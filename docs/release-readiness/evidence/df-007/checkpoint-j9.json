@@ -1,0 +1,143 @@
+{
+  "slice": "DF-007-J9",
+  "date": "2026-10-20",
+  "status": "locally-verified-bounded-internal-integration",
+  "baseRevision": "65a15c9b3bf2424a9e43905f85cb002073852e2c",
+  "sourceManifestSha256": "a08723c4e5e088bc4b4b699c56afa3b5dbebb0f20f57414d85aec173895532d7",
+  "sourceHashes": {
+    "apps/assets/src/app/account-export-owner.service.ts": "a6212396d6c85f1500f6d5d3e9b259d7fb9b9a1f027039a6190f5a9d090e5714",
+    "apps/assets/src/app/account-export-snapshot.service.spec.ts": "43860487d60361c1ce0a689d4814dc446556e2bc6ecb1d137ef2a3113b7c84be",
+    "apps/assets/src/app/account-export-snapshot.service.ts": "7ff35b6097850812f21d4019e6f93a12cb63dc9c046caeabf4a034cdb925ce7d",
+    "apps/assets/src/app/account-export.controller.ts": "399fb94bc8f3a1aec18c6c121f73c4dbcb0e267c1b35bb934ccbaca3f79158fc",
+    "apps/assets/src/app/app.module.ts": "8cd32dd2415b9506992dd9412d776176410b6d1b7b814783c0403ed92ea688af",
+    "apps/authentication-e2e/project.json": "1103c7f572057e2a4cde422267a42b311f583ffa8df965edf338e5db6c58adb1",
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "55b7ff8cf6f5cfbadd019f50935e19ebf25f9f316fdaca7680eb0f28eb299d11",
+    "apps/authentication-e2e/src/authentication/assets-account-export.spec.ts": "659f449d0a36d8ffbcd0166baa93c3902f9eb2286458b86346dfb454e4c3901e",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "5e067e3483a3c0efa24e37c678195ff6f7f118cda75412e34ed0c5380297e5aa",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "b08de8df0ade9f5456dd09f9175d4c695033201462c6f34cd4416ddda330b3a8",
+    "apps/authentication/src/account-export-jobs/assets-account-export-snapshot.client.spec.ts": "45a3232072b74ae251605109ec170ccce12c379cb853f8e756cb2d9f49c541e9",
+    "apps/authentication/src/account-export-jobs/assets-account-export-snapshot.client.ts": "7e800c4d71cc849cf658b793e5f9b8a729317bf02b215a40d3dae4ed4538e6b0",
+    "apps/authentication/src/app/app.module.ts": "216a3c530aeb18b127de5c653b4f050f32dc7dd11c4d6cc59bea5cda3af4f9b1",
+    "apps/authentication/src/config.spec.ts": "3901357427c0c69b0d4e6377cb3b3381745c554dbf4ff61181f52e70fda1d564",
+    "apps/authentication/src/config.ts": "9d33da6aefd9606e80e4ff5891ed0c2601b065899ef219f2552febafeac1a836",
+    "libs/constants/src/index.ts": "68c6c4d7f40b401bbb92b0bc14ccceb73de9ae495a5fcd1408eac16533dc1bca",
+    "libs/constants/src/lib/libs/asset.ts": "4cfc86c8454597a07b84f481b01c8e6909a6bfae748dea2714399fcbcc26f593",
+    "libs/models/src/lib/libs/account-export/account-export-snapshot.contract.ts": "a9c085df5339f63c39d196ca50845cb541680108299e5be3473cfa6c099f4c78"
+  },
+  "sourceCapture": "immutable git archive plus explicit 18 source overlays; protected43 excluded",
+  "fixtureConfigHashes": {
+    "apps/profile/src/assets/config.yaml": "4f322561d91db3aabcf8a5d6daf84b397e1f2a02984cd6dedad0bc72e4e67307",
+    "apps/permissions/src/assets/config.yaml": "461009841bd17af6f44b70dfb78a1573365b1deaa8db97e083c38c283e1b40a0",
+    "apps/social/src/assets/config.yaml": "59c4f45bd734c88ade4f46d72ec2537952861ea0207f716ec34365fa0c392a46",
+    "apps/forum/src/assets/config.yaml": "25d59375fe2dcdd6a9c291d33a5ab3ce2b55becf8783cfe998800262a7a5c728",
+    "apps/assets/src/assets/config.yaml": "70a106e2f559f0795fc2f78b8d9b04280dcda19558e2f78cf656fade62ddf138"
+  },
+  "unitTests": {
+    "assetsRegistry": 7,
+    "authenticationAssetsClient": 25,
+    "jobIntegration": 13,
+    "authenticationConfig": 9,
+    "passed": 54,
+    "unselectedOptInPostgresCases": 3,
+    "transport": "simulated"
+  },
+  "preE2E": {
+    "passed": [
+      "models:build",
+      "models:lint",
+      "constants:build",
+      "constants:lint",
+      "authentication:build:production",
+      "authentication:lint",
+      "assets:build:production",
+      "assets:lint",
+      "authentication-e2e:lint"
+    ],
+    "initialFailure": "Inline TypeScript import queries caused Nx lazy/static boundary lint conflict; replaced both with static type imports. Later focused Assets lint passed. New Auth/Assets Docker builds prove final captured source.",
+    "unchangedPriorTestsNotRerun": true
+  },
+  "runtime": {
+    "command": "SKIP_SETUP=true ACCOUNT_EXPORT_E2E_DB_MARKER=auth-profile-forum-export-fixture-v1 ACCOUNT_EXPORT_E2E_DB_HOST=127.0.0.1 E2E_DB_PORT=15548 ASSETS_JOB_E2E_MARKER=private-assets-j9-v1 ASSETS_JOB_E2E_CONTAINER_ID=<label-verified-private-container> ASSETS_JOB_E2E_MEDIA_DIR=<private-media-fixtures> pnpm exec nx run authentication-e2e:e2e:ci --testFile='(account-export|assets-account-export).spec.ts$' --testNamePattern='stores resumable export job|recovers an expired job lease|captures Assets over leased RPC' --runInBand --skipNxCache",
+    "result": {
+      "result": "PASS",
+      "passed": 3,
+      "skipped": 6,
+      "failed": 0,
+      "logSha256": "0e7fb4e880673926dcf5771eadc6e22b06227ad407a0a516204f13bd96aa6eb2"
+    },
+    "fixtureReadback": {
+      "result": "PASS",
+      "counts": {
+        "users": 0,
+        "jobs": 0,
+        "fixtureAssetRows": 0,
+        "guardianActivity": 0,
+        "assetsJ9Profiles": 0,
+        "temporaryRelations": 0
+      }
+    },
+    "teardown": "exit=0 down=0 containers=0 networks=0 volumes=0",
+    "imageIds": {
+      "assets": "sha256:70577d130d406f88a1e6392fa927cbe703db6521cc08c73754071f8677fc4e4f",
+      "authentication": "sha256:b7e59420a0f798f77196599a08b7a3d3dc7ca98c5d248b5536844ca4efe7c593",
+      "db": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+      "forum": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+      "permissions": "sha256:c0518f410f3b18dcfc7b85e763f622bd52fa64d9027853164f74e69f10e1bd91",
+      "profile": "sha256:34440d4535ea98cbe7b2da491ba1d381e8880b4cec4f4076204bef5f4da15163",
+      "social": "sha256:01bb87b452b1833c275b79866e3a4937ff3964f7f079e3ba0e544ba0502d04be"
+    },
+    "imageProvenance": "New Auth/Assets images from immutable base+explicit source overlays; prior verified Profile and remaining participants and reconstructed setup image retained. Prior synthetic fixture configuration only. Not production qualification.",
+    "passedScenarios": [
+      "nonempty Auth/Profile/Assets job capture remains incomplete without artifact",
+      "exact PNG/MP4 byte/hash/MIME verification through actual encrypted storage and leased RPC",
+      "wrong account/app/attempt/nonce denied",
+      "expired database-clock lease and revoked session denied; exact-scope stale release permitted",
+      "Assets restart invalidates old handles; recapture uses retained Profile parent",
+      "corrupt encrypted media fails direct capture and actual job without Assets marker; retry restores marker",
+      "counterpart asset rows preserved; local storage paths, foreign identifiers, bearer token and lease nonce absent",
+      "zero owner spool FDs on three actual service processes; no retained media spool files; fixture storage empty",
+      "Auth/Profile PIDs and all image IDs unchanged except guarded Assets restart; hashes protected43 and captured18 unchanged"
+    ],
+    "earlierAttempt": {
+      "attempt": 1,
+      "testsRun": 0,
+      "failure": "Private ADDITIONAL_DBS omitted ot_assets; corrected fixture only, same production images reused.",
+      "teardown": "exit=1 down=0 containers=0 networks=0 volumes=0"
+    }
+  },
+  "limits": [
+    "No downloadable artifact or durable media checkpoint; verified captures are staged and closed",
+    "No complete owner inventory, Videos owner, account deletion or shared UI acceptance",
+    "Cancellation producer-drain and cleanup-failure behavior unit-proven, not exercised by live runtime selection",
+    "Fixture encrypted files seeded directly; upload, ClamAV, external S3 and provider flows not exercised",
+    "Existing J8 storage AAD not rebound to account/profile/asset; MIME signature checks are not full codec validation",
+    "Reused participant images; mixed provenance does not establish combined production deployment qualification",
+    "No browser, remote CI or production release qualification",
+    "DF-007 and RR-11 remain open"
+  ],
+  "evidenceSha256": {
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/assets-snapshot-final.log": "fe1db1aa768d75d0ffcf762ee4193a5440163c8fdc87567c6a46e42df16e0541",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/auth-assets-unit.log": "db5d0418064305369269c2eab5a7ac030aea2b1d7ada8827e43cffc79b642db3",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/job-unit.log": "a59724abaab49ca7b510711756c4078b86f47f584012a276f0b762f89b295181",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/config-unit.log": "1cb8645605eaffe4e67340a9578c4f233f2331329259449ce512894255f19148",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/pre-e2e.log": "30bb86447298912871842f9d018566f23a9cc628850e2137abd486ee92479419",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/assets-lint-accepted.log": "1c1e154189b32326ef13c2f7091e4461329548295502b0d821898b1682d95d4d",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/auth-e2e-lint-final.log": "dd4cd39673616c7407f793bdaa8d6a39958d95e3aca8767c21bf0f773a170c13",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/attempt-2/e2e.log": "0e7fb4e880673926dcf5771eadc6e22b06227ad407a0a516204f13bd96aa6eb2",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/attempt-2/result.json": "41c464fb8ce8d8e01006e361b6cfdbd32ec6df3332197a3359a1b7b3ebe492bf",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/attempt-2/fixture-readback.json": "dae7348e796897ae1e410701672c649fe749378e0e7f46c7e23da1341dab29b3",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/attempt-2/summary.txt": "e47f952af6b895b642ebf98c91c291e49e15f870f9eec1d8bee59fe8c0e9f1e7",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/attempt-2/authentication-fds-after.json": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/attempt-2/profile-fds-after.json": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/attempt-2/assets-fds-after.json": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/attempt-2/assets-before.json": "616d6c9fa7e05e008e462786521cf55cad4ed522b81a76e2ac8611185ad3f179",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/attempt-2/assets-after.json": "ebd495d4d1a1303c8e5df922128ce64ba3da40a54f15cb9df5fabf867afaaf4d",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/attempt-2/image-ids.json": "db68d348750f429eed8edec969a059a352c454fd1c3c4a117deb5490d65fc8f7",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/attempt-2/preflight.json": "3adc9aade24fb8f05931cb38dc822b2c2bfe7adb2eb52721299e62cdede41e0e",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/attempt-2/services.log": "f41664b59ee4c3795d72681951c8cd2cb64e03943e4f3cdd0bb2d3c74c821f75",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/authentication-image-build.log": "54776697a1189ff017e0a5be00b63ae8b27e93eb1f29e841fc97328c8d54a240",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/assets-image-build.log": "ccc179e441bc1bc2f900ec955c859907493f0c2ea192fe1ce153bb3a226ce649",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/compose.json": "b3322553750d5ed927b4b8ac7a6a134f4e18eb791b011a6f0b6122e256929fea",
+    ".runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/run.sh": "4639aa6f28793fa5349d0362466ea398ddd02b636323caa050b8a49f472bf033"
+  }
+}

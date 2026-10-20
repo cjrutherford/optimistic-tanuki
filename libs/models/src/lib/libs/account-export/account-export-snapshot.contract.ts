@@ -94,3 +94,15 @@ export function isAccountExportCaptureGrant(
     v['attempt'] <= 2147483647
   );
 }
+
+/** Assets capture is derived from these exact leased Profile identities. */
+export interface AssetsAccountExportSnapshotOpenRequest
+  extends AccountExportCaptureGrant {
+  profileSnapshot: AccountExportSnapshotDescriptor;
+}
+export interface AssetsAccountExportSnapshotDescriptor
+  extends AccountExportSnapshotDescriptor {
+  profileHandleId: string;
+  profileCaptureId: string;
+  profileSnapshotAt: string;
+}

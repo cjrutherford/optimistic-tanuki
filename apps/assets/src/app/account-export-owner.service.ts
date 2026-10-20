@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { AuthCommands, ProfileCommands } from '@optimistic-tanuki/constants';
+import {
+  AuthCommands,
+  ProfileCommands,
+  ASSETS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from '@optimistic-tanuki/constants';
 import {
   AccountExportCaptureGrant,
   AccountExportOwnerChunk,
@@ -21,11 +25,8 @@ import AssetEntity from '../entities/asset.entity';
 import { AssetsAccountExportMediaReader } from './account-export-media-reader';
 import { AssetsAccountExportProfileSnapshotClient } from './account-export-profile-snapshot.client';
 
-export const ASSETS_ACCOUNT_EXPORT_SOURCES = [
-  'asset',
-  'assetMedia',
-  'guardianActivity',
-] as const;
+export const ASSETS_ACCOUNT_EXPORT_SOURCES =
+  ASSETS_ACCOUNT_EXPORT_CAPTURE_SOURCES;
 export type AssetsAccountExportSource =
   (typeof ASSETS_ACCOUNT_EXPORT_SOURCES)[number];
 export type AssetsAccountExportChunk =

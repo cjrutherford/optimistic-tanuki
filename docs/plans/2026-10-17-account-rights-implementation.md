@@ -214,3 +214,7 @@ At source `6fc407676`, frozen installation, migration governance, migration setu
 ### J8 — Assets database and media component
 
 [Finding](../release-readiness/findings/DF-007-J8.md), [receipt](../release-readiness/evidence/df-007/checkpoint-j8.json) and [field dispositions](../release-readiness/evidence/df-007/assets-owner-fields-j8.json): four enabled private PostgreSQL/encrypted-storage cases and twenty focused units pass with Assets production build/lint. The fixture verifies 1,006 owned uploads, plaintext PNG/MP4, guardian roles, snapshot behavior, failures and cleanup. Auth/Profile RPC remains simulated. Next add provider registration, leased Assets snapshot transport and verified job staging, retaining the owner promise through cancellation cleanup. Full Assets/account artifact/deletion/UI acceptance remains open.
+
+### J9 — Assets transport and job integration
+
+[Finding](../release-readiness/findings/DF-007-J9.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j9.json): three selected real-service cases passed with six unrelated cases unselected; 54 focused units passed with three opt-in database cases unselected. Assets now registers the J8 reader behind leased internal snapshots. Auth verifies all three captures and closes Assets before Profile; jobs remain incomplete without an artifact. Runtime verifies encrypted media bytes, restart/recapture, authorization fences, corrupt-media failure/retry and cleanup. Videos and remaining owner coverage, artifact/download, deletion and shared UI remain next. DF-007/RR-11 stay open.

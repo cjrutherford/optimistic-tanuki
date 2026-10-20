@@ -39,6 +39,7 @@ describe('AccountExportJobService authorization boundary', () => {
       preview as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
   });
@@ -214,6 +215,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
     renewLease: jest.Mock;
     profileCapture: jest.Mock;
     profileCleanup: jest.Mock;
+    assetsCapture: jest.Mock;
+    assetsCleanup: jest.Mock;
   } {
     const jobs = {};
     const auth = {};
@@ -233,7 +236,10 @@ describe('AccountExportJobService Authentication owner staging', () => {
       }),
     };
     const owner = { captureAccount: ownerCapture };
+    const assetsResult = { cleanup: jest.fn(async () => undefined) };
+    const assetsCapture = { capture: jest.fn(async () => assetsResult) };
     const profileResult = {
+      descriptor: { handleId: 'profile-fixture' },
       identities: jest.fn(async () => ({})),
       cleanup: jest.fn(async () => undefined),
     };
@@ -245,7 +251,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       preview as never,
       owner as never,
       spool,
-      profileCapture as never
+      profileCapture as never,
+      assetsCapture as never
     );
     const state = service as unknown as {
       run: (
@@ -276,6 +283,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       renewLease: state.renewLease,
       profileCapture: profileCapture.capture,
       profileCleanup: profileResult.cleanup,
+      assetsCapture: assetsCapture.capture,
+      assetsCleanup: assetsResult.cleanup,
     };
   }
 
@@ -331,7 +340,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
     expect(result.state).toBe('incomplete');
     expect(result.artifactUrl).toBeNull();
     expect(result.coverageSummary).toMatchObject({
-      capturedDatabaseOwners: ['authentication', 'profile'],
+      capturedDatabaseOwners: ['authentication', 'profile', 'assets'],
       artifactAvailable: false,
     });
     expect(test.renewLease).toHaveBeenCalledTimes(
@@ -342,6 +351,55 @@ describe('AccountExportJobService Authentication owner staging', () => {
       /sha256|captureId|sizeBytes|stage/i
     );
   });
+
+  it.each(['capture', 'cleanup', 'lease'])(
+    'fails safely when Assets %s fails while keeping Profile alive until cleanup',
+    async (mode) => {
+      const owner = jest.fn(async ({ onChunk }) => {
+        const chunks = createOwnerChunks(ACCOUNT_ID);
+        for (const chunk of chunks) await onChunk(chunk);
+        return chunks[chunks.length - 1];
+      });
+      const test = harness(async () => true, owner);
+      if (mode === 'capture')
+        test.assetsCapture.mockRejectedValueOnce(
+          new Error('private Assets diagnostic')
+        );
+      if (mode === 'cleanup')
+        test.assetsCleanup.mockRejectedValueOnce(
+          new Error('private Assets cleanup')
+        );
+      if (mode === 'lease') {
+        test.assetsCapture.mockImplementationOnce(
+          async (_grant, _profile, renew) => {
+            test.renewLease.mockResolvedValueOnce(false);
+            await renew();
+            throw new Error('stale');
+          }
+        );
+        await expect(test.run(input(), activeClaim)).rejects.toMatchObject({
+          message: 'Export operation lease is no longer current',
+        });
+        expect(test.finish).not.toHaveBeenCalled();
+      } else {
+        const result = await test.run(input(), activeClaim);
+        expect(result.state).toBe('failed');
+        expect(result.coverageSummary.capturedDatabaseOwners).toEqual([
+          'authentication',
+          'profile',
+        ]);
+        expect(result.coverageSummary.blockers).toContain(
+          'assets-capture-unavailable'
+        );
+        expect(JSON.stringify(result)).not.toContain('private Assets');
+      }
+      expect(test.profileCleanup).toHaveBeenCalledTimes(1);
+      if (mode === 'cleanup')
+        expect(test.assetsCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+          test.profileCleanup.mock.invocationCallOrder[0]
+        );
+    }
+  );
 
   it.each(['capture', 'cleanup', 'lease'])(
     'fails safely when Profile %s fails after Authentication staging',
@@ -460,6 +518,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       {} as never,
       {} as never,
       spool,
+      {} as never,
       {} as never
     );
     const internals = service as unknown as {
@@ -514,6 +573,7 @@ describe('AccountExportJobService database lease fence', () => {
       service = new AccountExportJobService(
         repository,
         dataSource,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,

@@ -1,3 +1,4 @@
+import { AssetsAccountExportSnapshotClient } from '../account-export-jobs/assets-account-export-snapshot.client';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -110,6 +111,7 @@ import {
       inject: [AccountExportOwnerSpoolService],
     },
     ProfileAccountExportSnapshotClient,
+    AssetsAccountExportSnapshotClient,
     {
       provide: AuthenticationAccountExportOwnerService,
       useFactory: (dataSource: DataSource, auth: AppService) =>
@@ -118,6 +120,17 @@ import {
     },
     AccountExportJobService,
     AccountExportCaptureLeaseService,
+    {
+      provide: ServiceTokens.ASSETS_SERVICE,
+      useFactory: (config: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: config.get<{ host: string; port: number }>(
+            'services.assets'
+          ),
+        }),
+      inject: [ConfigService],
+    },
     {
       provide: ServiceTokens.PROFILE_SERVICE,
       useFactory: (configService: ConfigService) => {

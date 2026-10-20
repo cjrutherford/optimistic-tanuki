@@ -34,6 +34,7 @@ export declare type AuthConfigType = {
     facebook?: OAuthProviderConfig;
   };
   services?: {
+    assets?: { host: string; port: number };
     profile?: { host: string; port: number };
     permissions?: { host: string; port: number };
     social?: { host: string; port: number };
@@ -175,6 +176,16 @@ const loadConfig = () => {
     ...configData,
     services: {
       ...configData.services,
+      assets: {
+        host:
+          process.env.SERVICE_ASSETS_HOST ||
+          configData.services?.assets?.host ||
+          'assets',
+        port:
+          Number(process.env.SERVICE_ASSETS_PORT) ||
+          configData.services?.assets?.port ||
+          3005,
+      },
       profile: {
         host:
           process.env.SERVICE_PROFILE_HOST ||

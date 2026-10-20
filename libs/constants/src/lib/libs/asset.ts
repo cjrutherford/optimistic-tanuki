@@ -1,4 +1,7 @@
 export const AssetCommands = {
+  OPEN_ACCOUNT_EXPORT_CAPTURE: 'asset.export.open',
+  READ_ACCOUNT_EXPORT_CAPTURE: 'asset.export.read',
+  RELEASE_ACCOUNT_EXPORT_CAPTURE: 'asset.export.release',
   CREATE: 'asset.create',
   REMOVE: 'asset.remove',
   RETRIEVE: 'asset.retrieve',
@@ -11,3 +14,9 @@ export const AssetCommands = {
   GUARDIAN_REMOVE: 'asset.guardian.remove',
   GUARDIAN_AUTHORIZE_READ: 'asset.guardian.authorizeRead',
 };
+
+export const ASSETS_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
+  'asset',
+  'assetMedia',
+  'guardianActivity',
+] as const;

@@ -16,9 +16,19 @@ import { loadConfig } from './config';
 import AssetEntity from '../entities/asset.entity';
 import { DataSource } from 'typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { GuardianAssetAuthorizationService } from './guardian-asset-authorization.service';
+import { AccountExportController } from './account-export.controller';
+import { AssetsAccountExportSnapshotService } from './account-export-snapshot.service';
+import { AssetsAccountExportOwnerService } from './account-export-owner.service';
+import { AssetsAccountExportProfileSnapshotClient } from './account-export-profile-snapshot.client';
+import { AssetsAccountExportMediaReader } from './account-export-media-reader';
+import { AccountExportOwnerSpoolService } from '@optimistic-tanuki/storage';
 
 @Module({
   imports: [
@@ -71,9 +81,58 @@ import { GuardianAssetAuthorizationService } from './guardian-asset-authorizatio
       inject: [ConfigService],
     }),
   ],
-  controllers: [AppController, InternalMediaController],
+  controllers: [
+    AppController,
+    InternalMediaController,
+    AccountExportController,
+  ],
   providers: [
     AppService,
+    AccountExportOwnerSpoolService,
+    AssetsAccountExportProfileSnapshotClient,
+    {
+      provide: AssetsAccountExportMediaReader,
+      useFactory: (appService: AppService) =>
+        new AssetsAccountExportMediaReader(appService),
+      inject: [AppService],
+    },
+    {
+      provide: AssetsAccountExportOwnerService,
+      useFactory: (
+        dataSource: DataSource,
+        identities: AssetsAccountExportProfileSnapshotClient,
+        media: AssetsAccountExportMediaReader,
+        auth: ClientProxy,
+        profile: ClientProxy
+      ) =>
+        new AssetsAccountExportOwnerService(
+          dataSource,
+          identities,
+          media,
+          auth,
+          profile
+        ),
+      inject: [
+        'ASSETS_CONNECTION',
+        AssetsAccountExportProfileSnapshotClient,
+        AssetsAccountExportMediaReader,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+        ServiceTokens.PROFILE_SERVICE,
+      ],
+    },
+    {
+      provide: AssetsAccountExportSnapshotService,
+      useFactory: (
+        owner: AssetsAccountExportOwnerService,
+        spool: AccountExportOwnerSpoolService,
+        auth: ClientProxy
+      ) => new AssetsAccountExportSnapshotService(owner, spool, auth),
+      inject: [
+        AssetsAccountExportOwnerService,
+        AccountExportOwnerSpoolService,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
     GuardianAssetAuthorizationService,
     {
       provide: ServiceTokens.AUTHENTICATION_SERVICE,

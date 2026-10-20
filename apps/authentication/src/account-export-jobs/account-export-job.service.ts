@@ -1,3 +1,4 @@
+import { AssetsAccountExportSnapshotClient } from './assets-account-export-snapshot.client';
 import { Inject, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -42,7 +43,8 @@ export class AccountExportJobService {
     private readonly preview: AccountExportService,
     private readonly owner: AuthenticationAccountExportOwnerService,
     private readonly ownerSpool: AccountExportOwnerSpoolService,
-    private readonly profileCapture: ProfileAccountExportSnapshotClient
+    private readonly profileCapture: ProfileAccountExportSnapshotClient,
+    private readonly assetsCapture: AssetsAccountExportSnapshotClient
   ) {}
 
   async create(request: unknown): Promise<AccountExportJobStatus> {
@@ -309,6 +311,10 @@ export class AccountExportJobService {
     }
     if (state === 'incomplete' && !leaseLost) {
       let profile: ProfileAccountExportCapture | undefined;
+      let assets:
+        | Awaited<ReturnType<AssetsAccountExportSnapshotClient['capture']>>
+        | undefined;
+      let stage: 'profile' | 'assets' = 'profile';
       try {
         if (!claimed.leaseOwner) {
           leaseLost = true;
@@ -335,19 +341,58 @@ export class AccountExportJobService {
           ...summary,
           capturedDatabaseOwners: ['authentication', 'profile'],
         };
+        stage = 'assets';
+        assets = await this.assetsCapture.capture(
+          {
+            accountId: input.accountId,
+            token: input.token,
+            appId: input.appId,
+            jobId: claimed.id,
+            attempt: claimed.attempt,
+            leaseOwner: claimed.leaseOwner,
+          },
+          profile.descriptor,
+          async () => {
+            const renewed = await this.renewLease(claimed);
+            if (!renewed) leaseLost = true;
+            return renewed;
+          }
+        );
+        summary = {
+          ...summary,
+          capturedDatabaseOwners: ['authentication', 'profile', 'assets'],
+        };
       } catch {
         if (!leaseLost) {
           summary = {
             ...summary,
             blockers: [
               ...(Array.isArray(summary.blockers) ? summary.blockers : []),
-              'profile-capture-unavailable',
+              `${stage}-capture-unavailable`,
             ],
           };
           state = 'failed';
-          errorCode = 'profile-capture-unavailable';
+          errorCode = `${stage}-capture-unavailable`;
         }
       } finally {
+        if (assets) {
+          try {
+            await assets.cleanup();
+          } catch {
+            if (!leaseLost) {
+              summary = {
+                ...summary,
+                capturedDatabaseOwners: ['authentication', 'profile'],
+                blockers: [
+                  ...(Array.isArray(summary.blockers) ? summary.blockers : []),
+                  'assets-capture-unavailable',
+                ],
+              };
+              state = 'failed';
+              errorCode = 'assets-capture-unavailable';
+            }
+          }
+        }
         if (profile) {
           try {
             await profile.cleanup();

@@ -8,6 +8,8 @@ describe('authentication config oauth env loading', () => {
     delete process.env.GOOGLE_CLIENT_ID;
     delete process.env.GOOGLE_CLIENT_SECRET;
     delete process.env.GOOGLE_REDIRECT_URI;
+    delete process.env.SERVICE_ASSETS_HOST;
+    delete process.env.SERVICE_ASSETS_PORT;
     delete process.env.SERVICE_PROFILE_HOST;
     delete process.env.SERVICE_PROFILE_PORT;
     delete process.env.SERVICE_PERMISSIONS_HOST;
@@ -53,6 +55,20 @@ describe('authentication config oauth env loading', () => {
         clientSecret: '',
       })
     );
+  });
+
+  it('loads the Assets participant target with environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.assets).toEqual({
+      host: 'assets',
+      port: 3005,
+    });
+    process.env.SERVICE_ASSETS_HOST = 'assets-internal';
+    process.env.SERVICE_ASSETS_PORT = '43005';
+    expect(loadConfig().services?.assets).toEqual({
+      host: 'assets-internal',
+      port: 43005,
+    });
   });
 
   it('loads the profile participant target from config with environment overrides', async () => {
