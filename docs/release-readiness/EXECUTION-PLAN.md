@@ -35,6 +35,8 @@
 
 **2026-10-20 J9 checkpoint:** [Assets snapshots and job integration](./findings/DF-007-J9.md) pass three selected real-service cases (six unrelated cases unselected), plus 54 focused unit tests. Auth jobs verify Authentication, Profile and Assets captures while remaining incomplete with no artifact. Encrypted PNG/MP4 transport, lease/session fences, Assets restart/recapture, corrupt-media failure/retry and independent cleanup/readback passed. Videos and remaining owners, artifact/download, deletion and shared UI remain next. Item 1/DF-007/RR-11 remain open.
 
+**2026-10-20 J10 component:** [Videos database ownership](./findings/DF-007-J10.md) passes five enabled private PostgreSQL cases with zero skips and 24 focused unit/regression tests. It captures seven tables through all fenced Profile identities, preserves counterpart rows and verifies cleanup, including actual dirty-connection eviction. Videos transport/jobs and HLS portability remain next, followed by remaining owners and artifacts. Item 1/DF-007/RR-11 remain open.
+
 The master audit and individual slice acceptance criteria remain authoritative. This map selects the next work; it does not mark any product behavior accepted. Read the slice before execution, audit current behavior, implement bounded remediation, verify, then report findings before moving on.
 
 ## Working order

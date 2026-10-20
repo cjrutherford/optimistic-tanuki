@@ -218,3 +218,7 @@ At source `6fc407676`, frozen installation, migration governance, migration setu
 ### J9 — Assets transport and job integration
 
 [Finding](../release-readiness/findings/DF-007-J9.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j9.json): three selected real-service cases passed with six unrelated cases unselected; 54 focused units passed with three opt-in database cases unselected. Assets now registers the J8 reader behind leased internal snapshots. Auth verifies all three captures and closes Assets before Profile; jobs remain incomplete without an artifact. Runtime verifies encrypted media bytes, restart/recapture, authorization fences, corrupt-media failure/retry and cleanup. Videos and remaining owner coverage, artifact/download, deletion and shared UI remain next. DF-007/RR-11 stay open.
+
+### J10 — Videos database owner component
+
+[Finding](../release-readiness/findings/DF-007-J10.md), [receipt](../release-readiness/evidence/df-007/checkpoint-j10.json) and [field dispositions](../release-readiness/evidence/df-007/videos-owner-fields-j10.json): five enabled PostgreSQL cases and 24 focused unit/regression tests passed, with Storage lint and Assets/Videos build/lint. Seven retained tables and all 1,006 captured identities are exercised; counterpart privacy, consistent reads, failures and cleanup pass. RPC dependencies are simulated in this component fixture. Videos snapshot/job integration, HLS portability, remaining owners, artifact/download and deletion/UI remain open.

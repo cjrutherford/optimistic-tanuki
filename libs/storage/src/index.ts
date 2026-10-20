@@ -15,3 +15,4 @@ export * from './lib/account-export-owner-spool.service';
 export * from './lib/account-export-owner-emitter';
 export * from './lib/file-mime';
 export * from './lib/account-export-snapshot-pull.service';
+export * from './lib/account-export-profile-snapshot.client';

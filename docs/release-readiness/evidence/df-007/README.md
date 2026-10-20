@@ -31,3 +31,5 @@ The [J1 finding](../../findings/DF-007-J1.md) and [receipt](checkpoint-j1.json) 
 [J8 Assets database/media component](../../findings/DF-007-J8.md): [receipt](checkpoint-j8.json), [field dispositions](assets-owner-fields-j8.json). Four private PostgreSQL/encrypted-storage cases and twenty units passed; registration, actual Assets RPC and job integration remain open.
 
 [J9 Assets snapshots and jobs](../../findings/DF-007-J9.md): [receipt](checkpoint-j9.json). Three selected real-service cases and 54 focused units passed; six unrelated runtime cases and three opt-in unit database cases were unselected. Private readback, spool cleanup and teardown passed. No account artifact or deletion is enabled; Videos and remaining owner coverage, delivery and shared UI stay open.
+
+[J10 Videos database component](../../findings/DF-007-J10.md): [receipt](checkpoint-j10.json), [field dispositions](videos-owner-fields-j10.json). Five enabled private PostgreSQL cases and 24 unit/regression cases passed. Videos transport/jobs, HLS media portability and remaining account-rights work stay open.
