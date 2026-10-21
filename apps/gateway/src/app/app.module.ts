@@ -90,6 +90,7 @@ import { WellnessController } from '../controllers/wellness/wellness.controller'
 import { ClassifiedsController } from '../controllers/classifieds/classifieds.controller';
 import { CommunitiesController } from '../controllers/communities/communities.controller';
 import { NotificationController } from '../controllers/social/notification/notification.controller';
+import { GatewayNotificationRecipientService } from '../controllers/social/notification/gateway-notification-recipient.service';
 import { SearchController } from '../controllers/social/search/search.controller';
 import { PrivacyController } from '../controllers/social/privacy/privacy.controller';
 import { ActivityController } from '../controllers/social/activity/activity.controller';
@@ -184,7 +185,7 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
       { id: 'social', requiredServices: ['social'], value: SocialController },
       {
         id: 'social-components',
-        requiredServices: ['social'],
+        requiredServices: ['social', 'profile'],
         value: SocialComponentController,
       },
       {
@@ -419,7 +420,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
       },
       {
         id: 'social-gateway',
-        requiredServices: ['social'],
+        requiredServices: ['social', 'profile'],
         value: SocialGateway,
       },
     ] as Array<ValueComposableEntry<any>>,
@@ -471,6 +472,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     // owns the invitation and knows nothing about which application it is for.
     ProjectInviteMailer,
     GatewayPresenceAudienceService,
+    GatewayNotificationRecipientService,
     // Same courtesy contract for community email invitations (token-based,
     // owned by social, addressed from the gateway-held app registry).
     CommunityInviteMailer,

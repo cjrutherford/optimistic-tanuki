@@ -23,6 +23,7 @@ import { PermissionsGuard } from '../guards/permissions.guard';
 import { RequirePermissions } from '../decorators/permissions.decorator';
 import { Public } from '../decorators/public.decorator';
 import { SiteAnalyticsService } from '../analytics/site-analytics.service';
+import { projectNotification } from '@optimistic-tanuki/social-contracts';
 import {
   PerformanceRumInput,
   RuntimeObservationInput,
@@ -120,9 +121,31 @@ export class PerformanceTelemetryController {
         { where: { appScope: 'owner-console' } }
       )
     );
-    const userIds = (profiles ?? [])
-      .map((profile: { userId?: string }) => profile.userId)
-      .filter((userId): userId is string => !!userId);
+    const UUID_PATTERN =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const validProfiles = (profiles ?? []).flatMap(
+      (profile: { id?: string; userId?: string }) => {
+        if (
+          typeof profile.id !== 'string' ||
+          !UUID_PATTERN.test(profile.id) ||
+          typeof profile.userId !== 'string' ||
+          !UUID_PATTERN.test(profile.userId)
+        )
+          return [];
+        return [
+          {
+            id: profile.id.toLowerCase(),
+            userId: profile.userId.toLowerCase(),
+          },
+        ];
+      }
+    );
+    const userIds = [
+      ...new Set(
+        validProfiles.map((profile: { userId: string }) => profile.userId)
+      ),
+    ];
+    if (!userIds.length) return;
     const users = await firstValueFrom(
       this.authenticationClient.send(
         { cmd: AuthCommands.GetUsersByIds },
@@ -135,11 +158,27 @@ export class PerformanceTelemetryController {
         user,
       ])
     );
-    const recipients = (profiles ?? [])
-      .map((profile: { userId?: string; id?: string }) =>
-        userById.get(profile.userId ?? '')
+    const recipientProfiles = validProfiles
+      .filter(
+        (profile: { id: string }, index: number, all: { id: string }[]) =>
+          all.findIndex((candidate) => candidate.id === profile.id) === index
       )
-      .filter((user): user is { id: string; email: string } => !!user?.email);
+      .map((profile: { id: string; userId: string }) => ({
+        profileId: profile.id,
+        user: userById.get(profile.userId),
+      }))
+      .filter(
+        (
+          entry
+        ): entry is {
+          profileId: string;
+          user: { id: string; email: string };
+        } => !!entry.user?.email
+      );
+    const emailByAccount = new Map<string, { id: string; email: string }>();
+    for (const { user } of recipientProfiles)
+      emailByAccount.set(user.id.toLowerCase(), user);
+    const emailRecipients = [...emailByAccount.values()];
     const title = `${
       alert.severity === 'critical' ? 'Critical' : 'Warning'
     } performance issue: ${alert.appId}`;
@@ -149,21 +188,22 @@ export class PerformanceTelemetryController {
       alert.threshold
     )}). Open Owner Console → Performance.`;
     await Promise.all(
-      recipients.map(async (recipient) => {
+      recipientProfiles.map(async ({ profileId }) => {
         await firstValueFrom(
           this.socialClient.send(
             { cmd: NotificationCommands.CREATE },
             {
-              recipientId: recipient.id,
+              recipientId: profileId,
               type: 'system',
               title,
               body,
-              resourceType: 'performance-alert',
-              resourceId: alert.id,
-              actionUrl: '/dashboard/performance',
             }
           )
         );
+      })
+    );
+    await Promise.all(
+      emailRecipients.map(async (recipient) => {
         await this.emailService.sendEmail({
           to: recipient.email,
           subject: title,

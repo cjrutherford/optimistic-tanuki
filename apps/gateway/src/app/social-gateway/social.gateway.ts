@@ -21,6 +21,8 @@ import {
   SocketSessionAuthService,
   SocketSessionUser,
 } from '../../auth/socket-session-auth.service';
+import { GatewayNotificationRecipientService } from '../../controllers/social/notification/gateway-notification-recipient.service';
+import { projectNotification } from '@optimistic-tanuki/social-contracts';
 
 interface ConnectedClient {
   id: string;
@@ -52,7 +54,8 @@ export class SocialGateway {
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
-    private readonly socketSessionAuth: SocketSessionAuthService
+    private readonly socketSessionAuth: SocketSessionAuthService,
+    private readonly notificationRecipients: GatewayNotificationRecipientService
   ) {}
 
   async handleConnection(client: Socket): Promise<void> {
@@ -345,9 +348,14 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = (
-      await this.assertProfileAfterAuthentication(client, payload.profileId)
-    ).profileId;
+    const user = await this.assertProfileAfterAuthentication(
+      client,
+      payload.profileId
+    );
+    const profileId = await this.notificationRecipients.assertSelected(
+      user,
+      payload.profileId
+    );
     this.l.log(`User ${profileId} subscribing to notifications`);
 
     const authenticatedUser = this.socketSessionAuth.getUser(client);
@@ -370,9 +378,14 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = (
-      await this.assertProfileAfterAuthentication(client, payload.profileId)
-    ).profileId;
+    const user = await this.assertProfileAfterAuthentication(
+      client,
+      payload.profileId
+    );
+    const profileId = await this.notificationRecipients.assertSelected(
+      user,
+      payload.profileId
+    );
     this.l.log(`User ${profileId} unsubscribing from notifications`);
 
     const connectedClient = this.clientToConnectedClient(client);
@@ -602,13 +615,34 @@ export class SocialGateway {
   }
 
   async broadcastNotification(notification: any): Promise<void> {
-    const { recipientId } = notification;
-    this.l.log(`Broadcasting notification to user: ${recipientId}`);
-    await this.broadcastToSubscribers(
-      `notifications:${recipientId}`,
-      'notification',
-      notification
+    const safeNotification = projectNotification(notification);
+    if (!safeNotification) return;
+    const subscribers = [
+      ...(this.connectedClients.get(safeNotification.recipientId) ?? []),
+    ].filter((subscriber) =>
+      subscriber.subscriptions.has(
+        `notifications:${safeNotification.recipientId}`
+      )
     );
+    for (const subscriber of subscribers) {
+      try {
+        const user = this.socketSessionAuth.getUser(subscriber.client);
+        const selected = await this.notificationRecipients.assertSelected(
+          user,
+          safeNotification.recipientId
+        );
+        if (
+          selected !== safeNotification.recipientId ||
+          !(await this.isCurrentSocketSession(subscriber))
+        )
+          continue;
+        subscriber.client.emit('notification', safeNotification);
+      } catch {
+        subscriber.subscriptions.delete(
+          `notifications:${safeNotification.recipientId}`
+        );
+      }
+    }
   }
 
   handleBroadcastNotification(payload: { notification: any }): Promise<void> {

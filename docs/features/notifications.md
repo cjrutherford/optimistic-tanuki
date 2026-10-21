@@ -1,73 +1,28 @@
-# Notifications System
+# Notifications
 
-The notifications system keeps users engaged by alerting them about interactions with their content.
+Notification lists, unread counts and read/delete controls use the selected profile's stream. The Gateway verifies that the profile still belongs to the authenticated account. Public notification creation is forbidden; existing server producers use Social's internal command at the trusted service boundary.
 
-## Notification Types
+## Content and actions
 
-| Type             | Trigger                                |
-| ---------------- | -------------------------------------- |
-| Like             | Someone likes your post                |
-| Comment          | Someone comments on your post          |
-| Follow           | Someone follows you                    |
-| Mention          | Someone mentions you in a post/comment |
-| Message          | You receive a direct message           |
-| Community Invite | Invitation to join a community         |
-| System           | System announcements                   |
+Notification previews use generic server templates. API and notification socket projections omit stored sender identifiers, arbitrary text, resource references and action URLs. Historical rows have no reliable provenance, so a stored link is not treated as authorization to open content. Unknown historical types display a generic system notice. New notifications store template text.
 
-## Features
+The shared notification library provides the existing bell and list components. These UI components are reused. It can load notifications and mark or delete recipient-owned records through HTTP.
 
-### Real-time Notifications
+## Producer coverage and delivery limits
 
-Notifications appear in real-time via WebSocket connections.
+Social has producers for post likes, comments, follows and mentions. Performance alerts address actual owner-console profile IDs, with emails deduplicated by account. These source paths do not establish that every producer, delay or browser journey has been exercised.
 
-### Notification Bell
+Message and community-invitation types exist in the model, but their end-to-end producer flows remain **VERIFY**. Browser realtime notification delivery is **DEFER**: the shared UI still uses a stale raw WebSocket endpoint and normal Social producer push wiring has not been qualified. Authenticated server notification-room tests do not establish browser delivery. Do not advertise realtime delivery until a dedicated transport/producer slice proves it.
 
-The bell icon in the toolbar shows:
+## API
 
-- Unread notification count
-- Dropdown with recent notifications
-- Mark all as read functionality
+| Method | Endpoint                                     | Behavior                                 |
+| ------ | -------------------------------------------- | ---------------------------------------- |
+| GET    | `/api/notifications/:profileId`              | Selected recipient's generic previews    |
+| GET    | `/api/notifications/:profileId/unread-count` | Selected recipient's unread count        |
+| POST   | `/api/notifications`                         | Forbidden                                |
+| PUT    | `/api/notifications/:id/read`                | Mark a recipient-owned notification read |
+| PUT    | `/api/notifications/:profileId/read-all`     | Mark selected recipient's stream read    |
+| DELETE | `/api/notifications/:id`                     | Delete a recipient-owned notification    |
 
-### Notification Page
-
-Full notification history with:
-
-- Grouped notifications by date
-- Filter by type
-- Mark as read/unread
-- Delete notifications
-
-## Components
-
-| Component                 | Description             |
-| ------------------------- | ----------------------- |
-| NotificationBellComponent | Bell icon with dropdown |
-| NotificationListComponent | Full notification page  |
-
-## Service
-
-| Service             | Description                           |
-| ------------------- | ------------------------------------- |
-| NotificationService | Load, mark read, delete notifications |
-
-## API Endpoints
-
-| Method | Endpoint                                     | Description           |
-| ------ | -------------------------------------------- | --------------------- |
-| GET    | `/api/notifications/:profileId`              | Get all notifications |
-| GET    | `/api/notifications/:profileId/unread-count` | Get unread count      |
-| POST   | `/api/notifications`                         | Create notification   |
-| PUT    | `/api/notifications/:id/read`                | Mark as read          |
-| PUT    | `/api/notifications/:profileId/read-all`     | Mark all as read      |
-| DELETE | `/api/notifications/:id`                     | Delete notification   |
-
-## Notification Triggers
-
-Notifications are automatically created when:
-
-- A post receives a like
-- A comment is added to a post
-- A user follows another user
-- A user is mentioned
-- A direct message is received
-- A community invitation is sent
+Notification snapshot/export disposition remains J23/J24. Download artifacts and account deletion are later work. Local acceptance and its limits are recorded in the release-readiness slice register.

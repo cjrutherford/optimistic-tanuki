@@ -10,6 +10,11 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { SocialGateway } from '../../../app/social-gateway/social.gateway';
 import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
+import { GatewayNotificationRecipientService } from './gateway-notification-recipient.service';
+
+const accountId = '11111111-1111-4111-8111-111111111111';
+const profileId = '22222222-2222-4222-8222-222222222222';
 
 describe('NotificationController', () => {
   let controller: NotificationController;
@@ -35,6 +40,17 @@ describe('NotificationController', () => {
         {
           provide: SocialGateway,
           useValue: mockSocialGateway,
+        },
+        {
+          provide: GatewayNotificationRecipientService,
+          useValue: {
+            assertSelected: jest.fn(async (user, requested) => {
+              if (requested && requested !== user?.profileId) {
+                throw new ForbiddenException();
+              }
+              return user?.profileId ?? profileId;
+            }),
+          },
         },
         {
           provide: AuthGuard,
@@ -88,13 +104,14 @@ describe('NotificationController', () => {
       ];
       mockSocialClient.send.mockReturnValue(of(mockNotifications));
 
-      const result = await controller.getNotifications('user1', {
-        profileId: 'user1',
+      const result = await controller.getNotifications(profileId, {
+        userId: accountId,
+        profileId,
       } as any);
 
       expect(mockSocialClient.send).toHaveBeenCalledWith(
         { cmd: NotificationCommands.FIND_BY_RECIPIENT },
-        { recipientId: 'user1' }
+        { recipientId: profileId }
       );
       expect(result).toEqual(mockNotifications);
     });
@@ -102,8 +119,9 @@ describe('NotificationController', () => {
     it('should return empty array when no notifications', async () => {
       mockSocialClient.send.mockReturnValue(of([]));
 
-      const result = await controller.getNotifications('user1', {
-        profileId: 'user1',
+      const result = await controller.getNotifications(profileId, {
+        userId: accountId,
+        profileId,
       } as any);
 
       expect(result).toEqual([]);
@@ -111,39 +129,43 @@ describe('NotificationController', () => {
 
     it('should reject cross-profile notification reads', async () => {
       await expect(
-        controller.getNotifications('user2', { profileId: 'user1' } as any)
+        controller.getNotifications('33333333-3333-4333-8333-333333333333', {
+          userId: accountId,
+          profileId,
+        } as any)
       ).rejects.toBeInstanceOf(ForbiddenException);
       expect(mockSocialClient.send).not.toHaveBeenCalled();
     });
   });
 
-  it('returns a committed notification when live delivery fails', async () => {
-    const notification = { id: 'notification-1', recipientId: 'profile-1' };
-    mockSocialClient.send.mockReturnValue(of(notification));
-    mockSocialGateway.broadcastNotification.mockRejectedValue(
-      new Error('socket delivery failed')
-    );
+  it('forbids arbitrary notification creation without Social RPC or broadcast', async () => {
+    await expect(
+      controller.create({ recipientId: profileId } as any)
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(mockSocialClient.send).not.toHaveBeenCalled();
+    expect(mockSocialGateway.broadcastNotification).not.toHaveBeenCalled();
+  });
 
-    await expect(controller.create(notification as any)).resolves.toBe(
-      notification
-    );
-    await Promise.resolve();
-    expect(mockSocialGateway.broadcastNotification).toHaveBeenCalledWith(
-      notification
-    );
+  it('forbids creation for the caller own recipient too', async () => {
+    await expect(
+      controller.create({ recipientId: profileId } as any)
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(mockSocialClient.send).not.toHaveBeenCalled();
+    expect(mockSocialGateway.broadcastNotification).not.toHaveBeenCalled();
   });
 
   describe('getUnreadCount', () => {
     it('should get unread notification count', async () => {
       mockSocialClient.send.mockReturnValue(of({ count: 5 }));
 
-      const result = await controller.getUnreadCount('user1', {
-        profileId: 'user1',
+      const result = await controller.getUnreadCount(profileId, {
+        userId: accountId,
+        profileId,
       } as any);
 
       expect(mockSocialClient.send).toHaveBeenCalledWith(
         { cmd: NotificationCommands.GET_UNREAD_COUNT },
-        { recipientId: 'user1' }
+        { recipientId: profileId }
       );
       expect(result).toEqual({ count: 5 });
     });
@@ -151,8 +173,9 @@ describe('NotificationController', () => {
     it('should return zero when no unread notifications', async () => {
       mockSocialClient.send.mockReturnValue(of({ count: 0 }));
 
-      const result = await controller.getUnreadCount('user1', {
-        profileId: 'user1',
+      const result = await controller.getUnreadCount(profileId, {
+        userId: accountId,
+        profileId,
       } as any);
 
       expect(result).toEqual({ count: 0 });
@@ -160,33 +183,24 @@ describe('NotificationController', () => {
 
     it('should reject cross-profile unread count reads', async () => {
       await expect(
-        controller.getUnreadCount('user2', { profileId: 'user1' } as any)
+        controller.getUnreadCount('33333333-3333-4333-8333-333333333333', {
+          userId: accountId,
+          profileId,
+        } as any)
       ).rejects.toBeInstanceOf(ForbiddenException);
       expect(mockSocialClient.send).not.toHaveBeenCalled();
     });
   });
 
   describe('create', () => {
-    it('should create a notification', async () => {
-      const createDto = {
-        recipientId: 'user1',
-        type: 'like',
-        title: 'New Like',
-        body: 'User liked your post',
-        senderId: 'user2',
-        resourceType: 'post',
-        resourceId: 'post1',
-      };
-      const createdNotification = { id: 'notif-1', ...createDto };
-      mockSocialClient.send.mockReturnValue(of(createdNotification));
-
-      const result = await controller.create(createDto);
-
-      expect(mockSocialClient.send).toHaveBeenCalledWith(
-        { cmd: NotificationCommands.CREATE },
-        createDto
-      );
-      expect(result).toEqual(createdNotification);
+    it('always rejects arbitrary recipients without Social RPC or broadcast', async () => {
+      await expect(
+        controller.create({
+          recipientId: '33333333-3333-4333-8333-333333333333',
+        } as any)
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(mockSocialClient.send).not.toHaveBeenCalled();
+      expect(mockSocialGateway.broadcastNotification).not.toHaveBeenCalled();
     });
   });
 
@@ -194,20 +208,24 @@ describe('NotificationController', () => {
     it('should mark a notification as read', async () => {
       mockSocialClient.send.mockReturnValue(of({ success: true }));
 
-      await controller.markAsRead('notif-1', {
-        profileId: 'recipient-1',
+      await controller.markAsRead('33333333-3333-4333-8333-333333333333', {
+        userId: accountId,
+        profileId,
       } as any);
 
       expect(mockSocialClient.send).toHaveBeenCalledWith(
         { cmd: NotificationCommands.MARK_READ },
-        { id: 'notif-1', recipientId: 'recipient-1' }
+        { id: '33333333-3333-4333-8333-333333333333', recipientId: profileId }
       );
     });
 
-    it('rejects a missing authenticated profile before sending a mutation', async () => {
+    it('rejects malformed notification ids before sending a mutation', async () => {
       await expect(
-        controller.markAsRead('notif-1', {} as any)
-      ).rejects.toBeInstanceOf(ForbiddenException);
+        controller.markAsRead('notif-1', {
+          userId: accountId,
+          profileId,
+        } as any)
+      ).rejects.toBeInstanceOf(BadRequestException);
       expect(mockSocialClient.send).not.toHaveBeenCalled();
     });
   });
@@ -216,17 +234,23 @@ describe('NotificationController', () => {
     it('should mark all notifications as read for a profile', async () => {
       mockSocialClient.send.mockReturnValue(of({ success: true }));
 
-      await controller.markAllAsRead('user1', { profileId: 'user1' } as any);
+      await controller.markAllAsRead(profileId, {
+        userId: accountId,
+        profileId,
+      } as any);
 
       expect(mockSocialClient.send).toHaveBeenCalledWith(
         { cmd: NotificationCommands.MARK_ALL_READ },
-        { recipientId: 'user1' }
+        { recipientId: profileId }
       );
     });
 
     it('should reject cross-profile mark-all requests', async () => {
       await expect(
-        controller.markAllAsRead('user2', { profileId: 'user1' } as any)
+        controller.markAllAsRead('33333333-3333-4333-8333-333333333333', {
+          userId: accountId,
+          profileId,
+        } as any)
       ).rejects.toBeInstanceOf(ForbiddenException);
       expect(mockSocialClient.send).not.toHaveBeenCalled();
     });
@@ -236,18 +260,21 @@ describe('NotificationController', () => {
     it('should delete a notification', async () => {
       mockSocialClient.send.mockReturnValue(of({ success: true }));
 
-      await controller.delete('notif-1', { profileId: 'recipient-1' } as any);
+      await controller.delete('33333333-3333-4333-8333-333333333333', {
+        userId: accountId,
+        profileId,
+      } as any);
 
       expect(mockSocialClient.send).toHaveBeenCalledWith(
         { cmd: NotificationCommands.DELETE },
-        { id: 'notif-1', recipientId: 'recipient-1' }
+        { id: '33333333-3333-4333-8333-333333333333', recipientId: profileId }
       );
     });
 
-    it('rejects a missing authenticated profile before sending a mutation', async () => {
+    it('rejects malformed notification ids before sending a mutation', async () => {
       await expect(
-        controller.delete('notif-1', {} as any)
-      ).rejects.toBeInstanceOf(ForbiddenException);
+        controller.delete('notif-1', { userId: accountId, profileId } as any)
+      ).rejects.toBeInstanceOf(BadRequestException);
       expect(mockSocialClient.send).not.toHaveBeenCalled();
     });
   });

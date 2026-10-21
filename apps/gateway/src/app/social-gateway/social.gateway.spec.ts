@@ -3,6 +3,7 @@ import { SocialGateway } from './social.gateway';
 import { PostCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { throwError, of, NEVER, Subject } from 'rxjs';
 import { SocketSessionAuthService } from '../../auth/socket-session-auth.service';
+import { GatewayNotificationRecipientService } from '../../controllers/social/notification/gateway-notification-recipient.service';
 
 describe('SocialGateway', () => {
   let gateway: SocialGateway;
@@ -42,6 +43,18 @@ describe('SocialGateway', () => {
         {
           provide: SocketSessionAuthService,
           useValue: mockSocketSessionAuth,
+        },
+        {
+          provide: GatewayNotificationRecipientService,
+          useValue: {
+            assertSelected: jest.fn(
+              async (user, requested) => requested ?? user.profileId
+            ),
+          },
+        },
+        {
+          provide: ServiceTokens.PROFILE_SERVICE,
+          useValue: { send: jest.fn().mockReturnValue(of({})) },
         },
       ],
     }).compile();
@@ -179,7 +192,10 @@ describe('SocialGateway', () => {
   });
 
   it('revalidates an active socket before protected packets and disconnects revoked users', async () => {
-    const user = { userId: 'minor-user', profileId: 'minor-profile' };
+    const user = {
+      userId: '11111111-1111-4111-8111-111111111111',
+      profileId: '22222222-2222-4222-8222-222222222222',
+    };
     let revoked = false;
     mockSocketSessionAuth.authenticate.mockImplementation(
       async (client: any) => {
@@ -203,14 +219,14 @@ describe('SocialGateway', () => {
       disconnect: jest.fn(),
     };
     await gateway.handleConnection(client);
-    expect(gateway['connectedClients'].get('minor-profile')?.size).toBe(1);
-    await gateway.handleGetFollowing({ profileId: 'minor-profile' }, client);
+    expect(gateway['connectedClients'].get(user.profileId)?.size).toBe(1);
+    await gateway.handleGetFollowing({ profileId: user.profileId }, client);
     expect(mockSocialClient.send).toHaveBeenCalled();
     mockSocialClient.send.mockClear();
 
     revoked = true;
     await expect(
-      gateway.handleGetFollowing({ profileId: 'minor-profile' }, client)
+      gateway.handleGetFollowing({ profileId: user.profileId }, client)
     ).rejects.toThrow('revoked session');
 
     expect(mockSocialClient.send).not.toHaveBeenCalled();
@@ -220,7 +236,10 @@ describe('SocialGateway', () => {
   });
 
   it('does not send private broadcasts to an active socket after session revocation', async () => {
-    const user = { userId: 'minor-user', profileId: 'minor-profile' };
+    const user = {
+      userId: '11111111-1111-4111-8111-111111111111',
+      profileId: '22222222-2222-4222-8222-222222222222',
+    };
     let revoked = false;
     mockSocketSessionAuth.authenticate.mockImplementation(
       async (client: any) => {
@@ -245,15 +264,30 @@ describe('SocialGateway', () => {
     };
     await gateway.handleConnection(client);
     await gateway.handleSubscribeNotifications(
-      { profileId: 'minor-profile' },
+      { profileId: user.profileId },
       client
     );
+    const recipients = (gateway as any).notificationRecipients;
+    recipients.assertSelected.mockResolvedValue(user.profileId);
     const notification = {
-      recipientId: 'minor-profile',
-      message: 'private notification',
+      id: '33333333-3333-4333-8333-333333333333',
+      recipientId: user.profileId,
+      type: 'system',
+      title: 'secret',
+      body: 'private notification',
+      isRead: false,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      senderId: 'private-user',
+      actionUrl: '/secret',
     };
     await gateway.broadcastNotification(notification);
-    expect(client.emit).toHaveBeenCalledWith('notification', notification);
+    expect(client.emit).toHaveBeenCalledWith(
+      'notification',
+      expect.not.objectContaining({
+        senderId: 'private-user',
+        actionUrl: '/secret',
+      })
+    );
     client.emit.mockClear();
 
     revoked = true;
@@ -266,6 +300,69 @@ describe('SocialGateway', () => {
     expect(client.disconnect).toHaveBeenCalledWith(true);
     expect(gateway['connectedClients'].size).toBe(0);
     expect(gateway['clientToProfileMap'].size).toBe(0);
+  });
+
+  it('drops notification delivery when selected profile ownership is stale', async () => {
+    const accountId = '11111111-1111-4111-8111-111111111111';
+    const profileId = '22222222-2222-4222-8222-222222222222';
+    const recipients = (gateway as any).notificationRecipients;
+    recipients.assertSelected.mockResolvedValue(profileId);
+    const client: any = {
+      id: 'stale-notification-socket',
+      data: { user: { userId: accountId, profileId } },
+      emit: jest.fn(),
+      disconnect: jest.fn(),
+    };
+    await gateway.handleConnection(client);
+    await gateway.handleSubscribeNotifications({ profileId }, client);
+    recipients.assertSelected.mockRejectedValue(new Error('ownership revoked'));
+    await gateway.broadcastNotification({
+      id: '33333333-3333-4333-8333-333333333333',
+      recipientId: profileId,
+      type: 'system',
+      title: 'secret',
+      body: 'secret',
+      isRead: false,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+    expect(client.emit).not.toHaveBeenCalledWith(
+      'notification',
+      expect.anything()
+    );
+    expect(gateway['connectedClients'].size).toBe(0);
+    expect(client.disconnect).toHaveBeenCalledWith(true);
+  });
+
+  it('does not deliver notifications to connected clients without an active subscription', async () => {
+    const profileId = '22222222-2222-4222-8222-222222222222';
+    const client: any = {
+      id: 'unsubscribed-notification-socket',
+      data: {
+        user: { userId: '11111111-1111-4111-8111-111111111111', profileId },
+      },
+      emit: jest.fn(),
+      disconnect: jest.fn(),
+    };
+    await gateway.handleConnection(client);
+    const subscription = `notifications:${profileId}`;
+    const connected = gateway['connectedClients']
+      .get(profileId)
+      ?.values()
+      .next().value;
+    connected?.subscriptions.delete(subscription);
+    await gateway.broadcastNotification({
+      id: '33333333-3333-4333-8333-333333333333',
+      recipientId: profileId,
+      type: 'system',
+      title: 'secret',
+      body: 'secret',
+      isRead: false,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+    expect(client.emit).not.toHaveBeenCalledWith(
+      'notification',
+      expect.anything()
+    );
   });
 
   it('does not register or serve messages when a socket disconnects during authentication', async () => {

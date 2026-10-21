@@ -165,26 +165,38 @@ test('RR04 I03 API: notification previews stay generic after access loss and mut
       marker
     );
 
-    const createNotification = await authorContext.post(
+    // Public notification creation is forbidden. The fixture uses the existing
+    // private Social command rather than granting a browser producer authority.
+    const forgedNotification = await authorContext.post(
       origin + '/api/notifications',
       {
         headers,
         data: {
           recipientId: recipient.profileId,
           type: 'mention',
-          title: 'You were mentioned',
-          body: 'Someone mentioned you in a post',
-          senderId: author.profileId,
-          resourceType: 'post',
-          resourceId: post.id,
-          actionUrl: `/feed/post/${post.id}`,
+          title: marker,
+          body: marker,
+          actionUrl: 'https://example.test/private',
         },
       }
     );
-    expect(createNotification.status(), await createNotification.text()).toBe(
-      201
+    expect(forgedNotification.status(), await forgedNotification.text()).toBe(
+      403
     );
-    notificationId = (await createNotification.json()).id;
+    const createdNotification = await socialCommand<{ id: string }>(
+      'CREATE_NOTIFICATION',
+      {
+        recipientId: recipient.profileId,
+        type: 'mention',
+        title: marker,
+        body: marker,
+        senderId: author.profileId,
+        resourceType: 'post',
+        resourceId: post.id,
+        actionUrl: `/feed/post/${post.id}`,
+      }
+    );
+    notificationId = createdNotification.id;
     recordFixture({
       type: 'notification',
       id: notificationId,
@@ -204,12 +216,12 @@ test('RR04 I03 API: notification previews stay generic after access loss and mut
     expect(beforeLoss).toMatchObject({
       type: 'mention',
       body: 'Someone mentioned you in a post',
-      resourceType: 'post',
-      resourceId: post.id,
-      actionUrl: `/feed/post/${post.id}`,
       isRead: false,
     });
     expect(JSON.stringify(beforeLoss)).not.toContain(marker);
+    expect(beforeLoss).not.toHaveProperty('actionUrl');
+    expect(beforeLoss).not.toHaveProperty('senderId');
+    expect(beforeLoss).not.toHaveProperty('resourceId');
 
     const unfollow = await recipientContext.post(
       origin + '/api/social/follow/unfollow',
@@ -231,12 +243,12 @@ test('RR04 I03 API: notification previews stay generic after access loss and mut
     expect(afterLoss).toMatchObject({
       type: 'mention',
       body: 'Someone mentioned you in a post',
-      resourceType: 'post',
-      resourceId: post.id,
-      actionUrl: `/feed/post/${post.id}`,
       isRead: false,
     });
     expect(JSON.stringify(afterLoss)).not.toContain(marker);
+    expect(afterLoss).not.toHaveProperty('actionUrl');
+    expect(afterLoss).not.toHaveProperty('senderId');
+    expect(afterLoss).not.toHaveProperty('resourceId');
 
     const attackerRead = await attackerContext.put(
       origin + `/api/notifications/${notificationId}/read`,
