@@ -9,6 +9,7 @@ import { TokenEntity } from '../tokens/entities/token.entity';
 import { OAuthConfigValidator } from './oauth-config.validator';
 import { randomUUID } from 'crypto';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
 
 @Injectable()
 export class OAuthService {
@@ -23,7 +24,8 @@ export class OAuthService {
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     private readonly jsonWebToken: JwtService,
     private readonly configValidator: OAuthConfigValidator,
-    private readonly guardianPermissions: GuardianPermissionService
+    private readonly guardianPermissions: GuardianPermissionService,
+    private readonly profileOwnershipVerifier: ProfileOwnershipVerifier
   ) {}
 
   async oauthLogin(
@@ -293,11 +295,14 @@ export class OAuthService {
       };
     }
 
+    const selectedProfileId =
+      await this.profileOwnershipVerifier.resolveSelection(user.id, profileId);
+
     const pl = {
       userId: user.id,
       name: `${user.firstName} ${user.lastName}`,
       email: user.email,
-      profileId: profileId || '',
+      profileId: selectedProfileId || '',
       jti: randomUUID(),
       ...(appId ? { appId } : {}),
     };
@@ -312,7 +317,7 @@ export class OAuthService {
       userId: user.id,
       user,
       revoked: false,
-      profileId: profileId || null,
+      profileId: selectedProfileId || null,
     };
     await this.tokenRepo.save(ntk);
 

@@ -18,6 +18,7 @@ import { EmailAuthService } from './email-auth.service';
 import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
 import { GuardianPermissionEntity } from '../guardian-permissions/entities/guardian-permission.entity';
 import { GuardianPolicyNoticeService } from '../guardian-permissions/guardian-policy-notice.service';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
 
 jest.mock('../config', () => {
   const mockConfig = {
@@ -124,6 +125,9 @@ describe('AppModule', () => {
   it('should provide the auth token issuer', () => {
     const tokenIssuer = appModule.get<TokenIssuerService>(TokenIssuerService);
     expect(tokenIssuer).toBeInstanceOf(TokenIssuerService);
+    expect(appModule.get(ProfileOwnershipVerifier)).toBeInstanceOf(
+      ProfileOwnershipVerifier
+    );
   });
 
   it('should load DatabaseModule with correct configuration', () => {

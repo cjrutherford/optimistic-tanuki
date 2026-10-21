@@ -33,11 +33,15 @@ import {
 import {
   GuardianProfileFields,
   GuardianProfileRequestDto,
+  AccountProfileOwnershipRequest,
+  AccountProfileOwnershipResult,
 } from '@optimistic-tanuki/profile-contracts';
 import { GuardianProfileActivity } from '../profiles/entities/guardian-profile-activity.entity';
 
 const DEFAULT_SEARCH_LIMIT = 20;
 const MAX_SEARCH_LIMIT = 100;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface UserRoleDto {
   id: string;
@@ -82,6 +86,32 @@ export class ProfileService implements OnModuleInit, OnModuleDestroy {
 
   onModuleDestroy(): void {
     if (this.cleanupTimer) clearInterval(this.cleanupTimer);
+  }
+
+  async checkAccountProfileOwnership(
+    request: AccountProfileOwnershipRequest
+  ): Promise<AccountProfileOwnershipResult> {
+    if (
+      !request ||
+      typeof request.accountId !== 'string' ||
+      typeof request.profileId !== 'string' ||
+      !UUID_PATTERN.test(request.accountId) ||
+      !UUID_PATTERN.test(request.profileId)
+    ) {
+      throw new RpcException({
+        code: 'PROFILE_OWNERSHIP_REQUEST_INVALID',
+        message: 'Invalid account profile ownership request',
+      });
+    }
+    const accountId = request.accountId.toLowerCase();
+    const profileId = request.profileId.toLowerCase();
+    const owned = await this.profileRepository
+      .createQueryBuilder('profile')
+      .select('profile.id')
+      .where('profile.id = :profileId', { profileId })
+      .andWhere('LOWER(profile.userId) = :accountId', { accountId })
+      .getExists();
+    return { accountId, profileId, owned };
   }
 
   async getGuardianProfile(

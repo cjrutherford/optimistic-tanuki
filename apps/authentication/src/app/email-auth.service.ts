@@ -16,6 +16,7 @@ import {
   AuthActionTokenEntity,
 } from '../email-auth/entities/auth-action-token.entity';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
 
 export interface AuthEmailContext {
   appId: string;
@@ -47,7 +48,8 @@ export class EmailAuthService {
     @Inject('EMAIL_PASSWORD_TOOLS')
     private readonly passwordTools: PasswordTools,
     private readonly tokenIssuer: TokenIssuerService,
-    private readonly guardianPermissions: GuardianPermissionService
+    private readonly guardianPermissions: GuardianPermissionService,
+    private readonly profileOwnershipVerifier: ProfileOwnershipVerifier
   ) {}
 
   async requestAction(
@@ -159,6 +161,11 @@ export class EmailAuthService {
       action.user.id,
       action.appId
     );
+    const selectedProfileId =
+      await this.profileOwnershipVerifier.resolveSelection(
+        action.user.id,
+        profileId
+      );
     const consumed = await this.actions.update(
       { id: action.id, consumedAt: IsNull() },
       { consumedAt: new Date() }
@@ -168,7 +175,7 @@ export class EmailAuthService {
     }
     action.user.emailVerifiedAt ||= new Date();
     await this.users.save(action.user);
-    if (!profileId) {
+    if (selectedProfileId === undefined) {
       return {
         message: 'Email action consumed',
         code: 0,
@@ -184,7 +191,7 @@ export class EmailAuthService {
         lastName: action.user.lastName,
         email: action.user.email,
       },
-      profileId,
+      selectedProfileId,
       action.appId
     );
     await this.sessions.save({
@@ -192,7 +199,7 @@ export class EmailAuthService {
       userId: action.user.id,
       user: action.user,
       revoked: false,
-      profileId: profileId || null,
+      profileId: selectedProfileId || null,
     } as any);
     return {
       message: 'Authentication successful',

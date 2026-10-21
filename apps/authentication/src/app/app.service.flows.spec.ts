@@ -17,6 +17,7 @@ import { EmailService } from '@optimistic-tanuki/email';
 
 import { AppService } from './app.service';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
 import { KeyService } from './key.service';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
@@ -91,6 +92,7 @@ const expectRpcError = async (promise: Promise<unknown>, message: string) => {
 
 describe('AppService flows', () => {
   let service: AppService;
+  let profileOwnershipVerifier: { resolveSelection: jest.Mock };
   let userRepo: UserRepoMock;
   let tokenRepo: TokenRepoMock;
   let keyRepo: KeyRepoMock;
@@ -153,6 +155,11 @@ describe('AppService flows', () => {
       generateSecret: jest.fn(),
     };
     configService = { get: jest.fn().mockReturnValue(undefined) };
+    profileOwnershipVerifier = {
+      resolveSelection: jest.fn((_accountId, selectedProfile) =>
+        Promise.resolve(selectedProfile || undefined)
+      ),
+    };
 
     (qrcode.toDataURL as jest.Mock).mockClear();
 
@@ -184,6 +191,10 @@ describe('AppService flows', () => {
               .fn()
               .mockResolvedValue({ pending: false, sent: false }),
           },
+        },
+        {
+          provide: ProfileOwnershipVerifier,
+          useValue: profileOwnershipVerifier,
         },
         {
           provide: MfaService,

@@ -9,6 +9,7 @@ import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.
 import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { OAuthConfigValidator } from './oauth-config.validator';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 
 describe('OAuthService', () => {
@@ -17,8 +18,14 @@ describe('OAuthService', () => {
   let userRepo: Repository<UserEntity>;
   let tokenRepo: Repository<TokenEntity>;
   let jwtService: JwtService;
+  let profileOwnershipVerifier: { resolveSelection: jest.Mock };
 
   beforeEach(async () => {
+    profileOwnershipVerifier = {
+      resolveSelection: jest.fn((_accountId, selectedProfile) =>
+        Promise.resolve(selectedProfile || undefined)
+      ),
+    };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         Logger,
@@ -69,6 +76,10 @@ describe('OAuthService', () => {
             attachAccount: jest.fn().mockResolvedValue(undefined),
           },
         },
+        {
+          provide: ProfileOwnershipVerifier,
+          useValue: profileOwnershipVerifier,
+        },
       ],
     }).compile();
 
@@ -111,6 +122,41 @@ describe('OAuthService', () => {
 
       expect(result.code).toBe(0);
       expect((result.data as any).newToken).toBe('mock-jwt-token');
+      expect(profileOwnershipVerifier.resolveSelection).toHaveBeenCalledWith(
+        'user-1',
+        undefined
+      );
+    });
+
+    it('does not sign or persist a selected-profile session when ownership is denied', async () => {
+      const mockUser = {
+        id: 'user-1',
+        firstName: 'Test',
+        lastName: 'User',
+        email: 'test@example.com',
+        emailVerifiedAt: new Date(),
+      };
+      (oauthRepo.findOne as jest.Mock).mockResolvedValue({
+        provider: 'google',
+        providerUserId: 'google-123',
+        user: mockUser,
+      });
+      const denied = new RpcException({
+        code: 'SELECTED_PROFILE_OWNERSHIP_UNVERIFIED',
+      });
+      profileOwnershipVerifier.resolveSelection.mockRejectedValue(denied);
+
+      await expect(
+        service.oauthLogin(
+          'google',
+          'google-123',
+          'test@example.com',
+          'Test User',
+          '22222222-2222-4222-8222-222222222222'
+        )
+      ).rejects.toBe(denied);
+      expect(jwtService.sign).not.toHaveBeenCalled();
+      expect(tokenRepo.save).not.toHaveBeenCalled();
     });
 
     it('persists profileId when issuing an OAuth session', async () => {
@@ -136,11 +182,17 @@ describe('OAuthService', () => {
         'google-123',
         'test@example.com',
         'Test User',
-        'profile-1'
+        'b2222222-b222-4222-8222-b22222222222'
+      );
+      expect(profileOwnershipVerifier.resolveSelection).toHaveBeenCalledWith(
+        'user-1',
+        'b2222222-b222-4222-8222-b22222222222'
       );
 
       expect(tokenRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ profileId: 'profile-1' })
+        expect.objectContaining({
+          profileId: 'b2222222-b222-4222-8222-b22222222222',
+        })
       );
     });
 

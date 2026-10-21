@@ -23,6 +23,7 @@ import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import { randomBytes } from 'crypto';
 import { authenticator } from 'otplib';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
 
 @Injectable()
 export class AppService {
@@ -44,7 +45,8 @@ export class AppService {
     @Inject('totp') private readonly totp: typeof authenticator,
     private readonly jsonWebToken: JwtService,
     private readonly emailService: EmailService,
-    private readonly guardianPermissionService: GuardianPermissionService
+    private readonly guardianPermissionService: GuardianPermissionService,
+    private readonly profileOwnershipVerifier: ProfileOwnershipVerifier
   ) {}
 
   private normalizeEmail(email: string): string {
@@ -270,6 +272,9 @@ export class AppService {
         };
       }
 
+      const selectedProfileId =
+        await this.profileOwnershipVerifier.resolveSelection(userId, profileId);
+
       const tk = this.tokenIssuerService.issueForUser(
         {
           userId,
@@ -277,7 +282,7 @@ export class AppService {
           lastName: user.lastName,
           email: normalizedEmail,
         },
-        profileId,
+        selectedProfileId,
         appId
       );
 
@@ -288,7 +293,7 @@ export class AppService {
         userId,
         user,
         revoked: false,
-        profileId: profileId || null,
+        profileId: selectedProfileId || null,
       };
       await this.tokenRepo.save(ntk);
 
@@ -651,6 +656,12 @@ export class AppService {
       }
       await this.guardianPermissionService.assertAccountAccess(user.id, appId);
 
+      const selectedProfileId =
+        await this.profileOwnershipVerifier.resolveSelection(
+          user.id,
+          profileId
+        );
+
       const tk = this.tokenIssuerService.issueForUser(
         {
           userId: user.id,
@@ -658,7 +669,7 @@ export class AppService {
           lastName: user.lastName,
           email: user.email,
         },
-        profileId,
+        selectedProfileId,
         appId
       );
 
@@ -668,7 +679,7 @@ export class AppService {
         userId: user.id,
         user,
         revoked: false,
-        profileId: profileId || null,
+        profileId: selectedProfileId || null,
       };
       await this.tokenRepo.save(ntk);
 

@@ -1,0 +1,231 @@
+{
+  "slice": "DF-007-J18",
+  "date": "2026-10-21",
+  "status": "locally-verified-bounded-runtime-harness",
+  "accepted": true,
+  "baseRevision": "090f656ff9f5ca42afe9c9e84e349255f279541d",
+  "sourceManifestSha256": "5de1d1aa3794b5048eb36e31a69e76c82eee4c33cb731bb711da3dd74061bf50",
+  "sourceHashes": {
+    "apps/authentication/src/app/app.module.test.ts": "cc24748d7feeaf29f5f9c0a791536468bbc2f991ffc634e9bcc56986ae1a4137",
+    "apps/authentication/src/app/app.module.ts": "8cfa956dde5845083184449bb56100c4c39b2193a04997ff1d3746795fa039ae",
+    "apps/authentication/src/app/app.service.flows.spec.ts": "560b00138520021302310730612607d9b8b8346db65c7e3b4436ca94bc26862f",
+    "apps/authentication/src/app/app.service.spec.ts": "5f8a16fa94d6823d6820a3f5f84f4201d3f786aaadad0d895f0fef3da24cc96c",
+    "apps/authentication/src/app/app.service.ts": "f346a97a6df619b894147250d6e1ff7cdc966be6b227bbdb59376058855fd06f",
+    "apps/authentication/src/app/email-auth.service.spec.ts": "5baf684f49034d1681cb028dd0781e1d9191017e2f582b07e17607adb4750cda",
+    "apps/authentication/src/app/email-auth.service.ts": "abf7459016dba516ac7273f26d61f8f10dc88bc247782ffd1d18f7e11abee622",
+    "apps/authentication/src/app/oauth.service.spec.ts": "bf7ecb9da61782924d6031e27c1029ca92274286479d5b90dc66ec6d4bf89656",
+    "apps/authentication/src/app/oauth.service.ts": "b105d90c4d4c0200a13ae33b6f5f47a833fdf7e8e4847765e67f7e417df4b3e8",
+    "apps/authentication/src/app/profile-ownership-verifier.service.spec.ts": "b9bc9d30c3df8316b9d3208e7e29ad93789e7e9986a0f00116b8a7bfcdbd729a",
+    "apps/authentication/src/app/profile-ownership-verifier.service.ts": "3481584a59f421ae005fa0b76e0c4b1d6145444bff5437494090d498185d6cf4",
+    "apps/authentication-e2e/src/authentication/selected-profile-ownership.spec.ts": "007f661a5dd657d40445f275d6b7bf60a283a18c660eac233e7149391b98af0c",
+    "apps/gateway-e2e/src/gateway/presence-actor-binding.spec.ts": "f0fcd2971f5434360ddd7cfce2ad548399d707aeee65e5a6f058cf4522a8f51a",
+    "apps/profile/src/app/profile-ownership.spec.ts": "f0651725abe1571f193a81a9f3f36d9e73b42a5dd8e47dd8da63b20c3f9c03e4",
+    "apps/profile/src/app/profile.service.ts": "38eca4cafa7675ae83b7cc9d741da97c30718fc607f616fd6f017865deddf37f",
+    "apps/profile/src/profiles/profiles.controller.spec.ts": "a0c9d31fc7bf2e5bf3796b3f1c23febc241a98abd52957f3b4f18685fe58dbd5",
+    "apps/profile/src/profiles/profiles.controller.ts": "61544a18435228059acd5ebff55f8ca77ef02b90914541df0ac91acfe38412f1",
+    "libs/profile/contracts/src/index.ts": "da4951b2a8288db631e29af7a0d0d1917eaeaf3189f3f3570908f526d9addf52",
+    "libs/profile/contracts/src/lib/profile-commands.ts": "e2f494b9afc6610748ec0ac71cfec3e9b183e1bc45e18f14b32cff7ea327e2e5",
+    "libs/profile/contracts/src/lib/profile-contract-parity.spec.ts": "b4420c3af5c50251a95fbce2c04c5532d68898a00b4a9e09cf75bb9d9a939c14",
+    "libs/profile/contracts/src/lib/profile-ownership.ts": "de51a12779471827e9fff263e161c6060e2abf38db77eb86b398a7ce8ff3267c",
+    "libs/constants/src/index.ts": "885a2fcb1e07262519818bd4626bb305b072f658887b5608bd557a2abcd7e075",
+    "libs/constants/src/lib/libs/profile.ts": "2b31f55a07cf18b8cafa898564d39505561cb42d41a3790d21e78903d322655f"
+  },
+  "behavior": {
+    "mintPaths": [
+      "AppService.login",
+      "AppService.issueToken",
+      "EmailAuthService.consumeLoginAction",
+      "OAuthService.issueTokenForUser"
+    ],
+    "ownership": "Credential-established account, canonical UUID input and exact reply scope, owned === true, three-second RPC timeout, sanitized fail-closed error before signing/session insert.",
+    "profileLookup": "Validated UUIDs, one profile primary key plus LOWER(userId), canonical ID echoes and owned boolean only; no Auth validation recursion.",
+    "compatibility": "undefined/null/empty selection remains profileless; deferred login creates no session; existing Gateway app-scope and guardian gates unchanged.",
+    "emailAction": "Ownership denial occurs before action consumption or saving the user.",
+    "sharedBoundary": "Canonical Profile contract types re-exported through shared constants; no type duplication or dependency-tag relaxation."
+  },
+  "focusedUnits": {
+    "passed": 169,
+    "skipped": 0,
+    "separateFocusedRuns": true,
+    "authentication": {
+      "verifier": 15,
+      "appService": 19,
+      "flows": 70,
+      "emailAuth": 11,
+      "oauth": 20,
+      "module": 10
+    },
+    "profile": {
+      "ownership": 4,
+      "controller": 8
+    },
+    "profileContracts": 12,
+    "redEvidence": "Initial verifier test failed on absent module; accidental broad invocation disclosed. Profile initial environment failure did not reach Jest; no Profile red claim.",
+    "profileOwnershipUnitLogRetained": false
+  },
+  "preRuntime": {
+    "authenticationProductionBuildAndLint": "PASS",
+    "profileProductionBuildAndLint": "PASS",
+    "profileContractsBuildAndLint": "PASS",
+    "constantsBuildAndLint": "PASS",
+    "constantsBuildCachedDependencyTasks": "9 of 10 tasks cached; owning constants build executed",
+    "authenticationE2eLint": "PASS after fixture correction",
+    "gatewayE2eLint": "PASS",
+    "scopedFormatAndDiffCheck": "PASS",
+    "evidenceDirectory": ".runtime-artifacts/account-rights/finish-sequence/selected-profile-ownership"
+  },
+  "runtimePreparation": {
+    "project": "ot-df007-selected-profile-j18",
+    "composeSha256": "59d7c5024fd9bf6eb5860ed3314a085bfa9b957368f0b6c6c93c24242827e5fb",
+    "sourceFiles": 23,
+    "protectedFilesExcluded": 43,
+    "fixtureConfigHashes": {
+      "apps/profile/src/assets/config.yaml": "4f322561d91db3aabcf8a5d6daf84b397e1f2a02984cd6dedad0bc72e4e67307",
+      "apps/permissions/src/assets/config.yaml": "461009841bd17af6f44b70dfb78a1573365b1deaa8db97e083c38c283e1b40a0",
+      "apps/social/src/assets/config.yaml": "59c4f45bd734c88ade4f46d72ec2537952861ea0207f716ec34365fa0c392a46",
+      "apps/forum/src/assets/config.yaml": "25d59375fe2dcdd6a9c291d33a5ab3ce2b55becf8783cfe998800262a7a5c728",
+      "apps/assets/src/assets/config.yaml": "70a106e2f559f0795fc2f78b8d9b04280dcda19558e2f78cf656fade62ddf138",
+      "apps/videos/src/assets/config.yaml": "270df8cae878a9c3add87652ff01332c36c10b154d8246c2854029c00afac013"
+    },
+    "freshImages": {
+      "authentication": {
+        "tag": "ot-df007-selected-profile-j18/authentication:5de1d1aa3794",
+        "imageId": "sha256:3d658283bcce1579e874c4f9e474494a21876dcb2869637ade6ca18df367e182",
+        "dockerCopyInputCount": 3029,
+        "reuseProvenance": {
+          "method": "retagged prior image after all Docker COPY hashes matched",
+          "priorManifestSha256": "2c5a7cabdb52b3f583263358770a5290471b8e452e06f295ed2e1a932a8de3e3",
+          "priorTag": "ot-df007-selected-profile-j18/authentication:2c5a7cabdb52",
+          "priorImageId": "sha256:3d658283bcce1579e874c4f9e474494a21876dcb2869637ade6ca18df367e182",
+          "allDockerCopyInputsEqual": true
+        }
+      },
+      "profile": {
+        "tag": "ot-df007-selected-profile-j18/profile:5de1d1aa3794",
+        "imageId": "sha256:8ba8ec306950ba6bdb0a98a61c5deda2ba049989916d4be471f43f817195435b",
+        "dockerCopyInputCount": 2978,
+        "reuseProvenance": {
+          "method": "retagged prior image after all Docker COPY hashes matched",
+          "priorManifestSha256": "2c5a7cabdb52b3f583263358770a5290471b8e452e06f295ed2e1a932a8de3e3",
+          "priorTag": "ot-df007-selected-profile-j18/profile:2c5a7cabdb52",
+          "priorImageId": "sha256:8ba8ec306950ba6bdb0a98a61c5deda2ba049989916d4be471f43f817195435b",
+          "allDockerCopyInputsEqual": true
+        }
+      },
+      "social": {
+        "tag": "ot-df007-selected-profile-j18/social:5de1d1aa3794",
+        "imageId": "sha256:3f8bf41c90594f226c59f9dd6469cda21d8e4e01aa03380fb1da62b96ad3897d",
+        "dockerCopyInputCount": 3060,
+        "reuseProvenance": {
+          "method": "retagged prior image after all Docker COPY hashes matched",
+          "priorManifestSha256": "2c5a7cabdb52b3f583263358770a5290471b8e452e06f295ed2e1a932a8de3e3",
+          "priorTag": "ot-df007-selected-profile-j18/social:2c5a7cabdb52",
+          "priorImageId": "sha256:3f8bf41c90594f226c59f9dd6469cda21d8e4e01aa03380fb1da62b96ad3897d",
+          "allDockerCopyInputsEqual": true
+        }
+      }
+    },
+    "retainedDependencies": {
+      "db": {
+        "tag": "postgres:15",
+        "imageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+        "j17RunImageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb"
+      },
+      "db_setup": {
+        "tag": "ot-df007-b6-forum/db-setup:reconstructed-389e9fb743af",
+        "imageId": "sha256:b55e0b7bd7bfdbee8a919679df5e11f194b40ade5dd85c524dadd02a309c9db4",
+        "j17RunImageId": null
+      },
+      "forum": {
+        "tag": "ot-df007-b6-forum/forum:b6-981665ddc7b4",
+        "imageId": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+        "j17RunImageId": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4"
+      },
+      "permissions": {
+        "tag": "ot-df007-permissions-integration/permissions:bf5389a29c23",
+        "imageId": "sha256:86e75b83b4fb51277d20a0915933b2f06dab6350a40b8a1273dc3acc6457760d",
+        "j17RunImageId": "sha256:86e75b83b4fb51277d20a0915933b2f06dab6350a40b8a1273dc3acc6457760d"
+      },
+      "assets": {
+        "tag": "ot-df007-permissions-integration/assets:bf5389a29c23",
+        "imageId": "sha256:325831f665cd65ec59d4ee5f61f49b162846a98a5f6120d08ff003c9bfcb3c46",
+        "j17RunImageId": "sha256:325831f665cd65ec59d4ee5f61f49b162846a98a5f6120d08ff003c9bfcb3c46"
+      },
+      "videos": {
+        "tag": "ot-df007-permissions-integration/videos:bf5389a29c23",
+        "imageId": "sha256:7f78e7b92597514ff788945635d595e198e88f87e5d3dad1841dad1bac5f494a",
+        "j17RunImageId": "sha256:7f78e7b92597514ff788945635d595e198e88f87e5d3dad1841dad1bac5f494a"
+      }
+    },
+    "dependencyLimitation": "Auth, Profile, and Social are rebuilt from the J18 source capture. Assets, Videos, Permissions, Forum, PostgreSQL, and db setup retain the recorded prior image IDs; because shared libraries changed, their Docker COPY inputs are not claimed equal to this capture.",
+    "imageReuse": {
+      "priorManifestSha256": "2c5a7cabdb52b3f583263358770a5290471b8e452e06f295ed2e1a932a8de3e3",
+      "priorBuildProof": "/home/cjrutherford/workspace/optimistic-tanuki/.runtime-artifacts/account-rights/finish-sequence/selected-profile-ownership/runtime/attempt-1-preparation/build-results.json",
+      "allThreeDockerCopyInputSetsAndHashesMatched": true,
+      "imageIdsPreserved": true
+    },
+    "configuration": "Synthetic private configuration, including AUTH_AUTO_VERIFY_EMAILS=true; no operator configuration copied."
+  },
+  "runtime": {
+    "acceptedAttempt": 2,
+    "status": "PASS",
+    "passed": 2,
+    "skipped": 0,
+    "commands": [
+      "NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx run authentication-e2e:e2e --testFile=selected-profile-ownership.spec.ts$ --runInBand --skipNxCache",
+      "NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx run gateway-e2e:e2e --testFile=presence-actor-binding.spec.ts$ --runInBand --skipNxCache"
+    ],
+    "proof": [
+      "First-session owned-profile Login without Auth recursion",
+      "Uppercase input and legacy uppercase profile owner canonicalized",
+      "Signed JWT claims and persisted Login/Issue selections match owned profiles",
+      "Foreign/missing/malformed/non-string Login and Issue denied with unchanged token rows",
+      "Counterpart profile rows and selected token fields preserved",
+      "Profileless Login and deferred no-session compatibility",
+      "Production Presence controller/guard in mini HTTP harness with real Auth/Social services; bearer/cookie, spoofed body, foreign path and logout/revocation checks"
+    ],
+    "independentReadback": {
+      "authSessions": 0,
+      "authKeys": 0,
+      "authActionTokens": 0,
+      "profiles": 0,
+      "selectedProfileUsers": 0,
+      "presenceJ17Users": 0,
+      "presenceRows": 0,
+      "temporaryRelations": 0
+    },
+    "cleanup": {
+      "containers": 0,
+      "networks": 0,
+      "volumes": 0
+    },
+    "sourceAndProtectedHashesPreserved": true,
+    "evidenceDirectory": ".runtime-artifacts/account-rights/finish-sequence/selected-profile-ownership/runtime/attempt-2"
+  },
+  "failedAttempt": {
+    "attempt": 1,
+    "cause": "Counterpart fixture email exceeded local-part length; failed during registration before ownership assertions. Gateway case did not run.",
+    "correction": "Only test email suffix shortened; all three image COPY input sets and hashes matched before reuse.",
+    "cleanup": {
+      "containers": 0,
+      "networks": 0,
+      "volumes": 0
+    },
+    "evidenceDirectory": ".runtime-artifacts/account-rights/finish-sequence/selected-profile-ownership/runtime/attempt-1"
+  },
+  "limits": [
+    "EmailAuth/OAuth signing paths are unit-only; external provider/email delivery not exercised.",
+    "Mint-time ownership proof does not continuously revalidate existing sessions after profile mutation.",
+    "Trusted internal TCP boundary; no new public ownership API or appScope alias rule.",
+    "J17 HTTP harness is not full Gateway deployment or a browser profile-switch journey.",
+    "Six dependency images retain recorded prior provenance; their COPY equality to current libraries is not claimed.",
+    "Malformed reply and timeout/unavailable-service handling are unit-only; no live outage was injected."
+  ],
+  "notRun": [
+    "Full Gateway deployment",
+    "Browser profile-switch journey",
+    "External OAuth/email flows",
+    "Remote CI",
+    "Production qualification"
+  ]
+}

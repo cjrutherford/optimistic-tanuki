@@ -40,6 +40,7 @@ import { GuardianPermissionEntity } from '../guardian-permissions/entities/guard
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 import { GuardianPolicyNoticeService } from '../guardian-permissions/guardian-policy-notice.service';
 import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
 import { AccountExportService } from './account-export.service';
 import { AccountExportController } from './account-export.controller';
 import { AccountExportJobService } from '../account-export-jobs/account-export-job.service';
@@ -197,6 +198,7 @@ import {
     OAuthService,
     OAuthConfigValidator,
     EmailAuthService,
+    ProfileOwnershipVerifier,
     GuardianPermissionService,
     GuardianPolicyNoticeService,
     SaltedHashService,

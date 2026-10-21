@@ -24,6 +24,7 @@ describe('ProfilesController', () => {
             getGuardianProfile: jest.fn(),
             updateGuardianProfile: jest.fn(),
             getGuardianConsoleProfile: jest.fn(),
+            checkAccountProfileOwnership: jest.fn(),
           },
         },
         {
@@ -44,6 +45,24 @@ describe('ProfilesController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('routes ownership lookup directly to ProfileService', async () => {
+    const request = {
+      accountId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      profileId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    };
+    service.checkAccountProfileOwnership.mockResolvedValue({
+      ...request,
+      owned: true,
+    });
+    await expect(
+      controller.checkAccountProfileOwnership(request)
+    ).resolves.toEqual({
+      ...request,
+      owned: true,
+    });
+    expect(service.checkAccountProfileOwnership).toHaveBeenCalledWith(request);
   });
 
   it('should create a profile', async () => {

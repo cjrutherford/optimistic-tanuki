@@ -8,3 +8,9 @@ export {
   TimelineCommands,
   PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES,
 } from '@optimistic-tanuki/profile-contracts';
+// Authentication consumes this narrow internal contract through the shared
+// boundary; keep its types canonical rather than duplicating RPC shapes.
+export type {
+  AccountProfileOwnershipRequest,
+  AccountProfileOwnershipResult,
+} from '@optimistic-tanuki/profile-contracts';

@@ -22,6 +22,7 @@ import { UserEntity } from '../user/entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { EmailService } from '@optimistic-tanuki/email';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
 
 let service: AppService;
 let userRepo: Repository<UserEntity>;
@@ -33,6 +34,7 @@ let keyService: KeyService;
 let jwtHandle: typeof jwt;
 let jwtService: JwtService;
 let configService: ConfigService;
+let profileOwnershipVerifier: { resolveSelection: jest.Mock };
 
 jest.mock('qrcode', () => ({
   toDataURL: jest.fn().mockResolvedValue('qrCodeDataUrl'),
@@ -110,7 +112,8 @@ describe('AppService.getPublicOAuthConfig', () => {
       {} as never,
       {} as JwtService,
       {} as EmailService,
-      { assertAccountAccess: jest.fn() } as never
+      { assertAccountAccess: jest.fn() } as never,
+      { resolveSelection: jest.fn() } as never
     );
 
     expect(service.getPublicOAuthConfig('tenant.example.com')).toEqual({
@@ -127,6 +130,11 @@ describe('AppService.getPublicOAuthConfig', () => {
 
 describe('AppService', () => {
   beforeEach(async () => {
+    profileOwnershipVerifier = {
+      resolveSelection: jest.fn((_accountId, selectedProfile) =>
+        Promise.resolve(selectedProfile || undefined)
+      ),
+    };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         Logger,
@@ -167,6 +175,10 @@ describe('AppService', () => {
               .fn()
               .mockResolvedValue({ pending: false }),
           },
+        },
+        {
+          provide: ProfileOwnershipVerifier,
+          useValue: profileOwnershipVerifier,
         },
         {
           provide: SaltedHashService,
@@ -322,6 +334,68 @@ describe('AppService', () => {
       );
       expect(signSpy).toHaveBeenCalled();
       expect(tokenRepo.save).toHaveBeenCalled();
+    });
+
+    it('issues a password session with the verifier returned selected profile', async () => {
+      const profileId = 'b2222222-b222-4222-8222-b22222222222';
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest
+        .spyOn(saltedHashService, 'validateHash')
+        .mockReturnValue(true as any);
+      profileOwnershipVerifier.resolveSelection.mockResolvedValueOnce(
+        profileId
+      );
+      const issueForUser = jest.spyOn(
+        (service as any).tokenIssuerService,
+        'issueForUser'
+      );
+
+      await service.login(
+        'test@example.com',
+        'password',
+        undefined,
+        profileId,
+        'forgeofwill'
+      );
+
+      expect(profileOwnershipVerifier.resolveSelection).toHaveBeenCalledWith(
+        'someUserId',
+        profileId
+      );
+      expect(issueForUser).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'someUserId' }),
+        profileId,
+        'forgeofwill'
+      );
+      expect(tokenRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ profileId })
+      );
+    });
+
+    it('does not mint or persist a selected-profile session when ownership is denied', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest
+        .spyOn(saltedHashService, 'validateHash')
+        .mockReturnValue(true as any);
+      const denied = new RpcException({
+        code: 'SELECTED_PROFILE_OWNERSHIP_UNVERIFIED',
+      });
+      profileOwnershipVerifier.resolveSelection.mockRejectedValue(denied);
+      const issueForUser = jest.spyOn(
+        (service as any).tokenIssuerService,
+        'issueForUser'
+      );
+
+      await expect(
+        service.login(
+          'test@example.com',
+          'password',
+          undefined,
+          '22222222-2222-4222-8222-222222222222'
+        )
+      ).rejects.toBe(denied);
+      expect(issueForUser).not.toHaveBeenCalled();
+      expect(tokenRepo.save).not.toHaveBeenCalled();
     });
 
     it('reports failed guardian email delivery without creating a session', async () => {
@@ -654,7 +728,8 @@ describe('AppService', () => {
       } as any);
       jest.spyOn(tokenRepo, 'save').mockResolvedValue(undefined);
 
-      const result = await service.issueToken('someUserId', 'profile-1');
+      const profileId = 'b2222222-b222-4222-8222-b22222222222';
+      const result = await service.issueToken('someUserId', profileId);
 
       expect(result).toEqual({
         message: 'Issued token',
@@ -662,8 +737,32 @@ describe('AppService', () => {
         data: { newToken: 'mockToken' },
       });
       expect(tokenRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ profileId: 'profile-1' })
+        expect.objectContaining({ profileId })
       );
+    });
+
+    it('does not mint or persist a selected-profile session when ownership is denied', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue({
+        id: 'someUserId',
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        emailVerifiedAt: new Date('2026-01-01T00:00:00Z'),
+      } as any);
+      const denied = new RpcException({
+        code: 'SELECTED_PROFILE_OWNERSHIP_UNVERIFIED',
+      });
+      profileOwnershipVerifier.resolveSelection.mockRejectedValue(denied);
+      const issueForUser = jest.spyOn(
+        (service as any).tokenIssuerService,
+        'issueForUser'
+      );
+
+      await expect(
+        service.issueToken('someUserId', '22222222-2222-4222-8222-222222222222')
+      ).rejects.toBe(denied);
+      expect(issueForUser).not.toHaveBeenCalled();
+      expect(tokenRepo.save).not.toHaveBeenCalled();
     });
   });
 });

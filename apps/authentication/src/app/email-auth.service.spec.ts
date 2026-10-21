@@ -19,6 +19,7 @@ describe('EmailAuthService', () => {
   let email: any;
   let password: any;
   let service: EmailAuthService;
+  let profileOwnershipVerifier: { resolveSelection: jest.Mock };
 
   beforeEach(() => {
     users = {
@@ -53,6 +54,11 @@ describe('EmailAuthService', () => {
         .fn()
         .mockReturnValue({ hash: 'new-hash', salt: 'new-salt' }),
     };
+    profileOwnershipVerifier = {
+      resolveSelection: jest.fn((_accountId, selectedProfile) =>
+        Promise.resolve(selectedProfile || undefined)
+      ),
+    };
     service = new EmailAuthService(
       users,
       actions,
@@ -63,7 +69,8 @@ describe('EmailAuthService', () => {
       {
         issueForUser: jest.fn().mockReturnValue('session-token'),
       } as any,
-      { assertAccountAccess: jest.fn().mockResolvedValue(undefined) } as any
+      { assertAccountAccess: jest.fn().mockResolvedValue(undefined) } as any,
+      profileOwnershipVerifier as any
     );
   });
 
@@ -156,7 +163,7 @@ describe('EmailAuthService', () => {
       service.consumeLoginAction(
         'raw-token',
         AuthActionPurpose.Verification,
-        'profile-1'
+        'b2222222-b222-4222-8222-b22222222222'
       )
     ).resolves.toEqual(
       expect.objectContaining({
@@ -166,6 +173,10 @@ describe('EmailAuthService', () => {
     );
     expect(users.save).toHaveBeenCalledWith(
       expect.objectContaining({ emailVerifiedAt: expect.any(Date) })
+    );
+    expect(profileOwnershipVerifier.resolveSelection).toHaveBeenCalledWith(
+      'user-1',
+      'b2222222-b222-4222-8222-b22222222222'
     );
     expect(actions.update).toHaveBeenCalledWith(
       { id: 'action-1', consumedAt: expect.anything() },
@@ -193,6 +204,37 @@ describe('EmailAuthService', () => {
         data: { userId: 'user-1', email: 'person@example.com' },
       })
     );
+    expect(sessions.save).not.toHaveBeenCalled();
+    expect(profileOwnershipVerifier.resolveSelection).toHaveBeenCalledWith(
+      'user-1',
+      undefined
+    );
+  });
+
+  it('does not mint or persist a selected-profile session when ownership is denied', async () => {
+    actions.findOne.mockResolvedValue({
+      id: 'action-1',
+      purpose: AuthActionPurpose.MagicLink,
+      appId: 'forgeofwill',
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      user: { ...user },
+    });
+    const denied = new RpcException({
+      code: 'SELECTED_PROFILE_OWNERSHIP_UNVERIFIED',
+    });
+    profileOwnershipVerifier.resolveSelection.mockRejectedValue(denied);
+
+    await expect(
+      service.consumeLoginAction(
+        'raw-token',
+        AuthActionPurpose.MagicLink,
+        '22222222-2222-4222-8222-222222222222'
+      )
+    ).rejects.toBe(denied);
+    expect(actions.update).not.toHaveBeenCalled();
+    expect(users.save).not.toHaveBeenCalled();
+    expect((service as any).tokenIssuer.issueForUser).not.toHaveBeenCalled();
     expect(sessions.save).not.toHaveBeenCalled();
   });
 

@@ -8,6 +8,7 @@ import { CreateProfileDto, UpdateProfileDto } from '@optimistic-tanuki/models';
 import {
   GuardianConsoleProfileRequestDto,
   GuardianProfileRequestDto,
+  AccountProfileOwnershipRequest,
 } from '@optimistic-tanuki/profile-contracts';
 
 @Controller('profiles')
@@ -16,6 +17,13 @@ export class ProfilesController {
     private readonly profileService: ProfileService,
     private readonly logger: Logger
   ) {}
+
+  @MessagePattern({ cmd: ProfileCommands.CheckAccountProfileOwnership })
+  checkAccountProfileOwnership(
+    @Payload() request: AccountProfileOwnershipRequest
+  ) {
+    return this.profileService.checkAccountProfileOwnership(request);
+  }
 
   @MessagePattern({ cmd: ProfileCommands.Create })
   async createProfile(@Payload() createProfileDto: CreateProfileDto) {

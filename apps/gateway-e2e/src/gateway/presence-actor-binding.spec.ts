@@ -25,9 +25,11 @@ describe('Gateway Presence actor binding against private Auth and Social service
   let auth: ClientProxy;
   let app: INestApplication | undefined;
   let authDb: PgClient | undefined;
+  let profileDb: PgClient | undefined;
   let socialDb: PgClient | undefined;
   let socialOrigin: string;
   let foreignId: string;
+  const profileIds: string[] = [];
 
   const assertPrivateFixture = () => {
     if (
@@ -98,6 +100,13 @@ describe('Gateway Presence actor binding against private Auth and Social service
       password: 'postgres',
       database: 'ot_authentication',
     });
+    profileDb = new PgClient({
+      host: '127.0.0.1',
+      port: 15548,
+      user: 'postgres',
+      password: 'postgres',
+      database: 'ot_profile',
+    });
     socialDb = new PgClient({
       host: '127.0.0.1',
       port: 15548,
@@ -105,7 +114,11 @@ describe('Gateway Presence actor binding against private Auth and Social service
       password: 'postgres',
       database: 'ot_social',
     });
-    await Promise.all([authDb.connect(), socialDb.connect()]);
+    await Promise.all([
+      authDb.connect(),
+      profileDb.connect(),
+      socialDb.connect(),
+    ]);
 
     const registry = {
       version: '1.0.0',
@@ -163,14 +176,26 @@ describe('Gateway Presence actor binding against private Auth and Social service
       accounts.push({ id, email });
     }
     const [owner, counterpart] = accounts;
+    const selectedProfiles = [randomUUID(), randomUUID()];
+    profileIds.push(...selectedProfiles);
+    await profileDb!.query(
+      `INSERT INTO profile (id,"userId","appScope","profileName","profilePic","coverPic",bio,location,occupation,interests,skills)
+       VALUES ($1,$2::varchar,'client-interface','J17 owner','','','','','','',''),
+              ($3,$4::varchar,'client-interface','J17 counterpart','','','','','','','')`,
+      [
+        selectedProfiles[0],
+        owner.id.toUpperCase(),
+        selectedProfiles[1],
+        counterpart.id,
+      ]
+    );
     for (const account of accounts) {
       const login = await rpc<any>(auth, AuthCommands.Login, {
         email: account.email,
         password,
         appId: 'client-interface',
-        // Each valid session deliberately carries the other account as its
-        // profile claim so the authenticated account id is unambiguous.
-        profileId: account === owner ? counterpart.id : owner.id,
+        profileId:
+          account === owner ? selectedProfiles[0] : selectedProfiles[1],
       });
       const token = login.data.newToken as string;
       tokens.push(token);
@@ -192,13 +217,15 @@ describe('Gateway Presence actor binding against private Auth and Social service
       secret: process.env.PRESENCE_J17_JWT_SECRET!,
     }).verifyAsync<{ userId: string; profileId?: string }>(ownerToken);
     expect(ownerTokenClaims.userId).toBe(owner.id);
-    expect(ownerTokenClaims.profileId).toBe(counterpart.id);
+    expect(ownerTokenClaims.profileId).toBe(selectedProfiles[0]);
     const counterpartClaims = await new JwtService({
       secret: process.env.PRESENCE_J17_JWT_SECRET!,
     }).verifyAsync<{ userId: string; profileId?: string }>(counterpartToken);
     expect(counterpartClaims.userId).toBe(counterpart.id);
-    expect(counterpartClaims.profileId).toBe(owner.id);
+    expect(counterpartClaims.profileId).toBe(selectedProfiles[1]);
     expect(owner.id).not.toBe(counterpart.id);
+    expect(ownerTokenClaims.profileId).not.toBe(owner.id);
+    expect(counterpartClaims.profileId).not.toBe(counterpart.id);
     expect(owner.id).toMatch(/[a-f]/i);
 
     const seedStatus = await socialDb!.query(
@@ -344,6 +371,12 @@ describe('Gateway Presence actor binding against private Auth and Social service
             [keyIds]
           );
       }
+      if (profileDb && profileIds.length) {
+        await profileDb.query(
+          'DELETE FROM profile WHERE id = ANY($1::uuid[])',
+          [profileIds]
+        );
+      }
     } finally {
       await app?.close().catch(() => undefined);
       await Promise.all(
@@ -354,7 +387,9 @@ describe('Gateway Presence actor binding against private Auth and Social service
         )
       );
       await Promise.all(
-        [authDb, socialDb].map((db) => db?.end().catch(() => undefined))
+        [authDb, profileDb, socialDb].map((db) =>
+          db?.end().catch(() => undefined)
+        )
       );
     }
   });
