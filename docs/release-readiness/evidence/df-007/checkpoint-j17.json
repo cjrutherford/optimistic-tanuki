@@ -1,0 +1,88 @@
+{
+  "slice": "DF-007-J17",
+  "date": "2026-10-21",
+  "status": "locally-verified-bounded-runtime-harness",
+  "accepted": true,
+  "baseRevision": "6064022d718bf673705c109f1077841a2d3af0bf",
+  "scope": "Gateway Presence mutation actor binding",
+  "sourceHashes": {
+    "apps/gateway/src/controllers/social/presence/presence.controller.ts": "34f52ecca12ea4dbb57e6c34aa33968ed86e0437418ee590453e6dc5d4fc590a",
+    "apps/gateway/src/controllers/social/presence/presence.controller.spec.ts": "4366a8e5a45d0be0cbc4ada230f0a556a25e1da4995c6c653639e4ce57365bf0",
+    "apps/gateway-e2e/src/gateway/presence-actor-binding.spec.ts": "094d6e78b6e3812a9489c2523d5327ae446087641f3c2f38edd5d0a89b7d1f30"
+  },
+  "behavior": {
+    "postActor": "Authenticated account userId; legacy body userId overwritten",
+    "pathMutations": "last-seen/offline require case-insensitive account UUID match",
+    "denials": "Missing/malformed principal 401; conflicting path 403 before Social RPC",
+    "reads": "Existing cross-account single, batch, and online reads retained"
+  },
+  "unit": {
+    "passed": 8,
+    "skipped": 0,
+    "redBeforeFix": true,
+    "evidence": ".runtime-artifacts/account-rights/finish-sequence/presence-actor-binding/red.log and green.log"
+  },
+  "preRuntime": {
+    "gatewayProductionBuild": "PASS",
+    "gatewayLint": "PASS",
+    "gatewayE2eLint": "PASS",
+    "evidenceDirectory": ".runtime-artifacts/account-rights/finish-sequence/presence-actor-binding"
+  },
+  "runtimePreparation": {
+    "project": "ot-df007-presence-j17",
+    "sourceManifestSha256": "021748d7d40729410657e2613c941b70b051606f3aff9e991484b1df6830bffc",
+    "capturePath": ".runtime-artifacts/account-rights/finish-sequence/presence-actor-binding/runtime/source-021748d7d407",
+    "composePath": ".runtime-artifacts/account-rights/finish-sequence/presence-actor-binding/runtime/compose.json",
+    "composeSha256": "8ee9e438e65dce1042c1e564429fd94699510893f03f9bb67dc3006d51a1a86f",
+    "socialImage": "ot-df007-presence-j17/social:021748d7d407",
+    "retainedCoreImageCopiesVerified": 5,
+    "protectedFilesExcluded": 43,
+    "harness": "Production PresenceController/AuthGuard/JWT/cookie parser in test-hosted Nest HTTP server, real private Auth/Social RPC and database; not full Gateway deployment",
+    "fixtureConfiguration": "Synthetic private configuration; see runtime/capture.json"
+  },
+  "runtime": {
+    "status": "PASS",
+    "command": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx run gateway-e2e:e2e --testFile=presence-actor-binding.spec.ts$ --runInBand --skipNxCache",
+    "passed": 1,
+    "skipped": 0,
+    "sourceManifestSha256": "021748d7d40729410657e2613c941b70b051606f3aff9e991484b1df6830bffc",
+    "authenticatedHttpCases": [
+      "Bearer and cookie sessions validated by real private Auth service",
+      "Spoofed POST body actor ignored; owner row updated and counterpart row unchanged",
+      "Foreign last-seen/offline PUT denied without changing counterpart rows",
+      "Own uppercase UUID PUT paths accepted",
+      "Anonymous POST denied",
+      "Logged-out session denied",
+      "Mismatched selected-profile claim does not change account actor",
+      "Cross-account read and batch behavior retained with exact counterpart readback"
+    ],
+    "independentReadback": {
+      "authSessions": 0,
+      "authKeys": 0,
+      "presenceRows": 0,
+      "temporaryRelations": 0,
+      "fixtureUsers": 0
+    },
+    "cleanup": {
+      "privateContainers": 0,
+      "privateNetworks": 0,
+      "privateVolumes": 0
+    },
+    "evidenceDirectory": ".runtime-artifacts/account-rights/finish-sequence/presence-actor-binding/runtime/attempt-1"
+  },
+  "runtimeImages": {
+    "social": "sha256:0cdb53ff8fb3a1692a5a87838c28bda284e65b7276ca22c50df3d748ff0f7f5e",
+    "retainedCoreServices": 5,
+    "retainedCoreCopyInputBytesMatched": true,
+    "forum": {
+      "imageId": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+      "provenance": "Retained from prior B6 run; mixed provenance explicitly recorded"
+    }
+  },
+  "limits": [
+    "Malformed-principal HTTP behavior and no-RPC behavior are unit-only evidence.",
+    "Presence read audience/global and batch disclosure remain J20.",
+    "Internal Social RPC trust, remote CI, and production qualification are not established."
+  ],
+  "notRun": ["Full Gateway deployment", "Remote CI", "Production qualification"]
+}

@@ -8,6 +8,8 @@ import {
   UseGuards,
   Logger,
   Inject,
+  ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { PresenceCommands, ServiceTokens } from '@optimistic-tanuki/constants';
@@ -39,6 +41,34 @@ export interface PresenceDto {
 @ApiTags('presence')
 @Controller('presence')
 export class PresenceController {
+  private accountActor(user: UserDetails | null | undefined): string {
+    const userId = user?.userId;
+    if (
+      typeof userId !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        userId
+      )
+    ) {
+      throw new UnauthorizedException(
+        'Authenticated account identity is invalid'
+      );
+    }
+    return userId.toLowerCase();
+  }
+
+  private assertOwnAccountPath(
+    userId: string,
+    user: UserDetails | null | undefined
+  ): string {
+    const accountId = this.accountActor(user);
+    if (typeof userId !== 'string' || userId.toLowerCase() !== accountId) {
+      throw new ForbiddenException(
+        'Presence mutations are limited to the authenticated account'
+      );
+    }
+    return accountId;
+  }
+
   private readonly logger = new Logger(PresenceController.name);
 
   constructor(
@@ -53,12 +83,14 @@ export class PresenceController {
     description: 'The presence has been successfully set.',
   })
   async setPresence(
-    @Body() setPresenceDto: SetPresenceDto
+    @Body() setPresenceDto: SetPresenceDto,
+    @User() user: UserDetails | null
   ): Promise<PresenceDto> {
+    const userId = this.accountActor(user);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: PresenceCommands.SET_PRESENCE },
-        setPresenceDto
+        { ...setPresenceDto, userId }
       )
     );
   }
@@ -112,11 +144,15 @@ export class PresenceController {
     status: 200,
     description: 'The last seen has been successfully updated.',
   })
-  async updateLastSeen(@Param('userId') userId: string): Promise<void> {
+  async updateLastSeen(
+    @Param('userId') userId: string,
+    @User() user: UserDetails | null
+  ): Promise<void> {
+    const accountId = this.assertOwnAccountPath(userId, user);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: PresenceCommands.UPDATE_LAST_SEEN },
-        { userId }
+        { userId: accountId }
       )
     );
   }
@@ -127,9 +163,16 @@ export class PresenceController {
     status: 200,
     description: 'The user has been successfully set as offline.',
   })
-  async setOffline(@Param('userId') userId: string): Promise<void> {
+  async setOffline(
+    @Param('userId') userId: string,
+    @User() user: UserDetails | null
+  ): Promise<void> {
+    const accountId = this.assertOwnAccountPath(userId, user);
     return await firstValueFrom(
-      this.socialClient.send({ cmd: PresenceCommands.SET_OFFLINE }, { userId })
+      this.socialClient.send(
+        { cmd: PresenceCommands.SET_OFFLINE },
+        { userId: accountId }
+      )
     );
   }
 }
