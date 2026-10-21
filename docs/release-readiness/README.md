@@ -23,6 +23,8 @@ This package defines and records:
 5. Update slice status and evidence as work progresses.
 6. Do not mark a slice `ACCEPTED` merely because code exists. Acceptance requires the evidence stated in the slice.
 
+Current account-rights checkpoint: [J24 source components](./findings/DF-007-J24.md) are locally verified. Continue with J25 using the [remaining-slices register](./REMAINING-SLICES.md).
+
 ## Core release rule
 
 > Everything we advertise works, private things stay private, primary workflows do not predictably break, and an ordinary person can understand the product without its creator standing beside them.

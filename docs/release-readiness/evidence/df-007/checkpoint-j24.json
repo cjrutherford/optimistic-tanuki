@@ -1,0 +1,168 @@
+{
+  "slice": "DF-007-J24",
+  "date": "2026-10-21",
+  "status": "locally-verified-owner-components",
+  "accepted": true,
+  "baseRevision": "fde92814013521a88908234819f95e1b094905a2",
+  "sourceManifestSha256": "4adcfe51f530ba615f51375f4df908b8ac591f6c960b863cc7e77d27f998bc40",
+  "sourceHashes": {
+    "apps/social/src/app/account-export-authored.sources.spec.ts": "ebfa19ee014d65c3788ea9634804bcb3cef5a9db4d6afdbe7d74aaf42e35ab44",
+    "apps/social/src/app/account-export-authored.sources.ts": "f5b84a768531c9e9d1ef2fcf3958db876e0a2a093b6279b82045f34ee83a57c7",
+    "apps/social/src/app/account-export-community.sources.ts": "c47bcb6e7d1b91317ddc676061bfc40e8ed60850ef2a2cabab76ad1432018d5c",
+    "apps/social/src/app/account-export-owner.service.spec.ts": "f7f3de1c0f397e39031a72e56806978a6dbe649690aecee757306d994616612e",
+    "apps/social/src/app/account-export-owner.service.ts": "daddc9b38e2bc87f2b2428593b3480536423abecc875d4b451eb68081364be0f",
+    "apps/social/src/app/account-export-personal.sources.ts": "0478c62c89b3634c8443bb8079aab5544af0385655ba97203720d536868978ea",
+    "apps/social/src/app/account-export-receipt.sources.spec.ts": "04d539a3e2d7117d1a07945cd10c3e22f6e7e2aa6cf0f35e9dcad8a3bdb96411",
+    "apps/social/src/app/account-export-receipt.sources.ts": "ec7b5bd3c6a446d231f8e360e1cd0a6336524f5a787390e523dd02d7f79ca678",
+    "apps/social/src/app/account-export-safety.sources.ts": "de7518b96479ef4e77bf13b9766564d64d81abfadc76d635c9071f2b54455a1c",
+    "apps/social/src/app/social-owner-capture.postgres.spec.ts": "5d09b5c094d79e131af9eb3fd1a1d7f4ff99fafd6a5dca689db435b6d8961878",
+    "apps/social/src/app/social-receipt-capture.postgres.spec.ts": "fd18edabd954bd881e928490178082235584331647b82a8d345413b1ccb9ceb2"
+  },
+  "sets": {
+    "J24-A": {
+      "status": "verified-local-owner-component",
+      "sources": 10,
+      "records": 13,
+      "sourceRowCounts": {
+        "Post": 1,
+        "Comment": 2,
+        "Reaction": 2,
+        "Vote": 2,
+        "Attachment": 1,
+        "Poll": 1,
+        "SocialComponent": 1,
+        "Link": 1,
+        "PostShare": 1,
+        "Event": 1
+      }
+    },
+    "J24-B": {
+      "status": "verified-local-owner-component",
+      "sources": 9,
+      "records": 269,
+      "sourceRowCounts": {
+        "SavedItem": 1,
+        "SearchHistory": 261,
+        "FollowEntity": 1,
+        "UserBlock": 1,
+        "UserMute": 1,
+        "Activity": 1,
+        "UserPresence": 1,
+        "ProfileView": 1,
+        "Notification": 1
+      }
+    },
+    "J24-C": {
+      "status": "verified-local-owner-component",
+      "sources": 7,
+      "records": 9,
+      "sourceRowCounts": {
+        "Community": 1,
+        "CommunityMember": 1,
+        "CommunityInvite": 2,
+        "CommunityMembershipAudit": 2,
+        "CommunityElection": 1,
+        "ElectionCandidate": 1,
+        "ElectionVote": 1
+      }
+    },
+    "J24-D": {
+      "status": "verified-local-owner-component",
+      "sources": 7,
+      "records": 9,
+      "sourceRowCounts": {
+        "BusinessPageContent": 1,
+        "BusinessThemeContent": 1,
+        "CommunitySponsorshipContent": 1,
+        "GuardianContentAudit": 2,
+        "GuardianPublishedAssetGrant": 2,
+        "ContentReport": 1,
+        "ContentModerationAction": 1
+      }
+    }
+  },
+  "verification": {
+    "focusedUnitTests": 17,
+    "ownerLifecycleTests": 4,
+    "sourceProjectionTests": 13,
+    "socialProductionBuild": "PASS",
+    "socialLint": "PASS",
+    "runtimeTests": 6,
+    "runtimeSkipped": 0,
+    "migrationsApplied": 27,
+    "schemaChanges": false,
+    "runtimeEvidence": {
+      "authored": {
+        "attempt": 5,
+        "tests": 3,
+        "manifest": "c142cbe963d967e6ae354bcf91454e50b04190fe3d7a8d93f48fa8967a519b54"
+      },
+      "receipts": {
+        "attempt": 6,
+        "tests": 3,
+        "manifest": "4adcfe51f530ba615f51375f4df908b8ac591f6c960b863cc7e77d27f998bc40"
+      },
+      "reuse": "All ten authored proof input hashes match the final source set. Only the separate B/C/D fixture changed; the three passing authored tests were not repeated."
+    },
+    "keysetPaging": {
+      "source": "SearchHistory",
+      "records": 261,
+      "databasePageSize": 200,
+      "emitterChunks": [250, 11]
+    },
+    "publicTableCountsUnchanged": 35,
+    "protectedWorkingTreeFilesUnchanged": 43,
+    "privateContainers": 0,
+    "privateNetworks": 0,
+    "privateVolumes": 0,
+    "fixtureSpoolRootsRemaining": 0
+  },
+  "review": {
+    "model": "gpt-6-luna",
+    "delegation": "flat",
+    "result": "GO after Unicode text-bound corrections and matching-selector correction",
+    "runtimeCorrection": "Bounded enum fields require ::text before PostgreSQL left/char_length."
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "result": "FAIL",
+      "reason": "Fixture dynamic node:fs imports unsupported by Jest VM."
+    },
+    {
+      "attempt": 2,
+      "result": "FAIL",
+      "reason": "Owner read failure masked by shared spool."
+    },
+    {
+      "attempt": 3,
+      "result": "FAIL",
+      "reason": "Projection-only diagnostics narrowed failure to SQL; expected malformed-row failure remained safe."
+    },
+    {
+      "attempt": 4,
+      "result": "FAIL",
+      "reason": "PostgreSQL 42883 identified missing text cast for enum fields."
+    },
+    {
+      "attempt": 5,
+      "result": "AUTHORED PASS / RECEIPTS FAIL",
+      "reason": "Authored three tests passed; receipt fixture assertions and candidate FK setup needed correction."
+    },
+    {
+      "attempt": 6,
+      "result": "PASS",
+      "reason": "Three receipt tests passed; authored proof reused with exact ten-file equality."
+    }
+  ],
+  "limits": [
+    "Controlled lease and Profile capability replies; no live Auth/Profile RPC or job integration in this fixture.",
+    "J25 registration, leased snapshot transport and durable job integration remain planned.",
+    "Asset UUIDs are opaque referenceOnly/unverified bindings; current ownership, access and consent are not asserted.",
+    "Raw component JSON, poll votes, event attendees, storage paths and shared/private counterpart content remain excluded per J23.",
+    "Post/Poll association remains unproven and excluded.",
+    "The four J23 store dispositions remain unchanged; external logs and other non-ORM stores require their later slices.",
+    "No browser, download, deletion, external provider, remote CI or production-release qualification claim."
+  ],
+  "next": "J25"
+}
