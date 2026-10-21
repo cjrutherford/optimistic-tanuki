@@ -8,6 +8,7 @@ import {
   In,
   Like,
   ManyToMany,
+  JoinTable,
   MoreThanOrEqual,
   OneToMany,
   OneToOne,
@@ -51,7 +52,12 @@ export class Post {
   @OneToMany(() => Comment, (comment) => comment.post)
   comments: Comment[];
 
-  @ManyToMany(() => Link, (link) => link.posts)
+  @ManyToMany(() => Link, (link) => link.posts, { cascade: false })
+  @JoinTable({
+    name: 'post_link',
+    joinColumn: { name: 'postId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'linkId', referencedColumnName: 'id' },
+  })
   links: Link[];
 
   @OneToMany(() => Attachment, (attachment) => attachment.post)

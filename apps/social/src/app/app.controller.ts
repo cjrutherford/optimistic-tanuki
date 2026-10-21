@@ -337,6 +337,10 @@ export class AppController {
     const limit = opts?.limit ? Math.min(opts.limit, MAX_LIMIT) : DEFAULT_LIMIT;
 
     searchOptions.take = limit;
+    searchOptions.relations = {
+      ...((searchOptions.relations as object) ?? {}),
+      links: true,
+    };
 
     if (opts) {
       if (opts.offset) {
@@ -370,12 +374,9 @@ export class AppController {
         where: { post: { id: post.id } },
       });
 
-      const links = []; // Assuming links are not implemented yet
-
       post.votes = votes || [];
       post.comments = comments || [];
       post.attachments = attachments || [];
-      post.links = links || [];
     }
 
     return posts;
@@ -775,8 +776,19 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: LinkCommands.CREATE })
-  async createLink(@Payload() dto: CreateLinkDto) {
-    return this.linkService.create(dto);
+  async createLink(
+    @Payload()
+    data: {
+      dto?: CreateLinkDto;
+      actor?: { accountId: string; profileId: string };
+    }
+  ) {
+    if (!data?.dto || !data.actor)
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Link actor required',
+      });
+    return this.linkService.create(data.dto, data.actor);
   }
 
   @MessagePattern({ cmd: LinkCommands.UPDATE })

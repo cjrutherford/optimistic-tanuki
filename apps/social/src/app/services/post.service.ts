@@ -437,6 +437,8 @@ export class PostService {
   }
 
   async create(createPostDto: CreatePostDto): Promise<Post> {
+    const { links: _ignoredLinks, ...postInput } =
+      createPostDto as CreatePostDto & { links?: unknown };
     // If communityId is provided, check membership
     if (createPostDto.communityId) {
       const isMember = await this.communityService.isMember(
@@ -458,7 +460,7 @@ export class PostService {
       throw new Error('Invalid post audience');
     }
     const normalizedDto = {
-      ...createPostDto,
+      ...postInput,
       visibility,
       publicAudienceExplicit:
         !!createPostDto.communityId && visibility === 'public',
@@ -655,6 +657,8 @@ export class PostService {
     userId: string,
     profileId?: string
   ): Promise<Post> {
+    const { links: _ignoredLinks, ...postInput } =
+      updatePostDto as UpdatePostDto & { links?: unknown };
     return this.postRepo.manager.transaction(async (manager) => {
       const postRepo = manager.getRepository(Post);
       const post = await postRepo.findOne({
@@ -699,17 +703,17 @@ export class PostService {
       }
 
       if (
-        updatePostDto.communityId !== undefined &&
-        updatePostDto.communityId !== post.communityId
+        postInput.communityId !== undefined &&
+        postInput.communityId !== post.communityId
       ) {
         throw new Error('A post cannot be moved between communities');
       }
-      if (updatePostDto.visibility === 'community' && !post.communityId) {
+      if (postInput.visibility === 'community' && !post.communityId) {
         throw new Error('Community audience requires a community post');
       }
       if (
-        updatePostDto.visibility !== undefined &&
-        !['public', 'followers', 'community'].includes(updatePostDto.visibility)
+        postInput.visibility !== undefined &&
+        !['public', 'followers', 'community'].includes(postInput.visibility)
       ) {
         throw new Error('Invalid post audience');
       }
@@ -717,8 +721,8 @@ export class PostService {
       // Sanitize content if provided
       const updatedAudiencePost = {
         ...post,
-        ...updatePostDto,
-        content: updatePostDto.content ?? post.content,
+        ...postInput,
+        content: postInput.content ?? post.content,
         profileId: post.profileId,
       } as Post;
       await this.latchPostAndCommentAssetReferences(post);
@@ -729,19 +733,17 @@ export class PostService {
         await this.latchPostAndCommentAssetReferences(updatedAudiencePost);
       }
       const sanitizedDto: Partial<Post> = {
-        ...(updatePostDto.title !== undefined
-          ? { title: updatePostDto.title }
-          : {}),
-        ...(updatePostDto.visibility !== undefined
+        ...(postInput.title !== undefined ? { title: postInput.title } : {}),
+        ...(postInput.visibility !== undefined
           ? {
-              visibility: updatePostDto.visibility,
+              visibility: postInput.visibility,
               publicAudienceExplicit:
-                !!post.communityId && updatePostDto.visibility === 'public',
+                !!post.communityId && postInput.visibility === 'public',
             }
           : { publicAudienceExplicit: post.publicAudienceExplicit ?? false }),
       };
-      if (updatePostDto.content) {
-        sanitizedDto.content = this.sanitizeContent(updatePostDto.content);
+      if (postInput.content) {
+        sanitizedDto.content = this.sanitizeContent(postInput.content);
       }
       await postRepo.update(id, sanitizedDto);
 

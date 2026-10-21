@@ -62,7 +62,8 @@ export class SocialAccountExportService {
     private readonly mutes: Repository<UserMute>,
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
     private readonly auth: ClientProxy,
-    @Inject(ServiceTokens.PROFILE_SERVICE) private readonly profile: ClientProxy
+    @Inject(ServiceTokens.PROFILE_SERVICE)
+    private readonly profile: ClientProxy
   ) {}
 
   async getAccountExportSnapshot(
@@ -99,7 +100,6 @@ export class SocialAccountExportService {
     const uncovered = new Set<string>([
       'social-preview-unfenced',
       'social-components-unreviewed',
-      'post-link-urls-omitted',
       'social-poll-vote-history-uncovered',
       'poll-post-association-unverified',
       'social-account-profile-selection-ambiguous',
@@ -408,6 +408,104 @@ export class SocialAccountExportService {
       'isScheduled',
     ]);
     const postIds = new Set(postRows.map((row) => row.id));
+    const postLinksOut: Array<{
+      postId: string;
+      linkId: number;
+      url?: string;
+      appScope: string;
+      assetId?: string;
+      referenceOnly?: true;
+    }> = [];
+    const seenPostLinks = new Set<string>();
+    for (
+      let offset = 0;
+      offset < postRows.length && postLinksOut.length < MAX_ROWS;
+      offset += ID_PAGE_SIZE
+    ) {
+      const ids = postRows
+        .slice(offset, offset + ID_PAGE_SIZE)
+        .map((row) => row.id);
+      const rows = await read('post-links', () =>
+        this.posts.manager
+          .createQueryBuilder()
+          .select('post.id', 'postId')
+          .addSelect('link.id', 'linkId')
+          .addSelect('link.url', 'url')
+          .addSelect('link.appScope', 'linkAppScope')
+          .addSelect('post.appScope', 'appScope')
+          .from(Post, 'post')
+          .innerJoin('post.links', 'link')
+          .where('post.id IN (:...ids)', { ids })
+          .orderBy('post.id', 'ASC')
+          .addOrderBy('link.id', 'ASC')
+          .limit(MAX_ROWS - postLinksOut.length + 1)
+          .getRawMany()
+      );
+      for (const row of rows) {
+        try {
+          const linkId = Number(row.linkId);
+          if (
+            typeof row.postId !== 'string' ||
+            !validUuid(row.postId) ||
+            !postIds.has(row.postId) ||
+            !Number.isSafeInteger(linkId) ||
+            linkId <= 0 ||
+            typeof row.appScope !== 'string' ||
+            row.appScope.length === 0 ||
+            row.appScope.length > MAX_STRING ||
+            row.linkAppScope !== row.appScope ||
+            typeof row.url !== 'string' ||
+            row.url.length === 0 ||
+            row.url.length > 2048
+          ) {
+            uncovered.add('post-links-malformed-or-unowned-row');
+            continue;
+          }
+          const associationKey = `${row.postId}:${linkId}`;
+          if (seenPostLinks.has(associationKey)) {
+            uncovered.add('post-links-malformed-or-unowned-row');
+            continue;
+          }
+          const url = new URL(row.url);
+          if (
+            !['http:', 'https:'].includes(url.protocol) ||
+            url.username ||
+            url.password
+          ) {
+            uncovered.add('post-links-malformed-or-unowned-row');
+            continue;
+          }
+          const asset = /\/(?:api\/)?asset\/([0-9a-f-]{36})(?:[/?#]|$)/i.exec(
+            row.url
+          );
+          if (asset && !validUuid(asset[1])) {
+            uncovered.add('post-links-malformed-or-unowned-row');
+            continue;
+          }
+          const item: any = {
+            postId: row.postId,
+            linkId,
+            appScope: row.appScope,
+          };
+          seenPostLinks.add(associationKey);
+          if (asset) {
+            item.assetId = asset[1].toLowerCase();
+            item.referenceOnly = true;
+          } else item.url = url.toString();
+          postLinksOut.push(item);
+          if (postLinksOut.length > MAX_ROWS) {
+            postLinksOut.length = MAX_ROWS;
+            uncovered.add('post-links-preview-limit-exceeded');
+            break;
+          }
+        } catch {
+          uncovered.add('post-links-malformed-or-unowned-row');
+        }
+      }
+    }
+    if (postLinksOut.length >= MAX_ROWS) {
+      uncovered.add('post-links-preview-limit-exceeded');
+    }
     const commentRows = await ownerRows(
       'comments',
       this.comments,
@@ -878,6 +976,7 @@ export class SocialAccountExportService {
     });
     const data = {
       posts: postsOut,
+      postLinks: postLinksOut,
       comments: commentsOut,
       reactions: reactionsOut,
       votes: votesOut,
@@ -896,6 +995,7 @@ export class SocialAccountExportService {
       uncovered.add('social-preview-string-limit-exceeded');
       return this.snapshot(accountId, uncovered, {
         posts: [],
+        postLinks: [],
         comments: [],
         reactions: [],
         votes: [],

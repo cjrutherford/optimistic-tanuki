@@ -8,7 +8,24 @@ describe('SocialAccountExportService', () => {
   const postId = '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b913';
   const session = { token: 'session', appId: 'app' };
   const repo = () => ({ find: jest.fn().mockResolvedValue([]) });
+  const emptyQueryBuilder = () => {
+    const builder: any = {};
+    for (const method of [
+      'select',
+      'addSelect',
+      'from',
+      'innerJoin',
+      'where',
+      'orderBy',
+      'addOrderBy',
+      'limit',
+    ])
+      builder[method] = jest.fn(() => builder);
+    builder.getRawMany = jest.fn().mockResolvedValue([]);
+    return builder;
+  };
   const post = repo();
+  post.manager = { createQueryBuilder: jest.fn(emptyQueryBuilder) };
   const comment = repo();
   const reaction = repo();
   const vote = repo();
@@ -220,6 +237,171 @@ describe('SocialAccountExportService', () => {
     expect(query.select).not.toHaveProperty('post');
     expect(query.select).not.toHaveProperty('votes');
     expect(query).not.toHaveProperty('relations');
+  });
+
+  it('exports only valid owned post-link associations and truncates raw results safely', async () => {
+    const ownedPostId = postId;
+    const otherPostId = '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b914';
+    auth.send.mockReturnValue(
+      of({ isValid: true, data: { userId: accountId } })
+    );
+    profiles.send.mockReturnValue(
+      of({
+        accountId,
+        profileIds: [profileId],
+        hasMore: false,
+        nextCursor: null,
+        unfenced: true,
+      })
+    );
+    post.find.mockResolvedValue([
+      {
+        id: ownedPostId,
+        userId: accountId,
+        profileId,
+        appScope: 'social',
+        title: 'owned',
+        content: '',
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      },
+      {
+        id: otherPostId,
+        userId: accountId,
+        profileId,
+        appScope: 'social',
+        title: 'owned 2',
+        content: '',
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      },
+    ]);
+    const rows: any[] = [
+      {
+        postId: ownedPostId,
+        linkId: '1',
+        url: 'https://example.test/a',
+        appScope: 'social',
+        linkAppScope: 'social',
+      },
+      {
+        postId: ownedPostId,
+        linkId: '1',
+        url: 'https://example.test/a',
+        appScope: 'social',
+        linkAppScope: 'social',
+      },
+      {
+        postId: otherPostId,
+        linkId: '2',
+        url: 'https://example.test/b',
+        appScope: 'social',
+        linkAppScope: 'social',
+      },
+      {
+        postId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b915',
+        linkId: '3',
+        url: 'https://example.test/c',
+        appScope: 'social',
+        linkAppScope: 'social',
+      },
+      {
+        postId: ownedPostId,
+        linkId: '4',
+        url: 'javascript:alert(1)',
+        appScope: 'social',
+        linkAppScope: 'social',
+      },
+      {
+        postId: ownedPostId,
+        linkId: '5',
+        url: 'https://example.test/api/asset/7b8f0c2e-5509-4f9f-94dd-ced7e8d1b916',
+        appScope: 'social',
+        linkAppScope: 'social',
+      },
+      {
+        postId: ownedPostId,
+        linkId: '-1',
+        url: 'https://example.test/bad-id',
+        appScope: 'social',
+        linkAppScope: 'social',
+      },
+      {
+        postId: ownedPostId,
+        linkId: '2000',
+        url: 'https://example.test/cross-scope',
+        appScope: 'social',
+        linkAppScope: 'other',
+      },
+      {
+        postId: ownedPostId,
+        linkId: '2001',
+        url: 'https://user:secret@example.test',
+        appScope: 'social',
+        linkAppScope: 'social',
+      },
+      {
+        postId: ownedPostId,
+        linkId: '2002',
+        url: 'https://example.test/asset/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        appScope: 'social',
+        linkAppScope: 'social',
+      },
+      ...Array.from({ length: 1000 }, (_, i) => ({
+        postId: ownedPostId,
+        linkId: String(i + 6),
+        url: `https://example.test/${i}`,
+        appScope: 'social',
+        linkAppScope: 'social',
+      })),
+    ];
+    const qb = emptyQueryBuilder();
+    qb.getRawMany.mockResolvedValue(rows);
+    post.manager.createQueryBuilder.mockReturnValue(qb);
+    const service = new SocialAccountExportService(
+      post as never,
+      comment as never,
+      reaction as never,
+      vote as never,
+      attachment as never,
+      poll as never,
+      savedItems as never,
+      searchHistory as never,
+      follows as never,
+      blocks as never,
+      mutes as never,
+      auth as never,
+      profiles as never
+    );
+
+    const snapshot = await service.getAccountExportSnapshot(accountId, session);
+    expect(snapshot.data.postLinks).toHaveLength(993);
+    expect(snapshot.data.postLinks[0]).toEqual({
+      postId: ownedPostId,
+      linkId: 1,
+      appScope: 'social',
+      url: 'https://example.test/a',
+    });
+    expect(snapshot.data.postLinks.find((item: any) => item.assetId)).toEqual({
+      postId: ownedPostId,
+      linkId: 5,
+      appScope: 'social',
+      assetId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b916',
+      referenceOnly: true,
+    });
+    expect(
+      snapshot.data.postLinks.find((item: any) => item.linkId === 4)
+    ).toBeUndefined();
+    expect(
+      snapshot.data.postLinks.some((item: any) =>
+        item.url?.startsWith('javascript:')
+      )
+    ).toBe(false);
+    expect(snapshot.uncovered).toContain('post-links-malformed-or-unowned-row');
+    expect(snapshot.uncovered).toContain('post-links-preview-limit-exceeded');
+    expect(qb.where).toHaveBeenCalledWith('post.id IN (:...ids)', {
+      ids: [ownedPostId, otherPostId],
+    });
   });
 
   it('rejects an invalid account before calling Authentication, Profile, or Social ORM', async () => {

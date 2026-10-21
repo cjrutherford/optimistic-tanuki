@@ -1,0 +1,137 @@
+{
+  "slice": "DF-007-J22",
+  "date": "2026-10-21",
+  "status": "locally-verified-private-postgresql",
+  "accepted": true,
+  "baseRevision": "2a50327d57fddac94ac1c003a501aa2675010c11",
+  "sourceManifestSha256": "936ab57402ee242002be9a2cda4559860446b5821c90c03586d9af967dfcdc51",
+  "sourceHashes": {
+    "apps/social/migrations/1792605693700-post-link-association.ts": "f89a9ac25cae9f58cb5f07f0cfdc01a8198af6c61541a5f2b8e9c0cc5298992a",
+    "apps/social/src/app/account-export.service.spec.ts": "75dfb9844ac273484f69ebad25ca0c0544bc5a8542d4a59d83e7cd9867c00715",
+    "apps/social/src/app/account-export.service.ts": "232a2c72c124649a621eb7b1a3a05fc459461f002f91be2f0a01634ee2d901a4",
+    "apps/social/src/app/app.controller.ts": "e34d7f85855436425e90406fe4d34f59a7289ebcf4b91a1db93fcb6b99a5ebb0",
+    "apps/social/src/app/post-link-associations.postgres.spec.ts": "e1b2176a8b826b475704a4b5d0b330f585e69177b2e87b3f06feff1ef302f9c3",
+    "apps/social/src/app/services/link.service.spec.ts": "fa694807d5d1af597cff3f6081b5360496dd564a5cdb5cff542e70b3bac37c7e",
+    "apps/social/src/app/services/link.service.ts": "7b693cc0ccc0dd830e923b7b708486cb1fe2b5d1fdf968b8c8fee91fa97064b0",
+    "apps/social/src/app/services/post.service.ts": "a1b8fee91ac77c005ce56a52f792bf6c5fad3f21b81645bfd9058936b1166a8d",
+    "apps/social/src/entities/post.entity.ts": "312088d2b27c739044c998a9fed087abc1a1ef9da33bd2e81a52913f0d299dbb"
+  },
+  "focusedTests": {
+    "passed": 66,
+    "suites": 3,
+    "skipped": 0
+  },
+  "preRuntime": {
+    "socialProductionBuildAndLint": "PASS",
+    "migrationValidation": "PASS pnpm run validate:typeorm-migrations",
+    "scopedFormatAndDiff": "PASS"
+  },
+  "migration": {
+    "file": "apps/social/migrations/1792605693700-post-link-association.ts",
+    "generatedBy": "pnpm exec nx run social:typeorm:migration:generate --skipNxCache",
+    "timestampPreserved": true,
+    "keptStatements": 10,
+    "excludedPreexistingElectionDriftStatements": 22,
+    "review": "Kept only CLI-generated post_link table, composite primary key, indexes and foreign keys; unrelated election drift was excluded. Full generated output retained privately.",
+    "downAndUpVerified": true
+  },
+  "runtime": {
+    "result": {
+      "project": "ot-social-post-link-j22",
+      "startedAt": "2026-10-21T18:06:57.600071+00:00",
+      "baseRevision": "2a50327d57fddac94ac1c003a501aa2675010c11",
+      "sourceManifestSha256": "936ab57402ee242002be9a2cda4559860446b5821c90c03586d9af967dfcdc51",
+      "database": "post_link_j22_fixture",
+      "migrationCommand": "pnpm exec nx run social:typeorm:migration:run",
+      "containerId": "429a4d2d58f6ecc630e2e9422e905808232b19534a03bd2517bbca65afbb152d",
+      "databaseReadiness": {
+        "database": "post_link_j22_fixture",
+        "serverVersionNum": 150019
+      },
+      "uuidExtension": {
+        "database": "post_link_j22_fixture",
+        "extension": "uuid-ossp"
+      },
+      "migrationExitCode": 0,
+      "newMigrationRevertedAndReapplied": true,
+      "testExitCode": 0,
+      "tableCountsUnchanged": true,
+      "remainingPrivateContainers": 0,
+      "remainingPrivateNetworks": 0,
+      "remainingPrivateVolumes": 0,
+      "containerMountTypes": [],
+      "finishedAt": "2026-10-21T18:07:20.919094+00:00",
+      "sourceAndProtectedHashesPreserved": true,
+      "result": "PASS"
+    },
+    "proof": {
+      "result": "PASS",
+      "migrationCount": 27,
+      "relationTable": "post_link",
+      "directions": ["Post.links", "Link.posts"],
+      "ownedAssociations": 2,
+      "foreignAndStandaloneExcluded": true,
+      "rawStorageExcluded": true,
+      "assetReferenceOnly": true,
+      "identityProof": "controlled Auth/Profile replies; no live Auth/Profile services in this PostgreSQL-only fixture"
+    },
+    "tableCountsAfter": {
+      "activity": "0",
+      "attachment": "0",
+      "business_page_contents": "0",
+      "business_theme_contents": "0",
+      "comment": "0",
+      "community": "0",
+      "community_election": "0",
+      "community_invite": "0",
+      "community_member": "0",
+      "community_membership_audit": "0",
+      "community_sponsorship_contents": "0",
+      "content_moderation_action": "0",
+      "content_report": "0",
+      "election_candidate": "0",
+      "election_vote": "0",
+      "event": "0",
+      "follow_entity": "0",
+      "guardian_content_audit": "0",
+      "guardian_published_asset_grant": "0",
+      "link": "0",
+      "migrations": "27",
+      "notification": "0",
+      "poll": "0",
+      "post": "0",
+      "post_link": "0",
+      "post_share": "0",
+      "profile_view": "0",
+      "reaction": "0",
+      "saved_item": "0",
+      "search_history": "0",
+      "social_components": "0",
+      "user_block": "0",
+      "user_mute": "0",
+      "user_presence": "0",
+      "vote": "0"
+    },
+    "publicTablesChecked": 35,
+    "fixtureCounts": {
+      "post": "0",
+      "link": "0",
+      "post_link": "0",
+      "attachment": "0"
+    },
+    "evidence": ".runtime-artifacts/account-rights/finish-sequence/post-link-associations/runtime/attempt-1"
+  },
+  "attemptsAndCorrections": [
+    "Initial migration command was launched from the main checkout and failed DNS resolution of db before connecting; no migration was applied. The corrected command used the synthetic private workspace.",
+    "An initial generation ran before the Post overlay was copied and recorded baseline election drift. Generation was repeated with the owning JoinTable metadata; raw outputs were retained.",
+    "A pnpm invocation in a copied workspace refreshed shared node_modules; an interrupted worker saw Nx unavailable. Root preflight then resolved dependencies and Nx 21.6.11, with no tracked package/lock changes. Final acceptance uses a pnpm-launched Node/Nx wrapper that selects the private workspace without pnpm reinterpreting its shared dependency symlink.",
+    "The first focused export run had a wrong accepted-row count and asset-ID expectation. Corrected tests distinguish raw query limits from valid accepted rows; final 66 tests passed."
+  ],
+  "limits": [
+    "Internal Link RPC remains trusted TCP, requires the new {dto,actor} payload; no public Gateway Link caller exists in checked-in source.",
+    "Private PostgreSQL case uses controlled Auth/Profile replies to isolate Social selection, not live authentication or a browser/full service deployment.",
+    "Asset IDs are opaque references only; no ownership, consent or byte access is inferred. Attachment raw paths remain excluded.",
+    "Existing Social preview remains partial/unfenced; full Social capture is J24. No historical association backfill, download artifact or deletion.",
+    "Unrelated election metadata/migration drift remains outside J22. No remote CI, external flows or production qualification."
+  ]
+}
