@@ -1,0 +1,1983 @@
+{
+  "version": 1,
+  "entities": [
+    {
+      "name": "Vote",
+      "table": "vote",
+      "source": "apps/social/src/entities/vote.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["userId", "profileId"],
+        "rule": "Both stored account and profile must match the authenticated principal's current binding.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/vote.entity.ts",
+          "apps/social/src/app/services/vote.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "value", "userId", "profileId", "appScope"],
+          "classification": "owned",
+          "handling": "Include under the account-and-profile selector; preserve the vote value as the subject's own contribution.",
+          "reason": "Vote is explicitly attributed to both account and profile in the write path.",
+          "evidence": [
+            "apps/social/src/entities/vote.entity.ts",
+            "apps/social/src/app/services/vote.service.ts"
+          ],
+          "action": "include-owned"
+        },
+        {
+          "fields": ["postId", "commentId"],
+          "classification": "opaque",
+          "handling": "Keep foreign content references as identifiers; do not recursively fetch content.",
+          "reason": "References identify the target and do not establish ownership of it.",
+          "evidence": ["apps/social/src/entities/vote.entity.ts"],
+          "action": "opaque-reference"
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["post", "comment"],
+          "classification": "opaque",
+          "handling": "Emit reference identifiers only.",
+          "reason": "Targets may belong to other people.",
+          "evidence": ["apps/social/src/entities/vote.entity.ts"],
+          "action": "opaque-reference"
+        }
+      ]
+    },
+    {
+      "name": "Reaction",
+      "table": "reaction",
+      "source": "apps/social/src/entities/reaction.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["userId", "profileId"],
+        "rule": "Both stored account and current profile binding must match.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/reaction.entity.ts",
+          "apps/social/src/app/services/reaction.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "value",
+            "userId",
+            "profileId",
+            "appScope",
+            "createdAt"
+          ],
+          "classification": "owned",
+          "handling": "Include as the subject's reaction; createdAt is personal activity time.",
+          "reason": "The reaction write stores account, profile, value, scope and activity timestamp.",
+          "evidence": [
+            "apps/social/src/entities/reaction.entity.ts",
+            "apps/social/src/app/services/reaction.service.ts"
+          ],
+          "action": "include-owned"
+        },
+        {
+          "fields": ["postId", "commentId"],
+          "classification": "opaque",
+          "handling": "Include identifiers only; no recursive fetch.",
+          "reason": "Foreign content pointers are not exported content ownership.",
+          "evidence": ["apps/social/src/entities/reaction.entity.ts"],
+          "action": "opaque-reference"
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["post", "comment"],
+          "classification": "opaque",
+          "handling": "Emit opaque identifiers only.",
+          "reason": "Referenced content can be another subject's.",
+          "evidence": ["apps/social/src/entities/reaction.entity.ts"],
+          "action": "opaque-reference"
+        }
+      ]
+    },
+    {
+      "name": "Comment",
+      "table": "comment",
+      "source": "apps/social/src/entities/comment.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["userId", "profileId"],
+        "rule": "Require account and current profile binding conjunction.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/comment.entity.ts",
+          "apps/social/src/app/services/comment.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "content",
+            "userId",
+            "profileId",
+            "appScope",
+            "createdAt",
+            "updatedAt"
+          ],
+          "classification": "owned",
+          "handling": "Include subject-authored content and its activity timestamps.",
+          "reason": "Comment producer records actor account/profile and authored text.",
+          "evidence": [
+            "apps/social/src/entities/comment.entity.ts",
+            "apps/social/src/app/services/comment.service.ts"
+          ],
+          "action": "include-owned"
+        },
+        {
+          "fields": [
+            "moderationStatus",
+            "moderationNotes",
+            "moderatedBy",
+            "moderatedAt"
+          ],
+          "classification": "opaque",
+          "handling": "Exclude moderation context and private reviewer notes.",
+          "reason": "These fields are moderator-authored operational context, not subject contribution.",
+          "evidence": [
+            "apps/social/src/entities/comment.entity.ts",
+            "apps/social/src/app/services/comment.service.ts"
+          ],
+          "action": "exclude"
+        },
+        {
+          "fields": ["postId", "parentId"],
+          "classification": "opaque",
+          "handling": "Include identifiers only without fetching referenced content.",
+          "reason": "References may point to another person's content.",
+          "evidence": ["apps/social/src/entities/comment.entity.ts"],
+          "action": "opaque-reference"
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["post", "parent"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Opaque context only; never fetch counterpart content.",
+          "reason": "Opaque context only; never fetch counterpart content.",
+          "evidence": ["apps/social/src/entities/comment.entity.ts"]
+        },
+        {
+          "fields": ["replies", "votes", "reactions"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Only independently selected subject contributions; no recursive collection expansion.",
+          "reason": "Only independently selected subject contributions; no recursive collection expansion.",
+          "evidence": ["apps/social/src/entities/comment.entity.ts"]
+        }
+      ]
+    },
+    {
+      "name": "Link",
+      "table": "link",
+      "source": "apps/social/src/entities/link.entity.ts",
+      "subject": {
+        "kind": "recorded-attribution-only",
+        "fields": [],
+        "rule": "No author selector exists on Link; include only through subject-owned post association and never claim verified authorship.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/link.entity.ts",
+          "apps/social/src/app/services/link.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "url", "appScope"],
+          "classification": "opaque",
+          "handling": "Expose only as a referenced URL when associated with a selected post; do not independently attribute authorship.",
+          "reason": "Link has no account/profile owner columns.",
+          "evidence": [
+            "apps/social/src/entities/link.entity.ts",
+            "apps/social/src/app/services/link.service.ts"
+          ],
+          "action": "opaque-reference"
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["posts"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "The inverse relation is for selection only; never serialize other Posts or their IDs.",
+          "reason": "The inverse relation is for selection only; never serialize other Posts or their IDs.",
+          "evidence": ["apps/social/src/entities/link.entity.ts"]
+        }
+      ]
+    },
+    {
+      "name": "SocialComponent",
+      "table": "social_components",
+      "source": "apps/social/src/entities/social-component.entity.ts",
+      "subject": {
+        "kind": "recorded-attribution-only",
+        "fields": [],
+        "rule": "Include only when parent post passes its subject selector.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/social-component.entity.ts",
+          "apps/social/src/app/services/social-component.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "postId",
+            "instanceId",
+            "componentType",
+            "position",
+            "createdAt",
+            "updatedAt"
+          ],
+          "classification": "owned",
+          "handling": "Include component envelope only under selected parent post.",
+          "reason": "Component is post-scoped; timestamps describe its activity.",
+          "evidence": [
+            "apps/social/src/entities/social-component.entity.ts",
+            "apps/social/src/app/services/social-component.service.ts"
+          ],
+          "action": "include-owned"
+        },
+        {
+          "fields": ["componentData"],
+          "classification": "opaque",
+          "handling": "Exclude raw JSON; typed, reviewed projection is required.",
+          "reason": "Unreviewed component JSON may contain third-party text or private data.",
+          "evidence": [
+            "apps/social/src/entities/social-component.entity.ts",
+            "apps/social/src/app/services/social-component.service.ts"
+          ],
+          "action": "exclude"
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["post"],
+          "classification": "opaque",
+          "handling": "Use parent identifier only and require selected subject post.",
+          "reason": "Parent relation is context, not component author identity.",
+          "evidence": ["apps/social/src/entities/social-component.entity.ts"],
+          "action": "opaque-reference"
+        }
+      ]
+    },
+    {
+      "name": "Poll",
+      "table": "poll",
+      "source": "apps/social/src/entities/poll.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["userId", "profileId"],
+        "rule": "Require account and current profile binding conjunction.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/poll.entity.ts",
+          "apps/social/src/app/services/poll.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "question",
+            "options",
+            "isMultipleChoice",
+            "endsAt",
+            "showResultsBeforeVote",
+            "isAnonymous",
+            "profileId",
+            "userId",
+            "isActive",
+            "createdAt"
+          ],
+          "classification": "owned",
+          "handling": "Include poll definition under subject selector; createdAt is personal activity time.",
+          "reason": "Poll creator fields attribute definition; raw options are the creator's poll definition.",
+          "evidence": [
+            "apps/social/src/entities/poll.entity.ts",
+            "apps/social/src/app/services/poll.service.ts"
+          ],
+          "action": "include-owned"
+        },
+        {
+          "fields": ["votes"],
+          "classification": "opaque",
+          "handling": "Exclude stored vote array; require typed projection and voter-level selection.",
+          "reason": "Raw array may encode other participants' votes and cannot safely be attributed wholesale.",
+          "evidence": [
+            "apps/social/src/entities/poll.entity.ts",
+            "apps/social/src/app/services/poll.service.ts"
+          ],
+          "action": "exclude"
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["post"],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Post/Poll linkage lacks a proven migrated owner column; author-selected Poll definitions do not depend on it.",
+          "reason": "Post/Poll linkage lacks a proven migrated owner column; author-selected Poll definitions do not depend on it.",
+          "evidence": ["apps/social/src/entities/poll.entity.ts"]
+        }
+      ]
+    },
+    {
+      "name": "Post",
+      "table": "post",
+      "source": "apps/social/src/entities/post.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["userId", "profileId"],
+        "rule": "Require account and currently owned profile conjunction; visibility does not establish authorship.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/post.entity.ts",
+          "apps/social/src/app/services/post.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "title",
+            "content",
+            "profileId",
+            "userId",
+            "appScope",
+            "createdAt",
+            "updatedAt",
+            "visibility",
+            "publicAudienceExplicit",
+            "scheduledAt",
+            "isScheduled"
+          ],
+          "classification": "owned",
+          "handling": "Include subject-authored post fields and activity timestamps after account/profile selector.",
+          "reason": "Post producer stores explicit author account/profile; timestamps are personal activity.",
+          "evidence": [
+            "apps/social/src/entities/post.entity.ts",
+            "apps/social/src/app/services/post.service.ts"
+          ],
+          "action": "include-owned"
+        },
+        {
+          "fields": ["communityId"],
+          "classification": "opaque",
+          "handling": "Include community identifier only.",
+          "reason": "Community is separately owned shared context.",
+          "evidence": ["apps/social/src/entities/post.entity.ts"],
+          "action": "opaque-reference"
+        },
+        {
+          "fields": [
+            "moderationStatus",
+            "moderationNotes",
+            "moderatedBy",
+            "moderatedAt"
+          ],
+          "classification": "opaque",
+          "handling": "Exclude moderation fields and private reviewer context.",
+          "reason": "Fields represent moderation decisions and notes, not subject content.",
+          "evidence": [
+            "apps/social/src/entities/post.entity.ts",
+            "apps/social/src/app/services/post.service.ts"
+          ],
+          "action": "exclude"
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["links"],
+          "classification": "opaque",
+          "action": "typed-projection",
+          "handling": "Use the J22 owned-post association projection only.",
+          "reason": "Use the J22 owned-post association projection only.",
+          "evidence": ["apps/social/src/entities/post.entity.ts"]
+        },
+        {
+          "fields": [
+            "votes",
+            "reactions",
+            "comments",
+            "attachments",
+            "components"
+          ],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Select each contribution by its own declared subject predicate; never expand all contributions to a subject post.",
+          "reason": "Select each contribution by its own declared subject predicate; never expand all contributions to a subject post.",
+          "evidence": ["apps/social/src/entities/post.entity.ts"]
+        },
+        {
+          "fields": ["poll"],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "No persisted owning Post/Poll join is established; retain the explicit poll-post-association-unverified gap rather than inventing a relation.",
+          "reason": "No persisted owning Post/Poll join is established; retain the explicit poll-post-association-unverified gap rather than inventing a relation.",
+          "evidence": ["apps/social/src/entities/post.entity.ts"]
+        }
+      ]
+    },
+    {
+      "name": "Attachment",
+      "table": "attachment",
+      "source": "apps/social/src/entities/attachment.entity.ts",
+      "subject": {
+        "kind": "recorded-attribution-only",
+        "fields": [],
+        "rule": "Include only as an attachment reference of a selected subject post.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/attachment.entity.ts",
+          "apps/social/src/app/services/attachment.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "name", "type", "appScope", "postId"],
+          "classification": "opaque",
+          "handling": "Include safe descriptive metadata and parent identifier only.",
+          "reason": "Attachment ownership derives only from parent post; no independent actor is stored.",
+          "evidence": [
+            "apps/social/src/entities/attachment.entity.ts",
+            "apps/social/src/app/services/attachment.service.ts"
+          ],
+          "action": "opaque-reference"
+        },
+        {
+          "fields": ["filePath"],
+          "classification": "opaque",
+          "handling": "Exclude raw storage path; no file dereference or download.",
+          "reason": "Path is a private storage locator and may expose storage structure.",
+          "evidence": [
+            "apps/social/src/entities/attachment.entity.ts",
+            "apps/social/src/app/services/attachment.service.ts"
+          ],
+          "action": "exclude"
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["post"],
+          "classification": "opaque",
+          "handling": "Require selected subject post; emit reference only.",
+          "reason": "Parent association does not prove attachment creator.",
+          "evidence": ["apps/social/src/entities/attachment.entity.ts"],
+          "action": "opaque-reference"
+        }
+      ]
+    },
+    {
+      "name": "FollowEntity",
+      "table": "follow_entity",
+      "source": "apps/social/src/entities/Follow.entity.ts",
+      "subject": {
+        "kind": "profile",
+        "fields": ["followerId"],
+        "rule": "Select outgoing follows only when followerId is a currently owned profile; never select inbound relationships by followeeId.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/Follow.entity.ts",
+          "apps/social/src/app/services/follow.service.ts",
+          "apps/gateway/src/controllers/social/follow/follow.controller.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "followerId", "appScope", "createdAt", "updatedAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Outgoing relationship is the subject profile contribution; timestamps are personal.",
+          "evidence": [
+            "apps/social/src/entities/Follow.entity.ts",
+            "apps/social/src/app/services/follow.service.ts"
+          ]
+        },
+        {
+          "fields": ["followeeId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Counterpart profile is an opaque target, not owned content.",
+          "evidence": [
+            "apps/social/src/entities/Follow.entity.ts",
+            "apps/social/src/app/services/follow.service.ts"
+          ]
+        },
+        {
+          "fields": ["isMutual"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Reciprocity incorporates another person\u2019s relationship state.",
+          "evidence": [
+            "apps/social/src/entities/Follow.entity.ts",
+            "apps/social/src/app/services/follow.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "CommunityMember",
+      "table": "community_member",
+      "source": "apps/social/src/entities/community-member.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["userId", "profileId"],
+        "rule": "Require account and current profile conjunction; export only this member's contribution.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/community-member.entity.ts",
+          "apps/social/src/app/services/community.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "communityId",
+            "userId",
+            "profileId",
+            "role",
+            "status",
+            "joinedAt"
+          ],
+          "classification": "shared",
+          "handling": "Include subject's own membership fields and joinedAt only under subject selector.",
+          "reason": "Membership is a subject contribution in shared community state.",
+          "evidence": [
+            "apps/social/src/entities/community-member.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ],
+          "action": "typed-projection"
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["community"],
+          "classification": "opaque",
+          "handling": "Include community identifier only.",
+          "reason": "Community data is shared and separately owned.",
+          "evidence": ["apps/social/src/entities/community-member.entity.ts"],
+          "action": "opaque-reference"
+        }
+      ]
+    },
+    {
+      "name": "Community",
+      "table": "community",
+      "source": "apps/social/src/entities/community.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["ownerId", "ownerProfileId"],
+        "rule": "Select recorded owner account and currently owned owner profile conjunction for a stewardship receipt only; exclude system communities. Administration is not individual ownership of shared content.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/community.entity.ts",
+          "apps/social/src/app/services/community.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "ownerId",
+            "ownerProfileId",
+            "appScope",
+            "createdAt"
+          ],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Recorded subject stewardship fact; createdAt is contextual personal time.",
+          "evidence": [
+            "apps/social/src/entities/community.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        },
+        {
+          "fields": ["parentId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque shared community hierarchy reference.",
+          "evidence": [
+            "apps/social/src/entities/community.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        },
+        {
+          "fields": [
+            "name",
+            "slug",
+            "localityType",
+            "countryCode",
+            "adminArea",
+            "city",
+            "lat",
+            "lng",
+            "population",
+            "description",
+            "isSystemCommunity",
+            "isPrivate",
+            "joinPolicy",
+            "tags",
+            "highlights",
+            "imageUrl",
+            "timezone",
+            "memberCount",
+            "bannerAssetId",
+            "logoAssetId",
+            "chatRoomId",
+            "managerId",
+            "managerProfileId",
+            "updatedAt"
+          ],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Shared community settings, content, membership aggregates and manager data are not wholly the administrator\u2019s personal contribution.",
+          "evidence": [
+            "apps/social/src/entities/community.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["parent"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Opaque hierarchy context only.",
+          "reason": "Opaque hierarchy context only.",
+          "evidence": ["apps/social/src/entities/community.entity.ts"]
+        },
+        {
+          "fields": ["subCommunities"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "No expansion of shared descendant communities.",
+          "reason": "No expansion of shared descendant communities.",
+          "evidence": ["apps/social/src/entities/community.entity.ts"]
+        },
+        {
+          "fields": ["members"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Select only subject-owned CommunityMember records by their account/profile predicate; never emit a roster or all member IDs.",
+          "reason": "Select only subject-owned CommunityMember records by their account/profile predicate; never emit a roster or all member IDs.",
+          "evidence": ["apps/social/src/entities/community.entity.ts"]
+        }
+      ]
+    },
+    {
+      "name": "CommunityInvite",
+      "table": "community_invite",
+      "source": "apps/social/src/entities/community-invite.entity.ts",
+      "subject": {
+        "kind": "recorded-attribution-only",
+        "fields": ["inviterId", "inviteeId"],
+        "rule": "Select inviterId or inviteeId equal to authenticated account; emit only the matching subject side and an opaque community reference. Do not expose the other participant identity.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/community-invite.entity.ts",
+          "apps/social/src/app/services/community.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "status", "expiresAt", "createdAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Subject-side invitation state and activity timestamps.",
+          "evidence": [
+            "apps/social/src/entities/community-invite.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        },
+        {
+          "fields": ["communityId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque community reference.",
+          "evidence": [
+            "apps/social/src/entities/community-invite.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        },
+        {
+          "fields": ["inviterId", "inviteeId"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Only an explicit bounded typed projection is allowed; raw rows/JSON are forbidden.",
+          "reason": "Emit only the matched subject identifier, never the unmatched participant.",
+          "evidence": [
+            "apps/social/src/entities/community-invite.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        },
+        {
+          "fields": ["inviteeEmail", "token"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Email and reusable/single-use invitation credentials never belong in this snapshot.",
+          "evidence": [
+            "apps/social/src/entities/community-invite.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "Notification",
+      "table": "notification",
+      "source": "apps/social/src/entities/notification.entity.ts",
+      "subject": {
+        "kind": "recipient-profile",
+        "fields": ["recipientId"],
+        "rule": "Select recipientId in currently owned profiles and use projectNotification from social-contracts (J21).",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/notification.entity.ts",
+          "apps/social/src/app/services/notification.service.ts",
+          "apps/gateway/src/controllers/social/notification/notification.controller.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "recipientId",
+            "type",
+            "title",
+            "body",
+            "isRead",
+            "createdAt"
+          ],
+          "classification": "owned",
+          "action": "template",
+          "handling": "Use the existing server-owned safe template projection; raw stored values are forbidden.",
+          "reason": "J21 templates replace arbitrary legacy text; identity/read state/time are recipient-side.",
+          "evidence": [
+            "apps/social/src/entities/notification.entity.ts",
+            "apps/social/src/app/services/notification.service.ts"
+          ]
+        },
+        {
+          "fields": ["senderId", "resourceType", "resourceId", "actionUrl"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "J21 forbids sender/resource/action leakage without provenance.",
+          "evidence": [
+            "apps/social/src/entities/notification.entity.ts",
+            "apps/social/src/app/services/notification.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "Activity",
+      "table": "activity",
+      "source": "apps/social/src/entities/activity.entity.ts",
+      "subject": {
+        "kind": "profile",
+        "fields": ["profileId"],
+        "rule": "Select profileId in currently owned profiles; raw descriptions have no reliable provenance.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/activity.entity.ts",
+          "apps/social/src/app/services/activity.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "profileId", "type", "createdAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Subject-side activity envelope; bounded allowlisted types and personal time.",
+          "evidence": [
+            "apps/social/src/entities/activity.entity.ts",
+            "apps/social/src/app/services/activity.service.ts"
+          ]
+        },
+        {
+          "fields": ["resourceId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque related resource identifier only.",
+          "evidence": [
+            "apps/social/src/entities/activity.entity.ts",
+            "apps/social/src/app/services/activity.service.ts"
+          ]
+        },
+        {
+          "fields": ["description", "resourceType"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Unverified arbitrary activity payload may embed counterpart text or links.",
+          "evidence": [
+            "apps/social/src/entities/activity.entity.ts",
+            "apps/social/src/app/services/activity.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "SavedItem",
+      "table": "saved_item",
+      "source": "apps/social/src/entities/saved-item.entity.ts",
+      "subject": {
+        "kind": "profile",
+        "fields": ["profileId"],
+        "rule": "Select profileId in currently owned profiles; preserve bookmark action without copying counterpart-authored titles.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/saved-item.entity.ts",
+          "apps/social/src/app/services/post.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "profileId", "itemType", "savedAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Own save action and personal activity time.",
+          "evidence": [
+            "apps/social/src/entities/saved-item.entity.ts",
+            "apps/social/src/app/services/post.service.ts"
+          ]
+        },
+        {
+          "fields": ["itemId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque foreign content target.",
+          "evidence": [
+            "apps/social/src/entities/saved-item.entity.ts",
+            "apps/social/src/app/services/post.service.ts"
+          ]
+        },
+        {
+          "fields": ["itemTitle"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Saved title can be a historical counterpart-content snapshot; origin is unverified.",
+          "evidence": [
+            "apps/social/src/entities/saved-item.entity.ts",
+            "apps/social/src/app/services/post.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "UserBlock",
+      "table": "user_block",
+      "source": "apps/social/src/entities/user-block.entity.ts",
+      "subject": {
+        "kind": "profile",
+        "fields": ["blockerId"],
+        "rule": "Select only blockerId in currently owned profiles; no inbound blocks.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/user-block.entity.ts",
+          "apps/social/src/app/services/privacy.service.ts",
+          "apps/gateway/src/controllers/social/privacy/privacy.controller.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "blockerId", "reason", "createdAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Subject-side preference and own submitted reason; never treat raw reason as a counterpart profile description.",
+          "evidence": [
+            "apps/social/src/entities/user-block.entity.ts",
+            "apps/social/src/app/services/privacy.service.ts"
+          ]
+        },
+        {
+          "fields": ["blockedId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque target profile of the subject\u2019s own block.",
+          "evidence": [
+            "apps/social/src/entities/user-block.entity.ts",
+            "apps/social/src/app/services/privacy.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "UserMute",
+      "table": "user_mute",
+      "source": "apps/social/src/entities/user-mute.entity.ts",
+      "subject": {
+        "kind": "profile",
+        "fields": ["muterId"],
+        "rule": "Select only muterId in currently owned profiles; no inbound mutes.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/user-mute.entity.ts",
+          "apps/social/src/app/services/privacy.service.ts",
+          "apps/gateway/src/controllers/social/privacy/privacy.controller.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "muterId", "duration", "createdAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Subject-side mute preference and personal activity time.",
+          "evidence": [
+            "apps/social/src/entities/user-mute.entity.ts",
+            "apps/social/src/app/services/privacy.service.ts"
+          ]
+        },
+        {
+          "fields": ["mutedId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque target profile of the subject\u2019s own mute.",
+          "evidence": [
+            "apps/social/src/entities/user-mute.entity.ts",
+            "apps/social/src/app/services/privacy.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "UserPresence",
+      "table": "user_presence",
+      "source": "apps/social/src/entities/user-presence.entity.ts",
+      "subject": {
+        "kind": "account",
+        "fields": ["userId"],
+        "rule": "Select where account userId matches principal.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/user-presence.entity.ts",
+          "apps/social/src/app/services/presence.service.ts",
+          "apps/gateway/src/controllers/social/presence/presence.controller.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "userId",
+            "status",
+            "lastSeen",
+            "createdAt",
+            "isExplicit"
+          ],
+          "classification": "owned",
+          "handling": "Include own presence settings and timestamps only.",
+          "reason": "Presence is directly keyed by account; lastSeen and createdAt are personal activity.",
+          "evidence": [
+            "apps/social/src/entities/user-presence.entity.ts",
+            "apps/social/src/app/services/presence.service.ts"
+          ],
+          "action": "include-owned"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "ProfileView",
+      "table": "profile_view",
+      "source": "apps/social/src/entities/profile-view.entity.ts",
+      "subject": {
+        "kind": "viewer-account",
+        "fields": ["viewerId"],
+        "rule": "Select viewerId equal to authenticated account only; analytics ownership of target profile is a separate J19 path.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/profile-view.entity.ts",
+          "apps/social/src/app/services/profile-analytics.service.ts",
+          "apps/gateway/src/controllers/social/profile-analytics/profile-analytics.controller.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "viewerId", "viewedAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Subject\u2019s recorded viewing activity and timestamp.",
+          "evidence": [
+            "apps/social/src/entities/profile-view.entity.ts",
+            "apps/social/src/app/services/profile-analytics.service.ts"
+          ]
+        },
+        {
+          "fields": ["profileId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque viewed profile target, not permission to disclose its content.",
+          "evidence": [
+            "apps/social/src/entities/profile-view.entity.ts",
+            "apps/social/src/app/services/profile-analytics.service.ts"
+          ]
+        },
+        {
+          "fields": ["source"],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Only an explicit bounded typed projection is allowed; raw rows/JSON are forbidden.",
+          "reason": "Normalize to J19 direct/profile/search/feed/other labels; no arbitrary legacy referrer text.",
+          "evidence": [
+            "apps/social/src/entities/profile-view.entity.ts",
+            "apps/social/src/app/services/profile-analytics.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "ContentReport",
+      "table": "content_report",
+      "source": "apps/social/src/entities/content-report.entity.ts",
+      "subject": {
+        "kind": "profile",
+        "fields": ["reporterId"],
+        "rule": "Select reporterId in currently owned profiles; the Gateway binds it to user.profileId, not user.userId.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/content-report.entity.ts",
+          "apps/social/src/app/services/content-report-moderation-case.ts",
+          "apps/gateway/src/controllers/social/privacy/privacy.controller.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "reporterId",
+            "contentType",
+            "appScope",
+            "reason",
+            "status",
+            "createdAt"
+          ],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Own report receipt, allowlisted reason/state and activity time.",
+          "evidence": [
+            "apps/social/src/entities/content-report.entity.ts",
+            "apps/social/src/app/services/content-report-moderation-case.ts"
+          ]
+        },
+        {
+          "fields": ["contentId", "workspaceId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Reported target/workspace identifiers only.",
+          "evidence": [
+            "apps/social/src/entities/content-report.entity.ts",
+            "apps/social/src/app/services/content-report-moderation-case.ts"
+          ]
+        },
+        {
+          "fields": ["description", "adminNotes"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Narrative and private reviewer context may contain counterpart private material.",
+          "evidence": [
+            "apps/social/src/entities/content-report.entity.ts",
+            "apps/social/src/app/services/content-report-moderation-case.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "ContentModerationAction",
+      "table": "content_moderation_action",
+      "source": "apps/social/src/entities/content-moderation-action.entity.ts",
+      "subject": {
+        "kind": "profile",
+        "fields": ["actorProfileId"],
+        "rule": "Select actorProfileId in currently owned profiles for an actor-action receipt only; being moderated does not confer ownership of the private audit.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/content-moderation-action.entity.ts",
+          "apps/social/src/app/services/content-report-moderation-case.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "appScope",
+            "action",
+            "subjectType",
+            "actorProfileId",
+            "createdAt"
+          ],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Own recorded moderation action envelope and personal activity time.",
+          "evidence": [
+            "apps/social/src/entities/content-moderation-action.entity.ts",
+            "apps/social/src/app/services/content-report-moderation-case.ts"
+          ]
+        },
+        {
+          "fields": ["workspaceId", "subjectId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque context only; never resolve subject content.",
+          "evidence": [
+            "apps/social/src/entities/content-moderation-action.entity.ts",
+            "apps/social/src/app/services/content-report-moderation-case.ts"
+          ]
+        },
+        {
+          "fields": ["reportId", "details"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Private report/audit context may identify other people or include raw payload.",
+          "evidence": [
+            "apps/social/src/entities/content-moderation-action.entity.ts",
+            "apps/social/src/app/services/content-report-moderation-case.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "SearchHistory",
+      "table": "search_history",
+      "source": "apps/social/src/entities/search-history.entity.ts",
+      "subject": {
+        "kind": "profile",
+        "fields": ["profileId"],
+        "rule": "Select by currently owned profile.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/search-history.entity.ts",
+          "apps/social/src/app/services/search.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "profileId",
+            "query",
+            "searchType",
+            "resultCount",
+            "createdAt"
+          ],
+          "classification": "owned",
+          "handling": "Include own query history; createdAt is personal activity time.",
+          "reason": "Search history is profile-scoped and records the subject's own query action.",
+          "evidence": [
+            "apps/social/src/entities/search-history.entity.ts",
+            "apps/social/src/app/services/search.service.ts"
+          ],
+          "action": "include-owned"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "Event",
+      "table": "event",
+      "source": "apps/social/src/entities/event.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["userId", "profileId"],
+        "rule": "Require account and current profile binding conjunction.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/event.entity.ts",
+          "apps/social/src/app/services/event.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "title",
+            "description",
+            "startDate",
+            "endDate",
+            "location",
+            "privacy",
+            "profileId",
+            "userId",
+            "status",
+            "createdAt",
+            "updatedAt"
+          ],
+          "classification": "owned",
+          "handling": "Include subject-authored event fields under selector; timestamps are personal activity.",
+          "reason": "Event producer records creator account and profile; attendance aggregates are handled separately.",
+          "evidence": [
+            "apps/social/src/entities/event.entity.ts",
+            "apps/social/src/app/services/event.service.ts"
+          ],
+          "action": "include-owned"
+        },
+        {
+          "fields": ["communityId"],
+          "classification": "opaque",
+          "handling": "Identifier only; no community traversal.",
+          "reason": "Community is shared foreign context.",
+          "evidence": ["apps/social/src/entities/event.entity.ts"],
+          "action": "opaque-reference"
+        },
+        {
+          "fields": ["attendeeCount", "attendeeIds"],
+          "classification": "shared",
+          "handling": "Exclude aggregate and attendee list; a typed own-attendance projection would be needed.",
+          "reason": "These fields contain other participants' data.",
+          "evidence": [
+            "apps/social/src/entities/event.entity.ts",
+            "apps/social/src/app/services/event.service.ts"
+          ],
+          "action": "exclude"
+        },
+        {
+          "fields": ["locationUrl", "coverImageUrl"],
+          "classification": "opaque",
+          "action": "typed-projection",
+          "handling": "Allow bounded credential-free HTTP(S) location links; recognized asset references become opaque referenceOnly IDs. Exclude raw storage paths, signed capabilities and unverified private media URLs.",
+          "reason": "A stored URL is not evidence of media ownership, download permission or current publication consent.",
+          "evidence": [
+            "apps/social/src/entities/event.entity.ts",
+            "apps/social/src/app/account-export.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "BusinessPageContent",
+      "table": "business_page_contents",
+      "source": "apps/social/src/entities/business-page-content.entity.ts",
+      "subject": {
+        "kind": "account",
+        "fields": ["ownerId"],
+        "rule": "Select ownerId equal to authenticated account, as bound by PaymentsController.createBusinessCheckout, for an owner registration receipt only; do not imply sole authorship of shared business content.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/business-page-content.entity.ts",
+          "apps/social/src/app/services/business-content.service.ts",
+          "apps/gateway/src/controllers/payments/payments.controller.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "ownerId",
+            "tier",
+            "subscriptionStatus",
+            "createdAt"
+          ],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Own registration/subscription mirror fact; payment details remain in Payments owner.",
+          "evidence": [
+            "apps/social/src/entities/business-page-content.entity.ts",
+            "apps/social/src/app/services/business-content.service.ts"
+          ]
+        },
+        {
+          "fields": ["communityId", "paymentsBusinessPageId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Cross-domain references without recursive content or billing expansion.",
+          "evidence": [
+            "apps/social/src/entities/business-page-content.entity.ts",
+            "apps/social/src/app/services/business-content.service.ts"
+          ]
+        },
+        {
+          "fields": [
+            "name",
+            "description",
+            "logoUrl",
+            "website",
+            "phone",
+            "email",
+            "address",
+            "pinnedPostId",
+            "isCommunity",
+            "isFeatured",
+            "updatedAt"
+          ],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Shared business content, contact fields and aggregate edit history lack individual author attribution.",
+          "evidence": [
+            "apps/social/src/entities/business-page-content.entity.ts",
+            "apps/social/src/app/services/business-content.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "BusinessThemeContent",
+      "table": "business_theme_contents",
+      "source": "apps/social/src/entities/business-theme-content.entity.ts",
+      "subject": {
+        "kind": "recorded-attribution-only",
+        "fields": ["businessPageId"],
+        "rule": "Select only via a BusinessPageContent row whose ownerId is the authenticated account; emit a configuration reference, not shared raw theme content.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/business-theme-content.entity.ts",
+          "apps/social/src/app/services/business-content.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "businessPageId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque configuration association to a subject-selected business page.",
+          "evidence": [
+            "apps/social/src/entities/business-theme-content.entity.ts",
+            "apps/social/src/app/services/business-content.service.ts"
+          ]
+        },
+        {
+          "fields": [
+            "personalityId",
+            "primaryColor",
+            "accentColor",
+            "backgroundColor",
+            "customCss",
+            "customFontFamily",
+            "createdAt",
+            "updatedAt"
+          ],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Theme state has no editor attribution; CSS/font strings may embed private external references.",
+          "evidence": [
+            "apps/social/src/entities/business-theme-content.entity.ts",
+            "apps/social/src/app/services/business-content.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "CommunitySponsorshipContent",
+      "table": "community_sponsorship_contents",
+      "source": "apps/social/src/entities/community-sponsorship-content.entity.ts",
+      "subject": {
+        "kind": "account",
+        "fields": ["userId"],
+        "rule": "Select userId equal to authenticated account for the sponsorship purchase/contribution receipt; do not treat linked business/community content as owned.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/community-sponsorship-content.entity.ts",
+          "apps/social/src/app/services/business-content.service.ts",
+          "apps/gateway/src/controllers/payments/payments.controller.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "userId",
+            "type",
+            "status",
+            "startsAt",
+            "expiresAt",
+            "months",
+            "createdAt"
+          ],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Subject sponsorship contribution and its timing.",
+          "evidence": [
+            "apps/social/src/entities/community-sponsorship-content.entity.ts",
+            "apps/social/src/app/services/business-content.service.ts"
+          ]
+        },
+        {
+          "fields": ["communityId", "businessPageId", "paymentsSponsorshipId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Cross-domain references only.",
+          "evidence": [
+            "apps/social/src/entities/community-sponsorship-content.entity.ts",
+            "apps/social/src/app/services/business-content.service.ts"
+          ]
+        },
+        {
+          "fields": ["adContent"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Raw advertisement JSON/content lacks individual authorship and URL provenance.",
+          "evidence": [
+            "apps/social/src/entities/community-sponsorship-content.entity.ts",
+            "apps/social/src/app/services/business-content.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "PostShare",
+      "table": "post_share",
+      "source": "apps/social/src/entities/post-share.entity.ts",
+      "subject": {
+        "kind": "profile",
+        "fields": ["sharedById"],
+        "rule": "Select sharedById in currently owned profiles; do not reinterpret it as an account UUID or fetch the original Post.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/post-share.entity.ts",
+          "apps/social/src/app/services/post-share.service.ts",
+          "apps/gateway/src/controllers/social/post-share/post-share.controller.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "sharedById", "comment", "visibility", "createdAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Own share action and submitted commentary.",
+          "evidence": [
+            "apps/social/src/entities/post-share.entity.ts",
+            "apps/social/src/app/services/post-share.service.ts"
+          ]
+        },
+        {
+          "fields": ["originalPostId", "communityId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Foreign parent/community reference only.",
+          "evidence": [
+            "apps/social/src/entities/post-share.entity.ts",
+            "apps/social/src/app/services/post-share.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "CommunityMembershipAudit",
+      "table": "community_membership_audit",
+      "source": "apps/social/src/entities/community-membership-audit.entity.ts",
+      "subject": {
+        "kind": "recorded-attribution-only",
+        "fields": ["subjectId", "actorId"],
+        "rule": "Two separate projections: subjectId in current owned profiles receives own lifecycle receipt; actorId equal to account receives own admin-action receipt. Do not interchange profile subjectId and account actorId or expose unmatched participant IDs.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/community-membership-audit.entity.ts",
+          "apps/social/src/app/services/community-membership-lifecycle.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "actor", "action", "from", "to", "createdAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Own lifecycle/action receipt after the matching branch selector; actor is a role label.",
+          "evidence": [
+            "apps/social/src/entities/community-membership-audit.entity.ts",
+            "apps/social/src/app/services/community-membership-lifecycle.ts"
+          ]
+        },
+        {
+          "fields": ["workspaceId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque community/workspace reference.",
+          "evidence": [
+            "apps/social/src/entities/community-membership-audit.entity.ts",
+            "apps/social/src/app/services/community-membership-lifecycle.ts"
+          ]
+        },
+        {
+          "fields": ["subjectId", "actorId"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Only an explicit bounded typed projection is allowed; raw rows/JSON are forbidden.",
+          "reason": "Only the matched subject-side identity is emitted; unmatched counterpart identifiers are excluded.",
+          "evidence": [
+            "apps/social/src/entities/community-membership-audit.entity.ts",
+            "apps/social/src/app/services/community-membership-lifecycle.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "GuardianContentAudit",
+      "table": "guardian_content_audit",
+      "source": "apps/social/src/entities/guardian-content-audit.entity.ts",
+      "subject": {
+        "kind": "recorded-attribution-only",
+        "fields": ["actorUserId", "dependentUserId"],
+        "rule": "Actor branch: actorUserId equals account. Dependent branch: dependentUserId equals account. Project only branch-safe action receipt; do not infer current guardian relationship or consent from the row.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/guardian-content-audit.entity.ts",
+          "apps/social/src/app/services/guardian-content.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "appId", "resourceType", "operation", "createdAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Own performed/received action receipt, without private payload.",
+          "evidence": [
+            "apps/social/src/entities/guardian-content-audit.entity.ts",
+            "apps/social/src/app/services/guardian-content.service.ts"
+          ]
+        },
+        {
+          "fields": ["resourceId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque affected resource reference; no media/content fetch.",
+          "evidence": [
+            "apps/social/src/entities/guardian-content-audit.entity.ts",
+            "apps/social/src/app/services/guardian-content.service.ts"
+          ]
+        },
+        {
+          "fields": ["actorUserId", "dependentUserId"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Only an explicit bounded typed projection is allowed; raw rows/JSON are forbidden.",
+          "reason": "Emit only the account identifier matching this export branch.",
+          "evidence": [
+            "apps/social/src/entities/guardian-content-audit.entity.ts",
+            "apps/social/src/app/services/guardian-content.service.ts"
+          ]
+        },
+        {
+          "fields": ["dependentProfileId", "changedFields"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Private dependent context and raw audit payload are excluded from ordinary snapshots.",
+          "evidence": [
+            "apps/social/src/entities/guardian-content-audit.entity.ts",
+            "apps/social/src/app/services/guardian-content.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "GuardianPublishedAssetGrant",
+      "table": "guardian_published_asset_grant",
+      "source": "apps/social/src/entities/guardian-published-asset-grant.entity.ts",
+      "subject": {
+        "kind": "recorded-attribution-only",
+        "fields": ["actorUserId", "dependentProfileId"],
+        "rule": "Actor branch selects actorUserId equal to account; dependent branch selects dependentProfileId in currently owned profiles. Grant history does not authorize present asset access or prove consent.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/guardian-published-asset-grant.entity.ts",
+          "apps/social/src/app/services/guardian-content.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "appId", "resourceType", "createdAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Own publication-action receipt after a matching branch.",
+          "evidence": [
+            "apps/social/src/entities/guardian-published-asset-grant.entity.ts",
+            "apps/social/src/app/services/guardian-content.service.ts"
+          ]
+        },
+        {
+          "fields": ["assetId", "resourceId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque references only, with referenceOnly integrity label; never bytes or current access grant.",
+          "evidence": [
+            "apps/social/src/entities/guardian-published-asset-grant.entity.ts",
+            "apps/social/src/app/services/guardian-content.service.ts"
+          ]
+        },
+        {
+          "fields": ["actorUserId", "dependentProfileId"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Only an explicit bounded typed projection is allowed; raw rows/JSON are forbidden.",
+          "reason": "Emit only the matching subject-side identity, not counterpart guardian/dependent identity.",
+          "evidence": [
+            "apps/social/src/entities/guardian-published-asset-grant.entity.ts",
+            "apps/social/src/app/services/guardian-content.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "ElectionCandidate",
+      "table": "election_candidate",
+      "source": "apps/social/src/entities/election-candidate.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["userId", "profileId"],
+        "rule": "Require current account/profile binding; include candidate's own nomination only.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/election-candidate.entity.ts",
+          "apps/social/src/app/services/community.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "userId", "profileId", "isWithdrawn", "nominatedAt"],
+          "classification": "owned",
+          "handling": "Include own candidate registration and nomination timestamp.",
+          "reason": "These fields describe subject's own candidacy.",
+          "evidence": ["apps/social/src/entities/election-candidate.entity.ts"],
+          "action": "include-owned"
+        },
+        {
+          "fields": ["electionId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Context for own nomination only.",
+          "evidence": [
+            "apps/social/src/entities/election-candidate.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        },
+        {
+          "fields": ["voteCount"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Aggregate includes other voters\u2019 contributions.",
+          "evidence": [
+            "apps/social/src/entities/election-candidate.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["election"],
+          "classification": "opaque",
+          "handling": "Include identifier only.",
+          "reason": "Election is shared community data.",
+          "evidence": ["apps/social/src/entities/election-candidate.entity.ts"],
+          "action": "opaque-reference"
+        }
+      ]
+    },
+    {
+      "name": "CommunityElection",
+      "table": "community_election",
+      "source": "apps/social/src/entities/community-election.entity.ts",
+      "subject": {
+        "kind": "account",
+        "fields": ["initiatedBy"],
+        "rule": "Select initiatedBy equal to authenticated account for an initiation receipt only; no whole-community governance ownership is inferred.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/community-election.entity.ts",
+          "apps/social/src/app/services/community.service.ts",
+          "apps/gateway/src/controllers/communities/communities.controller.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "initiatedBy", "createdAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only the subject\u2019s own recorded initiation fact and activity time.",
+          "reason": "Include only the subject\u2019s own recorded initiation fact and activity time.",
+          "evidence": [
+            "apps/social/src/entities/community-election.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        },
+        {
+          "fields": ["communityId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Opaque community context only; never expand shared governance data.",
+          "reason": "Opaque community context only; never expand shared governance data.",
+          "evidence": [
+            "apps/social/src/entities/community-election.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        },
+        {
+          "fields": [
+            "status",
+            "startedAt",
+            "endsAt",
+            "winnerId",
+            "winnerProfileId",
+            "updatedAt"
+          ],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Shared election state and counterpart winner data are not the initiating account\u2019s sole contribution.",
+          "reason": "Shared election state and counterpart winner data are not the initiating account\u2019s sole contribution.",
+          "evidence": [
+            "apps/social/src/entities/community-election.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["candidates"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Only separately selected own ElectionCandidate contributions; never a roster of other candidates/voters.",
+          "reason": "Only separately selected own ElectionCandidate contributions; never a roster of other candidates/voters.",
+          "evidence": ["apps/social/src/entities/community-election.entity.ts"]
+        }
+      ]
+    },
+    {
+      "name": "ElectionVote",
+      "table": "election_vote",
+      "source": "apps/social/src/entities/election-vote.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["voterId", "voterProfileId"],
+        "rule": "Select voterId equal to account AND voterProfileId currently owned; export only the subject\u2019s own recorded vote, never other voters.",
+        "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
+        "evidence": [
+          "apps/social/src/entities/election-vote.entity.ts",
+          "apps/social/src/app/services/community.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "voterId", "voterProfileId", "votedAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "reason": "Own voting fact and personal time; no claim of verified legacy authorship.",
+          "evidence": [
+            "apps/social/src/entities/election-vote.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        },
+        {
+          "fields": ["electionId", "candidateId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "The subject\u2019s own recorded choice/context is retained as opaque references.",
+          "evidence": [
+            "apps/social/src/entities/election-vote.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        },
+        {
+          "fields": ["candidateUserId"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude these raw fields from ordinary account snapshots.",
+          "reason": "Counterpart account identity is not needed to preserve the subject\u2019s vote.",
+          "evidence": [
+            "apps/social/src/entities/election-vote.entity.ts",
+            "apps/social/src/app/services/community.service.ts"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["election"],
+          "classification": "opaque",
+          "handling": "No traversal; election relation is shared governance context.",
+          "reason": "Could reveal private election context.",
+          "evidence": ["apps/social/src/entities/election-vote.entity.ts"],
+          "action": "opaque-reference"
+        }
+      ]
+    }
+  ],
+  "associations": [
+    {
+      "name": "post_link",
+      "table": "post_link",
+      "source": "apps/social/src/entities/post.entity.ts",
+      "columnNames": ["postId", "linkId"],
+      "columns": [
+        {
+          "fields": ["postId"],
+          "classification": "opaque",
+          "handling": "Use only as association key after validating parent post subject selector.",
+          "reason": "Foreign key references a potentially foreign post.",
+          "evidence": [
+            "apps/social/src/entities/post.entity.ts",
+            "apps/social/migrations/1792605693700-post-link-association.ts"
+          ],
+          "action": "opaque-reference"
+        },
+        {
+          "fields": ["linkId"],
+          "classification": "opaque",
+          "handling": "Use only as association key; link fields are separately governed.",
+          "reason": "Foreign key identifies shared link row.",
+          "evidence": [
+            "apps/social/src/entities/post.entity.ts",
+            "apps/social/migrations/1792605693700-post-link-association.ts"
+          ],
+          "action": "opaque-reference"
+        }
+      ]
+    }
+  ],
+  "stores": [
+    {
+      "name": "typeorm_migrations_store",
+      "table": "migrations",
+      "kind": "schema",
+      "source": "apps/social/src/app/staticDatabase.ts",
+      "columnNames": ["id", "timestamp", "name"],
+      "columns": [
+        {
+          "fields": ["id", "timestamp", "name"],
+          "classification": "nonpersonal",
+          "handling": "Exclude migration bookkeeping rows.",
+          "reason": "Schema version tracking is operational metadata, not personal data.",
+          "evidence": ["apps/social/src/app/staticDatabase.ts"],
+          "action": "exclude"
+        }
+      ],
+      "reason": "Migration tracking is schema metadata and is excluded from personal export.",
+      "handling": "Exclude migration bookkeeping rows."
+    },
+    {
+      "name": "NotificationService.pendingNotifications",
+      "kind": "volatile",
+      "source": "apps/social/src/app/services/notification.service.ts",
+      "columns": [
+        {
+          "fields": ["data", "count", "timeout"],
+          "classification": "opaque",
+          "handling": "Exclude volatile debounce payload and timer state. This is not a durable delivery ledger or a retention guarantee.",
+          "reason": "Transient delivery payload may include private notification data; not durable account data.",
+          "evidence": ["apps/social/src/app/services/notification.service.ts"],
+          "action": "exclude"
+        }
+      ],
+      "reason": "Transient delivery payload may include private notification data; not durable account data.",
+      "handling": "Exclude volatile debounce payload and timer state. This is not a durable delivery ledger or a retention guarantee.",
+      "columnNames": ["data", "count", "timeout"]
+    },
+    {
+      "name": "Social.processOutput",
+      "kind": "external",
+      "source": "apps/social/src/app/app.controller.ts",
+      "columnNames": ["message", "context", "timestamp"],
+      "handling": "Exclude this entire source from ordinary account snapshots.",
+      "reason": "Social log messages may contain mixed participant context. Persistence and retention belong to deployment/infrastructure; no safe per-account log selector is established.",
+      "columns": [
+        {
+          "fields": ["message", "context", "timestamp"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude raw records/inputs; never copy operational secrets or mixed-participant context.",
+          "reason": "Social log messages may contain mixed participant context. Persistence and retention belong to deployment/infrastructure; no safe per-account log selector is established.",
+          "evidence": ["apps/social/src/app/app.controller.ts"]
+        }
+      ]
+    },
+    {
+      "name": "Social.configurationInputs",
+      "kind": "operational-input",
+      "source": "apps/social/src/config.ts",
+      "columnNames": ["configuration"],
+      "handling": "Exclude this entire source from ordinary account snapshots.",
+      "reason": "Operator configuration is an input, not a personal-data ledger; credentials and service configuration are excluded wholesale.",
+      "columns": [
+        {
+          "fields": ["configuration"],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Exclude raw records/inputs; never copy operational secrets or mixed-participant context.",
+          "reason": "Operator configuration is an input, not a personal-data ledger; credentials and service configuration are excluded wholesale.",
+          "evidence": ["apps/social/src/config.ts"]
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    "This policy does not implement capture; J24-A/B/C/D must enforce each selector, action and integrity label.",
+    "No ordinary snapshot expands counterpart content, consent, media bytes or private moderation/guardian context.",
+    "All legacy attribution remains unverified; exclude ambiguous/conflicting actor bindings and report coverage gaps.",
+    "Current account/profile proofs establish current selection authority, not historical authorship.",
+    "Authored content and media metadata require bounded typed serialization: never emit backend storage paths, tokenized capabilities, raw HTML media URLs without settled asset disposition, or recursively expanded counterpart content."
+  ]
+}

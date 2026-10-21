@@ -1,0 +1,160 @@
+{
+  "slice": "DF-007-J23",
+  "date": "2026-10-21",
+  "status": "locally-verified-policy-and-physical-schema-coverage",
+  "accepted": true,
+  "baseRevision": "56201c4f23c6fb705fb8cdcb441ed373b3a48f61",
+  "sourceManifestSha256": "75e7fc26f58d46281375ede9f5b8cc87ce9a2e607ee72d93323f23ae4837d288",
+  "sourceHashes": {
+    "apps/social/src/app/social-account-export-dispositions.json": "983893e673b570addab077792225cf91b9d6dbd7052f9662612cd623f96ada07",
+    "apps/social/src/app/social-account-export-dispositions.spec.ts": "0b5ad4d4053b2f2a80fd4bc48b6ffcda9fce2d3b15fd9e1eec5ff4e71e26840c",
+    "apps/social/src/app/social-account-export-dispositions.ts": "7af22bd67c710d587e025032705c631ee90892972d2eed17e5b4a70193de7c56",
+    "apps/social/src/app/social-dispositions.postgres.spec.ts": "844733bd565c8c3d3fa01d3b2ddefc2c9186836cd5c99e1ddb521e13c5e29a7c"
+  },
+  "inventory": {
+    "path": "apps/social/src/app/social-account-export-dispositions.json",
+    "entities": 33,
+    "entityColumns": 314,
+    "relations": 27,
+    "junctions": 1,
+    "junctionColumns": 2,
+    "stores": [
+      {
+        "name": "typeorm_migrations_store",
+        "kind": "schema",
+        "handling": "Exclude migration bookkeeping rows."
+      },
+      {
+        "name": "NotificationService.pendingNotifications",
+        "kind": "volatile",
+        "handling": "Exclude volatile debounce payload and timer state. This is not a durable delivery ledger or a retention guarantee."
+      },
+      {
+        "name": "Social.processOutput",
+        "kind": "external",
+        "handling": "Exclude this entire source from ordinary account snapshots."
+      },
+      {
+        "name": "Social.configurationInputs",
+        "kind": "operational-input",
+        "handling": "Exclude this entire source from ordinary account snapshots."
+      }
+    ],
+    "physicalTables": 35,
+    "physicalColumns": 319,
+    "actions": [
+      "include-owned",
+      "opaque-reference",
+      "template",
+      "exclude",
+      "typed-projection"
+    ],
+    "legacy": "All sources require recorded-attribution integrity labels; current selection is not historical authorship/consent proof."
+  },
+  "focusedTests": {
+    "passed": 8,
+    "skipped": 0,
+    "note": "Distinct final contract tests; initial worker tests are superseded and not added to this count."
+  },
+  "preRuntime": {
+    "socialProductionBuildAndLint": "PASS",
+    "scopedFormatAndDiff": "PASS"
+  },
+  "runtime": {
+    "result": {
+      "project": "ot-social-dispositions-j23",
+      "startedAt": "2026-10-21T18:19:21.764611+00:00",
+      "baseRevision": "56201c4f23c6fb705fb8cdcb441ed373b3a48f61",
+      "sourceManifestSha256": "75e7fc26f58d46281375ede9f5b8cc87ce9a2e607ee72d93323f23ae4837d288",
+      "database": "social_dispositions_j23_fixture",
+      "migrationCommand": "pnpm exec nx run social:typeorm:migration:run",
+      "containerId": "0e5daa29cb0ac1df5c367f9db5400913251aac18a83ad28bb9195107bd6add37",
+      "databaseReadiness": {
+        "database": "social_dispositions_j23_fixture",
+        "serverVersionNum": 150019
+      },
+      "uuidExtension": {
+        "database": "social_dispositions_j23_fixture",
+        "extension": "uuid-ossp"
+      },
+      "migrationExitCode": 0,
+      "testExitCode": 0,
+      "tableCountsUnchanged": true,
+      "remainingPrivateContainers": 0,
+      "remainingPrivateNetworks": 0,
+      "remainingPrivateVolumes": 0,
+      "containerMountTypes": [],
+      "finishedAt": "2026-10-21T18:19:40.592755+00:00",
+      "sourceAndProtectedHashesPreserved": true,
+      "result": "PASS"
+    },
+    "proof": {
+      "result": "PASS",
+      "readOnly": true,
+      "entities": 33,
+      "junctions": 1,
+      "physicalTables": 35,
+      "physicalColumns": 319,
+      "scope": "Disposition policy/schema coverage; no snapshot capture or user data export implemented"
+    },
+    "tableCountsAfter": {
+      "activity": "0",
+      "attachment": "0",
+      "business_page_contents": "0",
+      "business_theme_contents": "0",
+      "comment": "0",
+      "community": "0",
+      "community_election": "0",
+      "community_invite": "0",
+      "community_member": "0",
+      "community_membership_audit": "0",
+      "community_sponsorship_contents": "0",
+      "content_moderation_action": "0",
+      "content_report": "0",
+      "election_candidate": "0",
+      "election_vote": "0",
+      "event": "0",
+      "follow_entity": "0",
+      "guardian_content_audit": "0",
+      "guardian_published_asset_grant": "0",
+      "link": "0",
+      "migrations": "27",
+      "notification": "0",
+      "poll": "0",
+      "post": "0",
+      "post_link": "0",
+      "post_share": "0",
+      "profile_view": "0",
+      "reaction": "0",
+      "saved_item": "0",
+      "search_history": "0",
+      "social_components": "0",
+      "user_block": "0",
+      "user_mute": "0",
+      "user_presence": "0",
+      "vote": "0"
+    },
+    "evidence": ".runtime-artifacts/account-rights/finish-sequence/social-dispositions/runtime/attempt-1",
+    "migrationCount": 27,
+    "personalRowsSeeded": 0,
+    "readOnlyConnection": true,
+    "negativeChecks": ["unaccounted physical store", "missing physical column"],
+    "identityServices": "Not invoked; this checks policy/metadata/catalog coverage only."
+  },
+  "reviewCorrections": [
+    "PostShare.sharedById and ContentReport.reporterId are profile identities, unlike Presence account and ProfileView viewer-account identities.",
+    "Notification sender/resource/action exclusions align with J21; raw saved counterpart titles and unverified activity text are excluded.",
+    "Community/business governance is shared; select narrow subject participation/registration receipts rather than assuming administrators own whole rows.",
+    "Guardian/membership audits distinguish actor-account and subject/dependent branches and exclude unmatched participant identities/private payload.",
+    "Migration, volatile notification state, mixed operational logs and configuration inputs each have explicit store policy.",
+    "Validator compares junction columns against actual metadata and all physical tables/columns; inventory declarations cannot redefine the expected schema."
+  ],
+  "limits": [
+    "Policy coverage does not implement or verify J24 capture enforcement. Existing partial/unfenced previews are not promoted to complete.",
+    "No per-row historical identity proof or consent is inferred; ambiguous attribution remains labeled/uncovered.",
+    "Typed-projection actions prohibit raw passthrough and require implementation and row-level proof in the relevant J24 slice.",
+    "Post/Poll persistence is unverified; its relation is explicitly excluded while owned Poll definitions remain separately selectable.",
+    "Operational log sinks and retention depend on deployment; this source-visible exclusion inventory is not log discovery, deletion or lifecycle qualification.",
+    "No user-facing UI, schema or migration change in J23. No media bytes, downloadable artifacts, deletion, external flow, remote CI or production qualification."
+  ]
+}
