@@ -11,7 +11,7 @@ import { AccountExportSnapshotPullService } from './account-export-snapshot-pull
 import { OwnerSpoolHandle } from './account-export-owner-spool.service';
 
 export interface AccountExportProfileBoundSnapshotClientOptions {
-  participantId: 'assets' | 'videos';
+  participantId: 'assets' | 'videos' | 'permissions';
   sources: readonly string[];
   open(payload: unknown, timeoutMs: number): Promise<unknown>;
   read(

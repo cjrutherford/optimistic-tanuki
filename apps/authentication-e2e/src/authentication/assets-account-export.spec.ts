@@ -30,7 +30,9 @@ describe('Assets account export real leased service integration', () => {
     if (process.env.ASSETS_JOB_E2E_MARKER !== 'private-assets-j9-v1')
       throw Error('Private Assets fixture marker required');
     const fixtureProject =
-      process.env.VIDEOS_JOB_E2E_MARKER === 'private-videos-j11-v1'
+      process.env.PERMISSIONS_JOB_E2E_MARKER === 'private-permissions-j15-v1'
+        ? 'ot-df007-permissions-integration'
+        : process.env.VIDEOS_JOB_E2E_MARKER === 'private-videos-j11-v1'
         ? 'ot-df007-videos-integration'
         : 'ot-df007-assets-integration';
     const container = process.env.ASSETS_JOB_E2E_CONTAINER_ID || '';
@@ -55,7 +57,9 @@ describe('Assets account export real leased service integration', () => {
     const dir = await realpath(process.env.ASSETS_JOB_E2E_MEDIA_DIR || '');
     expect(dir).toBe(
       resolve(
-        process.env.VIDEOS_JOB_E2E_MARKER === 'private-videos-j11-v1'
+        process.env.PERMISSIONS_JOB_E2E_MARKER === 'private-permissions-j15-v1'
+          ? '.runtime-artifacts/account-rights/finish-sequence/permissions-integration/runtime/media-fixtures'
+          : process.env.VIDEOS_JOB_E2E_MARKER === 'private-videos-j11-v1'
           ? '.runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/media-fixtures'
           : '.runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/media-fixtures'
       )
@@ -211,6 +215,7 @@ describe('Assets account export real leased service integration', () => {
         'profile',
         'assets',
         'videos',
+        'permissions',
       ]);
       expect(job.coverageSummary.artifactAvailable).toBe(false);
       expect(JSON.stringify(job)).not.toContain(users[0].token);
@@ -441,6 +446,7 @@ describe('Assets account export real leased service integration', () => {
         'profile',
         'assets',
         'videos',
+        'permissions',
       ]);
       grant = {
         ...grant,

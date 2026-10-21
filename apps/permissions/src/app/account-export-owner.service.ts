@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { AuthCommands } from '@optimistic-tanuki/constants';
+import {
+  AuthCommands,
+  PERMISSIONS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from '@optimistic-tanuki/constants';
 import {
   AccountExportCaptureGrant,
   AccountExportOwnerChunk,
@@ -18,10 +21,8 @@ import { firstValueFrom, timeout } from 'rxjs';
 import { DataSource, QueryRunner } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 
-export const PERMISSIONS_ACCOUNT_EXPORT_SOURCES = [
-  'roleAssignment',
-  'rolePermission',
-] as const;
+export const PERMISSIONS_ACCOUNT_EXPORT_SOURCES =
+  PERMISSIONS_ACCOUNT_EXPORT_CAPTURE_SOURCES;
 export type PermissionsAccountExportSource =
   (typeof PERMISSIONS_ACCOUNT_EXPORT_SOURCES)[number];
 export type PermissionsAccountExportChunk =

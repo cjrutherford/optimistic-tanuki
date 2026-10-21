@@ -6,7 +6,15 @@ export const PermissionCommands = {
   GetAll: 'GetAll:Permission',
   Search: 'Search:Permission',
   GetAccountExportSnapshot: 'Get:AccountExportSnapshot:Permissions',
+  OPEN_ACCOUNT_EXPORT_CAPTURE: 'permissions.export.open',
+  READ_ACCOUNT_EXPORT_CAPTURE: 'permissions.export.read',
+  RELEASE_ACCOUNT_EXPORT_CAPTURE: 'permissions.export.release',
 };
+
+export const PERMISSIONS_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
+  'roleAssignment',
+  'rolePermission',
+] as const;
 
 export const RoleCommands = {
   Create: 'Create:Role',

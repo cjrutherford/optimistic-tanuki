@@ -41,6 +41,7 @@ describe('AccountExportJobService authorization boundary', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
   });
@@ -220,6 +221,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
     assetsCleanup: jest.Mock;
     videosCapture: jest.Mock;
     videosCleanup: jest.Mock;
+    permissionsCapture: jest.Mock;
+    permissionsCleanup: jest.Mock;
   } {
     const jobs = {};
     const auth = {};
@@ -249,6 +252,22 @@ describe('AccountExportJobService Authentication owner staging', () => {
         return videosResult;
       }),
     };
+    const permissionsResult = { cleanup: jest.fn(async () => undefined) };
+    const permissionsCapture = {
+      capture: jest.fn(
+        async (
+          _grant: unknown,
+          _profile: unknown,
+          renew: () => Promise<boolean>
+        ) => {
+          expect(profileResult.cleanup).not.toHaveBeenCalled();
+          expect(assetsResult.cleanup).not.toHaveBeenCalled();
+          expect(videosResult.cleanup).not.toHaveBeenCalled();
+          await renew();
+          return permissionsResult;
+        }
+      ),
+    };
     const profileResult = {
       descriptor: { handleId: 'profile-fixture' },
       identities: jest.fn(async () => ({})),
@@ -264,7 +283,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       spool,
       profileCapture as never,
       assetsCapture as never,
-      videosCapture as never
+      videosCapture as never,
+      permissionsCapture as never
     );
     const state = service as unknown as {
       run: (
@@ -299,6 +319,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       assetsCleanup: assetsResult.cleanup,
       videosCapture: videosCapture.capture,
       videosCleanup: videosResult.cleanup,
+      permissionsCapture: permissionsCapture.capture,
+      permissionsCleanup: permissionsResult.cleanup,
     };
   }
 
@@ -329,7 +351,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
     idempotencyKey: IDEMPOTENCY_KEY,
   });
 
-  it('stores verified Authentication and Profile owner markers and keeps the global job incomplete', async () => {
+  it('stores all five verified owner markers and keeps the global job incomplete', async () => {
     const ownerCapture = jest.fn(
       async ({
         onChunk,
@@ -354,17 +376,87 @@ describe('AccountExportJobService Authentication owner staging', () => {
     expect(result.state).toBe('incomplete');
     expect(result.artifactUrl).toBeNull();
     expect(result.coverageSummary).toMatchObject({
-      capturedDatabaseOwners: ['authentication', 'profile', 'assets', 'videos'],
+      capturedDatabaseOwners: [
+        'authentication',
+        'profile',
+        'assets',
+        'videos',
+        'permissions',
+      ],
       artifactAvailable: false,
     });
     expect(test.renewLease).toHaveBeenCalledTimes(
-      1 + AUTHENTICATION_ACCOUNT_EXPORT_SOURCES.length + 1
+      1 + AUTHENTICATION_ACCOUNT_EXPORT_SOURCES.length + 2
+    );
+    expect(test.permissionsCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: ACCOUNT_ID }),
+      expect.objectContaining({ handleId: 'profile-fixture' }),
+      expect.any(Function)
+    );
+    expect(test.permissionsCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+      test.videosCleanup.mock.invocationCallOrder[0]
     );
     expect(JSON.stringify(result)).not.toContain('PRIVATE-OWNER-DATA-CANARY');
     expect(JSON.stringify(result)).not.toMatch(
       /sha256|captureId|sizeBytes|stage/i
     );
   });
+
+  it.each(['capture', 'cleanup', 'lease'])(
+    'fails safely when Permissions %s fails and cleans children in reverse order',
+    async (mode) => {
+      const owner = jest.fn(async ({ onChunk }) => {
+        const chunks = createOwnerChunks(ACCOUNT_ID);
+        for (const c of chunks) await onChunk(c);
+        return chunks[chunks.length - 1];
+      });
+      const test = harness(async () => true, owner);
+      if (mode === 'capture')
+        test.permissionsCapture.mockRejectedValueOnce(
+          new Error('private Permissions diagnostic')
+        );
+      if (mode === 'cleanup')
+        test.permissionsCleanup.mockRejectedValueOnce(
+          new Error('private Permissions cleanup')
+        );
+      if (mode === 'lease') {
+        test.permissionsCapture.mockImplementationOnce(
+          async (_g, _p, renew) => {
+            test.renewLease.mockResolvedValueOnce(false);
+            await renew();
+            throw Error('stale lease');
+          }
+        );
+        await expect(test.run(input(), activeClaim)).rejects.toMatchObject({
+          message: 'Export operation lease is no longer current',
+        });
+        expect(test.finish).not.toHaveBeenCalled();
+      } else {
+        const result = await test.run(input(), activeClaim);
+        expect(result.state).toBe('failed');
+        expect(result.coverageSummary.capturedDatabaseOwners).toEqual([
+          'authentication',
+          'profile',
+          'assets',
+          'videos',
+        ]);
+        expect(result.coverageSummary.blockers).toContain(
+          'permissions-capture-unavailable'
+        );
+        expect(JSON.stringify(result)).not.toContain('private Permissions');
+      }
+      expect(test.videosCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+        test.assetsCleanup.mock.invocationCallOrder[0]
+      );
+      expect(test.assetsCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+        test.profileCleanup.mock.invocationCallOrder[0]
+      );
+      if (mode === 'cleanup')
+        expect(
+          test.permissionsCleanup.mock.invocationCallOrder[0]
+        ).toBeLessThan(test.videosCleanup.mock.invocationCallOrder[0]);
+    }
+  );
 
   it.each(['capture', 'cleanup', 'lease'])(
     'fails safely when Videos %s fails and closes children before Profile',
@@ -586,6 +678,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       spool,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
     const internals = service as unknown as {
@@ -640,6 +733,7 @@ describe('AccountExportJobService database lease fence', () => {
       service = new AccountExportJobService(
         repository,
         dataSource,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,

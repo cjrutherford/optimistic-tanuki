@@ -78,6 +78,7 @@ export {
 
 export {
   PermissionCommands,
+  PERMISSIONS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
   RoleCommands,
   AppScopeCommands,
   ALL_APP_SCOPES,

@@ -1,0 +1,247 @@
+{
+  "slice": "DF-007-J15",
+  "date": "2026-10-20",
+  "status": "locally-verified-bounded-internal-integration",
+  "accepted": true,
+  "baseRevision": "ad87e1c567d6a64ca4ed063a995363da196e972c",
+  "sourceManifestSha256": "bf5389a29c235bb90ea438bb018ebd89cb2528c2b6bdb3e7de0b3951650c0cb4",
+  "sourceHashCount": 18,
+  "sourceCapture": ".runtime-artifacts/account-rights/finish-sequence/permissions-integration/runtime/source-bf5389a29c23",
+  "captureMetadata": ".runtime-artifacts/account-rights/finish-sequence/permissions-integration/runtime/capture.json",
+  "compose": ".runtime-artifacts/account-rights/finish-sequence/permissions-integration/runtime/compose.json",
+  "productionBehavior": {
+    "ownerSequence": [
+      "authentication",
+      "profile",
+      "assets",
+      "videos",
+      "permissions"
+    ],
+    "permissionsSources": ["roleAssignment", "rolePermission"],
+    "profileParent": "same leased Profile descriptor for Assets, Videos, and Permissions",
+    "cleanupOrder": ["permissions", "videos", "assets", "profile"],
+    "permissionsFailurePrefix": [
+      "authentication",
+      "profile",
+      "assets",
+      "videos"
+    ],
+    "lostLeaseAcknowledges": false,
+    "jobState": "incomplete",
+    "artifact": null,
+    "sharedStorageParticipantTypeIncludesPermissions": true,
+    "permissionsClientCompatibilityCast": false,
+    "localSpoolLimits": {
+      "entries": 2,
+      "readBytes": 65536,
+      "captureBytes": 268435456,
+      "aggregateBytes": 536870912,
+      "ttlMs": 120000
+    }
+  },
+  "unitTests": {
+    "distinctPassed": 23,
+    "permissionsWrapper": {
+      "passed": 1
+    },
+    "authenticationClientAndJob": {
+      "passed": 22,
+      "databaseGatedSkipped": 3
+    },
+    "sharedClientAfterParticipantTypeFix": {
+      "passed": 3,
+      "countedAsAdditionalDistinct": false
+    }
+  },
+  "preRuntimeGates": {
+    "permissionsProductionBuild": "PASS",
+    "permissionsLint": "PASS",
+    "authenticationProductionBuild": "PASS",
+    "authenticationAndE2ELint": "PASS",
+    "modelsAndConstantsBuildAndLint": "PASS",
+    "storageLint": "PASS",
+    "peerProductionReview": "GO; no concrete blocker found"
+  },
+  "runtime": {
+    "status": "accepted-narrow-private-integration",
+    "accepted": true,
+    "attempt1": {
+      "result": "FAIL",
+      "existingSelectedCasesPassed": 4,
+      "permissionsFixtureFailed": 1,
+      "unselectedCases": 6,
+      "cause": "Fixture negative override was overwritten, leaving child identityCount at zero.",
+      "correction": "Fixture-only correction; no production change.",
+      "teardown": "exit=1 down=0 containers=0 networks=0 volumes=0"
+    },
+    "attempt2": {
+      "result": "PASS",
+      "passed": 1,
+      "skipped": 0,
+      "failed": 0,
+      "logSha256": "5f22d32e5e687f813fe53555e19f827808381fe2bfd63258f8de8046172b70c9",
+      "selectedCase": "captures owned assignments and reachable definitions over leased RPC, retries, and recaptures after restart",
+      "teardown": "exit=0 down=0 containers=0 networks=0 volumes=0"
+    },
+    "uniqueSelectedCasesPassedAcrossRuns": 5,
+    "singleCombinedGreenRun": false,
+    "unchangedAttempt1PassesRerun": 0,
+    "attempt2IsPermissionsOnly": true,
+    "fixture": {
+      "capturedProfileIdentities": 1006,
+      "ownershipCoverage": "first and last captured identities have owned assignments; foreign assignment excluded",
+      "permissionsSourceRowCounts": {
+        "roleAssignment": 2,
+        "rolePermission": 2
+      },
+      "permissionsTotalRecords": 4,
+      "rolePermissionLinks": 2,
+      "scopeAndContextCases": [
+        "cross-scope",
+        "null-context",
+        "opaque missing target"
+      ],
+      "exactDatabaseDerivedExpectedRecords": true,
+      "counterpartFingerprintsUnchanged": true,
+      "permissionsDefinitionsRestoredToBaseline": true,
+      "jobState": "incomplete",
+      "artifactUrl": null
+    },
+    "readback": {
+      "result": "PASS",
+      "counts": {
+        "users": 0,
+        "jobs": 0,
+        "fixtureAssetRows": 0,
+        "guardianActivity": 0,
+        "assetsJ9Profiles": 0,
+        "temporaryRelations": 0,
+        "videos_channel": 0,
+        "videos_video": 0,
+        "videos_channel_subscription": 0,
+        "videos_video_view": 0,
+        "videos_channel_feed": 0,
+        "videos_program_block": 0,
+        "videos_live_session": 0,
+        "videosTemporaryRelations": 0,
+        "videosProfiles": 0,
+        "ot_authenticationTemporaryRelations": 0,
+        "ot_profileTemporaryRelations": 0,
+        "ot_videosTemporaryRelations": 0,
+        "ot_permissionsTemporaryRelations": 0,
+        "permissionsProfiles": 0,
+        "permissionsTemporaryRelations": 0,
+        "permissionsFixtureScopes": 0
+      }
+    },
+    "spoolDescriptorsAfter": {
+      "authentication": 0,
+      "profile": 0,
+      "assets": 0,
+      "videos": 0,
+      "permissions": 0
+    },
+    "allFiveOwnerProcessesHaveZeroSpoolDescriptors": true,
+    "mediaFixtureEntriesAfter": 0,
+    "serviceProcessChanges": {
+      "permissions": "restarted; recapture passed",
+      "assets": "unchanged",
+      "videos": "unchanged",
+      "authentication": "unchanged",
+      "profile": "unchanged"
+    },
+    "expectedRestartLogNoise": "TCP ECONNRESET messages during intentional Permissions restart; logs are not claimed error-free.",
+    "remainingPrivateContainers": 0,
+    "remainingPrivateNetworks": 0,
+    "remainingPrivateVolumes": 0,
+    "finalImageProof": {
+      "authentication": {
+        "sourceImageTag": "ot-df007-permissions-integration/authentication:440170c58078",
+        "finalImageTag": "ot-df007-permissions-integration/authentication:bf5389a29c23",
+        "imageId": "sha256:066d37a68d04398db47d6e0cb10df703347c6de6081498c394613733c7080f88",
+        "copyInputsCompared": 3025,
+        "allEqual": true
+      },
+      "profile": {
+        "sourceImageTag": "ot-df007-permissions-integration/profile:440170c58078",
+        "finalImageTag": "ot-df007-permissions-integration/profile:bf5389a29c23",
+        "imageId": "sha256:207dd8a8de721ec59e1f9206c2e109ce89a3a4ee65596f3f7eb93b2b573e10d0",
+        "copyInputsCompared": 2975,
+        "allEqual": true
+      },
+      "assets": {
+        "sourceImageTag": "ot-df007-permissions-integration/assets:440170c58078",
+        "finalImageTag": "ot-df007-permissions-integration/assets:bf5389a29c23",
+        "imageId": "sha256:325831f665cd65ec59d4ee5f61f49b162846a98a5f6120d08ff003c9bfcb3c46",
+        "copyInputsCompared": 2969,
+        "allEqual": true
+      },
+      "videos": {
+        "sourceImageTag": "ot-df007-permissions-integration/videos:440170c58078",
+        "finalImageTag": "ot-df007-permissions-integration/videos:bf5389a29c23",
+        "imageId": "sha256:7f78e7b92597514ff788945635d595e198e88f87e5d3dad1841dad1bac5f494a",
+        "copyInputsCompared": 2975,
+        "allEqual": true
+      },
+      "permissions": {
+        "sourceImageTag": "ot-df007-permissions-integration/permissions:440170c58078",
+        "finalImageTag": "ot-df007-permissions-integration/permissions:bf5389a29c23",
+        "imageId": "sha256:86e75b83b4fb51277d20a0915933b2f06dab6350a40b8a1273dc3acc6457760d",
+        "copyInputsCompared": 2972,
+        "allEqual": true
+      }
+    },
+    "finalImageProofAllFiveEqual": true,
+    "productionQualification": false
+  },
+  "openWork": [
+    "Social owner capture",
+    "Forum owner capture",
+    "remaining domain owners",
+    "durable encrypted artifact assembly and retention",
+    "authorized downloads",
+    "deletion and reusable lifecycle controls",
+    "shared UI",
+    "external provider flows",
+    "browser validation",
+    "remote CI",
+    "production qualification"
+  ],
+  "overallDf007": "open",
+  "overallRr11": "open",
+  "sourceHashes": {
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "3c64293dd77cca9bdbdbb597974f5356be3fe669fb5e6b3340e8b27143ea873e",
+    "apps/authentication-e2e/src/authentication/assets-account-export.spec.ts": "1134bc6667a8ad7fcf8e3bbf9e9a4bff8ef5d5bf4cbe1bfafb20aee40486042c",
+    "apps/authentication-e2e/src/authentication/permissions-account-export.spec.ts": "250d72e09dc5337d128fc873c0a5c389371d9a9ffd0d4357ec515c3e9ce7da94",
+    "apps/authentication-e2e/src/authentication/videos-account-export.spec.ts": "546fd24b58ef39de3eede00977d8152964f195510c8d67c55bf8d71e2a42a913",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "2135b5c9466af527825e6a2a113ddc3f5dd9971b262d24724456f7d5fd1aac6a",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "3e92e5fd7b695bec53d4ec8da2682fad79b2cf0e37ad964c7ddba0ad2db9e190",
+    "apps/authentication/src/account-export-jobs/permissions-account-export-snapshot.client.spec.ts": "ce3f3cbee46120f443ca56e79f0984877dd003bc0ec9810ae68f551caa5a52be",
+    "apps/authentication/src/account-export-jobs/permissions-account-export-snapshot.client.ts": "0a63bbfeccfca3cf86a4f03fc328c343c64a89061763e9ec65dfce913eda8a89",
+    "apps/authentication/src/app/app.module.ts": "0cf50ef95a63439673a6a9215e856dcff8901b4608bff33111f5bfc9be86096b",
+    "apps/permissions/src/app/account-export-owner.service.ts": "dc85809bd89cba18fb70c4eb28528a9ee9c4817d07fd9f4712e271b5ffc9b02e",
+    "apps/permissions/src/app/account-export-snapshot.controller.ts": "bddaa51f57c0b3db869cdaca58bc49a07fb505e7bdee9c3a8632123303fd032f",
+    "apps/permissions/src/app/account-export-snapshot.service.spec.ts": "62dda76398dd6bf73c2023d4cab7498802c749a9a07bd0449d52341f625630be",
+    "apps/permissions/src/app/account-export-snapshot.service.ts": "c0a3a6b7081a0d60201322c465140b0ae16b1910b02cd4f75f02c175f19c98f4",
+    "apps/permissions/src/app/app.module.ts": "52aa9375e875477133b96af9e4237a7ad3551a810ef244a2842e246cfffa1c66",
+    "libs/constants/src/index.ts": "2522206f0c30d0028ad95cf2ff4c7e9b237fffe8152745c8c6b274ba044eb23f",
+    "libs/constants/src/lib/libs/permissions.ts": "a03e5a89202c8c96a25a21f3b1fb01578a2538585fb1a9962d32a1b74d1c9e3a",
+    "libs/models/src/lib/libs/account-export/account-export-snapshot.contract.ts": "8813f9f285de6511a16fae89a45169a01896c2b8518cc31cfcdcac48711e4ed5",
+    "libs/storage/src/lib/account-export-profile-bound-snapshot.client.ts": "9ec35e8081df8ba2ccd22788521fcd16cf6336527b0f70d07ac2dccba3a64601"
+  },
+  "imageTags": {
+    "authentication": "ot-df007-permissions-integration/authentication:bf5389a29c23",
+    "profile": "ot-df007-permissions-integration/profile:bf5389a29c23",
+    "assets": "ot-df007-permissions-integration/assets:bf5389a29c23",
+    "videos": "ot-df007-permissions-integration/videos:bf5389a29c23",
+    "permissions": "ot-df007-permissions-integration/permissions:bf5389a29c23"
+  },
+  "imageIds": {
+    "authentication": "sha256:066d37a68d04398db47d6e0cb10df703347c6de6081498c394613733c7080f88",
+    "profile": "sha256:207dd8a8de721ec59e1f9206c2e109ce89a3a4ee65596f3f7eb93b2b573e10d0",
+    "assets": "sha256:325831f665cd65ec59d4ee5f61f49b162846a98a5f6120d08ff003c9bfcb3c46",
+    "videos": "sha256:7f78e7b92597514ff788945635d595e198e88f87e5d3dad1841dad1bac5f494a",
+    "permissions": "sha256:86e75b83b4fb51277d20a0915933b2f06dab6350a40b8a1273dc3acc6457760d"
+  },
+  "evidenceRoot": ".runtime-artifacts/account-rights/finish-sequence/permissions-integration"
+}

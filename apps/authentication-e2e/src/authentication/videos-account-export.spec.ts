@@ -25,6 +25,10 @@ describe('Videos account export private integration', () => {
   it('captures Videos over leased RPC and jobs, fences access, and recaptures after private restart', async () => {
     if (process.env.VIDEOS_JOB_E2E_MARKER !== 'private-videos-j11-v1')
       throw Error('Private Videos fixture marker required');
+    const fixtureProject =
+      process.env.PERMISSIONS_JOB_E2E_MARKER === 'private-permissions-j15-v1'
+        ? 'ot-df007-permissions-integration'
+        : 'ot-df007-videos-integration';
     const container = process.env.VIDEOS_JOB_E2E_CONTAINER_ID || '';
     if (!/^[a-f0-9]{64}$/.test(container))
       throw Error('Private Videos container required');
@@ -34,7 +38,7 @@ describe('Videos account export private integration', () => {
         .stdout
     )[0];
     expect(inspected.Config.Labels['com.docker.compose.project']).toBe(
-      'ot-df007-videos-integration'
+      fixtureProject
     );
     expect(inspected.Config.Labels['com.docker.compose.service']).toBe(
       'videos'
@@ -43,7 +47,7 @@ describe('Videos account export private integration', () => {
       inspected.Config.Labels[
         'io.optimistic-tanuki.account-rights.private-project'
       ]
-    ).toBe('ot-df007-videos-integration');
+    ).toBe(fixtureProject);
     if (
       process.env.ACCOUNT_EXPORT_E2E_DB_HOST !== '127.0.0.1' ||
       process.env.E2E_DB_PORT !== '15548'
@@ -237,7 +241,13 @@ describe('Videos account export private integration', () => {
         { ...requestValue, jobId: created.jobId },
         55000
       );
-      const expectedOwners = ['authentication', 'profile', 'assets', 'videos'];
+      const expectedOwners = [
+        'authentication',
+        'profile',
+        'assets',
+        'videos',
+        'permissions',
+      ];
       expect(job.state).toBe('incomplete');
       expect(job.coverageSummary.capturedDatabaseOwners).toEqual(
         expectedOwners

@@ -113,3 +113,7 @@ export type VideosAccountExportSnapshotDescriptor =
   ProfileBoundAccountExportSnapshotDescriptor;
 export type VideosAccountExportSnapshotOpenRequest =
   AssetsAccountExportSnapshotOpenRequest;
+export type PermissionsAccountExportSnapshotDescriptor =
+  ProfileBoundAccountExportSnapshotDescriptor;
+export type PermissionsAccountExportSnapshotOpenRequest =
+  AssetsAccountExportSnapshotOpenRequest;

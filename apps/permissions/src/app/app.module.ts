@@ -18,8 +18,19 @@ import { RolesController } from '../roles/roles.controller';
 import { AppScopesController } from '../app-scopes/app-scopes.controller';
 import { AccountExportService } from './account-export.service';
 import { AccountExportController } from './account-export.controller';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  AccountExportOwnerSpoolService,
+  AccountExportProfileSnapshotClient,
+} from '@optimistic-tanuki/storage';
+import { PermissionsAccountExportOwnerService } from './account-export-owner.service';
+import { PermissionsAccountExportSnapshotService } from './account-export-snapshot.service';
+import { AccountExportSnapshotController } from './account-export-snapshot.controller';
 
 @Module({
   imports: [
@@ -38,12 +49,47 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
     RolesController,
     AppScopesController,
     AccountExportController,
+    AccountExportSnapshotController,
   ],
   providers: [
     PermissionsService,
     RolesService,
     AppScopesService,
     AccountExportService,
+    AccountExportOwnerSpoolService,
+    AccountExportProfileSnapshotClient,
+    {
+      provide: PermissionsAccountExportOwnerService,
+      useFactory: (
+        dataSource: DataSource,
+        identities: AccountExportProfileSnapshotClient,
+        authClient: ClientProxy
+      ) =>
+        new PermissionsAccountExportOwnerService(
+          dataSource,
+          identities,
+          authClient
+        ),
+      inject: [
+        'PERMISSIONS_CONNECTION',
+        AccountExportProfileSnapshotClient,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
+    {
+      provide: PermissionsAccountExportSnapshotService,
+      useFactory: (
+        owner: PermissionsAccountExportOwnerService,
+        spool: AccountExportOwnerSpoolService,
+        authClient: ClientProxy
+      ) =>
+        new PermissionsAccountExportSnapshotService(owner, spool, authClient),
+      inject: [
+        PermissionsAccountExportOwnerService,
+        AccountExportOwnerSpoolService,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
     {
       provide: ServiceTokens.AUTHENTICATION_SERVICE,
       useFactory: (config: ConfigService) => {
