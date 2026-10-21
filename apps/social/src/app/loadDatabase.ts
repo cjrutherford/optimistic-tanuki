@@ -33,6 +33,9 @@ import { PostShare } from '../entities/post-share.entity';
 import { CommunityMembershipAudit } from '../entities/community-membership-audit.entity';
 import { GuardianContentAudit } from '../entities/guardian-content-audit.entity';
 import { GuardianPublishedAssetGrant } from '../entities/guardian-published-asset-grant.entity';
+import { CommunityElection } from '../entities/community-election.entity';
+import { ElectionCandidate } from '../entities/election-candidate.entity';
+import { ElectionVote } from '../entities/election-vote.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -67,6 +70,9 @@ const loadDatabase = (config: ConfigService) => {
     CommunitySponsorshipContent,
     Poll,
     PostShare,
+    CommunityElection,
+    ElectionCandidate,
+    ElectionVote,
   ];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',

@@ -60,6 +60,8 @@ import { BusinessThemeContent } from '../entities/business-theme-content.entity'
 import { CommunitySponsorshipContent } from '../entities/community-sponsorship-content.entity';
 import { BusinessContentService } from './services/business-content.service';
 import { GuardianContentAudit } from '../entities/guardian-content-audit.entity';
+import { GuardianPublishedAssetGrant } from '../entities/guardian-published-asset-grant.entity';
+import { ContentModerationAction } from '../entities/content-moderation-action.entity';
 import { GuardianContentService } from './services/guardian-content.service';
 import { SocialAccountExportService } from './account-export.service';
 import { SocialAccountExportController } from './account-export.controller';
@@ -198,6 +200,17 @@ import { SocialAccountExportController } from './account-export.controller';
       inject: ['SOCIAL_CONNECTION'],
     },
     {
+      provide: getRepositoryToken(GuardianContentAudit),
+      useFactory: (ds: DataSource) => ds.getRepository(GuardianContentAudit),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(GuardianPublishedAssetGrant),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(GuardianPublishedAssetGrant),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
       provide: getRepositoryToken(CommunityInvite),
       useFactory: (ds: DataSource) => ds.getRepository(CommunityInvite),
       inject: ['SOCIAL_CONNECTION'],
@@ -240,6 +253,11 @@ import { SocialAccountExportController } from './account-export.controller';
     {
       provide: getRepositoryToken(ContentReport),
       useFactory: (ds: DataSource) => ds.getRepository(ContentReport),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(ContentModerationAction),
+      useFactory: (ds: DataSource) => ds.getRepository(ContentModerationAction),
       inject: ['SOCIAL_CONNECTION'],
     },
     {

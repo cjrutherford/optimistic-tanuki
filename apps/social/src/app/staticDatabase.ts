@@ -32,6 +32,9 @@ import { PostShare } from '../entities/post-share.entity';
 import { CommunityMembershipAudit } from '../entities/community-membership-audit.entity';
 import { GuardianContentAudit } from '../entities/guardian-content-audit.entity';
 import { GuardianPublishedAssetGrant } from '../entities/guardian-published-asset-grant.entity';
+import { CommunityElection } from '../entities/community-election.entity';
+import { ElectionCandidate } from '../entities/election-candidate.entity';
+import { ElectionVote } from '../entities/election-vote.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -83,6 +86,9 @@ const entities = [
   CommunitySponsorshipContent,
   Poll,
   PostShare,
+  CommunityElection,
+  ElectionCandidate,
+  ElectionVote,
 ];
 
 const staticSource = new DataSource({
