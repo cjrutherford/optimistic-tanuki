@@ -13,6 +13,7 @@ export const loadDatabase = (config: ConfigService): DataSourceOptions => {
     type: 'postgres',
     host: process.env.POSTGRES_HOST || host,
     port: Number(port),
+    connectTimeoutMS: 3000,
     username,
     password,
     database: process.env.POSTGRES_DB || database,

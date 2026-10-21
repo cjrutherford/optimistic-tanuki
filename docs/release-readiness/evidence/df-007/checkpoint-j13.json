@@ -1,0 +1,113 @@
+{
+  "slice": "DF-007-J13",
+  "date": "2026-10-20",
+  "status": "locally-verified-bounded-owner-component",
+  "baseRevision": "e596505a607c95bf9a92920e1f2459d996aaa1ae",
+  "sourceHashes": {
+    "apps/permissions/src/app/account-export-owner.service.ts": "3e0f188099678967788ae21fd01433d32848dcb57bccdd021a95d5c80d6e7c4b",
+    "apps/permissions/src/app/account-export-owner.service.spec.ts": "6b9496583896161a16679416d3262df47b4cc202af87fd5ab47f783dd9a5d225",
+    "apps/permissions/src/app/account-export-owner.postgres.spec.ts": "53d820029c6505e3712915365be6005340b3817d698969e75bc4b22b50188293",
+    "apps/permissions/src/app/loadDatabase.ts": "50678e39c1d145f69f24a08d19b518e7e28d286a61f973a9a7526991a96d7e55",
+    "apps/permissions/src/app/loadDatabase.spec.ts": "d5ac932bd3541fe51abf44351d1fff1394faee4333cfad12c74358912dc2a5bb"
+  },
+  "contextHashes": {
+    "pnpm-lock.yaml": "64299eef891a07af29a63f97598727494f607b930ab607f85ca28df7ec2ab71d",
+    "tsconfig.base.json": "5b938bfc28d24cc2f5ec498a3bfceca54e2b11a7b12562aa9ad1b4c9b7c563ea",
+    "libs/models/src/lib/libs/account-export/account-export-snapshot.contract.ts": "b4f8be6da7620aa7d84e9d934e95cf4bf52c3cf2b5ab27e6f6801f03ea06b266",
+    "libs/storage/src/lib/account-export-profile-snapshot.client.ts": "513ccbf229f9382e6e38f92900a1713cec1b87db90f15d1071fef2e55d0d15f3",
+    "apps/permissions/migrations/1762976494195-initial.ts": "ed2d50611e779731c97782f026093d4db765cb51e859bba0691139f32389ffef",
+    "apps/permissions/migrations/1763070000000-update-role-assignment-unique-index.ts": "e40b265d189a6225cb2996c09e94f1a7f699da28b2ba873a31eefbb93d44bb2d"
+  },
+  "sourceManifestSha256": "042a408162305cbf2a97de8b523e2af7b680dabfe0609f2d8025024adb73a87d",
+  "unitTests": {
+    "owner": 6,
+    "databaseConfig": 1,
+    "passed": 7
+  },
+  "preE2E": {
+    "passed": ["permissions:build:production", "permissions:lint"]
+  },
+  "runtime": {
+    "acceptedAttempt": "attempt-4",
+    "suites": 1,
+    "passed": 7,
+    "skipped": 0,
+    "capturedProfiles": 1006,
+    "identityPageSize": 100,
+    "identityPages": 11,
+    "ownedAssignments": 205,
+    "reachableRolePermissionLinks": 203,
+    "keysetPageSize": 200,
+    "minimumUuid": "assignment, profile, role and permission initial cursors",
+    "uppercasePrincipal": "varchar profileId included; output UUID normalized",
+    "sharedContext": "independent cross-scope links, zero-permission role, nullable scopes and opaque missing targets",
+    "snapshot": "late insert absent in first capture, present in subsequent capture",
+    "missingRelationships": "required Role, Permission and non-null scope fail closed",
+    "schemaFixtureMechanism": "three named foreign keys temporarily dropped in private database; corrupt references restored and exact validated constraints re-added",
+    "foreignKeysRestored": 8,
+    "unvalidatedForeignKeys": 0,
+    "failures": [
+      "oversize role description/target",
+      "caller abort",
+      "mid-capture lease denial",
+      "consumer failure",
+      "dirty temporary-table cleanup"
+    ],
+    "dirtyCleanup": "actual backend PID removed within bounded poll; instance quarantined; fresh owner recovers",
+    "occupiedPoolMilliseconds": 3018,
+    "productionConnectTimeoutMS": 3000,
+    "migrations": 2,
+    "postgresVersion": "15.19",
+    "tableReadback": {
+      "role_assignment": 0,
+      "role": 0,
+      "permission": 0,
+      "app_scope": 0,
+      "role_permissions": 0,
+      "app_scope_permissions": 0
+    },
+    "temporaryRelations": 0,
+    "ownerSpoolDescriptors": 0,
+    "retainedSpoolFiles": 0,
+    "fixtureRootRemoved": true,
+    "teardown": {
+      "containers": 0,
+      "volumes": 0
+    },
+    "imageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb"
+  },
+  "earlierAttempts": [
+    {
+      "attempt": 1,
+      "passed": 5,
+      "failed": 2,
+      "issues": [
+        "fixture expected unseeded profile500",
+        "backend-removal assertion raced socket termination"
+      ]
+    },
+    {
+      "attempt": 2,
+      "passed": 6,
+      "failed": 1,
+      "issue": "fixture profile500 expectation persisted after distribution fix"
+    },
+    {
+      "attempt": 3,
+      "passed": 1,
+      "unselected": 6,
+      "scope": "narrow corrected ownership/context case; fixture anchors independently proven"
+    }
+  ],
+  "attemptPolicy": "counts are not combined across attempts; failed attempts retained with zero-resource teardown",
+  "limitations": [
+    "Auth and Profile RPC mocked at component boundary",
+    "not registered behind Permissions leased snapshots or Authentication jobs",
+    "no durable artifact/download/deletion or shared controls",
+    "remaining owner coverage and UUID case audit remain required",
+    "no browser, live TCP, remote CI or production qualification"
+  ],
+  "evidenceRoot": ".runtime-artifacts/account-rights/finish-sequence/permissions-owner",
+  "overallDf007": "open",
+  "overallRr11": "open"
+}
