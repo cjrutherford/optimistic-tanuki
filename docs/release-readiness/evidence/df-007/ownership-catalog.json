@@ -1,7 +1,7 @@
 {
-  "entityFileCount": 165,
-  "generatedAtUtc": "2026-10-17",
-  "inventoryVersion": 4,
+  "entityFileCount": 166,
+  "generatedAtUtc": "2026-10-20",
+  "inventoryVersion": 5,
   "methodology": {
     "accountOrTenantFieldPattern": "tenantId/accountId; mapping to account/profile is not inferred",
     "classifications": {
@@ -481,6 +481,99 @@
       }
     ],
     "authentication": [
+      {
+        "accountOrTenantFields": [
+          {
+            "field": "accountId",
+            "line": 26
+          }
+        ],
+        "class": "AccountExportJobEntity",
+        "classification": "direct_identity_link_candidate",
+        "explicitTable": "account_export_jobs",
+        "fields": [
+          {
+            "field": "id",
+            "line": 25
+          },
+          {
+            "field": "accountId",
+            "line": 26
+          },
+          {
+            "field": "appId",
+            "line": 27
+          },
+          {
+            "field": "kind",
+            "line": 28
+          },
+          {
+            "field": "idempotencyKey",
+            "line": 29
+          },
+          {
+            "field": "state",
+            "line": 30
+          },
+          {
+            "field": "coverageVersion",
+            "line": 32
+          },
+          {
+            "field": "attempt",
+            "line": 34
+          },
+          {
+            "field": "leaseOwner",
+            "line": 35
+          },
+          {
+            "field": "leaseExpiresAt",
+            "line": 36
+          },
+          {
+            "field": "coverageSummary",
+            "line": 37
+          },
+          {
+            "field": "lastErrorCode",
+            "line": 41
+          },
+          {
+            "field": "completedAt",
+            "line": 44
+          },
+          {
+            "field": "createdAt",
+            "line": 45
+          },
+          {
+            "field": "updatedAt",
+            "line": 46
+          }
+        ],
+        "identityFields": [
+          {
+            "field": "accountId",
+            "line": 26
+          }
+        ],
+        "mediaReferenceFieldCandidates": [],
+        "primaryKeys": [
+          {
+            "decorator": "PrimaryGeneratedColumn",
+            "field": "id",
+            "line": 25
+          }
+        ],
+        "relations": [],
+        "sensitiveFieldCandidates": [],
+        "service": "authentication",
+        "source": "apps/authentication/src/account-export-jobs/entities/account-export-job.entity.ts",
+        "sourceSha256": "88edcd6c8a894e5d9ae7da50b4792bd2616290861633efc46a382eb29a304310",
+        "tableNameStatus": "explicit"
+      },
       {
         "accountOrTenantFields": [],
         "class": "AuthActionTokenEntity",
@@ -14861,5 +14954,5 @@
       }
     ]
   },
-  "sourceHead": "6fc407676f4eb2b9b5b9a0fd5ffba2ab44f32f42"
+  "sourceHead": "ec543b0df5059ca75d163aa11a9931626cec3d88"
 }

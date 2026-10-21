@@ -1,5 +1,7 @@
 # DF-007 account-rights completion map
 
+**Remaining local slices:** follow the [explicit slice register](./REMAINING-SLICES.md) in recommendation order 1 → 2 → 4 → 6. It names Social/Forum prerequisites, all seventeen other owner domains, each capture/integration/deletion boundary, non-ORM stores, artifacts/downloads, shared controls and later retention/journey/claims work. SCOPE-01 reconciles 166 tracked entities; J17 Presence write binding is active. External flows and production qualification remain separately owned.
+
 **Status: open.** This map distinguishes bounded internal preview evidence from account-level export, deletion, media portability, and operational acceptance. The current participants and test receipts do not make the complete account-rights promise available to users. DF-007 remains a release prerequisite; RR-11 remains unaccepted.
 
 ## What is verified

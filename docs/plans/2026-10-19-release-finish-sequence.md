@@ -1,5 +1,7 @@
 # Remaining release work: local delivery sequence
 
+The [remaining-slice register](../release-readiness/REMAINING-SLICES.md) gives each remaining owner and delivery gate an explicit ID, dependencies and acceptance. Execute that register within the recommendation order below.
+
 The owner selected items 1, 2, 4 and 6 from the release status summary, in that order. Real external flows (item 3) and production release qualification (item 5) will be handled separately. Their evidence remains required for release claims, but does not prevent completing and testing the local implementation.
 
 Use the existing account-rights implementation plan, master audit and execution map as the scope and acceptance authorities. Preserve the excluded Directory stubs and root configuration edits. Use existing shared UI; add reusable library components when existing controls cannot meet the need. Work in the current checkout with flat Luna delegation.

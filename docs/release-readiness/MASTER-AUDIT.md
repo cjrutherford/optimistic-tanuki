@@ -1,5 +1,7 @@
 # OT + Towne Square Public Release Readiness Audit
 
+**Remaining local slices:** follow the [explicit slice register](./REMAINING-SLICES.md) in recommendation order 1 → 2 → 4 → 6. It names Social/Forum prerequisites, all seventeen other owner domains, each capture/integration/deletion boundary, non-ORM stores, artifacts/downloads, shared controls and later retention/journey/claims work. SCOPE-01 reconciles 166 tracked entities; J17 Presence write binding is active. External flows and production qualification remain separately owned.
+
 **Started:** 2026-10-05
 
 **Scope:** `apps/client-interface` (Optimistic Tanuki), `apps/local-hub` (Towne Square), shared user-facing libraries/services required by their primary workflows, and the shared HAI product-navigation surface.
