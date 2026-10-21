@@ -32,8 +32,8 @@ const enabled =
   process.env.VIDEOS_OWNER_PG_HOST === '127.0.0.1' &&
   process.env.VIDEOS_OWNER_PG_PORT === '15551';
 const pgDescribe = enabled ? describe : describe.skip;
-const A = '11111111-1111-4111-8111-111111111111',
-  B = '22222222-2222-4222-8222-222222222222';
+const A = 'abcdef11-1111-4111-8111-111111111111',
+  B = 'abcdef22-2222-4222-8222-222222222222';
 const ZERO = '00000000-0000-0000-0000-000000000000',
   PB = randomUUID();
 const tables = [
@@ -52,7 +52,10 @@ pgDescribe('Videos owner real PostgreSQL component', () => {
   let allowLease = true;
   const profiles = [
     ZERO,
-    ...Array.from({ length: 1005 }, () => randomUUID()),
+    ...Array.from(
+      { length: 1005 },
+      (_, i) => `abcdef00-0000-4000-8000-${i.toString(16).padStart(12, '0')}`
+    ),
   ].sort();
   const channels = profiles.map((_, i) => (i === 0 ? ZERO : randomUUID()));
   const videos = profiles.map((_, i) => (i === 0 ? ZERO : randomUUID()));
@@ -209,7 +212,7 @@ pgDescribe('Videos owner real PostgreSQL component', () => {
     await db.initialize();
     expect((await db.runMigrations()).length).toBe(3);
     await db.query(
-      `INSERT INTO channel(id,name,description,"profileId","userId","communityId") SELECT c,'owned channel',repeat('description ',2000),p,$3,'community-'||c FROM unnest($1::uuid[],$2::text[]) AS t(c,p)`,
+      `INSERT INTO channel(id,name,description,"profileId","userId","communityId") SELECT c,'owned channel',repeat('description ',2000),upper(p),upper($3),'community-'||c FROM unnest($1::uuid[],$2::text[]) AS t(c,p)`,
       [channels, profiles, A]
     );
     await db.query(
@@ -225,16 +228,16 @@ pgDescribe('Videos owner real PostgreSQL component', () => {
       [foreignVideo, foreignChannel]
     );
     await db.query(
-      `INSERT INTO channel_subscription("channelId","userId","profileId") VALUES($1,$2,$3),($4,$5,$6)`,
-      [foreignChannel, A, ZERO, channels[0], B, PB]
+      `INSERT INTO channel_subscription("channelId","userId","profileId") VALUES($1,upper($2),upper($3)),($4,$5,$6)`,
+      [foreignChannel, A, profiles[1], channels[0], B, PB]
     );
     await db.query(
-      `INSERT INTO video_view("videoId","userId","profileId","ipAddress","watchDurationSeconds") VALUES($1,$2,$3,'PRIVATE_IP',42),($1,NULL,$3,'PRIVATE_IP',1),($1,$4,$5,'FOREIGN_IP',2),($1,NULL,NULL,'ANON_IP',3)`,
-      [videos[0], A, ZERO, B, PB]
+      `INSERT INTO video_view("videoId","userId","profileId","ipAddress","watchDurationSeconds") VALUES($1,upper($2),upper($3),'PRIVATE_IP',42),($1,NULL,upper($4),'PRIVATE_IP',1),($1,$5,$6,'FOREIGN_IP',2),($1,NULL,NULL,'ANON_IP',3)`,
+      [videos[0], A, profiles[2], profiles[3], B, PB]
     );
     await db.query(
-      `INSERT INTO video_view("videoId","userId","profileId","ipAddress","watchDurationSeconds") VALUES($1,$2,$3,'PRIVATE_IP',7)`,
-      [foreignVideo, A, ZERO]
+      `INSERT INTO video_view("videoId","userId","profileId","ipAddress","watchDurationSeconds") VALUES($1,upper($2),upper($3),'PRIVATE_IP',7)`,
+      [foreignVideo, A, profiles[4]]
     );
     await db.query(
       `INSERT INTO channel_feed("channelId","communityId") VALUES($1,$2)`,
@@ -245,8 +248,8 @@ pgDescribe('Videos owner real PostgreSQL component', () => {
       [channels[0], 'community-' + channels[0], videos[0]]
     );
     await db.query(
-      `INSERT INTO live_session("channelId","communityId",title,"startedByUserId","startedByProfileId","liveSourceUrl") VALUES($1,$2,'own live',$3,$4,'rtmp://PRIVATE_URL/key'),($1,$2,'other host',$5,$6,'rtmp://FOREIGN_URL/key'),(NULL,'other-community','own unbound',$3,$4,'rtmp://PRIVATE_URL/key')`,
-      [channels[0], 'community-' + channels[0], A, ZERO, B, PB]
+      `INSERT INTO live_session("channelId","communityId",title,"startedByUserId","startedByProfileId","liveSourceUrl") VALUES($1,$2,'own live',upper($3),upper($4),'rtmp://PRIVATE_URL/key'),($1,$2,'other host',$5,$6,'rtmp://FOREIGN_URL/key'),(NULL,'other-community','own unbound',upper($3),upper($4),'rtmp://PRIVATE_URL/key')`,
+      [channels[0], 'community-' + channels[0], A, profiles[5], B, PB]
     );
     owner = makeOwner();
   });
@@ -268,6 +271,16 @@ pgDescribe('Videos owner real PostgreSQL component', () => {
   });
   it('captures seven sources and over1000 identities with full text, minimum UUID and counterpart privacy', async () => {
     const before = await fingerprint();
+    const uppercaseRows = await db.query(
+      `SELECT (SELECT count(*)::int FROM channel WHERE "profileId"<>lower("profileId") AND lower("profileId")=ANY($1::text[])) AS channels, (SELECT count(*)::int FROM channel_subscription WHERE "profileId"<>lower("profileId") AND lower("profileId")=ANY($1::text[])) AS subscriptions, (SELECT count(*)::int FROM video_view WHERE ("profileId"<>lower("profileId") AND lower("profileId")=ANY($1::text[])) OR ("userId"<>lower("userId") AND lower("userId")=$2)) AS views, (SELECT count(*)::int FROM live_session WHERE ("startedByUserId"<>lower("startedByUserId") AND lower("startedByUserId")=$2) OR ("startedByProfileId"<>lower("startedByProfileId") AND lower("startedByProfileId")=ANY($1::text[]))) AS sessions`,
+      [profiles, A]
+    );
+    expect(uppercaseRows[0]).toMatchObject({
+      channels: 1005,
+      subscriptions: 1,
+      views: 3,
+      sessions: 2,
+    });
     const h = await capture();
     try {
       const all = await records(h);
@@ -275,6 +288,10 @@ pgDescribe('Videos owner real PostgreSQL component', () => {
         ...VIDEOS_ACCOUNT_EXPORT_SOURCES,
       ]);
       expect(all.filter((r) => r.source === 'channel')).toHaveLength(1006);
+      const ownedChannels = all.filter((r) => r.source === 'channel');
+      expect(ownedChannels.map((r) => r.data.profileId).sort()).toEqual(
+        [...profiles].sort()
+      );
       expect(all.filter((r) => r.source === 'video')).toHaveLength(1006);
       expect(
         all.filter((r) => r.source === 'channelSubscription')

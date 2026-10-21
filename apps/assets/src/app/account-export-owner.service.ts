@@ -319,7 +319,7 @@ export class AssetsAccountExportOwnerService {
     while (true) {
       const rows = await this.query(
         r,
-        `SELECT a."id"::text AS "id", left(a."profileId",37) AS "profileId", char_length(a."profileId") AS "profileIdLength", left(a."name",1025) AS "name", char_length(a."name") AS "nameLength", a."type", a."storageStrategy", left(a."storagePath",4097) AS "storagePath", char_length(a."storagePath") AS "pathLength", a."originKind", a."originProfileId"::text AS "originProfileId", left(a."originAppId",121) AS "originAppId", char_length(a."originAppId") AS "originAppIdLength", a."lifecycleState" FROM "asset_entity" a JOIN "${temp}" s ON s."id"::text=a."profileId" WHERE ($1::uuid IS NULL OR a."id">$1::uuid) ORDER BY a."id" LIMIT $2`,
+        `SELECT a."id"::text AS "id", left(a."profileId",37) AS "profileId", char_length(a."profileId") AS "profileIdLength", left(a."name",1025) AS "name", char_length(a."name") AS "nameLength", a."type", a."storageStrategy", left(a."storagePath",4097) AS "storagePath", char_length(a."storagePath") AS "pathLength", a."originKind", a."originProfileId"::text AS "originProfileId", left(a."originAppId",121) AS "originAppId", char_length(a."originAppId") AS "originAppIdLength", a."lifecycleState" FROM "asset_entity" a JOIN "${temp}" s ON s."id"::text=lower(a."profileId") WHERE ($1::uuid IS NULL OR a."id">$1::uuid) ORDER BY a."id" LIMIT $2`,
         [cursor, PAGE_PROBE],
         signal,
         deadline
@@ -361,7 +361,7 @@ export class AssetsAccountExportOwnerService {
     while (true) {
       const rows = await this.query(
         r,
-        `SELECT a."id"::text AS "id", left(a."profileId",37) AS "profileId", char_length(a."profileId") AS "profileIdLength", left(a."name",1025) AS "name", char_length(a."name") AS "nameLength", a."type", a."storageStrategy", left(a."storagePath",4097) AS "storagePath", char_length(a."storagePath") AS "pathLength", a."originKind", a."originProfileId"::text AS "originProfileId", left(a."originAppId",121) AS "originAppId", char_length(a."originAppId") AS "originAppIdLength", a."lifecycleState" FROM "asset_entity" a JOIN "${temp}" s ON s."id"::text=a."profileId" WHERE ($1::varchar IS NULL OR (a."profileId",a."id")>($1::varchar,$2::uuid)) ORDER BY a."profileId",a."id" LIMIT $3`,
+        `SELECT a."id"::text AS "id", left(a."profileId",37) AS "profileId", char_length(a."profileId") AS "profileIdLength", left(a."name",1025) AS "name", char_length(a."name") AS "nameLength", a."type", a."storageStrategy", left(a."storagePath",4097) AS "storagePath", char_length(a."storagePath") AS "pathLength", a."originKind", a."originProfileId"::text AS "originProfileId", left(a."originAppId",121) AS "originAppId", char_length(a."originAppId") AS "originAppIdLength", a."lifecycleState" FROM "asset_entity" a JOIN "${temp}" s ON s."id"::text=lower(a."profileId") WHERE ($1::varchar IS NULL OR (lower(a."profileId"),a."id")>(lower($1::varchar),$2::uuid)) ORDER BY lower(a."profileId"),a."id" LIMIT $3`,
         [profile, assetId, PAGE_PROBE],
         signal,
         deadline
@@ -415,7 +415,7 @@ export class AssetsAccountExportOwnerService {
       const batch = normalized.slice(offset, offset + PAGE);
       const rows = await this.query(
         r,
-        `SELECT a.id::text AS id FROM asset_entity a JOIN "${temp}" s ON s.id::text=a."profileId" WHERE a.id=ANY($1::uuid[]) AND a.type='video' AND a."lifecycleState"='active' AND a."storageStrategy" IN ('local_block_storage','remote_block_storage')`,
+        `SELECT a.id::text AS id FROM asset_entity a JOIN "${temp}" s ON s.id::text=lower(a."profileId") WHERE a.id=ANY($1::uuid[]) AND a.type='video' AND a."lifecycleState"='active' AND a."storageStrategy" IN ('local_block_storage','remote_block_storage')`,
         [batch],
         signal,
         deadline
@@ -441,7 +441,7 @@ export class AssetsAccountExportOwnerService {
     while (true) {
       const rows = await this.query(
         r,
-        `SELECT left(ga."id"::text,37) AS "id", left(ga."actorUserId",37) AS "actorUserId", char_length(ga."actorUserId") AS "actorLength", left(ga."dependentUserId",37) AS "dependentUserId", char_length(ga."dependentUserId") AS "dependentLength", left(ga."profileId",37) AS "profileId", char_length(ga."profileId") AS "profileLength", left(ga."assetId",37) AS "assetId", char_length(ga."assetId") AS "assetLength", left(ga."appId",121) AS "appId", char_length(ga."appId") AS "appLength", left(ga."operation",65) AS "operation", char_length(ga."operation") AS "operationLength", left(ga."changedFieldNames"::text,8193) AS "changedFieldNames", char_length(ga."changedFieldNames"::text) AS "fieldsLength", to_char(ga."createdAt" AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "createdAt" FROM "guardian_asset_activity" ga WHERE (ga."actorUserId"=$1 OR ga."dependentUserId"=$1) AND ($2::uuid IS NULL OR ga."id">$2::uuid) ORDER BY ga."id" LIMIT $3`,
+        `SELECT left(ga."id"::text,37) AS "id", left(ga."actorUserId",37) AS "actorUserId", char_length(ga."actorUserId") AS "actorLength", left(ga."dependentUserId",37) AS "dependentUserId", char_length(ga."dependentUserId") AS "dependentLength", left(ga."profileId",37) AS "profileId", char_length(ga."profileId") AS "profileLength", left(ga."assetId",37) AS "assetId", char_length(ga."assetId") AS "assetLength", left(ga."appId",121) AS "appId", char_length(ga."appId") AS "appLength", left(ga."operation",65) AS "operation", char_length(ga."operation") AS "operationLength", left(ga."changedFieldNames"::text,8193) AS "changedFieldNames", char_length(ga."changedFieldNames"::text) AS "fieldsLength", to_char(ga."createdAt" AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "createdAt" FROM "guardian_asset_activity" ga WHERE (lower(ga."actorUserId")=$1 OR lower(ga."dependentUserId")=$1) AND ($2::uuid IS NULL OR ga."id">$2::uuid) ORDER BY ga."id" LIMIT $3`,
         [account, cursor, PAGE_PROBE],
         signal,
         deadline
@@ -524,7 +524,7 @@ export class AssetsAccountExportOwnerService {
         throw new AssetsAccountExportOwnerError('OWNER_RELATIONSHIP_AMBIGUOUS');
       const assets = await this.query(
         r,
-        `SELECT "profileId"::text AS "profileId" FROM "asset_entity" WHERE "id"=$1::uuid`,
+        `SELECT lower("profileId") AS "profileId" FROM "asset_entity" WHERE "id"=$1::uuid`,
         [assetId],
         signal,
         deadline

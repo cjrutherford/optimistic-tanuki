@@ -68,9 +68,9 @@ describe('VideosAccountExportOwnerService', () => {
               nameLength: options.oversize ? 201 : 10,
               description: null,
               descriptionLength: null,
-              profileId: profile,
+              profileId: profile.toUpperCase(),
               profileIdLength: 36,
-              userId: account,
+              userId: account.toUpperCase(),
               userIdLength: 36,
               communityId: 'community-safe',
               communityIdLength: 14,
@@ -135,6 +135,16 @@ describe('VideosAccountExportOwnerService', () => {
     );
     expect(end.complete).toBe(true);
     expect(x.auth.send).toHaveBeenCalled();
+    const ownerQueries = x.runner.query.mock.calls.map(
+      ([sql]: [string]) => sql
+    );
+    expect(
+      ownerQueries.some(
+        (sql: string) =>
+          sql.includes('lower(c."userId")=$1') &&
+          sql.includes('lower(c."profileId") IN')
+      )
+    ).toBe(true);
   });
 
   it('sanitizes cleanup errors and quarantines a dirty query runner', async () => {

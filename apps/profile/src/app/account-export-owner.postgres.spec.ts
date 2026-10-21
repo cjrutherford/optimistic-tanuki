@@ -94,7 +94,7 @@ describePg('ProfileAccountExportOwnerService PostgreSQL snapshot', () => {
     const profiles = [
       {
         id: MIN_PROFILE_ID,
-        userId: ACCOUNT_ID,
+        userId: ACCOUNT_ID.toUpperCase(),
         appScope: 'scope-minimum-uuid',
         profileName: 'minimum UUID profile',
         profilePic: dataUrl('image/png', PNG_BYTES),
@@ -107,7 +107,7 @@ describePg('ProfileAccountExportOwnerService PostgreSQL snapshot', () => {
         blogRole: 'none',
       },
       ...Array.from({ length: 1004 }, (_, index) => ({
-        userId: ACCOUNT_ID,
+        userId: index === 0 ? ACCOUNT_ID.toUpperCase() : ACCOUNT_ID,
         appScope: `scope-${index.toString().padStart(4, '0')}`,
         profileName: `profile-${index}`,
         profilePic: 'https://cdn.example.test/owned.png?exact=1',
@@ -171,7 +171,7 @@ describePg('ProfileAccountExportOwnerService PostgreSQL snapshot', () => {
       ownedTimelineIds.push(id);
       return {
         id,
-        userId: ACCOUNT_ID,
+        userId: index === 0 ? ACCOUNT_ID.toUpperCase() : ACCOUNT_ID,
         title: `timeline-${index}`,
         description:
           index === 0
@@ -220,20 +220,21 @@ describePg('ProfileAccountExportOwnerService PostgreSQL snapshot', () => {
   afterAll(async () => {
     if (!dataSource?.isInitialized) return;
     await dataSource.query(
-      'UPDATE "timeline" SET "relatedGoalId"=NULL, "relatedProjectId"=NULL WHERE "userId"=$1',
+      'UPDATE "timeline" SET "relatedGoalId"=NULL, "relatedProjectId"=NULL WHERE lower("userId")=lower($1)',
       [ACCOUNT_ID]
     );
     await dataSource.query(
-      'UPDATE "project" SET "goalsId"=NULL, "timeLineEventsId"=NULL WHERE "userId"=$1',
+      'UPDATE "project" SET "goalsId"=NULL, "timeLineEventsId"=NULL WHERE lower("userId")=lower($1)',
       [ACCOUNT_ID]
     );
     await dataSource.query(
-      'UPDATE "goal" SET "relatedProjectId"=NULL WHERE "userId"=$1',
+      'UPDATE "goal" SET "relatedProjectId"=NULL WHERE lower("userId")=lower($1)',
       [ACCOUNT_ID]
     );
-    await dataSource.query(`DELETE FROM "timeline" WHERE "userId" = $1`, [
-      ACCOUNT_ID,
-    ]);
+    await dataSource.query(
+      `DELETE FROM "timeline" WHERE lower("userId") = lower($1)`,
+      [ACCOUNT_ID]
+    );
     await dataSource.query(
       `DELETE FROM "guardian_profile_activity" WHERE "actorUserId" = ANY($1::uuid[]) OR "dependentUserId" = ANY($1::uuid[])`,
       [[ACCOUNT_ID, GUARDIAN_ID, DEPENDENT_ID]]
@@ -246,13 +247,25 @@ describePg('ProfileAccountExportOwnerService PostgreSQL snapshot', () => {
       [[ownedLegacyProjectId, foreignLegacyProjectId]]
     );
     await dataSource.query(
-      `DELETE FROM "profile" WHERE "userId" = ANY($1::text[])`,
+      `DELETE FROM "profile" WHERE lower("userId") = ANY($1::text[])`,
       [[ACCOUNT_ID, DEPENDENT_ID, FOREIGN_ID]]
     );
     await dataSource.destroy();
   }, 30_000);
 
   it('captures complete bounded data from one stable snapshot with real media bytes and owner privacy', async () => {
+    expect(
+      await dataSource.query(
+        'SELECT "userId" FROM "profile" WHERE "id"=$1::uuid',
+        [MIN_PROFILE_ID]
+      )
+    ).toEqual([{ userId: ACCOUNT_ID.toUpperCase() }]);
+    expect(
+      await dataSource.query(
+        'SELECT "userId" FROM "timeline" WHERE "id"=$1::uuid',
+        [ownedTimelineIds[0]]
+      )
+    ).toEqual([{ userId: ACCOUNT_ID.toUpperCase() }]);
     const chunks: CapturedRecord[] = [];
     let insertedDuringCapture = false;
     const end = await service.captureAccount({
@@ -267,7 +280,7 @@ describePg('ProfileAccountExportOwnerService PostgreSQL snapshot', () => {
         ) {
           insertedDuringCapture = true;
           await dataSource.getRepository(Profile).insert({
-            userId: ACCOUNT_ID,
+            userId: ACCOUNT_ID.toUpperCase(),
             appScope: 'late-concurrent-profile',
             profileName: 'must not enter snapshot',
             profilePic: '',
@@ -299,6 +312,7 @@ describePg('ProfileAccountExportOwnerService PostgreSQL snapshot', () => {
       (record) =>
         record.source === 'profile' && record.data.id === MIN_PROFILE_ID
     )!.data;
+    expect(profile.userId).toBe(ACCOUNT_ID);
     expect(profile.bio).toMatchObject({
       disposition: 'full-text-in-profileText-source',
     });
@@ -324,6 +338,11 @@ describePg('ProfileAccountExportOwnerService PostgreSQL snapshot', () => {
       .map((record) => record.data.id)
       .sort();
     expect(identityIds).toEqual(profileIds);
+    expect(
+      chunks
+        .filter((record) => record.source === 'timeline')
+        .every((record) => record.data.userId === ACCOUNT_ID)
+    ).toBe(true);
     expect(JSON.stringify(chunks)).not.toContain(FOREIGN_ID);
     expect(JSON.stringify(chunks)).not.toContain(FOREIGN_PROFILE_ID);
 
@@ -467,13 +486,13 @@ describePg('ProfileAccountExportOwnerService PostgreSQL snapshot', () => {
     const longDescription = `project-${'🧭é'.repeat(1600)}`;
     await dataSource.query(
       `INSERT INTO "goal" ("id", "name", "description", "target", "progress", "userId", "startDate", "relatedProfileId") VALUES ($1, $4, 'fixture goal', -3, 7, $2, '2024-02-03 04:05:06.123456'::timestamp, $3)`,
-      [ownedLegacyGoalId, ACCOUNT_ID, MIN_PROFILE_ID, longName]
+      [ownedLegacyGoalId, ACCOUNT_ID.toUpperCase(), MIN_PROFILE_ID, longName]
     );
     await dataSource.query(
       `INSERT INTO "project" ("id", "name", "description", "userId", "relatedProfileId", "timeLineEventsId", "goalsId") VALUES ($1, 'owned project', $6, $2, $3, $4, $5)`,
       [
         ownedLegacyProjectId,
-        ACCOUNT_ID,
+        ACCOUNT_ID.toUpperCase(),
         FOREIGN_PROFILE_ID,
         ownedTimelineIds[0],
         ownedLegacyGoalId,
@@ -495,6 +514,18 @@ describePg('ProfileAccountExportOwnerService PostgreSQL snapshot', () => {
     const first = await capture();
     expect(first.end.sourceRowCounts?.legacyGoal).toBe(1);
     expect(first.end.sourceRowCounts?.legacyProject).toBe(1);
+    expect(
+      await dataSource.query(
+        'SELECT "userId" FROM "goal" WHERE "id"=$1::uuid',
+        [ownedLegacyGoalId]
+      )
+    ).toEqual([{ userId: ACCOUNT_ID.toUpperCase() }]);
+    expect(
+      await dataSource.query(
+        'SELECT "userId" FROM "project" WHERE "id"=$1::uuid',
+        [ownedLegacyProjectId]
+      )
+    ).toEqual([{ userId: ACCOUNT_ID.toUpperCase() }]);
     const reconstruct = (source: string, field: string) =>
       first.records
         .filter((row) => row.source === source && row.data.field === field)

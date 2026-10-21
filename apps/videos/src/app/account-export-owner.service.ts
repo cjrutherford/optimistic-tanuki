@@ -101,7 +101,7 @@ const SELECTS: Record<VideosAccountExportSource, (temp: string) => string> = {
       'c',
       'avatarAssetId',
       256
-    )},c."createdAt"::text "createdAt",c."updatedAt"::text "updatedAt" FROM "channel" c WHERE (c."userId"=$1 OR c."profileId" IN (SELECT id::text FROM "${t}")) AND ($2::uuid IS NULL OR c."id">$2::uuid) ORDER BY c."id" LIMIT $3`,
+    )},c."createdAt"::text "createdAt",c."updatedAt"::text "updatedAt" FROM "channel" c WHERE (lower(c."userId")=$1 OR lower(c."profileId") IN (SELECT id::text FROM "${t}")) AND ($2::uuid IS NULL OR c."id">$2::uuid) ORDER BY c."id" LIMIT $3`,
   video: (t) =>
     `SELECT v."id"::text id,${text('v', 'title', 200)},${text(
       'v',
@@ -136,7 +136,7 @@ const SELECTS: Record<VideosAccountExportSource, (temp: string) => string> = {
       'communityId',
       256,
       'channelCommunityId'
-    )} FROM "video" v JOIN "channel" c ON c."id"=v."channelId" WHERE (c."userId"=$1 OR c."profileId" IN (SELECT id::text FROM "${t}")) AND ($2::uuid IS NULL OR v."id">$2::uuid) ORDER BY v."id" LIMIT $3`,
+    )} FROM "video" v JOIN "channel" c ON c."id"=v."channelId" WHERE (lower(c."userId")=$1 OR lower(c."profileId") IN (SELECT id::text FROM "${t}")) AND ($2::uuid IS NULL OR v."id">$2::uuid) ORDER BY v."id" LIMIT $3`,
   channelSubscription: (t) =>
     `SELECT s."id"::text id,s."channelId"::text "channelId",s."subscribedAt"::text "subscribedAt",${text(
       's',
@@ -147,7 +147,7 @@ const SELECTS: Record<VideosAccountExportSource, (temp: string) => string> = {
       'communityId',
       256,
       'channelCommunityId'
-    )} FROM "channel_subscription" s JOIN "channel" c ON c."id"=s."channelId" WHERE (s."userId"=$1 OR s."profileId" IN (SELECT id::text FROM "${t}")) AND ($2::uuid IS NULL OR s."id">$2::uuid) ORDER BY s."id" LIMIT $3`,
+    )} FROM "channel_subscription" s JOIN "channel" c ON c."id"=s."channelId" WHERE (lower(s."userId")=$1 OR lower(s."profileId") IN (SELECT id::text FROM "${t}")) AND ($2::uuid IS NULL OR s."id">$2::uuid) ORDER BY s."id" LIMIT $3`,
   videoView: (t) =>
     `SELECT x."id"::text id,x."videoId"::text "videoId",${text(
       'x',
@@ -157,7 +157,7 @@ const SELECTS: Record<VideosAccountExportSource, (temp: string) => string> = {
       'x',
       'profileId',
       36
-    )},x."watchDurationSeconds" "watchDurationSeconds",x."viewedAt"::text "viewedAt" FROM "video_view" x WHERE (x."userId"=$1 OR x."profileId" IN (SELECT id::text FROM "${t}")) AND ($2::uuid IS NULL OR x."id">$2::uuid) ORDER BY x."id" LIMIT $3`,
+    )},x."watchDurationSeconds" "watchDurationSeconds",x."viewedAt"::text "viewedAt" FROM "video_view" x WHERE (lower(x."userId")=$1 OR lower(x."profileId") IN (SELECT id::text FROM "${t}")) AND ($2::uuid IS NULL OR x."id">$2::uuid) ORDER BY x."id" LIMIT $3`,
   channelFeed: (t) =>
     `SELECT f."id"::text id,f."channelId"::text "channelId",${text(
       'f',
@@ -172,7 +172,7 @@ const SELECTS: Record<VideosAccountExportSource, (temp: string) => string> = {
       'communityId',
       256,
       'channelCommunityId'
-    )} FROM "channel_feed" f JOIN "channel" c ON c."id"=f."channelId" WHERE (c."userId"=$1 OR c."profileId" IN (SELECT id::text FROM "${t}")) AND ($2::uuid IS NULL OR f."id">$2::uuid) ORDER BY f."id" LIMIT $3`,
+    )} FROM "channel_feed" f JOIN "channel" c ON c."id"=f."channelId" WHERE (lower(c."userId")=$1 OR lower(c."profileId") IN (SELECT id::text FROM "${t}")) AND ($2::uuid IS NULL OR f."id">$2::uuid) ORDER BY f."id" LIMIT $3`,
   programBlock: (t) =>
     `SELECT p."id"::text id,p."channelId"::text "channelId",${text(
       'p',
@@ -191,7 +191,7 @@ const SELECTS: Record<VideosAccountExportSource, (temp: string) => string> = {
       'communityId',
       256,
       'channelCommunityId'
-    )} FROM "program_block" p JOIN "channel" c ON c."id"=p."channelId" WHERE (c."userId"=$1 OR c."profileId" IN (SELECT id::text FROM "${t}")) AND ($2::uuid IS NULL OR p."id">$2::uuid) ORDER BY p."id" LIMIT $3`,
+    )} FROM "program_block" p JOIN "channel" c ON c."id"=p."channelId" WHERE (lower(c."userId")=$1 OR lower(c."profileId") IN (SELECT id::text FROM "${t}")) AND ($2::uuid IS NULL OR p."id">$2::uuid) ORDER BY p."id" LIMIT $3`,
   liveSession: (t) =>
     `SELECT l."id"::text id,${text(
       'l',
@@ -218,7 +218,7 @@ const SELECTS: Record<VideosAccountExportSource, (temp: string) => string> = {
       'communityId',
       256,
       'channelCommunityId'
-    )} FROM "live_session" l LEFT JOIN "channel" c ON c."id"=l."channelId" WHERE ((l."startedByUserId"=$1 OR l."startedByProfileId" IN (SELECT id::text FROM "${t}")) OR (c."userId"=$1 OR c."profileId" IN (SELECT id::text FROM "${t}"))) AND ($2::uuid IS NULL OR l."id">$2::uuid) ORDER BY l."id" LIMIT $3`,
+    )} FROM "live_session" l LEFT JOIN "channel" c ON c."id"=l."channelId" WHERE ((lower(l."startedByUserId")=$1 OR lower(l."startedByProfileId") IN (SELECT id::text FROM "${t}")) OR (lower(c."userId")=$1 OR lower(c."profileId") IN (SELECT id::text FROM "${t}"))) AND ($2::uuid IS NULL OR l."id">$2::uuid) ORDER BY l."id" LIMIT $3`,
 };
 
 /** Transaction-consistent, lease-bound export of Videos-owned metadata. */
@@ -452,6 +452,18 @@ export class VideosAccountExportOwnerService {
       for (const raw of rows.slice(0, PAGE)) {
         this.active(signal, deadline);
         const row = raw as Record<string, unknown>;
+        for (const key of [
+          'userId',
+          'profileId',
+          'startedByUserId',
+          'startedByProfileId',
+        ]) {
+          const value = row[key];
+          if (value != null && !UUID.test(String(value)))
+            throw new VideosAccountExportOwnerError(
+              'OWNER_RELATIONSHIP_AMBIGUOUS'
+            );
+        }
         const profileOwned =
           typeof row.profileId === 'string' &&
           (await this.profileHas(r, temp, row.profileId, signal, deadline));
@@ -509,6 +521,8 @@ export class VideosAccountExportOwnerService {
               (key !== 'profileId' || source === 'channel')
           )
         );
+        if (typeof data.profileId === 'string')
+          data.profileId = data.profileId.toLowerCase();
         for (const [key, value] of Object.entries(data)) {
           if (
             /At$/.test(key) &&
@@ -549,6 +563,12 @@ export class VideosAccountExportOwnerService {
               'OWNER_RELATIONSHIP_AMBIGUOUS'
             );
           const own = userMatch && profileMatch;
+          if (own) {
+            data.startedByUserId = String(row.startedByUserId).toLowerCase();
+            data.startedByProfileId = String(
+              row.startedByProfileId
+            ).toLowerCase();
+          }
           if (
             row.channelId != null &&
             row.channelCommunityId !== row.communityId

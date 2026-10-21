@@ -245,7 +245,7 @@ describe('AssetsAccountExportOwnerService', () => {
       query.mock.calls.some(
         ([sql, params]) =>
           String(sql).includes(
-            '(a."profileId",a."id")>($1::varchar,$2::uuid)'
+            '(lower(a."profileId"),a."id")>(lower($1::varchar),$2::uuid)'
           ) && params[0] === null
       )
     ).toBe(true);
@@ -255,6 +255,67 @@ describe('AssetsAccountExportOwnerService', () => {
           String(sql).includes('ga."id">$2::uuid') && params[1] === null
       )
     ).toBe(true);
+    expect(
+      query.mock.calls.some(([sql]) =>
+        String(sql).includes('s."id"::text=lower(a."profileId")')
+      )
+    ).toBe(true);
+    expect(
+      query.mock.calls.some(([sql]) =>
+        String(sql).includes('lower(ga."actorUserId")=$1')
+      )
+    ).toBe(true);
+  });
+
+  it('matches uppercase varchar profile and guardian account UUIDs and emits canonical values', async () => {
+    const ownedProfile = 'abcdefab-cdef-4abc-8def-abcdefabcdef';
+    ownedProfileIds = [ownedProfile];
+    assetRows = [
+      {
+        id: minUuid,
+        profileId: ownedProfile.toUpperCase(),
+        profileIdLength: 36,
+        name: 'upper.png',
+        nameLength: 9,
+        type: 'image',
+        storageStrategy: 'local_block_storage',
+        storagePath: '/private/raw/storage/location',
+        pathLength: 29,
+        originKind: 'ordinary',
+        originProfileId: null,
+        originAppId: null,
+        originAppIdLength: null,
+        lifecycleState: 'active',
+      },
+    ];
+    activityRows = [
+      activity({
+        id: nextUuid,
+        actorUserId: accountId.toUpperCase(),
+        dependentUserId: accountId.toUpperCase(),
+        profileId: ownedProfile.toUpperCase(),
+      }),
+    ];
+    const chunks: any[] = [];
+    await service.captureAccount({
+      grant,
+      profileSnapshot: descriptor,
+      onChunk: async (chunk) => {
+        chunks.push(chunk);
+      },
+    });
+    expect(
+      chunks.find((chunk) => chunk.source === 'asset').records[0].data.profileId
+    ).toBe(ownedProfile);
+    expect(
+      chunks.find((chunk) => chunk.source === 'guardianActivity').records[0]
+        .data
+    ).toMatchObject({
+      accountRoles: ['actor', 'dependent'],
+      actorRole: 'account',
+      dependentRole: 'account',
+      ownedProfileId: ownedProfile,
+    });
   });
 
   it('queries every empty source and sends the terminal envelope only after cleanup', async () => {

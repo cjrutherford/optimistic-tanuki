@@ -51,11 +51,11 @@ const enabled =
   process.env['ASSETS_HLS_PG_USER'] === 'assets_fixture' &&
   !!process.env['ASSETS_HLS_PG_PASSWORD'];
 const describePg = enabled ? describe : describe.skip;
-const ACCOUNT = '11111111-1111-4111-8111-111111111111';
-const FOREIGN = '22222222-2222-4222-8222-222222222222';
-const PROFILE_A = '33333333-3333-4333-8333-333333333333';
-const PROFILE_B = '44444444-4444-4444-8444-444444444444';
-const PROFILE_FOREIGN = '55555555-5555-4555-8555-555555555555';
+const ACCOUNT = 'abcdef11-1111-4111-8111-111111111111';
+const FOREIGN = 'abcdef22-2222-4222-8222-222222222222';
+const PROFILE_A = 'abcdef33-3333-4333-8333-333333333333';
+const PROFILE_B = 'abcdef44-4444-4444-8444-444444444444';
+const PROFILE_FOREIGN = 'abcdef55-5555-4555-8555-555555555555';
 const exec = promisify(execFile);
 
 describePg('Assets real PostgreSQL HLS capture acceptance', () => {
@@ -352,14 +352,23 @@ describePg('Assets real PostgreSQL HLS capture acceptance', () => {
       `INSERT INTO asset_entity (id,name,type,"storageStrategy","storagePath","profileId") VALUES
       ($1,'capture.mp4','video','local_block_storage','playback.env',$2),
       ($3,'stream.m3u8','video','local_block_storage','manifest.env',$2)`,
-      [randomUUID(), PROFILE_A, manifestId]
+      [randomUUID(), PROFILE_A.toUpperCase(), manifestId]
     );
     await db.query(
       `INSERT INTO asset_entity (id,name,type,"storageStrategy","storagePath","profileId")
       SELECT u.id, 'segment-' || u.ordinality || '.ts', 'video', 'local_block_storage', u.path,
       CASE WHEN u.ordinality % 2 = 0 THEN $3 ELSE $4 END
       FROM unnest($1::uuid[], $2::text[]) WITH ORDINALITY AS u(id,path,ordinality)`,
-      [segmentIds, segmentPaths, PROFILE_A, PROFILE_B]
+      [
+        segmentIds,
+        segmentPaths,
+        PROFILE_A.toUpperCase(),
+        PROFILE_B.toUpperCase(),
+      ]
+    );
+    await db.query(
+      `INSERT INTO guardian_asset_activity ("actorUserId","dependentUserId","profileId","assetId","appId","operation","changedFieldNames") VALUES ($1,$2,$3,'*','assets','list','[]'::jsonb)`,
+      [ACCOUNT.toUpperCase(), ACCOUNT.toUpperCase(), PROFILE_A.toUpperCase()]
     );
     const profileClient = { send: profileSend } as unknown as ClientProxy;
     reader = new AssetsAccountExportOwnerService(
@@ -397,6 +406,16 @@ describePg('Assets real PostgreSQL HLS capture acceptance', () => {
 
   it('captures exact encrypted HLS bytes and cross-profile TS references that assemble and probe offline', async () => {
     const before = await fingerprint();
+    expect(PROFILE_A.toUpperCase()).not.toBe(PROFILE_A);
+    expect(ACCOUNT.toUpperCase()).not.toBe(ACCOUNT);
+    const uppercaseRows = await db.query(
+      `SELECT (SELECT count(*)::int FROM asset_entity WHERE "profileId"<>lower("profileId") AND lower("profileId")=ANY($1::text[])) AS assets, (SELECT count(*)::int FROM guardian_asset_activity WHERE "actorUserId"<>lower("actorUserId") AND lower("actorUserId")=$2 AND "dependentUserId"<>lower("dependentUserId") AND lower("dependentUserId")=$2) AS activities`,
+      [[PROFILE_A, PROFILE_B], ACCOUNT]
+    );
+    expect(uppercaseRows[0]).toMatchObject({
+      assets: 2 + segmentIds.length,
+      activities: 1,
+    });
     const handle = await capture();
     try {
       const all = await records(handle);
@@ -459,6 +478,14 @@ describePg('Assets real PostgreSQL HLS capture acceptance', () => {
           )
         )
       ).toEqual(new Set([PROFILE_A, PROFILE_B]));
+      expect(
+        all.find((record) => record.source === 'guardianActivity')?.data
+      ).toMatchObject({
+        accountRoles: ['actor', 'dependent'],
+        actorRole: 'account',
+        dependentRole: 'account',
+        ownedProfileId: PROFILE_A,
+      });
       const offline = join(root, 'offline');
       await mkdir(offline);
       for (const record of manifests)
@@ -570,16 +597,28 @@ describePg('Assets real PostgreSQL HLS capture acceptance', () => {
     const ids = Array.from({ length: 201 }, () => randomUUID());
     const before = await fingerprint();
     await db.query(
-      `INSERT INTO asset_entity (id,name,type,"storageStrategy","storagePath","profileId") SELECT x,'batch.ts','video','local_block_storage',$2,CASE WHEN n%2=0 THEN $3 ELSE $4 END FROM unnest($1::uuid[]) WITH ORDINALITY AS u(x,n)`,
+      `INSERT INTO asset_entity (id,name,type,"storageStrategy","storagePath","profileId") SELECT x,'batch.ts','video','local_block_storage',$2,CASE WHEN n%4=0 THEN upper($3) WHEN n%4=1 THEN $3 WHEN n%4=2 THEN upper($4) ELSE $4 END FROM unnest($1::uuid[]) WITH ORDINALITY AS u(x,n)`,
       [ids, segmentPaths[0], PROFILE_A, PROFILE_B]
     );
+    expect(
+      await db.query(
+        `SELECT lower("profileId") AS "profileId",count(DISTINCT "profileId")::int AS variants FROM asset_entity WHERE id=ANY($1::uuid[]) GROUP BY lower("profileId") ORDER BY lower("profileId")`,
+        [ids]
+      )
+    ).toEqual([
+      { profileId: PROFILE_A, variants: 2 },
+      { profileId: PROFILE_B, variants: 2 },
+    ]);
     await encryptedWrite('manifest.env', await playlist(ids));
     const batchSizes: number[] = [];
+    let mediaPages = 0;
     const originalCreate = db.createQueryRunner.bind(db);
     db.createQueryRunner = ((...args: Parameters<typeof originalCreate>) => {
       const runner = originalCreate(...args);
       const query = runner.query.bind(runner);
       runner.query = async (...queryArgs: Parameters<typeof query>) => {
+        if (String(queryArgs[0]).includes('ORDER BY lower(a."profileId")'))
+          mediaPages++;
         if (
           /a\.id=ANY\(\$1::uuid\[\]\)[\s\S]*a\.type='video'/.test(
             String(queryArgs[0])
@@ -594,6 +633,30 @@ describePg('Assets real PostgreSQL HLS capture acceptance', () => {
     try {
       handle = await capture();
       expect(batchSizes).toEqual([200, 1]);
+      const batchRecords = await records(handle);
+      const batchManifests = batchRecords.filter(
+        (record) =>
+          record.source === 'assetMedia' &&
+          record.data.kind === 'manifest' &&
+          ids.includes(record.data.assetId)
+      );
+      expect(
+        new Set(batchManifests.map((record) => record.data.assetId))
+      ).toEqual(new Set(ids));
+      expect(
+        new Set(batchManifests.map((record) => record.data.sizeBytes))
+      ).toEqual(new Set([segmentBytes[0].length]));
+      expect(
+        new Set(batchManifests.map((record) => record.data.sha256))
+      ).toEqual(
+        new Set([createHash('sha256').update(segmentBytes[0]).digest('hex')])
+      );
+      expect(
+        batchRecords.filter(
+          (record) => record.source === 'asset' && ids.includes(record.data.id)
+        )
+      ).toHaveLength(201);
+      expect(mediaPages).toBeGreaterThanOrEqual(2);
     } finally {
       await handle?.cleanup();
       db.createQueryRunner = originalCreate;

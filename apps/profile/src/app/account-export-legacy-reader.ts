@@ -39,8 +39,10 @@ const TEXT_CHUNK_CHARS = 1000;
 
 /** Bounded row and text readers that share the caller's authenticated DB snapshot. */
 export class ProfileAccountExportLegacyReader {
+  private readonly accountId: string;
+
   constructor(
-    private readonly accountId: string,
+    accountId: string,
     private readonly queryCallback: ProfileAccountExportReadQuery
   ) {
     if (
@@ -49,6 +51,7 @@ export class ProfileAccountExportLegacyReader {
     ) {
       throw new ProfileAccountExportLegacyReadError();
     }
+    this.accountId = accountId.toLowerCase();
   }
 
   async *legacyGoalTextRows(): AsyncGenerator<ProfileAccountExportLegacyRecord> {
@@ -77,9 +80,9 @@ export class ProfileAccountExportLegacyReader {
           INLINE_TEXT_CHARS + 1
         }) AS "descriptionPrefix", char_length(g."description") AS "descriptionChars", octet_length(g."description") AS "descriptionBytes", g."target", g."progress", g."startDate"::text AS "startDate", g."endDate"::text AS "endDate", g."completed", g."created_at"::text AS "created_at", (g."relatedProfileId" IS NOT NULL) AS "hasRelatedProfileId", CASE WHEN owned_profile."id" IS NULL THEN NULL ELSE g."relatedProfileId"::text END AS "ownedRelatedProfileId", (g."relatedProjectId" IS NOT NULL) AS "hasRelatedProjectId", CASE WHEN owned_project."id" IS NULL THEN NULL ELSE g."relatedProjectId"::text END AS "ownedRelatedProjectId"
            FROM "goal" g
-           LEFT JOIN "profile" owned_profile ON owned_profile."id" = g."relatedProfileId" AND owned_profile."userId" = $1::varchar
-           LEFT JOIN "project" owned_project ON owned_project."id" = g."relatedProjectId" AND owned_project."userId" = $1::varchar
-          WHERE g."userId" = $1::varchar AND ($2::uuid IS NULL OR g."id" > $2::uuid)
+           LEFT JOIN "profile" owned_profile ON owned_profile."id" = g."relatedProfileId" AND lower(owned_profile."userId") = lower($1::varchar)
+           LEFT JOIN "project" owned_project ON owned_project."id" = g."relatedProjectId" AND lower(owned_project."userId") = lower($1::varchar)
+          WHERE lower(g."userId") = lower($1::varchar) AND ($2::uuid IS NULL OR g."id" > $2::uuid)
           ORDER BY g."id" LIMIT $3::integer`,
         [this.accountId, cursor, PAGE_LIMIT],
         'goal',
@@ -126,10 +129,10 @@ export class ProfileAccountExportLegacyReader {
           INLINE_TEXT_CHARS + 1
         }) AS "descriptionPrefix", char_length(p."description") AS "descriptionChars", octet_length(p."description") AS "descriptionBytes", p."created_at"::text AS "created_at", (p."relatedProfileId" IS NOT NULL) AS "hasRelatedProfileId", CASE WHEN owned_profile."id" IS NULL THEN NULL ELSE p."relatedProfileId"::text END AS "ownedRelatedProfileId", (p."timeLineEventsId" IS NOT NULL) AS "hasTimeLineEventsId", CASE WHEN owned_timeline."id" IS NULL THEN NULL ELSE p."timeLineEventsId"::text END AS "ownedTimeLineEventsId", (p."goalsId" IS NOT NULL) AS "hasGoalsId", CASE WHEN owned_goal."id" IS NULL THEN NULL ELSE p."goalsId"::text END AS "ownedGoalsId"
            FROM "project" p
-           LEFT JOIN "profile" owned_profile ON owned_profile."id" = p."relatedProfileId" AND owned_profile."userId" = $1::varchar
-           LEFT JOIN "timeline" owned_timeline ON owned_timeline."id" = p."timeLineEventsId" AND owned_timeline."userId" = $1::varchar
-           LEFT JOIN "goal" owned_goal ON owned_goal."id" = p."goalsId" AND owned_goal."userId" = $1::varchar
-          WHERE p."userId" = $1::varchar AND ($2::uuid IS NULL OR p."id" > $2::uuid)
+           LEFT JOIN "profile" owned_profile ON owned_profile."id" = p."relatedProfileId" AND lower(owned_profile."userId") = lower($1::varchar)
+           LEFT JOIN "timeline" owned_timeline ON owned_timeline."id" = p."timeLineEventsId" AND lower(owned_timeline."userId") = lower($1::varchar)
+           LEFT JOIN "goal" owned_goal ON owned_goal."id" = p."goalsId" AND lower(owned_goal."userId") = lower($1::varchar)
+          WHERE lower(p."userId") = lower($1::varchar) AND ($2::uuid IS NULL OR p."id" > $2::uuid)
           ORDER BY p."id" LIMIT $3::integer`,
         [this.accountId, cursor, PAGE_LIMIT],
         'project',
@@ -176,7 +179,7 @@ export class ProfileAccountExportLegacyReader {
           INLINE_TEXT_CHARS + 1
         }) AS "descriptionPrefix", char_length(${prefix}."description") AS "descriptionChars", octet_length(${prefix}."description") AS "descriptionBytes"
            FROM "${table}" ${prefix}
-          WHERE ${prefix}."userId" = $1::varchar AND ($2::uuid IS NULL OR ${prefix}."id" > $2::uuid)
+          WHERE lower(${prefix}."userId") = lower($1::varchar) AND ($2::uuid IS NULL OR ${prefix}."id" > $2::uuid)
           ORDER BY ${prefix}."id" LIMIT $3::integer`,
         [this.accountId, cursor, PAGE_LIMIT],
         table,
@@ -198,7 +201,7 @@ export class ProfileAccountExportLegacyReader {
           let emittedBytes = 0;
           while (offset <= chars) {
             const chunkRows = await this.queryRows(
-              `SELECT substring("${fieldName}" from $2::integer for $3::integer) AS "value" FROM "${table}" WHERE "id" = $1::uuid AND "userId" = $4::varchar`,
+              `SELECT substring("${fieldName}" from $2::integer for $3::integer) AS "value" FROM "${table}" WHERE "id" = $1::uuid AND lower("userId") = lower($4::varchar)`,
               [id, offset, TEXT_CHUNK_CHARS, this.accountId]
             );
             if (chunkRows.length !== 1)
@@ -301,17 +304,25 @@ export class ProfileAccountExportLegacyReader {
       throw new ProfileAccountExportLegacyReadError();
     }
     const normalized = id.toLowerCase();
-    if (row['userId'] !== this.accountId) {
+    if (!this.isOwnedUser(row['userId'])) {
       throw new ProfileAccountExportLegacyReadError();
     }
     return normalized;
   }
 
   private ownedUser(row: Row): string {
-    if (row['userId'] !== this.accountId) {
+    if (!this.isOwnedUser(row['userId'])) {
       throw new ProfileAccountExportLegacyReadError();
     }
     return this.accountId;
+  }
+
+  private isOwnedUser(value: unknown): boolean {
+    return (
+      typeof value === 'string' &&
+      UUID_PATTERN.test(value) &&
+      value.toLowerCase() === this.accountId
+    );
   }
 
   private textValue(

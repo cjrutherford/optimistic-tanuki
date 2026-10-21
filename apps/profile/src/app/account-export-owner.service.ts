@@ -86,21 +86,22 @@ export class ProfileAccountExportOwnerService {
     options: ProfileAccountExportOptions
   ): Promise<ProfileAccountExportChunk> {
     const {
-      accountId,
+      accountId: requestedAccountId,
       sessionToken,
       appId,
       onChunk,
       signal: externalSignal,
     } = options ?? ({} as ProfileAccountExportOptions);
     if (
-      typeof accountId !== 'string' ||
-      !PRINCIPAL_ID_PATTERN.test(accountId)
+      typeof requestedAccountId !== 'string' ||
+      !PRINCIPAL_ID_PATTERN.test(requestedAccountId)
     ) {
       throw new ProfileAccountExportOwnerError(
         'OWNER_ACCOUNT_MISMATCH',
-        typeof accountId === 'string' ? accountId : ''
+        typeof requestedAccountId === 'string' ? requestedAccountId : ''
       );
     }
+    const accountId = requestedAccountId.toLowerCase();
     if (
       typeof sessionToken !== 'string' ||
       sessionToken.trim().length === 0 ||
@@ -340,7 +341,7 @@ export class ProfileAccountExportOwnerService {
     }
     if (
       validation?.isValid !== true ||
-      validation.data?.userId !== accountId ||
+      !this.isAccountId(validation.data?.userId, accountId) ||
       validation.data?.appId !== appId
     ) {
       throw new ProfileAccountExportOwnerError(
@@ -359,14 +360,15 @@ export class ProfileAccountExportOwnerService {
   ): AsyncGenerator<ProfileAccountExportRecord> {
     for await (const row of this.uuidPages(
       runner,
-      'SELECT "id"::text AS "id", "userId" FROM "profile" WHERE "userId" = $1 AND ($2::uuid IS NULL OR "id" > $2::uuid) ORDER BY "id" LIMIT $3',
+      'SELECT "id"::text AS "id", "userId" FROM "profile" WHERE lower("userId") = $1 AND ($2::uuid IS NULL OR "id" > $2::uuid) ORDER BY "id" LIMIT $3',
       accountId,
       signal,
       deadlineAt,
       timedOut
     )) {
       const id = this.uuid(row['id'], 'profile id');
-      if (row['userId'] !== accountId) this.relationshipFailure(accountId);
+      if (!this.isAccountId(row['userId'], accountId))
+        this.relationshipFailure(accountId);
       yield { source: 'profileIdentity', data: { id, userId: accountId } };
     }
   }
@@ -386,7 +388,8 @@ export class ProfileAccountExportOwnerService {
       timedOut
     )) {
       const id = this.uuid(row['id'], 'profile id');
-      if (row['userId'] !== accountId) this.relationshipFailure(accountId);
+      if (!this.isAccountId(row['userId'], accountId))
+        this.relationshipFailure(accountId);
       const data: Row = {
         id,
         userId: accountId,
@@ -422,7 +425,8 @@ export class ProfileAccountExportOwnerService {
       timedOut
     )) {
       const profileId = this.uuid(profile['id'], 'profile id');
-      if (profile['userId'] !== accountId) this.relationshipFailure(accountId);
+      if (!this.isAccountId(profile['userId'], accountId))
+        this.relationshipFailure(accountId);
       for (const [fieldIndex, field] of fields.entries()) {
         const chars = this.numberValue(
           profile[`${field}Chars`],
@@ -444,7 +448,7 @@ export class ProfileAccountExportOwnerService {
         while (offset <= chars) {
           const [chunk] = (await this.readQuery(
             runner,
-            `SELECT substring("${field}" from $2::integer for $3::integer) AS "value" FROM "profile" WHERE "id" = $1::uuid AND "userId" = $4`,
+            `SELECT substring("${field}" from $2::integer for $3::integer) AS "value" FROM "profile" WHERE "id" = $1::uuid AND lower("userId") = $4`,
             [profileId, offset, TEXT_CHUNK_CHARS, accountId],
             signal,
             deadlineAt,
@@ -487,7 +491,8 @@ export class ProfileAccountExportOwnerService {
       timedOut
     )) {
       const profileId = this.uuid(row['id'], 'profile id');
-      if (row['userId'] !== accountId) this.relationshipFailure(accountId);
+      if (!this.isAccountId(row['userId'], accountId))
+        this.relationshipFailure(accountId);
       for (const [fieldIndex, field] of MEDIA_FIELDS.entries()) {
         const chars = this.numberValue(row[`${field}Chars`], `${field}Chars`);
         if (chars === 0) continue;
@@ -609,10 +614,10 @@ export class ProfileAccountExportOwnerService {
           MAX_INLINE_TEXT_CHARS + 1
         }) AS "descriptionPrefix", char_length(t."description") AS "descriptionChars", octet_length(t."description") AS "descriptionBytes", t."timeStamp"::text AS "timeStamp", t."eventType", t."relatedProfileId"::text AS "relatedProfileId", owned."id"::text AS "ownedRelatedProfileId", (t."relatedGoalId" IS NOT NULL) AS "hasRelatedGoalId", owned_goal."id"::text AS "ownedRelatedGoalId", (t."relatedProjectId" IS NOT NULL) AS "hasRelatedProjectId", owned_project."id"::text AS "ownedRelatedProjectId"
            FROM "timeline" t
-           LEFT JOIN "profile" owned ON owned."id" = t."relatedProfileId" AND owned."userId" = $1
-           LEFT JOIN "goal" owned_goal ON owned_goal."id" = t."relatedGoalId" AND owned_goal."userId" = $1
-           LEFT JOIN "project" owned_project ON owned_project."id" = t."relatedProjectId" AND owned_project."userId" = $1
-          WHERE t."userId" = $1 AND ($2::uuid IS NULL OR t."id" > $2::uuid)
+           LEFT JOIN "profile" owned ON owned."id" = t."relatedProfileId" AND lower(owned."userId") = $1
+           LEFT JOIN "goal" owned_goal ON owned_goal."id" = t."relatedGoalId" AND lower(owned_goal."userId") = $1
+           LEFT JOIN "project" owned_project ON owned_project."id" = t."relatedProjectId" AND lower(owned_project."userId") = $1
+          WHERE lower(t."userId") = $1 AND ($2::uuid IS NULL OR t."id" > $2::uuid)
           ORDER BY t."id" LIMIT $3`,
         [accountId, cursor, PAGE_LIMIT],
         signal,
@@ -624,7 +629,8 @@ export class ProfileAccountExportOwnerService {
       const pageRows = rows.slice(0, PAGE_SIZE);
       for (const row of pageRows) {
         const id = this.uuid(row['id'], 'timeline id');
-        if (row['userId'] !== accountId) this.relationshipFailure(accountId);
+        if (!this.isAccountId(row['userId'], accountId))
+          this.relationshipFailure(accountId);
         const rawRelated = row['relatedProfileId'];
         const related = row['ownedRelatedProfileId'];
         yield {
@@ -687,7 +693,7 @@ export class ProfileAccountExportOwnerService {
     while (true) {
       const rows = (await this.readQuery(
         runner,
-        `SELECT "id"::text AS "id", "userId", char_length("title") AS "titleChars", octet_length("title") AS "titleBytes", char_length("description") AS "descriptionChars", octet_length("description") AS "descriptionBytes" FROM "timeline" WHERE "userId" = $1 AND ($2::uuid IS NULL OR "id" > $2::uuid) ORDER BY "id" LIMIT $3`,
+        `SELECT "id"::text AS "id", "userId", char_length("title") AS "titleChars", octet_length("title") AS "titleBytes", char_length("description") AS "descriptionChars", octet_length("description") AS "descriptionBytes" FROM "timeline" WHERE lower("userId") = $1 AND ($2::uuid IS NULL OR "id" > $2::uuid) ORDER BY "id" LIMIT $3`,
         [accountId, cursor, PAGE_LIMIT],
         signal,
         deadlineAt,
@@ -698,7 +704,8 @@ export class ProfileAccountExportOwnerService {
       const pageRows = rows.slice(0, PAGE_SIZE);
       for (const row of pageRows) {
         const timelineId = this.uuid(row['id'], 'timeline text id');
-        if (row['userId'] !== accountId) this.relationshipFailure(accountId);
+        if (!this.isAccountId(row['userId'], accountId))
+          this.relationshipFailure(accountId);
         for (const [fieldIndex, field] of ['title', 'description'].entries()) {
           const chars = this.numberValue(row[`${field}Chars`], `${field}Chars`);
           if (chars <= MAX_INLINE_TEXT_CHARS) continue;
@@ -711,7 +718,7 @@ export class ProfileAccountExportOwnerService {
           while (offset <= chars) {
             const [chunk] = (await this.readQuery(
               runner,
-              `SELECT substring("${field}" from $2::integer for $3::integer) AS "value" FROM "timeline" WHERE "id" = $1::uuid AND "userId" = $4`,
+              `SELECT substring("${field}" from $2::integer for $3::integer) AS "value" FROM "timeline" WHERE "id" = $1::uuid AND lower("userId") = $4`,
               [timelineId, offset, TEXT_CHUNK_CHARS, accountId],
               signal,
               deadlineAt,
@@ -785,10 +792,10 @@ export class ProfileAccountExportOwnerService {
     while (true) {
       const rows = (await this.readQuery(
         runner,
-        `SELECT a."id"::text AS "id", a."actorUserId"::text AS "actorUserId", a."dependentUserId"::text AS "dependentUserId", a."profileId"::text AS "profileId", a."appId", a."operation", CASE WHEN a."dependentUserId" = $1 THEN CASE WHEN cardinality(a."changedFieldNames") <= 1000 AND octet_length(a."changedFieldNames"::text) <= 65536 THEN a."changedFieldNames" ELSE NULL END ELSE NULL END AS "changedFieldNames", a."createdAt"::text AS "createdAt", owned."id"::text AS "verifiedProfileId"
+        `SELECT a."id"::text AS "id", a."actorUserId"::text AS "actorUserId", a."dependentUserId"::text AS "dependentUserId", a."profileId"::text AS "profileId", a."appId", a."operation", CASE WHEN a."dependentUserId"::text = $1 THEN CASE WHEN cardinality(a."changedFieldNames") <= 1000 AND octet_length(a."changedFieldNames"::text) <= 65536 THEN a."changedFieldNames" ELSE NULL END ELSE NULL END AS "changedFieldNames", a."createdAt"::text AS "createdAt", owned."id"::text AS "verifiedProfileId"
            FROM "guardian_profile_activity" a
-           LEFT JOIN "profile" owned ON owned."id" = a."profileId" AND owned."userId" = a."dependentUserId"::text
-          WHERE (a."actorUserId" = $1 OR a."dependentUserId" = $1)
+           LEFT JOIN "profile" owned ON owned."id" = a."profileId" AND lower(owned."userId") = lower(a."dependentUserId"::text)
+          WHERE (a."actorUserId" = $1::uuid OR a."dependentUserId" = $1::uuid)
             AND ($2::uuid IS NULL OR a."id" > $2::uuid)
           ORDER BY a."id" LIMIT $3`,
         [accountId, cursor, PAGE_LIMIT],
@@ -801,8 +808,8 @@ export class ProfileAccountExportOwnerService {
       const pageRows = rows.slice(0, PAGE_SIZE);
       for (const row of pageRows) {
         const id = this.uuid(row['id'], 'guardian activity id');
-        const isActor = row['actorUserId'] === accountId;
-        const isDependent = row['dependentUserId'] === accountId;
+        const isActor = this.isAccountId(row['actorUserId'], accountId);
+        const isDependent = this.isAccountId(row['dependentUserId'], accountId);
         if (isActor === isDependent || row['verifiedProfileId'] == null) {
           this.relationshipFailure(accountId);
         }
@@ -897,7 +904,7 @@ export class ProfileAccountExportOwnerService {
       const rows = (await this.readQuery(
         runner,
         `SELECT \"id\"::text AS \"id\", \"userId\", ${selected}, CASE WHEN \"blogRole\" IN ('none', 'poster', 'owner') THEN \"blogRole\" ELSE NULL END AS \"blogRole\", \"created_at\"::text AS \"createdAt\"
-           FROM "profile" WHERE "userId" = $1 AND ($2::uuid IS NULL OR "id" > $2::uuid)
+           FROM "profile" WHERE lower("userId") = $1 AND ($2::uuid IS NULL OR "id" > $2::uuid)
           ORDER BY "id" LIMIT $3`,
         [accountId, cursor, PAGE_LIMIT],
         signal,
@@ -909,7 +916,10 @@ export class ProfileAccountExportOwnerService {
       const pageRows = rows.slice(0, PAGE_SIZE);
       for (const row of pageRows) {
         const id = this.uuid(row['id'], 'profile cursor');
-        if (row['userId'] !== accountId || (cursor && id <= cursor)) {
+        if (
+          !this.isAccountId(row['userId'], accountId) ||
+          (cursor && id <= cursor)
+        ) {
           this.relationshipFailure(accountId);
         }
         yield row;
@@ -996,7 +1006,7 @@ export class ProfileAccountExportOwnerService {
       const length = Math.min(MEDIA_BASE64_CHUNK_CHARS, encodedLength - offset);
       const [row] = (await this.readQuery(
         runner,
-        `SELECT substring("${field}" from $2::integer for $3::integer) AS "value" FROM "profile" WHERE "id" = $1::uuid AND "userId" = $4`,
+        `SELECT substring("${field}" from $2::integer for $3::integer) AS "value" FROM "profile" WHERE "id" = $1::uuid AND lower("userId") = $4`,
         [profileId, firstBase64Position + offset, length, accountId],
         signal,
         deadlineAt,
@@ -1214,6 +1224,14 @@ export class ProfileAccountExportOwnerService {
       throw new Error(`invalid ${field}`);
     }
     return value.toLowerCase();
+  }
+
+  private isAccountId(value: unknown, accountId: string): boolean {
+    return (
+      typeof value === 'string' &&
+      UUID_PATTERN.test(value) &&
+      value.toLowerCase() === accountId.toLowerCase()
+    );
   }
 
   private dateString(value: unknown, field: string): string {

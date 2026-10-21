@@ -133,6 +133,43 @@ describe('ProfileAccountExportLegacyReader', () => {
     ).toBe(true);
   });
 
+  it('includes uppercase UUID owner keys before chunk rereads and normalizes output', async () => {
+    const description = `upper-${'😀漢字'.repeat(1100)}`;
+    const chars = Array.from(description);
+    const query = jest.fn(async (sql: string, parameters: unknown[]) => {
+      if (sql.includes('substring(')) {
+        const offset = Number(parameters[1]) - 1;
+        const length = Number(parameters[2]);
+        return [{ value: chars.slice(offset, offset + length).join('') }];
+      }
+      return [
+        goalRow({
+          userId: ACCOUNT_ID.toUpperCase(),
+          descriptionPrefix: chars.slice(0, 2501).join(''),
+          descriptionChars: chars.length,
+          descriptionBytes: Buffer.byteLength(description),
+        }),
+      ];
+    });
+    const reader = new ProfileAccountExportLegacyReader(
+      ACCOUNT_ID.toUpperCase(),
+      query
+    );
+    const records = await collect(reader.legacyGoalTextRows());
+    expect(records[0].data.accountId).toBe(ACCOUNT_ID);
+    expect(records.map((record) => record.data.value).join('')).toBe(
+      description
+    );
+    expect(String(query.mock.calls[0][0])).toContain(
+      'lower(g."userId") = lower($1::varchar)'
+    );
+    expect(
+      query.mock.calls.some(([sql]) =>
+        String(sql).includes('lower("userId") = lower($4::varchar)')
+      )
+    ).toBe(true);
+  });
+
   it('rejects malformed page ordering, foreign rows and unusable query results', async () => {
     const rows = [goalRow({ id: OWNED_ID }), goalRow({ id: MIN_ID })];
     const outOfOrder = new ProfileAccountExportLegacyReader(
