@@ -1,4 +1,8 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { of } from 'rxjs';
 import { PresenceCommands } from '@optimistic-tanuki/constants';
 import { UserDetails } from '../../../decorators/user.decorator';
@@ -9,6 +13,7 @@ describe('PresenceController mutation actor binding', () => {
   const otherId = 'b2222222-2222-4222-8222-222222222222';
   let send: jest.Mock;
   let controller: PresenceController;
+  let audience: { resolveConversationPresence: jest.Mock };
   const principal = (userId = accountId, profileId = otherId) =>
     ({ userId, profileId } as UserDetails);
   const invoke = (method: string, ...args: unknown[]) =>
@@ -20,7 +25,8 @@ describe('PresenceController mutation actor binding', () => {
     send = jest
       .fn()
       .mockReturnValue(of({ userId: accountId, status: 'online' }));
-    controller = new PresenceController({ send } as never);
+    audience = { resolveConversationPresence: jest.fn().mockResolvedValue([]) };
+    controller = new PresenceController({ send } as never, audience as never);
   });
 
   it('binds POST actor to authenticated account and ignores the legacy body userId', async () => {
@@ -83,15 +89,69 @@ describe('PresenceController mutation actor binding', () => {
     expect(send).not.toHaveBeenCalled();
   });
 
-  it('preserves cross-account presence reads, batch reads, and online listing', async () => {
-    await controller.getPresence(otherId);
-    await controller.getPresenceBatch({ userIds: [otherId] });
-    await controller.getOnlineUsers();
+  it('allows only canonical self reads, including legacy uppercase UUIDs', async () => {
+    await controller.getPresence(accountId.toUpperCase(), principal());
+    await controller.getPresenceBatch(
+      { userIds: [accountId.toUpperCase()] },
+      principal()
+    );
+    await controller.getOnlineUsers(principal());
 
     expect(send.mock.calls).toEqual([
-      [{ cmd: PresenceCommands.GET_PRESENCE }, { userId: otherId }],
-      [{ cmd: PresenceCommands.GET_PRESENCE_BATCH }, { userIds: [otherId] }],
-      [{ cmd: PresenceCommands.GET_ONLINE_USERS }, {}],
+      [{ cmd: PresenceCommands.GET_PRESENCE }, { userId: accountId }],
+      [{ cmd: PresenceCommands.GET_PRESENCE_BATCH }, { userIds: [accountId] }],
+      [{ cmd: PresenceCommands.GET_ONLINE_USERS }, { userIds: [accountId] }],
     ]);
+  });
+
+  it('denies foreign reads before Social RPC', async () => {
+    await expect(
+      controller.getPresence(otherId, principal())
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      controller.getPresenceBatch({ userIds: [otherId] }, principal())
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('validates self read principal and batch bounds before Social RPC', async () => {
+    await expect(
+      controller.getPresence(accountId, null)
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(
+      controller.getPresenceBatch(
+        { userIds: Array(101).fill(accountId) },
+        principal()
+      )
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(
+      await controller.getPresenceBatch({ userIds: [] }, principal())
+    ).toEqual([]);
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('verifies and canonicalizes conversation presence inputs', async () => {
+    const conversationId = 'c3333333-3333-4333-8333-333333333333';
+    const result = await controller.getConversationPresence(
+      {
+        conversationId: conversationId.toUpperCase(),
+        profileIds: [otherId.toUpperCase(), otherId],
+      },
+      principal()
+    );
+
+    expect(result).toEqual([]);
+    expect(audience.resolveConversationPresence).toHaveBeenCalledWith(
+      accountId,
+      otherId,
+      conversationId,
+      [otherId]
+    );
+    await expect(
+      controller.getConversationPresence(
+        { conversationId, profileIds: ['bad'] },
+        principal()
+      )
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

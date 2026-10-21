@@ -96,6 +96,21 @@ describe('PresenceService', () => {
     req.flush([presence('u1'), presence('u2')]);
   });
 
+  it('gets profile-scoped presence for a conversation', (done) => {
+    const result = [{ profileId: 'p2', status: 'online' as const }];
+    service.getConversationPresence('conversation-1', ['p2']).subscribe((p) => {
+      expect(p).toEqual(result);
+      done();
+    });
+    const req = httpMock.expectOne('/api/presence/conversation');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      conversationId: 'conversation-1',
+      profileIds: ['p2'],
+    });
+    req.flush(result);
+  });
+
   it('gets online users', (done) => {
     service.getOnlineUsers().subscribe(() => done());
     const req = httpMock.expectOne('/api/presence/online/users');

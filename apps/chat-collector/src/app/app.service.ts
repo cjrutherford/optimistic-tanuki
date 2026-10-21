@@ -236,6 +236,65 @@ export class AppService {
     });
   }
 
+  async getPresenceAudience(request: {
+    conversationId: string;
+    requestingProfileId: string;
+    targetProfileIds: string[];
+  }) {
+    const uuid = (v: unknown): v is string =>
+      typeof v === 'string' && isUUID(v, 'all');
+    if (
+      !request ||
+      !uuid(request.conversationId) ||
+      !uuid(request.requestingProfileId) ||
+      !Array.isArray(request.targetProfileIds) ||
+      request.targetProfileIds.length > 100 ||
+      request.targetProfileIds.some((id) => !uuid(id))
+    )
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Invalid presence audience request',
+      });
+    const conversationId = request.conversationId.toLowerCase();
+    const requestingProfileId = request.requestingProfileId.toLowerCase();
+    const targetProfileIds = [
+      ...new Set(request.targetProfileIds.map((id) => id.toLowerCase())),
+    ];
+    const conversation = await this.conversationRepository.findOne({
+      where: { id: conversationId, isDeleted: false },
+    });
+    if (!conversation)
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Presence audience is outside the conversation',
+      });
+    let members: string[];
+    try {
+      members = (
+        await this.participants(conversation, requestingProfileId)
+      ).map((id) => id.toLowerCase());
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Conversation membership unavailable',
+      });
+    }
+    if (
+      !members.includes(requestingProfileId) ||
+      targetProfileIds.some((id) => !members.includes(id))
+    )
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Presence audience is outside the conversation',
+      });
+    return {
+      conversationId,
+      requestingProfileId,
+      allowedProfileIds: targetProfileIds,
+    };
+  }
+
   async getConversationHttp(conversationId: string): Promise<Conversation> {
     const conversation = await this.getConversation(conversationId);
     if (!conversation) throw new NotFoundException('Conversation not found');

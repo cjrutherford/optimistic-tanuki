@@ -8,6 +8,7 @@ export const ProfileCommands = {
   Get: 'Get:Profile',
   GetAll: 'GetAll:Profile',
   CheckAccountProfileOwnership: 'Check:AccountProfileOwnership',
+  ResolveAccountBindings: 'Resolve:ProfileAccountBindings',
   Search: 'Search:Profile',
   GetPhoto: 'Get:ProfilePhoto',
   GetCover: 'Get:ProfileCover',

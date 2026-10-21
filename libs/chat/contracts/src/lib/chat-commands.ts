@@ -15,6 +15,7 @@ export const ChatCommands = {
   SEND_MESSAGE: 'SEND_MESSAGE',
   /** The conversation belonging to a project, made if it is not there yet. */
   GET_OR_CREATE_PROJECT_CHAT: 'GET_OR_CREATE_PROJECT_CHAT',
+  GET_PRESENCE_AUDIENCE: 'GET_PRESENCE_AUDIENCE',
 };
 
 export default ChatCommands;

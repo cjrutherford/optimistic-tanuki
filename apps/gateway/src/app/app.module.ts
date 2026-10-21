@@ -94,6 +94,7 @@ import { SearchController } from '../controllers/social/search/search.controller
 import { PrivacyController } from '../controllers/social/privacy/privacy.controller';
 import { ActivityController } from '../controllers/social/activity/activity.controller';
 import { PresenceController } from '../controllers/social/presence/presence.controller';
+import { GatewayPresenceAudienceService } from '../controllers/social/presence/gateway-presence-audience.service';
 import { ProfileAnalyticsController } from '../controllers/social/profile-analytics/profile-analytics.controller';
 import { PollController } from '../controllers/social/poll/poll.controller';
 import { PostShareController } from '../controllers/social/post-share/post-share.controller';
@@ -469,6 +470,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     // Sends the invitation email. Here rather than in project-planning, which
     // owns the invitation and knows nothing about which application it is for.
     ProjectInviteMailer,
+    GatewayPresenceAudienceService,
     // Same courtesy contract for community email invitations (token-based,
     // owned by social, addressed from the gateway-held app registry).
     CommunityInviteMailer,

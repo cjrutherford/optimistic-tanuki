@@ -1886,8 +1886,19 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: PresenceCommands.GET_ONLINE_USERS })
-  async getOnlineUsers() {
-    return await this.presenceService.getOnlineUsers();
+  async getOnlineUsers(@Payload() data: { userIds?: string[] }) {
+    return await this.presenceService.getOnlineUsers(data?.userIds ?? []);
+  }
+
+  @MessagePattern({ cmd: PresenceCommands.GET_CONVERSATION_PRESENCE })
+  async getConversationPresence(
+    @Payload()
+    data: {
+      actorProfileId: string;
+      bindings: Array<{ profileId: string; accountId: string }>;
+    }
+  ) {
+    return await this.presenceService.getConversationPresence(data);
   }
 
   @MessagePattern({ cmd: PresenceCommands.UPDATE_LAST_SEEN })

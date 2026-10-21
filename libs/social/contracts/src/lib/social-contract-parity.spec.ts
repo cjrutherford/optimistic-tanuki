@@ -337,6 +337,10 @@ const DEFERRED_KEYS: Record<string, string[]> = {
   BusinessContentCommands: [],
 };
 
+const INTERNAL_KEYS: Record<string, string[]> = {
+  PresenceCommands: ['GET_CONVERSATION_PRESENCE'],
+};
+
 const COMMAND_OBJECTS: Record<string, Record<string, string>> = {
   PostCommands: PostCommands as Record<string, string>,
   CommunityCommands: CommunityCommands as Record<string, string>,
@@ -372,6 +376,7 @@ describe('social-contract-parity', () => {
           Object.values(commands).includes(c.pattern)
         ).map((c) => c.pattern),
         ...DEFERRED_KEYS[name].map((k) => commands[k]),
+        ...(INTERNAL_KEYS[name] ?? []).map((k) => commands[k]),
       ]);
       expect(new Set(Object.values(commands))).toEqual(expected);
       for (const key of DEFERRED_KEYS[name]) {

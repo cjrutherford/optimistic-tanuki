@@ -171,6 +171,7 @@ const SCALAR: string[] = [ProfileCommands.GetBlogRole, TimelineCommands.Get];
 /** Internal object payload with strict validation at the handler boundary. */
 const OBJECT: string[] = [
   ProfileCommands.CheckAccountProfileOwnership,
+  ProfileCommands.ResolveAccountBindings,
   ProfileCommands.OpenAccountExportCapture,
   ProfileCommands.ReadAccountExportCapture,
   ProfileCommands.ReadAccountExportCaptureIdentities,

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { By } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { MessagesComponent } from './messages.component';
@@ -76,7 +76,7 @@ describe('MessagesComponent', () => {
         {
           provide: PresenceService,
           useValue: {
-            getPresenceBatch: jest.fn().mockReturnValue(of([])),
+            getConversationPresence: jest.fn().mockReturnValue(of([])),
           },
         },
         {
@@ -225,6 +225,70 @@ describe('MessagesComponent', () => {
       { id: 'profile-1', name: 'Alice', profilePic: 'alice.png' },
       { id: 'other-profile', name: 'Bob', profilePic: 'bob.png' },
     ]);
+  });
+
+  it('loads presence per conversation and keeps messages available when presence fails', async () => {
+    const http = TestBed.inject(HttpClient) as unknown as { post: jest.Mock };
+    http.post.mockReturnValue(
+      of([
+        { id: 'profile-1', profileName: 'Alice' },
+        { id: 'other-profile', profileName: 'Bob' },
+      ])
+    );
+    const presence = TestBed.inject(PresenceService) as unknown as {
+      getConversationPresence: jest.Mock;
+    };
+    presence.getConversationPresence.mockReturnValue(
+      throwError(() => new Error('presence unavailable'))
+    );
+    chatService.getMessages.mockResolvedValue([]);
+
+    await (component as any).handleConversationsLoaded([
+      {
+        id: 'conversation-1',
+        participants: ['profile-1', 'other-profile'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+
+    expect(presence.getConversationPresence).toHaveBeenCalledWith(
+      'conversation-1',
+      ['other-profile']
+    );
+    expect(component.chatContacts()[0].presence).toBe('offline');
+    expect(component.chatConversations()).toHaveLength(1);
+  });
+
+  it('does not carry presence from one authorized conversation into another', async () => {
+    const http = TestBed.inject(HttpClient) as unknown as { post: jest.Mock };
+    http.post.mockReturnValue(
+      of([
+        { id: 'profile-1', profileName: 'Alice' },
+        { id: 'other-profile', profileName: 'Bob' },
+      ])
+    );
+    const presence = TestBed.inject(PresenceService) as unknown as {
+      getConversationPresence: jest.Mock;
+    };
+    presence.getConversationPresence
+      .mockReturnValueOnce(
+        of([{ profileId: 'other-profile', status: 'online' }])
+      )
+      .mockReturnValueOnce(of([]));
+    chatService.getMessages.mockResolvedValue([]);
+    const conversations = ['conversation-a', 'conversation-b'].map((id) => ({
+      id,
+      participants: ['profile-1', 'other-profile'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
+
+    await (component as any).handleConversationsLoaded(conversations);
+
+    expect(component.chatContacts().map((contact) => contact.presence)).toEqual(
+      ['online', 'offline']
+    );
   });
 
   it('keeps socket arrivals that race an authorized history refresh', async () => {

@@ -25,6 +25,11 @@ export class ProfilesController {
     return this.profileService.checkAccountProfileOwnership(request);
   }
 
+  @MessagePattern({ cmd: ProfileCommands.ResolveAccountBindings })
+  resolveAccountBindings(@Payload() request: { profileIds: string[] }) {
+    return this.profileService.resolveAccountBindings(request);
+  }
+
   @MessagePattern({ cmd: ProfileCommands.Create })
   async createProfile(@Payload() createProfileDto: CreateProfileDto) {
     return await this.profileService.create(createProfileDto);

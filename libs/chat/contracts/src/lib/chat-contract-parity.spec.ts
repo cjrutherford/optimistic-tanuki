@@ -126,6 +126,9 @@ const KNOWN_UNIMPLEMENTED = [
   'REMOVE_FROM_COMMUNITY_CHAT',
   'CREATE_ADDITIONAL_CHAT_ROOM',
 ];
+/** Internal security RPC: contract shape is an exported interface and its
+ * boundary validator is implemented in chat-collector rather than a DTO. */
+const INTERNAL = ['GET_PRESENCE_AUDIENCE'];
 
 const propsOf = (errors: ValidationError[]) =>
   errors.map((e) => e.property).sort();
@@ -151,6 +154,7 @@ describe('chat-contract-parity', () => {
       ...KNOWN_UNIMPLEMENTED.map(
         (k) => (ChatCommands as Record<string, string>)[k]
       ),
+      ...INTERNAL.map((k) => (ChatCommands as Record<string, string>)[k]),
     ]);
     expect(commandValues).toEqual(expected);
     for (const key of KNOWN_UNIMPLEMENTED) {

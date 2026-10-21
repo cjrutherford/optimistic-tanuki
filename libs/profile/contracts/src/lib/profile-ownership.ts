@@ -10,3 +10,11 @@ export interface AccountProfileOwnershipResult {
   profileId: string;
   owned: boolean;
 }
+
+export interface ResolveAccountBindingsRequest {
+  profileIds: string[];
+}
+export interface ResolveAccountBindingsResult {
+  profileIds: string[];
+  bindings: Array<{ profileId: string; accountId: string }>;
+}

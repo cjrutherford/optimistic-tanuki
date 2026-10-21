@@ -174,6 +174,7 @@ export const PresenceCommands = {
   GET_ONLINE_USERS: 'GET_ONLINE_USERS',
   UPDATE_LAST_SEEN: 'UPDATE_LAST_SEEN',
   SET_OFFLINE: 'SET_OFFLINE',
+  GET_CONVERSATION_PRESENCE: 'GET_CONVERSATION_PRESENCE',
 };
 
 export const ProfileAnalyticsCommands = {

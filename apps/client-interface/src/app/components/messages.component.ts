@@ -21,7 +21,7 @@ import {
   ChatService,
   ChatConversation as AppChatConversation,
 } from '../chat.service';
-import { PresenceService, UserPresence } from '../presence.service';
+import { PresenceService, ConversationPresence } from '../presence.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { HttpClient } from '@angular/common/http';
@@ -315,23 +315,53 @@ export class MessagesComponent implements OnInit, OnDestroy {
       const participantIds = Array.from(allParticipantIds);
 
       let profiles: ProfileDto[] = [];
-      let presences: UserPresence[] = [];
+      const presenceByConversationProfileId = new Map<
+        string,
+        ConversationPresence
+      >();
 
       if (participantIds.length > 0) {
-        const [profilesResponse, presencesResponse] = await Promise.all([
-          firstValueFrom(
-            this.profiles.profileControllerGetProfilesByIds<ProfileDto[]>({
-              ids: participantIds,
-            })
-          ),
-          firstValueFrom(this.presenceService.getPresenceBatch(participantIds)),
-        ]);
-        profiles = profilesResponse;
-        presences = presencesResponse;
+        profiles = await firstValueFrom(
+          this.profiles.profileControllerGetProfilesByIds<ProfileDto[]>({
+            ids: participantIds,
+          })
+        );
       }
 
       const profileMap = new Map(profiles.map((p) => [p.id, p]));
-      const presenceMap = new Map(presences.map((p) => [p.userId, p]));
+      // Presence is optional metadata. Query each authorized conversation's
+      // participant audience and keep chat/profile rendering independent of it.
+      await Promise.all(
+        conversations.map(async (conversation) => {
+          const targetProfileIds = [
+            ...new Set(
+              conversation.participants.filter((id) => id !== profileId)
+            ),
+          ];
+          for (let start = 0; start < targetProfileIds.length; start += 100) {
+            try {
+              const presence = await firstValueFrom(
+                this.presenceService.getConversationPresence(
+                  conversation.id,
+                  targetProfileIds.slice(start, start + 100)
+                )
+              );
+              presence.forEach((entry) =>
+                presenceByConversationProfileId.set(
+                  `${conversation.id}:${entry.profileId}`,
+                  entry
+                )
+              );
+            } catch (err) {
+              console.warn(
+                'Could not load conversation presence:',
+                conversation.id,
+                err
+              );
+            }
+          }
+        })
+      );
 
       const conversationMessagesPromises = conversations.map(async (conv) => {
         try {
@@ -397,7 +427,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
             ? profileMap.get(otherParticipantId)
             : null;
           const presence = otherParticipantId
-            ? presenceMap.get(otherParticipantId)
+            ? presenceByConversationProfileId.get(
+                `${conv.id}:${otherParticipantId}`
+              )
             : null;
 
           return {
@@ -405,7 +437,6 @@ export class MessagesComponent implements OnInit, OnDestroy {
             name: otherProfile?.profileName || conv.title || 'Unknown',
             profilePic: otherProfile?.profilePic,
             presence: presence?.status || 'offline',
-            lastSeen: presence?.lastSeen,
           };
         })
       );

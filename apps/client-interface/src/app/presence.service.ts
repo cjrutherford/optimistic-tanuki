@@ -11,6 +11,11 @@ export interface UserPresence {
   isExplicit: boolean;
 }
 
+export interface ConversationPresence {
+  profileId: string;
+  status: PresenceStatus;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PresenceService {
   private baseUrl = '/api/presence';
@@ -37,6 +42,16 @@ export class PresenceService {
     return this.http.post<UserPresence[]>(`${this.baseUrl}/batch`, {
       userIds,
     });
+  }
+
+  getConversationPresence(
+    conversationId: string,
+    profileIds: string[]
+  ): Observable<ConversationPresence[]> {
+    return this.http.post<ConversationPresence[]>(
+      `${this.baseUrl}/conversation`,
+      { conversationId, profileIds }
+    );
   }
 
   getOnlineUsers(): Observable<UserPresence[]> {

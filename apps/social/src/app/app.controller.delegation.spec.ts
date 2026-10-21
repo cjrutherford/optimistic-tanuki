@@ -1566,7 +1566,10 @@ describe('AppController delegation', () => {
       await expect(
         h.controller.getPresenceBatch(['u1', 'u2'])
       ).resolves.toEqual([{ status: 'online' }]);
-      await expect(h.controller.getOnlineUsers()).resolves.toEqual(['u1']);
+      await expect(
+        h.controller.getOnlineUsers({ userIds: ['u1'] })
+      ).resolves.toEqual(['u1']);
+      expect(h.presenceService.getOnlineUsers).toHaveBeenCalledWith(['u1']);
 
       await expect(h.controller.updateLastSeen('u1')).resolves.toEqual({
         success: true,

@@ -14,6 +14,7 @@ import { Client as PgClient } from 'pg';
 import { firstValueFrom, timeout } from 'rxjs';
 import { AuthGuard } from '../../../gateway/src/auth/auth.guard';
 import { PresenceController } from '../../../gateway/src/controllers/social/presence/presence.controller';
+import { GatewayPresenceAudienceService } from '../../../gateway/src/controllers/social/presence/gateway-presence-audience.service';
 import { GATEWAY_APP_REGISTRY } from '../../../gateway/src/controllers/registry/registry.tokens';
 
 jest.setTimeout(90000);
@@ -92,7 +93,9 @@ describe('Gateway Presence actor binding against private Auth and Social service
     assertPrivateFixture();
     const secret = process.env.PRESENCE_J17_JWT_SECRET!;
     auth = connectRpc(3001);
+    const profile = connectRpc(3002);
     const social = connectRpc(3003);
+    const chat = connectRpc(3007);
     authDb = new PgClient({
       host: '127.0.0.1',
       port: 15548,
@@ -141,11 +144,14 @@ describe('Gateway Presence actor binding against private Auth and Social service
         AuthGuard,
         Reflector,
         { provide: ServiceTokens.AUTHENTICATION_SERVICE, useValue: auth },
+        { provide: ServiceTokens.PROFILE_SERVICE, useValue: profile },
+        { provide: ServiceTokens.CHAT_COLLECTOR_SERVICE, useValue: chat },
         {
           provide: ServiceTokens.PERMISSIONS_SERVICE,
           useValue: connectRpc(3012),
         },
         { provide: ServiceTokens.SOCIAL_SERVICE, useValue: social },
+        GatewayPresenceAudienceService,
         { provide: GATEWAY_APP_REGISTRY, useValue: registry },
         { provide: JwtService, useValue: new JwtService({ secret }) },
       ],
@@ -295,26 +301,40 @@ describe('Gateway Presence actor binding against private Auth and Social service
       );
     }
 
+    const ownerRead = await request(
+      `/${owner.id.toUpperCase()}`,
+      {},
+      ownerToken
+    );
+    expect(ownerRead.status).toBe(200);
+    expect(await ownerRead.json()).toMatchObject({ userId: owner.id });
     const counterpartRead = await request(`/${counterpart.id}`, {}, ownerToken);
-    expect(counterpartRead.status).toBe(200);
-    expect(await counterpartRead.json()).toMatchObject({
-      userId: counterpart.id,
-    });
+    expect(counterpartRead.status).toBe(403);
     const batchRead = await request(
       '/batch',
       {
         method: 'POST',
-        body: JSON.stringify({ userIds: [owner.id, counterpart.id] }),
+        body: JSON.stringify({ userIds: [owner.id.toUpperCase(), owner.id] }),
       },
       ownerToken
     );
     expect(batchRead.status).toBe(201);
-    expect(await batchRead.json()).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ userId: owner.id }),
-        expect.objectContaining({ userId: counterpart.id }),
-      ])
+    expect(await batchRead.json()).toEqual([
+      expect.objectContaining({ userId: owner.id }),
+    ]);
+    const foreignBatch = await request(
+      '/batch',
+      { method: 'POST', body: JSON.stringify({ userIds: [counterpart.id] }) },
+      ownerToken
     );
+    expect(foreignBatch.status).toBe(403);
+    const emptyBatch = await request(
+      '/batch',
+      { method: 'POST', body: JSON.stringify({ userIds: [] }) },
+      ownerToken
+    );
+    expect(emptyBatch.status).toBe(201);
+    expect(await emptyBatch.json()).toEqual([]);
 
     const stableCounterpart = await readPresenceRows([counterpart.id]);
     const stableOwner = await readPresenceRows([owner.id]);

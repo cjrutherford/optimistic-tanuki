@@ -34,6 +34,18 @@ export class AppController {
     return await this.appService.postMessage(data);
   }
 
+  @MessagePattern({ cmd: ChatCommands.GET_PRESENCE_AUDIENCE })
+  getPresenceAudience(
+    @Payload()
+    request: {
+      conversationId: string;
+      requestingProfileId: string;
+      targetProfileIds: string[];
+    }
+  ) {
+    return this.appService.getPresenceAudience(request);
+  }
+
   @MessagePattern({ cmd: ChatCommands.GET_CONVERSATIONS })
   async getConversations(@Payload() data: { profileId: string }) {
     this.l.log(`Retrieving conversations for profile ID: ${data.profileId}`);

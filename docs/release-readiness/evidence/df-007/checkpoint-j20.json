@@ -1,0 +1,223 @@
+{
+  "slice": "DF-007-J20",
+  "date": "2026-10-21",
+  "status": "locally-verified-bounded-runtime-harness",
+  "accepted": true,
+  "baseRevision": "b495e0c404c26676c1095c45a4746e142702fb09",
+  "sourceManifestSha256": "7cfccd0f048e26bcefea147e021c919c3255384d630617fb3d96275b2e2a1224",
+  "sourceHashes": {
+    "apps/chat-collector/src/app/app.controller.ts": "909089329979efb33fa77a1293e80079430ee52c069a351fda6f11c1470bfe10",
+    "apps/chat-collector/src/app/app.service.ts": "19d8eefb434bbff476e35c0b6b8eeba57bfba7646b4cfb84ddf30777d127e0b2",
+    "apps/chat-collector/src/app/presence-audience.spec.ts": "86d3eddfa7336ee9fcf597e2a8ddc8ad7d0651f488cdda21e59a38789e844da9",
+    "apps/client-interface/src/app/components/messages.component.spec.ts": "7f59f9269c9f32946853b08b4ac40ea47de21a9725bcd7da20cdde6a2bcc43f8",
+    "apps/client-interface/src/app/components/messages.component.ts": "bb8d28eabd423bcb21a79116140cf27976eff7ae7c9560cb3c828b40b00f06d6",
+    "apps/client-interface/src/app/presence.service.spec.ts": "22753f2eed0aa06eaddcd0739278b5724ea44030e93a6e933f158284abeceeb8",
+    "apps/client-interface/src/app/presence.service.ts": "32cac413607f3cfa084d9ce509df99b6ea9decb7b99deaf3f6a5a52290b4599a",
+    "apps/gateway-e2e/src/gateway/presence-actor-binding.spec.ts": "2589e580c3ab7236237314be49d83712162605fc149135c8d6e239b9030d6c89",
+    "apps/gateway-e2e/src/gateway/presence-audience.spec.ts": "63ebf387774b7dadcd181cdc08d572bd174a96b0aa197be54435095507c22928",
+    "apps/gateway/src/app/app.module.ts": "56d76668754a928cb15307e722a444bdb38c1d26385f909c304bdf622c162546",
+    "apps/gateway/src/controllers/social/presence/gateway-presence-audience.service.spec.ts": "6afd064ab43219edb407d8b8dd8c38b9aa81e614f5576c1293398617d529a8c7",
+    "apps/gateway/src/controllers/social/presence/gateway-presence-audience.service.ts": "0665be07af39c9de5d673dcd6e6c7ffe5c32ff354510ea8733f62e8bab9ed6ab",
+    "apps/gateway/src/controllers/social/presence/presence.controller.spec.ts": "346a2fa79a0f7cd5a669408abb9950ef1ea18f49d8aacb2e069ef1fbc41cc68e",
+    "apps/gateway/src/controllers/social/presence/presence.controller.ts": "92d9b780045eb7d5af1f66089a6bbd1e8f9f0c8b969c6225e4a9ac6a97e83a96",
+    "apps/profile/src/app/profile-bindings.spec.ts": "af59ec325a415c104494810202ab52a1409402d55762315777280ee049cf4028",
+    "apps/profile/src/app/profile.service.ts": "b9bf18b46ecd2496b652c2b4760368c484d7bc80436746acd5f76a1911bf5de9",
+    "apps/profile/src/profiles/profiles.controller.ts": "68521dc06179251b81274c2cf98d8217db1263d244229e63b5e1a0ec5a9f8ca4",
+    "apps/social/src/app/app.controller.delegation.spec.ts": "12ca609befa322f3c0bd034fa9cdc5f3000c325799319f912169cdfe8726aa4d",
+    "apps/social/src/app/app.controller.ts": "b2f025c37697ee7b9e8e2e3e355cb3eb24df34622e91f2e72bb4ba77b151b7cc",
+    "apps/social/src/app/services/presence.service.spec.ts": "452c36cec632356b9e396dbd33ce51ec37f41dc449ca8c460a4d03c4e9925dab",
+    "apps/social/src/app/services/presence.service.ts": "d927fc534e5773ef36c04835390567d4dbe2aaedb47c082d18d0af31d6724cef",
+    "libs/chat/contracts/src/lib/chat-commands.ts": "7df03f7125b4a18435f399de1b756ce43c5e21794429afbde1ce6675c09a3be7",
+    "libs/chat/contracts/src/lib/chat-contract-parity.spec.ts": "547d2e6efd302d2bc77086e367d27958425a95c926f9d5725005766895b0d905",
+    "libs/chat/contracts/src/lib/conversation.ts": "eb6f47ce90d327170dc655005dad858ea508c9b2ded2a332e0e055bf7224b183",
+    "libs/profile/contracts/src/lib/profile-commands.ts": "6438ff598720d5d0df9a4e0279a368f20eb4ee778fcb70c653cf44b9f9f5bdea",
+    "libs/profile/contracts/src/lib/profile-contract-parity.spec.ts": "5803bd733af73144af2e54a2fffd764e3c5dd0675c07a90f41f10c3ad76691fd",
+    "libs/profile/contracts/src/lib/profile-ownership.ts": "d9f4d25096dd7d55174e6ef629e91c8b93ae0abfd427d30dc9db8fd405f9b728",
+    "libs/social/contracts/src/lib/interaction.ts": "632ce4481037a0a12545091d87ad4cd4d2508a8814d7defd31bbf2204773bc8f",
+    "libs/social/contracts/src/lib/social-commands.ts": "941afa3b5c47cd68bb0ae0907ce1f7ea6b9592f2347c494b8fefb26cc52712a1",
+    "libs/social/contracts/src/lib/social-contract-parity.spec.ts": "76d69c62157a22592b31713109df5bc6f5a0151f098852dccf7698d337fce53e"
+  },
+  "behavior": {
+    "unscoped": "Single, batch and online reads are account-self-only. Batch inputs cap at 100 before deduplication; empty batches do not query Social.",
+    "scoped": "Conversation reads verify current selected-profile ownership, Chat current membership, Profile account bindings, and bilateral profile blocks. Peer results contain only profileId and status.",
+    "client": "Existing Messages requests each conversation separately, chunks targets at 100, and keys results by conversation/profile; Presence failures remain soft.",
+    "legacy": "Internal Presence remains account-wide. Ambiguous case-variant account rows fail closed; historical ownership is not repaired."
+  },
+  "focusedUnits": {
+    "passed": 177,
+    "skipped": 0,
+    "gateway": 18,
+    "clientPresence": 12,
+    "clientMessages": 10,
+    "profileBindings": 3,
+    "profileContracts": 12,
+    "chatAudience": 4,
+    "chatContracts": 11,
+    "socialPresence": 25,
+    "socialControllerDelegation": 48,
+    "socialContracts": 34,
+    "note": "Distinct final tests only. Initial fixture compilation/mock failures were corrected; no comprehensive RED claim."
+  },
+  "preRuntime": {
+    "gatewayAndClientProductionBuildAndLint": "PASS; final client build/lint after conversation-key fix",
+    "backendAndContractsProductionBuildAndLint": "PASS; 2 of 6 build tasks cached (chat-contracts/profile-contracts); three backend lints passed after final test-only coverage",
+    "authenticationProductionBuild": "PASS",
+    "gatewayE2eLint": "PASS",
+    "formatAndDiff": "PASS",
+    "evidenceDirectory": ".runtime-artifacts/account-rights/finish-sequence/presence-audience"
+  },
+  "runtimePreparation": {
+    "project": "ot-df007-presence-audience-j20",
+    "baseRevision": "b495e0c404c26676c1095c45a4746e142702fb09",
+    "sourceManifestSha256": "7cfccd0f048e26bcefea147e021c919c3255384d630617fb3d96275b2e2a1224",
+    "sourceFiles": 30,
+    "protectedFilesExcluded": 43,
+    "composeSha256": "6c73088fee02fc437425b728d3f61346f2ab407c2000f783a4d9293af107c3d6",
+    "freshImages": {
+      "profile": {
+        "tag": "ot-df007-presence-audience-j20/profile:7cfccd0f048e",
+        "imageId": "sha256:1ced432290b793f467eff409778f8dacf400243250c5c8c5f2cc84e2239488ac",
+        "dockerCopyInputCount": 2979
+      },
+      "authentication": {
+        "tag": "ot-df007-presence-audience-j20/authentication:7cfccd0f048e",
+        "imageId": "sha256:2344c255a90649d3f1bb3e6235f5323d027b061091f29ad7d57d08fd48948a4b",
+        "dockerCopyInputCount": 3029
+      },
+      "chat-collector": {
+        "tag": "ot-df007-presence-audience-j20/chat-collector:7cfccd0f048e",
+        "imageId": "sha256:43383cbc21b27054555c3ee200ec4d270129286327488fb564a45b5ee6064df0",
+        "dockerCopyInputCount": 2948
+      },
+      "social": {
+        "tag": "ot-df007-presence-audience-j20/social:7cfccd0f048e",
+        "imageId": "sha256:3ce2b1088f0a08c1e97cc374f6b4615a37d2e0fb55d0afb300333a9337fcc5b2",
+        "dockerCopyInputCount": 3061
+      }
+    },
+    "retainedImages": {
+      "db": {
+        "tag": "postgres:15",
+        "imageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+        "j18RunImageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb"
+      },
+      "db_setup": {
+        "tag": "ot-df007-b6-forum/db-setup:reconstructed-389e9fb743af",
+        "imageId": "sha256:b55e0b7bd7bfdbee8a919679df5e11f194b40ade5dd85c524dadd02a309c9db4",
+        "j18RunImageId": "sha256:b55e0b7bd7bfdbee8a919679df5e11f194b40ade5dd85c524dadd02a309c9db4"
+      },
+      "forum": {
+        "tag": "ot-df007-b6-forum/forum:b6-981665ddc7b4",
+        "imageId": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+        "j18RunImageId": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4"
+      },
+      "permissions": {
+        "tag": "ot-df007-permissions-integration/permissions:bf5389a29c23",
+        "imageId": "sha256:86e75b83b4fb51277d20a0915933b2f06dab6350a40b8a1273dc3acc6457760d",
+        "j18RunImageId": "sha256:86e75b83b4fb51277d20a0915933b2f06dab6350a40b8a1273dc3acc6457760d"
+      },
+      "assets": {
+        "tag": "ot-df007-permissions-integration/assets:bf5389a29c23",
+        "imageId": "sha256:325831f665cd65ec59d4ee5f61f49b162846a98a5f6120d08ff003c9bfcb3c46",
+        "j18RunImageId": "sha256:325831f665cd65ec59d4ee5f61f49b162846a98a5f6120d08ff003c9bfcb3c46"
+      },
+      "videos": {
+        "tag": "ot-df007-permissions-integration/videos:bf5389a29c23",
+        "imageId": "sha256:7f78e7b92597514ff788945635d595e198e88f87e5d3dad1841dad1bac5f494a",
+        "j18RunImageId": "sha256:7f78e7b92597514ff788945635d595e198e88f87e5d3dad1841dad1bac5f494a"
+      }
+    },
+    "dependencyLimitation": "Authentication, Profile, Social and Chat are freshly built from the J20 capture. Six other dependency images retain reviewed J19 IDs; their current COPY equality is not claimed.",
+    "configuration": "Seven synthetic private service configs; no operator secrets/config copied."
+  },
+  "runtime": {
+    "acceptedAttempt": 1,
+    "result": {
+      "result": "PASS",
+      "project": "ot-df007-presence-audience-j20",
+      "sourceManifestSha256": "7cfccd0f048e26bcefea147e021c919c3255384d630617fb3d96275b2e2a1224",
+      "gatewayE2ePassed": 2,
+      "skipped": 0,
+      "cleanupCounts": {
+        "authSessions": 0,
+        "authKeys": 0,
+        "authActionTokens": 0,
+        "profiles": 0,
+        "presenceRows": 0,
+        "blocks": 0,
+        "conversations": 0,
+        "messages": 0,
+        "j20FixtureUsers": 0,
+        "temporaryRelations": 0
+      },
+      "imageIds": {
+        "social": "sha256:3ce2b1088f0a08c1e97cc374f6b4615a37d2e0fb55d0afb300333a9337fcc5b2",
+        "chat-collector": "sha256:43383cbc21b27054555c3ee200ec4d270129286327488fb564a45b5ee6064df0",
+        "forum": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+        "permissions": "sha256:86e75b83b4fb51277d20a0915933b2f06dab6350a40b8a1273dc3acc6457760d",
+        "profile": "sha256:1ced432290b793f467eff409778f8dacf400243250c5c8c5f2cc84e2239488ac",
+        "videos": "sha256:7f78e7b92597514ff788945635d595e198e88f87e5d3dad1841dad1bac5f494a",
+        "assets": "sha256:325831f665cd65ec59d4ee5f61f49b162846a98a5f6120d08ff003c9bfcb3c46",
+        "authentication": "sha256:2344c255a90649d3f1bb3e6235f5323d027b061091f29ad7d57d08fd48948a4b",
+        "db": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb"
+      },
+      "protectedFilesChecked": 43,
+      "remainingComposeResources": {
+        "containers": 0,
+        "networks": 0,
+        "volumes": 0
+      },
+      "sourceAndProtectedHashesPreserved": true
+    },
+    "commands": [
+      "NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx run gateway-e2e:e2e --testFile=presence-(audience|actor-binding).spec.ts$ --runInBand --skipNxCache"
+    ],
+    "evidence": ".runtime-artifacts/account-rights/finish-sequence/presence-audience/runtime/attempt-1"
+  },
+  "limitations": [
+    "Trusted internal TCP boundary; no service-to-service authentication added.",
+    "Three-second RPC waits are configured; timer expiry and live outage not exercised.",
+    "Real DIRECT-conversation runtime proof; dynamic community/project membership covered by focused units only.",
+    "Production controllers/AuthGuard hosted by private mini HTTP server; no full Gateway deployment, browser, Presence socket, external flow, remote CI or production qualification.",
+    "No historical ownership repair, full Social export capture, downloadable artifact or deletion work in J20."
+  ],
+  "finalFormattingOnlyChanges": {
+    "apps/gateway/src/controllers/social/presence/gateway-presence-audience.service.spec.ts": {
+      "runtimeSha256": "6afd064ab43219edb407d8b8dd8c38b9aa81e614f5576c1293398617d529a8c7",
+      "finalSha256": "d3e3e3f19c2ecc3b64fb60cd631989740ce45594d79f1ce5a5a2d661970b5723",
+      "reason": "Nx final formatting changed only whitespace in an existing focused unit spec after runtime; production and E2E source unchanged."
+    }
+  },
+  "finalSourceHashes": {
+    "apps/chat-collector/src/app/app.controller.ts": "909089329979efb33fa77a1293e80079430ee52c069a351fda6f11c1470bfe10",
+    "apps/chat-collector/src/app/app.service.ts": "19d8eefb434bbff476e35c0b6b8eeba57bfba7646b4cfb84ddf30777d127e0b2",
+    "apps/chat-collector/src/app/presence-audience.spec.ts": "86d3eddfa7336ee9fcf597e2a8ddc8ad7d0651f488cdda21e59a38789e844da9",
+    "apps/client-interface/src/app/components/messages.component.spec.ts": "7f59f9269c9f32946853b08b4ac40ea47de21a9725bcd7da20cdde6a2bcc43f8",
+    "apps/client-interface/src/app/components/messages.component.ts": "bb8d28eabd423bcb21a79116140cf27976eff7ae7c9560cb3c828b40b00f06d6",
+    "apps/client-interface/src/app/presence.service.spec.ts": "22753f2eed0aa06eaddcd0739278b5724ea44030e93a6e933f158284abeceeb8",
+    "apps/client-interface/src/app/presence.service.ts": "32cac413607f3cfa084d9ce509df99b6ea9decb7b99deaf3f6a5a52290b4599a",
+    "apps/gateway-e2e/src/gateway/presence-actor-binding.spec.ts": "2589e580c3ab7236237314be49d83712162605fc149135c8d6e239b9030d6c89",
+    "apps/gateway-e2e/src/gateway/presence-audience.spec.ts": "63ebf387774b7dadcd181cdc08d572bd174a96b0aa197be54435095507c22928",
+    "apps/gateway/src/app/app.module.ts": "56d76668754a928cb15307e722a444bdb38c1d26385f909c304bdf622c162546",
+    "apps/gateway/src/controllers/social/presence/gateway-presence-audience.service.spec.ts": "d3e3e3f19c2ecc3b64fb60cd631989740ce45594d79f1ce5a5a2d661970b5723",
+    "apps/gateway/src/controllers/social/presence/gateway-presence-audience.service.ts": "0665be07af39c9de5d673dcd6e6c7ffe5c32ff354510ea8733f62e8bab9ed6ab",
+    "apps/gateway/src/controllers/social/presence/presence.controller.spec.ts": "346a2fa79a0f7cd5a669408abb9950ef1ea18f49d8aacb2e069ef1fbc41cc68e",
+    "apps/gateway/src/controllers/social/presence/presence.controller.ts": "92d9b780045eb7d5af1f66089a6bbd1e8f9f0c8b969c6225e4a9ac6a97e83a96",
+    "apps/profile/src/app/profile-bindings.spec.ts": "af59ec325a415c104494810202ab52a1409402d55762315777280ee049cf4028",
+    "apps/profile/src/app/profile.service.ts": "b9bf18b46ecd2496b652c2b4760368c484d7bc80436746acd5f76a1911bf5de9",
+    "apps/profile/src/profiles/profiles.controller.ts": "68521dc06179251b81274c2cf98d8217db1263d244229e63b5e1a0ec5a9f8ca4",
+    "apps/social/src/app/app.controller.delegation.spec.ts": "12ca609befa322f3c0bd034fa9cdc5f3000c325799319f912169cdfe8726aa4d",
+    "apps/social/src/app/app.controller.ts": "b2f025c37697ee7b9e8e2e3e355cb3eb24df34622e91f2e72bb4ba77b151b7cc",
+    "apps/social/src/app/services/presence.service.spec.ts": "452c36cec632356b9e396dbd33ce51ec37f41dc449ca8c460a4d03c4e9925dab",
+    "apps/social/src/app/services/presence.service.ts": "d927fc534e5773ef36c04835390567d4dbe2aaedb47c082d18d0af31d6724cef",
+    "libs/chat/contracts/src/lib/chat-commands.ts": "7df03f7125b4a18435f399de1b756ce43c5e21794429afbde1ce6675c09a3be7",
+    "libs/chat/contracts/src/lib/chat-contract-parity.spec.ts": "547d2e6efd302d2bc77086e367d27958425a95c926f9d5725005766895b0d905",
+    "libs/chat/contracts/src/lib/conversation.ts": "eb6f47ce90d327170dc655005dad858ea508c9b2ded2a332e0e055bf7224b183",
+    "libs/profile/contracts/src/lib/profile-commands.ts": "6438ff598720d5d0df9a4e0279a368f20eb4ee778fcb70c653cf44b9f9f5bdea",
+    "libs/profile/contracts/src/lib/profile-contract-parity.spec.ts": "5803bd733af73144af2e54a2fffd764e3c5dd0675c07a90f41f10c3ad76691fd",
+    "libs/profile/contracts/src/lib/profile-ownership.ts": "d9f4d25096dd7d55174e6ef629e91c8b93ae0abfd427d30dc9db8fd405f9b728",
+    "libs/social/contracts/src/lib/interaction.ts": "632ce4481037a0a12545091d87ad4cd4d2508a8814d7defd31bbf2204773bc8f",
+    "libs/social/contracts/src/lib/social-commands.ts": "941afa3b5c47cd68bb0ae0907ce1f7ea6b9592f2347c494b8fefb26cc52712a1",
+    "libs/social/contracts/src/lib/social-contract-parity.spec.ts": "76d69c62157a22592b31713109df5bc6f5a0151f098852dccf7698d337fce53e"
+  }
+}

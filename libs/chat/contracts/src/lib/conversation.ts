@@ -197,3 +197,15 @@ export class GetOrCreateProjectChatDto {
   @IsString()
   title?: string;
 }
+
+/** Server-authorized presence audience for an existing conversation. */
+export interface GetPresenceAudienceRequest {
+  conversationId: string;
+  requestingProfileId: string;
+  targetProfileIds: string[];
+}
+export interface GetPresenceAudienceResult {
+  conversationId: string;
+  requestingProfileId: string;
+  allowedProfileIds: string[];
+}

@@ -114,6 +114,39 @@ export class ProfileService implements OnModuleInit, OnModuleDestroy {
     return { accountId, profileId, owned };
   }
 
+  async resolveAccountBindings(request: { profileIds: string[] }) {
+    const ids = request?.profileIds;
+    if (
+      !Array.isArray(ids) ||
+      ids.length > 100 ||
+      ids.some((id) => typeof id !== 'string' || !UUID_PATTERN.test(id))
+    ) {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Invalid profile bindings request',
+      });
+    }
+    const profileIds = [...new Set(ids.map((id) => id.toLowerCase()))];
+    if (!profileIds.length) return { profileIds, bindings: [] };
+    const rows = await this.profileRepository
+      .createQueryBuilder('profile')
+      .select(['profile.id', 'profile.userId'])
+      .where('profile.id IN (:...profileIds)', { profileIds })
+      .limit(100)
+      .getMany();
+    const bindings = rows.flatMap((row) =>
+      typeof row.userId === 'string' && UUID_PATTERN.test(row.userId)
+        ? [
+            {
+              profileId: row.id.toLowerCase(),
+              accountId: row.userId.toLowerCase(),
+            },
+          ]
+        : []
+    );
+    return { profileIds, bindings };
+  }
+
   async getGuardianProfile(
     request: GuardianProfileRequestDto
   ): Promise<Profile> {

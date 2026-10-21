@@ -8,6 +8,7 @@ import {
   UseGuards,
   Logger,
   Inject,
+  BadRequestException,
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -17,6 +18,7 @@ import { AuthGuard } from '../../../auth/auth.guard';
 import { User, UserDetails } from '../../../decorators/user.decorator';
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { GatewayPresenceAudienceService } from './gateway-presence-audience.service';
 
 export enum PresenceStatus {
   ONLINE = 'online',
@@ -36,6 +38,9 @@ export interface PresenceDto {
   lastSeen: Date;
   isExplicit: boolean;
 }
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 @UseGuards(AuthGuard)
 @ApiTags('presence')
@@ -73,8 +78,28 @@ export class PresenceController {
 
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
-    private readonly socialClient: ClientProxy
+    private readonly socialClient: ClientProxy,
+    private readonly audienceService: GatewayPresenceAudienceService
   ) {}
+
+  private canonicalAccountPath(
+    requestedUserId: unknown,
+    user: UserDetails | null | undefined
+  ): string {
+    const accountId = this.accountActor(user);
+    if (
+      typeof requestedUserId !== 'string' ||
+      !UUID_PATTERN.test(requestedUserId)
+    ) {
+      throw new BadRequestException('A valid account ID is required.');
+    }
+    if (requestedUserId.toLowerCase() !== accountId) {
+      throw new ForbiddenException(
+        'Presence reads are limited to the authenticated account'
+      );
+    }
+    return accountId;
+  }
 
   @Post()
   @ApiOperation({ summary: 'Set user presence status' })
@@ -102,10 +127,15 @@ export class PresenceController {
     description: 'The presence has been successfully retrieved.',
   })
   async getPresence(
-    @Param('userId') userId: string
+    @Param('userId') userId: string,
+    @User() user: UserDetails | null
   ): Promise<PresenceDto | null> {
+    const accountId = this.canonicalAccountPath(userId, user);
     return await firstValueFrom(
-      this.socialClient.send({ cmd: PresenceCommands.GET_PRESENCE }, { userId })
+      this.socialClient.send(
+        { cmd: PresenceCommands.GET_PRESENCE },
+        { userId: accountId }
+      )
     );
   }
 
@@ -116,12 +146,31 @@ export class PresenceController {
     description: 'The presences have been successfully retrieved.',
   })
   async getPresenceBatch(
-    @Body() body: { userIds: string[] }
+    @Body() body: { userIds: string[] },
+    @User() user: UserDetails | null
   ): Promise<PresenceDto[]> {
+    const accountId = this.accountActor(user);
+    if (!body || !Array.isArray(body.userIds) || body.userIds.length > 100) {
+      throw new BadRequestException(
+        'At most 100 valid account IDs are allowed.'
+      );
+    }
+    const userIds = body.userIds.map((id) => {
+      if (typeof id !== 'string' || !UUID_PATTERN.test(id)) {
+        throw new BadRequestException('A valid account ID is required.');
+      }
+      return id.toLowerCase();
+    });
+    if (userIds.some((id) => id !== accountId)) {
+      throw new ForbiddenException(
+        'Presence reads are limited to the authenticated account'
+      );
+    }
+    if (userIds.length === 0) return [];
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: PresenceCommands.GET_PRESENCE_BATCH },
-        { userIds: body.userIds }
+        { userIds: [accountId] }
       )
     );
   }
@@ -132,9 +181,50 @@ export class PresenceController {
     status: 200,
     description: 'The online users have been successfully retrieved.',
   })
-  async getOnlineUsers(): Promise<PresenceDto[]> {
+  async getOnlineUsers(
+    @User() user: UserDetails | null
+  ): Promise<PresenceDto[]> {
+    const accountId = this.accountActor(user);
     return await firstValueFrom(
-      this.socialClient.send({ cmd: PresenceCommands.GET_ONLINE_USERS }, {})
+      this.socialClient.send(
+        { cmd: PresenceCommands.GET_ONLINE_USERS },
+        { userIds: [accountId] }
+      )
+    );
+  }
+
+  @Post('conversation')
+  @ApiOperation({ summary: 'Get presence for participants in a conversation' })
+  async getConversationPresence(
+    @Body() body: { conversationId: string; profileIds: string[] },
+    @User() user: UserDetails | null
+  ): Promise<{ profileId: string; status: string }[]> {
+    const accountId = this.accountActor(user);
+    const selectedProfileId = user?.profileId;
+    if (!canonicalUUID(selectedProfileId)) {
+      throw new UnauthorizedException(
+        'Authenticated profile identity is invalid'
+      );
+    }
+    if (
+      !body ||
+      !canonicalUUID(body.conversationId) ||
+      !Array.isArray(body.profileIds) ||
+      body.profileIds.length > 100 ||
+      !body.profileIds.every(canonicalUUID)
+    ) {
+      throw new BadRequestException(
+        'A valid conversation and at most 100 profile IDs are required.'
+      );
+    }
+    const profileIds = [
+      ...new Set(body.profileIds.map((id) => id.toLowerCase())),
+    ];
+    return this.audienceService.resolveConversationPresence(
+      accountId,
+      selectedProfileId.toLowerCase(),
+      body.conversationId.toLowerCase(),
+      profileIds
     );
   }
 
@@ -175,4 +265,8 @@ export class PresenceController {
       )
     );
   }
+}
+
+function canonicalUUID(value: unknown): value is string {
+  return typeof value === 'string' && UUID_PATTERN.test(value);
 }
