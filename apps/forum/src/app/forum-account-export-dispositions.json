@@ -1,0 +1,553 @@
+{
+  "version": 1,
+  "scope": "J26 policy/schema coverage only; J27 enforcement and J28 transport/jobs are not implemented by this inventory.",
+  "entities": [
+    {
+      "name": "Topic",
+      "table": "topic",
+      "source": "apps/forum/src/entities/topic.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["userId", "profileId"],
+        "rule": "Account-wide capture: stored userId must equal the authenticated account AND stored profileId must belong to the captured current Profile identity set. Compare UUIDs canonically. Retain each recorded appScope as context; grant appId authenticates the operation, not a filter silently dropping other owned app scopes. Synthetic seed identities do not match a real current account binding. No child or parent content traversal.",
+        "legacyProvenance": "Recorded attribution only: historical authorship, per-row origin and consent are unverified. Current profile binding is selection evidence, not historical identity, exclusive ownership or current authority.",
+        "evidence": [
+          "apps/forum/src/entities/topic.entity.ts",
+          "apps/gateway/src/controllers/forum/forum.controller.ts",
+          "apps/forum/src/app/account-export.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "userId",
+            "profileId",
+            "appScope",
+            "createdAt",
+            "updatedAt",
+            "visibility"
+          ],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Bounded typed stewardship receipt; retain visibility and scope as recorded, with recorded-unverified attribution.",
+          "reason": "Bounded typed stewardship receipt; retain visibility and scope as recorded, with recorded-unverified attribution.",
+          "evidence": [
+            "apps/forum/src/entities/topic.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/account-export.service.ts"
+          ]
+        },
+        {
+          "fields": ["title", "description"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Bounded inert text of the selected container definition as recorded stewardship contribution, not exclusive ownership or proof of sole authorship; exclude all nested threads and counterpart content.",
+          "reason": "Bounded inert text of the selected container definition as recorded stewardship contribution, not exclusive ownership or proof of sole authorship; exclude all nested threads and counterpart content.",
+          "evidence": [
+            "apps/forum/src/entities/topic.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/account-export.service.ts"
+          ]
+        },
+        {
+          "fields": ["isPinned", "isLocked"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Shared governance state is not the creator contribution.",
+          "reason": "Shared governance state is not the creator contribution.",
+          "evidence": [
+            "apps/forum/src/entities/topic.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/account-export.service.ts"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["threads"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Do not expand a shared conversation container or include other authors. Independently selected Threads carry their own opaque topicId.",
+          "reason": "Do not expand a shared conversation container or include other authors. Independently selected Threads carry their own opaque topicId.",
+          "evidence": ["apps/forum/src/entities/topic.entity.ts"]
+        }
+      ]
+    },
+    {
+      "name": "Thread",
+      "table": "thread",
+      "source": "apps/forum/src/entities/thread.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["userId", "profileId"],
+        "rule": "Account-wide capture: stored userId must equal the authenticated account AND stored profileId must belong to the captured current Profile identity set. Compare UUIDs canonically. Retain each recorded appScope as context; grant appId authenticates the operation, not a filter silently dropping other owned app scopes. Synthetic seed identities do not match a real current account binding. No child or parent content traversal.",
+        "legacyProvenance": "Recorded attribution only: historical authorship, per-row origin and consent are unverified. Current profile binding is selection evidence, not historical identity, exclusive ownership or current authority.",
+        "evidence": [
+          "apps/forum/src/entities/thread.entity.ts",
+          "apps/gateway/src/controllers/forum/forum.controller.ts",
+          "apps/forum/src/app/account-export.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "userId",
+            "profileId",
+            "appScope",
+            "createdAt",
+            "updatedAt",
+            "visibility"
+          ],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Bounded typed authored-row envelope; preserve private/public classification without broadening access.",
+          "reason": "Bounded typed authored-row envelope; preserve private/public classification without broadening access.",
+          "evidence": [
+            "apps/forum/src/entities/thread.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/account-export.service.ts"
+          ]
+        },
+        {
+          "fields": ["title", "description", "content"],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Bounded inert text, never rendered markup or executable data. Explicitly parse embedded asset references as opaque UUIDs only; never dereference them, retain raw storage locators or claim media ownership. Unsafe/malformed/credential-bearing resource locators must be projected safely or reported uncovered; no silent truncation or complete omission.",
+          "reason": "Bounded inert text, never rendered markup or executable data. Explicitly parse embedded asset references as opaque UUIDs only; never dereference them, retain raw storage locators or claim media ownership. Unsafe/malformed/credential-bearing resource locators must be projected safely or reported uncovered; no silent truncation or complete omission.",
+          "evidence": [
+            "apps/forum/src/entities/thread.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/account-export.service.ts"
+          ]
+        },
+        {
+          "fields": ["topicId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Opaque parent identifier; never fetch or include another creator Topic through this relation.",
+          "reason": "Opaque parent identifier; never fetch or include another creator Topic through this relation.",
+          "evidence": [
+            "apps/forum/src/entities/thread.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/account-export.service.ts"
+          ]
+        },
+        {
+          "fields": [
+            "isPinned",
+            "isLocked",
+            "viewCount",
+            "moderationStatus",
+            "moderationNotes",
+            "moderatedBy",
+            "moderatedAt"
+          ],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude governance, aggregate views and private moderation state, notes and actor identities.",
+          "reason": "Exclude governance, aggregate views and private moderation state, notes and actor identities.",
+          "evidence": [
+            "apps/forum/src/entities/thread.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/account-export.service.ts"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["topic"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Only topicId; no parent content traversal.",
+          "reason": "Only topicId; no parent content traversal.",
+          "evidence": ["apps/forum/src/entities/thread.entity.ts"]
+        },
+        {
+          "fields": ["posts"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Never expand posts based on parent ownership. Independently attributed own posts are selected separately, including own posts on foreign threads.",
+          "reason": "Never expand posts based on parent ownership. Independently attributed own posts are selected separately, including own posts on foreign threads.",
+          "evidence": ["apps/forum/src/entities/thread.entity.ts"]
+        }
+      ]
+    },
+    {
+      "name": "ForumPost",
+      "table": "forum_post",
+      "source": "apps/forum/src/entities/forum-post.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["userId", "profileId"],
+        "rule": "Account-wide capture: stored userId must equal the authenticated account AND stored profileId must belong to the captured current Profile identity set. Compare UUIDs canonically. Retain each recorded appScope as context; grant appId authenticates the operation, not a filter silently dropping other owned app scopes. Synthetic seed identities do not match a real current account binding. No child or parent content traversal.",
+        "legacyProvenance": "Recorded attribution only: historical authorship, per-row origin and consent are unverified. Current profile binding is selection evidence, not historical identity, exclusive ownership or current authority.",
+        "evidence": [
+          "apps/forum/src/entities/forum-post.entity.ts",
+          "apps/gateway/src/controllers/forum/forum.controller.ts",
+          "apps/forum/src/app/account-export.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "userId",
+            "profileId",
+            "appScope",
+            "createdAt",
+            "updatedAt",
+            "isEdited"
+          ],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Bounded typed own-post contribution envelope with legacy attribution uncertainty.",
+          "reason": "Bounded typed own-post contribution envelope with legacy attribution uncertainty.",
+          "evidence": [
+            "apps/forum/src/entities/forum-post.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/account-export.service.ts"
+          ]
+        },
+        {
+          "fields": ["content"],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Bounded inert text with reviewed resource-reference projection; known asset IDs are referenceOnly-unverified, never bytes, backend paths or access grants. Unknown/unsafe media references require an explicit uncovered outcome in J27, not silent complete success.",
+          "reason": "Bounded inert text with reviewed resource-reference projection; known asset IDs are referenceOnly-unverified, never bytes, backend paths or access grants. Unknown/unsafe media references require an explicit uncovered outcome in J27, not silent complete success.",
+          "evidence": [
+            "apps/forum/src/entities/forum-post.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/account-export.service.ts"
+          ]
+        },
+        {
+          "fields": ["threadId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Opaque parent identifier; own posts on foreign threads remain eligible without fetching the thread.",
+          "reason": "Opaque parent identifier; own posts on foreign threads remain eligible without fetching the thread.",
+          "evidence": [
+            "apps/forum/src/entities/forum-post.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/account-export.service.ts"
+          ]
+        },
+        {
+          "fields": [
+            "moderationStatus",
+            "moderationNotes",
+            "moderatedBy",
+            "moderatedAt"
+          ],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Exclude private moderation and counterpart actor context.",
+          "reason": "Exclude private moderation and counterpart actor context.",
+          "evidence": [
+            "apps/forum/src/entities/forum-post.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/account-export.service.ts"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["thread"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Only threadId, no parent content.",
+          "reason": "Only threadId, no parent content.",
+          "evidence": ["apps/forum/src/entities/forum-post.entity.ts"]
+        },
+        {
+          "fields": ["links"],
+          "classification": "opaque",
+          "action": "typed-projection",
+          "handling": "Only persisted junction associations under independently selected own posts; require identical nonempty post/link appScope. No unselected post expansion.",
+          "reason": "Only persisted junction associations under independently selected own posts; require identical nonempty post/link appScope. No unselected post expansion.",
+          "evidence": ["apps/forum/src/entities/forum-post.entity.ts"]
+        }
+      ]
+    },
+    {
+      "name": "ForumLink",
+      "table": "forum_link",
+      "source": "apps/forum/src/entities/forum-link.entity.ts",
+      "subject": {
+        "kind": "recorded-attribution-only",
+        "fields": [],
+        "rule": "No independent owner selector. Select only through a verified persisted junction to a selected own ForumPost, with matching nonempty recorded appScope. A link association is not authorship of the Link or target page.",
+        "legacyProvenance": "Recorded attribution only: historical authorship, per-row origin and consent are unverified. Current profile binding is selection evidence, not historical identity, exclusive ownership or current authority.",
+        "evidence": [
+          "apps/forum/src/entities/forum-link.entity.ts",
+          "apps/gateway/src/controllers/forum/forum.controller.ts",
+          "apps/forum/src/app/account-export.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "appScope", "createdAt"],
+          "classification": "opaque",
+          "action": "typed-projection",
+          "handling": "Bounded associated-reference envelope, explicitly referenceOnly-unverified; include selected postId as context from the junction.",
+          "reason": "Bounded associated-reference envelope, explicitly referenceOnly-unverified; include selected postId as context from the junction.",
+          "evidence": [
+            "apps/forum/src/entities/forum-link.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/services/forum-access.service.ts"
+          ]
+        },
+        {
+          "fields": ["url"],
+          "classification": "opaque",
+          "action": "typed-projection",
+          "handling": "Allow only bounded credential-free HTTP(S) URLs without query or fragment, or recognized /asset/:uuid or /api/asset/:uuid converted to canonical opaque asset UUID. Reject executable schemes, filesystem/storage locators and arbitrary relative URLs. Never fetch targets; malformed or unsafe references produce explicit uncovered/failure in J27.",
+          "reason": "Allow only bounded credential-free HTTP(S) URLs without query or fragment, or recognized /asset/:uuid or /api/asset/:uuid converted to canonical opaque asset UUID. Reject executable schemes, filesystem/storage locators and arbitrary relative URLs. Never fetch targets; malformed or unsafe references produce explicit uncovered/failure in J27.",
+          "evidence": [
+            "apps/forum/src/entities/forum-link.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/services/forum-access.service.ts"
+          ]
+        },
+        {
+          "fields": ["title", "description"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "External or counterpart-authored copied metadata lacks independent author provenance; omit it from the associated reference.",
+          "reason": "External or counterpart-authored copied metadata lacks independent author provenance; omit it from the associated reference.",
+          "evidence": [
+            "apps/forum/src/entities/forum-link.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/services/forum-access.service.ts"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["posts"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Do not recurse into unselected posts or expose the full many-to-many relation.",
+          "reason": "Do not recurse into unselected posts or expose the full many-to-many relation.",
+          "evidence": ["apps/forum/src/entities/forum-link.entity.ts"]
+        }
+      ]
+    },
+    {
+      "name": "ForumReport",
+      "table": "forum_report",
+      "source": "apps/forum/src/entities/forum-report.entity.ts",
+      "subject": {
+        "kind": "profile",
+        "fields": ["reporterId"],
+        "rule": "reporterId is a PROFILE UUID from the authenticated Gateway actor. Select only if in captured owned Profile identities; never reinterpret it as accountId. Account-wide subject receipt preserves nullable appScope as unknown legacy scope, without guessing or target access. Do not select because the subject owns the reported content.",
+        "legacyProvenance": "Recorded attribution only: historical authorship, per-row origin and consent are unverified. Current profile binding is selection evidence, not historical identity, exclusive ownership or current authority.",
+        "evidence": [
+          "apps/forum/src/entities/forum-report.entity.ts",
+          "apps/gateway/src/controllers/forum/forum.controller.ts",
+          "apps/forum/src/app/services/forum-moderation.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "reporterId",
+            "contentType",
+            "reason",
+            "status",
+            "createdAt"
+          ],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Typed reporter-side action receipt only; allowlist reason/status/contentType enums from actual producers, bound identifiers and timestamps; preserve recorded-unverified attribution and no current-authority inference.",
+          "reason": "Typed reporter-side action receipt only; allowlist reason/status/contentType enums from actual producers, bound identifiers and timestamps; preserve recorded-unverified attribution and no current-authority inference.",
+          "evidence": [
+            "apps/forum/src/entities/forum-report.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/services/forum-moderation.service.ts"
+          ]
+        },
+        {
+          "fields": ["appScope"],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Retain stored appScope or explicit null/unknown for legacy rows; a null scope cannot establish tenant visibility or be inferred from current target rows.",
+          "reason": "Retain stored appScope or explicit null/unknown for legacy rows; a null scope cannot establish tenant visibility or be inferred from current target rows.",
+          "evidence": [
+            "apps/forum/src/entities/forum-report.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/services/forum-moderation.service.ts"
+          ]
+        },
+        {
+          "fields": ["contentId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Opaque target ID only; do not fetch target, its author, private content or moderation payload.",
+          "reason": "Opaque target ID only; do not fetch target, its author, private content or moderation payload.",
+          "evidence": [
+            "apps/forum/src/entities/forum-report.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/services/forum-moderation.service.ts"
+          ]
+        },
+        {
+          "fields": ["description", "adminNotes"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Free-text report context can copy counterpart content; moderator notes are private. Receipt excludes both, rather than serializing the row.",
+          "reason": "Free-text report context can copy counterpart content; moderator notes are private. Receipt excludes both, rather than serializing the row.",
+          "evidence": [
+            "apps/forum/src/entities/forum-report.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/services/forum-moderation.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "ForumModerationAction",
+      "table": "forum_moderation_action",
+      "source": "apps/forum/src/entities/forum-moderation-action.entity.ts",
+      "subject": {
+        "kind": "profile",
+        "fields": ["actorProfileId"],
+        "rule": "actorProfileId is a PROFILE UUID from moderatedBy authenticated Gateway actor. Select only actorProfileId in captured owned Profile identities; preserve recorded action fact, not current moderator role or authority. Being moderated does not grant subject access to private audit records.",
+        "legacyProvenance": "Recorded attribution only: historical authorship, per-row origin and consent are unverified. Current profile binding is selection evidence, not historical identity, exclusive ownership or current authority.",
+        "evidence": [
+          "apps/forum/src/entities/forum-moderation-action.entity.ts",
+          "apps/gateway/src/controllers/forum/forum.controller.ts",
+          "apps/forum/src/app/services/forum-moderation.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "appScope",
+            "action",
+            "subjectType",
+            "actorProfileId",
+            "createdAt"
+          ],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Typed actor-side receipt with allowlisted action/subjectType, bounded scope and timestamp; historical attribution remains unverified.",
+          "reason": "Typed actor-side receipt with allowlisted action/subjectType, bounded scope and timestamp; historical attribution remains unverified.",
+          "evidence": [
+            "apps/forum/src/entities/forum-moderation-action.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/services/forum-moderation.service.ts"
+          ]
+        },
+        {
+          "fields": ["subjectId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Opaque target identifier only; never traverse target or copied report content.",
+          "reason": "Opaque target identifier only; never traverse target or copied report content.",
+          "evidence": [
+            "apps/forum/src/entities/forum-moderation-action.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/services/forum-moderation.service.ts"
+          ]
+        },
+        {
+          "fields": ["details"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Untyped audit JSON contains moderator notes, report IDs and private workflow data; exclude raw payload and all unreviewed nested keys.",
+          "reason": "Untyped audit JSON contains moderator notes, report IDs and private workflow data; exclude raw payload and all unreviewed nested keys.",
+          "evidence": [
+            "apps/forum/src/entities/forum-moderation-action.entity.ts",
+            "apps/gateway/src/controllers/forum/forum.controller.ts",
+            "apps/forum/src/app/services/forum-moderation.service.ts"
+          ]
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "associations": [
+    {
+      "name": "forum_post_links_forum_link",
+      "table": "forum_post_links_forum_link",
+      "source": "apps/forum/src/entities/forum-post.entity.ts",
+      "columnNames": ["forumPostId", "forumLinkId"],
+      "columns": [
+        {
+          "fields": ["forumPostId", "forumLinkId"],
+          "classification": "opaque",
+          "action": "typed-projection",
+          "handling": "Emit only association identifiers proven through selected own ForumPost and same-scope safe ForumLink reference. Composite key deduplicates; no standalone link ownership or counterpart posts.",
+          "reason": "Emit only association identifiers proven through selected own ForumPost and same-scope safe ForumLink reference. Composite key deduplicates; no standalone link ownership or counterpart posts.",
+          "evidence": [
+            "apps/forum/src/entities/forum-post.entity.ts",
+            "apps/forum/migrations/1769469736399-initial.ts"
+          ]
+        }
+      ]
+    }
+  ],
+  "stores": [
+    {
+      "name": "typeorm_migrations_store",
+      "kind": "schema",
+      "source": "apps/forum/src/app/staticDatabase.ts",
+      "columnNames": ["id", "timestamp", "name"],
+      "handling": "Exclude schema migration bookkeeping; reviewed by migrated catalog parity, not personal content.",
+      "reason": "Exclude schema migration bookkeeping; reviewed by migrated catalog parity, not personal content.",
+      "columns": [
+        {
+          "fields": ["id", "timestamp", "name"],
+          "classification": "nonpersonal",
+          "action": "exclude",
+          "handling": "Exclude schema migration bookkeeping; reviewed by migrated catalog parity, not personal content.",
+          "reason": "Exclude schema migration bookkeeping; reviewed by migrated catalog parity, not personal content.",
+          "evidence": ["apps/forum/src/app/staticDatabase.ts"]
+        }
+      ],
+      "table": "migrations"
+    },
+    {
+      "name": "Forum.processOutput",
+      "kind": "external",
+      "source": "apps/forum/src/main.ts",
+      "columnNames": ["message", "context", "timestamp"],
+      "handling": "Exclude operational stdout/logger output from ordinary account snapshots. Do not claim logs are nonpersonal or absent; remote sink discovery, retention and purge remain N/X work.",
+      "reason": "Exclude operational stdout/logger output from ordinary account snapshots. Do not claim logs are nonpersonal or absent; remote sink discovery, retention and purge remain N/X work.",
+      "columns": [
+        {
+          "fields": ["message", "context", "timestamp"],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Exclude operational stdout/logger output from ordinary account snapshots. Do not claim logs are nonpersonal or absent; remote sink discovery, retention and purge remain N/X work.",
+          "reason": "Exclude operational stdout/logger output from ordinary account snapshots. Do not claim logs are nonpersonal or absent; remote sink discovery, retention and purge remain N/X work.",
+          "evidence": ["apps/forum/src/main.ts"]
+        }
+      ]
+    },
+    {
+      "name": "Forum.configurationInputs",
+      "kind": "operational-input",
+      "source": "apps/forum/src/config.ts",
+      "columnNames": ["configuration", "seedDefinitions"],
+      "handling": "Exclude configuration (including connection credentials) and checked-in synthetic seed definitions. Seeded Topic rows remain real shared DB records and cannot be attributed to a user merely by topic scope/title.",
+      "reason": "Exclude configuration (including connection credentials) and checked-in synthetic seed definitions. Seeded Topic rows remain real shared DB records and cannot be attributed to a user merely by topic scope/title.",
+      "columns": [
+        {
+          "fields": ["configuration", "seedDefinitions"],
+          "classification": "nonpersonal",
+          "action": "exclude",
+          "handling": "Exclude configuration (including connection credentials) and checked-in synthetic seed definitions. Seeded Topic rows remain real shared DB records and cannot be attributed to a user merely by topic scope/title.",
+          "reason": "Exclude configuration (including connection credentials) and checked-in synthetic seed definitions. Seeded Topic rows remain real shared DB records and cannot be attributed to a user merely by topic scope/title.",
+          "evidence": ["apps/forum/src/config.ts"]
+        }
+      ]
+    }
+  ]
+}
