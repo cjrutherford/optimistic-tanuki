@@ -1,0 +1,663 @@
+{
+  "accepted": true,
+  "attempt": "attempt-1",
+  "attemptHistory": [
+    {
+      "attempt": "attempt-1",
+      "result": "PASS",
+      "seconds": 66.79,
+      "sourceManifestSha256": "70ee2c1e6511eccc3a8565c9ceb3f29129f84484f8bc4e214ad34c703f54f36f"
+    }
+  ],
+  "baseRevision": "920fe80bb643f46fa4015d8ad5a96a0188b05eae",
+  "capture": {
+    "composeSha256": "e5d3214b7bd832a01956a0c030c4aef8f8e8628697db8b3b5d94eb89fde0bcb4",
+    "fixtureConfigHashes": {
+      "apps/assets/src/assets/config.yaml": "70a106e2f559f0795fc2f78b8d9b04280dcda19558e2f78cf656fade62ddf138",
+      "apps/forum/src/assets/config.yaml": "25d59375fe2dcdd6a9c291d33a5ab3ce2b55becf8783cfe998800262a7a5c728",
+      "apps/permissions/src/assets/config.yaml": "461009841bd17af6f44b70dfb78a1573365b1deaa8db97e083c38c283e1b40a0",
+      "apps/profile/src/assets/config.yaml": "4f322561d91db3aabcf8a5d6daf84b397e1f2a02984cd6dedad0bc72e4e67307",
+      "apps/social/src/assets/config.yaml": "59c4f45bd734c88ade4f46d72ec2537952861ea0207f716ec34365fa0c392a46",
+      "apps/videos/src/assets/config.yaml": "270df8cae878a9c3add87652ff01332c36c10b154d8246c2854029c00afac013"
+    },
+    "protectedFilesExcluded": 43
+  },
+  "cleanup": {
+    "databaseCountsAfter": {
+      "assets": {
+        "asset_entity": 0,
+        "guardian_asset_activity": 0,
+        "migrations": 5
+      },
+      "authentication": {
+        "account_export_jobs": 0,
+        "auth_action_token": 0,
+        "guardian_permission": 0,
+        "guardian_policy_notice": 0,
+        "key_datum": 0,
+        "migrations": 13,
+        "oauth_provider": 0,
+        "token": 0,
+        "user_entity": 0
+      },
+      "forum": {
+        "forum_link": 0,
+        "forum_moderation_action": 0,
+        "forum_post": 0,
+        "forum_post_links_forum_link": 0,
+        "forum_report": 0,
+        "migrations": 3,
+        "thread": 0,
+        "topic": 0
+      },
+      "permissions": {
+        "app_scope": 0,
+        "app_scope_permissions": 0,
+        "migrations": 2,
+        "permission": 0,
+        "role": 0,
+        "role_assignment": 0,
+        "role_permissions": 0
+      },
+      "profile": {
+        "goal": 0,
+        "guardian_profile_activity": 0,
+        "migrations": 3,
+        "profile": 0,
+        "project": 0,
+        "timeline": 0
+      },
+      "social": {
+        "activity": 0,
+        "attachment": 0,
+        "business_page_contents": 0,
+        "business_theme_contents": 0,
+        "comment": 0,
+        "community": 0,
+        "community_election": 0,
+        "community_invite": 0,
+        "community_member": 0,
+        "community_membership_audit": 0,
+        "community_sponsorship_contents": 0,
+        "content_moderation_action": 0,
+        "content_report": 0,
+        "election_candidate": 0,
+        "election_vote": 0,
+        "event": 0,
+        "follow_entity": 0,
+        "guardian_content_audit": 0,
+        "guardian_published_asset_grant": 0,
+        "link": 0,
+        "migrations": 27,
+        "notification": 0,
+        "poll": 0,
+        "post": 0,
+        "post_link": 0,
+        "post_share": 0,
+        "profile_view": 0,
+        "reaction": 0,
+        "saved_item": 0,
+        "search_history": 0,
+        "social_components": 0,
+        "user_block": 0,
+        "user_mute": 0,
+        "user_presence": 0,
+        "vote": 0
+      },
+      "videos": {
+        "channel": 0,
+        "channel_feed": 0,
+        "channel_subscription": 0,
+        "live_session": 0,
+        "migrations": 3,
+        "program_block": 0,
+        "video": 0,
+        "video_view": 0
+      }
+    },
+    "databaseCountsBefore": {
+      "assets": {
+        "asset_entity": 0,
+        "guardian_asset_activity": 0,
+        "migrations": 5
+      },
+      "authentication": {
+        "account_export_jobs": 0,
+        "auth_action_token": 0,
+        "guardian_permission": 0,
+        "guardian_policy_notice": 0,
+        "key_datum": 0,
+        "migrations": 13,
+        "oauth_provider": 0,
+        "token": 0,
+        "user_entity": 0
+      },
+      "forum": {
+        "forum_link": 0,
+        "forum_moderation_action": 0,
+        "forum_post": 0,
+        "forum_post_links_forum_link": 0,
+        "forum_report": 0,
+        "migrations": 3,
+        "thread": 0,
+        "topic": 0
+      },
+      "permissions": {
+        "app_scope": 0,
+        "app_scope_permissions": 0,
+        "migrations": 2,
+        "permission": 0,
+        "role": 0,
+        "role_assignment": 0,
+        "role_permissions": 0
+      },
+      "profile": {
+        "goal": 0,
+        "guardian_profile_activity": 0,
+        "migrations": 3,
+        "profile": 0,
+        "project": 0,
+        "timeline": 0
+      },
+      "social": {
+        "activity": 0,
+        "attachment": 0,
+        "business_page_contents": 0,
+        "business_theme_contents": 0,
+        "comment": 0,
+        "community": 0,
+        "community_election": 0,
+        "community_invite": 0,
+        "community_member": 0,
+        "community_membership_audit": 0,
+        "community_sponsorship_contents": 0,
+        "content_moderation_action": 0,
+        "content_report": 0,
+        "election_candidate": 0,
+        "election_vote": 0,
+        "event": 0,
+        "follow_entity": 0,
+        "guardian_content_audit": 0,
+        "guardian_published_asset_grant": 0,
+        "link": 0,
+        "migrations": 27,
+        "notification": 0,
+        "poll": 0,
+        "post": 0,
+        "post_link": 0,
+        "post_share": 0,
+        "profile_view": 0,
+        "reaction": 0,
+        "saved_item": 0,
+        "search_history": 0,
+        "social_components": 0,
+        "user_block": 0,
+        "user_mute": 0,
+        "user_presence": 0,
+        "vote": 0
+      },
+      "videos": {
+        "channel": 0,
+        "channel_feed": 0,
+        "channel_subscription": 0,
+        "live_session": 0,
+        "migrations": 3,
+        "program_block": 0,
+        "video": 0,
+        "video_view": 0
+      }
+    },
+    "fixtureSeedIds": {
+      "communityMembershipAudit": 1,
+      "guardianContentAudit": 1,
+      "jobs": 1,
+      "notifications": 1,
+      "posts": 2,
+      "profiles": 3,
+      "searchHistory": 262
+    },
+    "fixtureSocialTableCountsRestored": true,
+    "privateResourcesAfterTeardown": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "ownerSpoolAudits": {
+      "before": {
+        "authentication": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "profile": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "assets": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "videos": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "permissions": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "social": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "forum": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        }
+      },
+      "after": {
+        "authentication": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "profile": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "assets": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "videos": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "permissions": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "social": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "forum": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        }
+      }
+    },
+    "temporaryRelations": {
+      "authentication": 0,
+      "profile": 0,
+      "assets": 0,
+      "videos": 0,
+      "permissions": 0,
+      "social": 0,
+      "forum": 0
+    }
+  },
+  "date": "2026-10-22",
+  "finding": "DF-007-J25",
+  "images": {
+    "dockerBuildInputs": {
+      "assets": {
+        "imageId": "sha256:6f2ef5c785aab908eb88f61388df5028b7c43e49aec7eff67e3a5e916ee593b4",
+        "inputFiles": 2972,
+        "inputManifestSha256": "5009715b762d009b1cd0da7119a63d8c8d3e300468c4c6d2fea68cb92d2a50c0"
+      },
+      "authentication": {
+        "imageId": "sha256:f8811e57870d0c9f5676b5aba4b58cf12bb82d2d73defe1efbd05ccf2792251f",
+        "inputFiles": 3032,
+        "inputManifestSha256": "050cbadcfeebe181d4d0670cc740b4e2ec382f21375dd9aa8540e3936f0962f1"
+      },
+      "forum": {
+        "imageId": "sha256:02308588667094b71baa5cba6ef370edac3275f8faa26e7ef23d64d33dc4bde3",
+        "inputFiles": 2968,
+        "inputManifestSha256": "52ab0d21a0547eebed8b5a5e05d1228e356ecfd98151967354a85e676461bf6f"
+      },
+      "permissions": {
+        "imageId": "sha256:578736c90e1deb0caf619bfa68b6c1369aa3b275ba9607449326b42fc50e6a7b",
+        "inputFiles": 2975,
+        "inputManifestSha256": "2df1577a39e7b8ade5d15425c2b3e0906412d7fc0fa6239a38bc01a81e9934bd"
+      },
+      "profile": {
+        "imageId": "sha256:509d25f18cf15796b6bfd246424061d643725763f6e9cefdc3ad0be89221ebe9",
+        "inputFiles": 2980,
+        "inputManifestSha256": "cf6cd89ba45ac1ab4fbe37d5b8201a45e3f799d863588422df147db3ed6b82dc"
+      },
+      "social": {
+        "imageId": "sha256:36f63157dc7fdf7331fe76affa7bce106746d67f1d04e5d949334c50181bbae2",
+        "inputFiles": 3085,
+        "inputManifestSha256": "e2c2d898f78ac3b2fb567d3ee2fb6b4cc4514204e971f9a2b30ecfc61dd9290b"
+      },
+      "videos": {
+        "imageId": "sha256:53f096f5751fec387b2040e841879a65d2c519c490c1355a3e83965526a76532",
+        "inputFiles": 2978,
+        "inputManifestSha256": "5aa9f53aaa4d47a2480c9b81e608799bbf9a78d673148a7cf61b521e698b1d7f"
+      }
+    },
+    "freshApplicationImages": {
+      "assets": {
+        "dockerfileSha256": "8caae61b5d5ed6b061713f147665678659732249969bb696e814467f06ca5b06",
+        "id": "sha256:6f2ef5c785aab908eb88f61388df5028b7c43e49aec7eff67e3a5e916ee593b4",
+        "seconds": 214,
+        "tag": "ot-df007-social-integration/assets:70ee2c1e6511"
+      },
+      "authentication": {
+        "dockerfileSha256": "d44c8d8223b1551d792765a56da08f3984bb4dcf54302d43235e9fb7757a0db9",
+        "id": "sha256:f8811e57870d0c9f5676b5aba4b58cf12bb82d2d73defe1efbd05ccf2792251f",
+        "seconds": 273,
+        "tag": "ot-df007-social-integration/authentication:70ee2c1e6511"
+      },
+      "forum": {
+        "dockerfileSha256": "5e638e8ed86883f8407505fd8e9ba9683d5174667a9e5d89204d196969b18d85",
+        "id": "sha256:02308588667094b71baa5cba6ef370edac3275f8faa26e7ef23d64d33dc4bde3",
+        "seconds": 134,
+        "tag": "ot-df007-social-integration/forum:70ee2c1e6511"
+      },
+      "permissions": {
+        "dockerfileSha256": "00e2af6391c1e962fac14b21d8a89a5b9f0641e06d3ad8f93b62795a27d1c021",
+        "id": "sha256:578736c90e1deb0caf619bfa68b6c1369aa3b275ba9607449326b42fc50e6a7b",
+        "seconds": 229,
+        "tag": "ot-df007-social-integration/permissions:70ee2c1e6511"
+      },
+      "profile": {
+        "dockerfileSha256": "57192be5bc836177222c3c6c5a14d6f56e8221711414ed7de574a05bf5e026b4",
+        "id": "sha256:509d25f18cf15796b6bfd246424061d643725763f6e9cefdc3ad0be89221ebe9",
+        "seconds": 272,
+        "tag": "ot-df007-social-integration/profile:70ee2c1e6511"
+      },
+      "social": {
+        "dockerfileSha256": "5336a2e10dec5a133f9df440e6ec67a01e0c99ad5b079e30252a693ad31f6bf8",
+        "id": "sha256:36f63157dc7fdf7331fe76affa7bce106746d67f1d04e5d949334c50181bbae2",
+        "seconds": 226,
+        "tag": "ot-df007-social-integration/social:70ee2c1e6511"
+      },
+      "videos": {
+        "dockerfileSha256": "3a2d548ebbef5f4fe55a158dbb499c7d402b45a8e93bc5c9cfcf592d9eb840a4",
+        "id": "sha256:53f096f5751fec387b2040e841879a65d2c519c490c1355a3e83965526a76532",
+        "seconds": 211,
+        "tag": "ot-df007-social-integration/videos:70ee2c1e6511"
+      }
+    },
+    "freshGenericDatabaseSetupImage": {
+      "dockerfileSha256": "389e9fb743af0dc016cdb5fddbbcbbf4b7ac76b03d34c080cacd649770525906",
+      "id": "sha256:3f33cecc1a90bc154fd4cb6878bd498829414c85749c98230e53f93484cadcac",
+      "seconds": 22,
+      "tag": "ot-df007-social-integration/db-setup:70ee2c1e6511"
+    }
+  },
+  "limitations": [
+    "No schema change",
+    "No public UI or download",
+    "No deletion support",
+    "No remote CI evidence",
+    "No production qualification",
+    "DF-007 and RR-11 remain open",
+    "Account-export job remains incomplete by design"
+  ],
+  "prechecks": {
+    "builds": [
+      "constants",
+      "models",
+      "authentication production",
+      "social production (repair passed)"
+    ],
+    "history": "The initial combined gate recorded a Social production build type error; the later Social repair log records the corrected build and lint passing.",
+    "lint": [
+      "authentication",
+      "social",
+      "constants",
+      "models",
+      "storage",
+      "authentication-e2e"
+    ],
+    "logs": {
+      "authUnits": ".runtime-artifacts/account-rights/finish-sequence/social-integration/auth-unit-final.log",
+      "e2eLint": ".runtime-artifacts/account-rights/finish-sequence/social-integration/e2e-lint.log",
+      "prechecks": ".runtime-artifacts/account-rights/finish-sequence/social-integration/pre-e2e-build-lint.log",
+      "socialRepair": ".runtime-artifacts/account-rights/finish-sequence/social-integration/social-build-repair.log",
+      "socialUnits": ".runtime-artifacts/account-rights/finish-sequence/social-integration/social-unit.log"
+    },
+    "unitTests": {
+      "authenticationDbGatedSkipped": 3,
+      "authenticationPassed": 26,
+      "distinctPassed": 35,
+      "socialPassed": 9
+    }
+  },
+  "privateEvidenceRoot": ".runtime-artifacts/account-rights/finish-sequence/social-integration",
+  "reusedEvidence": {
+    "j24Finding": "DF-007-J24.md",
+    "j24Receipt": "checkpoint-j24.json",
+    "scope": "J24's unchanged seeded source-level proof covers positive selection for the 33 source definitions; J25 runtime has 265 representative rows and does not claim a positive row for every source.",
+    "unchangedSourceHashes": {
+      "apps/social/src/app/account-export-authored.sources.spec.ts": "ebfa19ee014d65c3788ea9634804bcb3cef5a9db4d6afdbe7d74aaf42e35ab44",
+      "apps/social/src/app/account-export-authored.sources.ts": "f5b84a768531c9e9d1ef2fcf3958db876e0a2a093b6279b82045f34ee83a57c7",
+      "apps/social/src/app/account-export-community.sources.ts": "c47bcb6e7d1b91317ddc676061bfc40e8ed60850ef2a2cabab76ad1432018d5c",
+      "apps/social/src/app/account-export-personal.sources.ts": "0478c62c89b3634c8443bb8079aab5544af0385655ba97203720d536868978ea",
+      "apps/social/src/app/account-export-receipt.sources.spec.ts": "04d539a3e2d7117d1a07945cd10c3e22f6e7e2aa6cf0f35e9dcad8a3bdb96411",
+      "apps/social/src/app/account-export-receipt.sources.ts": "ec7b5bd3c6a446d231f8e360e1cd0a6336524f5a787390e523dd02d7f79ca678",
+      "apps/social/src/app/account-export-safety.sources.ts": "de7518b96479ef4e77bf13b9766564d64d81abfadc76d635c9071f2b54455a1c",
+      "apps/social/src/app/social-owner-capture.postgres.spec.ts": "5d09b5c094d79e131af9eb3fd1a1d7f4ff99fafd6a5dca689db435b6d8961878",
+      "apps/social/src/app/social-receipt-capture.postgres.spec.ts": "fd18edabd954bd881e928490178082235584331647b82a8d345413b1ccb9ceb2"
+    },
+    "changedLifecycleInputs": [
+      "apps/social/src/app/account-export-owner.service.ts",
+      "apps/social/src/app/account-export-owner.service.spec.ts"
+    ]
+  },
+  "runtime": {
+    "capturedOwnerSequence": [
+      "authentication",
+      "profile",
+      "assets",
+      "videos",
+      "permissions",
+      "social"
+    ],
+    "declaredSourceCount": 33,
+    "declaredSources": [
+      "Post",
+      "Comment",
+      "Reaction",
+      "Vote",
+      "Attachment",
+      "Poll",
+      "SocialComponent",
+      "Link",
+      "PostShare",
+      "Event",
+      "SavedItem",
+      "SearchHistory",
+      "FollowEntity",
+      "UserBlock",
+      "UserMute",
+      "Activity",
+      "UserPresence",
+      "ProfileView",
+      "Notification",
+      "Community",
+      "CommunityMember",
+      "CommunityInvite",
+      "CommunityMembershipAudit",
+      "CommunityElection",
+      "ElectionCandidate",
+      "ElectionVote",
+      "BusinessPageContent",
+      "BusinessThemeContent",
+      "CommunitySponsorshipContent",
+      "GuardianContentAudit",
+      "GuardianPublishedAssetGrant",
+      "ContentReport",
+      "ContentModerationAction"
+    ],
+    "expiredLeaseDenied": true,
+    "failurePrefix": [
+      "authentication",
+      "profile",
+      "assets",
+      "videos",
+      "permissions"
+    ],
+    "fixtureResult": "PASS",
+    "foreignFingerprintPreserved": true,
+    "globalJobRemainsIncomplete": true,
+    "invalidRangeDenied": true,
+    "logoutDeniedRead": true,
+    "noArtifactAvailable": true,
+    "parentProfileBinding": true,
+    "privacyAssertions": true,
+    "recapturedWithNewId": true,
+    "restartInvalidatedHandle": true,
+    "result": "PASS",
+    "retryRestoresAllOwners": true,
+    "verifiedSourceRowCounts": {
+      "Activity": 0,
+      "Attachment": 0,
+      "BusinessPageContent": 0,
+      "BusinessThemeContent": 0,
+      "Comment": 0,
+      "Community": 0,
+      "CommunityElection": 0,
+      "CommunityInvite": 0,
+      "CommunityMember": 0,
+      "CommunityMembershipAudit": 1,
+      "CommunitySponsorshipContent": 0,
+      "ContentModerationAction": 0,
+      "ContentReport": 0,
+      "ElectionCandidate": 0,
+      "ElectionVote": 0,
+      "Event": 0,
+      "FollowEntity": 0,
+      "GuardianContentAudit": 1,
+      "GuardianPublishedAssetGrant": 0,
+      "Link": 0,
+      "Notification": 1,
+      "Poll": 0,
+      "Post": 1,
+      "PostShare": 0,
+      "ProfileView": 0,
+      "Reaction": 0,
+      "SavedItem": 0,
+      "SearchHistory": 261,
+      "SocialComponent": 0,
+      "UserBlock": 0,
+      "UserMute": 0,
+      "UserPresence": 0,
+      "Vote": 0
+    },
+    "verifiedTerminalCount": 265,
+    "tests": {
+      "passed": 1,
+      "skipped": 0,
+      "suitesPassed": 1
+    },
+    "harnessSha256": "be462e7c62fcd804c9fd4e22d8ee539fd1f25cd7e00e926e04a012ccb6a7f3e7"
+  },
+  "slice": "DF-007-J25",
+  "sourceHashes": {
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "5b24348139f6c118313348a9ca62e56b9135ca74a46a8f9e95e3e85c47ed4df1",
+    "apps/authentication-e2e/src/authentication/assets-account-export.spec.ts": "3bff2af85581a00752975602a7a03b10f98f62496ab4c055bcc9c16475ec1735",
+    "apps/authentication-e2e/src/authentication/permissions-account-export.spec.ts": "076fc7e0b7f1a14928f68741cfc61b16b06b75e068edb2e18717fdd1bd1cff7b",
+    "apps/authentication-e2e/src/authentication/social-account-export.spec.ts": "66f4b060a2f9bb369ea088abdf18115dcdbd6d9a0b23f4492d2b7299d694ae49",
+    "apps/authentication-e2e/src/authentication/videos-account-export.spec.ts": "5ad09533cea8418874383e53de45ccb23ff8b614164fd8e88fc4b231b23d357a",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "21c09db3b8bbbbd9907e505814d6cd982ed4f7f1a4d86251c3361df25bd59955",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "ee365d56e2e4b3da7b62a79dc3e89406707228f6c663c954df27f0e7a2c2e28c",
+    "apps/authentication/src/account-export-jobs/social-account-export-snapshot.client.spec.ts": "b236900d150e470fc4c88ebd02095814f34aa8485b34cb6fd537c7f883612d77",
+    "apps/authentication/src/account-export-jobs/social-account-export-snapshot.client.ts": "45e7c6db20900f1e32083ee88ce1e59f22ded7d15ee5417b9a099cce613ed3ff",
+    "apps/authentication/src/app/app.module.ts": "d076df2b591bf63b954250e4d9dc1cfa02cac1d1873070469d41b78ff470622d",
+    "apps/social/src/app/account-export-owner.service.spec.ts": "64c693d58017b800729101fe2c9c295cd2bea01efc4287450615b4d9e64a8511",
+    "apps/social/src/app/account-export-owner.service.ts": "9d0b3b1410f38ad66382c77c828e349936de33e911a432cc241226d7f1c6b4da",
+    "apps/social/src/app/account-export-snapshot.controller.spec.ts": "f98ec12991e0f91c701a999c290e62bf85998d5600b984343f5cb7fb0222be34",
+    "apps/social/src/app/account-export-snapshot.controller.ts": "6d5c395c979bf57342733e1426b1d0aa3268ffaaaef639069f5d9a0759cd3fd5",
+    "apps/social/src/app/account-export-snapshot.service.spec.ts": "37eaee346a780401915cb624a408a3f811faa78f5aa4a34b4dce34193426227c",
+    "apps/social/src/app/account-export-snapshot.service.ts": "fd06cd6d43d42235157aeb9e50c041af2e75266c80f97159a725909f11bf63b7",
+    "apps/social/src/app/account-export-sources.spec.ts": "b32a52f71cb55fec5026d747a79177451dabf84760419b2a750c67856d983f59",
+    "apps/social/src/app/account-export-sources.ts": "ca86f3f111bf7efc06fede5f38da720156df76ca3f2092061a0745c79d48b423",
+    "apps/social/src/app/app.module.ts": "d554628185229b225a902e7128db0f319a1b87ffcaea0f564f99e34a485533bb",
+    "libs/constants/src/index.ts": "55a267aa57db399d62877e08946350590726fd87d03bdc7fa67ff9369e0be646",
+    "libs/constants/src/lib/libs/social.ts": "b8d9eb9f92b220291fab9619de228cdbdac942c9eb376a2b2fdf4142051d851d",
+    "libs/models/src/lib/libs/account-export/account-export-snapshot.contract.ts": "606d18cf0304bff9daac34c1d279b22c5f5c796da9083f6a246606c59f64465d",
+    "libs/storage/src/lib/account-export-profile-bound-snapshot.client.ts": "556d82b111e04a1aae6e6d43ebc91e843666546522f71925e8007fc5878120df"
+  },
+  "sourceManifestSha256": "70ee2c1e6511eccc3a8565c9ceb3f29129f84484f8bc4e214ad34c703f54f36f",
+  "status": "locally-verified-integration",
+  "next": "J26",
+  "review": {
+    "result": "GO",
+    "reviewer": "flat Luna worker j24_postgres_fixture",
+    "scope": "Social/Auth wiring, private prepare/build/runtime harness and fixture",
+    "mode": "read-only source review; no independent runtime claim",
+    "blockers": [],
+    "qualification": "Foreign Post fingerprint plus all-table count checks; J24 retains source-level positive/exclusion proof."
+  }
+}

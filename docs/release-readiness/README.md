@@ -23,7 +23,7 @@ This package defines and records:
 5. Update slice status and evidence as work progresses.
 6. Do not mark a slice `ACCEPTED` merely because code exists. Acceptance requires the evidence stated in the slice.
 
-Current account-rights checkpoint: [J24 source components](./findings/DF-007-J24.md) are locally verified. Continue with J25 using the [remaining-slices register](./REMAINING-SLICES.md).
+Current account-rights checkpoint: [J25 Social snapshot/job integration](./findings/DF-007-J25.md) is locally verified. Continue with J26 using the [remaining-slices register](./REMAINING-SLICES.md).
 
 ## Core release rule
 
@@ -59,3 +59,5 @@ The operator confirmed `/home/cjrutherford/workspace/retumbl` as the current che
 - Deferred capabilities: `docs/release-readiness/DEFERRED-FEATURES.md`.
 
 Keep these locations stable. If a future relocation is necessary, update all consumers and preserve the audit history in the same change.
+
+**2026-10-22 J25 Social snapshot/job integration:** [Local integration finding](./findings/DF-007-J25.md) records a real six-owner job invoking the leased Social participant and all 33 declared sources. The selected Profile parent was verified; the job remained incomplete with no artifact; failure stopped at the five-owner prefix, retry restored all owners, and range/lease/restart/logout checks passed. The runtime fixture verified 265 representative rows and restored table counts; J24's unchanged source-specific evidence supplies the positive 33-source coverage. Seven fresh application images plus the generic database setup image were used. The first combined production gate recorded and the repair gate cleared a Social type error. 35 distinct focused unit tests passed (9 Social, 26 Authentication); three DB-gated Authentication unit tests remained skipped. Authentication and Social production builds, Auth/Social/Constants/Models/Storage lint, Authentication E2E lint, and Social production build/lint after its recorded type repair passed. This is local capture/job integration evidence only. The real runtime captured 265 representative A/B/C/D records (Post 1, SearchHistory 261, Notification 1, CommunityMembershipAudit 1, GuardianContentAudit 1); it does not establish 33 positive source fixtures in J25. The unchanged J24 source-set proof remains the positive coverage evidence for all 33 sources. No schema, UI, download, deletion, remote-CI, or production-qualification claim is made. The job remains incomplete and DF-007/RR-11 remain open. See the [J25 receipt](./evidence/df-007/checkpoint-j25.json).

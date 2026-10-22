@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 
 import { AppController } from './app.controller';
@@ -65,6 +69,13 @@ import { ContentModerationAction } from '../entities/content-moderation-action.e
 import { GuardianContentService } from './services/guardian-content.service';
 import { SocialAccountExportService } from './account-export.service';
 import { SocialAccountExportController } from './account-export.controller';
+import { SocialAccountExportOwnerService } from './account-export-owner.service';
+import { SocialAccountExportSnapshotController } from './account-export-snapshot.controller';
+import { SocialAccountExportSnapshotService } from './account-export-snapshot.service';
+import {
+  AccountExportOwnerSpoolService,
+  AccountExportProfileSnapshotClient,
+} from '@optimistic-tanuki/storage';
 
 @Module({
   imports: [
@@ -77,7 +88,11 @@ import { SocialAccountExportController } from './account-export.controller';
       factory: loadDatabase,
     }),
   ],
-  controllers: [AppController, SocialAccountExportController],
+  controllers: [
+    AppController,
+    SocialAccountExportController,
+    SocialAccountExportSnapshotController,
+  ],
   providers: [
     VoteService,
     ReactionService,
@@ -100,6 +115,35 @@ import { SocialAccountExportController } from './account-export.controller';
     BusinessContentService,
     GuardianContentService,
     SocialAccountExportService,
+    AccountExportOwnerSpoolService,
+    AccountExportProfileSnapshotClient,
+    {
+      provide: SocialAccountExportOwnerService,
+      useFactory: (
+        dataSource: DataSource,
+        identities: AccountExportProfileSnapshotClient,
+        authClient: ClientProxy
+      ) =>
+        new SocialAccountExportOwnerService(dataSource, identities, authClient),
+      inject: [
+        'SOCIAL_CONNECTION',
+        AccountExportProfileSnapshotClient,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
+    {
+      provide: SocialAccountExportSnapshotService,
+      useFactory: (
+        owner: SocialAccountExportOwnerService,
+        spool: AccountExportOwnerSpoolService,
+        authClient: ClientProxy
+      ) => new SocialAccountExportSnapshotService(owner, spool, authClient),
+      inject: [
+        SocialAccountExportOwnerService,
+        AccountExportOwnerSpoolService,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
     {
       provide: ServiceTokens.AUTHENTICATION_SERVICE,
       useFactory: (configService: ConfigService) => {

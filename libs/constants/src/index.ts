@@ -20,6 +20,7 @@ export {
   FollowCommands,
   SocialComponentCommands,
   SocialCommands,
+  SOCIAL_ACCOUNT_EXPORT_CAPTURE_SOURCES,
   SocialRealtimeCommands,
   CommunityCommands,
   NotificationCommands,

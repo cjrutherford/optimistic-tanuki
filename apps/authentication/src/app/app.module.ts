@@ -47,6 +47,7 @@ import { AccountExportJobService } from '../account-export-jobs/account-export-j
 import { AccountExportCaptureLeaseService } from '../account-export-jobs/account-export-capture-lease.service';
 import { ProfileAccountExportSnapshotClient } from '../account-export-jobs/profile-account-export-snapshot.client';
 import { PermissionsAccountExportSnapshotClient } from '../account-export-jobs/permissions-account-export-snapshot.client';
+import { SocialAccountExportSnapshotClient } from '../account-export-jobs/social-account-export-snapshot.client';
 import { AccountExportJobEntity } from '../account-export-jobs/entities/account-export-job.entity';
 import { AuthenticationAccountExportOwnerService } from '../account-export-owner/account-export-owner.service';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
@@ -117,6 +118,7 @@ import {
     AssetsAccountExportSnapshotClient,
     VideosAccountExportSnapshotClient,
     PermissionsAccountExportSnapshotClient,
+    SocialAccountExportSnapshotClient,
     {
       provide: AuthenticationAccountExportOwnerService,
       useFactory: (dataSource: DataSource, auth: AppService) =>

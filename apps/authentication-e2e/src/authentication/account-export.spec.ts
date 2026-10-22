@@ -2039,6 +2039,7 @@ describe('Account export session boundary over TCP', () => {
       'assets',
       'videos',
       'permissions',
+      'social',
     ]);
     expect(repeated.coverageSummary.capturedDatabaseOwners).toEqual([
       'authentication',
@@ -2046,6 +2047,7 @@ describe('Account export session boundary over TCP', () => {
       'assets',
       'videos',
       'permissions',
+      'social',
     ]);
     const laterKey = randomUUID();
     const laterJob = await firstValueFrom(
@@ -2164,6 +2166,7 @@ describe('Account export session boundary over TCP', () => {
         'assets',
         'videos',
         'permissions',
+        'social',
       ]);
       expect(row.rows[0].coverageSummary.capturedDatabaseOwners).toEqual([
         'authentication',
@@ -2171,6 +2174,7 @@ describe('Account export session boundary over TCP', () => {
         'assets',
         'videos',
         'permissions',
+        'social',
       ]);
     } finally {
       await database.end();

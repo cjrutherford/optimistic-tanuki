@@ -253,6 +253,7 @@ describe('Permissions account export private integration', () => {
         'assets',
         'videos',
         'permissions',
+        'social',
       ];
       expect(job.state).toBe('incomplete');
       expect(job.coverageSummary.capturedDatabaseOwners).toEqual(

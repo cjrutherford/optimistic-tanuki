@@ -31,6 +31,7 @@ import {
   ProfileAccountExportCapture,
 } from './profile-account-export-snapshot.client';
 import { PermissionsAccountExportSnapshotClient } from './permissions-account-export-snapshot.client';
+import { SocialAccountExportSnapshotClient } from './social-account-export-snapshot.client';
 
 const LEASE_MS = 60_000;
 
@@ -48,7 +49,8 @@ export class AccountExportJobService {
     private readonly profileCapture: ProfileAccountExportSnapshotClient,
     private readonly assetsCapture: AssetsAccountExportSnapshotClient,
     private readonly videosCapture: VideosAccountExportSnapshotClient,
-    private readonly permissionsCapture: PermissionsAccountExportSnapshotClient
+    private readonly permissionsCapture: PermissionsAccountExportSnapshotClient,
+    private readonly socialCapture: SocialAccountExportSnapshotClient
   ) {}
 
   async create(request: unknown): Promise<AccountExportJobStatus> {
@@ -324,7 +326,11 @@ export class AccountExportJobService {
       let permissions:
         | Awaited<ReturnType<PermissionsAccountExportSnapshotClient['capture']>>
         | undefined;
-      let stage: 'profile' | 'assets' | 'videos' | 'permissions' = 'profile';
+      let social:
+        | Awaited<ReturnType<SocialAccountExportSnapshotClient['capture']>>
+        | undefined;
+      let stage: 'profile' | 'assets' | 'videos' | 'permissions' | 'social' =
+        'profile';
       try {
         if (!claimed.leaseOwner) {
           leaseLost = true;
@@ -425,6 +431,34 @@ export class AccountExportJobService {
             'permissions',
           ],
         };
+        stage = 'social';
+        social = await this.socialCapture.capture(
+          {
+            accountId: input.accountId,
+            token: input.token,
+            appId: input.appId,
+            jobId: claimed.id,
+            attempt: claimed.attempt,
+            leaseOwner: claimed.leaseOwner,
+          },
+          profile.descriptor,
+          async () => {
+            const renewed = await this.renewLease(claimed);
+            if (!renewed) leaseLost = true;
+            return renewed;
+          }
+        );
+        summary = {
+          ...summary,
+          capturedDatabaseOwners: [
+            'authentication',
+            'profile',
+            'assets',
+            'videos',
+            'permissions',
+            'social',
+          ],
+        };
       } catch {
         if (!leaseLost) {
           summary = {
@@ -438,6 +472,30 @@ export class AccountExportJobService {
           errorCode = `${stage}-capture-unavailable`;
         }
       } finally {
+        if (social) {
+          try {
+            await social.cleanup();
+          } catch {
+            if (!leaseLost) {
+              summary = {
+                ...summary,
+                capturedDatabaseOwners: [
+                  'authentication',
+                  'profile',
+                  'assets',
+                  'videos',
+                  'permissions',
+                ],
+                blockers: [
+                  ...(Array.isArray(summary.blockers) ? summary.blockers : []),
+                  'social-capture-unavailable',
+                ],
+              };
+              state = 'failed';
+              errorCode = 'social-capture-unavailable';
+            }
+          }
+        }
         if (permissions) {
           try {
             await permissions.cleanup();

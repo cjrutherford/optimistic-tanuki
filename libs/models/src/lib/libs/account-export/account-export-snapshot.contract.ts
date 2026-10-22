@@ -117,3 +117,8 @@ export type PermissionsAccountExportSnapshotDescriptor =
   ProfileBoundAccountExportSnapshotDescriptor;
 export type PermissionsAccountExportSnapshotOpenRequest =
   AssetsAccountExportSnapshotOpenRequest;
+
+export type SocialAccountExportSnapshotDescriptor =
+  ProfileBoundAccountExportSnapshotDescriptor;
+export type SocialAccountExportSnapshotOpenRequest =
+  AssetsAccountExportSnapshotOpenRequest;

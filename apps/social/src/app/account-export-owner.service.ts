@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { AuthCommands } from '@optimistic-tanuki/constants';
+import {
+  AuthCommands,
+  SOCIAL_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from '@optimistic-tanuki/constants';
 import {
   AccountExportCaptureGrant,
   AccountExportOwnerChunk,
@@ -16,10 +19,8 @@ import {
 import { firstValueFrom, timeout } from 'rxjs';
 import { DataSource, QueryRunner } from 'typeorm';
 import { randomUUID } from 'node:crypto';
-import {
-  createAuthoredSources,
-  SocialCaptureSource,
-} from './account-export-authored.sources';
+import { SocialCaptureSource } from './account-export-authored.sources';
+import { createSocialAccountExportSources } from './account-export-sources';
 
 export type SocialAccountExportSource = string;
 export type SocialAccountExportChunk = AccountExportOwnerChunk<string>;
@@ -46,7 +47,6 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PAGE = 200;
 const MAX_CAPTURE_ROWS = 100_000;
 const MAX_CAPTURE_BYTES = 64 * 1024 * 1024;
-
 @Injectable()
 export class SocialAccountExportOwnerService {
   private busy = false;
@@ -91,7 +91,7 @@ export class SocialAccountExportOwnerService {
       identityCount: d.identityCount,
       expiresAt: d.expiresAt,
     };
-    const sourcesFactory = value.sources ?? createAuthoredSources;
+    const sourcesFactory = value.sources ?? createSocialAccountExportSources;
     const onChunk = value.onChunk;
     const external = value.signal;
     const timeoutMs = value.captureTimeoutMs ?? 45_000;
@@ -153,6 +153,9 @@ export class SocialAccountExportOwnerService {
         sources.some(
           (s) =>
             !/^[A-Za-z][A-Za-z0-9]{0,63}$/.test(s.source) ||
+            !SOCIAL_ACCOUNT_EXPORT_CAPTURE_SOURCES.some(
+              (registered) => registered === s.source
+            ) ||
             typeof s.sql !== 'string' ||
             typeof s.project !== 'function'
         ) ||

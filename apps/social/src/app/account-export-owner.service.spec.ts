@@ -1,4 +1,5 @@
 import { of } from 'rxjs';
+import { SOCIAL_ACCOUNT_EXPORT_CAPTURE_SOURCES } from '@optimistic-tanuki/constants';
 jest.mock('@optimistic-tanuki/storage', () => ({
   AccountExportOwnerEmitter: jest.requireActual(
     '../../../../libs/storage/src/lib/account-export-owner-emitter'
@@ -115,6 +116,27 @@ describe('SocialAccountExportOwnerService', () => {
     );
     expect(events.indexOf('release')).toBeLessThan(events.indexOf('terminal'));
     expect(chunks.at(-1).checksum).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it('uses the full 33-source registry by default while allowing explicit fixture subsets', async () => {
+    const { service, runner } = setup();
+    const chunks: any[] = [];
+    const terminal = await service.captureAccount({
+      grant,
+      profileSnapshot: descriptor,
+      onChunk: async (chunk) => chunks.push(chunk),
+    });
+
+    expect(terminal.complete).toBe(true);
+    expect(Object.keys(terminal.sourceRowCounts)).toEqual(
+      SOCIAL_ACCOUNT_EXPORT_CAPTURE_SOURCES
+    );
+    expect(
+      runner.query.mock.calls.filter(
+        ([sql]: [string]) =>
+          sql.startsWith('SELECT') && !sql.includes('transaction_timestamp')
+      )
+    ).toHaveLength(SOCIAL_ACCOUNT_EXPORT_CAPTURE_SOURCES.length);
   });
 
   it('fails closed on source read errors and never emits complete', async () => {

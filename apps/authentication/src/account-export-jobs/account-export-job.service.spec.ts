@@ -42,6 +42,7 @@ describe('AccountExportJobService authorization boundary', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
   });
@@ -223,6 +224,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
     videosCleanup: jest.Mock;
     permissionsCapture: jest.Mock;
     permissionsCleanup: jest.Mock;
+    socialCapture: jest.Mock;
+    socialCleanup: jest.Mock;
   } {
     const jobs = {};
     const auth = {};
@@ -268,6 +271,24 @@ describe('AccountExportJobService Authentication owner staging', () => {
         }
       ),
     };
+    const socialResult = { cleanup: jest.fn(async () => undefined) };
+    const socialCapture = {
+      capture: jest.fn(
+        async (
+          _grant: unknown,
+          profile: unknown,
+          renew: () => Promise<boolean>
+        ) => {
+          expect(profile).toEqual({ handleId: 'profile-fixture' });
+          expect(profileResult.cleanup).not.toHaveBeenCalled();
+          expect(assetsResult.cleanup).not.toHaveBeenCalled();
+          expect(videosResult.cleanup).not.toHaveBeenCalled();
+          expect(permissionsResult.cleanup).not.toHaveBeenCalled();
+          await renew();
+          return socialResult;
+        }
+      ),
+    };
     const profileResult = {
       descriptor: { handleId: 'profile-fixture' },
       identities: jest.fn(async () => ({})),
@@ -284,7 +305,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       profileCapture as never,
       assetsCapture as never,
       videosCapture as never,
-      permissionsCapture as never
+      permissionsCapture as never,
+      socialCapture as never
     );
     const state = service as unknown as {
       run: (
@@ -321,6 +343,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       videosCleanup: videosResult.cleanup,
       permissionsCapture: permissionsCapture.capture,
       permissionsCleanup: permissionsResult.cleanup,
+      socialCapture: socialCapture.capture,
+      socialCleanup: socialResult.cleanup,
     };
   }
 
@@ -351,7 +375,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
     idempotencyKey: IDEMPOTENCY_KEY,
   });
 
-  it('stores all five verified owner markers and keeps the global job incomplete', async () => {
+  it('stores all six verified owner markers and keeps the global job incomplete', async () => {
     const ownerCapture = jest.fn(
       async ({
         onChunk,
@@ -382,16 +406,25 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'assets',
         'videos',
         'permissions',
+        'social',
       ],
       artifactAvailable: false,
     });
     expect(test.renewLease).toHaveBeenCalledTimes(
-      1 + AUTHENTICATION_ACCOUNT_EXPORT_SOURCES.length + 2
+      1 + AUTHENTICATION_ACCOUNT_EXPORT_SOURCES.length + 3
     );
     expect(test.permissionsCapture).toHaveBeenCalledWith(
       expect.objectContaining({ accountId: ACCOUNT_ID }),
       expect.objectContaining({ handleId: 'profile-fixture' }),
       expect.any(Function)
+    );
+    expect(test.socialCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: ACCOUNT_ID }),
+      expect.objectContaining({ handleId: 'profile-fixture' }),
+      expect.any(Function)
+    );
+    expect(test.socialCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+      test.permissionsCleanup.mock.invocationCallOrder[0]
     );
     expect(test.permissionsCleanup.mock.invocationCallOrder[0]).toBeLessThan(
       test.videosCleanup.mock.invocationCallOrder[0]
@@ -400,6 +433,104 @@ describe('AccountExportJobService Authentication owner staging', () => {
     expect(JSON.stringify(result)).not.toMatch(
       /sha256|captureId|sizeBytes|stage/i
     );
+    expect(JSON.stringify(result)).not.toContain(TOKEN);
+  });
+
+  it.each(['capture', 'cleanup', 'lease'])(
+    'fails safely when Social %s fails and cleans snapshots in reverse order',
+    async (mode) => {
+      const owner = jest.fn(async ({ onChunk }) => {
+        const chunks = createOwnerChunks(ACCOUNT_ID);
+        for (const chunk of chunks) await onChunk(chunk);
+        return chunks[chunks.length - 1];
+      });
+      const test = harness(async () => true, owner);
+      if (mode === 'capture')
+        test.socialCapture.mockRejectedValueOnce(
+          new Error('private Social diagnostic')
+        );
+      if (mode === 'cleanup')
+        test.socialCleanup.mockRejectedValueOnce(
+          new Error('private Social cleanup detail')
+        );
+      if (mode === 'lease') {
+        test.socialCapture.mockImplementationOnce(async (_g, _p, renew) => {
+          test.renewLease.mockResolvedValueOnce(false);
+          await renew();
+          throw new Error('stale lease');
+        });
+        await expect(test.run(input(), activeClaim)).rejects.toMatchObject({
+          message: 'Export operation lease is no longer current',
+        });
+        expect(test.finish).not.toHaveBeenCalled();
+      } else {
+        const result = await test.run(input(), activeClaim);
+        expect(result.state).toBe('failed');
+        expect(result.coverageSummary.capturedDatabaseOwners).toEqual([
+          'authentication',
+          'profile',
+          'assets',
+          'videos',
+          'permissions',
+        ]);
+        expect(result.coverageSummary.blockers).toContain(
+          'social-capture-unavailable'
+        );
+        expect(JSON.stringify(result)).not.toContain('private Social');
+        expect(JSON.stringify(result)).not.toContain(TOKEN);
+      }
+      if (mode === 'cleanup')
+        expect(test.socialCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+          test.permissionsCleanup.mock.invocationCallOrder[0]
+        );
+      expect(test.permissionsCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+        test.videosCleanup.mock.invocationCallOrder[0]
+      );
+      expect(test.videosCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+        test.assetsCleanup.mock.invocationCallOrder[0]
+      );
+      expect(test.assetsCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+        test.profileCleanup.mock.invocationCallOrder[0]
+      );
+      expect(await readdir(root)).toEqual([]);
+    }
+  );
+
+  it('retries a failed Social stage without retaining the previous attempt spool', async () => {
+    const owner = jest.fn(async ({ onChunk }) => {
+      const chunks = createOwnerChunks(ACCOUNT_ID);
+      for (const chunk of chunks) await onChunk(chunk);
+      return chunks[chunks.length - 1];
+    });
+    const test = harness(async () => true, owner);
+    test.socialCapture.mockRejectedValueOnce(
+      new Error('private Social temporary failure')
+    );
+    const first = await test.run(input(), activeClaim);
+    expect(first.state).toBe('failed');
+    expect(first.coverageSummary.blockers).toContain(
+      'social-capture-unavailable'
+    );
+    expect(await readdir(root)).toEqual([]);
+
+    for (const cleanup of [
+      test.profileCleanup,
+      test.assetsCleanup,
+      test.videosCleanup,
+      test.permissionsCleanup,
+      test.socialCleanup,
+    ])
+      cleanup.mockClear();
+
+    activeClaim.state = 'running';
+    activeClaim.attempt += 1;
+    activeClaim.leaseOwner = randomUUID();
+    activeClaim.leaseExpiresAt = new Date(Date.now() + 60_000);
+    const second = await test.run(input(), activeClaim);
+    expect(second.state).toBe('incomplete');
+    expect(second.coverageSummary.capturedDatabaseOwners).toContain('social');
+    expect(test.socialCapture).toHaveBeenCalledTimes(2);
+    expect(await readdir(root)).toEqual([]);
   });
 
   it.each(['capture', 'cleanup', 'lease'])(
@@ -679,6 +810,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
     const internals = service as unknown as {
@@ -733,6 +865,7 @@ describe('AccountExportJobService database lease fence', () => {
       service = new AccountExportJobService(
         repository,
         dataSource,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,
