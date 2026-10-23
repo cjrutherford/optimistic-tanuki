@@ -45,6 +45,7 @@ describe('AccountExportJobService authorization boundary', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
   });
@@ -232,6 +233,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
     forumCleanup: jest.Mock;
     workspaceCapture: jest.Mock;
     workspaceCleanup: jest.Mock;
+    appConfiguratorCapture: jest.Mock;
+    appConfiguratorCleanup: jest.Mock;
   } {
     const jobs = {};
     const auth = {};
@@ -325,6 +328,10 @@ describe('AccountExportJobService Authentication owner staging', () => {
         }
       ),
     };
+    const appConfiguratorResult = { cleanup: jest.fn(async () => undefined) };
+    const appConfiguratorCapture = {
+      capture: jest.fn(async () => appConfiguratorResult),
+    };
     const profileResult = {
       descriptor: { handleId: 'profile-fixture' },
       identities: jest.fn(async () => ({})),
@@ -344,7 +351,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       permissionsCapture as never,
       socialCapture as never,
       forumCapture as never,
-      workspaceCapture as never
+      workspaceCapture as never,
+      appConfiguratorCapture as never
     );
     const state = service as unknown as {
       run: (
@@ -387,6 +395,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       forumCleanup: forumResult.cleanup,
       workspaceCapture: workspaceCapture.capture,
       workspaceCleanup: workspaceResult.cleanup,
+      appConfiguratorCapture: appConfiguratorCapture.capture,
+      appConfiguratorCleanup: appConfiguratorResult.cleanup,
     };
   }
 
@@ -417,7 +427,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
     idempotencyKey: IDEMPOTENCY_KEY,
   });
 
-  it('stores all eight verified owner markers and keeps the global job incomplete', async () => {
+  it('stores all nine verified owner markers and keeps the global job incomplete', async () => {
     const ownerCapture = jest.fn(
       async ({
         onChunk,
@@ -451,6 +461,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'social',
         'forum',
         'workspace',
+        'app-configurator',
       ],
       artifactAvailable: false,
     });
@@ -477,9 +488,17 @@ describe('AccountExportJobService Authentication owner staging', () => {
       expect.objectContaining({ handleId: 'profile-fixture' }),
       expect.any(Function)
     );
+    expect(test.appConfiguratorCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: ACCOUNT_ID }),
+      expect.objectContaining({ handleId: 'profile-fixture' }),
+      expect.any(Function)
+    );
     expect(test.workspaceCleanup.mock.invocationCallOrder[0]).toBeLessThan(
       test.forumCleanup.mock.invocationCallOrder[0]
     );
+    expect(
+      test.appConfiguratorCleanup.mock.invocationCallOrder[0]
+    ).toBeLessThan(test.workspaceCleanup.mock.invocationCallOrder[0]);
     expect(test.forumCleanup.mock.invocationCallOrder[0]).toBeLessThan(
       test.socialCleanup.mock.invocationCallOrder[0]
     );
@@ -594,7 +613,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
   });
 
   it.each(['capture', 'cleanup'])(
-    'keeps the six-owner prefix when Forum %s fails and restores eight on retry',
+    'keeps the six-owner prefix when Forum %s fails and restores nine on retry',
     async (mode) => {
       const owner = jest.fn(async ({ onChunk }) => {
         const chunks = createOwnerChunks(ACCOUNT_ID);
@@ -636,6 +655,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
         test.permissionsCleanup,
         test.socialCleanup,
         test.forumCleanup,
+        test.workspaceCleanup,
+        test.appConfiguratorCleanup,
       ])
         cleanup.mockClear();
       activeClaim.state = 'running';
@@ -653,6 +674,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'social',
         'forum',
         'workspace',
+        'app-configurator',
       ]);
       expect(second.coverageSummary.artifactAvailable).toBe(false);
       expect(second.artifactUrl).toBeNull();
@@ -665,7 +687,51 @@ describe('AccountExportJobService Authentication owner staging', () => {
   );
 
   it.each(['capture', 'cleanup'])(
-    'keeps the seven-owner prefix when Workspace %s fails and restores eight on retry',
+    'keeps exactly eight earlier owners when App Configurator %s fails',
+    async (mode) => {
+      const owner = jest.fn(async ({ onChunk }) => {
+        const chunks = createOwnerChunks(ACCOUNT_ID);
+        for (const chunk of chunks) await onChunk(chunk);
+        return chunks[chunks.length - 1];
+      });
+      const test = harness(async () => true, owner);
+      if (mode === 'capture')
+        test.appConfiguratorCapture.mockRejectedValueOnce(
+          new Error('private app configuration capture')
+        );
+      else
+        test.appConfiguratorCleanup.mockRejectedValueOnce(
+          new Error('private app configuration cleanup')
+        );
+      const result = await test.run(input(), activeClaim);
+      expect(result.state).toBe('failed');
+      expect(result.coverageSummary.capturedDatabaseOwners).toEqual([
+        'authentication',
+        'profile',
+        'assets',
+        'videos',
+        'permissions',
+        'social',
+        'forum',
+        'workspace',
+      ]);
+      expect(result.coverageSummary.blockers).toContain(
+        'app-configurator-capture-unavailable'
+      );
+      expect(result.artifactUrl).toBeNull();
+      expect(result.coverageSummary.artifactAvailable).toBe(false);
+      expect(JSON.stringify(result)).not.toContain('private app configuration');
+      if (mode === 'cleanup')
+        expect(
+          test.appConfiguratorCleanup.mock.invocationCallOrder[0]
+        ).toBeLessThan(test.workspaceCleanup.mock.invocationCallOrder[0]);
+      expect(test.profileCleanup).toHaveBeenCalledTimes(1);
+      expect(await readdir(root)).toEqual([]);
+    }
+  );
+
+  it.each(['capture', 'cleanup'])(
+    'keeps the seven-owner prefix when Workspace %s fails and restores nine on retry',
     async (mode) => {
       const owner = jest.fn(async ({ onChunk }) => {
         const chunks = createOwnerChunks(ACCOUNT_ID);
@@ -687,15 +753,27 @@ describe('AccountExportJobService Authentication owner staging', () => {
       expect(first.coverageSummary.blockers).toContain(
         'workspace-capture-unavailable'
       );
-      expect(first.coverageSummary.capturedDatabaseOwners).toEqual([
-        'authentication',
-        'profile',
-        'assets',
-        'videos',
-        'permissions',
-        'social',
-        'forum',
-      ]);
+      expect(first.coverageSummary.capturedDatabaseOwners).toEqual(
+        mode === 'capture'
+          ? [
+              'authentication',
+              'profile',
+              'assets',
+              'videos',
+              'permissions',
+              'social',
+              'forum',
+            ]
+          : [
+              'authentication',
+              'profile',
+              'assets',
+              'videos',
+              'permissions',
+              'social',
+              'forum',
+            ]
+      );
       expect(first.coverageSummary.artifactAvailable).toBe(false);
       expect(first.artifactUrl).toBeNull();
       expect(JSON.stringify(first)).not.toContain('private Workspace');
@@ -709,6 +787,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         test.socialCleanup,
         test.forumCleanup,
         test.workspaceCleanup,
+        test.appConfiguratorCleanup,
       ])
         cleanup.mockClear();
       activeClaim.state = 'running';
@@ -726,6 +805,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'social',
         'forum',
         'workspace',
+        'app-configurator',
       ]);
       expect(second.coverageSummary.artifactAvailable).toBe(false);
       expect(second.artifactUrl).toBeNull();
@@ -737,7 +817,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
     }
   );
 
-  it('drops every failed owner from coverage when Workspace and Forum cleanup both fail', async () => {
+  it('retains prior cleanup blockers while later cleanup failures restore their trusted prefix', async () => {
     const owner = jest.fn(async ({ onChunk }) => {
       const chunks = createOwnerChunks(ACCOUNT_ID);
       for (const chunk of chunks) await onChunk(chunk);
@@ -748,6 +828,9 @@ describe('AccountExportJobService Authentication owner staging', () => {
       new Error('private Workspace cleanup')
     );
     test.forumCleanup.mockRejectedValueOnce(new Error('private Forum cleanup'));
+    test.appConfiguratorCleanup.mockRejectedValueOnce(
+      new Error('private App Configurator cleanup')
+    );
     const result = await test.run(input(), activeClaim);
     expect(result.state).toBe('failed');
     expect(result.coverageSummary.capturedDatabaseOwners).toEqual([
@@ -762,6 +845,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       expect.arrayContaining([
         'workspace-capture-unavailable',
         'forum-capture-unavailable',
+        'app-configurator-capture-unavailable',
       ])
     );
     expect(test.workspaceCleanup.mock.invocationCallOrder[0]).toBeLessThan(
@@ -1051,6 +1135,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
     const internals = service as unknown as {
@@ -1105,6 +1190,7 @@ describe('AccountExportJobService database lease fence', () => {
       service = new AccountExportJobService(
         repository,
         dataSource,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,

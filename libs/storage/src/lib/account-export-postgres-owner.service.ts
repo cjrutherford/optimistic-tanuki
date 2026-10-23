@@ -51,6 +51,7 @@ export class AccountExportPostgresOwnerError extends Error {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const IDENTIFIER = /^[A-Za-z][A-Za-z0-9]{0,63}$/;
+const PARTICIPANT_IDENTIFIER = /^[A-Za-z][A-Za-z0-9-]{0,63}$/;
 const PAGE = 200;
 const MAX_CAPTURE_ROWS = 100_000;
 const MAX_CAPTURE_BYTES = 64 * 1024 * 1024;
@@ -74,7 +75,7 @@ export class AccountExportPostgresOwnerService {
       throw new AccountExportPostgresOwnerError('OWNER_READ_FAILED');
     if (
       !this.options ||
-      !IDENTIFIER.test(this.options.participantId) ||
+      !PARTICIPANT_IDENTIFIER.test(this.options.participantId) ||
       !Array.isArray(this.options.sources) ||
       !this.options.sources.length ||
       this.options.sources.some((source) => !IDENTIFIER.test(source)) ||
@@ -119,10 +120,9 @@ export class AccountExportPostgresOwnerService {
       runner = this.dataSource.createQueryRunner();
       await runner.connect();
       this.active(abort.signal, deadline);
-      temp = `${this.options.participantId}_export_scope_${randomUUID().replace(
-        /-/g,
-        ''
-      )}`;
+      temp = `${this.options.participantId
+        .replace(/-/g, '_')
+        .slice(0, 16)}_export_scope_${randomUUID().replace(/-/g, '')}`;
       await runner.query(
         `CREATE TEMP TABLE "${temp}" ("id" uuid PRIMARY KEY) ON COMMIT PRESERVE ROWS`
       );

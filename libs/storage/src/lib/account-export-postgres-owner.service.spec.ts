@@ -32,6 +32,7 @@ describe('AccountExportPostgresOwnerService', () => {
     options: {
       cleanupFails?: boolean;
       ids?: string[];
+      participantId?: string;
       sourceRows?: Record<string, unknown>[];
     } = {}
   ) {
@@ -80,7 +81,7 @@ describe('AccountExportPostgresOwnerService', () => {
       identities,
       auth,
       {
-        participantId: 'forum',
+        participantId: options.participantId ?? 'forum',
         sources: sourceNames,
         createSources: (table) =>
           sourceNames.map((source) => ({
@@ -112,6 +113,72 @@ describe('AccountExportPostgresOwnerService', () => {
     expect(events.indexOf('release')).toBeLessThan(events.indexOf('terminal'));
     expect(runner.startTransaction).toHaveBeenCalledWith('REPEATABLE READ');
     expect(chunks.at(-1).checksum).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it('captures app-configurator with a normalized bounded temp table name', async () => {
+    const { service, runner, events } = setup({
+      participantId: 'app-configurator',
+    });
+    const chunks: any[] = [];
+    const terminal = await service.captureAccount({
+      grant,
+      profileSnapshot: descriptor,
+      onChunk: async (chunk) => {
+        chunks.push(chunk);
+      },
+    });
+    const createSql = runner.query.mock.calls.find(([sql]: [string]) =>
+      sql.startsWith('CREATE TEMP')
+    )?.[0] as string;
+    const tempName = createSql.match(/CREATE TEMP TABLE "([^"]+)"/)?.[1];
+
+    expect(terminal.complete).toBe(true);
+    expect(chunks.at(-1).participantId).toBe('app-configurator');
+    expect(tempName).toBeDefined();
+    expect(tempName).toMatch(/^app_configurator_export_scope_[a-f0-9]{32}$/);
+    expect(tempName?.length).toBeLessThanOrEqual(63);
+    expect(events).toEqual(
+      expect.arrayContaining([
+        'connect',
+        'profile-identity',
+        'drop-temp',
+        'release',
+      ])
+    );
+  });
+
+  it('rejects unsafe participant and source identifiers before connecting', async () => {
+    const participant = setup({
+      participantId: 'bad-participant; DROP TABLE x',
+    });
+    await expect(
+      participant.service.captureAccount({
+        grant,
+        profileSnapshot: descriptor,
+        onChunk: async () => undefined,
+      })
+    ).rejects.toMatchObject({ code: 'OWNER_AUTHORIZATION_FAILED' });
+    expect(participant.runner.connect).not.toHaveBeenCalled();
+
+    const source = setup();
+    const invalidSourceService = new AccountExportPostgresOwnerService(
+      { createQueryRunner: () => source.runner } as any,
+      source.identities,
+      source.auth,
+      {
+        participantId: 'forum',
+        sources: ['bad-source'],
+        createSources: () => [],
+      }
+    );
+    await expect(
+      invalidSourceService.captureAccount({
+        grant,
+        profileSnapshot: descriptor,
+        onChunk: async () => undefined,
+      })
+    ).rejects.toMatchObject({ code: 'OWNER_AUTHORIZATION_FAILED' });
+    expect(source.runner.connect).not.toHaveBeenCalled();
   });
 
   it('quarantines the owner after cleanup failure', async () => {

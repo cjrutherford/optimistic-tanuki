@@ -22,6 +22,8 @@ describe('authentication config oauth env loading', () => {
     delete process.env.SERVICE_FORUM_PORT;
     delete process.env.SERVICE_WORKSPACE_HOST;
     delete process.env.SERVICE_WORKSPACE_PORT;
+    delete process.env.SERVICE_APP_CONFIGURATOR_HOST;
+    delete process.env.SERVICE_APP_CONFIGURATOR_PORT;
   });
 
   afterAll(() => {
@@ -142,6 +144,20 @@ describe('authentication config oauth env loading', () => {
     expect(loadConfig().services?.workspace).toEqual({
       host: 'workspace-internal',
       port: 43024,
+    });
+  });
+
+  it('loads the App Configurator participant target with environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.app_configurator).toEqual({
+      host: 'app-configurator',
+      port: 3014,
+    });
+    process.env.SERVICE_APP_CONFIGURATOR_HOST = 'app-configurator-internal';
+    process.env.SERVICE_APP_CONFIGURATOR_PORT = '43014';
+    expect(loadConfig().services?.app_configurator).toEqual({
+      host: 'app-configurator-internal',
+      port: 43014,
     });
   });
 

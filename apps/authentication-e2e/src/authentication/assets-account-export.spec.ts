@@ -219,6 +219,7 @@ describe('Assets account export real leased service integration', () => {
         'social',
         'forum',
         'workspace',
+        'app-configurator',
       ]);
       expect(job.coverageSummary.artifactAvailable).toBe(false);
       expect(JSON.stringify(job)).not.toContain(users[0].token);
@@ -453,6 +454,7 @@ describe('Assets account export real leased service integration', () => {
         'social',
         'forum',
         'workspace',
+        'app-configurator',
       ]);
       grant = {
         ...grant,

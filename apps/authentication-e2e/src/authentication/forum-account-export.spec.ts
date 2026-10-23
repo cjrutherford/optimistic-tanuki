@@ -269,6 +269,7 @@ describe('Forum account export private TCP integration', () => {
         'social',
         'forum',
         'workspace',
+        'app-configurator',
       ];
       let job = await rpc(
         clients.auth,

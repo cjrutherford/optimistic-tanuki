@@ -1,6 +1,8 @@
 # HAI OT + Towne Square Release-Readiness Package
 
-**Fixed completion baseline (2026-10-22):** use the [release sequence](../plans/2026-10-19-release-finish-sequence.md). It rolls the existing 109 local technical entries into 75 sequential deliveries, with the existing O-P/C/I checks contained inside each O delivery. Current: O01 Workspace verified; 1/75 complete; O02 App Configurator next. J1–J28 are accepted prerequisites; account-wide export/download/deletion remain incomplete. External X01–X04 remain separately owned. This changes reporting granularity, not scope.
+**Scope clarification (2026-10-23):** The authoritative audit scope remains `client-interface` (Optimistic Tanuki), `local-hub` (Towne Square), shared services required by their primary workflows, and shared HAI navigation. The 75-delivery inventory must be reconciled to those workflows and the shared-account contract before treating every remaining owner as a release blocker. Preserve accepted work; do not add owners or silently drop cross-product account data. No technical ID or release boundary is added by this clarification.
+
+**Fixed completion baseline (2026-10-22):** use the [release sequence](../plans/2026-10-19-release-finish-sequence.md). It rolls the existing 109 local technical entries into 75 sequential deliveries, with the existing O-P/C/I checks contained inside each O delivery. Current: O01 Workspace and O02 App Configurator verified; 2/75 complete; O03 Blogging next. J1–J28 are accepted prerequisites; account-wide export/download/deletion remain incomplete. External X01–X04 remain separately owned. This changes reporting granularity, not scope.
 
 This working package lives in `docs/release-readiness/`. RR-00 establishes this as the stable audit location and records version-control evidence.
 
@@ -25,7 +27,7 @@ This package defines and records:
 5. Update slice status and evidence as work progresses.
 6. Do not mark a slice `ACCEPTED` merely because code exists. Acceptance requires the evidence stated in the slice.
 
-Current account-rights checkpoint: [O01 Workspace delivery](./findings/DF-007-O01.md) is locally verified. Progress: 1/75 deliveries complete; 74 remain. Next: O02 App Configurator in the [fixed sequence](../plans/2026-10-19-release-finish-sequence.md).
+Current account-rights checkpoint: [O02 App Configurator delivery](./findings/DF-007-O02.md) is locally verified. Progress: 2/75 deliveries complete; 73 remain. Next: O03 Blogging in the [fixed sequence](../plans/2026-10-19-release-finish-sequence.md).
 
 ## Core release rule
 
@@ -71,3 +73,5 @@ Keep these locations stable. If a future relocation is necessary, update all con
 **2026-10-22 J28 Forum integration:** [Seventh-owner integration](./findings/DF-007-J28.md). Forum now participates in the real seven-owner leased export job. One private TCP case passed with zero skips, covering all six Forum sources/seven representative rows, exact Profile-parent/session/lease checks, failure-prefix/retry, multibyte checksum, restart and logout denial. Independent seven-database counts were restored, spool descriptors and private resources were zero, and 43 protected paths were unchanged. The job remains incomplete with no artifact. O01-P (Workspace policy) is next; the seventeen other owners, non-ORM stores, artifacts/downloads, deletion, shared controls and claims remain open. DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j28.json).
 
 **2026-10-23 O01 Workspace delivery:** [Policy, capture and integration](./findings/DF-007-O01.md) are locally verified. One real eight-service case captured 252 owned rows across two profiles/scopes, excluded foreign/mismatched bindings, and proved parent/session/lease denial, integrity, failure-prefix/retry, restart/logout and independent cleanup. Global jobs remain incomplete with no artifact. **1/75 local deliveries complete; 74 remain. Next: O02 App Configurator.** [Receipt](./evidence/df-007/checkpoint-o01.json).
+
+**2026-10-23 O02 App Configurator delivery:** [Policy, capture and integration](./findings/DF-007-O02.md) are locally verified. One private nine-service case captured 757 receipts across all three sources, excluded counterpart/configuration secrets, and proved parent/session/lease checks, failure-prefix/retry, integrity, restart/logout and independent cleanup. Migrated physical catalog parity passed read-only. Global jobs remain incomplete with no artifact. **2/75 local deliveries complete; 73 remain. Next planned ID: O03 Blogging, pending OT/TS scope reconciliation.** [Receipt](./evidence/df-007/checkpoint-o02.json).

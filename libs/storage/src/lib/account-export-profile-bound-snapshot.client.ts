@@ -17,7 +17,8 @@ export interface AccountExportProfileBoundSnapshotClientOptions {
     | 'permissions'
     | 'social'
     | 'forum'
-    | 'workspace';
+    | 'workspace'
+    | 'app-configurator';
   sources: readonly string[];
   open(payload: unknown, timeoutMs: number): Promise<unknown>;
   read(

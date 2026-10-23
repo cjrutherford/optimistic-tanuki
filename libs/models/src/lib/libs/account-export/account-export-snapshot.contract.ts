@@ -130,3 +130,8 @@ export type WorkspaceAccountExportSnapshotDescriptor =
   ProfileBoundAccountExportSnapshotDescriptor;
 export type WorkspaceAccountExportSnapshotOpenRequest =
   AssetsAccountExportSnapshotOpenRequest;
+
+export type AppConfiguratorAccountExportSnapshotDescriptor =
+  ProfileBoundAccountExportSnapshotDescriptor;
+export type AppConfiguratorAccountExportSnapshotOpenRequest =
+  AssetsAccountExportSnapshotOpenRequest;

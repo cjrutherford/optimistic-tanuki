@@ -1,0 +1,259 @@
+{
+  "version": 1,
+  "policy": "bounded recorded app configuration and membership receipts",
+  "selection": {
+    "principal": "account-and-currently-owned-profile",
+    "accountScope": "account-wide across appScope values",
+    "appId": "authenticates request; never filters rows",
+    "selector": {
+      "operator": "AND",
+      "accountField": "per-entity account field",
+      "profileField": "per-entity profile field",
+      "profileSet": "capturedCurrentProfileIds",
+      "currentProfileRequired": true
+    }
+  },
+  "entities": [
+    {
+      "name": "AppConfigurationEntity",
+      "table": "app_configuration_entity",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["ownerUserId", "ownerProfileId"],
+        "rule": "Both captured account UUID and current captured profile required; account-wide; appId is not a filter.",
+        "legacyProvenance": "Recorded attribution only; consent is not inferred.",
+        "evidence": [
+          "apps/app-configurator/src/configurations/entities/app-configuration.entity.ts"
+        ],
+        "selector": {
+          "operator": "AND",
+          "accountField": "ownerUserId",
+          "profileField": "ownerProfileId",
+          "profileSet": "capturedCurrentProfileIds",
+          "currentProfileRequired": true,
+          "statusFilter": false
+        },
+        "parentPolicy": "composite-parent-and-recorded-owner-pair"
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "workspaceId",
+            "appInstanceId",
+            "ownerUserId",
+            "ownerProfileId",
+            "createdAt",
+            "updatedAt"
+          ],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Strict UUID and timestamp projection.",
+          "reason": "Recorded identifiers and timestamps.",
+          "evidence": [
+            "apps/app-configurator/src/configurations/entities/app-configuration.entity.ts"
+          ]
+        },
+        {
+          "fields": [
+            "name",
+            "appScope",
+            "domain",
+            "active",
+            "accessPolicy",
+            "revision"
+          ],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Bounded typed scalar projection; domain is inert DNS hostname only.",
+          "reason": "Safe configuration receipt fields only.",
+          "evidence": [
+            "apps/app-configurator/src/configurations/entities/app-configuration.entity.ts"
+          ]
+        },
+        {
+          "fields": [
+            "description",
+            "landingPage",
+            "routes",
+            "features",
+            "theme",
+            "manifest",
+            "release"
+          ],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Never selected or emitted.",
+          "reason": "Untyped prose or payloads can contain secrets and personal data.",
+          "evidence": [
+            "apps/app-configurator/src/configurations/entities/app-configuration.entity.ts"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["appInstance"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Validate composite parent (appInstanceId, workspaceId, appScope) and exact recorded owner pair; fail selected mismatches; never traverse relation payload.",
+          "reason": "Enforce referential and ownership consistency.",
+          "evidence": [
+            "apps/app-configurator/src/configurations/entities/app-configuration.entity.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AppInstanceEntity",
+      "table": "app_instances",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["ownerUserId", "ownerProfileId"],
+        "rule": "Both captured account UUID and current captured profile required; account-wide; appId is not a filter.",
+        "legacyProvenance": "Recorded attribution only; consent is not inferred.",
+        "evidence": [
+          "apps/app-configurator/src/configurations/entities/app-instance.entity.ts"
+        ],
+        "selector": {
+          "operator": "AND",
+          "accountField": "ownerUserId",
+          "profileField": "ownerProfileId",
+          "profileSet": "capturedCurrentProfileIds",
+          "currentProfileRequired": true,
+          "statusFilter": false
+        },
+        "parentPolicy": "none"
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "workspaceId",
+            "ownerUserId",
+            "ownerProfileId",
+            "createdAt",
+            "updatedAt"
+          ],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Strict UUID and timestamp projection.",
+          "reason": "Recorded registration and ownership receipt.",
+          "evidence": [
+            "apps/app-configurator/src/configurations/entities/app-instance.entity.ts"
+          ]
+        },
+        {
+          "fields": ["appScope", "status"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Bounded text and known lifecycle enum; include historical states.",
+          "reason": "Safe registration context.",
+          "evidence": [
+            "apps/app-configurator/src/configurations/entities/app-instance.entity.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "AppMembershipEntity",
+      "table": "app_memberships",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["userId", "profileId"],
+        "rule": "Both captured account UUID and current captured profile required; account-wide; appId is not a filter.",
+        "legacyProvenance": "Membership is the subject's own historical receipt; recorded attribution only; consent is not inferred.",
+        "evidence": [
+          "apps/app-configurator/src/configurations/entities/app-membership.entity.ts"
+        ],
+        "selector": {
+          "operator": "AND",
+          "accountField": "userId",
+          "profileField": "profileId",
+          "profileSet": "capturedCurrentProfileIds",
+          "currentProfileRequired": true,
+          "statusFilter": false
+        },
+        "parentPolicy": "composite-parent-exists-no-owner-projection"
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "workspaceId",
+            "appInstanceId",
+            "userId",
+            "profileId",
+            "createdAt",
+            "updatedAt"
+          ],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Strict UUID and timestamp projection.",
+          "reason": "Subject membership identifiers and timestamps.",
+          "evidence": [
+            "apps/app-configurator/src/configurations/entities/app-membership.entity.ts"
+          ]
+        },
+        {
+          "fields": ["appScope", "role", "status"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Known enums and bounded context including historical receipts.",
+          "reason": "Safe own membership receipt; no counterpart owner emitted.",
+          "evidence": [
+            "apps/app-configurator/src/configurations/entities/app-membership.entity.ts"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["appInstance"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Validate composite parent existence only; do not require parent owner match or emit its owner/configuration.",
+          "reason": "Membership in another person's app is permitted as own receipt.",
+          "evidence": [
+            "apps/app-configurator/src/configurations/entities/app-membership.entity.ts"
+          ]
+        }
+      ]
+    }
+  ],
+  "associations": [],
+  "stores": [
+    {
+      "name": "typeorm_migrations_store",
+      "fields": ["id", "timestamp", "name"],
+      "classification": "nonpersonal",
+      "action": "exclude",
+      "handling": "Not exported.",
+      "reason": "Migration metadata only.",
+      "evidence": ["apps/app-configurator/src/app/loadDatabase.ts"],
+      "kind": "schema",
+      "table": "migrations"
+    },
+    {
+      "name": "processOutput",
+      "fields": ["external shared process output"],
+      "classification": "shared",
+      "action": "exclude",
+      "handling": "Not exported.",
+      "reason": "External/shared output is not account-owned.",
+      "evidence": ["apps/app-configurator/src/app/configurations.service.ts"],
+      "kind": "external"
+    },
+    {
+      "name": "configurationInputs",
+      "fields": ["opaque credentials"],
+      "classification": "opaque",
+      "action": "exclude",
+      "handling": "Never exported.",
+      "reason": "Inputs can contain credentials.",
+      "evidence": [
+        "apps/app-configurator/src/configurations/entities/app-configuration.entity.ts"
+      ],
+      "kind": "operational-input"
+    }
+  ]
+}

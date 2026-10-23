@@ -11,6 +11,19 @@ import { AppInstanceEntity } from '../configurations/entities/app-instance.entit
 import { AppMembershipEntity } from '../configurations/entities/app-membership.entity';
 import { ConfigurationsService } from './configurations.service';
 import { ConfigurationsController } from '../configurations/configurations.controller';
+import {
+  ClientProxyFactory,
+  Transport,
+  ClientProxy,
+} from '@nestjs/microservices';
+import {
+  AccountExportOwnerSpoolService,
+  AccountExportProfileSnapshotClient,
+} from '@optimistic-tanuki/storage';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { AppConfiguratorAccountExportOwnerService } from './account-export-owner.service';
+import { AppConfiguratorAccountExportSnapshotService } from './account-export-snapshot.service';
+import { AppConfiguratorAccountExportSnapshotController } from './account-export-snapshot.controller';
 
 @Module({
   imports: [
@@ -24,10 +37,68 @@ import { ConfigurationsController } from '../configurations/configurations.contr
     }),
     LoggerModule,
   ],
-  controllers: [ConfigurationsController],
+  controllers: [
+    ConfigurationsController,
+    AppConfiguratorAccountExportSnapshotController,
+  ],
   providers: [
     ConfigurationsService,
     Logger,
+    AccountExportOwnerSpoolService,
+    {
+      provide: AppConfiguratorAccountExportOwnerService,
+      useFactory: (
+        ds: DataSource,
+        identities: AccountExportProfileSnapshotClient,
+        auth: any
+      ) => new AppConfiguratorAccountExportOwnerService(ds, identities, auth),
+      inject: [
+        'APP-CONFIGURATOR_CONNECTION',
+        AccountExportProfileSnapshotClient,
+        'APP_CONFIGURATOR_AUTH_PROXY',
+      ],
+    },
+    {
+      provide: AccountExportProfileSnapshotClient,
+      useFactory: (profile: any) =>
+        new AccountExportProfileSnapshotClient(profile),
+      inject: [ServiceTokens.PROFILE_SERVICE],
+    },
+    {
+      provide: ServiceTokens.PROFILE_SERVICE,
+      useFactory: () =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env.SERVICE_PROFILE_HOST || 'profile',
+            port: Number(process.env.SERVICE_PROFILE_PORT || 3002),
+          },
+        }),
+    },
+    {
+      provide: 'APP_CONFIGURATOR_AUTH_PROXY',
+      useFactory: () =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env.SERVICE_AUTHENTICATION_HOST || 'authentication',
+            port: Number(process.env.SERVICE_AUTHENTICATION_PORT || 3001),
+          },
+        }),
+    },
+    {
+      provide: AppConfiguratorAccountExportSnapshotService,
+      useFactory: (
+        owner: AppConfiguratorAccountExportOwnerService,
+        spool: AccountExportOwnerSpoolService,
+        auth: ClientProxy
+      ) => new AppConfiguratorAccountExportSnapshotService(owner, spool, auth),
+      inject: [
+        AppConfiguratorAccountExportOwnerService,
+        AccountExportOwnerSpoolService,
+        'APP_CONFIGURATOR_AUTH_PROXY',
+      ],
+    },
     {
       provide: getRepositoryToken(AppConfigurationEntity),
       useFactory: (ds: DataSource) => ds.getRepository(AppConfigurationEntity),

@@ -1,4 +1,13 @@
+export const APP_CONFIGURATOR_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
+  'AppConfigurationEntity',
+  'AppInstanceEntity',
+  'AppMembershipEntity',
+] as const;
+
 export const AppConfigCommands = {
+  OPEN_ACCOUNT_EXPORT_CAPTURE: 'app-config.OpenAccountExportCapture',
+  READ_ACCOUNT_EXPORT_CAPTURE: 'app-config.ReadAccountExportCapture',
+  RELEASE_ACCOUNT_EXPORT_CAPTURE: 'app-config.ReleaseAccountExportCapture',
   Create: 'app-config.create',
   Get: 'app-config.get',
   GetPublishedByDomain: 'app-config.getPublishedByDomain',

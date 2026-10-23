@@ -41,6 +41,7 @@ export declare type AuthConfigType = {
     social?: { host: string; port: number };
     forum?: { host: string; port: number };
     workspace?: { host: string; port: number };
+    app_configurator?: { host: string; port: number };
   };
 };
 
@@ -247,6 +248,16 @@ const loadConfig = () => {
           Number(process.env.SERVICE_WORKSPACE_PORT) ||
           configData.services?.workspace?.port ||
           3024,
+      },
+      app_configurator: {
+        host:
+          process.env.SERVICE_APP_CONFIGURATOR_HOST ||
+          configData.services?.app_configurator?.host ||
+          'app-configurator',
+        port:
+          Number(process.env.SERVICE_APP_CONFIGURATOR_PORT) ||
+          configData.services?.app_configurator?.port ||
+          3014,
       },
     },
     database: {

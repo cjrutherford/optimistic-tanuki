@@ -103,7 +103,10 @@ export {
   CatalogCommands,
 } from './lib/libs/store';
 
-export { AppConfigCommands } from './lib/libs/app-config';
+export {
+  AppConfigCommands,
+  APP_CONFIGURATOR_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from './lib/libs/app-config';
 export { TrainerConfigCommands } from './lib/libs/trainer';
 export {
   WorkspaceCommands,

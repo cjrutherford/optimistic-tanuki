@@ -10,7 +10,8 @@
     "forum",
     "assets",
     "videos",
-    "workspace"
+    "workspace",
+    "app-configurator"
   ],
   "targets": {
     "e2e": {
@@ -29,7 +30,8 @@
         "forum:build",
         "assets:build",
         "videos:build",
-        "workspace:build"
+        "workspace:build",
+        "app-configurator:build"
       ]
     }
   },
