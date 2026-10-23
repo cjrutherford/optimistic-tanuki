@@ -1,16 +1,16 @@
-# Fixed release completion sequence
+# OT and Towne Square release completion sequence
 
-**Scope clarification (2026-10-23):** The authoritative audit scope remains `client-interface` (Optimistic Tanuki), `local-hub` (Towne Square), shared services required by their primary workflows, and shared HAI navigation. The 75-delivery inventory must be reconciled to those workflows and the shared-account contract before treating every remaining owner as a release blocker. Preserve accepted work; do not add owners or silently drop cross-product account data. No technical ID or release boundary is added by this clarification.
+**Scope clarification (2026-10-23):** The authoritative audit scope is `client-interface` (Optimistic Tanuki), `local-hub` (Towne Square), their required shared services and shared HAI navigation. Historical platform records retain their IDs and accepted evidence as reference. Another product does not become release work through queue position or shared infrastructure alone.
 
 Updated: 2026-10-23. Sequence starting accepted baseline: `661853166a332596ffe1cbfd172a98a6f339bc28` (J28).
 
 **Goal:** finish the already selected local release work in order: account rights, inactivity/log retention, integrated journeys, then launch materials. Real external flows and production release qualification remain separately owned.
 
-**Accepted inventory deliveries: 3/75 (O01, O02, O04); 72 open. Next selection requires an OT/TS workflow or shared-account dependency trace; O03 Blogging remains unstarted.** J1–J28 are accepted prerequisites, not completion of this sequence. Authentication, Profile, Assets, Videos, Permissions, Social, Forum, Workspace, App Configurator and Chat Collector have integrated database capture; the account-wide job remains incomplete with no downloadable artifact or deletion workflow.
+**Active scope:** OT (`client-interface`) and TS (`local-hub`) only. O09-P → O09-C → O09-I Classifieds is locally verified; see the [O09 finding](../release-readiness/findings/DF-007-O09.md). Do not use the historical platform inventory as a release denominator or start another product owner from its queue position.
 
-This is the readable execution view of the [existing technical register](../release-readiness/REMAINING-SLICES.md), not added scope. It accounts for **109 existing local technical entries as 75 end-to-end deliveries**. Each O01–O17 delivery contains its existing P → C → I checks; those 51 technical checks become 17 deliveries. D00 was already required in the register's prose and is now shown explicitly. The earlier count of 108 missed D00. No existing ID is removed or renumbered.
+The [technical register](../release-readiness/REMAINING-SLICES.md) and historical rows below preserve existing IDs and accepted receipts. They do not define an additional product scope or a remaining-release denominator.
 
-The [master audit](../release-readiness/MASTER-AUDIT.md) remains the acceptance authority. The [completion map](../release-readiness/DF-007-COMPLETION-MAP.md) and technical register hold detailed evidence and dependencies. This document is the one sequential release checklist: use its order and outcome when reporting progress.
+The [master audit](../release-readiness/MASTER-AUDIT.md) remains the acceptance authority. The [completion map](../release-readiness/DF-007-COMPLETION-MAP.md) and technical register hold detailed evidence and dependencies. The application boundary above governs active execution; the technical rows below preserve existing IDs and evidence without making unrelated products release requirements.
 
 ## Execution and reporting rules
 
@@ -18,13 +18,13 @@ The [master audit](../release-readiness/MASTER-AUDIT.md) remains the acceptance 
 2. For each O delivery, approve every field/store disposition, implement bounded owner capture, then integrate it with the existing leased snapshot/job pipeline. These are internal checks, not three new finish lines. Reuse shared Storage/contracts/session/UI infrastructure; new reusable UI belongs in a library.
 3. Apply the common pre-E2E gate: inspect affected Nx/CI targets; run the narrow regression, changed-contract checks, owning production build/lint and affected E2E lint. Use Node 24, `NX_DAEMON=false`, `NX_ISOLATE_PLUGINS=false`. Run API drift or migration checks when that surface changes. Do not repeat unchanged accepted checks.
 4. Acceptance needs the row's observable result: real owner/service/database evidence where required, allow/deny and counterpart cases, failure/retry/restart, independent readback and fixture cleanup. Source presence, mocks or policy approval alone cannot complete an owner delivery. Retain the existing generated-migration rules.
-5. At closeout report **completed outcome; evidence and checks not run; completed/75 and remaining; next existing ID; blockers**. Update the finding, receipt, master audit and both execution views together. An internal checkpoint is reported as progress within the current delivery.
+5. At closeout report **completed outcome; evidence and checks not run; exact existing IDs completed and remaining OT/TS outcomes; next existing ID; blockers**. Update the finding, receipt, master audit and both execution views together. An internal checkpoint is reported as progress within the current delivery.
 6. Keep this list fixed. Map discoveries to an existing outcome and identify the impact there. If a discovery really changes scope, state the precise addition and reason before changing the baseline; do not silently create a replacement sequence. Unknown ownership cannot count as empty successful capture.
 7. Keep jobs and UI truthful. Export becomes available only after its complete accepted coverage and artifact gates; deletion only after its accepted readbacks. Completion of local implementation does not authorize production release or external acceptance claims.
 
-## Sequential deliveries
+## Historical technical inventory — existing IDs preserved
 
-Rows 1, 2 and 4 are verified. The remaining 72 rows are open inventory entries; they must be reconciled to OT/TS before being treated as release blockers. O04 was selected from both apps’ actual Messages workflows; row 3 is unstarted. Numbering is reading order only; the existing IDs remain canonical.
+O01, O02, O04 and O09 retain their accepted evidence. All other owner rows require an OT/TS workflow dependency before implementation. O03 remains unstarted. Historical numbering does not establish release scope.
 
 ### 1. Finish the remaining export owners
 
@@ -40,7 +40,7 @@ One owner is complete only when its field/store policy, real bounded capture, an
 | 6     | O06 (P → C → I) | project-planning: account export captured and integrated         | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
 | 7     | O07 (P → C → I) | learning-service: account export captured and integrated         | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
 | 8     | O08 (P → C → I) | wellness: account export captured and integrated                 | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
-| 9     | O09 (P → C → I) | classifieds: account export captured and integrated              | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
+| 9     | O09 (P → C → I) | classifieds: account export captured and integrated              | **VERIFIED OT/TS ONLY**: [O09 receipt](../release-readiness/evidence/df-007/checkpoint-o09.json); 253 receipts, explicit scope filtering and leased-job cleanup.                                                  |
 | 10    | O10 (P → C → I) | payments: account export captured and integrated                 | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
 | 11    | O11 (P → C → I) | store: account export captured and integrated                    | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
 | 12    | O12 (P → C → I) | billing: account export captured and integrated                  | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
@@ -166,10 +166,14 @@ These existing obligations are outside the 75 local deliveries and remain requir
 - **X03:** backups, operational object versions, remote log sinks and executed purge evidence.
 - **X04:** operational support and the operator's final release decision.
 
-## Latest completed delivery: O01 Workspace
+## Historical O01 Workspace receipt
 
 Owned implementation is `apps/workspace`, its existing contracts and the Authentication account-export job adapter. The policy receipt selects the recorded account **and** a currently owned captured profile, preserves scope as context, and treats source IDs as opaque. Shared registration labels are inert metadata; membership, other contributors and source-service contents are separate owners. Current bindings do not prove historical authorship or consent.
 
 O01-P verifies one entity/12 columns, no relations, three local store dispositions, the two-table/15-column migrated catalog and scoped identity indexes. O01-C must enforce that receipt with bounded, repeatable-read owner capture through the existing Storage driver. O01-I must add Workspace to the authenticated leased job and qualify exact Profile-parent/lease/session binding, failure-prefix/retry, restart/revocation and cleanup. **All three O01 checks passed; see the [O01 finding](../release-readiness/findings/DF-007-O01.md).**
 
 Workspace and App Configurator capture and integration are accepted at the local scope recorded in the O01 and O02 receipts. No artifact, download, deletion or production qualification is implied. O04 messaging is now accepted because both release applications use it. O03 remains unstarted; another owner requires a release-workflow/shared-account dependency trace. Retain this register and its existing IDs.
+
+## Latest completed OT/TS delivery: O09 Classifieds
+
+**O09-P, O09-C and O09-I locally verified.** The [finding](../release-readiness/findings/DF-007-O09.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-o09.json) record 253 listing receipts, explicit two-app filtering, failure/retry and independent cleanup. No other product is qualified. Overall export, download and deletion remain incomplete.

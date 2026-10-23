@@ -140,3 +140,8 @@ export type ChatAccountExportSnapshotDescriptor =
   ProfileBoundAccountExportSnapshotDescriptor;
 export type ChatAccountExportSnapshotOpenRequest =
   AssetsAccountExportSnapshotOpenRequest;
+
+export type ClassifiedsAccountExportSnapshotDescriptor =
+  ProfileBoundAccountExportSnapshotDescriptor;
+export type ClassifiedsAccountExportSnapshotOpenRequest =
+  AssetsAccountExportSnapshotOpenRequest;

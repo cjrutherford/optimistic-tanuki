@@ -47,6 +47,7 @@ describe('AccountExportJobService authorization boundary', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
   });
@@ -238,6 +239,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
     appConfiguratorCleanup: jest.Mock;
     chatCapture: jest.Mock;
     chatCleanup: jest.Mock;
+    classifiedsCapture: jest.Mock;
+    classifiedsCleanup: jest.Mock;
   } {
     const jobs = {};
     const auth = {};
@@ -335,6 +338,10 @@ describe('AccountExportJobService Authentication owner staging', () => {
     const appConfiguratorCapture = {
       capture: jest.fn(async () => appConfiguratorResult),
     };
+    const classifiedsResult = { cleanup: jest.fn(async () => undefined) };
+    const classifiedsCapture = {
+      capture: jest.fn(async () => classifiedsResult),
+    };
     const chatResult = { cleanup: jest.fn(async () => undefined) };
     const chatCapture = { capture: jest.fn(async () => chatResult) };
     const profileResult = {
@@ -358,7 +365,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       forumCapture as never,
       workspaceCapture as never,
       appConfiguratorCapture as never,
-      chatCapture as never
+      chatCapture as never,
+      classifiedsCapture as never
     );
     const state = service as unknown as {
       run: (
@@ -405,6 +413,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       appConfiguratorCleanup: appConfiguratorResult.cleanup,
       chatCapture: chatCapture.capture,
       chatCleanup: chatResult.cleanup,
+      classifiedsCapture: classifiedsCapture.capture,
+      classifiedsCleanup: classifiedsResult.cleanup,
     };
   }
 
@@ -471,6 +481,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'workspace',
         'app-configurator',
         'chat-collector',
+        'classifieds',
       ],
       artifactAvailable: false,
     });
@@ -675,6 +686,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         test.workspaceCleanup,
         test.appConfiguratorCleanup,
         test.chatCleanup,
+        test.classifiedsCleanup,
       ])
         cleanup.mockClear();
       activeClaim.state = 'running';
@@ -694,6 +706,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'workspace',
         'app-configurator',
         'chat-collector',
+        'classifieds',
       ]);
       expect(second.coverageSummary.artifactAvailable).toBe(false);
       expect(second.artifactUrl).toBeNull();
@@ -742,6 +755,50 @@ describe('AccountExportJobService Authentication owner staging', () => {
         expect(test.chatCleanup.mock.invocationCallOrder[0]).toBeLessThan(
           test.appConfiguratorCleanup.mock.invocationCallOrder[0]
         );
+      expect(await readdir(root)).toEqual([]);
+    }
+  );
+
+  it.each(['capture', 'cleanup'])(
+    'keeps ten owners when Classifieds %s fails',
+    async (mode) => {
+      const owner = jest.fn(async ({ onChunk }) => {
+        const chunks = createOwnerChunks(ACCOUNT_ID);
+        for (const chunk of chunks) await onChunk(chunk);
+        return chunks[chunks.length - 1];
+      });
+      const test = harness(async () => true, owner);
+      (mode === 'capture'
+        ? test.classifiedsCapture
+        : test.classifiedsCleanup
+      ).mockRejectedValueOnce(new Error('private classifieds payload'));
+      const result = await test.run(input(), activeClaim);
+      expect(result.state).toBe('failed');
+      expect(result.coverageSummary.capturedDatabaseOwners).toEqual([
+        'authentication',
+        'profile',
+        'assets',
+        'videos',
+        'permissions',
+        'social',
+        'forum',
+        'workspace',
+        'app-configurator',
+        'chat-collector',
+      ]);
+      expect(result.coverageSummary.blockers).toContain(
+        'classifieds-capture-unavailable'
+      );
+      expect(result.artifactUrl).toBeNull();
+      expect(result.coverageSummary.artifactAvailable).toBe(false);
+      expect(JSON.stringify(result)).not.toContain(
+        'private classifieds payload'
+      );
+      expect(test.chatCleanup).toHaveBeenCalledTimes(1);
+      if (mode === 'cleanup')
+        expect(
+          test.classifiedsCleanup.mock.invocationCallOrder[0]
+        ).toBeLessThan(test.chatCleanup.mock.invocationCallOrder[0]);
       expect(await readdir(root)).toEqual([]);
     }
   );
@@ -849,6 +906,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         test.workspaceCleanup,
         test.appConfiguratorCleanup,
         test.chatCleanup,
+        test.classifiedsCleanup,
       ])
         cleanup.mockClear();
       activeClaim.state = 'running';
@@ -868,6 +926,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'workspace',
         'app-configurator',
         'chat-collector',
+        'classifieds',
       ]);
       expect(second.coverageSummary.artifactAvailable).toBe(false);
       expect(second.artifactUrl).toBeNull();
@@ -1199,6 +1258,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
     const internals = service as unknown as {
@@ -1253,6 +1313,7 @@ describe('AccountExportJobService database lease fence', () => {
       service = new AccountExportJobService(
         repository,
         dataSource,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,

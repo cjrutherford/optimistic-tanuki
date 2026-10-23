@@ -26,6 +26,8 @@ describe('authentication config oauth env loading', () => {
     delete process.env.SERVICE_APP_CONFIGURATOR_PORT;
     delete process.env.SERVICE_CHAT_COLLECTOR_HOST;
     delete process.env.SERVICE_CHAT_COLLECTOR_PORT;
+    delete process.env.SERVICE_CLASSIFIEDS_HOST;
+    delete process.env.SERVICE_CLASSIFIEDS_PORT;
   });
 
   afterAll(() => {
@@ -174,6 +176,20 @@ describe('authentication config oauth env loading', () => {
     expect(loadConfig().services?.chat_collector).toEqual({
       host: 'chat-private',
       port: 43007,
+    });
+  });
+
+  it('loads the Classifieds participant from defaults and environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.classifieds).toEqual({
+      host: 'classifieds',
+      port: 3017,
+    });
+    process.env.SERVICE_CLASSIFIEDS_HOST = 'classifieds-private';
+    process.env.SERVICE_CLASSIFIEDS_PORT = '43017';
+    expect(loadConfig().services?.classifieds).toEqual({
+      host: 'classifieds-private',
+      port: 43017,
     });
   });
 

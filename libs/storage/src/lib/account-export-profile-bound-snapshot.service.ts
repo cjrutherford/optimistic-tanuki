@@ -298,61 +298,62 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
       this.fail('OWNER_AUTHORIZATION_FAILED');
     const source = value as Record<string, unknown>;
     const grant = this.grant(source);
-    const p = source.profileSnapshot as Record<string, unknown> | undefined;
+    const p = source['profileSnapshot'] as Record<string, unknown> | undefined;
     if (
       !p ||
       Array.isArray(p) ||
-      p.participantId !== 'profile' ||
-      p.accountId !== grant.accountId ||
-      typeof p.handleId !== 'string' ||
-      !UUID.test(p.handleId) ||
-      typeof p.captureId !== 'string' ||
-      !UUID.test(p.captureId) ||
-      typeof p.snapshotAt !== 'string' ||
-      !Number.isFinite(Date.parse(p.snapshotAt)) ||
-      p.snapshotAt.length > 128 ||
-      !Number.isSafeInteger(p.identityCount) ||
-      (p.identityCount as number) < 0 ||
-      (p.identityCount as number) >
+      p['participantId'] !== 'profile' ||
+      p['accountId'] !== grant['accountId'] ||
+      typeof p['handleId'] !== 'string' ||
+      !UUID.test(p['handleId']) ||
+      typeof p['captureId'] !== 'string' ||
+      !UUID.test(p['captureId']) ||
+      typeof p['snapshotAt'] !== 'string' ||
+      !Number.isFinite(Date.parse(p['snapshotAt'])) ||
+      p['snapshotAt'].length > 128 ||
+      !Number.isSafeInteger(p['identityCount']) ||
+      (p['identityCount'] as number) < 0 ||
+      (p['identityCount'] as number) >
         ACCOUNT_EXPORT_SNAPSHOT_LIMITS.identityPages *
           ACCOUNT_EXPORT_SNAPSHOT_LIMITS.identityPageSize ||
-      !Array.isArray(p.sources) ||
-      !p.sources.length ||
-      p.sources.length > 32 ||
-      new Set(p.sources).size !== p.sources.length ||
-      p.sources.some(
+      !Array.isArray(p['sources']) ||
+      !p['sources'].length ||
+      p['sources'].length > 32 ||
+      new Set(p['sources']).size !== p['sources'].length ||
+      p['sources'].some(
         (s) =>
           typeof s !== 'string' || !/^[A-Za-z][A-Za-z0-9._:-]{0,79}$/.test(s)
       ) ||
-      !this.rowCounts(p.sourceRowCounts, p.sources as string[]) ||
-      !this.dispositions(p.sourceDispositions, p.sources as string[]) ||
-      !Number.isSafeInteger(p.sizeBytes) ||
-      (p.sizeBytes as number) < 0 ||
-      (p.sizeBytes as number) > ACCOUNT_EXPORT_SNAPSHOT_LIMITS.captureBytes ||
-      !Number.isSafeInteger(p.rowCount) ||
-      (p.rowCount as number) < 0 ||
-      typeof p.sha256 !== 'string' ||
-      !/^[a-f0-9]{64}$/i.test(p.sha256) ||
-      typeof p.expiresAt !== 'string' ||
-      !Number.isFinite(Date.parse(p.expiresAt))
+      !this.rowCounts(p['sourceRowCounts'], p['sources'] as string[]) ||
+      !this.dispositions(p['sourceDispositions'], p['sources'] as string[]) ||
+      !Number.isSafeInteger(p['sizeBytes']) ||
+      (p['sizeBytes'] as number) < 0 ||
+      (p['sizeBytes'] as number) >
+        ACCOUNT_EXPORT_SNAPSHOT_LIMITS.captureBytes ||
+      !Number.isSafeInteger(p['rowCount']) ||
+      (p['rowCount'] as number) < 0 ||
+      typeof p['sha256'] !== 'string' ||
+      !/^[a-f0-9]{64}$/i.test(p['sha256']) ||
+      typeof p['expiresAt'] !== 'string' ||
+      !Number.isFinite(Date.parse(p['expiresAt']))
     )
       this.fail('OWNER_AUTHORIZATION_FAILED');
     const profile: ParentDescriptor = {
-      handleId: p.handleId as string,
+      handleId: p['handleId'] as string,
       participantId: 'profile',
-      accountId: p.accountId as string,
-      captureId: p.captureId as string,
-      snapshotAt: p.snapshotAt as string,
-      sizeBytes: p.sizeBytes as number,
-      sha256: p.sha256 as string,
-      rowCount: p.rowCount as number,
-      sources: [...p.sources] as string[],
-      sourceRowCounts: { ...(p.sourceRowCounts as Record<string, number>) },
+      accountId: p['accountId'] as string,
+      captureId: p['captureId'] as string,
+      snapshotAt: p['snapshotAt'] as string,
+      sizeBytes: p['sizeBytes'] as number,
+      sha256: p['sha256'] as string,
+      rowCount: p['rowCount'] as number,
+      sources: [...p['sources']] as string[],
+      sourceRowCounts: { ...(p['sourceRowCounts'] as Record<string, number>) },
       sourceDispositions: {
-        ...(p.sourceDispositions as Record<string, string>),
+        ...(p['sourceDispositions'] as Record<string, string>),
       },
-      identityCount: p.identityCount as number,
-      expiresAt: p.expiresAt as string,
+      identityCount: p['identityCount'] as number,
+      expiresAt: p['expiresAt'] as string,
     };
     return {
       grant,
@@ -412,9 +413,12 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
       this.fail('OWNER_AUTHORIZATION_FAILED');
     const source = value as Record<string, unknown>;
     const grant = this.grant(source);
-    if (typeof source.handleId !== 'string' || !UUID.test(source.handleId))
+    if (
+      typeof source['handleId'] !== 'string' ||
+      !UUID.test(source['handleId'])
+    )
       this.fail('OWNER_SNAPSHOT_NOT_FOUND');
-    return { ...grant, handleId: source.handleId };
+    return { ...grant, handleId: source['handleId'] };
   }
 
   private readRequest(value: unknown): AccountExportSnapshotReadRequest {
@@ -422,8 +426,8 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
     const source = value as Record<string, unknown>;
     return {
       ...request,
-      offset: source.offset as number,
-      length: source.length as number,
+      offset: source['offset'] as number,
+      length: source['length'] as number,
     };
   }
 

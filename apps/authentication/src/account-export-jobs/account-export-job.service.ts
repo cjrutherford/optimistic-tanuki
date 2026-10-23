@@ -35,6 +35,7 @@ import { SocialAccountExportSnapshotClient } from './social-account-export-snaps
 import { ForumAccountExportSnapshotClient } from './forum-account-export-snapshot.client';
 import { WorkspaceAccountExportSnapshotClient } from './workspace-account-export-snapshot.client';
 import { AppConfiguratorAccountExportSnapshotClient } from './app-configurator-account-export-snapshot.client';
+import { ClassifiedsAccountExportSnapshotClient } from './classifieds-account-export-snapshot.client';
 import { ChatAccountExportSnapshotClient } from './chat-account-export-snapshot.client';
 
 const LEASE_MS = 60_000;
@@ -58,7 +59,8 @@ export class AccountExportJobService {
     private readonly forumCapture: ForumAccountExportSnapshotClient,
     private readonly workspaceCapture: WorkspaceAccountExportSnapshotClient,
     private readonly appConfiguratorCapture: AppConfiguratorAccountExportSnapshotClient,
-    private readonly chatCapture: ChatAccountExportSnapshotClient
+    private readonly chatCapture: ChatAccountExportSnapshotClient,
+    private readonly classifiedsCapture: ClassifiedsAccountExportSnapshotClient
   ) {}
 
   async create(request: unknown): Promise<AccountExportJobStatus> {
@@ -343,6 +345,9 @@ export class AccountExportJobService {
       let workspace:
         | Awaited<ReturnType<WorkspaceAccountExportSnapshotClient['capture']>>
         | undefined;
+      let classifieds:
+        | Awaited<ReturnType<ClassifiedsAccountExportSnapshotClient['capture']>>
+        | undefined;
       let chat:
         | Awaited<ReturnType<ChatAccountExportSnapshotClient['capture']>>
         | undefined;
@@ -360,7 +365,8 @@ export class AccountExportJobService {
         | 'forum'
         | 'workspace'
         | 'app-configurator'
-        | 'chat-collector' = 'profile';
+        | 'chat-collector'
+        | 'classifieds' = 'profile';
       try {
         if (!claimed.leaseOwner) {
           leaseLost = true;
@@ -611,6 +617,39 @@ export class AccountExportJobService {
             'chat-collector',
           ],
         };
+        stage = 'classifieds';
+        classifieds = await this.classifiedsCapture.capture(
+          {
+            accountId: input.accountId,
+            token: input.token,
+            appId: input.appId,
+            jobId: claimed.id,
+            attempt: claimed.attempt,
+            leaseOwner: claimed.leaseOwner,
+          },
+          profile.descriptor,
+          async () => {
+            const renewed = await this.renewLease(claimed);
+            if (!renewed) leaseLost = true;
+            return renewed;
+          }
+        );
+        summary = {
+          ...summary,
+          capturedDatabaseOwners: [
+            'authentication',
+            'profile',
+            'assets',
+            'videos',
+            'permissions',
+            'social',
+            'forum',
+            'workspace',
+            'app-configurator',
+            'chat-collector',
+            'classifieds',
+          ],
+        };
       } catch {
         if (!leaseLost) {
           summary = {
@@ -624,6 +663,35 @@ export class AccountExportJobService {
           errorCode = `${stage}-capture-unavailable`;
         }
       } finally {
+        if (classifieds) {
+          try {
+            await classifieds.cleanup();
+          } catch {
+            if (!leaseLost) {
+              summary = {
+                ...summary,
+                capturedDatabaseOwners: [
+                  'authentication',
+                  'profile',
+                  'assets',
+                  'videos',
+                  'permissions',
+                  'social',
+                  'forum',
+                  'workspace',
+                  'app-configurator',
+                  'chat-collector',
+                ],
+                blockers: [
+                  ...(Array.isArray(summary.blockers) ? summary.blockers : []),
+                  'classifieds-capture-unavailable',
+                ],
+              };
+              state = 'failed';
+              errorCode = 'classifieds-capture-unavailable';
+            }
+          }
+        }
         if (chat) {
           try {
             await chat.cleanup();

@@ -42,6 +42,7 @@ export declare type AuthConfigType = {
     forum?: { host: string; port: number };
     workspace?: { host: string; port: number };
     app_configurator?: { host: string; port: number };
+    classifieds?: { host: string; port: number };
     chat_collector?: { host: string; port: number };
   };
 };
@@ -259,6 +260,16 @@ const loadConfig = () => {
           Number(process.env.SERVICE_CHAT_COLLECTOR_PORT) ||
           configData.services?.chat_collector?.port ||
           3007,
+      },
+      classifieds: {
+        host:
+          process.env.SERVICE_CLASSIFIEDS_HOST ||
+          configData.services?.classifieds?.host ||
+          'classifieds',
+        port:
+          Number(process.env.SERVICE_CLASSIFIEDS_PORT) ||
+          configData.services?.classifieds?.port ||
+          3017,
       },
       app_configurator: {
         host:

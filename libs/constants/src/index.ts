@@ -141,7 +141,10 @@ export { WellnessCommands } from './lib/libs/wellness';
 
 export { WellnessAiCommands } from './lib/libs/ai-orchestration';
 
-export { ClassifiedCommands } from './lib/libs/classifieds';
+export {
+  ClassifiedCommands,
+  CLASSIFIEDS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from './lib/libs/classifieds';
 export { BillingCommands } from './lib/libs/billing';
 
 export {

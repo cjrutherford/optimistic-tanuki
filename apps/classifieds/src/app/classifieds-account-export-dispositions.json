@@ -1,0 +1,141 @@
+{
+  "version": 1,
+  "scope": "O09-P/O09-C Classifieds owner capture inventory for OT client-interface and TS local-hub only; attribution recorded-unverified and consent not inferred.",
+  "selection": {
+    "principal": "account-owned-classified-ad-records",
+    "appId": "authenticates the leased operation; row selection is bound to account UUID and the two allowlisted scopes",
+    "selector": {
+      "profileSource": "captured current identity IDs from Profile snapshot",
+      "profileBinding": "query all account candidates in client-interface/local-hub scope and fail capture if a candidate profileId is not in the captured identity table",
+      "appScopes": ["client-interface", "local-hub"],
+      "statusFilter": false,
+      "historicalStatuses": ["active", "sold", "expired", "removed"],
+      "provenance": "recorded attribution only; consent, exclusive ownership and current authority are not inferred"
+    }
+  },
+  "entities": [
+    {
+      "name": "ClassifiedAdEntity",
+      "table": "classified_ad",
+      "source": "apps/classifieds/src/app/entities/classified-ad.entity.ts",
+      "subject": {
+        "kind": "account-and-current-profile-evidence",
+        "fields": ["userId", "profileId", "appScope"],
+        "rule": "Include every account-owned row in either allowed app scope, regardless of historical status; fail capture if current profile binding cannot be verified.",
+        "legacyProvenance": "Current profile match is selection evidence only; attribution and consent remain unverified.",
+        "evidence": [
+          "apps/classifieds/src/app/entities/classified-ad.entity.ts",
+          "apps/classifieds/src/app/account-export-sources.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Canonical nonzero UUID.",
+          "reason": "Stable record identifier.",
+          "evidence": [
+            "apps/classifieds/src/app/entities/classified-ad.entity.ts"
+          ]
+        },
+        {
+          "fields": ["userId", "profileId"],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Account UUID must match; profile UUID must be among captured current identities.",
+          "reason": "Owner and current-profile binding evidence.",
+          "evidence": ["apps/classifieds/src/app/account-export-sources.ts"]
+        },
+        {
+          "fields": ["appScope", "status"],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Allowlist scopes client-interface/local-hub; preserve active, sold, expired, removed history.",
+          "reason": "Constrain product boundary while retaining lifecycle history.",
+          "evidence": [
+            "apps/classifieds/src/app/account-export-sources.ts",
+            "apps/classifieds/src/app/entities/classified-ad.entity.ts"
+          ]
+        },
+        {
+          "fields": [
+            "title",
+            "description",
+            "category",
+            "condition",
+            "currency",
+            "price",
+            "isFeatured",
+            "featuredUntil",
+            "createdAt",
+            "updatedAt",
+            "expiresAt"
+          ],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Bounded text, validated decimal string, strict boolean and canonical UTC timestamps.",
+          "reason": "Explicit typed export of the non-media record fields.",
+          "evidence": [
+            "apps/classifieds/src/app/account-export-sources.ts",
+            "apps/classifieds/src/app/entities/classified-ad.entity.ts"
+          ]
+        },
+        {
+          "fields": ["communityId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Optional UUID reference only; no community lookup.",
+          "reason": "Preserve the recorded reference without fetching related data.",
+          "evidence": [
+            "apps/classifieds/src/app/entities/classified-ad.entity.ts"
+          ]
+        },
+        {
+          "fields": ["imageUrls"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Excluded; emit mediaDisposition excluded-unverified-image-references.",
+          "reason": "Unverified external image references are not fetched or exported.",
+          "evidence": [
+            "apps/classifieds/src/app/entities/classified-ad.entity.ts",
+            "apps/classifieds/src/app/account-export-sources.ts"
+          ]
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "stores": [
+    {
+      "name": "typeorm_migrations_store",
+      "fields": ["id", "timestamp", "name"],
+      "action": "exclude",
+      "handling": "Migration bookkeeping only.",
+      "reason": "Schema metadata is not account data.",
+      "evidence": [
+        "apps/classifieds/migrations/1773361829138-initial.ts",
+        "apps/classifieds/migrations/1786715231836-index-classified-user-id.ts"
+      ]
+    },
+    {
+      "name": "processOutput",
+      "fields": ["stdout", "stderr", "logs"],
+      "action": "exclude",
+      "handling": "Runtime process output excluded; retention and personal-data handling remain unknown per N04.",
+      "reason": "No additional persistence is established by this slice.",
+      "evidence": [
+        "apps/classifieds/src/app/classifieds.controller.ts",
+        "apps/classifieds/src/app/classifieds.service.ts"
+      ]
+    },
+    {
+      "name": "configurationInputs",
+      "fields": ["database credentials", "service endpoints"],
+      "action": "exclude",
+      "handling": "Operational configuration and credentials excluded.",
+      "reason": "Secrets and runtime configuration are not export records.",
+      "evidence": ["apps/classifieds/src/app/app.module.ts"]
+    }
+  ]
+}

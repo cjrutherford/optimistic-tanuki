@@ -51,6 +51,7 @@ import { SocialAccountExportSnapshotClient } from '../account-export-jobs/social
 import { ForumAccountExportSnapshotClient } from '../account-export-jobs/forum-account-export-snapshot.client';
 import { WorkspaceAccountExportSnapshotClient } from '../account-export-jobs/workspace-account-export-snapshot.client';
 import { AppConfiguratorAccountExportSnapshotClient } from '../account-export-jobs/app-configurator-account-export-snapshot.client';
+import { ClassifiedsAccountExportSnapshotClient } from '../account-export-jobs/classifieds-account-export-snapshot.client';
 import { ChatAccountExportSnapshotClient } from '../account-export-jobs/chat-account-export-snapshot.client';
 import { AccountExportJobEntity } from '../account-export-jobs/entities/account-export-job.entity';
 import { AuthenticationAccountExportOwnerService } from '../account-export-owner/account-export-owner.service';
@@ -127,6 +128,7 @@ import {
     WorkspaceAccountExportSnapshotClient,
     AppConfiguratorAccountExportSnapshotClient,
     ChatAccountExportSnapshotClient,
+    ClassifiedsAccountExportSnapshotClient,
     {
       provide: AuthenticationAccountExportOwnerService,
       useFactory: (dataSource: DataSource, auth: AppService) =>
@@ -234,6 +236,17 @@ import {
           transport: Transport.TCP,
           options: config.get<{ host: string; port: number }>(
             'services.chat_collector'
+          ),
+        }),
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.CLASSIFIEDS_SERVICE,
+      useFactory: (config: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: config.get<{ host: string; port: number }>(
+            'services.classifieds'
           ),
         }),
       inject: [ConfigService],

@@ -19,7 +19,8 @@ export interface AccountExportProfileBoundSnapshotClientOptions {
     | 'forum'
     | 'workspace'
     | 'app-configurator'
-    | 'chat-collector';
+    | 'chat-collector'
+    | 'classifieds';
   sources: readonly string[];
   open(payload: unknown, timeoutMs: number): Promise<unknown>;
   read(
@@ -90,10 +91,10 @@ function cloneMap(value: unknown): Record<string, unknown> {
 
 function cloneSnapshot(value: unknown): AccountExportSnapshotDescriptor {
   const source = plainDataObject(value, PARENT_FIELDS);
-  if (!Array.isArray(source.sources)) throw new Error();
-  const sources = source.sources.map((_item, index) => {
+  if (!Array.isArray(source['sources'])) throw new Error();
+  const sources = source['sources'].map((_item, index) => {
     const descriptor = Object.getOwnPropertyDescriptor(
-      source.sources,
+      source['sources'],
       String(index)
     );
     if (
@@ -104,25 +105,28 @@ function cloneSnapshot(value: unknown): AccountExportSnapshotDescriptor {
       throw new Error();
     return descriptor.value;
   });
-  if (Reflect.ownKeys(source.sources).length !== sources.length + 1)
+  if (Reflect.ownKeys(source['sources']).length !== sources.length + 1)
     throw new Error();
   return {
-    handleId: source.handleId as string,
-    participantId: source.participantId as string,
-    accountId: source.accountId as string,
-    captureId: source.captureId as string,
-    snapshotAt: source.snapshotAt as string,
-    sizeBytes: source.sizeBytes as number,
-    sha256: source.sha256 as string,
-    rowCount: source.rowCount as number,
+    handleId: source['handleId'] as string,
+    participantId: source['participantId'] as string,
+    accountId: source['accountId'] as string,
+    captureId: source['captureId'] as string,
+    snapshotAt: source['snapshotAt'] as string,
+    sizeBytes: source['sizeBytes'] as number,
+    sha256: source['sha256'] as string,
+    rowCount: source['rowCount'] as number,
     sources,
-    sourceRowCounts: cloneMap(source.sourceRowCounts) as Record<string, number>,
-    sourceDispositions: cloneMap(source.sourceDispositions) as Record<
+    sourceRowCounts: cloneMap(source['sourceRowCounts']) as Record<
+      string,
+      number
+    >,
+    sourceDispositions: cloneMap(source['sourceDispositions']) as Record<
       string,
       string
     >,
-    identityCount: source.identityCount as number,
-    expiresAt: source.expiresAt as string,
+    identityCount: source['identityCount'] as number,
+    expiresAt: source['expiresAt'] as string,
   };
 }
 
@@ -135,9 +139,9 @@ function cloneBoundDescriptor(
   );
   return {
     ...common,
-    profileHandleId: source.profileHandleId as string,
-    profileCaptureId: source.profileCaptureId as string,
-    profileSnapshotAt: source.profileSnapshotAt as string,
+    profileHandleId: source['profileHandleId'] as string,
+    profileCaptureId: source['profileCaptureId'] as string,
+    profileSnapshotAt: source['profileSnapshotAt'] as string,
   };
 }
 

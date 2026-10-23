@@ -1,7 +1,14 @@
+export const CLASSIFIEDS_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
+  'ClassifiedAdEntity',
+] as const;
+
 /**
  * Commands for the Classifieds microservice.
  */
 export const ClassifiedCommands = {
+  OPEN_ACCOUNT_EXPORT_CAPTURE: 'classified.OpenAccountExportCapture',
+  READ_ACCOUNT_EXPORT_CAPTURE: 'classified.ReadAccountExportCapture',
+  RELEASE_ACCOUNT_EXPORT_CAPTURE: 'classified.ReleaseAccountExportCapture',
   // Classified ad CRUD
   CREATE: 'classified.create',
   UPDATE: 'classified.update',

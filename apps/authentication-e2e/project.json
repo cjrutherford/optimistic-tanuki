@@ -12,7 +12,8 @@
     "videos",
     "workspace",
     "app-configurator",
-    "chat-collector"
+    "chat-collector",
+    "classifieds"
   ],
   "targets": {
     "e2e": {
@@ -33,7 +34,8 @@
         "videos:build",
         "workspace:build",
         "app-configurator:build",
-        "chat-collector:build"
+        "chat-collector:build",
+        "classifieds:build"
       ]
     }
   },

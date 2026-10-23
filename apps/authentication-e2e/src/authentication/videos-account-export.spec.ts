@@ -252,6 +252,7 @@ describe('Videos account export private integration', () => {
         'workspace',
         'app-configurator',
         'chat-collector',
+        'classifieds',
       ];
       expect(job.state).toBe('incomplete');
       expect(job.coverageSummary.capturedDatabaseOwners).toEqual(

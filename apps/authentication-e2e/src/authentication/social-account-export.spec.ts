@@ -299,6 +299,7 @@ describe('Social account export private TCP integration', () => {
         'workspace',
         'app-configurator',
         'chat-collector',
+        'classifieds',
       ];
       expect(job.state).toBe('incomplete');
       expect(job.coverageSummary.capturedDatabaseOwners).toEqual(
