@@ -114,6 +114,77 @@ describe('AccountExportJobService authorization boundary', () => {
     });
     expect(dataSource.transaction).not.toHaveBeenCalled();
   });
+
+  it('rejects malformed, unauthenticated, cross-account, and unauthorized-app cancellations', async () => {
+    const base = {
+      accountId: ACCOUNT_ID,
+      token: TOKEN,
+      appId: 'client-interface',
+      jobId: randomUUID(),
+    };
+    await expect(
+      service.cancel({ ...base, jobId: 'bad' })
+    ).rejects.toBeInstanceOf(RpcException);
+    auth.validateToken.mockResolvedValue({ isValid: false });
+    await expect(service.cancel(base)).rejects.toBeInstanceOf(RpcException);
+    auth.validateToken.mockResolvedValue({
+      isValid: true,
+      data: { userId: randomUUID(), appId: base.appId },
+    });
+    await expect(service.cancel(base)).rejects.toBeInstanceOf(RpcException);
+    auth.validateToken.mockResolvedValue({
+      isValid: true,
+      data: { userId: ACCOUNT_ID, appId: 'other' },
+    });
+    await expect(service.cancel(base)).rejects.toBeInstanceOf(RpcException);
+    auth.validateToken.mockResolvedValue({
+      isValid: true,
+      data: { userId: ACCOUNT_ID, appId: 'business-site' },
+    });
+    await expect(
+      service.cancel({ ...base, appId: 'business-site' })
+    ).rejects.toBeInstanceOf(RpcException);
+    expect(dataSource.transaction).not.toHaveBeenCalled();
+  });
+
+  it('scopes the locked cancellation lookup by exact job, account, app, and kind', async () => {
+    auth.validateToken.mockResolvedValue({
+      isValid: true,
+      data: { userId: ACCOUNT_ID, appId: 'client-interface' },
+    });
+    const query = { setLock: jest.fn(), where: jest.fn(), getOne: jest.fn() };
+    query.setLock.mockReturnValue(query);
+    query.where.mockReturnValue(query);
+    query.getOne.mockResolvedValue(null);
+    const repository = { createQueryBuilder: jest.fn(() => query) };
+    dataSource.transaction.mockImplementation(async (callback) =>
+      callback({ getRepository: () => repository })
+    );
+    await expect(
+      service.cancel({
+        accountId: ACCOUNT_ID,
+        token: TOKEN,
+        appId: 'client-interface',
+        jobId: randomUUID(),
+      })
+    ).rejects.toMatchObject({
+      error: expect.objectContaining({
+        statusCode: 404,
+        code: 'EXPORT_JOB_NOT_FOUND',
+      }),
+    });
+    expect(query.setLock).toHaveBeenCalledWith('pessimistic_write');
+    expect(query.where).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'job.id = :id AND job.accountId = :accountId AND job.appId = :appId AND job.kind = :kind'
+      ),
+      expect.objectContaining({
+        accountId: ACCOUNT_ID,
+        appId: 'client-interface',
+        kind: 'export',
+      })
+    );
+  });
 });
 
 describe('AccountExportJobService Authentication owner staging', () => {
@@ -1360,6 +1431,102 @@ describe('AccountExportJobService database lease fence', () => {
           renewLease(row: AccountExportJobEntity): Promise<boolean>;
         }
       ).renewLease(claim);
+
+    const cancel = (row: AccountExportJobEntity) =>
+      (
+        service as unknown as {
+          cancel(request: unknown): Promise<AccountExportJobStatus>;
+        }
+      ).cancel({
+        accountId: row.accountId,
+        token: TOKEN,
+        appId: row.appId,
+        jobId: row.id,
+      });
+    const authSessionForCancel = (accountId: string) => {
+      (
+        service as unknown as { auth: { validateToken: jest.Mock } }
+      ).auth.validateToken = jest.fn().mockResolvedValue({
+        isValid: true,
+        data: { userId: accountId, appId: 'client-interface' },
+      });
+    };
+
+    it('cancellation invalidates a running lease and the stale worker cannot finish it', async () => {
+      const repository = dataSource.getRepository(AccountExportJobEntity);
+      const id = randomUUID();
+      ids.push(id);
+      const row = await repository.save(
+        repository.create({
+          id,
+          accountId: randomUUID(),
+          appId: 'client-interface',
+          kind: 'export',
+          idempotencyKey: randomUUID(),
+          state: 'running',
+          attempt: 3,
+          leaseOwner: randomUUID(),
+          leaseExpiresAt: new Date(Date.now() + 60_000),
+          coverageVersion: '2026-10-17.v1',
+          coverageSummary: {
+            blockers: ['owner-gap'],
+            coveredOwners: ['authentication'],
+            artifactAvailable: true,
+          },
+        })
+      );
+      authSessionForCancel(row.accountId);
+      const result = await cancel(row);
+      expect(result.state).toBe('failed');
+      expect(JSON.stringify(result)).not.toContain(TOKEN);
+      const cancelled = await repository.findOneByOrFail({ id });
+      expect(cancelled).toMatchObject({
+        state: 'failed',
+        attempt: 3,
+        lastErrorCode: 'EXPORT_JOB_CANCELLED',
+        leaseOwner: null,
+        leaseExpiresAt: null,
+        completedAt: null,
+        coverageSummary: {
+          blockers: ['owner-gap', 'cancelled'],
+          coveredOwners: ['authentication'],
+          globalCompletionBlocked: true,
+          artifactAvailable: false,
+        },
+      });
+      await finish(row);
+      expect(await repository.findOneByOrFail({ id })).toEqual(cancelled);
+
+      const resumed = await (
+        service as unknown as {
+          claim(id: string): Promise<AccountExportJobEntity | null>;
+        }
+      ).claim(id);
+      expect(resumed).toMatchObject({ state: 'running', attempt: 4 });
+    });
+
+    it('does not rewrite completed jobs during cancellation', async () => {
+      const repository = dataSource.getRepository(AccountExportJobEntity);
+      const id = randomUUID();
+      ids.push(id);
+      const row = await repository.save(
+        repository.create({
+          id,
+          accountId: randomUUID(),
+          appId: 'client-interface',
+          kind: 'export',
+          idempotencyKey: randomUUID(),
+          state: 'complete',
+          attempt: 2,
+          coverageVersion: '2026-10-17.v1',
+          completedAt: new Date(),
+          coverageSummary: { blockers: [], artifactAvailable: true },
+        })
+      );
+      authSessionForCancel(row.accountId);
+      await cancel(row);
+      expect(await repository.findOneByOrFail({ id })).toEqual(row);
+    });
 
     it('renews only the current running attempt with its nonce and live lease', async () => {
       const repository = dataSource.getRepository(AccountExportJobEntity);

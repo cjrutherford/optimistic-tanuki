@@ -53,6 +53,7 @@ export class HttpApiEmailProvider implements EmailProvider {
       };
 
       const response = await fetch(this.config.apiUrl, {
+        signal: AbortSignal.timeout(30_000),
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,6 +86,7 @@ export class HttpApiEmailProvider implements EmailProvider {
   async verifyConnection(): Promise<boolean> {
     try {
       const response = await fetch(this.config.apiUrl, {
+        signal: AbortSignal.timeout(30_000),
         method: 'HEAD',
         headers: {
           Authorization: `Bearer ${this.config.apiKey}`,

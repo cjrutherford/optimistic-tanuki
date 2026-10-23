@@ -161,6 +161,60 @@ export class AccountExportJobService {
     return this.run(input, row);
   }
 
+  async cancel(request: unknown): Promise<AccountExportJobStatus> {
+    const input = this.validate(request, false);
+    if (!input.jobId)
+      this.raise(
+        400,
+        'EXPORT_JOB_INVALID_REQUEST',
+        'Invalid export operation request'
+      );
+    if (!['client-interface', 'local-hub'].includes(input.appId))
+      this.raise(403, 'EXPORT_JOB_APP_FORBIDDEN', 'App cannot cancel exports');
+    await this.authorize(input.accountId, input.token, input.appId);
+    const row = await this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(AccountExportJobEntity);
+      const job = await repo
+        .createQueryBuilder('job')
+        .setLock('pessimistic_write')
+        .where(
+          'job.id = :id AND job.accountId = :accountId AND job.appId = :appId AND job.kind = :kind',
+          {
+            id: input.jobId,
+            accountId: input.accountId,
+            appId: input.appId,
+            kind: 'export',
+          }
+        )
+        .getOne();
+      if (!job)
+        this.raise(404, 'EXPORT_JOB_NOT_FOUND', 'Export operation not found');
+      if (job.state === 'complete') return job;
+      const summary = job.coverageSummary ?? {};
+      const blockers = Array.isArray(summary.blockers)
+        ? summary.blockers.filter(
+            (value): value is string => typeof value === 'string'
+          )
+        : [];
+      if (!blockers.includes('cancelled')) blockers.push('cancelled');
+      return repo.save({
+        ...job,
+        state: 'failed',
+        lastErrorCode: 'EXPORT_JOB_CANCELLED',
+        leaseOwner: null,
+        leaseExpiresAt: null,
+        completedAt: null,
+        coverageSummary: {
+          ...summary,
+          blockers,
+          globalCompletionBlocked: true,
+          artifactAvailable: false,
+        },
+      });
+    });
+    return this.status(row);
+  }
+
   private async run(
     input: ReturnType<AccountExportJobService['validate']>,
     row: AccountExportJobEntity

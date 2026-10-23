@@ -52,6 +52,9 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
+    void this.cleanupPendingAssets().catch(() =>
+      this.l.error('Asset lifecycle startup cleanup failed')
+    );
     this.cleanupTimer = setInterval(
       () =>
         void this.cleanupPendingAssets().catch(() =>
@@ -405,6 +408,8 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
   }
 
   async createAsset(data: CreateAssetDto): Promise<AssetEntity> {
+    let reserved: AssetEntity | undefined;
+    let stored: AssetEntity | undefined;
     try {
       this.assertGenericAssetInput(data);
       // Asset IDs are server-owned. Assign one before storage so the database
@@ -452,15 +457,76 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
         originKind: 'ordinary',
         originProfileId: null,
         originAppId: null,
+        storagePath: '',
+        lifecycleState: 'pending-upload',
+        lifecycleLeaseUntil: new Date(Date.now() + 15 * 60_000),
       };
-      const asset = this.assetRepo.create(entityAsset);
-      const persistedAsset = await this.storageAdapter.create(data);
-      const newAsset = await this.assetRepo.save({
-        ...asset,
-        ...persistedAsset,
-      } as AssetEntity);
-      return newAsset;
+      const reservationPath = this.storageAdapter.reservationPath?.(data);
+      if (!reservationPath)
+        throw new RpcException({
+          statusCode: 503,
+          message: 'Storage adapter cannot reserve asset paths',
+        });
+      entityAsset.storagePath = reservationPath;
+      reserved = await this.assetRepo.save(
+        this.assetRepo.create(entityAsset) as AssetEntity
+      );
+
+      return await this.assetRepo.manager.transaction(async (manager) => {
+        const repo = manager.getRepository(AssetEntity);
+        const current = await repo.findOne({
+          where: { id: reserved!.id },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (
+          !current ||
+          current.lifecycleState !== 'pending-upload' ||
+          !current.lifecycleLeaseUntil ||
+          current.lifecycleLeaseUntil <= new Date()
+        )
+          throw new RpcException({
+            statusCode: 409,
+            message: 'Asset upload reservation is no longer active',
+          });
+        data.id = reserved!.id;
+        stored = (await this.storageAdapter.create(data)) as AssetEntity;
+        if (
+          !current.lifecycleLeaseUntil ||
+          current.lifecycleLeaseUntil <= new Date()
+        )
+          throw new RpcException({
+            statusCode: 409,
+            message: 'Asset upload reservation expired during storage write',
+          });
+
+        Object.assign(current, {
+          name: persistedName,
+          storagePath: stored.storagePath ?? current.storagePath,
+          type: entityAsset.type,
+          storageStrategy: entityAsset.storageStrategy,
+          profileId: entityAsset.profileId,
+          audienceCommunityIds: entityAsset.audienceCommunityIds,
+          audienceRestrictions: entityAsset.audienceRestrictions,
+          originKind: 'ordinary',
+          originProfileId: null,
+          originAppId: null,
+          lifecycleState: 'active',
+          lifecycleLeaseUntil: null,
+        });
+        return repo.save(current);
+      });
     } catch (error) {
+      if (reserved && stored) {
+        try {
+          await this.storageAdapter.remove(stored);
+          await this.assetRepo.delete({
+            id: reserved.id,
+            lifecycleState: 'pending-upload',
+          });
+        } catch {
+          // Keep the pending reservation for the existing lifecycle cleanup worker.
+        }
+      }
       this.l.error('Error creating asset:', error);
       if (error instanceof RpcException) {
         throw error;

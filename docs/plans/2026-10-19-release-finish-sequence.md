@@ -6,7 +6,7 @@ Updated: 2026-10-23. Sequence starting accepted baseline: `661853166a332596ffe1c
 
 **Goal:** finish the already selected local release work in order: account rights, inactivity/log retention, integrated journeys, then launch materials. Real external flows and production release qualification remain separately owned.
 
-**Active scope:** OT (`client-interface`) and TS (`local-hub`) only. O09-P → O09-C → O09-I Classifieds is locally verified; see the [O09 finding](../release-readiness/findings/DF-007-O09.md). Do not use the historical platform inventory as a release denominator or start another product owner from its queue position.
+**Active scope:** OT (`client-interface`) and TS (`local-hub`) only. N01 is locally verified; **N02 is next**. See the [N01 finding](../release-readiness/findings/DF-007-N01.md). O09-P/C/I remains accepted. Do not use the historical platform inventory as a release denominator or start another product owner from its queue position.
 
 The [technical register](../release-readiness/REMAINING-SLICES.md) and historical rows below preserve existing IDs and accepted receipts. They do not define an additional product scope or a remaining-release denominator.
 
@@ -54,15 +54,15 @@ One owner is complete only when its field/store policy, real bounded capture, an
 
 Complete each existing local store contract and its independent readback. External execution evidence remains X-owned; it cannot be silently represented as a local pass.
 
-| Order | Existing ID | Finished outcome                                                                                                   | Acceptance                                                                                                                           |
-| ----- | ----------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| 18    | N01         | Enumerate and address per-account queues, processing jobs and outboxes, including media workers and delivery jobs. | Complete producer/consumer inventory, write/cancel fencing and restart/readback proof.                                               |
-| 19    | N02         | Address permission/session caches and transient OAuth state without persisting bearer credentials.                 | Account-scoped invalidation, stale replica denial, cookie/bearer compatibility.                                                      |
-| 20    | N03         | Address search indexes, materialized projections and secondary persistence found by reconciliation.                | Exact source-to-index attribution and independent account cleanup/readback; explicit evidence if a candidate store is absent.        |
-| 21    | N04         | Address account-identifiable application/activity logs and local sink deletion contracts.                          | Sink inventory and immediate account-deletion behavior, with no undisclosed retained copies. The rolling 90-day rule is R2-02 below. |
-| 22    | N05         | Address object-store versions, media derivatives, in-flight processing and encryption-key custody.                 | Complete version/derivative inventory, race fences, recoverable deletion ordering and independent reads.                             |
-| 23    | N06         | Address browser/local persisted account state using shared session/account infrastructure.                         | Signout/deletion/account-switch cleanup across products; no stale cross-account state.                                               |
-| 24    | N07         | Address application-held provider grants and provider adapter revocation/deletion contracts.                       | No external provider-account deletion; local ownership/redaction and failure/retry proved. Live external calls remain X01.           |
+| Order | Existing ID            | Finished outcome                                                                                                   | Acceptance                                                                                                                           |
+| ----- | ---------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 18    | N01 **VERIFIED OT/TS** | Enumerate and address per-account queues, processing jobs and outboxes, including media workers and delivery jobs. | Complete producer/consumer inventory, write/cancel fencing and restart/readback proof.                                               |
+| 19    | N02                    | Address permission/session caches and transient OAuth state without persisting bearer credentials.                 | Account-scoped invalidation, stale replica denial, cookie/bearer compatibility.                                                      |
+| 20    | N03                    | Address search indexes, materialized projections and secondary persistence found by reconciliation.                | Exact source-to-index attribution and independent account cleanup/readback; explicit evidence if a candidate store is absent.        |
+| 21    | N04                    | Address account-identifiable application/activity logs and local sink deletion contracts.                          | Sink inventory and immediate account-deletion behavior, with no undisclosed retained copies. The rolling 90-day rule is R2-02 below. |
+| 22    | N05                    | Address object-store versions, media derivatives, in-flight processing and encryption-key custody.                 | Complete version/derivative inventory, race fences, recoverable deletion ordering and independent reads.                             |
+| 23    | N06                    | Address browser/local persisted account state using shared session/account infrastructure.                         | Signout/deletion/account-switch cleanup across products; no stale cross-account state.                                               |
+| 24    | N07                    | Address application-held provider grants and provider adapter revocation/deletion contracts.                       | No external provider-account deletion; local ownership/redaction and failure/retry proved. Live external calls remain X01.           |
 
 ### 3. Deliver the export file and download
 
@@ -177,3 +177,5 @@ Workspace and App Configurator capture and integration are accepted at the local
 ## Latest completed OT/TS delivery: O09 Classifieds
 
 **O09-P, O09-C and O09-I locally verified.** The [finding](../release-readiness/findings/DF-007-O09.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-o09.json) record 253 listing receipts, explicit two-app filtering, failure/retry and independent cleanup. No other product is qualified. Overall export, download and deletion remain incomplete.
+
+N01 acceptance is limited to the two-app inventory and per-work-item fencing/recovery. Permanent account-wide producer fencing and deletion remain D00. See the [receipt](../release-readiness/evidence/df-007/checkpoint-n01.json).

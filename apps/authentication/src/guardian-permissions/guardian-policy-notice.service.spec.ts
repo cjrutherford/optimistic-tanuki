@@ -49,7 +49,12 @@ describe('GuardianPolicyNoticeService', () => {
     };
     const storedNotices: any[] = [];
     notices = {
-      findOne: jest.fn().mockResolvedValue(null),
+      findOne: jest.fn(
+        async ({ where }: any) =>
+          storedNotices.find((row) =>
+            Object.entries(where).every(([key, value]) => row[key] === value)
+          ) ?? null
+      ),
       find: jest.fn(async () => storedNotices),
       create: jest.fn((value) => value),
       save: jest.fn(async (value) => {
@@ -65,6 +70,9 @@ describe('GuardianPolicyNoticeService', () => {
         return { affected: matches.length || 1 };
       }),
       delete: jest.fn().mockResolvedValue({ affected: 0 }),
+    };
+    notices.manager = {
+      transaction: async (work: any) => work({ getRepository: () => notices }),
     };
     email = { sendEmail: jest.fn().mockResolvedValue({ success: true }) };
     service = new GuardianPolicyNoticeService(
@@ -202,5 +210,79 @@ describe('GuardianPolicyNoticeService', () => {
       attempts: 0,
       lastFailureCode: null,
     });
+  });
+  it('durably suppresses pending work only for an established OT/TS guardian context', async () => {
+    const guardianId = 'd816be66-4fb6-4ed6-a91d-cc058bd5c816';
+    permissions.find.mockResolvedValue([
+      { guardianUserId: guardianId, appId: 'local-hub' },
+    ]);
+    await notices.save({
+      guardianUserId: guardianId,
+      policyVersion: version,
+      status: 'pending',
+      nextAttemptAt: new Date(0),
+    });
+    await expect(
+      service.suppressPendingForGuardian(guardianId, 'local-hub')
+    ).resolves.toBe(1);
+    expect((await notices.find())[0].status).toBe('suppressed');
+    expect(await service.deliverDueNotices()).toBe(0);
+    expect(email.sendEmail).not.toHaveBeenCalled();
+  });
+
+  it('refuses mixed or unproven product scope without suppressing another product notice', async () => {
+    const guardianId = 'd816be66-4fb6-4ed6-a91d-cc058bd5c816';
+    permissions.find.mockResolvedValue([
+      { appId: 'local-hub' },
+      { appId: 'other-product' },
+    ]);
+    await expect(
+      service.suppressPendingForGuardian(guardianId, 'local-hub')
+    ).rejects.toThrow('NOTICE_CANCEL_SCOPE_UNPROVEN');
+    expect(notices.update).not.toHaveBeenCalled();
+    permissions.find.mockResolvedValue([]);
+    await expect(
+      service.suppressPendingForGuardian(guardianId, 'local-hub')
+    ).rejects.toThrow('NOTICE_CANCEL_SCOPE_UNPROVEN');
+    await expect(
+      service.suppressPendingForGuardian(guardianId, 'other-product')
+    ).rejects.toThrow('NOTICE_CANCEL_INVALID_SCOPE');
+  });
+
+  it('drains a started provider call before acknowledging shutdown', async () => {
+    let release!: () => void;
+    let started!: () => void;
+    const entered = new Promise<void>((done) => {
+      started = done;
+    });
+    const blocked = new Promise<void>((done) => {
+      release = done;
+    });
+    email.sendEmail.mockImplementation(async () => {
+      started();
+      await blocked;
+      return { success: true };
+    });
+    await notices.save({
+      guardianUserId: 'guardian-1',
+      policyVersion: version,
+      policyUrl: 'https://example.test/policy',
+      status: 'pending',
+      attempts: 0,
+      nextAttemptAt: new Date(0),
+    });
+    const delivery = service.deliverDueNotices();
+    await entered;
+    let stopped = false;
+    const shutdown = service.onModuleDestroy().then(() => {
+      stopped = true;
+    });
+    await Promise.resolve();
+    expect(stopped).toBe(false);
+    release();
+    await delivery;
+    await shutdown;
+    expect((await notices.find())[0].status).toBe('accepted');
+    expect(await service.deliverDueNotices()).toBe(0);
   });
 });

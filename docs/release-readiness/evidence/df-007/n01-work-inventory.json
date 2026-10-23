@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "slice": "N01",
+  "status": "locally-verified-OT-TS-N01",
+  "applications": {
+    "OT": "client-interface",
+    "TS": "local-hub"
+  },
+  "stores": [
+    {
+      "storeId": "assets.lifecycle",
+      "persistence": "durable",
+      "producer": "AssetCommands.CREATE and GUARDIAN_CREATE after Gateway authorization",
+      "consumer": "AppService.createAsset/createGuardianAsset -> startup and 60-second cleanupPendingAssets",
+      "store": "asset_entity lifecycleState/lifecycleLeaseUntil/lifecycleRetryAfter; encrypted storage path",
+      "identity": "profile UUID; ordinary assets have no app-scope column, so do not infer all assets belong to OT/TS",
+      "writeFence": "Reservation persisted before bytes; write lock and lease recheck before activation; compensation or retained cleanup row",
+      "cancellation": "Lease expiry/tombstone cleanup; does not implement D00 account-wide producer fencing",
+      "restart": "Pending row survives worker death; startup/poll reclaims expired work",
+      "exportDisposition": "Existing safe Assets capture; operational leases and storage paths excluded",
+      "sourceEvidence": [
+        "apps/assets/src/app/app.service.ts",
+        "apps/assets/src/entities/asset.entity.ts"
+      ]
+    },
+    {
+      "storeId": "social.notification-debounce",
+      "persistence": "volatile",
+      "producer": "Trusted Social mention/like/comment/follow producers",
+      "consumer": "NotificationService.queueNotification -> timer flush -> create",
+      "store": "Process Map, active-write promises and transient recipient cancellation set; persisted Notification only after flush",
+      "identity": "recipient profile UUID; use only verified OT/TS profile context, no app partition is stored in Notification",
+      "writeFence": "Canonical typed pending payload; batch cancel clears timers and waits for started writes; shutdown drains started writes",
+      "cancellation": "Internal batch cancellation only; new work after acknowledgement is allowed; D00 owns permanent account fence",
+      "restart": "Pending debounce is intentionally lost on process death; no durable-delivery/replay promise",
+      "exportDisposition": "Pending operational payload excluded; durable notification uses J21 safe projection",
+      "sourceEvidence": [
+        "apps/social/src/app/services/notification.service.ts",
+        "apps/social/src/app/app.controller.ts"
+      ]
+    },
+    {
+      "storeId": "auth.account-export-jobs",
+      "persistence": "durable",
+      "producer": "Authenticated internal create/resume commands; frontend controls remain U01",
+      "consumer": "AccountExportJobService.run -> snapshot clients; explicit resume after interrupted lease",
+      "store": "account_export_jobs states, attempt, idempotency key, lease owner and expiry",
+      "identity": "account UUID AND appId; new cancel command restricted to client-interface/local-hub",
+      "writeFence": "Exact-scope locked cancellation clears lease; renewal and finish require current running attempt/nonce/unexpired lease",
+      "cancellation": "Current attempt cancelled as failed/EXPORT_JOB_CANCELLED; explicit resume may claim a new attempt",
+      "restart": "Cancelled state persists; stale finish cannot replace it; restart does not silently resume with stored credentials",
+      "exportDisposition": "Typed existing owner receipt; bearer credentials never persisted; artifact remains unavailable",
+      "sourceEvidence": [
+        "apps/authentication/src/account-export-jobs/account-export-job.service.ts",
+        "apps/authentication/src/app/account-export.controller.ts"
+      ]
+    },
+    {
+      "storeId": "auth.guardian-policy-notices",
+      "persistence": "durable",
+      "producer": "Operator-approved policy notice scheduling for guardian relationships",
+      "consumer": "GuardianPolicyNoticeService startup/periodic delivery",
+      "store": "guardian_policy_notice policy/guardian/status/attempt/lease/nextAttemptAt; no app-scope column",
+      "identity": "guardian account UUID plus related GuardianPermission app anchors; mixed/unproven product scope refuses suppression",
+      "writeFence": "Delivery row lock held through provider result; suppression waits for active send and cannot overwrite accepted delivery",
+      "cancellation": "Internal pending/sending suppression for established OT/TS context; accepted provider message cannot be recalled",
+      "restart": "Suppressed/accepted rows not replayed; expired sending lease can be reclaimed; shutdown drains started delivery",
+      "exportDisposition": "Typed Authentication receipt; no email/DOB/token/provider payload in ordinary work inventory",
+      "sourceEvidence": [
+        "apps/authentication/src/guardian-permissions/guardian-policy-notice.service.ts",
+        "apps/authentication/src/guardian-permissions/entities/guardian-policy-notice.entity.ts"
+      ]
+    },
+    {
+      "storeId": "social.community-invitation-delivery",
+      "persistence": "synchronous-external-boundary",
+      "producer": "OT/TS community invitation -> persisted invitation -> Gateway mailer",
+      "consumer": "CommunityInviteMailer.send -> EmailService configured provider",
+      "store": "community_invite is durable; email has no local outbox/retry record",
+      "identity": "inviter/invitee account or email domains plus community/app scope; secret token is not an ownership proof",
+      "writeFence": "Invitation status/token acceptance remains authoritative; network provider calls have transport deadlines",
+      "cancellation": "Existing invitation cancellation invalidates local acceptance; cannot retract already accepted external email",
+      "restart": "No durable email retry promise; in-app invitation remains discoverable when mail fails",
+      "exportDisposition": "Existing branch-safe Social invitation receipt; tokens and unmatched identities excluded; provider-held execution is X01",
+      "sourceEvidence": [
+        "apps/gateway/src/controllers/social/community/community.controller.ts",
+        "apps/gateway/src/controllers/social/community/community-invite.mailer.ts",
+        "libs/email/src/lib/providers/http-api-email.provider.ts",
+        "libs/email/src/lib/providers/smtp-email.provider.ts"
+      ]
+    },
+    {
+      "storeId": "guardian.retention-maintenance",
+      "persistence": "database-maintenance",
+      "producer": "Guardian permission and guardian audit lifecycle timers",
+      "consumer": "Auth GuardianPermissionService, Social GuardianContentService, Assets audit cleanup",
+      "store": "Existing guardian_permission, guardian_content_audit and guardian_asset_activity rows; no separate queue payload",
+      "identity": "Existing account/profile/app attribution; no new cross-product selection",
+      "writeFence": "Conditional lifecycle updates/deletes; no delayed content producer or account re-creation",
+      "cancellation": "Not a notification delivery queue; account deletion coordination belongs D00 and sink retention to R2/N04",
+      "restart": "Startup and periodic passes operate on persisted predicates; no hidden retry payload",
+      "exportDisposition": "Existing owner dispositions; no additional export source invented",
+      "sourceEvidence": [
+        "apps/authentication/src/guardian-permissions/guardian-permission.service.ts",
+        "apps/social/src/app/services/guardian-content.service.ts",
+        "apps/assets/src/app/app.service.ts"
+      ]
+    },
+    {
+      "storeId": "account-capture.temporary-work",
+      "persistence": "leased-volatile",
+      "producer": "Authenticated export job -> Profile/owner snapshot handles",
+      "consumer": "Snapshot expiry timers, pull clients and owner spool cleanup",
+      "store": "Process handle maps, temporary identity tables, bounded NDJSON spools",
+      "identity": "Lease-bound account/app/job/attempt/nonce and captured Profile parent",
+      "writeFence": "Current lease validated for reads/commit; bounded capture abort/cleanup; no application-data writes",
+      "cancellation": "Cancellation invalidates lease and read handles; cleanup is bounded/finally/TTL, not an immediate global byte-deletion acknowledgement",
+      "restart": "Restart invalidates handles; callers recapture under a new lease, no stored bearer-token auto-resume",
+      "exportDisposition": "Operational state excluded; safe owner records already qualified at individual receipts",
+      "sourceEvidence": [
+        "apps/profile/src/app/account-export-snapshot.service.ts",
+        "libs/storage/src/lib/account-export-profile-bound-snapshot.service.ts",
+        "libs/storage/src/lib/account-export-owner-spool.service.ts"
+      ]
+    },
+    {
+      "storeId": "asset.validation-and-scanning",
+      "persistence": "awaited-bounded-operation",
+      "producer": "Authenticated OT/TS upload before reservation/write",
+      "consumer": "FileValidationService and VirusScanService",
+      "store": "Request bytes and bounded scanner socket/deadline state; no durable queue",
+      "identity": "Acting profile derived by Gateway; validation/scanner payload is not an owner selector",
+      "writeFence": "Validation and scanner failure happen before asset write; finite byte/response/deadline caps",
+      "cancellation": "Request abort/deadline; no durable scan replay job",
+      "restart": "No hidden scan retry store; a failed request must be retried explicitly",
+      "exportDisposition": "No scanner payload export; N01 lifecycle fixture controls clean scan result and does not qualify malware detection",
+      "sourceEvidence": [
+        "libs/storage/src/lib/virus-scan.service.ts",
+        "libs/storage/src/lib/file-validation.service.ts",
+        "apps/assets/src/app/app.service.ts"
+      ]
+    },
+    {
+      "storeId": "auth.account-email-delivery",
+      "persistence": "synchronous-external-boundary",
+      "producer": "OT/TS account registration/login/recovery actions",
+      "consumer": "EmailAuthService -> configured EmailService provider",
+      "store": "Durable auth_action_token credential metadata; no local email outbox or deferred payload",
+      "identity": "Account/email/action and application context; raw bearer token is not an ownership selector",
+      "writeFence": "Existing token expiry/single-use/state validation controls action acceptance; provider calls have transport timeouts",
+      "cancellation": "Local credential invalidation blocks later action use, not recall of accepted provider email; D00 supplies account operation fencing",
+      "restart": "No hidden local send replay; existing credential validation remains authoritative",
+      "exportDisposition": "Existing safe Authentication capture; token secrets/provider payload excluded; real external execution stays X01",
+      "sourceEvidence": [
+        "apps/authentication/src/app/email-auth.service.ts",
+        "apps/authentication/src/email-auth/entities/auth-action-token.entity.ts",
+        "libs/email/src/lib/email.service.ts"
+      ]
+    }
+  ],
+  "explicitExclusions": [
+    {
+      "path": "apps/videos/src/app/services/video-processing.service.ts",
+      "reason": "No create-video producer was demonstrated in the two primary clients; no new Videos/transcoder implementation or qualification in N01."
+    },
+    {
+      "families": ["N02", "N04", "N05", "N06", "N07"],
+      "reason": "Cache state, log sinks, media bytes/versions, browser storage and external grants retain their existing boundaries; this inventory does not silently close them."
+    },
+    {
+      "path": "apps/gateway/src/app/chat-gateway/chat.gateway.ts",
+      "reason": "Conditional AI-recipient polling has no demonstrated AI-producing call in the scoped client Messages components/services; no AI orchestration/Telos qualification is introduced. Ordinary socket/session state stays N02."
+    }
+  ],
+  "acceptance": "Complete producer/store/consumer dispositions plus write/cancel fencing and real restart/readback; source presence alone is insufficient.",
+  "acceptanceBoundary": "Per-work-item fencing and cancellation only. Permanent account-wide producer fencing and deletion remain D00 and its adapters."
+}

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { EmailService } from '@optimistic-tanuki/email';
 import { timingSafeEqual } from 'crypto';
-import { LessThanOrEqual, Repository } from 'typeorm';
+import { In, LessThanOrEqual, Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Inject } from '@nestjs/common';
 import { UserEntity } from '../user/entities/user.entity';
@@ -28,6 +28,8 @@ export class GuardianPolicyNoticeService
   private readonly logger = new Logger(GuardianPolicyNoticeService.name);
   private deliveryTimer?: ReturnType<typeof setInterval>;
   private cleanupTimer?: ReturnType<typeof setInterval>;
+  private stopping = false;
+  private readonly activeDeliveries = new Set<Promise<number>>();
 
   constructor(
     @Inject(getRepositoryToken(GuardianPermissionEntity))
@@ -54,9 +56,11 @@ export class GuardianPolicyNoticeService
     void this.runCleanupSafely();
   }
 
-  onModuleDestroy(): void {
+  async onModuleDestroy(): Promise<void> {
+    this.stopping = true;
     if (this.deliveryTimer) clearInterval(this.deliveryTimer);
     if (this.cleanupTimer) clearInterval(this.cleanupTimer);
+    await Promise.allSettled([...this.activeDeliveries]);
   }
 
   async schedulePolicyNotice(
@@ -193,6 +197,17 @@ export class GuardianPolicyNoticeService
   }
 
   async deliverDueNotices(now = new Date()): Promise<number> {
+    if (this.stopping) return 0;
+    const work = this.processDueNotices(now);
+    this.activeDeliveries.add(work);
+    try {
+      return await work;
+    } finally {
+      this.activeDeliveries.delete(work);
+    }
+  }
+
+  private async processDueNotices(now: Date): Promise<number> {
     const due = await this.notices.find({
       where: [
         { status: 'pending', nextAttemptAt: LessThanOrEqual(now) },
@@ -203,29 +218,68 @@ export class GuardianPolicyNoticeService
     });
 
     let processed = 0;
-    for (const notice of due) {
-      const claimWhere =
-        notice.status === 'pending'
-          ? {
-              id: notice.id,
-              status: 'pending' as const,
-              nextAttemptAt: LessThanOrEqual(now),
-            }
-          : {
-              id: notice.id,
-              status: 'sending' as const,
-              leaseUntil: LessThanOrEqual(now),
-            };
-      const claimed = await this.notices.update(claimWhere, {
-        status: 'sending',
-        leaseUntil: new Date(now.getTime() + LEASE_MS),
-        updatedAt: now,
-      });
-      if (!claimed.affected) continue;
-      processed++;
-      await this.deliverOne(notice, now);
+    for (const candidate of due) {
+      const delivered = await this.notices.manager.transaction(
+        async (manager) => {
+          const repo = manager.getRepository(GuardianPolicyNoticeEntity);
+          const current = await repo.findOne({
+            where: { id: candidate.id },
+            lock: { mode: 'pessimistic_write' },
+          });
+          if (!current) return false;
+          const isDue =
+            current.status === 'pending'
+              ? current.nextAttemptAt <= now
+              : current.status === 'sending' &&
+                current.leaseUntil != null &&
+                current.leaseUntil <= now;
+          if (!isDue) return false;
+          await repo.update(current.id, {
+            status: 'sending',
+            leaseUntil: new Date(now.getTime() + LEASE_MS),
+            updatedAt: now,
+          });
+          // Keep the row locked through the bounded provider call. Cancellation
+          // acknowledges only after an already-started send finishes; it cannot unsend it.
+          await this.deliverOne(current, now, repo);
+          return true;
+        }
+      );
+      if (delivered) processed++;
     }
     return processed;
+  }
+
+  /** Internal local-work primitive, not a public account-deletion endpoint. */
+  async suppressPendingForGuardian(
+    guardianUserId: string,
+    appId: string
+  ): Promise<number> {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        guardianUserId
+      ) ||
+      !['client-interface', 'local-hub'].includes(appId)
+    )
+      throw new Error('NOTICE_CANCEL_INVALID_SCOPE');
+    const links = await this.permissions.find({ where: { guardianUserId } });
+    if (
+      !links.some((link) => link.appId === appId) ||
+      links.some(
+        (link) => !['client-interface', 'local-hub'].includes(link.appId)
+      )
+    )
+      throw new Error('NOTICE_CANCEL_SCOPE_UNPROVEN');
+    const result = await this.notices.update(
+      { guardianUserId, status: In(['pending', 'sending']) },
+      {
+        status: 'suppressed',
+        leaseUntil: null,
+        lastFailureCode: null,
+        updatedAt: new Date(),
+      }
+    );
+    return result.affected ?? 0;
   }
 
   async cleanupExpiredNotices(now = new Date()): Promise<number> {
@@ -237,7 +291,8 @@ export class GuardianPolicyNoticeService
 
   private async deliverOne(
     notice: GuardianPolicyNoticeEntity,
-    now: Date
+    now: Date,
+    notices: Repository<GuardianPolicyNoticeEntity> = this.notices
   ): Promise<void> {
     const [guardian, links] = await Promise.all([
       this.users.findOne({ where: { id: notice.guardianUserId } }),
@@ -258,7 +313,7 @@ export class GuardianPolicyNoticeService
       !guardian.email?.trim() ||
       !activeLink
     ) {
-      await this.notices.update(notice.id, {
+      await notices.update(notice.id, {
         status: 'suppressed',
         leaseUntil: null,
         lastFailureCode: null,
@@ -287,7 +342,7 @@ export class GuardianPolicyNoticeService
         sensitive: true,
       });
       if (result.success) {
-        await this.notices.update(notice.id, {
+        await notices.update(notice.id, {
           status: 'accepted',
           leaseUntil: null,
           lastFailureCode: null,
@@ -296,20 +351,21 @@ export class GuardianPolicyNoticeService
         });
         return;
       }
-      await this.recordDeliveryFailure(notice, now);
+      await this.recordDeliveryFailure(notice, now, notices);
     } catch {
-      await this.recordDeliveryFailure(notice, now);
+      await this.recordDeliveryFailure(notice, now, notices);
     }
   }
 
   private async recordDeliveryFailure(
     notice: GuardianPolicyNoticeEntity,
-    now: Date
+    now: Date,
+    notices: Repository<GuardianPolicyNoticeEntity> = this.notices
   ): Promise<void> {
     const attempts = notice.attempts + 1;
     const failed = attempts >= MAX_ATTEMPTS;
     const delayMs = Math.min(5 * 60_000 * 2 ** (attempts - 1), DAY_MS);
-    await this.notices.update(notice.id, {
+    await notices.update(notice.id, {
       status: failed ? 'failed' : 'pending',
       attempts,
       nextAttemptAt: new Date(now.getTime() + delayMs),

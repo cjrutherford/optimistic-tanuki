@@ -1,0 +1,123 @@
+{
+  "slice": "DF-007-N01",
+  "date": "2026-10-23",
+  "accepted": true,
+  "status": "locally-verified-OT-TS-background-work",
+  "releaseApplications": {
+    "OT": "client-interface",
+    "TS": "local-hub"
+  },
+  "baseRevision": "4194741cca66792828b77a61435f4d35a0c1412e",
+  "sourceManifestSha256": "04c16281352ab73b77cff1a563254eed1c7d07f75ada2041fc106e86324d7733",
+  "sourceHashes": {
+    "apps/assets/src/app/app.service.spec.ts": "e5fa393f4be97512919489ceaad0ecfd88d4715dc844c41a76307132fc689507",
+    "apps/assets/src/app/app.service.ts": "84668df64192237d246f51bf2b33671181cdcef94f17e0a6451bfa31918a8c38",
+    "apps/authentication-e2e/src/authentication/background-work.spec.ts": "9f70346c1609099f32b180661d932c220cc4c3034a6f38a9e9b99876e6457a89",
+    "apps/authentication-e2e/src/authentication/n01-runtime.worker.ts": "408d683969430482d5ba3ef6ef4937610e450fcbf186c06677995c646dbd2c7a",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "087da06e33299365dcfbc73caa43f6fa8aedffaf2dd37d8c03f4e4a13b611a38",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "b423bf06c41c662d93c86def1b5d8bcc3ee75744d516970d4c1f5af7637baefe",
+    "apps/authentication/src/app/account-export.controller.ts": "42c2398ff4ad10b9d4718a8798cb06b33033c03bfd7c3d9f70d2c072fc17c6e7",
+    "apps/authentication/src/guardian-permissions/guardian-policy-notice.service.spec.ts": "1c28f33f4c3affac2d0644147d8da8a0c1302df3d70b7bac77a735df891accb4",
+    "apps/authentication/src/guardian-permissions/guardian-policy-notice.service.ts": "7d10ce6641b07cf50e5b1996371ac3d9a6e4bcfe4e2fe3f30f1fc9df4c21ae99",
+    "apps/social/src/app/services/notification.service.spec.ts": "c85a4803a38e2833c63a6485b3eaadeae25616b17b3e0088e400be41b44e17de",
+    "apps/social/src/app/services/notification.service.ts": "88c442e7e317c04e30955c48bb9cc2f3bacb7f416c682df8874f3ec0a5eab6bf",
+    "libs/constants/src/lib/libs/authentication.ts": "8cdc0b19ebbf2c5940250717e3a4cb843790802138499e5e5d2643b7ac658c53",
+    "libs/email/src/lib/providers/http-api-email.provider.spec.ts": "269d9c12036db5fd5fdecf823127e5d10f4658d86d7bc9f11d6c654c7308636e",
+    "libs/email/src/lib/providers/http-api-email.provider.ts": "2a1e57ffc5078eacdf8033115fcc170d665d00381c4f3bbd76a888c78d7910ba",
+    "libs/email/src/lib/providers/smtp-email.provider.spec.ts": "00fb2f3f06b0a3de4cc346901a1ef90dbff337f748f50887fe8785c6108f1ab0",
+    "libs/email/src/lib/providers/smtp-email.provider.ts": "db8f888c3382d2ce3e1355fdf84234e3b8de3ea70ab1ecbec551dd558518ec68"
+  },
+  "inventory": "docs/release-readiness/evidence/df-007/n01-work-inventory.json",
+  "runtime": {
+    "result": "PASS",
+    "command": "N01_ATTEMPT=attempt-4 timeout 900s python3 .runtime-artifacts/account-rights/finish-sequence/background-work/runtime/run.py",
+    "seconds": 72.39,
+    "casesPassed": 1,
+    "casesSkipped": 0,
+    "stages": {
+      "bothScopedProfileUploads": true,
+      "assetReservationCompensationLockAndProcessRestart": true,
+      "notificationCancelDrainAndVolatileRestart": true,
+      "exportCancelStaleFinishRestartAndExplicitReclaim": true,
+      "noticeRowLockSuppressionRestartAndProviderBoundary": true
+    },
+    "databaseCountMapsEqual": true,
+    "databases": ["authentication", "profile", "assets", "social"],
+    "temporaryTablesRemaining": 0,
+    "encryptedFilesRemaining": 0,
+    "privateResources": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "images": {
+      "authentication": "sha256:324be291e83454e2c24f79010fc3b2ddef6bdd9576eae5fb5830cbe04040398b",
+      "profile": "sha256:c80baaec300cfa1b5af4ad28f0ca38e05e17c0c81fec9b5887204b07f8c2d9e8",
+      "db_setup": "sha256:3f33cecc1a90bc154fd4cb6878bd498829414c85749c98230e53f93484cadcac"
+    },
+    "provenance": "Fresh Authentication image; pinned, schema-unchanged Profile identity and migration toolchain. Changed Assets/Social/notice services execute in independent source Node processes against real PostgreSQL and encrypted local storage.",
+    "controlledBoundaries": [
+      "clean-antivirus-result",
+      "post-write/compensation faults",
+      "local HTTP provider response timing"
+    ]
+  },
+  "checks": {
+    "focusedTestsPassed": 118,
+    "focusedPostgresTestsGated": 5,
+    "ciContractTestsPassed": 41,
+    "productionBuilds": ["authentication", "assets", "social"],
+    "lintProjects": [
+      "authentication",
+      "assets",
+      "social",
+      "email",
+      "constants",
+      "authentication-e2e"
+    ],
+    "scopedDevelopmentBuilds": [
+      "client-interface",
+      "local-hub",
+      "authentication",
+      "assets",
+      "social"
+    ],
+    "migrationGovernance": "PASS; no schema changes",
+    "sourceReview": "GO; read-only, no P1/P2 found"
+  },
+  "earlierAttempts": [
+    {
+      "attempt": 1,
+      "result": "FAIL",
+      "reason": "Fixture expected bare base64 instead of adapter data URL. Own leftover file recorded and removed; private volume torn down; database count restoration not established."
+    },
+    {
+      "attempt": 2,
+      "result": "FAIL",
+      "reason": "All behavior stages passed; fixture cleanup used UUID array for varchar recipient, leaving one notification row. Files/resources zero; volume removed."
+    },
+    {
+      "attempt": 3,
+      "result": "FAIL",
+      "reason": "Preflight transient address-in-use, before fixture startup. Rebind check corrected to SO_REUSEADDR; no live listener bypass."
+    }
+  ],
+  "limits": [
+    "No browser journey or public U01 controls qualified.",
+    "No external provider delivery/inbox, malware detection, remote CI or production release qualification.",
+    "SMTP connect/greeting/socket timeouts are not an absolute end-to-end send deadline.",
+    "Notification cancellation is volatile and batch-scoped; restart discards pending work.",
+    "D00 permanent account-wide fencing/deletion remains open; existing cancellation does not prevent later independent work.",
+    "Overall export remains incomplete; artifact unavailable and URL null."
+  ],
+  "protectedFilesUnchanged": 43,
+  "evidenceHashes": {
+    ".runtime-artifacts/account-rights/finish-sequence/background-work/runtime/attempt-4/result.json": "69942e7388c714af7449bea07ca4d41ab5bf0a6e95384ffecf67ac0bc83b05a8",
+    ".runtime-artifacts/account-rights/finish-sequence/background-work/runtime/attempt-4/fixture-report.json": "357bf235a454b425d1e2c9d3621eeb13c124ecf16f4e7ba06d86bcbb6a998d9e",
+    ".runtime-artifacts/account-rights/finish-sequence/background-work/runtime/attempt-4/database-counts-before.json": "86c4a8b0c99b3c4abf5b078089dc75552db8ab196725c20b761d97b86c03ee49",
+    ".runtime-artifacts/account-rights/finish-sequence/background-work/runtime/attempt-4/database-counts-after.json": "86c4a8b0c99b3c4abf5b078089dc75552db8ab196725c20b761d97b86c03ee49",
+    ".runtime-artifacts/account-rights/finish-sequence/background-work/runtime/attempt-4/identities.json": "32229742ed7232b11fe4eb3f16607d52a64d5bab7261ed7a1ebdced0446d0e4e",
+    ".runtime-artifacts/account-rights/finish-sequence/background-work/runtime/attempt-4/cleanup.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+    ".runtime-artifacts/account-rights/finish-sequence/background-work/runtime/attempt-4/filesystem-readback.json": "6ac91cab38eae269a4e6457275b3b956f615a7df03de4b1ce88f44b8110efc30"
+  }
+}

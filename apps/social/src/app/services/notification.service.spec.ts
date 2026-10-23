@@ -188,3 +188,111 @@ describe('NotificationService safe persistence and projection', () => {
     });
   });
 });
+
+describe('N01 volatile notification work', () => {
+  const event = {
+    recipientId,
+    type: 'mention',
+    title: 'PRIVATE_TITLE',
+    body: 'PRIVATE_BODY',
+    senderId: 'PRIVATE_SENDER',
+    actionUrl: 'https://PRIVATE.example',
+  };
+  const repository = () => ({
+    create: jest.fn((value) => ({
+      ...value,
+      id: notificationId,
+      isRead: false,
+      createdAt: new Date(),
+    })),
+    save: jest.fn(async (value) => value),
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('stores only canonical typed work and cancellation clears a queued timer', async () => {
+    jest.useFakeTimers();
+    const repo = repository();
+    const service = new NotificationService(repo as any);
+    await service.queueNotification({
+      ...event,
+      recipientId: recipientId.toUpperCase(),
+    });
+    expect(
+      JSON.stringify(
+        [...(service as any).pendingNotifications.values()].map(
+          (row: any) => row.data
+        )
+      )
+    ).not.toContain('PRIVATE');
+    await expect(
+      service.cancelPendingForRecipient(recipientId)
+    ).resolves.toEqual({ cancelledPending: 1, drainedWrites: 0 });
+    await jest.advanceTimersByTimeAsync(300001);
+    expect(repo.save).not.toHaveBeenCalled();
+    await service.onModuleDestroy();
+  });
+
+  it('waits for an in-flight write and rejects new work during cancellation', async () => {
+    const repo = repository();
+    let release!: () => void;
+    const barrier = new Promise<void>((done) => {
+      release = done;
+    });
+    repo.save.mockImplementationOnce(async (value) => {
+      await barrier;
+      return value;
+    });
+    const service = new NotificationService(repo as any);
+    const write = service.create(event);
+    let acknowledged = false;
+    const cancel = service
+      .cancelPendingForRecipient(recipientId)
+      .then((value) => {
+        acknowledged = true;
+        return value;
+      });
+    await Promise.resolve();
+    expect(acknowledged).toBe(false);
+    await expect(service.create(event)).rejects.toBeDefined();
+    await expect(service.queueNotification(event)).rejects.toBeDefined();
+    release();
+    await write;
+    await expect(cancel).resolves.toEqual({
+      cancelledPending: 0,
+      drainedWrites: 1,
+    });
+    expect(repo.save).toHaveBeenCalledTimes(1);
+    // This cancels an existing batch; D00 supplies the permanent account fence.
+    await service.create(event);
+    expect(repo.save).toHaveBeenCalledTimes(2);
+    await service.onModuleDestroy();
+  });
+
+  it('shutdown discards volatile work and prevents a later timer or producer write', async () => {
+    jest.useFakeTimers();
+    const repo = repository();
+    const service = new NotificationService(repo as any);
+    await service.queueNotification(event);
+    await service.onModuleDestroy();
+    await jest.advanceTimersByTimeAsync(300001);
+    expect(repo.save).not.toHaveBeenCalled();
+    await expect(service.create(event)).rejects.toBeDefined();
+  });
+
+  it('does not cancel another recipient and rejects malformed work before queueing', async () => {
+    jest.useFakeTimers();
+    const repo = repository();
+    const service = new NotificationService(repo as any);
+    await service.queueNotification(event);
+    await service.cancelPendingForRecipient(notificationId);
+    await jest.advanceTimersByTimeAsync(300001);
+    expect(repo.save).toHaveBeenCalledTimes(1);
+    await expect(
+      service.queueNotification({ ...event, recipientId: 'invalid' })
+    ).rejects.toBeDefined();
+    await expect(
+      service.queueNotification({ ...event, type: 'unknown' })
+    ).rejects.toBeDefined();
+    await service.onModuleDestroy();
+  });
+});

@@ -39,6 +39,8 @@ describe('AppService', () => {
     assetRepo = {
       create: jest.fn(),
       save: jest.fn(),
+      findOne: jest.fn(),
+      delete: jest.fn(),
       find: jest.fn(),
       findOneBy: jest.fn(),
       remove: jest.fn(),
@@ -50,6 +52,7 @@ describe('AppService', () => {
       remove: jest.fn(),
       read: jest.fn(),
       retrieve: jest.fn(),
+      reservationPath: jest.fn((data: any) => `assets/${data.id}/${data.name}`),
     } as StorageAdapter;
     fileValidationService = {
       validateFile: jest.fn().mockReturnValue({ isValid: true }),
@@ -81,6 +84,35 @@ describe('AppService', () => {
     }).compile();
 
     appService = moduleRef.get<AppService>(AppService);
+
+    const manager: any = {
+      getRepository: () => assetRepo,
+      transaction: async (work: (value: unknown) => unknown) => work(manager),
+    };
+    (assetRepo as any).manager = manager;
+    let reservation: any;
+    const createReservation = jest.fn((data: any) => {
+      reservation = { ...data };
+      return reservation;
+    });
+    (assetRepo.create as jest.Mock).mockImplementation(createReservation);
+    (assetRepo.save as jest.Mock).mockImplementation(async (row: any) => {
+      if (row.lifecycleState === 'pending-upload') reservation = row;
+      return row;
+    });
+    (assetRepo as any).findOne = jest.fn(async () => {
+      const created = (assetRepo.create as jest.Mock).mock.results.at(
+        -1
+      )?.value;
+      if (created?.lifecycleState === 'pending-upload') return created;
+      if (reservation?.lifecycleState === 'pending-upload') return reservation;
+      return {
+        ...created,
+        lifecycleState: 'pending-upload',
+        lifecycleLeaseUntil: new Date(Date.now() + 60_000),
+      };
+    });
+    (assetRepo as any).delete = jest.fn().mockResolvedValue({ affected: 1 });
   });
 
   it('should be defined', () => {
@@ -240,9 +272,119 @@ describe('AppService', () => {
   });
 
   describe('createAsset', () => {
+    it('reserves before writing and activates the same ID with ordinary metadata', async () => {
+      const dto = {
+        id: 'caller-id',
+        name: 'My photo',
+        type: 'image',
+        profileId: 'owner-1',
+        communityId: 'community-1',
+        audienceRestrictions: [{ type: 'owner', profileId: 'owner-1' }],
+        content: Buffer.from('photo'),
+        fileExtension: 'png',
+      } as any;
+      (storageAdapter.create as jest.Mock).mockImplementation(
+        async (input: any) => ({
+          id: 'adapter-spoof',
+          name: 'adapter-name',
+          storagePath: `bytes/${input.id}`,
+          profileId: 'adapter-profile',
+          originKind: 'guardian-staged',
+          lifecycleState: 'pending-delete',
+          audienceRestrictions: [],
+        })
+      );
+      const result = await appService.createAsset(dto);
+      expect(storageAdapter.reservationPath).toHaveBeenCalled();
+      expect(assetRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: expect.any(String),
+          lifecycleState: 'pending-upload',
+          originKind: 'ordinary',
+          profileId: 'owner-1',
+        })
+      );
+      expect(storageAdapter.create).toHaveBeenCalledWith(
+        expect.objectContaining({ id: result.id })
+      );
+      expect(result.id).not.toBe('caller-id');
+      expect(result.lifecycleState).toBe('active');
+      expect(result.name).toBe('My_photo.png');
+      expect(result.profileId).toBe('owner-1');
+      expect(result.originKind).toBe('ordinary');
+      expect(result.originProfileId).toBeNull();
+      expect(result.originAppId).toBeNull();
+      expect(result.audienceCommunityIds).toEqual(['community-1']);
+      expect(result.audienceRestrictions).toEqual(dto.audienceRestrictions);
+    });
+
+    it('does not write storage when the reservation insert fails', async () => {
+      (assetRepo.save as jest.Mock).mockRejectedValueOnce(
+        new Error('reservation unavailable')
+      );
+      await expect(
+        appService.createAsset({
+          name: 'photo.png',
+          type: 'image',
+          profileId: 'owner-1',
+          content: Buffer.from('photo'),
+        } as any)
+      ).rejects.toThrow(RpcException);
+      expect(storageAdapter.create).not.toHaveBeenCalled();
+    });
+
+    it('compensates bytes when activation fails', async () => {
+      (storageAdapter.create as jest.Mock).mockResolvedValue({
+        storagePath: 'actual/storage/path',
+      });
+      (assetRepo.save as jest.Mock)
+        .mockImplementationOnce(async (row: any) => {
+          return row;
+        })
+        .mockRejectedValueOnce(new Error('activation unavailable'));
+      await expect(
+        appService.createAsset({
+          name: 'photo.png',
+          type: 'image',
+          profileId: 'owner-1',
+          content: Buffer.from('photo'),
+        } as any)
+      ).rejects.toThrow(RpcException);
+      expect(storageAdapter.remove).toHaveBeenCalledWith(
+        expect.objectContaining({ storagePath: 'actual/storage/path' })
+      );
+      expect(assetRepo.delete).toHaveBeenCalledWith({
+        id: expect.any(String),
+        lifecycleState: 'pending-upload',
+      });
+    });
+
+    it('retains pending cleanup state when compensation fails', async () => {
+      (storageAdapter.create as jest.Mock).mockResolvedValue({
+        storagePath: 'actual/storage/path',
+      });
+      (storageAdapter.remove as jest.Mock).mockRejectedValue(
+        new Error('cleanup unavailable')
+      );
+      (assetRepo.save as jest.Mock)
+        .mockImplementationOnce(async (row: any) => {
+          return row;
+        })
+        .mockRejectedValueOnce(new Error('activation unavailable'));
+      await expect(
+        appService.createAsset({
+          name: 'photo.png',
+          type: 'image',
+          profileId: 'owner-1',
+          content: Buffer.from('photo'),
+        } as any)
+      ).rejects.toThrow(RpcException);
+      expect(assetRepo.delete).not.toHaveBeenCalled();
+    });
+
     it('should create an asset and return it', async () => {
       const dto = { name: 'test', type: 'image', content: '' } as any;
-      const asset = { id: '1', ...dto };
+      const asset = { id: expect.any(String), ...dto } as any;
       jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
       jest.spyOn(storageAdapter, 'create').mockResolvedValue({
         id: asset.id,
@@ -269,19 +411,23 @@ describe('AppService', () => {
         originKind: 'ordinary',
         originProfileId: null,
         originAppId: null,
+        storagePath: expect.stringContaining('assets/'),
+        lifecycleState: 'pending-upload',
+        lifecycleLeaseUntil: expect.any(Date),
       });
       expect(storageAdapter.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: expect.stringMatching(/^[0-9a-f-]{36}$/i),
+          id: expect.any(String),
         })
       );
-      expect(assetRepo.save).toHaveBeenCalledWith({
-        ...asset,
-        storagePath: 'some/path',
-        content: Buffer.from('some_content'),
-        profileId: asset.profileId,
-        storageStrategy: asset.storageStrategy,
-      });
+      expect(assetRepo.save).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          lifecycleState: 'active',
+          storagePath: 'some/path',
+          profileId: asset.profileId,
+        })
+      );
     });
 
     it('persists a community audience before the upload can be attached to content', async () => {

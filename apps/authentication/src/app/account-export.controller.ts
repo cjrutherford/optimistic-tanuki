@@ -44,6 +44,11 @@ export class AccountExportController {
     return this.jobs.resume(data);
   }
 
+  @MessagePattern({ cmd: AuthCommands.CancelAccountExportJob })
+  cancelExportJob(@Payload() data: Record<string, unknown>) {
+    return this.jobs.cancel(data);
+  }
+
   @MessagePattern({ cmd: AuthCommands.PreviewAccountExport })
   previewAccountExport(
     @Payload() data: { accountId?: unknown; token?: unknown; appId?: unknown }
