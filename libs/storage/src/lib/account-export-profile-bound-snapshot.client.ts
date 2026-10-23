@@ -18,7 +18,8 @@ export interface AccountExportProfileBoundSnapshotClientOptions {
     | 'social'
     | 'forum'
     | 'workspace'
-    | 'app-configurator';
+    | 'app-configurator'
+    | 'chat-collector';
   sources: readonly string[];
   open(payload: unknown, timeoutMs: number): Promise<unknown>;
   read(

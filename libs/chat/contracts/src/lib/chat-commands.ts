@@ -1,4 +1,12 @@
+export const CHAT_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
+  'Conversation',
+  'Message',
+] as const;
+
 export const ChatCommands = {
+  OPEN_ACCOUNT_EXPORT_CAPTURE: 'chat.OpenAccountExportCapture',
+  READ_ACCOUNT_EXPORT_CAPTURE: 'chat.ReadAccountExportCapture',
+  RELEASE_ACCOUNT_EXPORT_CAPTURE: 'chat.ReleaseAccountExportCapture',
   POST_MESSAGE: 'POST_MESSAGE',
   GET_CONVERSATIONS: 'GET_CONVERSATIONS',
   GET_CONVERSATION: 'GET_CONVERSATION',

@@ -4,7 +4,6 @@ import { Conversation, Message } from './entities';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
-  console.log(`Database configuration: ${JSON.stringify(database)}`);
   const entities = [Message, Conversation];
   console.log(
     `Using database configuration: host=${database.host}, port=${database.port}, username=${database.username}, database=${database.database}`

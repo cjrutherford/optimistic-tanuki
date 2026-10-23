@@ -225,6 +225,7 @@ describe('Workspace account export private TCP integration', () => {
         'forum',
         'workspace',
         'app-configurator',
+        'chat-collector',
       ];
       let job = await rpc(
         clients.auth,

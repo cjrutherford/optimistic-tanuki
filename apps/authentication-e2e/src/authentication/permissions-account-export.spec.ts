@@ -257,6 +257,7 @@ describe('Permissions account export private integration', () => {
         'forum',
         'workspace',
         'app-configurator',
+        'chat-collector',
       ];
       expect(job.state).toBe('incomplete');
       expect(job.coverageSummary.capturedDatabaseOwners).toEqual(

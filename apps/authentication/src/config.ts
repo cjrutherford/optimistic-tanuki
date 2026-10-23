@@ -42,6 +42,7 @@ export declare type AuthConfigType = {
     forum?: { host: string; port: number };
     workspace?: { host: string; port: number };
     app_configurator?: { host: string; port: number };
+    chat_collector?: { host: string; port: number };
   };
 };
 
@@ -248,6 +249,16 @@ const loadConfig = () => {
           Number(process.env.SERVICE_WORKSPACE_PORT) ||
           configData.services?.workspace?.port ||
           3024,
+      },
+      chat_collector: {
+        host:
+          process.env.SERVICE_CHAT_COLLECTOR_HOST ||
+          configData.services?.chat_collector?.host ||
+          'chat-collector',
+        port:
+          Number(process.env.SERVICE_CHAT_COLLECTOR_PORT) ||
+          configData.services?.chat_collector?.port ||
+          3007,
       },
       app_configurator: {
         host:

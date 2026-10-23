@@ -128,7 +128,12 @@ const KNOWN_UNIMPLEMENTED = [
 ];
 /** Internal security RPC: contract shape is an exported interface and its
  * boundary validator is implemented in chat-collector rather than a DTO. */
-const INTERNAL = ['GET_PRESENCE_AUDIENCE'];
+const INTERNAL = [
+  'GET_PRESENCE_AUDIENCE',
+  'OPEN_ACCOUNT_EXPORT_CAPTURE',
+  'READ_ACCOUNT_EXPORT_CAPTURE',
+  'RELEASE_ACCOUNT_EXPORT_CAPTURE',
+];
 
 const propsOf = (errors: ValidationError[]) =>
   errors.map((e) => e.property).sort();

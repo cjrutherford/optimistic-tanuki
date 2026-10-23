@@ -82,6 +82,7 @@ describe('App Configurator account export private TCP integration', () => {
       'forum',
       'workspace',
       'app-configurator',
+      'chat-collector',
     ];
     const databases = databaseNames.map(
       (name) =>
@@ -288,6 +289,7 @@ describe('App Configurator account export private TCP integration', () => {
         'forum',
         'workspace',
         'app-configurator',
+        'chat-collector',
       ];
       let job = await rpc(
         clients.auth,

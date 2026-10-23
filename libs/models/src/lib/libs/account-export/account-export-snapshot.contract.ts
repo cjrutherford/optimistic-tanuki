@@ -135,3 +135,8 @@ export type AppConfiguratorAccountExportSnapshotDescriptor =
   ProfileBoundAccountExportSnapshotDescriptor;
 export type AppConfiguratorAccountExportSnapshotOpenRequest =
   AssetsAccountExportSnapshotOpenRequest;
+
+export type ChatAccountExportSnapshotDescriptor =
+  ProfileBoundAccountExportSnapshotDescriptor;
+export type ChatAccountExportSnapshotOpenRequest =
+  AssetsAccountExportSnapshotOpenRequest;

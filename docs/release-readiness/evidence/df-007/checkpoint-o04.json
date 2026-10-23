@@ -1,0 +1,352 @@
+{
+  "slice": "DF-007-O04",
+  "date": "2026-10-23",
+  "accepted": true,
+  "status": "locally-verified-owner-delivery",
+  "baseRevision": "0d0a74558f9ddf30e959973d16201b0192a8cb49",
+  "sourceManifestSha256": "0d82cfbe5d501a1ea964e6ec09f817f334ce24f60d06b4bebddb7e0491668a08",
+  "sourceHashes": {
+    "apps/authentication-e2e/project.json": "19bd2434c91a31f09335e84c0e6ecd2f7977375991220fc7c97f35b6c88c924e",
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "7428185459418cd6de0b24c5b456215622278123f58c960d12c9e9e547c69346",
+    "apps/authentication-e2e/src/authentication/app-configurator-account-export.spec.ts": "b84286743015acc5eb21837817e802e793d88152e4e24b4389693f23722bd02e",
+    "apps/authentication-e2e/src/authentication/assets-account-export.spec.ts": "95315ffafee0316458eaa3cf0ede5aa314489e63a10fefd229b5b71ed9970e14",
+    "apps/authentication-e2e/src/authentication/chat-account-export.spec.ts": "5b2b56bdc40c1d803fbf746804b0d5634d74967f3162b34811f75d2fe8dab1f7",
+    "apps/authentication-e2e/src/authentication/forum-account-export.spec.ts": "bc94d145f71ce541972623e8f5c702792e1194e92179ffb7f203c85ba21c96e7",
+    "apps/authentication-e2e/src/authentication/permissions-account-export.spec.ts": "93cf9c95809e1bcf49f78826ee7ef41c298e1bdda1126f1657a638262ab45bec",
+    "apps/authentication-e2e/src/authentication/social-account-export.spec.ts": "f01319532c4d19302987b4c071d8cc512871569c2df92cb85e4e49e81eac60bd",
+    "apps/authentication-e2e/src/authentication/videos-account-export.spec.ts": "023a138e64cfeb22c6c19ce81b933e08220e649cc2db09dcb77a5e4c919e8043",
+    "apps/authentication-e2e/src/authentication/workspace-account-export.spec.ts": "4e6cb589ecfc17d7b8ea0a5e9db0a413de226f9bba637d7418ae7cfb4de3c24a",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "00b33f428336b236c19d80b8c8e8580b5100e429aa84926e025bd4ef725f3d97",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "1e9ca146a87c985ac7a181c9dc09978fe4b20215eb124587c3cc6b7663c5e095",
+    "apps/authentication/src/account-export-jobs/chat-account-export-snapshot.client.spec.ts": "30adfe736b2250687ef3d30fc9f14a1286cc36bff572cf170a1fc3918d4a09bf",
+    "apps/authentication/src/account-export-jobs/chat-account-export-snapshot.client.ts": "912dc4c3073f7843fec9780049f1f6225f2f802335635a88b497bf5e2d5ff317",
+    "apps/authentication/src/app/app.module.ts": "589abf332c316eb765b6a2cb448ace15458162aaf740bca4d71b3c3a71b26ade",
+    "apps/authentication/src/config.spec.ts": "31f3364884eb6f6e7e5f8aa4b87976e0a52f85c7a06db92eae360a54efe01685",
+    "apps/authentication/src/config.ts": "15e71442b40094b17c7bd5ecff573d5f5ab3a666b36e62e5d85f22c9cf43e0a5",
+    "apps/chat-collector/src/app/account-export-owner.service.spec.ts": "1ad66b8136f1aaf26a295e5ea5254b083358f091ac76b9d5a107a1815f4e1ce9",
+    "apps/chat-collector/src/app/account-export-owner.service.ts": "43a2598a433037ce9aad82dd7856c71f016bbb6d76d5d9d98d2cea382e1c45c2",
+    "apps/chat-collector/src/app/account-export-snapshot.controller.spec.ts": "87f8853fe00650ad459da4dcc0d5f4b4bfac3a855b38ba201c2f6189f3f6b6d9",
+    "apps/chat-collector/src/app/account-export-snapshot.controller.ts": "27a85320299856764456109349ca9af5bc0e681c4f0c32d0ab6ce5f96cfd9283",
+    "apps/chat-collector/src/app/account-export-snapshot.service.spec.ts": "a4e2d11d6e0f723a2063c33c35ca3fec42c3b08647f276932aca4d5e3b945c41",
+    "apps/chat-collector/src/app/account-export-snapshot.service.ts": "3bf6e9414ac657dc922e88c22530fc2125e76a220393c1cf8b9989a90b6c3fe0",
+    "apps/chat-collector/src/app/account-export-sources.spec.ts": "29ef456fbed6795b93f23637b62b27628bc90be54c844ba80c8bc91d96e386c1",
+    "apps/chat-collector/src/app/account-export-sources.ts": "577632e6a964cccb55bc25aea345b8b6bb92e81322fc72bbba5a5cde561a9b5a",
+    "apps/chat-collector/src/app/app.module.ts": "e598e7ece07a246ccc8d10b9b4b766b370ed5059f9ab937a04cd03fd225dc432",
+    "apps/chat-collector/src/app/chat-account-export-dispositions.json": "3df23e53c4d61b1976b8efee5f3330b445a78dd11f993f0a797a6173ee841927",
+    "apps/chat-collector/src/app/chat-account-export-dispositions.spec.ts": "52f466111647cc5547e0769e1dbf97033ca9cb811fd55c862711b0c6b62e152d",
+    "apps/chat-collector/src/app/chat-account-export-dispositions.ts": "1451012b6a94bac374ad426f1d2b3908922f581727c99c5ea6154d712b494fa8",
+    "apps/chat-collector/src/app/chat-dispositions.postgres.spec.ts": "4cf598b664ca88675d592ca2eaeeee3a16b36153014f76bb0982e679957250a6",
+    "apps/chat-collector/src/app/loadConfig.ts": "a86e86d8a9eef143f17d0c5efc7765e1470a853b66503bd764ec5c05f89c389d",
+    "apps/chat-collector/src/app/loadDatabase.ts": "8950e75920c480a6355894a7c3b2d76cca49a206f5ea0fa23a3615e9a4998275",
+    "libs/chat/contracts/src/lib/chat-commands.ts": "da7226843a8d7cdd42cd803071b5b765e4d18ab0ca43f06831fed40a9981665d",
+    "libs/chat/contracts/src/lib/chat-contract-parity.spec.ts": "0afeef7c7ba5c7f4d3e3d1cec3a801298cf4e8c4fc2999057ed5617ae38ead01",
+    "libs/constants/src/index.ts": "429cb5ccd06b09b1768ac8f38a882279ad171cb7d4728ef1f482d1b57f028372",
+    "libs/constants/src/lib/libs/chat.ts": "406529b5d2dbf1971e38d34957edd1f844884911c672d9b7a697442390dc217b",
+    "libs/models/src/lib/libs/account-export/account-export-snapshot.contract.ts": "cdd0293d1e0924bebadc42323879dd454feeaf9f21651cc80c496fdbc13d8e1d",
+    "libs/storage/src/lib/account-export-profile-bound-snapshot.client.ts": "ffbd4cd78375d16de63adda1e6323d880b060eb47d52bd40a2ad542d2100508d"
+  },
+  "releaseScope": {
+    "applications": ["client-interface", "local-hub"],
+    "workflow": "Messages -> shared chat UI and authenticated Gateway -> Chat Collector",
+    "contract": "account-wide shared chat selected by captured current Profile identities; no stored app-scope partition",
+    "unstartedO03": "No primary Blogging workflow established; not asserted as a release blocker",
+    "remainingOwnerDependencies": "Require app/workflow or shared-account evidence before next implementation"
+  },
+  "progress": {
+    "inventoryDeliveriesComplete": 3,
+    "inventoryDeliveriesRemaining": 72,
+    "totalExistingInventoryDeliveries": 75,
+    "verified": ["O01", "O02", "O04"],
+    "inventoryIsNotAReleaseBlockerCount": true
+  },
+  "runtime": {
+    "result": {
+      "result": "PASS",
+      "seconds": 96.89,
+      "sourceManifestSha256": "0d82cfbe5d501a1ea964e6ec09f817f334ce24f60d06b4bebddb7e0491668a08",
+      "privateResources": {
+        "containers": [],
+        "networks": [],
+        "volumes": []
+      }
+    },
+    "sourceRowCounts": {
+      "Conversation": 255,
+      "Message": 254
+    },
+    "stages": {
+      "bothApplicationProfileMessageReads": true,
+      "initialJobState": "incomplete",
+      "initialCapturedOwners": [
+        "authentication",
+        "profile",
+        "assets",
+        "videos",
+        "permissions",
+        "social",
+        "forum",
+        "workspace",
+        "app-configurator",
+        "chat-collector"
+      ],
+      "initialBlockers": [
+        "coverage-inventory-unaccepted",
+        "required-participants-incomplete",
+        "portable-media-unverified"
+      ],
+      "jobCaptureOwners": [
+        "authentication",
+        "profile",
+        "assets",
+        "videos",
+        "permissions",
+        "social",
+        "forum",
+        "workspace",
+        "app-configurator",
+        "chat-collector"
+      ],
+      "globalJobRemainsIncomplete": true,
+      "failurePrefix": [
+        "authentication",
+        "profile",
+        "assets",
+        "videos",
+        "permissions",
+        "social",
+        "forum",
+        "workspace",
+        "app-configurator"
+      ],
+      "orphanMessageFailsCapture": true,
+      "retryRestoresAllOwners": true,
+      "verifiedSourceRowCounts": {
+        "Conversation": 255,
+        "Message": 254
+      },
+      "verifiedTerminalCount": 509,
+      "generatedContentExcluded": true,
+      "counterpartMessagesExcluded": true,
+      "historicalSentMessageContextRetained": true,
+      "verifiedTerminalChecksum": true,
+      "parentProfileBinding": true,
+      "privacyAssertions": true,
+      "multipleByteReads": 4,
+      "invalidRangeDenied": true,
+      "expiredLeaseDenied": true,
+      "restartInvalidatedHandle": true,
+      "recapturedWithNewId": true,
+      "logoutDeniedRead": true,
+      "foreignFingerprintPreserved": true
+    },
+    "catalog": {
+      "result": "PASS",
+      "readOnly": true,
+      "entities": 2,
+      "physicalTables": [
+        {
+          "table": "conversation",
+          "columns": [
+            "id",
+            "title",
+            "createdAt",
+            "updatedAt",
+            "participants",
+            "type",
+            "communityId",
+            "ownerId",
+            "isDeleted",
+            "projectId"
+          ]
+        },
+        {
+          "table": "message",
+          "columns": [
+            "id",
+            "content",
+            "senderId",
+            "type",
+            "recipients",
+            "createdAt",
+            "updatedAt",
+            "conversationId"
+          ]
+        },
+        {
+          "table": "migrations",
+          "columns": ["id", "timestamp", "name"]
+        }
+      ],
+      "foreignKeys": [
+        {
+          "table": "message",
+          "parent": "conversation",
+          "columns": ["conversationId"],
+          "parentColumns": ["id"],
+          "deleteAction": "c"
+        }
+      ],
+      "countsBefore": [
+        {
+          "table": "conversation",
+          "rows": "0"
+        },
+        {
+          "table": "message",
+          "rows": "0"
+        },
+        {
+          "table": "migrations",
+          "rows": "3"
+        }
+      ],
+      "countsAfter": [
+        {
+          "table": "conversation",
+          "rows": "0"
+        },
+        {
+          "table": "message",
+          "rows": "0"
+        },
+        {
+          "table": "migrations",
+          "rows": "3"
+        }
+      ]
+    },
+    "databaseCountsRestored": true,
+    "protectedPathsUnchanged": 43,
+    "privateResources": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "images": {
+      "authentication": {
+        "tag": "ot-df007-chat-integration/authentication:0d82cfbe5d50",
+        "id": "sha256:050abee4e42dc59a99471788f2d0ddecdc050373a9595f374abecf71cbf468a8",
+        "seconds": 109,
+        "dockerfileSha256": "d44c8d8223b1551d792765a56da08f3984bb4dcf54302d43235e9fb7757a0db9"
+      },
+      "profile": {
+        "tag": "ot-df007-chat-integration/profile:0d82cfbe5d50",
+        "id": "sha256:d842c43a92e68d92a22512f5ed9c7b4f154753b95767995386908ff354f15994",
+        "seconds": 111,
+        "dockerfileSha256": "57192be5bc836177222c3c6c5a14d6f56e8221711414ed7de574a05bf5e026b4"
+      },
+      "assets": {
+        "tag": "ot-df007-chat-integration/assets:0d82cfbe5d50",
+        "id": "sha256:89ff1540d85fc9da1bdf9a70a7284556d3bfd5644037826563ca1be808bdd4b4",
+        "seconds": 90,
+        "dockerfileSha256": "8caae61b5d5ed6b061713f147665678659732249969bb696e814467f06ca5b06"
+      },
+      "videos": {
+        "tag": "ot-df007-chat-integration/videos:0d82cfbe5d50",
+        "id": "sha256:3c43abf6079cc36b45c6e6e23fc37c2f32c92dc2e20257cb52a87126d59de5d7",
+        "seconds": 90,
+        "dockerfileSha256": "3a2d548ebbef5f4fe55a158dbb499c7d402b45a8e93bc5c9cfcf592d9eb840a4"
+      },
+      "permissions": {
+        "tag": "ot-df007-chat-integration/permissions:0d82cfbe5d50",
+        "id": "sha256:e05aff975c6383ea54871d7147d12d867c664d2080426412e7ef9321f972adeb",
+        "seconds": 97,
+        "dockerfileSha256": "00e2af6391c1e962fac14b21d8a89a5b9f0641e06d3ad8f93b62795a27d1c021"
+      },
+      "social": {
+        "tag": "ot-df007-chat-integration/social:0d82cfbe5d50",
+        "id": "sha256:ea6952ac17895a8fe6c782f9731c448521a8fbf684a4b7195d3b4f453526cfce",
+        "seconds": 88,
+        "dockerfileSha256": "5336a2e10dec5a133f9df440e6ec67a01e0c99ad5b079e30252a693ad31f6bf8"
+      },
+      "forum": {
+        "tag": "ot-df007-chat-integration/forum:0d82cfbe5d50",
+        "id": "sha256:f3e1f26e3a51940061d2584cd099ed110bcf1d511f0c1c684d6e5ae194fca8d1",
+        "seconds": 106,
+        "dockerfileSha256": "5e638e8ed86883f8407505fd8e9ba9683d5174667a9e5d89204d196969b18d85"
+      },
+      "workspace": {
+        "tag": "ot-df007-chat-integration/workspace:0d82cfbe5d50",
+        "id": "sha256:6496ac793900b058e8de7da38e634e5a852dce28ac8ddc52cb97cffa36cf6718",
+        "seconds": 110,
+        "dockerfileSha256": "b06291589cf2b08a809bfa8238297d001a8ae3304a56e5e0e552b3c901a4c9d5"
+      },
+      "app-configurator": {
+        "tag": "ot-df007-chat-integration/app-configurator:0d82cfbe5d50",
+        "id": "sha256:30fc86c2d7c02a436afeea0d770b7430a58e3fdfe85ca71bd60bf8087f68fe3c",
+        "seconds": 99,
+        "dockerfileSha256": "e25b619d1bb847d7850323b69f6d15cee2ea58b9bd9fc7f25d8143b7cc3c60c4"
+      },
+      "chat-collector": {
+        "tag": "ot-df007-chat-integration/chat-collector:0d82cfbe5d50",
+        "id": "sha256:b8590eb4f0ebf45118a8f941e3723101df53c5c75d2b57e350411381c832b942",
+        "seconds": 158,
+        "dockerfileSha256": "e0ac0d0c2cb847dd477461e1f082de2f25c545158a36aec4660db5b211941320"
+      },
+      "db-setup": {
+        "tag": "ot-df007-chat-integration/db-setup:0d82cfbe5d50",
+        "id": "sha256:3f33cecc1a90bc154fd4cb6878bd498829414c85749c98230e53f93484cadcac",
+        "seconds": 2,
+        "dockerfileSha256": "389e9fb743af0dc016cdb5fddbbcbbf4b7ac76b03d34c080cacd649770525906"
+      }
+    }
+  },
+  "focusedUnitTests": {
+    "chat": 9,
+    "authentication": 47,
+    "chatContracts": 11,
+    "distinctPassed": 67,
+    "authenticationGatedDbCasesSkipped": 3,
+    "privateRuntimeCasesPassed": 2,
+    "privateRuntimeCasesSkipped": 0
+  },
+  "checks": {
+    "productionBuild": ["authentication", "chat-collector"],
+    "lint": [
+      "authentication",
+      "chat-collector",
+      "chat-contracts",
+      "authentication-e2e",
+      "constants",
+      "models",
+      "storage"
+    ],
+    "developmentAggregate": "pnpm run build:dev PASS",
+    "ciContractTests": 41,
+    "format": "scoped PASS",
+    "migrationGovernance": "PASS"
+  },
+  "evidenceHashes": {
+    "auth-root-unit.log": "aefeaf684a016835fc2a999446e71fb112ecf171a4d0abde07e5787cb4b122fb",
+    "chat-unit.log": "7bb42e345f33bab235f263d1098b53c5f4e4e09da103a466713b093d456c92a1",
+    "contracts-unit.log": "6d4a3923c784526b5c28eee9038bbfa438fe945eebbf5e8faee821be52e2df79",
+    "final-build.log": "91a37e99b5c43ed74087d223b35ed33c3dafb3eecc22c6e4a72cfa154b9ae7c7",
+    "final-lint.log": "4457c50a20ace5687c498acd390f6580b37ee6bcb4aa56248a0250058ebf153e",
+    "shared-lint.log": "a0c5555434e2acfcca4c4793eb95a15c7f39997a581d5e3609031f4386e2837f",
+    "format-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "migrations.log": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9",
+    "ci-contracts.log": "dee1136c47bbfdb8f0ee9d69b753e9f909a54fa79264daf08c628dbe760a0ddc",
+    "build-dev.log": "9b5de20ccf2231f79ae73eacb6080ce6df756bd687dce31277c58b075139741e",
+    "policy-final-drift-unit.log": "fc124caa5e17ebd71620f4a5c37c33da4616fb8e233b64a75344bf40319546e4",
+    "runtime/result.json": "1aa744bfa953e2c800698390397c5e247e7bfc34e919616c218a0038d5dfcc49",
+    "runtime/fixture-report.json": "8291b4966219c336b01fd6b34a91c79d245845cc3f5486149fcb644b3d264fdb",
+    "runtime/catalog-report.json": "3b2723390f4de757df2710ca4794f021379dd4ba7825d3668a31e01506d58097",
+    "runtime/database-counts-before.json": "a3ec1c22a9bfbaf278bd5891bfedb3280ee7f4fbeb739f5f258b078e0a13081e",
+    "runtime/database-counts-after.json": "a3ec1c22a9bfbaf278bd5891bfedb3280ee7f4fbeb739f5f258b078e0a13081e",
+    "runtime/cleanup.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+    "runtime/identities-before.json": "77e99ac44d85c431bf91ce88eec60a1b9d7eb968db25e2d165e465be1dd35379",
+    "runtime/identities-after.json": "8b0f1dc2f1f94ffa7ca9a1ac74e718c8826ebaf96d65c94950158c0700d2d0e7"
+  },
+  "reviewDisposition": {
+    "review": "GO source-only, Luna",
+    "runtimeAcceptedSeparately": true
+  },
+  "limitations": [
+    "Overall export remains incomplete, artifactAvailable false and URL null.",
+    "No downloadable artifact, deletion workflow or production/external-flow qualification.",
+    "No browser or remote CI run. Existing earlier owner E2E success expectations updated; their full positive fixtures were not rerun.",
+    "No portable media ownership inferred from message text.",
+    "Chat process log sinks/retention and socket state lifecycle remain N04/N02.",
+    "Other inventory owners require OT/TS scope reconciliation; no automatic expansion."
+  ]
+}

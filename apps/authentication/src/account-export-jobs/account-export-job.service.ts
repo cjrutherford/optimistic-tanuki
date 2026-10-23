@@ -35,6 +35,7 @@ import { SocialAccountExportSnapshotClient } from './social-account-export-snaps
 import { ForumAccountExportSnapshotClient } from './forum-account-export-snapshot.client';
 import { WorkspaceAccountExportSnapshotClient } from './workspace-account-export-snapshot.client';
 import { AppConfiguratorAccountExportSnapshotClient } from './app-configurator-account-export-snapshot.client';
+import { ChatAccountExportSnapshotClient } from './chat-account-export-snapshot.client';
 
 const LEASE_MS = 60_000;
 
@@ -56,7 +57,8 @@ export class AccountExportJobService {
     private readonly socialCapture: SocialAccountExportSnapshotClient,
     private readonly forumCapture: ForumAccountExportSnapshotClient,
     private readonly workspaceCapture: WorkspaceAccountExportSnapshotClient,
-    private readonly appConfiguratorCapture: AppConfiguratorAccountExportSnapshotClient
+    private readonly appConfiguratorCapture: AppConfiguratorAccountExportSnapshotClient,
+    private readonly chatCapture: ChatAccountExportSnapshotClient
   ) {}
 
   async create(request: unknown): Promise<AccountExportJobStatus> {
@@ -341,6 +343,9 @@ export class AccountExportJobService {
       let workspace:
         | Awaited<ReturnType<WorkspaceAccountExportSnapshotClient['capture']>>
         | undefined;
+      let chat:
+        | Awaited<ReturnType<ChatAccountExportSnapshotClient['capture']>>
+        | undefined;
       let appConfigurator:
         | Awaited<
             ReturnType<AppConfiguratorAccountExportSnapshotClient['capture']>
@@ -354,7 +359,8 @@ export class AccountExportJobService {
         | 'social'
         | 'forum'
         | 'workspace'
-        | 'app-configurator' = 'profile';
+        | 'app-configurator'
+        | 'chat-collector' = 'profile';
       try {
         if (!claimed.leaseOwner) {
           leaseLost = true;
@@ -573,6 +579,38 @@ export class AccountExportJobService {
             'app-configurator',
           ],
         };
+        stage = 'chat-collector';
+        chat = await this.chatCapture.capture(
+          {
+            accountId: input.accountId,
+            token: input.token,
+            appId: input.appId,
+            jobId: claimed.id,
+            attempt: claimed.attempt,
+            leaseOwner: claimed.leaseOwner,
+          },
+          profile.descriptor,
+          async () => {
+            const renewed = await this.renewLease(claimed);
+            if (!renewed) leaseLost = true;
+            return renewed;
+          }
+        );
+        summary = {
+          ...summary,
+          capturedDatabaseOwners: [
+            'authentication',
+            'profile',
+            'assets',
+            'videos',
+            'permissions',
+            'social',
+            'forum',
+            'workspace',
+            'app-configurator',
+            'chat-collector',
+          ],
+        };
       } catch {
         if (!leaseLost) {
           summary = {
@@ -586,6 +624,34 @@ export class AccountExportJobService {
           errorCode = `${stage}-capture-unavailable`;
         }
       } finally {
+        if (chat) {
+          try {
+            await chat.cleanup();
+          } catch {
+            if (!leaseLost) {
+              summary = {
+                ...summary,
+                capturedDatabaseOwners: [
+                  'authentication',
+                  'profile',
+                  'assets',
+                  'videos',
+                  'permissions',
+                  'social',
+                  'forum',
+                  'workspace',
+                  'app-configurator',
+                ],
+                blockers: [
+                  ...(Array.isArray(summary.blockers) ? summary.blockers : []),
+                  'chat-collector-capture-unavailable',
+                ],
+              };
+              state = 'failed';
+              errorCode = 'chat-collector-capture-unavailable';
+            }
+          }
+        }
         if (appConfigurator) {
           try {
             await appConfigurator.cleanup();

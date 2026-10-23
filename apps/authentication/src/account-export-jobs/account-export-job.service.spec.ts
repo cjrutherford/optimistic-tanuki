@@ -46,6 +46,7 @@ describe('AccountExportJobService authorization boundary', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
   });
@@ -235,6 +236,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
     workspaceCleanup: jest.Mock;
     appConfiguratorCapture: jest.Mock;
     appConfiguratorCleanup: jest.Mock;
+    chatCapture: jest.Mock;
+    chatCleanup: jest.Mock;
   } {
     const jobs = {};
     const auth = {};
@@ -332,6 +335,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
     const appConfiguratorCapture = {
       capture: jest.fn(async () => appConfiguratorResult),
     };
+    const chatResult = { cleanup: jest.fn(async () => undefined) };
+    const chatCapture = { capture: jest.fn(async () => chatResult) };
     const profileResult = {
       descriptor: { handleId: 'profile-fixture' },
       identities: jest.fn(async () => ({})),
@@ -352,7 +357,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       socialCapture as never,
       forumCapture as never,
       workspaceCapture as never,
-      appConfiguratorCapture as never
+      appConfiguratorCapture as never,
+      chatCapture as never
     );
     const state = service as unknown as {
       run: (
@@ -397,6 +403,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       workspaceCleanup: workspaceResult.cleanup,
       appConfiguratorCapture: appConfiguratorCapture.capture,
       appConfiguratorCleanup: appConfiguratorResult.cleanup,
+      chatCapture: chatCapture.capture,
+      chatCleanup: chatResult.cleanup,
     };
   }
 
@@ -462,6 +470,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'forum',
         'workspace',
         'app-configurator',
+        'chat-collector',
       ],
       artifactAvailable: false,
     });
@@ -492,6 +501,14 @@ describe('AccountExportJobService Authentication owner staging', () => {
       expect.objectContaining({ accountId: ACCOUNT_ID }),
       expect.objectContaining({ handleId: 'profile-fixture' }),
       expect.any(Function)
+    );
+    expect(test.chatCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: ACCOUNT_ID }),
+      expect.objectContaining({ handleId: 'profile-fixture' }),
+      expect.any(Function)
+    );
+    expect(test.chatCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+      test.appConfiguratorCleanup.mock.invocationCallOrder[0]
     );
     expect(test.workspaceCleanup.mock.invocationCallOrder[0]).toBeLessThan(
       test.forumCleanup.mock.invocationCallOrder[0]
@@ -657,6 +674,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         test.forumCleanup,
         test.workspaceCleanup,
         test.appConfiguratorCleanup,
+        test.chatCleanup,
       ])
         cleanup.mockClear();
       activeClaim.state = 'running';
@@ -675,6 +693,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'forum',
         'workspace',
         'app-configurator',
+        'chat-collector',
       ]);
       expect(second.coverageSummary.artifactAvailable).toBe(false);
       expect(second.artifactUrl).toBeNull();
@@ -682,6 +701,47 @@ describe('AccountExportJobService Authentication owner staging', () => {
       expect(test.forumCleanup.mock.invocationCallOrder[0]).toBeLessThan(
         test.socialCleanup.mock.invocationCallOrder[0]
       );
+      expect(await readdir(root)).toEqual([]);
+    }
+  );
+
+  it.each(['capture', 'cleanup'])(
+    'keeps nine owners when Chat %s fails',
+    async (mode) => {
+      const owner = jest.fn(async ({ onChunk }) => {
+        const chunks = createOwnerChunks(ACCOUNT_ID);
+        for (const chunk of chunks) await onChunk(chunk);
+        return chunks[chunks.length - 1];
+      });
+      const test = harness(async () => true, owner);
+      (mode === 'capture'
+        ? test.chatCapture
+        : test.chatCleanup
+      ).mockRejectedValueOnce(new Error('private chat payload'));
+      const result = await test.run(input(), activeClaim);
+      expect(result.state).toBe('failed');
+      expect(result.coverageSummary.capturedDatabaseOwners).toEqual([
+        'authentication',
+        'profile',
+        'assets',
+        'videos',
+        'permissions',
+        'social',
+        'forum',
+        'workspace',
+        'app-configurator',
+      ]);
+      expect(result.coverageSummary.blockers).toContain(
+        'chat-collector-capture-unavailable'
+      );
+      expect(result.artifactUrl).toBeNull();
+      expect(result.coverageSummary.artifactAvailable).toBe(false);
+      expect(JSON.stringify(result)).not.toContain('private chat payload');
+      expect(test.appConfiguratorCleanup).toHaveBeenCalledTimes(1);
+      if (mode === 'cleanup')
+        expect(test.chatCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+          test.appConfiguratorCleanup.mock.invocationCallOrder[0]
+        );
       expect(await readdir(root)).toEqual([]);
     }
   );
@@ -788,6 +848,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         test.forumCleanup,
         test.workspaceCleanup,
         test.appConfiguratorCleanup,
+        test.chatCleanup,
       ])
         cleanup.mockClear();
       activeClaim.state = 'running';
@@ -806,6 +867,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'forum',
         'workspace',
         'app-configurator',
+        'chat-collector',
       ]);
       expect(second.coverageSummary.artifactAvailable).toBe(false);
       expect(second.artifactUrl).toBeNull();
@@ -1136,6 +1198,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
     const internals = service as unknown as {
@@ -1190,6 +1253,7 @@ describe('AccountExportJobService database lease fence', () => {
       service = new AccountExportJobService(
         repository,
         dataSource,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,

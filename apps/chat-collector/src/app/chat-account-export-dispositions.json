@@ -1,0 +1,195 @@
+{
+  "version": 1,
+  "scope": "O04 Chat Collector owner capture and policy inventory; attribution is recorded and unverified, consent is not inferred.",
+  "selection": {
+    "principal": "account-wide-shared-chat-across-current-captured-profiles",
+    "appId": "authenticates the leased operation; never filters chat rows",
+    "selector": {
+      "profileSource": "capturedCurrentProfileIds from Profile snapshot",
+      "conversationBranches": [
+        "participant",
+        "owner-profile",
+        "sent-message-author"
+      ],
+      "orOperator": true,
+      "accountOwnerOnly": "include candidate and fail capture as CHAT_EXPORT_AMBIGUOUS_ACCOUNT_OWNER",
+      "messageSelector": "senderId only; recipients never select messages",
+      "statusFilter": false,
+      "membershipFilter": false
+    },
+    "provenance": "Current profile matching is selection evidence only; historical attribution and consent are unverified. This receipt does not assert exclusive ownership, current authority, or visibility."
+  },
+  "entities": [
+    {
+      "name": "Conversation",
+      "table": "conversation",
+      "source": "apps/chat-collector/src/app/entities/conversation.entity.ts",
+      "subject": {
+        "kind": "account-and-current-profile-evidence",
+        "fields": ["participants", "ownerId", "messages.senderId"],
+        "rule": "Select if any captured profile occurs in participants, equals ownerId, or authored any message. Also select account-UUID owner-only candidates so capture fails closed as ambiguous when none of those profile proofs exists.",
+        "legacyProvenance": "Recorded attribution only; current matching does not prove historical attribution, consent, exclusive ownership, or authority.",
+        "evidence": [
+          "apps/chat-collector/src/app/entities/conversation.entity.ts",
+          "apps/chat-collector/src/app/entities/message.entity.ts",
+          "apps/chat-collector/src/app/account-export-sources.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Strict UUID projection.",
+          "reason": "Opaque conversation reference.",
+          "evidence": [
+            "apps/chat-collector/src/app/entities/conversation.entity.ts"
+          ]
+        },
+        {
+          "fields": ["type", "isDeleted", "createdAt", "updatedAt"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Allowlisted enum, actual boolean, and exact microsecond timestamp projection.",
+          "reason": "Minimal context receipt for recorded shared conversation involvement.",
+          "evidence": [
+            "apps/chat-collector/src/app/entities/conversation.entity.ts"
+          ]
+        },
+        {
+          "fields": [
+            "title",
+            "communityId",
+            "projectId",
+            "ownerId",
+            "participants"
+          ],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Never selected or emitted; SQL derives only boolean participation, stewardship, and sent-message indicators.",
+          "reason": "Conversation labels, owner identity, and full participant lists expose other people or unrelated context.",
+          "evidence": [
+            "apps/chat-collector/src/app/entities/conversation.entity.ts",
+            "apps/chat-collector/src/app/account-export-sources.ts"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["messages"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Exists checks only for recorded sent-message evidence; selected message records are exported separately for captured sender profiles.",
+          "reason": "Preserve historical sent-contribution context without traversing unrelated messages.",
+          "evidence": [
+            "apps/chat-collector/src/app/entities/conversation.entity.ts",
+            "apps/chat-collector/src/app/entities/message.entity.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Message",
+      "table": "message",
+      "source": "apps/chat-collector/src/app/entities/message.entity.ts",
+      "subject": {
+        "kind": "captured-profile-sender",
+        "fields": ["senderId"],
+        "rule": "Select only where senderId matches a captured profile; recipients never select a message. Export all historical states for the sender without membership or visibility filters. Require parent conversation existence or fail the complete capture.",
+        "legacyProvenance": "Sender attribution is recorded and unverified; recipient identity is not collected.",
+        "evidence": [
+          "apps/chat-collector/src/app/entities/message.entity.ts",
+          "apps/chat-collector/src/app/account-export-sources.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "senderId", "conversationId"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Strict UUID projection; senderId is the canonical captured profile UUID and conversationId remains opaque.",
+          "reason": "Identify the person's recorded sent contribution and its parent context.",
+          "evidence": ["apps/chat-collector/src/app/entities/message.entity.ts"]
+        },
+        {
+          "fields": ["type", "createdAt", "updatedAt"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Allowlisted enum and exact microsecond timestamps.",
+          "reason": "Minimal message receipt metadata.",
+          "evidence": ["apps/chat-collector/src/app/entities/message.entity.ts"]
+        },
+        {
+          "fields": ["content"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Read only for type chat as inert text, capped at 65536 Unicode characters; generated or unverified types omit content and carry an exclusion disposition.",
+          "reason": "Bounded authored text without interpreting generated notices as authored content.",
+          "evidence": [
+            "apps/chat-collector/src/app/entities/message.entity.ts",
+            "apps/chat-collector/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": ["recipients"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Never selected or emitted and never used for selection.",
+          "reason": "Recipient arrays expose other people and do not establish authorship.",
+          "evidence": ["apps/chat-collector/src/app/entities/message.entity.ts"]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["conversation"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Require the parent conversation by generated conversationId foreign key; export only its opaque UUID and fail the complete capture if missing.",
+          "reason": "Avoid silently dropping orphaned authored records; ORM declares ON DELETE CASCADE and this owner implements no deletion.",
+          "evidence": [
+            "apps/chat-collector/src/app/entities/message.entity.ts",
+            "apps/chat-collector/src/app/entities/conversation.entity.ts"
+          ]
+        }
+      ]
+    }
+  ],
+  "stores": [
+    {
+      "name": "typeorm_migrations_store",
+      "fields": ["id", "timestamp", "name"],
+      "classification": "nonpersonal",
+      "action": "exclude",
+      "handling": "Schema bookkeeping is outside owner capture.",
+      "reason": "Migration metadata is not a chat account record.",
+      "evidence": ["apps/chat-collector/src/app/staticDatabase.ts"]
+    },
+    {
+      "name": "processOutput",
+      "fields": ["message", "profileIds"],
+      "classification": "shared",
+      "action": "exclude",
+      "handling": "Operational output may contain message or profile identifiers; retention remains unresolved under N04.",
+      "reason": "Logs and process output are not captured account records.",
+      "evidence": ["apps/chat-collector/src/app/loadDatabase.ts"]
+    },
+    {
+      "name": "configurationInputs",
+      "fields": ["credentials", "databaseConfiguration"],
+      "classification": "opaque",
+      "action": "exclude",
+      "handling": "Configuration inputs and credentials are opaque and never exported.",
+      "reason": "Operational secrets and deployment settings are outside account export.",
+      "evidence": ["apps/chat-collector/src/app/loadDatabase.ts"]
+    },
+    {
+      "name": "Gateway.connectedClients",
+      "fields": ["socketRegistry"],
+      "classification": "shared",
+      "action": "exclude",
+      "handling": "Volatile shared socket registry is excluded separately under N02; no Redis persistence is claimed.",
+      "reason": "Transient connection state is not an owner database store.",
+      "evidence": ["apps/gateway/src/gateway.gateway.ts"]
+    }
+  ]
+}

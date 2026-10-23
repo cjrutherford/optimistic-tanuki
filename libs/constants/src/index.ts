@@ -66,7 +66,10 @@ export {
   TaskNoteCommands,
   AnalyticsCommands,
 } from './lib/libs/project';
-export { default as ChatCommands } from './lib/libs/chat';
+export {
+  default as ChatCommands,
+  CHAT_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from './lib/libs/chat';
 export * from './lib/libs/telos';
 export * from './lib/libs/prompt';
 export * from './lib/libs/ai-orchestration';

@@ -6,7 +6,7 @@ Updated: 2026-10-23. Sequence starting accepted baseline: `661853166a332596ffe1c
 
 **Goal:** finish the already selected local release work in order: account rights, inactivity/log retention, integrated journeys, then launch materials. Real external flows and production release qualification remain separately owned.
 
-**Completed: 2/75. Remaining: 73. Next delivery: 3 of 75 — O03 Blogging.** J1–J28 are accepted prerequisites, not completion of this sequence. Authentication, Profile, Assets, Videos, Permissions, Social, Forum, Workspace and App Configurator have integrated database capture; the account-wide job remains incomplete with no downloadable artifact or deletion workflow.
+**Accepted inventory deliveries: 3/75 (O01, O02, O04); 72 open. Next selection requires an OT/TS workflow or shared-account dependency trace; O03 Blogging remains unstarted.** J1–J28 are accepted prerequisites, not completion of this sequence. Authentication, Profile, Assets, Videos, Permissions, Social, Forum, Workspace, App Configurator and Chat Collector have integrated database capture; the account-wide job remains incomplete with no downloadable artifact or deletion workflow.
 
 This is the readable execution view of the [existing technical register](../release-readiness/REMAINING-SLICES.md), not added scope. It accounts for **109 existing local technical entries as 75 end-to-end deliveries**. Each O01–O17 delivery contains its existing P → C → I checks; those 51 technical checks become 17 deliveries. D00 was already required in the register's prose and is now shown explicitly. The earlier count of 108 missed D00. No existing ID is removed or renumbered.
 
@@ -24,7 +24,7 @@ The [master audit](../release-readiness/MASTER-AUDIT.md) remains the acceptance 
 
 ## Sequential deliveries
 
-Rows 1–2 are verified; row 3 is next. The remaining 73 rows stay open. Numbering is reading order only; the existing IDs remain canonical.
+Rows 1, 2 and 4 are verified. The remaining 72 rows are open inventory entries; they must be reconciled to OT/TS before being treated as release blockers. O04 was selected from both apps’ actual Messages workflows; row 3 is unstarted. Numbering is reading order only; the existing IDs remain canonical.
 
 ### 1. Finish the remaining export owners
 
@@ -35,7 +35,7 @@ One owner is complete only when its field/store policy, real bounded capture, an
 | 1     | O01 (P → C → I) | workspace: account export captured and integrated — **VERIFIED** | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
 | 2     | O02 (P → C → I) | app-configurator: account export captured and integrated         | **VERIFIED**: [O02 receipt](../release-readiness/evidence/df-007/checkpoint-o02.json); 757 receipts across three sources; nine-service job and independent cleanup. Global export stays incomplete until A01–A07. |
 | 3     | O03 (P → C → I) | blogging: account export captured and integrated                 | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
-| 4     | O04 (P → C → I) | chat-collector: account export captured and integrated           | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
+| 4     | O04 (P → C → I) | chat-collector: account export captured and integrated           | **VERIFIED**: [O04 receipt](../release-readiness/evidence/df-007/checkpoint-o04.json); 509 conversation/sent-message receipts, ten-service leased job and independent cleanup. Global export remains incomplete.  |
 | 5     | O05 (P → C → I) | telos-docs-service: account export captured and integrated       | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
 | 6     | O06 (P → C → I) | project-planning: account export captured and integrated         | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
 | 7     | O07 (P → C → I) | learning-service: account export captured and integrated         | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07.                                            |
@@ -172,4 +172,4 @@ Owned implementation is `apps/workspace`, its existing contracts and the Authent
 
 O01-P verifies one entity/12 columns, no relations, three local store dispositions, the two-table/15-column migrated catalog and scoped identity indexes. O01-C must enforce that receipt with bounded, repeatable-read owner capture through the existing Storage driver. O01-I must add Workspace to the authenticated leased job and qualify exact Profile-parent/lease/session binding, failure-prefix/retry, restart/revocation and cleanup. **All three O01 checks passed; see the [O01 finding](../release-readiness/findings/DF-007-O01.md).**
 
-Workspace and App Configurator capture and integration are accepted at the local scope recorded in the O01 and O02 receipts. No artifact, download, deletion or production qualification is implied. After O02, continue directly to O03 Blogging; do not start another planning series.
+Workspace and App Configurator capture and integration are accepted at the local scope recorded in the O01 and O02 receipts. No artifact, download, deletion or production qualification is implied. O04 messaging is now accepted because both release applications use it. O03 remains unstarted; another owner requires a release-workflow/shared-account dependency trace. Retain this register and its existing IDs.

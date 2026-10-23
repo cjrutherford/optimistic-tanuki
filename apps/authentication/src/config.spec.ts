@@ -24,6 +24,8 @@ describe('authentication config oauth env loading', () => {
     delete process.env.SERVICE_WORKSPACE_PORT;
     delete process.env.SERVICE_APP_CONFIGURATOR_HOST;
     delete process.env.SERVICE_APP_CONFIGURATOR_PORT;
+    delete process.env.SERVICE_CHAT_COLLECTOR_HOST;
+    delete process.env.SERVICE_CHAT_COLLECTOR_PORT;
   });
 
   afterAll(() => {
@@ -158,6 +160,20 @@ describe('authentication config oauth env loading', () => {
     expect(loadConfig().services?.app_configurator).toEqual({
       host: 'app-configurator-internal',
       port: 43014,
+    });
+  });
+
+  it('loads the Chat Collector participant from defaults and environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.chat_collector).toEqual({
+      host: 'chat-collector',
+      port: 3007,
+    });
+    process.env.SERVICE_CHAT_COLLECTOR_HOST = 'chat-private';
+    process.env.SERVICE_CHAT_COLLECTOR_PORT = '43007';
+    expect(loadConfig().services?.chat_collector).toEqual({
+      host: 'chat-private',
+      port: 43007,
     });
   });
 

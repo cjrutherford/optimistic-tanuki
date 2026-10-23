@@ -298,6 +298,7 @@ describe('Social account export private TCP integration', () => {
         'forum',
         'workspace',
         'app-configurator',
+        'chat-collector',
       ];
       expect(job.state).toBe('incomplete');
       expect(job.coverageSummary.capturedDatabaseOwners).toEqual(
