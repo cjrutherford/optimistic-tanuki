@@ -32,6 +32,7 @@ import {
 } from './profile-account-export-snapshot.client';
 import { PermissionsAccountExportSnapshotClient } from './permissions-account-export-snapshot.client';
 import { SocialAccountExportSnapshotClient } from './social-account-export-snapshot.client';
+import { ForumAccountExportSnapshotClient } from './forum-account-export-snapshot.client';
 
 const LEASE_MS = 60_000;
 
@@ -50,7 +51,8 @@ export class AccountExportJobService {
     private readonly assetsCapture: AssetsAccountExportSnapshotClient,
     private readonly videosCapture: VideosAccountExportSnapshotClient,
     private readonly permissionsCapture: PermissionsAccountExportSnapshotClient,
-    private readonly socialCapture: SocialAccountExportSnapshotClient
+    private readonly socialCapture: SocialAccountExportSnapshotClient,
+    private readonly forumCapture: ForumAccountExportSnapshotClient
   ) {}
 
   async create(request: unknown): Promise<AccountExportJobStatus> {
@@ -329,8 +331,16 @@ export class AccountExportJobService {
       let social:
         | Awaited<ReturnType<SocialAccountExportSnapshotClient['capture']>>
         | undefined;
-      let stage: 'profile' | 'assets' | 'videos' | 'permissions' | 'social' =
-        'profile';
+      let forum:
+        | Awaited<ReturnType<ForumAccountExportSnapshotClient['capture']>>
+        | undefined;
+      let stage:
+        | 'profile'
+        | 'assets'
+        | 'videos'
+        | 'permissions'
+        | 'social'
+        | 'forum' = 'profile';
       try {
         if (!claimed.leaseOwner) {
           leaseLost = true;
@@ -459,6 +469,35 @@ export class AccountExportJobService {
             'social',
           ],
         };
+        stage = 'forum';
+        forum = await this.forumCapture.capture(
+          {
+            accountId: input.accountId,
+            token: input.token,
+            appId: input.appId,
+            jobId: claimed.id,
+            attempt: claimed.attempt,
+            leaseOwner: claimed.leaseOwner,
+          },
+          profile.descriptor,
+          async () => {
+            const renewed = await this.renewLease(claimed);
+            if (!renewed) leaseLost = true;
+            return renewed;
+          }
+        );
+        summary = {
+          ...summary,
+          capturedDatabaseOwners: [
+            'authentication',
+            'profile',
+            'assets',
+            'videos',
+            'permissions',
+            'social',
+            'forum',
+          ],
+        };
       } catch {
         if (!leaseLost) {
           summary = {
@@ -472,6 +511,31 @@ export class AccountExportJobService {
           errorCode = `${stage}-capture-unavailable`;
         }
       } finally {
+        if (forum) {
+          try {
+            await forum.cleanup();
+          } catch {
+            if (!leaseLost) {
+              summary = {
+                ...summary,
+                capturedDatabaseOwners: [
+                  'authentication',
+                  'profile',
+                  'assets',
+                  'videos',
+                  'permissions',
+                  'social',
+                ],
+                blockers: [
+                  ...(Array.isArray(summary.blockers) ? summary.blockers : []),
+                  'forum-capture-unavailable',
+                ],
+              };
+              state = 'failed';
+              errorCode = 'forum-capture-unavailable';
+            }
+          }
+        }
         if (social) {
           try {
             await social.cleanup();

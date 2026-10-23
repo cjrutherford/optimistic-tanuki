@@ -43,6 +43,7 @@ describe('AccountExportJobService authorization boundary', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
   });
@@ -226,6 +227,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
     permissionsCleanup: jest.Mock;
     socialCapture: jest.Mock;
     socialCleanup: jest.Mock;
+    forumCapture: jest.Mock;
+    forumCleanup: jest.Mock;
   } {
     const jobs = {};
     const auth = {};
@@ -289,6 +292,21 @@ describe('AccountExportJobService Authentication owner staging', () => {
         }
       ),
     };
+    const forumResult = { cleanup: jest.fn(async () => undefined) };
+    const forumCapture = {
+      capture: jest.fn(
+        async (
+          _grant: unknown,
+          profile: unknown,
+          renew: () => Promise<boolean>
+        ) => {
+          expect(profile).toEqual({ handleId: 'profile-fixture' });
+          expect(socialResult.cleanup).not.toHaveBeenCalled();
+          await renew();
+          return forumResult;
+        }
+      ),
+    };
     const profileResult = {
       descriptor: { handleId: 'profile-fixture' },
       identities: jest.fn(async () => ({})),
@@ -306,7 +324,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       assetsCapture as never,
       videosCapture as never,
       permissionsCapture as never,
-      socialCapture as never
+      socialCapture as never,
+      forumCapture as never
     );
     const state = service as unknown as {
       run: (
@@ -345,6 +364,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       permissionsCleanup: permissionsResult.cleanup,
       socialCapture: socialCapture.capture,
       socialCleanup: socialResult.cleanup,
+      forumCapture: forumCapture.capture,
+      forumCleanup: forumResult.cleanup,
     };
   }
 
@@ -407,11 +428,12 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'videos',
         'permissions',
         'social',
+        'forum',
       ],
       artifactAvailable: false,
     });
     expect(test.renewLease).toHaveBeenCalledTimes(
-      1 + AUTHENTICATION_ACCOUNT_EXPORT_SOURCES.length + 3
+      1 + AUTHENTICATION_ACCOUNT_EXPORT_SOURCES.length + 4
     );
     expect(test.permissionsCapture).toHaveBeenCalledWith(
       expect.objectContaining({ accountId: ACCOUNT_ID }),
@@ -422,6 +444,14 @@ describe('AccountExportJobService Authentication owner staging', () => {
       expect.objectContaining({ accountId: ACCOUNT_ID }),
       expect.objectContaining({ handleId: 'profile-fixture' }),
       expect.any(Function)
+    );
+    expect(test.forumCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: ACCOUNT_ID }),
+      expect.objectContaining({ handleId: 'profile-fixture' }),
+      expect.any(Function)
+    );
+    expect(test.forumCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+      test.socialCleanup.mock.invocationCallOrder[0]
     );
     expect(test.socialCleanup.mock.invocationCallOrder[0]).toBeLessThan(
       test.permissionsCleanup.mock.invocationCallOrder[0]
@@ -532,6 +562,76 @@ describe('AccountExportJobService Authentication owner staging', () => {
     expect(test.socialCapture).toHaveBeenCalledTimes(2);
     expect(await readdir(root)).toEqual([]);
   });
+
+  it.each(['capture', 'cleanup'])(
+    'keeps the six-owner prefix when Forum %s fails and restores seven on retry',
+    async (mode) => {
+      const owner = jest.fn(async ({ onChunk }) => {
+        const chunks = createOwnerChunks(ACCOUNT_ID);
+        for (const chunk of chunks) await onChunk(chunk);
+        return chunks[chunks.length - 1];
+      });
+      const test = harness(async () => true, owner);
+      if (mode === 'capture')
+        test.forumCapture.mockRejectedValueOnce(
+          new Error('private Forum diagnostic')
+        );
+      else
+        test.forumCleanup.mockRejectedValueOnce(
+          new Error('private Forum cleanup diagnostic')
+        );
+
+      const first = await test.run(input(), activeClaim);
+      expect(first.state).toBe('failed');
+      expect(first.coverageSummary.blockers).toContain(
+        'forum-capture-unavailable'
+      );
+      expect(first.coverageSummary.capturedDatabaseOwners).toEqual([
+        'authentication',
+        'profile',
+        'assets',
+        'videos',
+        'permissions',
+        'social',
+      ]);
+      expect(first.coverageSummary.artifactAvailable).toBe(false);
+      expect(first.artifactUrl).toBeNull();
+      expect(JSON.stringify(first)).not.toContain('private Forum');
+      expect(await readdir(root)).toEqual([]);
+
+      for (const cleanup of [
+        test.profileCleanup,
+        test.assetsCleanup,
+        test.videosCleanup,
+        test.permissionsCleanup,
+        test.socialCleanup,
+        test.forumCleanup,
+      ])
+        cleanup.mockClear();
+      activeClaim.state = 'running';
+      activeClaim.attempt += 1;
+      activeClaim.leaseOwner = randomUUID();
+      activeClaim.leaseExpiresAt = new Date(Date.now() + 60_000);
+      const second = await test.run(input(), activeClaim);
+      expect(second.state).toBe('incomplete');
+      expect(second.coverageSummary.capturedDatabaseOwners).toEqual([
+        'authentication',
+        'profile',
+        'assets',
+        'videos',
+        'permissions',
+        'social',
+        'forum',
+      ]);
+      expect(second.coverageSummary.artifactAvailable).toBe(false);
+      expect(second.artifactUrl).toBeNull();
+      expect(test.forumCapture).toHaveBeenCalledTimes(2);
+      expect(test.forumCleanup.mock.invocationCallOrder[0]).toBeLessThan(
+        test.socialCleanup.mock.invocationCallOrder[0]
+      );
+      expect(await readdir(root)).toEqual([]);
+    }
+  );
 
   it.each(['capture', 'cleanup', 'lease'])(
     'fails safely when Permissions %s fails and cleans children in reverse order',
@@ -811,6 +911,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
     const internals = service as unknown as {
@@ -865,6 +966,7 @@ describe('AccountExportJobService database lease fence', () => {
       service = new AccountExportJobService(
         repository,
         dataSource,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,

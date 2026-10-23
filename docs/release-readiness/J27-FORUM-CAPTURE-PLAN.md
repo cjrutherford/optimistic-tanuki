@@ -1,6 +1,6 @@
 # J27 Forum capture plan
 
-**Status: VERIFIED (local owner), 2026-10-22.** See the [finding](./findings/DF-007-J27.md) and [receipt](./evidence/df-007/checkpoint-j27.json). J28 integration is next.
+**Status: VERIFIED (local owner), 2026-10-22.** See the [finding](./findings/DF-007-J27.md) and [receipt](./evidence/df-007/checkpoint-j27.json). J28 Forum integration is locally verified; O01-P is next.
 
 The approved [J26 policy](./FORUM-DISPOSITIONS.md) controls selection and projection. J27 implements the local owner component; J28 registers its leased RPC participant and integrates it into jobs. No public download or deletion acceptance follows from either slice.
 
@@ -15,3 +15,5 @@ J27 closes only when all three children pass. The SQL/profile capture driver bel
 Content export is inert data. A bounded, explicitly supported markup/resource grammar may fail closed on unsupported legacy syntax; it must not silently drop references, truncate content, normalize away unsafe input and claim completeness, or treat its output as renderable HTML. Known asset locators become canonical IDs labeled `referenceOnly-unverified`; external references must satisfy J26's credential/query/fragment restrictions. No remote fetch, filesystem traversal, image/video byte ownership or current audience grant is inferred.
 
 The private owner fixture uses real PostgreSQL and controlled lease/Profile capability replies. It proves local database capture, not session/RPC integration. J28 must then prove actual Authentication/Profile/Forum RPC, exact Profile-parent binding, seventh-owner job coverage, reverse cleanup, failure-prefix/retry, restart and revocation. Both slices retain truthful incomplete/artifact-unavailable job status until the remaining account-rights work is qualified.
+
+**2026-10-22 J28 Forum integration:** [Seventh-owner integration](./findings/DF-007-J28.md). Forum now participates in the real seven-owner leased export job. One private TCP case passed with zero skips, covering all six Forum sources/seven representative rows, exact Profile-parent/session/lease checks, failure-prefix/retry, multibyte checksum, restart and logout denial. Independent seven-database counts were restored, spool descriptors and private resources were zero, and 43 protected paths were unchanged. The job remains incomplete with no artifact. O01-P (Workspace policy) is next; the seventeen other owners, non-ORM stores, artifacts/downloads, deletion, shared controls and claims remain open. DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j28.json).

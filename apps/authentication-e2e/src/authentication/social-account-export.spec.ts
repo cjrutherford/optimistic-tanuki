@@ -295,6 +295,7 @@ describe('Social account export private TCP integration', () => {
         'videos',
         'permissions',
         'social',
+        'forum',
       ];
       expect(job.state).toBe('incomplete');
       expect(job.coverageSummary.capturedDatabaseOwners).toEqual(

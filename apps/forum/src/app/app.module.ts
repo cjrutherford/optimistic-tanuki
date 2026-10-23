@@ -22,6 +22,13 @@ import { ForumModerationService } from './services/forum-moderation.service';
 import { ForumSeedService } from './services/forum-seed.service';
 import { ForumAccountExportService } from './account-export.service';
 import { ForumAccountExportController } from './account-export.controller';
+import { ForumAccountExportOwnerService } from './account-export-owner.service';
+import { ForumAccountExportSnapshotService } from './account-export-snapshot.service';
+import { ForumAccountExportSnapshotController } from './account-export-snapshot.controller';
+import {
+  AccountExportOwnerSpoolService,
+  AccountExportProfileSnapshotClient,
+} from '@optimistic-tanuki/storage';
 
 @Module({
   imports: [
@@ -34,7 +41,11 @@ import { ForumAccountExportController } from './account-export.controller';
       factory: loadDatabase,
     }),
   ],
-  controllers: [AppController, ForumAccountExportController],
+  controllers: [
+    AppController,
+    ForumAccountExportController,
+    ForumAccountExportSnapshotController,
+  ],
   providers: [
     {
       provide: ServiceTokens.AUTHENTICATION_SERVICE,
@@ -59,6 +70,34 @@ import { ForumAccountExportController } from './account-export.controller';
         }),
     },
     ForumAccountExportService,
+    AccountExportOwnerSpoolService,
+    AccountExportProfileSnapshotClient,
+    {
+      provide: ForumAccountExportOwnerService,
+      useFactory: (
+        ds: DataSource,
+        identities: AccountExportProfileSnapshotClient,
+        auth: any
+      ) => new ForumAccountExportOwnerService(ds, identities, auth),
+      inject: [
+        'FORUM_CONNECTION',
+        AccountExportProfileSnapshotClient,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
+    {
+      provide: ForumAccountExportSnapshotService,
+      useFactory: (
+        owner: ForumAccountExportOwnerService,
+        spool: AccountExportOwnerSpoolService,
+        auth: any
+      ) => new ForumAccountExportSnapshotService(owner, spool, auth),
+      inject: [
+        ForumAccountExportOwnerService,
+        AccountExportOwnerSpoolService,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
     {
       provide: ServiceTokens.ASSETS_SERVICE,
       useFactory: () =>

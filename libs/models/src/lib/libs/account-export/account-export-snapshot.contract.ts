@@ -122,3 +122,7 @@ export type SocialAccountExportSnapshotDescriptor =
   ProfileBoundAccountExportSnapshotDescriptor;
 export type SocialAccountExportSnapshotOpenRequest =
   AssetsAccountExportSnapshotOpenRequest;
+export type ForumAccountExportSnapshotDescriptor =
+  ProfileBoundAccountExportSnapshotDescriptor;
+export type ForumAccountExportSnapshotOpenRequest =
+  AssetsAccountExportSnapshotOpenRequest;
