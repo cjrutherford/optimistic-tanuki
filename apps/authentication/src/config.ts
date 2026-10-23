@@ -40,6 +40,7 @@ export declare type AuthConfigType = {
     permissions?: { host: string; port: number };
     social?: { host: string; port: number };
     forum?: { host: string; port: number };
+    workspace?: { host: string; port: number };
   };
 };
 
@@ -236,6 +237,16 @@ const loadConfig = () => {
           Number(process.env.SERVICE_FORUM_PORT) ||
           configData.services?.forum?.port ||
           3015,
+      },
+      workspace: {
+        host:
+          process.env.SERVICE_WORKSPACE_HOST ||
+          configData.services?.workspace?.host ||
+          'workspace',
+        port:
+          Number(process.env.SERVICE_WORKSPACE_PORT) ||
+          configData.services?.workspace?.port ||
+          3024,
       },
     },
     database: {

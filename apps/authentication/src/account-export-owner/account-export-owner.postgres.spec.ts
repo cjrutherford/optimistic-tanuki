@@ -22,6 +22,7 @@ import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/gua
 import { AccountExportJobEntity } from '../account-export-jobs/entities/account-export-job.entity';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 import { AppService } from '../app/app.service';
+import { ProfileOwnershipVerifier } from '../app/profile-ownership-verifier.service';
 import {
   AuthenticationAccountExportChunk,
   AuthenticationAccountExportOwnerService,
@@ -130,7 +131,12 @@ postgresDescribe(
         authenticator,
         jwtService,
         {} as EmailService,
-        guardians
+        guardians,
+        new ProfileOwnershipVerifier({
+          send: () => {
+            throw new Error('This account-only fixture has no Profile service');
+          },
+        } as never)
       );
       service = new AuthenticationAccountExportOwnerService(
         dataSource,

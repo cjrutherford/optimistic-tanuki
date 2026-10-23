@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "policy": "root-approved typed stewardship receipt for locally registered workspaces only",
+  "selection": {
+    "principal": "account-and-currently-owned-profile",
+    "accountScope": "account-wide across appScope values",
+    "appId": "authenticates request; never filters rows",
+    "limitations": [
+      "recorded ownership is unverified evidence, not proof of historical authority or consent",
+      "do not traverse members, roles, counterpart records, or source content"
+    ],
+    "selector": {
+      "operator": "AND",
+      "accountField": "ownerUserId",
+      "profileField": "ownerProfileId",
+      "profileSet": "capturedCurrentProfileIds",
+      "currentProfileRequired": true
+    }
+  },
+  "entities": [
+    {
+      "name": "Workspace",
+      "table": "workspaces",
+      "source": "apps/workspace/src/entities/workspace.entity.ts",
+      "subject": {
+        "kind": "account-and-profile",
+        "fields": ["ownerUserId", "ownerProfileId"],
+        "rule": "Require both captured account ID and a currently owned profile ID; account-wide across appScope values. appId authenticates the request and is not a row filter.",
+        "legacyProvenance": "Current ownership is evaluated at capture time; historical ownership or consent is unverified and is not inferred.",
+        "evidence": [
+          "apps/workspace/src/entities/workspace.entity.ts",
+          "apps/workspace/src/app/services/workspace.service.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": ["id", "kind", "status", "createdAt", "updatedAt"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include these bounded workspace registration fields as recorded; timestamps remain ISO strings without conversion or truncation.",
+          "reason": "These fields are recorded attributes of the locally registered Workspace.",
+          "evidence": [
+            "apps/workspace/src/entities/workspace.entity.ts",
+            "apps/workspace/src/app/services/workspace.service.ts",
+            "apps/workspace/migrations/1788010552417-scope-workspace-identity-indexes.ts"
+          ]
+        },
+        {
+          "fields": ["slug", "displayName", "appScope", "sourceService"],
+          "classification": "shared",
+          "action": "typed-projection",
+          "handling": "Include these bounded registration labels and enum context exactly as recorded.",
+          "reason": "Labels describe a shared registration and do not prove authorship or authority; appScope is not a selection filter.",
+          "evidence": [
+            "apps/workspace/src/entities/workspace.entity.ts",
+            "apps/workspace/src/app/services/workspace.service.ts",
+            "apps/workspace/migrations/1788010552417-scope-workspace-identity-indexes.ts"
+          ]
+        },
+        {
+          "fields": ["ownerUserId", "ownerProfileId"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Include the recorded principal identifiers in the typed receipt; require both to match the authenticated account and a currently owned profile for selection.",
+          "reason": "These are personal identifiers and receipt fields as well as the conjunctive selection keys; inclusion does not establish exclusive or historical ownership.",
+          "evidence": [
+            "apps/workspace/src/entities/workspace.entity.ts",
+            "apps/workspace/src/app/services/workspace.service.ts",
+            "apps/workspace/migrations/1788010552417-scope-workspace-identity-indexes.ts"
+          ]
+        },
+        {
+          "fields": ["sourceId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include only as an opaque identifier alongside sourceService; never resolve, dereference, or fetch source content.",
+          "reason": "A source identifier is a reference, not authority or permission to inspect another service.",
+          "evidence": [
+            "apps/workspace/src/entities/workspace.entity.ts",
+            "apps/workspace/src/app/services/workspace.service.ts",
+            "apps/workspace/migrations/1788010552417-scope-workspace-identity-indexes.ts"
+          ]
+        }
+      ],
+      "relations": [],
+      "selection": {
+        "principal": "account-and-currently-owned-profile",
+        "accountScope": "account-wide across appScope values",
+        "appId": "authenticates request; never filters rows",
+        "limitations": [
+          "recorded ownership is unverified evidence, not proof of historical authority or consent",
+          "do not traverse members, roles, counterpart records, or source content"
+        ]
+      }
+    }
+  ],
+  "associations": [],
+  "stores": [
+    {
+      "name": "typeorm_migrations_store",
+      "kind": "schema",
+      "table": "migrations",
+      "columnNames": ["id", "timestamp", "name"],
+      "columns": [
+        {
+          "fields": ["id", "timestamp", "name"],
+          "classification": "nonpersonal",
+          "action": "exclude",
+          "handling": "Exclude migration bookkeeping from account receipts.",
+          "reason": "Schema history is not personal workspace content.",
+          "evidence": [
+            "apps/workspace/src/entities/workspace.entity.ts",
+            "apps/workspace/src/app/services/workspace.service.ts",
+            "apps/workspace/migrations/1788010552417-scope-workspace-identity-indexes.ts"
+          ]
+        }
+      ],
+      "reason": "Local migration bookkeeping; not an account-owned record.",
+      "handling": "Excluded from export selection."
+    },
+    {
+      "name": "Workspace.processOutput",
+      "kind": "external",
+      "columnNames": ["message", "context", "timestamp"],
+      "columns": [
+        {
+          "fields": ["message", "context", "timestamp"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Do not capture process/logger output.",
+          "reason": "Logger sinks, personal content and retention are outside the registered workspace store.",
+          "evidence": [
+            "apps/workspace/src/entities/workspace.entity.ts",
+            "apps/workspace/src/app/services/workspace.service.ts",
+            "apps/workspace/migrations/1788010552417-scope-workspace-identity-indexes.ts"
+          ]
+        }
+      ],
+      "reason": "Process output has external and unknown retention.",
+      "handling": "Excluded; no claim that logs are absent or purged."
+    },
+    {
+      "name": "Workspace.configurationInputs",
+      "kind": "operational-input",
+      "columnNames": ["configuration", "seedDefinitions"],
+      "columns": [
+        {
+          "fields": ["configuration", "seedDefinitions"],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Never export operator configuration or seed inputs.",
+          "reason": "Inputs may contain operator secrets and are not local registered account records.",
+          "evidence": [
+            "apps/workspace/src/entities/workspace.entity.ts",
+            "apps/workspace/src/app/services/workspace.service.ts",
+            "apps/workspace/migrations/1788010552417-scope-workspace-identity-indexes.ts"
+          ]
+        }
+      ],
+      "reason": "Operator-controlled configuration and seed inputs.",
+      "handling": "Excluded; do not inspect values."
+    }
+  ]
+}

@@ -255,6 +255,7 @@ describe('Permissions account export private integration', () => {
         'permissions',
         'social',
         'forum',
+        'workspace',
       ];
       expect(job.state).toBe('incomplete');
       expect(job.coverageSummary.capturedDatabaseOwners).toEqual(

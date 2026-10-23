@@ -1,10 +1,10 @@
 # Fixed release completion sequence
 
-Updated: 2026-10-22. Accepted baseline: `661853166a332596ffe1cbfd172a98a6f339bc28` (J28).
+Updated: 2026-10-23. Sequence starting accepted baseline: `661853166a332596ffe1cbfd172a98a6f339bc28` (J28).
 
 **Goal:** finish the already selected local release work in order: account rights, inactivity/log retention, integrated journeys, then launch materials. Real external flows and production release qualification remain separately owned.
 
-**Current delivery: 1 of 75 — O01 Workspace. Completed deliveries in this remaining sequence: 0/75.** J1–J28 are accepted prerequisites, not completion of this sequence. Authentication, Profile, Assets, Videos, Permissions, Social and Forum have integrated database capture; the account-wide job remains incomplete with no downloadable artifact or deletion workflow.
+**Completed: 1/75. Remaining: 74. Next delivery: 2 of 75 — O02 App Configurator.** J1–J28 are accepted prerequisites, not completion of this sequence. Authentication, Profile, Assets, Videos, Permissions, Social, Forum and Workspace have integrated database capture; the account-wide job remains incomplete with no downloadable artifact or deletion workflow.
 
 This is the readable execution view of the [existing technical register](../release-readiness/REMAINING-SLICES.md), not added scope. It accounts for **109 existing local technical entries as 75 end-to-end deliveries**. Each O01–O17 delivery contains its existing P → C → I checks; those 51 technical checks become 17 deliveries. D00 was already required in the register's prose and is now shown explicitly. The earlier count of 108 missed D00. No existing ID is removed or renumbered.
 
@@ -22,31 +22,31 @@ The [master audit](../release-readiness/MASTER-AUDIT.md) remains the acceptance 
 
 ## Sequential deliveries
 
-Every row below remains open. Row 1 is active; all later rows are queued. Numbering is reading order only; the existing IDs remain canonical.
+Row 1 is verified; row 2 is next. The remaining 74 rows stay open. Numbering is reading order only; the existing IDs remain canonical.
 
 ### 1. Finish the remaining export owners
 
 One owner is complete only when its field/store policy, real bounded capture, and leased job integration all pass. The capture must prove owned/shared/counterpart boundaries, exact counts/digests, failure/retry/restart and cleanup. Existing database-owner capture stays accepted at its recorded scope.
 
-| Order | Existing ID     | Finished outcome                                                | Acceptance                                                                                                                                                             |
-| ----- | --------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | O01 (P → C → I) | workspace: account export captured and integrated               | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 2     | O02 (P → C → I) | app-configurator: account export captured and integrated        | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 3     | O03 (P → C → I) | blogging: account export captured and integrated                | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 4     | O04 (P → C → I) | chat-collector: account export captured and integrated          | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 5     | O05 (P → C → I) | telos-docs-service: account export captured and integrated      | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 6     | O06 (P → C → I) | project-planning: account export captured and integrated        | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 7     | O07 (P → C → I) | learning-service: account export captured and integrated        | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 8     | O08 (P → C → I) | wellness: account export captured and integrated                | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 9     | O09 (P → C → I) | classifieds: account export captured and integrated             | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 10    | O10 (P → C → I) | payments: account export captured and integrated                | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 11    | O11 (P → C → I) | store: account export captured and integrated                   | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 12    | O12 (P → C → I) | billing: account export captured and integrated                 | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 13    | O13 (P → C → I) | finance: account export captured and integrated                 | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 14    | O14 (P → C → I) | system-configurator-api: account export captured and integrated | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 15    | O15 (P → C → I) | lead-tracker: account export captured and integrated            | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 16    | O16 (P → C → I) | civic: account export captured and integrated                   | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
-| 17    | O17 (P → C → I) | compliance-audit: account export captured and integrated        | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| Order | Existing ID     | Finished outcome                                                 | Acceptance                                                                                                                                                             |
+| ----- | --------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | O01 (P → C → I) | workspace: account export captured and integrated — **VERIFIED** | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 2     | O02 (P → C → I) | app-configurator: account export captured and integrated         | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 3     | O03 (P → C → I) | blogging: account export captured and integrated                 | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 4     | O04 (P → C → I) | chat-collector: account export captured and integrated           | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 5     | O05 (P → C → I) | telos-docs-service: account export captured and integrated       | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 6     | O06 (P → C → I) | project-planning: account export captured and integrated         | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 7     | O07 (P → C → I) | learning-service: account export captured and integrated         | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 8     | O08 (P → C → I) | wellness: account export captured and integrated                 | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 9     | O09 (P → C → I) | classifieds: account export captured and integrated              | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 10    | O10 (P → C → I) | payments: account export captured and integrated                 | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 11    | O11 (P → C → I) | store: account export captured and integrated                    | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 12    | O12 (P → C → I) | billing: account export captured and integrated                  | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 13    | O13 (P → C → I) | finance: account export captured and integrated                  | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 14    | O14 (P → C → I) | system-configurator-api: account export captured and integrated  | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 15    | O15 (P → C → I) | lead-tracker: account export captured and integrated             | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 16    | O16 (P → C → I) | civic: account export captured and integrated                    | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 17    | O17 (P → C → I) | compliance-audit: account export captured and integrated         | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
 
 ### 2. Close non-database account stores
 
@@ -164,10 +164,10 @@ These existing obligations are outside the 75 local deliveries and remain requir
 - **X03:** backups, operational object versions, remote log sinks and executed purge evidence.
 - **X04:** operational support and the operator's final release decision.
 
-## Current iteration: O01 Workspace
+## Latest completed delivery: O01 Workspace
 
 Owned implementation is `apps/workspace`, its existing contracts and the Authentication account-export job adapter. The policy receipt selects the recorded account **and** a currently owned captured profile, preserves scope as context, and treats source IDs as opaque. Shared registration labels are inert metadata; membership, other contributors and source-service contents are separate owners. Current bindings do not prove historical authorship or consent.
 
-O01-P verifies one entity/12 columns, no relations, three local store dispositions, the two-table/15-column migrated catalog and scoped identity indexes. O01-C must enforce that receipt with bounded, repeatable-read owner capture through the existing Storage driver. O01-I must add Workspace to the authenticated leased job and qualify exact Profile-parent/lease/session binding, failure-prefix/retry, restart/revocation and cleanup. **O01 remains active until all three checks pass.**
+O01-P verifies one entity/12 columns, no relations, three local store dispositions, the two-table/15-column migrated catalog and scoped identity indexes. O01-C must enforce that receipt with bounded, repeatable-read owner capture through the existing Storage driver. O01-I must add Workspace to the authenticated leased job and qualify exact Profile-parent/lease/session binding, failure-prefix/retry, restart/revocation and cleanup. **All three O01 checks passed; see the [O01 finding](../release-readiness/findings/DF-007-O01.md).**
 
-No Workspace capture or integration is accepted by this plan. No artifact, download, deletion or production qualification is implied. After O01, continue directly to O02 App Configurator; do not start another planning series.
+Workspace capture and integration are accepted at the local scope recorded in the O01 receipt. No artifact, download, deletion or production qualification is implied. After O01, continue directly to O02 App Configurator; do not start another planning series.

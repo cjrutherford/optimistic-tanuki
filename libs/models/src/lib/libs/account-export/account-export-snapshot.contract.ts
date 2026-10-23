@@ -126,3 +126,7 @@ export type ForumAccountExportSnapshotDescriptor =
   ProfileBoundAccountExportSnapshotDescriptor;
 export type ForumAccountExportSnapshotOpenRequest =
   AssetsAccountExportSnapshotOpenRequest;
+export type WorkspaceAccountExportSnapshotDescriptor =
+  ProfileBoundAccountExportSnapshotDescriptor;
+export type WorkspaceAccountExportSnapshotOpenRequest =
+  AssetsAccountExportSnapshotOpenRequest;

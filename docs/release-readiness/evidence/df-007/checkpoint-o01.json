@@ -1,0 +1,202 @@
+{
+  "slice": "DF-007-O01",
+  "date": "2026-10-23",
+  "accepted": true,
+  "status": "locally-verified-owner-delivery",
+  "baseRevision": "209c335502ff7b123f05f498ea1f65d8b02e003a",
+  "sourceManifestSha256": "8847a383ef073c3af0f19215ec423eafc16bdfdf74cbed1e8f3b43ec0eaac8f4",
+  "sourceHashes": {
+    "apps/authentication-e2e/project.json": "0dc160aee53f14105871fe2593dd57286621d5f1f22e7a527ea918ac88054386",
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "8ad48ae07cb094384df9ab165c05ecac04979165eb48f9d2da4adfba010c5db7",
+    "apps/authentication-e2e/src/authentication/assets-account-export.spec.ts": "5ab2116f46f96e968e6bfde2f6605a11566bf3bafd1155596eeef333fcbbd865",
+    "apps/authentication-e2e/src/authentication/forum-account-export.spec.ts": "312201622e12bcb1f32981a6fda6a392c4797762845f90a31a9b88bee7d22de5",
+    "apps/authentication-e2e/src/authentication/permissions-account-export.spec.ts": "0c5c03cff3619267287e7adcc513552d940c7d931c285454e0b68f7ab38bb77b",
+    "apps/authentication-e2e/src/authentication/social-account-export.spec.ts": "f73ab57c3882254eca72da6a9912c919e55a5a70aab464fa9a53a3f93018a908",
+    "apps/authentication-e2e/src/authentication/videos-account-export.spec.ts": "8efe82c5b183b7e1b89b9743ec4120d6effe434e777aa6e8b6563cf41703779f",
+    "apps/authentication-e2e/src/authentication/workspace-account-export.spec.ts": "0b2941fe628a85fe2ac03a0f919707f61ad428bee456fefdd6b6c310fe131303",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "f1a98b6620aea8114d301a40e9260938ccc7e92007660a5f1c85b03b91047dc6",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "3ea2daa4854634f36836cf115ebdc3923d2b51202f6f46ed068bc6be3814fe4f",
+    "apps/authentication/src/account-export-jobs/workspace-account-export-snapshot.client.spec.ts": "fc13a2a77a2a4db3999c4965c704904335ba7b179dc2a63229681b7f5867c5e3",
+    "apps/authentication/src/account-export-jobs/workspace-account-export-snapshot.client.ts": "06f1e1380992c7ade040ce77a21bc828ebf0fa562cf509b95ae30cb58261366a",
+    "apps/authentication/src/account-export-owner/account-export-owner.postgres.spec.ts": "3e5249a7bede018218ceaec01c2097c6c05a77d77499a0c3eb35d951c28cb128",
+    "apps/authentication/src/app/app.module.ts": "48ed8eec7f19232bb297c4266e25123547c5314319d95cfc9df2eb14a0b07ee5",
+    "apps/authentication/src/config.spec.ts": "4c3a5bedf78744b0e6dcee51bb3e17f43ab08715b4fff8c522d4e1d777138a51",
+    "apps/authentication/src/config.ts": "882493d4b56f214ab29062d2544d9896e7cc20df8da21b053910f48da2c9ded0",
+    "apps/workspace/src/app/account-export-owner.service.spec.ts": "ed2f8829d4a5861f91a5f8b923cbb9af4d8e4f5701210853e1c52f7bc965d28b",
+    "apps/workspace/src/app/account-export-owner.service.ts": "280c784b726bd3650a39d68c94bdbe7330982932d77eb801b9a452ca72fad901",
+    "apps/workspace/src/app/account-export-snapshot.controller.spec.ts": "d71a1d561001467c6fae76471a6d9c130c61d9950ed648177cbc0062e6b7344c",
+    "apps/workspace/src/app/account-export-snapshot.controller.ts": "ce0786f1e929bace9ce7254aa60434479cb694542749c1dca8570c65a443141d",
+    "apps/workspace/src/app/account-export-snapshot.service.spec.ts": "9b27d55263a55c61adbfcef810237497b4b45578c31d35c4b95e399ad73c493b",
+    "apps/workspace/src/app/account-export-snapshot.service.ts": "65f6752a85af364300ea669cbb3038041a0199c5ecc772d438181a61acc048f9",
+    "apps/workspace/src/app/account-export-sources.spec.ts": "8e2ec7bcedbb4fb4de541bd3218cb121e4a5f766b947b014dab4e6a2a888ec7f",
+    "apps/workspace/src/app/account-export-sources.ts": "7b0414a676aa7d4b1513a7ed530905e5d8a0eb2253de094e6d1a5c5397396d50",
+    "apps/workspace/src/app/app.module.ts": "29661a6ba26f78b55c27b6fb07af1234209c5d2e8ecc6d7a864bf2a97e2b6453",
+    "apps/workspace/src/app/workspace-account-export-dispositions.json": "3ed1ffc621c5d813dcfedc19d3ef5cefb0949a5850d2b39db469d33b0a887afa",
+    "apps/workspace/src/app/workspace-account-export-dispositions.spec.ts": "f98789dfd85328c2dea5ecb0ca7a50a66c243f27e119f3ff67b87707cc846bd0",
+    "apps/workspace/src/app/workspace-account-export-dispositions.ts": "98d111872cfc8c4a5adda5e604ad48e6c077ba0db9e1115da55560cf157e28ff",
+    "apps/workspace/src/app/workspace-dispositions.postgres.spec.ts": "4954fa957720fe27c544a742989324c800335885618ac3823b8fd24ef5b14764",
+    "libs/constants/src/index.ts": "21a0269508e416d16a571cde599ff2382e383b5a3fe8424c88e3f82b11f0642e",
+    "libs/constants/src/lib/libs/workspace.ts": "73dc1fbb50259047a4d21de609dfcbece5c7fab197c89c84881e667155d0550b",
+    "libs/models/src/lib/libs/account-export/account-export-snapshot.contract.ts": "8cbbadc400204273996cb68930758289d5953e055d326b97d4c1d6342b04458f",
+    "libs/storage/src/lib/account-export-profile-bound-snapshot.client.ts": "d787c16f23a5aaad1c0d206df34d155b6afc9a33d95a38a558d12aa100786579",
+    "libs/storage/src/lib/account-export-profile-bound-snapshot.service.ts": "4d3eb7b31b881355850b20a08a580dbb63ecbdc0fdc828c92756b5f94a9b4e54"
+  },
+  "deliveryProgress": {
+    "completed": 1,
+    "total": 75,
+    "remaining": 74,
+    "next": "O02"
+  },
+  "checks": {
+    "P": {
+      "focusedTestsPassed": 2,
+      "physicalCasePassed": 1,
+      "catalogTables": 2,
+      "catalogColumns": 15,
+      "existingMigrations": 2,
+      "summarySha256": "da2c91cae41d5e9cb7dfe6e881aed2ab77c74feb0a294b24327bb2d8ebc8238b"
+    },
+    "C": {
+      "source": "Workspace",
+      "positiveRows": 252,
+      "ownedProfiles": 2,
+      "scopes": 2,
+      "foreignOrMismatchedRowsExcluded": 3,
+      "keysetAndEmitterPaging": true,
+      "digestAndUnicodeVerified": true
+    },
+    "I": {
+      "capturedOwners": [
+        "authentication",
+        "profile",
+        "assets",
+        "videos",
+        "permissions",
+        "social",
+        "forum",
+        "workspace"
+      ],
+      "failurePrefix": [
+        "authentication",
+        "profile",
+        "assets",
+        "videos",
+        "permissions",
+        "social",
+        "forum"
+      ],
+      "privateTcpCasesPassed": 1,
+      "casesSkipped": 0,
+      "fixtureStage": {
+        "jobCaptureOwners": [
+          "authentication",
+          "profile",
+          "assets",
+          "videos",
+          "permissions",
+          "social",
+          "forum",
+          "workspace"
+        ],
+        "globalJobRemainsIncomplete": true,
+        "failurePrefix": [
+          "authentication",
+          "profile",
+          "assets",
+          "videos",
+          "permissions",
+          "social",
+          "forum"
+        ],
+        "retryRestoresAllOwners": true,
+        "verifiedSourceRowCounts": {
+          "Workspace": 252
+        },
+        "verifiedTerminalCount": 252,
+        "verifiedTerminalChecksum": true,
+        "parentProfileBinding": true,
+        "privacyAssertions": true,
+        "multipleByteReads": 3,
+        "invalidRangeDenied": true,
+        "expiredLeaseDenied": true,
+        "restartInvalidatedHandle": true,
+        "recapturedWithNewId": true,
+        "logoutDeniedRead": true,
+        "foreignFingerprintPreserved": true
+      }
+    }
+  },
+  "unitChecks": {
+    "distinctPassed": 55,
+    "databaseGatedSkipped": 3,
+    "legacyDatabaseFixtureCompileOnlySkipped": 1,
+    "logs": [
+      "auth-unit-final.log",
+      "multiple-cleanup-regression.log",
+      "service-unit-final.log",
+      "controller-final.log",
+      "shared-snapshot-regression.log",
+      "legacy-fixture-compile.log"
+    ]
+  },
+  "preE2E": [
+    "Workspace production build/lint",
+    "Authentication production build/lint",
+    "Constants and Models build/lint",
+    "Storage lint",
+    "Authentication E2E lint"
+  ],
+  "runtime": {
+    "attempt": "attempt-2",
+    "resultSha256": "c854fa9bc1ce01067d255fd89d5443200894c5b3d13ccb8e4a64e16ee1a633bc",
+    "fixtureReportSha256": "cc8aa92a2c224eaf1c4aad976128ddc008fbb0ec50619391549306dd9466058d",
+    "databaseCountsSha256": "5fddc9a3d54440e075f8b29cf1742ad5ee39ba1bb1310e0cf9e4457456c500cb",
+    "imageIds": {
+      "authentication": "sha256:cc4a573037471a844dbff48f3664dca945d0427802c3488cae34e26d4dcbfea0",
+      "profile": "sha256:dda0c01501e18db1691e7394124a0ba56690a3ca18e297abdef77333bdec9f61",
+      "assets": "sha256:8ab000d595ba1352b36a09dccc13df262fb6a7a5a4ba94983dfffd7c13beacf7",
+      "videos": "sha256:0922df07e1669e158daa8ba6bc85308f6d303cb565caab6ac39ee6e9ca7c68aa",
+      "permissions": "sha256:5fc9cb1d38cc6a79a4a35cf241412682576c065236c1ae06daa3b3c9876df1b1",
+      "social": "sha256:3580cea51c1b17ab88a396fa695501c3115c165b1e48acd6eee8e7ea8f13ce8b",
+      "forum": "sha256:4cbd00b86e5c3c486c81609ca7f9f6fa10b72f9b074054a268b9709ed6a3e2ae",
+      "workspace": "sha256:3c2834b4d126dfaf4635c91acdd693f4ad3176d05afc653f33c6a04a93ec9feb",
+      "db-setup": "sha256:3f33cecc1a90bc154fd4cb6878bd498829414c85749c98230e53f93484cadcac"
+    },
+    "composeSha256": "3df31cebc0269c943e39201c95a97378d4eceea3c7b87317f596d638c632b4b3",
+    "fixtureConfigHashes": {
+      "apps/profile/src/assets/config.yaml": "4f322561d91db3aabcf8a5d6daf84b397e1f2a02984cd6dedad0bc72e4e67307",
+      "apps/permissions/src/assets/config.yaml": "461009841bd17af6f44b70dfb78a1573365b1deaa8db97e083c38c283e1b40a0",
+      "apps/social/src/assets/config.yaml": "59c4f45bd734c88ade4f46d72ec2537952861ea0207f716ec34365fa0c392a46",
+      "apps/forum/src/assets/config.yaml": "25d59375fe2dcdd6a9c291d33a5ab3ce2b55becf8783cfe998800262a7a5c728",
+      "apps/assets/src/assets/config.yaml": "70a106e2f559f0795fc2f78b8d9b04280dcda19558e2f78cf656fade62ddf138",
+      "apps/videos/src/assets/config.yaml": "270df8cae878a9c3add87652ff01332c36c10b154d8246c2854029c00afac013",
+      "apps/workspace/src/assets/config.yaml": "a3275deea87568eb88581af97157a2fa2ffd7061bb97c27c49731a44aa0ea57c"
+    },
+    "dockerCopyInputsSha256": "e7884b55d244fd14e2c2fbf0000787872f9fe45d40baa700226eb4896c9b55c5",
+    "privateResources": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "allEightDatabaseCountsRestored": true,
+    "allEightSpoolDescriptors": 0,
+    "protectedHashesPreserved": 43
+  },
+  "limitations": [
+    "Global account export remains incomplete; no artifact or download.",
+    "Deletion and shared account controls are not enabled.",
+    "SourceId is an opaque reference; no cross-service ownership or content traversal.",
+    "Recorded current bindings do not prove historical authorship, consent or authority.",
+    "No remote CI, real external flows, production or release qualification."
+  ],
+  "verificationHistory": [
+    "Attempt 1 failed on fixture record.id instead of record.data.id; captured counts were252 and teardown was zero. The accepted attempt uses the corrected, refrozen fixture."
+  ],
+  "repairs": [
+    "Public library aliases and flat policy projection retained.",
+    "Existing strict shared snapshot typing now constructs complete validated descriptor maps and returns failure explicitly.",
+    "Legacy DB fixture missing ProfileOwnershipVerifier dependency repaired; gated case compiled/skipped only.",
+    "Retry expectations include the eighth owner; module fixture recognizes factory providers.",
+    "Multiple cleanup failures shrink the accepted owner prefix rather than preserving false coverage."
+  ]
+}

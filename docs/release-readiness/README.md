@@ -1,6 +1,6 @@
 # HAI OT + Towne Square Release-Readiness Package
 
-**Fixed completion baseline (2026-10-22):** use the [release sequence](../plans/2026-10-19-release-finish-sequence.md). It rolls the existing 109 local technical entries into 75 sequential deliveries, with the existing O-P/C/I checks contained inside each O delivery. Current: O01 Workspace active; 0/75 complete. J1–J28 are accepted prerequisites; account-wide export/download/deletion remain incomplete. External X01–X04 remain separately owned. This changes reporting granularity, not scope.
+**Fixed completion baseline (2026-10-22):** use the [release sequence](../plans/2026-10-19-release-finish-sequence.md). It rolls the existing 109 local technical entries into 75 sequential deliveries, with the existing O-P/C/I checks contained inside each O delivery. Current: O01 Workspace verified; 1/75 complete; O02 App Configurator next. J1–J28 are accepted prerequisites; account-wide export/download/deletion remain incomplete. External X01–X04 remain separately owned. This changes reporting granularity, not scope.
 
 This working package lives in `docs/release-readiness/`. RR-00 establishes this as the stable audit location and records version-control evidence.
 
@@ -25,7 +25,7 @@ This package defines and records:
 5. Update slice status and evidence as work progresses.
 6. Do not mark a slice `ACCEPTED` merely because code exists. Acceptance requires the evidence stated in the slice.
 
-Current account-rights checkpoint: [J28 Forum integration](./findings/DF-007-J28.md) is locally verified. Continue with O01-P (Workspace policy) using the [remaining-slices register](./REMAINING-SLICES.md).
+Current account-rights checkpoint: [O01 Workspace delivery](./findings/DF-007-O01.md) is locally verified. Progress: 1/75 deliveries complete; 74 remain. Next: O02 App Configurator in the [fixed sequence](../plans/2026-10-19-release-finish-sequence.md).
 
 ## Core release rule
 
@@ -69,3 +69,5 @@ Keep these locations stable. If a future relocation is necessary, update all con
 **2026-10-22 J27 Forum owner capture:** [Six-source capture](./findings/DF-007-J27.md) enforces the J26 field policy with typed references and a reusable PostgreSQL/Profile driver. All three child slices passed: 25 focused tests, owning builds/lints, and one fresh PostgreSQL case with zero skips after three migrations. It captured 267 records, including 261 Posts across database/emitter pages, and verified the snapshot fence with a concurrent insert. Failure/privacy, restored eight-table counts, spool cleanup, private teardown and protected-file checks passed. Capability replies are controlled; actual RPC/jobs remain J28. See the [receipt](./evidence/df-007/checkpoint-j27.json). DF-007/RR-11 remain open.
 
 **2026-10-22 J28 Forum integration:** [Seventh-owner integration](./findings/DF-007-J28.md). Forum now participates in the real seven-owner leased export job. One private TCP case passed with zero skips, covering all six Forum sources/seven representative rows, exact Profile-parent/session/lease checks, failure-prefix/retry, multibyte checksum, restart and logout denial. Independent seven-database counts were restored, spool descriptors and private resources were zero, and 43 protected paths were unchanged. The job remains incomplete with no artifact. O01-P (Workspace policy) is next; the seventeen other owners, non-ORM stores, artifacts/downloads, deletion, shared controls and claims remain open. DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j28.json).
+
+**2026-10-23 O01 Workspace delivery:** [Policy, capture and integration](./findings/DF-007-O01.md) are locally verified. One real eight-service case captured 252 owned rows across two profiles/scopes, excluded foreign/mismatched bindings, and proved parent/session/lease denial, integrity, failure-prefix/retry, restart/logout and independent cleanup. Global jobs remain incomplete with no artifact. **1/75 local deliveries complete; 74 remain. Next: O02 App Configurator.** [Receipt](./evidence/df-007/checkpoint-o01.json).

@@ -191,7 +191,7 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
       }
       if (cleanupFailed) this.fail('OWNER_SNAPSHOT_CLEANUP_FAILED');
       if (error instanceof AccountExportProfileBoundSnapshotError) throw error;
-      this.fail(
+      return this.fail(
         this.closing ? 'OWNER_SNAPSHOT_CLOSED' : 'OWNER_CAPTURE_FAILED'
       );
     } finally {
@@ -453,6 +453,23 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
     entry: Entry<TSource>
   ): ProfileBoundAccountExportSnapshotDescriptor {
     const m = entry.spool.metadata;
+    const sourceRowCounts: Record<string, number> = {};
+    const sourceDispositions: Record<string, string> = {};
+    for (const source of this.sources) {
+      const count = m.sourceRowCounts[source];
+      const disposition = m.sourceDispositions[source];
+      if (
+        typeof count !== 'number' ||
+        !Number.isSafeInteger(count) ||
+        count < 0 ||
+        typeof disposition !== 'string' ||
+        !disposition.length ||
+        disposition.length > 4096
+      )
+        return this.fail('OWNER_CAPTURE_FAILED');
+      sourceRowCounts[source] = count;
+      sourceDispositions[source] = disposition;
+    }
     return {
       handleId: entry.handleId,
       participantId: m.participantId,
@@ -463,8 +480,8 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
       sha256: m.sha256,
       rowCount: m.rowCount,
       sources: [...this.sources],
-      sourceRowCounts: { ...m.sourceRowCounts },
-      sourceDispositions: { ...m.sourceDispositions },
+      sourceRowCounts,
+      sourceDispositions,
       identityCount: 0,
       expiresAt: new Date(entry.expiresAtMs).toISOString(),
       ...entry.profile,

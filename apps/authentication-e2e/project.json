@@ -9,7 +9,8 @@
     "social",
     "forum",
     "assets",
-    "videos"
+    "videos",
+    "workspace"
   ],
   "targets": {
     "e2e": {
@@ -27,7 +28,8 @@
         "social:build",
         "forum:build",
         "assets:build",
-        "videos:build"
+        "videos:build",
+        "workspace:build"
       ]
     }
   },

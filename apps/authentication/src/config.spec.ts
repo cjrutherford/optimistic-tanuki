@@ -20,6 +20,8 @@ describe('authentication config oauth env loading', () => {
     delete process.env.SERVICE_SOCIAL_PORT;
     delete process.env.SERVICE_FORUM_HOST;
     delete process.env.SERVICE_FORUM_PORT;
+    delete process.env.SERVICE_WORKSPACE_HOST;
+    delete process.env.SERVICE_WORKSPACE_PORT;
   });
 
   afterAll(() => {
@@ -125,6 +127,21 @@ describe('authentication config oauth env loading', () => {
     expect(loadConfig().services?.forum).toEqual({
       host: 'forum-internal',
       port: 43015,
+    });
+  });
+
+  it('loads the Workspace participant target from defaults and environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.workspace).toEqual({
+      host: 'workspace',
+      port: 3024,
+    });
+
+    process.env.SERVICE_WORKSPACE_HOST = 'workspace-internal';
+    process.env.SERVICE_WORKSPACE_PORT = '43024';
+    expect(loadConfig().services?.workspace).toEqual({
+      host: 'workspace-internal',
+      port: 43024,
     });
   });
 
