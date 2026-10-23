@@ -1,0 +1,17 @@
+# J27 Forum capture plan
+
+**Status: VERIFIED (local owner), 2026-10-22.** See the [finding](./findings/DF-007-J27.md) and [receipt](./evidence/df-007/checkpoint-j27.json). J28 integration is next.
+
+The approved [J26 policy](./FORUM-DISPOSITIONS.md) controls selection and projection. J27 implements the local owner component; J28 registers its leased RPC participant and integrates it into jobs. No public download or deletion acceptance follows from either slice.
+
+| Child | Scope                                                                                            | Acceptance                                                                                                                                                                                                                          |
+| ----- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| J27-A | Typed content and media-reference projection; six exact source definitions.                      | Account/profile and actor-profile selectors; safe inert content and opaque media IDs; private/counterpart exclusions; unsafe or unknown resource syntax fails visibly.                                                              |
+| J27-B | Bounded Forum owner capture using the shared Profile identity client, emitter and storage spool. | Lease checks, frozen Profile identities, repeatable-read transaction, deterministic keysets, byte/row/time limits and cleanup before terminal success.                                                                              |
+| J27-C | Fresh migrated PostgreSQL owner qualification.                                                   | Positive rows for all six sources, foreign and mismatched identity exclusions, actual junction queries, multiple database/emitter pages, projection failures, cancellation/lease behavior and unchanged table counts after cleanup. |
+
+J27 closes only when all three children pass. The SQL/profile capture driver belongs in the existing storage library, accepts source factories and participant configuration, and has no dependency on Forum. Forum owns the typed projections and source queries. The existing Social capture stays unchanged; adoption of the new driver by other owners is separate work.
+
+Content export is inert data. A bounded, explicitly supported markup/resource grammar may fail closed on unsupported legacy syntax; it must not silently drop references, truncate content, normalize away unsafe input and claim completeness, or treat its output as renderable HTML. Known asset locators become canonical IDs labeled `referenceOnly-unverified`; external references must satisfy J26's credential/query/fragment restrictions. No remote fetch, filesystem traversal, image/video byte ownership or current audience grant is inferred.
+
+The private owner fixture uses real PostgreSQL and controlled lease/Profile capability replies. It proves local database capture, not session/RPC integration. J28 must then prove actual Authentication/Profile/Forum RPC, exact Profile-parent binding, seventh-owner job coverage, reverse cleanup, failure-prefix/retry, restart and revocation. Both slices retain truthful incomplete/artifact-unavailable job status until the remaining account-rights work is qualified.

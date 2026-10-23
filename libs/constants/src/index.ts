@@ -120,6 +120,7 @@ export {
   ForumModerationCommands,
   ForumLinkCommands,
   ForumCommands,
+  FORUM_ACCOUNT_EXPORT_CAPTURE_SOURCES,
 } from './lib/libs/forum';
 
 export {

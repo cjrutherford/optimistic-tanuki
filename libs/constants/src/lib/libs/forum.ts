@@ -44,3 +44,12 @@ export const ForumCommands = {
   SEED_PRODUCTION_TOPICS: 'SEED_PRODUCTION_FORUM_TOPICS',
   GetAccountExportSnapshot: 'GET_FORUM_ACCOUNT_EXPORT_SNAPSHOT',
 };
+
+export const FORUM_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
+  'Topic',
+  'Thread',
+  'ForumPost',
+  'ForumLink',
+  'ForumReport',
+  'ForumModerationAction',
+] as const;

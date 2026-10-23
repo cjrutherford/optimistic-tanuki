@@ -1,0 +1,192 @@
+{
+  "slice": "DF-007-J27",
+  "date": "2026-10-22",
+  "status": "locally-verified-owner-component",
+  "accepted": true,
+  "baseRevision": "b0a0728155f0ab4d007b8a88f599ebad1931916e",
+  "sourceManifestSha256": "63edb08a97ae60c66fdcbc0fcf10f0e275738b1cd239e8c68e7452a72eb4f30b",
+  "sourceHashes": {
+    "apps/forum/src/app/account-export-content.spec.ts": "4149f3f2596cc51a87e21bd6c3f7ea2cc1e8f3d4f204d03d5b2be3127e53f914",
+    "apps/forum/src/app/account-export-content.ts": "af16972b00f1c05389344a60e45370a3f281d042414f73bab8d5f306ae7f7090",
+    "apps/forum/src/app/account-export-owner.service.spec.ts": "d255c74f0113c4db7b3121fa18cf67cd9668baebbb32101305ba35d62ac60e8c",
+    "apps/forum/src/app/account-export-owner.service.ts": "1e5be6bdc1a23412b776ae95f94d6959cf9dbeb7902a4f69b3ab4c5ed80d976c",
+    "apps/forum/src/app/account-export-sources.spec.ts": "8a00b9de369d84ad0ec67c3028bb0c3db11104c399f38f97de43096684585d68",
+    "apps/forum/src/app/account-export-sources.ts": "186a62f2f2da2f34bc4f9145aa876a9c49eae0e1b871db55dbc16a04f05c0562",
+    "apps/forum/src/app/forum-owner-capture.postgres.spec.ts": "cd2fea97f4bb6752b1e08b6a944208f50a7666e850d9972b5dbada922fe05b2e",
+    "libs/constants/src/index.ts": "032d92241789316e45a872b9a5b949f843d41ceaaa0ee38135697e71c7ee7697",
+    "libs/constants/src/lib/libs/forum.ts": "21851f81f1dc45ff513362deeb357826fdca3d04f80260375dd9a7e4390e5a40",
+    "libs/storage/src/index.ts": "9200a4e3ea57a15042f3dd3048bc18a7d00faad1a03dbfde8760118fb260fede",
+    "libs/storage/src/lib/account-export-postgres-owner.service.spec.ts": "7e5ce63a9738569d86f66ce5f5c6b755d0a30a7560047a239bf0dd2ec20279f9",
+    "libs/storage/src/lib/account-export-postgres-owner.service.ts": "137d7fc03514eef41dc714b3617a53315da24a46d1effdbdbe80bab846dddd1a"
+  },
+  "children": {
+    "J27-A": "verified typed projections and resource grammar",
+    "J27-B": "verified reusable storage driver and Forum adapter",
+    "J27-C": "verified fresh PostgreSQL owner case"
+  },
+  "verification": {
+    "focusedTests": {
+      "distinctPassed": 25,
+      "forum": 20,
+      "storageLifecycle": 5,
+      "storageEvidence": "Flat Luna worker results.log; existing driver unchanged after its passing run"
+    },
+    "prechecks": {
+      "builds": ["forum", "constants", "social", "authentication"],
+      "lint": ["forum", "storage", "constants", "social", "authentication"],
+      "initialFailure": "Forum lint rejected control-character regex; explicit character checks repaired it before accepted runtime"
+    },
+    "privatePostgres": {
+      "passed": 1,
+      "skipped": 0,
+      "migrationsApplied": 3,
+      "fixtureReport": {
+        "result": "PASS",
+        "capabilityReplies": "controlled lease/Profile replies; real PostgreSQL and production projections",
+        "stage": {
+          "actualReadOnlyRepeatableRead": true,
+          "concurrentInsertExcluded": true,
+          "positiveSources": {
+            "Topic": 1,
+            "Thread": 1,
+            "ForumPost": 261,
+            "ForumLink": 1,
+            "ForumReport": 2,
+            "ForumModerationAction": 1
+          },
+          "records": 267,
+          "postPages": [250, 11],
+          "digest": true,
+          "crossScope": true,
+          "unsafeReferenceDenied": true,
+          "scopeMismatchDenied": true,
+          "abortDenied": true,
+          "leaseDenials": true,
+          "foreignFingerprint": true
+        },
+        "cleanup": {
+          "countsBefore": {
+            "forum_link": "0",
+            "forum_moderation_action": "0",
+            "forum_post": "0",
+            "forum_post_links_forum_link": "0",
+            "forum_report": "0",
+            "migrations": "3",
+            "thread": "0",
+            "topic": "0"
+          },
+          "countsAfter": {
+            "forum_link": "0",
+            "forum_moderation_action": "0",
+            "forum_post": "0",
+            "forum_post_links_forum_link": "0",
+            "forum_report": "0",
+            "migrations": "3",
+            "thread": "0",
+            "topic": "0"
+          },
+          "liveOwnerSpoolDescriptors": 0,
+          "spoolRootRemoved": true
+        }
+      },
+      "summary": {
+        "project": "ot-forum-owner-capture-j27",
+        "startedAt": "2026-10-23T00:22:34.269755+00:00",
+        "baseRevision": "b0a0728155f0ab4d007b8a88f599ebad1931916e",
+        "sourceManifestSha256": "63edb08a97ae60c66fdcbc0fcf10f0e275738b1cd239e8c68e7452a72eb4f30b",
+        "database": "forum_owner_capture_j27_fixture",
+        "migrationCommand": "pnpm exec nx run forum:typeorm:migration:run",
+        "containerId": "ef6edc174760699917eb401d226f9327dc5689e629276d2181d1bd600d485e19",
+        "databaseReadiness": {
+          "database": "forum_owner_capture_j27_fixture",
+          "serverVersionNum": 150019
+        },
+        "uuidExtension": {
+          "database": "forum_owner_capture_j27_fixture",
+          "extension": "uuid-ossp"
+        },
+        "migrationExitCode": 0,
+        "testExitCode": 0,
+        "tableCountsUnchanged": true,
+        "remainingPrivateContainers": 0,
+        "remainingPrivateNetworks": 0,
+        "remainingPrivateVolumes": 0,
+        "containerMountTypes": [],
+        "finishedAt": "2026-10-23T00:22:51.819443+00:00",
+        "sourceAndProtectedHashesPreserved": true,
+        "result": "PASS"
+      }
+    },
+    "attempts": [
+      {
+        "project": "ot-forum-owner-capture-j27",
+        "startedAt": "2026-10-23T00:21:03.669930+00:00",
+        "baseRevision": "b0a0728155f0ab4d007b8a88f599ebad1931916e",
+        "sourceManifestSha256": "27c0ccfb5c9490e564d946023c45e7aec9605ecf08c12be43d353b73949488c4",
+        "database": "forum_owner_capture_j27_fixture",
+        "migrationCommand": "pnpm exec nx run forum:typeorm:migration:run",
+        "containerId": "c72021aeb27290e0657e98dd4e8a8e67e0a7aab7890a547774eb52f957645be7",
+        "databaseReadiness": {
+          "database": "forum_owner_capture_j27_fixture",
+          "serverVersionNum": 150019
+        },
+        "uuidExtension": {
+          "database": "forum_owner_capture_j27_fixture",
+          "extension": "uuid-ossp"
+        },
+        "migrationExitCode": 0,
+        "testExitCode": 1,
+        "tableCountsUnchanged": true,
+        "remainingPrivateContainers": 0,
+        "remainingPrivateNetworks": 0,
+        "remainingPrivateVolumes": 0,
+        "containerMountTypes": [],
+        "finishedAt": "2026-10-23T00:21:17.317854+00:00",
+        "sourceAndProtectedHashesPreserved": true,
+        "result": "FAIL"
+      },
+      {
+        "project": "ot-forum-owner-capture-j27",
+        "startedAt": "2026-10-23T00:22:34.269755+00:00",
+        "baseRevision": "b0a0728155f0ab4d007b8a88f599ebad1931916e",
+        "sourceManifestSha256": "63edb08a97ae60c66fdcbc0fcf10f0e275738b1cd239e8c68e7452a72eb4f30b",
+        "database": "forum_owner_capture_j27_fixture",
+        "migrationCommand": "pnpm exec nx run forum:typeorm:migration:run",
+        "containerId": "ef6edc174760699917eb401d226f9327dc5689e629276d2181d1bd600d485e19",
+        "databaseReadiness": {
+          "database": "forum_owner_capture_j27_fixture",
+          "serverVersionNum": 150019
+        },
+        "uuidExtension": {
+          "database": "forum_owner_capture_j27_fixture",
+          "extension": "uuid-ossp"
+        },
+        "migrationExitCode": 0,
+        "testExitCode": 0,
+        "tableCountsUnchanged": true,
+        "remainingPrivateContainers": 0,
+        "remainingPrivateNetworks": 0,
+        "remainingPrivateVolumes": 0,
+        "containerMountTypes": [],
+        "finishedAt": "2026-10-23T00:22:51.819443+00:00",
+        "sourceAndProtectedHashesPreserved": true,
+        "result": "PASS"
+      }
+    ],
+    "protectedFilesUnchanged": 43
+  },
+  "history": [
+    "Initial delegated source test command found no tests; actual supported Nx selections subsequently ran.",
+    "Root repaired a stale Markdown reference adapter, silent Link scope filtering, SQL buffer bounds, UTC/enum/boolean handling, URI controls/entities and bounded HTML token parsing.",
+    "An intermediate duplicate URI export prevented test compilation; removed before the passing focused tests.",
+    "Private attempt 1 stopped at fixture TS2554: spool sink takes one argument. It ran zero cases and cleaned up. Fresh attempt 2 passed after fixture repair."
+  ],
+  "limits": [
+    "Controlled lease/Profile capability replies; real PostgreSQL and production source queries/projections. Real session/RPC/job proof belongs to J28.",
+    "Bounded common HTML subset: p,strong,em,code,a,br,img with strict resource attributes. Unsupported syntax fails capture; no sanitization-and-success or general HTML compatibility claim.",
+    "Known asset IDs and external references are referenceOnly-unverified, not bytes, ownership or current access proof.",
+    "No new schema, public endpoint, UI, downloads, deletion, external-provider or production qualification.",
+    "DF-007 and RR-11 remain open."
+  ],
+  "next": "J28"
+}
