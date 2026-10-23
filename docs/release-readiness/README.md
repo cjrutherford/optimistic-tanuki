@@ -1,5 +1,7 @@
 # HAI OT + Towne Square Release-Readiness Package
 
+**Fixed completion baseline (2026-10-22):** use the [release sequence](../plans/2026-10-19-release-finish-sequence.md). It rolls the existing 109 local technical entries into 75 sequential deliveries, with the existing O-P/C/I checks contained inside each O delivery. Current: O01 Workspace active; 0/75 complete. J1–J28 are accepted prerequisites; account-wide export/download/deletion remain incomplete. External X01–X04 remain separately owned. This changes reporting granularity, not scope.
+
 This working package lives in `docs/release-readiness/`. RR-00 establishes this as the stable audit location and records version-control evidence.
 
 ## Purpose

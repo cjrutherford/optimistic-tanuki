@@ -1,57 +1,173 @@
-# Remaining release work: local delivery sequence
+# Fixed release completion sequence
 
-The [remaining-slice register](../release-readiness/REMAINING-SLICES.md) gives each remaining owner and delivery gate an explicit ID, dependencies and acceptance. Execute that register within the recommendation order below.
+Updated: 2026-10-22. Accepted baseline: `661853166a332596ffe1cbfd172a98a6f339bc28` (J28).
 
-The owner selected items 1, 2, 4 and 6 from the release status summary, in that order. Real external flows (item 3) and production release qualification (item 5) will be handled separately. Their evidence remains required for release claims, but does not prevent completing and testing the local implementation.
+**Goal:** finish the already selected local release work in order: account rights, inactivity/log retention, integrated journeys, then launch materials. Real external flows and production release qualification remain separately owned.
 
-Use the existing account-rights implementation plan, master audit and execution map as the scope and acceptance authorities. Preserve the excluded Directory stubs and root configuration edits. Use existing shared UI; add reusable library components when existing controls cannot meet the need. Work in the current checkout with flat Luna delegation.
+**Current delivery: 1 of 75 — O01 Workspace. Completed deliveries in this remaining sequence: 0/75.** J1–J28 are accepted prerequisites, not completion of this sequence. Authentication, Profile, Assets, Videos, Permissions, Social and Forum have integrated database capture; the account-wide job remains incomplete with no downloadable artifact or deletion workflow.
 
-## 1. Account export and deletion
+This is the readable execution view of the [existing technical register](../release-readiness/REMAINING-SLICES.md), not added scope. It accounts for **109 existing local technical entries as 75 end-to-end deliveries**. Each O01–O17 delivery contains its existing P → C → I checks; those 51 technical checks become 17 deliveries. D00 was already required in the register's prose and is now shown explicitly. The earlier count of 108 missed D00. No existing ID is removed or renumbered.
 
-Current baseline: Authentication, Profile, Permissions, Social and Forum have locally verified **partial internal previews**. They are not a portable account export or deletion workflow.
+The [master audit](../release-readiness/MASTER-AUDIT.md) remains the acceptance authority. The [completion map](../release-readiness/DF-007-COMPLETION-MAP.md) and technical register hold detailed evidence and dependencies. This document is the one sequential release checklist: use its order and outcome when reporting progress.
 
-Complete these deliverables:
+## Execution and reporting rules
 
-1. Reconcile the ownership register across database and non-database stores. Give every store explicit account/profile/tenant ownership rules, counterpart preservation rules and an owning participant. Unknown ownership remains a blocker, rather than an empty-data success.
-2. Add Authentication's durable operation ledger: account authorization, idempotency, serialized concurrent requests, fenced leases, retry after interruption and truthful coverage/status. Do not persist bearer credentials or partial exported content in the ledger. Existing previews remain compatible; incomplete coverage cannot unlock an artifact.
-3. Finish owning-service export, deletion and independent readback adapters against that register. Preserve other people's contributions and conversation placeholders. Fence concurrent writes, revoke account sessions, and order key removal after media and dependent cleanup can recover safely.
-4. Produce portable JSON and associated image/video bytes with bounded streaming, an artifact manifest, authorized access and expiry. Do not fetch arbitrary user-supplied URLs or call encrypted storage bytes a portable export.
-5. Connect existing shared account/settings UI to real backend status, confirmation, download and retry behavior. Verify both products, authorization, counterpart preservation, injected failures, restart/retry and exact fixture cleanup.
+1. Finish the current delivery before starting the next. Independent mapping or verification can run alongside it, with flat Luna workers and disjoint owned paths. Work in the current checkout; preserve the 43 excluded Directory/Compose/tsconfig files.
+2. For each O delivery, approve every field/store disposition, implement bounded owner capture, then integrate it with the existing leased snapshot/job pipeline. These are internal checks, not three new finish lines. Reuse shared Storage/contracts/session/UI infrastructure; new reusable UI belongs in a library.
+3. Apply the common pre-E2E gate: inspect affected Nx/CI targets; run the narrow regression, changed-contract checks, owning production build/lint and affected E2E lint. Use Node 24, `NX_DAEMON=false`, `NX_ISOLATE_PLUGINS=false`. Run API drift or migration checks when that surface changes. Do not repeat unchanged accepted checks.
+4. Acceptance needs the row's observable result: real owner/service/database evidence where required, allow/deny and counterpart cases, failure/retry/restart, independent readback and fixture cleanup. Source presence, mocks or policy approval alone cannot complete an owner delivery. Retain the existing generated-migration rules.
+5. At closeout report **completed outcome; evidence and checks not run; completed/75 and remaining; next existing ID; blockers**. Update the finding, receipt, master audit and both execution views together. An internal checkpoint is reported as progress within the current delivery.
+6. Keep this list fixed. Map discoveries to an existing outcome and identify the impact there. If a discovery really changes scope, state the precise addition and reason before changing the baseline; do not silently create a replacement sequence. Unknown ownership cannot count as empty successful capture.
+7. Keep jobs and UI truthful. Export becomes available only after its complete accepted coverage and artifact gates; deletion only after its accepted readbacks. Completion of local implementation does not authorize production release or external acceptance claims.
 
-The J1 durable job foundation, J2 Authentication DB-reader component, J3 staging/job integration, J4 current Profile reader and J5 legacy Profile adapters are locally verified. J5 includes the retained goal/project stores and Timeline links found during J4; the temporary legacy-data guard has been replaced. J6 now locally verifies secure same-snapshot identity transport and Profile job integration over real services, including restart recovery and cleanup. J7 adds a locally tested Assets consumer for all fenced identity pages; it is not wired to Assets capture. J8 locally verifies Assets table/byte capture against a private database and encrypted storage; Auth/Profile RPC is simulated. J9 now locally verifies Assets provider/transport/job integration through three selected real-service cases, including encrypted media and failure/retry. J10 now locally verifies the seven-table Videos DB component with five real PostgreSQL cases. J11 now locally verifies Videos transport/jobs and shared snapshot infrastructure over four real-service cases. J12 now locally verifies HLS capture and offline rewriting. Remaining owner coverage, durable portable files/downloads, deletion and shared controls remain. These components do not complete item 1. Deletion and downloads stay unavailable until their required coverage closes.
+## Sequential deliveries
 
-External provider, storage retention/versioning, backup and deployment evidence is separately owned. Record locally tested adapter behavior separately from those operational acceptance checks. DF-007 and RR-11 stay open while either implementation or required external evidence is missing.
+Every row below remains open. Row 1 is active; all later rows are queued. Numbering is reading order only; the existing IDs remain canonical.
 
-## 2. Inactivity and activity-log retention
+### 1. Finish the remaining export owners
 
-After the local account-rights implementation, finish seven-day rolling inactivity expiry with no absolute lifetime cap. Verify natural expiry, refresh/activity boundaries, revocation and cross-replica behavior.
+One owner is complete only when its field/store policy, real bounded capture, and leased job integration all pass. The capture must prove owned/shared/counterpart boundaries, exact counts/digests, failure/retry/restart and cleanup. Existing database-owner capture stays accepted at its recorded scope.
 
-Inventory every account-activity log sink and implement removal after 90 days with no retained-data exceptions. Test cutoff boundaries, retries, scheduling and independent readback. Document the required operator checks for external sinks, backups and actual execution; a source fix or scheduled task alone is not operational acceptance.
+| Order | Existing ID     | Finished outcome                                                | Acceptance                                                                                                                                                             |
+| ----- | --------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | O01 (P → C → I) | workspace: account export captured and integrated               | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 2     | O02 (P → C → I) | app-configurator: account export captured and integrated        | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 3     | O03 (P → C → I) | blogging: account export captured and integrated                | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 4     | O04 (P → C → I) | chat-collector: account export captured and integrated          | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 5     | O05 (P → C → I) | telos-docs-service: account export captured and integrated      | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 6     | O06 (P → C → I) | project-planning: account export captured and integrated        | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 7     | O07 (P → C → I) | learning-service: account export captured and integrated        | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 8     | O08 (P → C → I) | wellness: account export captured and integrated                | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 9     | O09 (P → C → I) | classifieds: account export captured and integrated             | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 10    | O10 (P → C → I) | payments: account export captured and integrated                | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 11    | O11 (P → C → I) | store: account export captured and integrated                   | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 12    | O12 (P → C → I) | billing: account export captured and integrated                 | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 13    | O13 (P → C → I) | finance: account export captured and integrated                 | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 14    | O14 (P → C → I) | system-configurator-api: account export captured and integrated | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 15    | O15 (P → C → I) | lead-tracker: account export captured and integrated            | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 16    | O16 (P → C → I) | civic: account export captured and integrated                   | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
+| 17    | O17 (P → C → I) | compliance-audit: account export captured and integrated        | Approved ownership/field/store policy; real paged capture; authenticated leased job integration and independent cleanup. Global export stays incomplete until A01–A07. |
 
-## 4. Integrated journeys, accessibility and reliability
+### 2. Close non-database account stores
 
-Close the remaining local OT/Towne Square account switching, locality/membership/owner and buyer/seller journeys. Cover keyboard/focus/error announcements and shared lifecycle UI, plus upload retry, error recovery, deep links and realtime recovery. Use the primary client-interface, forgeofwill and business-site validation targets where affected; include Towne Square for its owned flows.
+Complete each existing local store contract and its independent readback. External execution evidence remains X-owned; it cannot be silently represented as a local pass.
 
-Keep real OAuth/email/invitation delivery and production provider/load qualification in their separately owned registers. Exercise the corresponding local failure contracts without describing mocks as external acceptance.
+| Order | Existing ID | Finished outcome                                                                                                   | Acceptance                                                                                                                           |
+| ----- | ----------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 18    | N01         | Enumerate and address per-account queues, processing jobs and outboxes, including media workers and delivery jobs. | Complete producer/consumer inventory, write/cancel fencing and restart/readback proof.                                               |
+| 19    | N02         | Address permission/session caches and transient OAuth state without persisting bearer credentials.                 | Account-scoped invalidation, stale replica denial, cookie/bearer compatibility.                                                      |
+| 20    | N03         | Address search indexes, materialized projections and secondary persistence found by reconciliation.                | Exact source-to-index attribution and independent account cleanup/readback; explicit evidence if a candidate store is absent.        |
+| 21    | N04         | Address account-identifiable application/activity logs and local sink deletion contracts.                          | Sink inventory and immediate account-deletion behavior, with no undisclosed retained copies. The rolling 90-day rule is R2-02 below. |
+| 22    | N05         | Address object-store versions, media derivatives, in-flight processing and encryption-key custody.                 | Complete version/derivative inventory, race fences, recoverable deletion ordering and independent reads.                             |
+| 23    | N06         | Address browser/local persisted account state using shared session/account infrastructure.                         | Signout/deletion/account-switch cleanup across products; no stale cross-account state.                                               |
+| 24    | N07         | Address application-held provider grants and provider adapter revocation/deletion contracts.                       | No external provider-account deletion; local ownership/redaction and failure/retry proved. Live external calls remain X01.           |
 
-## 6. Claims, onboarding and launch materials
+### 3. Deliver the export file and download
 
-Reconcile every surviving public claim with accepted behavior. Complete first-session guidance, public policy text, screenshots/demos of verified workflows and the launch checklist. Use VERIFY, COMPLETE, REWORD, RETRACT or DEFER consistently. Do not advertise incomplete account rights or deferred reputation/federation capabilities.
+Finish complete coverage first, then artifact assembly, durable publication, authorized download and expiry. A07 is the full local export acceptance gate.
 
-Keep the launch decision separate from finishing local implementation. Link the externally owned checks and record the evidence still required from them.
+| Order | Existing ID | Finished outcome                                                                                 | Acceptance                                                                                                                                   |
+| ----- | ----------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 25    | A01         | Close required-owner/store coverage manifest and fail-closed orchestration.                      | Every reconciled store has an accepted participant or evidenced disposition; missing/unavailable owner blocks completion.                    |
+| 26    | A02         | Assemble portable manifest/JSON and verified media references, safe filenames and MIME.          | Exact counts/digests, full declared text, images/video/HLS and inline images; no arbitrary URL fetch or raw storage paths.                   |
+| 27    | A03         | Persist encrypted artifacts atomically with bounded assembly and recoverable key custody.        | Interrupted write/restart, digest verification, quota/expiry and zero orphaned plaintext staging.                                            |
+| 28    | A04         | Connect durable artifact assembly to resumable/background jobs without storing user credentials. | Two-worker fencing, idempotency, lost-lease denial, restart and cleanup before publication.                                                  |
+| 29    | A05         | Authorize downloads with expiry/revocation and safe streaming headers.                           | Own account allowed; foreign account/app, expired/revoked session denied; bytes/filename/length/range behavior verified.                     |
+| 30    | A06         | Expire artifacts and all retained versions/keys on schedule and account deletion.                | Boundary times, retries, crash recovery and independent version/key readback.                                                                |
+| 31    | A07         | Run complete local export journey against the required-owner matrix.                             | Real multi-account records/media, failure/restart/retry, privacy, downloads and precise cleanup. No global complete flag before this passes. |
 
-## Verification and progress
+### 4. Deliver recoverable account deletion
 
-At each implementation checkpoint, inspect the affected CI requirements, run the narrowest meaningful checks for the changed owners and then the relevant integration case. Do not repeat unchanged broad suites. Schema changes use the owning Nx migration-generation target and fresh-database migration checks.
+D00 establishes the durable operation and write fence. D01–D24 implement owner adapters/readbacks under that fence. Each must preserve counterpart content and tolerate retry. D25 closes non-ORM cleanup; D26 removes final root identities/keys after dependent recovery is safe; D27 proves the full operation. Preserve original ordering/dependencies.
 
-Record command, source identity, actual execution/caching, results, skips and exact cleanup. Synchronize findings, the master audit and execution map at each verified milestone. A passing preview or compile does not close its larger deliverable.
+| Order | Existing ID | Finished outcome                                                                                   | Acceptance                                                                                                                          |
+| ----- | ----------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 32    | D00         | Durable deletion job, account write fence, session revocation and counterpart-placeholder contract | Requires A07 and N01–N07; deletion remains recoverable after sessions are revoked.                                                  |
+| 33    | D01         | Authentication                                                                                     | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 34    | D02         | Profile/current and retained legacy stores                                                         | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 35    | D03         | Assets                                                                                             | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 36    | D04         | Videos                                                                                             | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 37    | D05         | Permissions                                                                                        | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 38    | D06         | Social                                                                                             | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 39    | D07         | Forum                                                                                              | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 40    | D08         | `workspace`                                                                                        | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 41    | D09         | `app-configurator`                                                                                 | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 42    | D10         | `blogging`                                                                                         | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 43    | D11         | `chat-collector`                                                                                   | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 44    | D12         | `telos-docs-service`                                                                               | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 45    | D13         | `project-planning`                                                                                 | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 46    | D14         | `learning-service`                                                                                 | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 47    | D15         | `wellness`                                                                                         | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 48    | D16         | `classifieds`                                                                                      | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 49    | D17         | `payments`                                                                                         | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 50    | D18         | `store`                                                                                            | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 51    | D19         | `billing`                                                                                          | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 52    | D20         | `finance`                                                                                          | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 53    | D21         | `system-configurator-api`                                                                          | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 54    | D22         | `lead-tracker`                                                                                     | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 55    | D23         | `civic`                                                                                            | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 56    | D24         | `compliance-audit`                                                                                 | Accepted owner policy; authenticated deletion under D00; counterpart preservation; retry/restart and independent row/byte readback. |
+| 57    | D25         | Non-ORM store cleanup                                                                              | All N01–N07 stores cleared under the deletion fence, with independent readback.                                                     |
+| 58    | D26         | Final root identities and key removal                                                              | Every dependent participant acknowledged; recoverable final identity/key removal and minimal permitted receipt.                     |
+| 59    | D27         | End-to-end deletion recovery                                                                       | Injected failure/restart/retry across the full operation; no stranded bytes or stale sessions; counterpart preservation proved.     |
 
-J12 locally verifies bounded HLS playlist/segment capture and offline rewriting: nine private PostgreSQL/encrypted-storage cases and 38 focused tests passed, with affected pre-E2E gates and cleanup. See [J12 findings](../release-readiness/findings/DF-007-J12.md). Next: complete Permissions, Social, Forum and remaining owners, then encrypted artifacts/downloads; deletion and shared controls remain required. DF-007/RR-11 stay open.
+### 5. Connect and qualify shared account controls
 
-J13 locally verifies the complete Permissions database component: seven private PostgreSQL cases and seven focused tests passed, along with production build/lint, readback and private teardown. See [J13 findings](../release-readiness/findings/DF-007-J13.md). Next: Permissions leased snapshots/jobs, UUID case follow-up and complete remaining owners before artifacts/downloads. This does not complete DF-007 or RR-11.
+Reuse existing account/settings controls. Exercise the accepted backend operation rather than a preview or fabricated completion status. U03 includes both products and affected primary clients.
 
-J14 locally verifies UUID case handling in current/legacy Profile, Assets and Videos: 25 focused tests and five selected private PostgreSQL cases passed, with twelve unchanged cases unselected. Owning production builds/lints, fourteen-table readback and private cleanup passed. See [J14 findings](../release-readiness/findings/DF-007-J14.md). Next: Permissions leased transport/jobs and remaining owners before artifacts/downloads; DF-007/RR-11 remain open.
+| Order | Existing ID | Finished outcome                                                                        | Acceptance                                                                                                                     |
+| ----- | ----------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 60    | U01         | Connect existing shared account/settings controls to real export status/retry/download. | Authenticated OT/Towne Square flows, errors, keyboard/focus and no false completion.                                           |
+| 61    | U02         | Connect deletion confirmation/status/recovery to real deletion jobs.                    | Clear consequences, correct account, explicit confirmation, failure/retry and revoked-session behavior.                        |
+| 62    | U03         | Validate both products and affected primary clients together.                           | Browser evidence at relevant viewports, accessibility and account isolation. New reusable elements belong in shared libraries. |
 
-J15 locally verifies Permissions snapshot transport and export-job integration after Videos. See [findings](../release-readiness/findings/DF-007-J15-PERMISSIONS-SNAPSHOT-INTEGRATION.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j15.json). Five unique live cases were verified across two runs: four existing cases passed before a fixture-only failure, then the corrected Permissions case passed separately. Twenty-three distinct focused tests, affected pre-E2E checks, five current images, source/input provenance, accepted-run readback and private teardown are recorded. Next: Social principal/registration and owner coverage, Forum and remaining domains before durable artifacts/downloads, deletion and shared controls. Item 1 and DF-007/RR-11 remain open.
+### 6. Finish inactivity and log retention
 
-J16 is locally verified: [findings](../release-readiness/findings/DF-007-J16.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j16.json). Both datasources and repository providers now register all 33 existing entities. One offline parity test, production build/lint and one fresh PostgreSQL case passed; all 26 existing migrations applied, 33 repositories resolved and read mapped columns, all 34 public table counts stayed unchanged, and private teardown left zero resources. No schema/migration files changed. Full Social capture, principal binding and relationship traversal remain outside this prerequisite acceptance.
+These are recommendation 2, after local account rights. Seven-day rolling inactivity has no absolute lifetime cap. The 90-day rule covers every inventoried account-activity sink; separately owned remote execution remains explicit.
+
+| Order | Existing ID | Finished outcome                                                       | Acceptance                                                                                                                            |
+| ----- | ----------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 63    | R2-01       | Seven-day rolling inactivity expiry, without an absolute lifetime cap. | Natural expiry, activity/refresh boundaries, revocation and cross-replica/session compatibility.                                      |
+| 64    | R2-02       | Ninety-day removal for every inventoried account-activity log sink.    | Exact cutoff, scheduling, retry, independent readback and no retained-data exceptions.                                                |
+| 65    | R2-03       | Integrate retention with deletion, jobs and shared status.             | Account deletion wins over retention windows; no stale replica/job can restore removed data. External execution/sinks are X evidence. |
+
+### 7. Qualify integrated user journeys
+
+These are recommendation 4. Cover both products and relevant clients, real account isolation, recovery, accessibility and responsive behavior. Local provider failure contracts remain distinct from external delivery.
+
+| Order | Existing ID | Finished outcome                                 | Acceptance                                                                                                           |
+| ----- | ----------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| 66    | R4-01       | Account switching and session/account isolation. | Both products, owned secondary profiles, cookie restore and stale-state denial.                                      |
+| 67    | R4-02       | Locality, membership and owner journeys.         | Authorized owner/member/nonmember boundaries and recoverable local errors.                                           |
+| 68    | R4-03       | Buyer/seller journeys.                           | Counterpart isolation, purchase/sale local failure contracts and accurate status.                                    |
+| 69    | R4-04       | Shared accessibility closeout.                   | Keyboard navigation, focus restoration, error/status announcements and responsive controls.                          |
+| 70    | R4-05       | Upload/realtime/deep-link recovery.              | Upload retry, network interruption, route restoration and socket reconnect without duplicate writes or stale access. |
+
+### 8. Make release claims match accepted behavior
+
+These are recommendation 6. Use VERIFY/COMPLETE/REWORD/RETRACT/DEFER. Screenshots and launch material must show accepted behavior. The launch decision stays operator-owned.
+
+| Order | Existing ID | Finished outcome                       | Acceptance                                                                                                                |
+| ----- | ----------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 71    | R6-01       | Reconcile all remaining claims.        | Every advertised claim has VERIFY/COMPLETE/REWORD/RETRACT/DEFER disposition linked to evidence.                           |
+| 72    | R6-02       | Complete first-session guidance.       | Both products describe and lead to accepted behavior; no invented counts or unavailable rights.                           |
+| 73    | R6-03       | Align public policy/support text.      | Privacy, account rights, retention and support promises match accepted behavior and open external obligations.            |
+| 74    | R6-04       | Capture verified screenshots/demos.    | Exact reviewed revision and real usable workflows, with no staged unsupported claims.                                     |
+| 75    | R6-05       | Assemble launch checklist and handoff. | Local slice evidence, unresolved external checks and explicit release decision owner; no premature release qualification. |
+
+## Separately owned release acceptance
+
+These existing obligations are outside the 75 local deliveries and remain required for the corresponding release claims:
+
+- **X01:** real OAuth, email, invitations and provider-held data/grant execution.
+- **X02:** exact deployed revision/images, production load and environment qualification.
+- **X03:** backups, operational object versions, remote log sinks and executed purge evidence.
+- **X04:** operational support and the operator's final release decision.
+
+## Current iteration: O01 Workspace
+
+Owned implementation is `apps/workspace`, its existing contracts and the Authentication account-export job adapter. The policy receipt selects the recorded account **and** a currently owned captured profile, preserves scope as context, and treats source IDs as opaque. Shared registration labels are inert metadata; membership, other contributors and source-service contents are separate owners. Current bindings do not prove historical authorship or consent.
+
+O01-P verifies one entity/12 columns, no relations, three local store dispositions, the two-table/15-column migrated catalog and scoped identity indexes. O01-C must enforce that receipt with bounded, repeatable-read owner capture through the existing Storage driver. O01-I must add Workspace to the authenticated leased job and qualify exact Profile-parent/lease/session binding, failure-prefix/retry, restart/revocation and cleanup. **O01 remains active until all three checks pass.**
+
+No Workspace capture or integration is accepted by this plan. No artifact, download, deletion or production qualification is implied. After O01, continue directly to O02 App Configurator; do not start another planning series.
