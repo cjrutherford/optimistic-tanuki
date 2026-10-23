@@ -466,6 +466,99 @@ export class AppService {
     return { message: 'Password reset successful', code: 0 };
   }
 
+  private oauthCallbackIdentity(data: {
+    userId: string;
+    profileId: string;
+    appId: string;
+  }) {
+    const uuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (
+      !data ||
+      typeof data.userId !== 'string' ||
+      !uuid.test(data.userId) ||
+      typeof data.profileId !== 'string' ||
+      !uuid.test(data.profileId) ||
+      typeof data.appId !== 'string' ||
+      !/^[a-z][a-z0-9_-]{0,127}$/.test(data.appId)
+    )
+      throw new RpcException('Invalid OAuth callback identity');
+    return {
+      userId: data.userId.toLowerCase(),
+      profileId: data.profileId.toLowerCase(),
+      appId: data.appId,
+    };
+  }
+
+  /** Internal RPC only. Transient Gateway stores receive a reference, never a bearer. */
+  async createOAuthCallbackSession(data: {
+    userId: string;
+    profileId: string;
+    appId: string;
+  }) {
+    const identity = this.oauthCallbackIdentity(data);
+    const issued = await this.issueToken(
+      identity.userId,
+      identity.profileId,
+      identity.appId
+    );
+    const row = await this.tokenRepo.findOne({
+      where: { tokenData: issued.data.newToken, revoked: false },
+    });
+    if (
+      !row ||
+      row.userId !== identity.userId ||
+      row.profileId !== identity.profileId
+    )
+      throw new RpcException('OAuth callback session unavailable');
+    return { sessionId: row.id, ...identity };
+  }
+
+  /** Resolve only after the Gateway has consumed its origin/nonce-bound one-time grant. */
+  async resolveOAuthCallbackSession(data: {
+    sessionId: string;
+    userId: string;
+    profileId: string;
+    appId: string;
+  }) {
+    const identity = this.oauthCallbackIdentity(data);
+    if (
+      typeof data.sessionId !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        data.sessionId
+      )
+    )
+      throw new RpcException('Invalid OAuth callback session');
+    const row = await this.tokenRepo.findOne({
+      where: {
+        id: data.sessionId.toLowerCase(),
+        userId: identity.userId,
+        profileId: identity.profileId,
+        revoked: false,
+      },
+    });
+    if (!row || row.revoked)
+      throw new RpcException('OAuth callback session unavailable');
+    const validation = await this.validateToken(row.tokenData, identity.appId);
+    const claims = validation.data as {
+      userId?: string;
+      profileId?: string;
+      appId?: string;
+    };
+    if (
+      !validation.isValid ||
+      claims.userId?.toLowerCase() !== identity.userId ||
+      claims.profileId?.toLowerCase() !== identity.profileId ||
+      claims.appId !== identity.appId
+    )
+      throw new RpcException('OAuth callback session binding mismatch');
+    await this.profileOwnershipVerifier.resolveSelection(
+      identity.userId,
+      identity.profileId
+    );
+    return { token: row.tokenData };
+  }
+
   async validateToken(token: string, appId?: string) {
     try {
       const valid = await this.jsonWebToken.verifyAsync(token, {

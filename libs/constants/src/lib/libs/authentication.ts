@@ -17,6 +17,8 @@ const AuthCommands = {
   ValidateAccountExportLease: 'ValidateAccountExportLease',
   // Issue a new token for a user (e.g. after profile creation). Payload: { userId, profileId? }
   Issue: 'Issue',
+  CreateOAuthCallbackSession: 'CreateOAuthCallbackSession',
+  ResolveOAuthCallbackSession: 'ResolveOAuthCallbackSession',
   ValidateTotp: 'ValidateTotp',
   // OAuth commands for social login and account linking
   OAuthLogin: 'OAuthLogin',

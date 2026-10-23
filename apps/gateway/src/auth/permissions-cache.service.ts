@@ -2,8 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ICacheProvider } from './cache/cache-provider.interface';
 
 /**
- * Service for caching permission check results to reduce load on the permissions service
- * and improve response times for frequently checked permissions.
+ * Permission lookup fencing and diagnostic cache maintenance.
+ * Authorization always reloads the owning service; process-local cache entries
+ * cannot establish current permissions on another Gateway replica.
  *
  * Supports multiple cache backends: memory, file, Redis
  */
@@ -94,29 +95,9 @@ export class PermissionsCacheService {
           continue;
         }
         const generation = state.generation;
-        const cached = !this.cacheBypass
-          ? await this.get(profileId, permission, appScopeId, targetId)
-          : null;
-        if (generation !== state.generation || state.invalidations > 0)
-          continue;
-        if (cached !== null) return cached;
-
         const granted = await load();
         if (generation !== state.generation || state.invalidations > 0)
           continue;
-        if (!this.cacheBypass) {
-          await this.set(profileId, permission, appScopeId, granted, targetId);
-          if (generation !== state.generation || state.invalidations > 0) {
-            // The stale write may have landed after the first deletion.
-            try {
-              await this.cacheProvider.deletePattern(`${profileId}:*`);
-            } catch (error) {
-              this.cacheBypass = true;
-              throw error;
-            }
-            continue;
-          }
-        }
         return granted;
       }
     } finally {
@@ -145,6 +126,21 @@ export class PermissionsCacheService {
         state.invalidationWaiters.splice(0).forEach((resolve) => resolve());
       }
       this.releaseEpoch(profileId, state);
+    }
+  }
+
+  async invalidateAccountProfiles(profileIds: string[]): Promise<void> {
+    const uuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (
+      !Array.isArray(profileIds) ||
+      profileIds.length > 10000 ||
+      profileIds.some((id) => typeof id !== 'string' || !uuid.test(id))
+    ) {
+      throw new Error('Invalid account profile identity set');
+    }
+    for (const profileId of new Set(profileIds.map((id) => id.toLowerCase()))) {
+      await this.invalidateProfile(profileId);
     }
   }
 

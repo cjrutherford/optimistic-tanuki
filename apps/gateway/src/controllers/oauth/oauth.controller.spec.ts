@@ -206,7 +206,7 @@ describe('OAuthController', () => {
   it('carries a provider-verified email assertion only when registering a new OAuth account', async () => {
     const registerBootstrap = (controller as any).registerBootstrap;
     registerBootstrap.register.mockResolvedValue({
-      data: { user: { id: 'user-1' } },
+      data: { user: { id: '89275026-3642-5afe-be87-ca57f818b2c2' } },
     });
     (authClient.send as jest.Mock).mockReturnValue(
       of({ data: { id: 'oauth-1' } })
@@ -224,7 +224,7 @@ describe('OAuthController', () => {
     expect(authClient.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.LinkProvider },
       expect.objectContaining({
-        userId: 'user-1',
+        userId: '89275026-3642-5afe-be87-ca57f818b2c2',
         providerEmail: 'person@example.com',
         providerEmailVerified: true,
       })
@@ -803,7 +803,7 @@ describe('OAuthController', () => {
         returnTo: 'https://optimistic-tanuki.example/login',
         appScope: 'client-interface',
         issuedAt: Date.now(),
-        linkUserId: 'user-1',
+        linkUserId: '89275026-3642-5afe-be87-ca57f818b2c2',
       });
       jest.spyOn(controller as any, 'exchangeProviderCode').mockResolvedValue({
         providerUserId: '   ',
@@ -911,9 +911,18 @@ describe('OAuthController', () => {
         (command: { cmd: string }) =>
           of(
             command.cmd === AuthCommands.OAuthLogin
-              ? { data: { userId: 'legacy-user' } }
-              : command.cmd === AuthCommands.Issue
-              ? { data: { newToken: 'legacy-platform-token' } }
+              ? { data: { userId: 'a7a4941c-9ade-5cfb-87ae-a1a1753fc830' } }
+              : command.cmd === AuthCommands.CreateOAuthCallbackSession
+              ? {
+                  data: {
+                    sessionId: 'abababab-abab-4bab-8bab-abababababab',
+                    userId: 'a7a4941c-9ade-5cfb-87ae-a1a1753fc830',
+                    profileId: '4cca6fc8-1816-5afc-bb84-94f02a1bfbf3',
+                    appId: 'client-interface',
+                  },
+                }
+              : command.cmd === AuthCommands.ResolveOAuthCallbackSession
+              ? { data: { token: 'legacy-platform-token' } }
               : { data: { id: 'oauth-legacy' } }
           )
       );
@@ -924,7 +933,7 @@ describe('OAuthController', () => {
       jest
         .spyOn(controller as any, 'getOrCreateAppScopedProfile')
         .mockResolvedValue({
-          id: 'legacy-profile',
+          id: '4cca6fc8-1816-5afc-bb84-94f02a1bfbf3',
         });
       const response = { redirect: jest.fn() } as any;
 
@@ -978,7 +987,7 @@ describe('OAuthController', () => {
       registerBootstrap.register.mockResolvedValue({
         data: {
           user: {
-            id: 'new-user',
+            id: '61d9334f-61bd-5af6-882d-7d63bbbf046c',
             emailVerifiedAt: new Date('2026-08-03T15:14:11.083Z'),
           },
         },
@@ -988,8 +997,17 @@ describe('OAuthController', () => {
           of(
             command.cmd === AuthCommands.OAuthLogin
               ? { data: { needsRegistration: true } }
-              : command.cmd === AuthCommands.Issue
-              ? { data: { newToken: 'platform-token' } }
+              : command.cmd === AuthCommands.CreateOAuthCallbackSession
+              ? {
+                  data: {
+                    sessionId: '22222222-2222-4222-8222-222222222222',
+                    userId: '61d9334f-61bd-5af6-882d-7d63bbbf046c',
+                    profileId: 'eeb3151e-e115-5418-941a-1f01caa76d52',
+                    appId: 'client-interface',
+                  },
+                }
+              : command.cmd === AuthCommands.ResolveOAuthCallbackSession
+              ? { data: { token: 'platform-token' } }
               : { data: { id: 'oauth-1' } }
           )
       );
@@ -997,8 +1015,8 @@ describe('OAuthController', () => {
       profileClient.send.mockReturnValue(
         of([
           {
-            id: 'profile-1',
-            userId: 'new-user',
+            id: 'eeb3151e-e115-5418-941a-1f01caa76d52',
+            userId: '61d9334f-61bd-5af6-882d-7d63bbbf046c',
             appScope: 'client-interface',
           },
         ])
@@ -1101,15 +1119,29 @@ describe('OAuthController', () => {
           of(
             command.cmd === AuthCommands.OAuthLogin
               ? { data: { needsRegistration: true } }
-              : { data: { newToken: 'platform-token' } }
+              : command.cmd === AuthCommands.CreateOAuthCallbackSession
+              ? {
+                  data: {
+                    sessionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+                    userId: '6a3faa03-a70c-5359-8bda-e64569149ca3',
+                    profileId: 'e76dfce8-5e9f-5889-958d-7a3b39696a63',
+                    appId: 'client-interface',
+                  },
+                }
+              : command.cmd === AuthCommands.ResolveOAuthCallbackSession
+              ? { data: { token: 'platform-token' } }
+              : { data: { id: 'oauth-test' } }
           )
       );
       const registerOAuthUser = jest
         .spyOn(controller as any, 'registerOAuthUser')
-        .mockResolvedValue({ userId: 'teen-user', emailVerified: true });
+        .mockResolvedValue({
+          userId: '6a3faa03-a70c-5359-8bda-e64569149ca3',
+          emailVerified: true,
+        });
       jest
         .spyOn(controller as any, 'getOrCreateAppScopedProfile')
-        .mockResolvedValue({ id: 'teen-profile' });
+        .mockResolvedValue({ id: 'e76dfce8-5e9f-5889-958d-7a3b39696a63' });
       const response = { redirect: jest.fn() } as any;
 
       await controller.oauthRedirectCallback(
@@ -1207,7 +1239,10 @@ describe('OAuthController', () => {
     it('rejects an expired callback grant', async () => {
       const store = (controller as any).oauthStateStore as LocalOAuthStateStore;
       await store.createCallbackGrant('state-1.secret', {
-        token: 'platform-token',
+        sessionId: '33333333-3333-4333-8333-333333333333',
+        userId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        profileId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        appId: 'client-interface',
         returnOrigin: 'https://optimistic-tanuki.example',
         redemptionOrigin: 'https://client-interface.example',
         stateId: 'state-1',
@@ -1233,7 +1268,10 @@ describe('OAuthController', () => {
       const secret = 'callback_secret_for_cookie_grant';
       const callbackCode = `${stateId}.${secret}`;
       await store.createCallbackGrant(callbackCode, {
-        token: 'platform-token',
+        sessionId: '44444444-4444-4444-8444-444444444444',
+        userId: '55555555-5555-4555-8555-555555555555',
+        profileId: '66666666-6666-4666-8666-666666666666',
+        appId: 'client-interface',
         returnOrigin: 'https://forge.example',
         redemptionOrigin: 'https://optimistic-tanuki.example',
         cookieSession: true,
@@ -1241,6 +1279,9 @@ describe('OAuthController', () => {
         nonceHash: (controller as any).hashNonce('nonce'),
         expiresAt: Date.now() + 60_000,
       });
+      (authClient.send as jest.Mock).mockReturnValue(
+        of({ data: { token: 'platform-token' } })
+      );
 
       const targetResponse = { cookie: jest.fn() } as any;
       await expect(
@@ -1278,7 +1319,10 @@ describe('OAuthController', () => {
       const stateId = 'production_cookie_callback_grant';
       const callbackCode = `${stateId}.callback_secret_for_production_cookie`;
       await store.createCallbackGrant(callbackCode, {
-        token: 'platform-token',
+        sessionId: '77777777-7777-4777-8777-777777777777',
+        userId: '88888888-8888-4888-8888-888888888888',
+        profileId: '99999999-9999-4999-8999-999999999999',
+        appId: 'client-interface',
         returnOrigin: 'https://optimistic-tanuki.example',
         redemptionOrigin: 'https://optimistic-tanuki.example',
         cookieSession: true,
@@ -1286,6 +1330,9 @@ describe('OAuthController', () => {
         nonceHash: (controller as any).hashNonce('nonce'),
         expiresAt: Date.now() + 60_000,
       });
+      (authClient.send as jest.Mock).mockReturnValue(
+        of({ data: { token: 'platform-token' } })
+      );
       const targetResponse = { cookie: jest.fn() } as any;
 
       try {
@@ -1328,7 +1375,7 @@ describe('OAuthController', () => {
         appScope: 'client-interface',
         issuedAt: Date.now(),
         cookieSession: true,
-        linkUserId: 'user-1',
+        linkUserId: '89275026-3642-5afe-be87-ca57f818b2c2',
       });
       jest.spyOn(controller as any, 'exchangeProviderCode').mockResolvedValue({
         providerUserId: 'provider-derived-id',
@@ -1360,7 +1407,7 @@ describe('OAuthController', () => {
       expect(authClient.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.LinkProvider },
         {
-          userId: 'user-1',
+          userId: '89275026-3642-5afe-be87-ca57f818b2c2',
           provider: 'google',
           providerUserId: 'provider-derived-id',
           providerEmail: 'person@example.com',
@@ -1397,14 +1444,29 @@ describe('OAuthController', () => {
         (command: { cmd: string }) =>
           of(
             command.cmd === AuthCommands.OAuthLogin
-              ? { data: { userId: 'user-1' } }
-              : { data: { newToken: 'platform-token' } }
+              ? { data: { userId: '89275026-3642-5afe-be87-ca57f818b2c2' } }
+              : command.cmd === AuthCommands.CreateOAuthCallbackSession
+              ? {
+                  data: {
+                    sessionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+                    userId: '89275026-3642-5afe-be87-ca57f818b2c2',
+                    profileId: 'eeb3151e-e115-5418-941a-1f01caa76d52',
+                    appId: 'client-interface',
+                  },
+                }
+              : command.cmd === AuthCommands.ResolveOAuthCallbackSession
+              ? { data: { token: 'platform-token' } }
+              : { data: {} }
           )
       );
       const profileClient = (controller as any).profileClient;
       profileClient.send.mockReturnValue(
         of([
-          { id: 'profile-1', userId: 'user-1', appScope: 'client-interface' },
+          {
+            id: 'eeb3151e-e115-5418-941a-1f01caa76d52',
+            userId: '89275026-3642-5afe-be87-ca57f818b2c2',
+            appScope: 'client-interface',
+          },
         ])
       );
       const response = { redirect: jest.fn() } as any;
@@ -1845,7 +1907,10 @@ describe('OAuthController', () => {
       const response = { redirect: jest.fn(), cookie: jest.fn() } as any;
 
       await controller.startOAuthLink(
-        { params: { provider: 'google' }, user: { userId: 'user-1' } } as any,
+        {
+          params: { provider: 'google' },
+          user: { userId: '89275026-3642-5afe-be87-ca57f818b2c2' },
+        } as any,
         response,
         'google',
         'https://optimistic-tanuki.example/login',
@@ -1856,12 +1921,14 @@ describe('OAuthController', () => {
       const state = new URL(
         response.redirect.mock.calls[0][0]
       ).searchParams.get('state')!;
-      expect(state).not.toContain('user-1');
+      expect(state).not.toContain('89275026-3642-5afe-be87-ca57f818b2c2');
       const stateId = state.split('.')[0];
       const nonce = JSON.parse(response.cookie.mock.calls[0][1])[0].nonce;
       await expect(
         (controller as any).verifyAndConsumeState(state, 'google', nonce)
-      ).resolves.toMatchObject({ linkUserId: 'user-1' });
+      ).resolves.toMatchObject({
+        linkUserId: '89275026-3642-5afe-be87-ca57f818b2c2',
+      });
     });
   });
 
@@ -1874,7 +1941,7 @@ describe('OAuthController', () => {
       (authClient.send as jest.Mock).mockReturnValue(of(mockResult));
 
       const user = {
-        userId: 'user-1',
+        userId: '89275026-3642-5afe-be87-ca57f818b2c2',
         email: 'test@test.com',
         name: 'Test',
         profileId: 'p1',
@@ -1886,7 +1953,7 @@ describe('OAuthController', () => {
 
       expect(authClient.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.UnlinkProvider },
-        { ...unlinkRequest, userId: 'user-1' }
+        { ...unlinkRequest, userId: '89275026-3642-5afe-be87-ca57f818b2c2' }
       );
       expect(result).toEqual(mockResult);
     });
@@ -1897,7 +1964,7 @@ describe('OAuthController', () => {
       });
 
       const user = {
-        userId: 'user-1',
+        userId: '89275026-3642-5afe-be87-ca57f818b2c2',
         email: 'test@test.com',
         name: 'Test',
         profileId: 'p1',
@@ -1921,7 +1988,7 @@ describe('OAuthController', () => {
       (authClient.send as jest.Mock).mockReturnValue(of(mockResult));
 
       const user = {
-        userId: 'user-1',
+        userId: '89275026-3642-5afe-be87-ca57f818b2c2',
         email: 'test@test.com',
         name: 'Test',
         profileId: 'p1',
@@ -1932,7 +1999,7 @@ describe('OAuthController', () => {
 
       expect(authClient.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.GetLinkedProviders },
-        { userId: 'user-1' }
+        { userId: '89275026-3642-5afe-be87-ca57f818b2c2' }
       );
       expect(result).toEqual(mockResult);
     });
@@ -1943,7 +2010,7 @@ describe('OAuthController', () => {
       });
 
       const user = {
-        userId: 'user-1',
+        userId: '89275026-3642-5afe-be87-ca57f818b2c2',
         email: 'test@test.com',
         name: 'Test',
         profileId: 'p1',

@@ -478,6 +478,26 @@ export class AppController {
     }
   }
 
+  @MessagePattern({ cmd: AuthCommands.CreateOAuthCallbackSession })
+  createOAuthCallbackSession(
+    @Payload() data: { userId: string; profileId: string; appId: string }
+  ) {
+    return this.appService.createOAuthCallbackSession(data);
+  }
+
+  @MessagePattern({ cmd: AuthCommands.ResolveOAuthCallbackSession })
+  resolveOAuthCallbackSession(
+    @Payload()
+    data: {
+      sessionId: string;
+      userId: string;
+      profileId: string;
+      appId: string;
+    }
+  ) {
+    return this.appService.resolveOAuthCallbackSession(data);
+  }
+
   @MessagePattern({ cmd: AuthCommands.EnableMultiFactor })
   async enableMfa(@Payload() data: EnableMultiFactorRequest) {
     try {

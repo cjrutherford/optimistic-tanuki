@@ -1,5 +1,5 @@
 import { ClientProxy } from '@nestjs/microservices';
-import { RoleCommands } from '@optimistic-tanuki/constants';
+import { PermissionCommands, RoleCommands } from '@optimistic-tanuki/constants';
 import { catchError, from, Observable, concatMap, throwError } from 'rxjs';
 import { PermissionsCacheService } from './permissions-cache.service';
 
@@ -11,7 +11,10 @@ const BY_TARGET_UNASSIGN = 'Unassign:Role:ByTarget';
  */
 export function withPermissionMutationInvalidation(
   client: ClientProxy,
-  cache: Pick<PermissionsCacheService, 'invalidateProfile' | 'clear'>
+  cache: Pick<
+    PermissionsCacheService,
+    'invalidateProfile' | 'invalidateAccountProfiles' | 'clear'
+  >
 ): ClientProxy {
   return new Proxy(client, {
     get(target, property) {
@@ -49,13 +52,30 @@ export function withPermissionMutationInvalidation(
 async function invalidateAmbiguousMutation(
   pattern: unknown,
   data: unknown,
-  cache: Pick<PermissionsCacheService, 'invalidateProfile' | 'clear'>
+  cache: Pick<
+    PermissionsCacheService,
+    'invalidateProfile' | 'invalidateAccountProfiles' | 'clear'
+  >
 ): Promise<void> {
   const command =
     typeof pattern === 'string'
       ? pattern
       : (pattern as { cmd?: string } | null)?.cmd;
   const payload = (data || {}) as Record<string, unknown>;
+  if (
+    [
+      RoleCommands.Update,
+      RoleCommands.Delete,
+      RoleCommands.AddPermission,
+      RoleCommands.RemovePermission,
+      PermissionCommands.Create,
+      PermissionCommands.Update,
+      PermissionCommands.Delete,
+    ].includes(command as never)
+  ) {
+    await cache.clear();
+    return;
+  }
   let ids: unknown[] = [];
   if (command === RoleCommands.Assign || command === BY_TARGET_UNASSIGN) {
     ids = [payload.profileId];
@@ -78,7 +98,10 @@ async function affectedProfiles(
   pattern: unknown,
   data: unknown,
   result: unknown,
-  cache: Pick<PermissionsCacheService, 'invalidateProfile' | 'clear'>
+  cache: Pick<
+    PermissionsCacheService,
+    'invalidateProfile' | 'invalidateAccountProfiles' | 'clear'
+  >
 ): Promise<string[]> {
   const command =
     typeof pattern === 'string'
@@ -86,6 +109,20 @@ async function affectedProfiles(
       : (pattern as { cmd?: string } | null)?.cmd;
   const payload = (data || {}) as Record<string, unknown>;
   const response = (result || {}) as Record<string, unknown>;
+  if (
+    [
+      RoleCommands.Update,
+      RoleCommands.Delete,
+      RoleCommands.AddPermission,
+      RoleCommands.RemovePermission,
+      PermissionCommands.Create,
+      PermissionCommands.Update,
+      PermissionCommands.Delete,
+    ].includes(command as never)
+  ) {
+    await cache.clear();
+    return [];
+  }
   let ids: unknown[] = [];
 
   if (command === RoleCommands.Assign) {

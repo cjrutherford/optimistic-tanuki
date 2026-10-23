@@ -631,22 +631,31 @@ export class OAuthController {
         identity.email
       );
       await this.assertOwnerConsoleAccess(statePayload.appScope, profile.id);
-      const issueResult = await firstValueFrom(
+      const callbackSession = await firstValueFrom(
         this.authClient.send(
-          { cmd: AuthCommands.Issue },
+          { cmd: AuthCommands.CreateOAuthCallbackSession },
           { userId, profileId: profile.id, appId: statePayload.appScope }
         )
       );
-      const token =
-        issueResult?.data?.newToken ||
-        issueResult?.newToken ||
-        issueResult?.token;
-      if (!token) {
-        throw new Error('Authentication service did not return a token');
+      const session = callbackSession?.data || callbackSession;
+      const isUUID = (value: unknown): value is string =>
+        typeof value === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          value
+        );
+      if (
+        !isUUID(session?.sessionId) ||
+        session.userId !== userId ||
+        session.profileId !== profile.id ||
+        session.appId !== statePayload.appScope
+      ) {
+        throw new Error(
+          'Authentication service returned an invalid callback session'
+        );
       }
 
       const callbackCode = await this.createCallbackGrant(
-        token,
+        session,
         statePayload.returnTo,
         statePayload.appScope,
         stateId,
@@ -734,12 +743,39 @@ export class OAuthController {
         HttpStatus.UNAUTHORIZED
       );
     }
+    let resolveResult: unknown;
+    try {
+      resolveResult = await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.ResolveOAuthCallbackSession },
+          {
+            sessionId: grant.sessionId,
+            userId: grant.userId,
+            profileId: grant.profileId,
+            appId: grant.appId,
+          }
+        )
+      );
+    } catch {
+      throw new HttpException(
+        'OAuth session is unavailable',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+    const token =
+      (resolveResult as any)?.data?.token || (resolveResult as any)?.token;
+    if (typeof token !== 'string' || !token.trim()) {
+      throw new HttpException(
+        'Invalid OAuth callback code',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
     if (
       (grant.cookieSession ||
         request.headers['x-ot-session-mode'] === 'cookie') &&
       response
     ) {
-      response.cookie('ot_session', grant.token, {
+      response.cookie('ot_session', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -748,7 +784,7 @@ export class OAuthController {
       });
       return { session: true, returnOrigin: grant.returnOrigin };
     }
-    return { token: grant.token, returnOrigin: grant.returnOrigin };
+    return { token, returnOrigin: grant.returnOrigin };
   }
 
   // Not @Public(): this mutates account state, so AuthGuard MUST reject an
@@ -1231,7 +1267,12 @@ export class OAuthController {
   }
 
   private async createCallbackGrant(
-    token: string,
+    session: {
+      sessionId: string;
+      userId: string;
+      profileId: string;
+      appId: string;
+    },
     returnTo: string,
     appScope: string,
     stateId: string,
@@ -1240,7 +1281,7 @@ export class OAuthController {
   ): Promise<string> {
     const callbackCode = `${stateId}.${randomBytes(32).toString('base64url')}`;
     await this.oauthStateStore.createCallbackGrant(callbackCode, {
-      token,
+      ...session,
       returnOrigin: new URL(returnTo).origin,
       redemptionOrigin: new URL(this.resolveCallbackBase(appScope)).origin,
       cookieSession,

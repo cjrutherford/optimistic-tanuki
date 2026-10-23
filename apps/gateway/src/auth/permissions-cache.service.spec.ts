@@ -83,6 +83,34 @@ describe('PermissionsCacheService', () => {
     expect(service).toBeDefined();
   });
 
+  it('always loads authoritative decisions across independent cache providers', async () => {
+    const second = new PermissionsCacheService(cacheProvider);
+    await service.set('profile-independent', 'p', 's', true);
+    const load = jest.fn().mockResolvedValue(false);
+    await expect(
+      second.getOrLoad('profile-independent', 'p', 's', undefined, load)
+    ).resolves.toBe(false);
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('invalidates a validated account profile set and preserves unrelated profiles', async () => {
+    const ids = [
+      '11111111-1111-4111-8111-111111111111',
+      '22222222-2222-4222-8222-222222222222',
+    ];
+    for (const id of [...ids, '33333333-3333-4333-8333-333333333333'])
+      await service.set(id, 'p', 's', true);
+    await service.invalidateAccountProfiles([...ids, ids[0]]);
+    for (const id of ids)
+      await expect(service.get(id, 'p', 's')).resolves.toBeNull();
+    await expect(
+      service.get('33333333-3333-4333-8333-333333333333', 'p', 's')
+    ).resolves.toBe(true);
+    await expect(
+      service.invalidateAccountProfiles(['account-1'])
+    ).rejects.toThrow();
+  });
+
   describe('get and set', () => {
     it('should return null for non-existent cache entry', async () => {
       const result = await service.get('profile1', 'permission1', 'appScope1');
@@ -222,7 +250,7 @@ describe('PermissionsCacheService', () => {
     expect(loader).toHaveBeenCalledTimes(2);
     await expect(
       service.get('profile-race', 'permission', 'scope-a')
-    ).resolves.toBe(false);
+    ).resolves.toBeNull();
   });
 
   it('does not trust cache after profile invalidation fails', async () => {
@@ -271,43 +299,12 @@ describe('PermissionsCacheService', () => {
     expect(load).toHaveBeenCalledTimes(1);
   });
 
-  it('bypasses cache when a late stale-write cleanup fails', async () => {
-    let finishSet!: () => void;
-    let markSetStarted!: () => void;
-    const setStarted = new Promise<void>(
-      (resolve) => (markSetStarted = resolve)
-    );
-    (cacheProvider.set as jest.Mock).mockImplementationOnce(
-      () =>
-        new Promise<void>((resolve) => {
-          finishSet = resolve;
-          markSetStarted();
-        })
-    );
-    const load = jest
-      .fn<Promise<boolean>, []>()
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(false);
-    (cacheProvider.deletePattern as jest.Mock)
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error('late delete failed'));
-    const pending = service.getOrLoad(
-      'profile-late',
-      'p',
-      's',
-      undefined,
-      load
-    );
-    await setStarted;
-    await service.invalidateProfile('profile-late');
-    finishSet();
-    await expect(pending).rejects.toThrow('late delete failed');
-
-    await service.set('profile-late', 'p', 's', true);
+  it('does not persist authoritative lookups to the diagnostics cache', async () => {
+    const load = jest.fn().mockResolvedValue(true);
     await expect(
       service.getOrLoad('profile-late', 'p', 's', undefined, load)
-    ).resolves.toBe(false);
-    expect(load).toHaveBeenCalledTimes(2);
+    ).resolves.toBe(true);
+    expect(cacheProvider.set).not.toHaveBeenCalled();
   });
 
   it('fences in-flight lookups during clear and keeps cache bypassed after clear failure', async () => {

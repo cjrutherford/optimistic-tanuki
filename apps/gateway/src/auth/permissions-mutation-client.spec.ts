@@ -1,5 +1,5 @@
 import { ClientProxy } from '@nestjs/microservices';
-import { RoleCommands } from '@optimistic-tanuki/constants';
+import { PermissionCommands, RoleCommands } from '@optimistic-tanuki/constants';
 import { defer, lastValueFrom, of, throwError } from 'rxjs';
 import { PermissionsCacheService } from './permissions-cache.service';
 import { withPermissionMutationInvalidation } from './permissions-mutation-client';
@@ -8,13 +8,14 @@ describe('withPermissionMutationInvalidation', () => {
   let client: ClientProxy;
   let cacheService: Pick<
     PermissionsCacheService,
-    'invalidateProfile' | 'clear'
+    'invalidateProfile' | 'invalidateAccountProfiles' | 'clear'
   >;
 
   beforeEach(() => {
     client = { send: jest.fn() } as unknown as ClientProxy;
     cacheService = {
       invalidateProfile: jest.fn().mockResolvedValue(undefined),
+      invalidateAccountProfiles: jest.fn().mockResolvedValue(undefined),
       clear: jest.fn().mockResolvedValue(undefined),
     };
   });
@@ -46,6 +47,28 @@ describe('withPermissionMutationInvalidation', () => {
     expect(result).toBe(assignment);
     expect(events).toEqual(['mutation', 'invalidate:profile-1']);
     expect(cacheService.invalidateProfile).toHaveBeenCalledWith('profile-1');
+  });
+
+  it('clears shared role definitions without requiring a new RPC reply shape', async () => {
+    (client.send as jest.Mock).mockReturnValue(of({ id: 'definition-1' }));
+    await lastValueFrom(
+      withPermissionMutationInvalidation(client, cacheService).send(
+        { cmd: RoleCommands.Update },
+        { roleId: 'role-1' }
+      )
+    );
+    expect(cacheService.clear).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears shared permission definitions without trusting caller profile lists', async () => {
+    (client.send as jest.Mock).mockReturnValue(of({ id: 'definition-1' }));
+    await lastValueFrom(
+      withPermissionMutationInvalidation(client, cacheService).send(
+        { cmd: PermissionCommands.Update },
+        { permissionId: 'permission-1' }
+      )
+    );
+    expect(cacheService.clear).toHaveBeenCalledTimes(1);
   });
 
   it('invalidates the affected profile returned by an exact unassign acknowledgement', async () => {
