@@ -1,0 +1,274 @@
+{
+  "slice": "DF-007-N03",
+  "date": "2026-10-23",
+  "accepted": true,
+  "status": "locally-verified-OT-TS-search-stores",
+  "releaseApplications": {
+    "OT": "client-interface",
+    "TS": "local-hub"
+  },
+  "baseRevision": "56ca3989f885d0d9342852e84170db4f6e4a3aba",
+  "sourceManifestSha256": "1a90d0a0100b13bfd94fdec06bb11756478454f4a8283f35ef2aea3817ebc17a",
+  "runtimeSourceHashes": {
+    "apps/social/src/app/services/search.service.ts": "86ef72ff2dce4add7b00cd1698ff946b50eea3221848720fd601db7397439e2d",
+    "apps/social/src/app/services/search.service.spec.ts": "034cfcc24473261dbc948a389e2b3edd8e7de9ee078b1703ad6aefdb187801fd",
+    "apps/authentication-e2e/src/authentication/n03-catalog.worker.ts": "a9859338ec45e837a38aaeaf573650552e61e4e4c5f923f789d98918454bc8af",
+    "apps/authentication-e2e/src/authentication/search-stores.spec.ts": "a9a897d16d4890488f58f210305590ae949a392b541ece75cec9f18ce0f366cc"
+  },
+  "currentSourceHashes": {
+    "apps/social/src/app/services/search.service.ts": "86ef72ff2dce4add7b00cd1698ff946b50eea3221848720fd601db7397439e2d",
+    "apps/social/src/app/services/search.service.spec.ts": "034cfcc24473261dbc948a389e2b3edd8e7de9ee078b1703ad6aefdb187801fd",
+    "apps/authentication-e2e/src/authentication/n03-catalog.worker.ts": "a9859338ec45e837a38aaeaf573650552e61e4e4c5f923f789d98918454bc8af",
+    "apps/authentication-e2e/src/authentication/search-stores.spec.ts": "a9a897d16d4890488f58f210305590ae949a392b541ece75cec9f18ce0f366cc",
+    "apps/authentication-e2e/src/authentication/background-work.spec.ts": "f35a2893631d884627777b9ad86b9f3773f4f28f8285e8a65ded3d8c8b8eaa36",
+    "apps/authentication-e2e/src/authentication/session-cache.spec.ts": "123c2a3fa2fc70724bf5f058150937150fbc6e50c92d16aff2975e018f9daed6"
+  },
+  "schemaInputsVerified": 171,
+  "schemaInputsSha256": "5f8701802d7aa713da4f4f11596e97ac80413253d174eac3aa556149e73a00f0",
+  "sourceScan": {
+    "files": 756,
+    "matches": {
+      "externalSearchEngine": 0,
+      "materializedView": 0,
+      "fullTextVector": 0,
+      "foreignTable": 0
+    },
+    "sha256": "770eca3e60f9dce118c8389924ee95c2db2288ccca27f19071629a98146ed762",
+    "limit": "Bounded tracked-source scan plus traced primary repository flows; not proof of deployed external-store absence. Directory stubs excluded."
+  },
+  "runtime": {
+    "command": "N03_ATTEMPT=attempt-5 timeout 900s python3 .runtime-artifacts/account-rights/finish-sequence/search-stores/runtime/run.py",
+    "result": "PASS",
+    "seconds": 92.91,
+    "casesPassed": 1,
+    "casesSkipped": 0,
+    "migrationExitCode": 0,
+    "catalogs": {
+      "authentication": {
+        "tables": 9,
+        "columns": 91,
+        "indexes": 26,
+        "migrationOnlyPrimaryTables": [],
+        "migrationOnlyColumns": {}
+      },
+      "profile": {
+        "tables": 6,
+        "columns": 53,
+        "indexes": 8,
+        "migrationOnlyPrimaryTables": ["goal", "project"],
+        "migrationOnlyColumns": {
+          "timeline": ["relatedGoalId", "relatedProjectId"]
+        }
+      },
+      "permissions": {
+        "tables": 7,
+        "columns": 32,
+        "indexes": 15,
+        "migrationOnlyPrimaryTables": [],
+        "migrationOnlyColumns": {}
+      },
+      "social": {
+        "tables": 35,
+        "columns": 319,
+        "indexes": 67,
+        "migrationOnlyPrimaryTables": [],
+        "migrationOnlyColumns": {}
+      },
+      "forum": {
+        "tables": 8,
+        "columns": 71,
+        "indexes": 10,
+        "migrationOnlyPrimaryTables": [],
+        "migrationOnlyColumns": {}
+      },
+      "assets": {
+        "tables": 3,
+        "columns": 26,
+        "indexes": 4,
+        "migrationOnlyPrimaryTables": [],
+        "migrationOnlyColumns": {}
+      },
+      "videos": {
+        "tables": 8,
+        "columns": 91,
+        "indexes": 12,
+        "migrationOnlyPrimaryTables": [],
+        "migrationOnlyColumns": {}
+      },
+      "workspace": {
+        "tables": 2,
+        "columns": 15,
+        "indexes": 4,
+        "migrationOnlyPrimaryTables": [],
+        "migrationOnlyColumns": {}
+      },
+      "app-configurator": {
+        "tables": 4,
+        "columns": 41,
+        "indexes": 9,
+        "migrationOnlyPrimaryTables": [],
+        "migrationOnlyColumns": {}
+      },
+      "chat-collector": {
+        "tables": 3,
+        "columns": 21,
+        "indexes": 3,
+        "migrationOnlyPrimaryTables": [],
+        "migrationOnlyColumns": {}
+      },
+      "classifieds": {
+        "tables": 2,
+        "columns": 21,
+        "indexes": 3,
+        "migrationOnlyPrimaryTables": [],
+        "migrationOnlyColumns": {}
+      }
+    },
+    "totals": {
+      "databases": 11,
+      "ormTablesIncludingJunctions": 74,
+      "migrationStores": 11,
+      "migrationOnlyPrimaryTables": 2,
+      "physicalTables": 87,
+      "columns": 781,
+      "nativeBtreeIndexes": 161
+    },
+    "absentInRegisteredFreshSchemas": [
+      "public views/materialized views",
+      "stored generated/full-text columns",
+      "foreign tables",
+      "custom mirror/persistence triggers",
+      "unregistered application schemas"
+    ],
+    "nativeIndexMethods": {
+      "btree": 161
+    },
+    "stages": {
+      "readOnlyElevenOwnerCatalogAttribution": true,
+      "realHistoryCleanupAndIndexReadback": true
+    },
+    "historyStages": {
+      "primaryHistoryAttributionAndNativeIndexCleanup": true,
+      "publicCommunityDiscoveryExcludesPrivate": true,
+      "lateSearchCannotRecreateClearedHistory": true,
+      "activeSqlWriteDrainedBeforeCleanupAck": true,
+      "cleanupSqlFailureVisibleAndRetryable": true,
+      "restartReadbackAndNewIndependentSearch": true
+    },
+    "independentCountMapsRestored": true,
+    "independentSchemaShapeRestored": true,
+    "temporaryTablesRemaining": 0,
+    "privateResources": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "imageIds": {
+      "db": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+      "db_setup": "sha256:3f33cecc1a90bc154fd4cb6878bd498829414c85749c98230e53f93484cadcac"
+    },
+    "provenance": "Pinned migration toolchain and private migration workspace with all current registered entity/migration inputs verified byte-identical; real PostgreSQL catalogs and independent source SearchService process. Synthetic config injection only; no full Gateway or browser deployment.",
+    "controlledBoundaries": [
+      "synthetic database configuration",
+      "trusted owned-profile set selected from real Profile rows; no authenticated deletion API",
+      "community-read scheduler barrier and private SQL failure/lock triggers"
+    ]
+  },
+  "checks": {
+    "focusedSocialTestsPassed": 12,
+    "ciContractChecksPassed": 35,
+    "productionBuilds": ["social"],
+    "lintProjects": ["social", "authentication-e2e"],
+    "scopedDevelopmentBuilds": ["client-interface", "local-hub", "social"],
+    "migrationGovernance": "PASS; no production schema change",
+    "sourceReview": "GO; read-only Luna, no P1/P2 found; no runtime claim by reviewer",
+    "privateRegistrationProbe": {
+      "result": "PASS",
+      "command": [
+        "pnpm",
+        "nx",
+        "run",
+        "authentication-e2e:e2e",
+        "--excludeTaskDependencies",
+        "--testFile=(background-work|session-cache|search-stores).spec.ts$",
+        "--runInBand"
+      ],
+      "readiness": "Controlled TCP readiness socket only; this verifies opt-in test registration, not any backend behavior.",
+      "markersAbsent": [
+        "N01_PRIVATE_MARKER",
+        "N02_PRIVATE_MARKER",
+        "N03_PRIVATE_MARKER"
+      ],
+      "exitCode": 0,
+      "expectedPrivateCasesSkipped": 3,
+      "executedPrivateCases": 0
+    },
+    "previousPrivateCallbackBodies": [
+      {
+        "slice": "N01",
+        "path": "apps/authentication-e2e/src/authentication/background-work.spec.ts",
+        "callbackASTUnchanged": true,
+        "normalization": "Ignore trivia, optional parentheses and trailing commas; retain expression/statement structure, operators and literal values",
+        "sha256": "f35a2893631d884627777b9ad86b9f3773f4f28f8285e8a65ded3d8c8b8eaa36"
+      },
+      {
+        "slice": "N02",
+        "path": "apps/authentication-e2e/src/authentication/session-cache.spec.ts",
+        "callbackASTUnchanged": true,
+        "normalization": "Ignore trivia, optional parentheses and trailing commas; retain expression/statement structure, operators and literal values",
+        "sha256": "123c2a3fa2fc70724bf5f058150937150fbc6e50c92d16aff2975e018f9daed6"
+      }
+    ]
+  },
+  "earlierAttempts": [
+    {
+      "attempt": 1,
+      "result": "FAIL",
+      "seconds": 19.36,
+      "reason": "Outer schema query needed an explicit relkind text cast; stopped before application test."
+    },
+    {
+      "attempt": 2,
+      "result": "FAIL",
+      "seconds": 45.07,
+      "reason": "Read-only catalog found migration-only timeline.relatedGoalId/relatedProjectId; explicitly attributed to initial Profile migration. Opened database counts restored."
+    },
+    {
+      "attempt": 3,
+      "result": "FAIL",
+      "reason": "Inherited POSTGRES_DB selected postgres for Permissions metadata. Added scoped synthetic environment overrides; opened database counts restored."
+    },
+    {
+      "attempt": 4,
+      "result": "FAIL",
+      "seconds": 59.85,
+      "reason": "All catalog/history assertions and inner cleanup passed, but outer baseline was captured before migration completion. Rejected acceptance; added explicit exited/zero migration barrier."
+    }
+  ],
+  "limits": [
+    "Fresh local schemas and the reviewed source only; no deployed external-store absence claim.",
+    "Generation/write-drain history fences are process-local. D00 must provide distributed/permanent account producer fencing and authoritative identity discovery.",
+    "No authenticated deletion API, browser account-switch cleanup, complete search UX or provider qualification.",
+    "New independent searches can record history after cleanup acknowledgement.",
+    "Native index readback proves current row visibility, not physical erasure of dead tuples, WAL or backups.",
+    "Migration-only Profile structures and primary aggregate/playback fields are inventoried without new semantic ownership/deletion acceptance.",
+    "Overall export/deletion/download controls remain incomplete; no artifact available.",
+    "Full remote CI/release qualification is not established by selected pre-E2E checks or the registration-only probe."
+  ],
+  "protectedFilesUnchanged": 43,
+  "evidenceHashes": {
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/runtime/attempt-5/result.json": "cacf8d2aae8f5bc97257848573cd2a4f3b8fa771c315a40cc6ed57ecd4c538f0",
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/runtime/attempt-5/fixture-report.json": "1f4b64df57df780e4cd4e0586603c599b41a3ddf31313e4479b79dc58dfc586b",
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/runtime/attempt-5/history.json": "710022c03b38514f21d89ab7d7707ebc1a48f4cce8772f45f3e3c1c64ca19820",
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/runtime/attempt-5/metadata.json": "2ee77b4eaf3cf3e5e0a4d2f266a20fca74eae7938dcdfdd32aaeefe9cf679c08",
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/runtime/attempt-5/identities.json": "8811f84a9e4284c75cc0b072b5a8c86bd41a0630675dead0ba72910a15f468cb",
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/runtime/attempt-5/migration-completion.json": "cc814ffa19263d4b7d80ecef93240300d297d2a42acdf85c5dba3cb111070bc0",
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/runtime/attempt-5/database-counts-before.json": "91d7773fadf9c20bda68a32789de09fe2b401484dcde2bd2e08f4ba8bf0317d3",
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/runtime/attempt-5/database-counts-after.json": "91d7773fadf9c20bda68a32789de09fe2b401484dcde2bd2e08f4ba8bf0317d3",
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/runtime/attempt-5/schema-before.json": "cd7cbd1aa99497282be57cd315d81aa93ca6b59fe7e8508f352c98ff9b22adbb",
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/runtime/attempt-5/schema-after.json": "cd7cbd1aa99497282be57cd315d81aa93ca6b59fe7e8508f352c98ff9b22adbb",
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/runtime/attempt-5/cleanup.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/private-gates-selection.log": "502a0e1758a98f9594b13dfde9830bc5353f1b5a47c8510108073ee6cb95efc5",
+    ".runtime-artifacts/account-rights/finish-sequence/search-stores/private-gate-body-proof.json": "aed449a90eb94d0fda3a59b12e89f3ace83da346fced72b641d921e1a3fd3009"
+  }
+}

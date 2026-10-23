@@ -6,7 +6,7 @@ Updated: 2026-10-23. Sequence starting accepted baseline: `661853166a332596ffe1c
 
 **Goal:** finish the already selected local release work in order: account rights, inactivity/log retention, integrated journeys, then launch materials. Real external flows and production release qualification remain separately owned.
 
-**Active scope:** OT (`client-interface`) and TS (`local-hub`) only. N02 is locally verified; **N03 is next**. See the [N02 finding](../release-readiness/findings/DF-007-N02.md). N01 and O09-P/C/I remain accepted. Do not use the historical platform inventory as a release denominator or start another product owner from its queue position.
+**Active scope:** OT (`client-interface`) and TS (`local-hub`) only. N03 is locally verified; **N04 is next**. See the [N03 finding](../release-readiness/findings/DF-007-N03.md). N01, N02 and O09-P/C/I remain accepted. Do not use the historical platform inventory as a release denominator or start another product owner from its queue position.
 
 The [technical register](../release-readiness/REMAINING-SLICES.md) and historical rows below preserve existing IDs and accepted receipts. They do not define an additional product scope or a remaining-release denominator.
 
@@ -58,7 +58,7 @@ Complete each existing local store contract and its independent readback. Extern
 | ----- | ---------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
 | 18    | N01 **VERIFIED OT/TS** | Enumerate and address per-account queues, processing jobs and outboxes, including media workers and delivery jobs. | Complete producer/consumer inventory, write/cancel fencing and restart/readback proof.                                               |
 | 19    | N02 **VERIFIED OT/TS** | Address permission/session caches and transient OAuth state without persisting bearer credentials.                 | Account-scoped invalidation, stale replica denial, cookie/bearer compatibility.                                                      |
-| 20    | N03                    | Address search indexes, materialized projections and secondary persistence found by reconciliation.                | Exact source-to-index attribution and independent account cleanup/readback; explicit evidence if a candidate store is absent.        |
+| 20    | N03 **VERIFIED OT/TS** | Address search indexes, materialized projections and secondary persistence found by reconciliation.                | Exact source-to-index attribution and independent account cleanup/readback; explicit evidence if a candidate store is absent.        |
 | 21    | N04                    | Address account-identifiable application/activity logs and local sink deletion contracts.                          | Sink inventory and immediate account-deletion behavior, with no undisclosed retained copies. The rolling 90-day rule is R2-02 below. |
 | 22    | N05                    | Address object-store versions, media derivatives, in-flight processing and encryption-key custody.                 | Complete version/derivative inventory, race fences, recoverable deletion ordering and independent reads.                             |
 | 23    | N06                    | Address browser/local persisted account state using shared session/account infrastructure.                         | Signout/deletion/account-switch cleanup across products; no stale cross-account state.                                               |
@@ -181,3 +181,5 @@ Workspace and App Configurator capture and integration are accepted at the local
 N01 acceptance is limited to the two-app inventory and per-work-item fencing/recovery. Permanent account-wide producer fencing and deletion remain D00. See the [receipt](../release-readiness/evidence/df-007/checkpoint-n01.json).
 
 N02 backend replica/session/OAuth acceptance is recorded in the [receipt](../release-readiness/evidence/df-007/checkpoint-n02.json). Permanent account-wide fencing and browser cleanup remain D00 and N06.
+
+N03 store-level cleanup and catalog acceptance is recorded in the [receipt](../release-readiness/evidence/df-007/checkpoint-n03.json). D00 permanent fencing and N06 browser cleanup remain open.
