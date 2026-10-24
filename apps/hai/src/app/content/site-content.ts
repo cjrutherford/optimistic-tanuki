@@ -101,7 +101,7 @@ export const PARTNER_BENEFITS: string[] = [
 export const CONTACT_LEAD = {
   title: 'Start a Project',
   description:
-    'Tell us about a project, an infrastructure need, or a partner delivery conversation.',
+    'Tell us about a project, an infrastructure need, or a partner delivery conversation. Reach out with a problem, or an idea!',
 } as const;
 
 export const CONTACT_SUBJECTS: ContactSubject[] = [

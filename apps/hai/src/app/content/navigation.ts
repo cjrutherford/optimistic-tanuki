@@ -27,6 +27,12 @@ export const SITE_NAVIGATION: AppShellNavLink[] = [
   },
   { label: 'Cost Comparison', route: '/cost-comparison' },
   { label: 'How We Work', route: '/how-we-work' },
+  { label: 'Technical Training', route: '/technical-training' },
+  { label: 'Web Design', route: '/web-design' },
+  {
+    label: 'Hardware Support and Repair',
+    route: '/hardware-support-and-repair',
+  },
   { label: 'Contact', route: '/contact' },
 ];
 
