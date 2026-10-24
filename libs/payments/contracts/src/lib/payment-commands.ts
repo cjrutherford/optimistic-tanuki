@@ -1,4 +1,7 @@
 export const PaymentCommands = {
+  OPEN_ACCOUNT_EXPORT_CAPTURE: 'payments.openAccountExportCapture',
+  READ_ACCOUNT_EXPORT_CAPTURE: 'payments.readAccountExportCapture',
+  RELEASE_ACCOUNT_EXPORT_CAPTURE: 'payments.releaseAccountExportCapture',
   GET_DONATION_GOAL: 'payments.getDonationGoal',
   LIST_DONATIONS: 'payments.listDonations',
   RECORD_DONATION: 'payments.recordDonation',

@@ -20,7 +20,8 @@ export interface AccountExportProfileBoundSnapshotClientOptions {
     | 'workspace'
     | 'app-configurator'
     | 'chat-collector'
-    | 'classifieds';
+    | 'classifieds'
+    | 'payments';
   sources: readonly string[];
   open(payload: unknown, timeoutMs: number): Promise<unknown>;
   read(

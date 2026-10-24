@@ -1,0 +1,39 @@
+{
+  "slice": "A01",
+  "scope": ["client-interface", "local-hub"],
+  "status": "ACTIVE_NOT_ACCEPTED",
+  "accepted": false,
+  "pushedBaseline": "3070fe316e5588208d388fb224604472a77cc02d",
+  "captureOwnersImplemented": 11,
+  "blockingOwner": "payments",
+  "existingOwnerSlice": "O10-P/O10-C/O10-I",
+  "pendingPolicy": "decisions/A01-PAYMENTS-EXPORT-POLICY.md",
+  "artifactDownloadAvailable": false,
+  "checks": {
+    "modelsUnit": 5,
+    "authenticationUnit": 37,
+    "authenticationPostgresTestsSkipped": 5,
+    "preE2E": 34,
+    "productionBuilds": 2,
+    "owningLints": 2,
+    "sourceReview": "Flat Luna, no P1/P2; source-only"
+  },
+  "runtimeLimit": "Real Authentication spool in unit fixture; remote owner captures mocked. No new live owner/Payments/runtime qualification.",
+  "sourceHashes": {
+    "libs/models/src/index.ts": "d7abc3e2c12ee9d7bddf6f861a9ca3f88f5cfc5e3c082fbd44e7c52c43f51a3e",
+    "libs/models/src/lib/libs/account-export/account-export-release-coverage.ts": "ce87abc1934d6698f55872c5122bd175dd5206a2d3e4891e73c055687906c3a7",
+    "libs/models/src/lib/libs/account-export/account-export-release-coverage.spec.ts": "b0e8a878b1212427bcfe0f6ef88558f6a389a6f015bd4b48178816da276f38c2",
+    "apps/authentication/src/account-export-jobs/account-export-release-registry.ts": "6e0c9c58233a0388f6c70abc48e8d1c21dd83e17d8bfca3d552f53db03a11ee2",
+    "apps/authentication/src/account-export-jobs/account-export-release-registry.spec.ts": "e761055ccad5332552f4719e8543687f4d6fb84dd2129bc37bc9be59ed7fbe43",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "e946bdf4f8e5fbe8a9d04b94658a42b06f7b6334ab4c88911aaa806aaf7897d5",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "8fddf8fb45884c033001321166c6cc75acca4787e8f3c826b2ab1af2ae3cb0cc"
+  },
+  "artifacts": {
+    ".runtime-artifacts/account-rights/finish-sequence/artifact-coverage/models-unit-qualified.log": "2c747a04a12ac86bca2ffc89e9bdb3feeb811df7677bd0c8529d91c29408a0fc",
+    ".runtime-artifacts/account-rights/finish-sequence/artifact-coverage/auth-unit-qualified.log": "9e4a971173696209aacdfa5968fbc2d05de71b3642c4240cb1ab42b1f9c79729",
+    ".runtime-artifacts/account-rights/finish-sequence/artifact-coverage/pre-e2e.log": "cdf76c97d244a98b7f44cf99df872c72a3a50c759c3d279cc79a85f9941c518d",
+    ".runtime-artifacts/account-rights/finish-sequence/artifact-coverage/build.log": "d2430eab6380359a0a64e38d0d7e762113a3cfdab16ad7bcab8d38c1d5b894c2",
+    ".runtime-artifacts/account-rights/finish-sequence/artifact-coverage/lint.log": "df2930acaecd4c62cfd8dd6ba88c75ddc424a419c6bc9dc358e23024d357fd4f"
+  },
+  "failedRuns": "Worker first invocation used singular testPathPattern and ran broad suite, failed compilation. Corrected narrow job run then failed six stale incomplete-state expectations because Payments now blocks coverage; qualified runs passed with explicit coverage assertions."
+}

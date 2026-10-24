@@ -1,0 +1,596 @@
+{
+  "version": 1,
+  "scope": "A01 O10 payments safe shared-account source capture. Shared financial receipts and wallet totals are included for the subject account without inferred app scope; attribution is recorded-unverified and consent is not inferred.",
+  "selection": {
+    "principal": "subject-account-owned-and-shared-financial-records",
+    "appScope": "not present on financial rows; no appScope filter is inferred",
+    "selectors": [
+      "Donation.userId",
+      "ClassifiedPayment.buyerId OR sellerId (never interestedBuyerId alone)",
+      "SellerWallet.sellerId",
+      "Transaction.userId",
+      "Offer.buyerId OR sellerId",
+      "PayoutRequest.sellerId",
+      "BusinessPage.ownerId",
+      "BusinessTheme through selected BusinessPage.ownerId",
+      "CommunitySponsorship.userId",
+      "LemonSqueezyProduct excluded with zero rows"
+    ]
+  },
+  "entities": [
+    {
+      "name": "Donation",
+      "table": "donations",
+      "source": "apps/payments/src/entities/donation.entity.ts",
+      "columns": [
+        {
+          "fields": ["id"],
+          "classification": "owned",
+          "action": "include-owned",
+          "handling": "Selected account receipt identifier.",
+          "reason": "Opaque identifier for the subject's donation receipt.",
+          "evidence": [
+            "apps/payments/src/app/loadDatabase.ts",
+            "apps/payments/src/entities/donation.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": [
+            "userId",
+            "profileId",
+            "amount",
+            "isRecurring",
+            "status",
+            "currency",
+            "createdAt",
+            "cancelledAt"
+          ],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Project only bounded account receipt fields; bind non-null profileId to captured identity snapshot or fail capture.",
+          "reason": "Safe donation receipt facts and amounts belong to the subject's shared account history.",
+          "evidence": [
+            "apps/payments/src/entities/donation.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": ["lemonSqueezyOrderId", "lemonSqueezySubscriptionId"],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Omit provider identifiers.",
+          "reason": "Provider identifiers are unnecessary for the receipt and can expose cross-system linkage.",
+          "evidence": ["apps/payments/src/entities/donation.entity.ts"]
+        },
+        {
+          "fields": ["message", "anonymous"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Omit donor freeform text and visibility preference.",
+          "reason": "Freeform/private content and audience preference are outside safe-source capture.",
+          "evidence": ["apps/payments/src/entities/donation.entity.ts"]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "ClassifiedPayment",
+      "table": "classified_payments",
+      "source": "apps/payments/src/entities/classified-payment.entity.ts",
+      "columns": [
+        {
+          "fields": ["id", "classifiedId", "offerId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include receipt ID and opaque classified/offer references only.",
+          "reason": "A shared-account receipt can identify its associated record without exporting counterpart identity.",
+          "evidence": [
+            "apps/payments/src/entities/classified-payment.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": [
+            "buyerId",
+            "sellerId",
+            "amount",
+            "status",
+            "createdAt",
+            "confirmedAt",
+            "releasedAt"
+          ],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Select by buyer or seller account; project the subject's role and receipt values only.",
+          "reason": "The account may participate as buyer or seller; both are shared financial history.",
+          "evidence": [
+            "apps/payments/src/entities/classified-payment.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": ["interestedBuyerId"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Do not use as a selector or emit.",
+          "reason": "Interest alone is not participation in the payment receipt.",
+          "evidence": [
+            "apps/payments/src/entities/classified-payment.entity.ts"
+          ]
+        },
+        {
+          "fields": [
+            "platformFeeAmount",
+            "sellerReceivesAmount",
+            "LemonSqueezyOrderId"
+          ],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Omit internal fee split and provider order identifier.",
+          "reason": "Avoid provider linkage and details not needed for a safe receipt.",
+          "evidence": [
+            "apps/payments/src/entities/classified-payment.entity.ts"
+          ]
+        },
+        {
+          "fields": ["paymentIntentId"],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Omit provider payment-intent identifiers.",
+          "reason": "Provider handles are excluded from the approved portable receipt.",
+          "evidence": [
+            "apps/payments/src/entities/classified-payment.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": ["paymentMethod"],
+          "classification": "nonpersonal",
+          "action": "exclude",
+          "handling": "Omit payment method.",
+          "reason": "Payment credential context is excluded.",
+          "evidence": [
+            "apps/payments/src/entities/classified-payment.entity.ts"
+          ]
+        },
+        {
+          "fields": ["proofImageUrl", "disputeReason"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Omit proof and dispute content.",
+          "reason": "Private dispute/proof content is explicitly excluded.",
+          "evidence": [
+            "apps/payments/src/entities/classified-payment.entity.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "SellerWallet",
+      "table": "seller_wallets",
+      "source": "apps/payments/src/entities/seller-wallet.entity.ts",
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "sellerId",
+            "availableBalance",
+            "pendingBalance",
+            "totalEarned",
+            "totalPaidOut",
+            "createdAt",
+            "lastPayoutAt"
+          ],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Include subject wallet balances as exact decimal strings and timestamps.",
+          "reason": "The user explicitly included own shared-account wallet totals.",
+          "evidence": [
+            "apps/payments/src/entities/seller-wallet.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": [
+            "payoutMethod",
+            "payoutEmail",
+            "bankAccountLast4",
+            "bankRoutingLast4"
+          ],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Omit payout destination and credential fields.",
+          "reason": "Payment credentials and destination details are excluded.",
+          "evidence": ["apps/payments/src/entities/seller-wallet.entity.ts"]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "Transaction",
+      "table": "payment_events",
+      "source": "apps/payments/src/entities/transaction.entity.ts",
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "userId",
+            "type",
+            "direction",
+            "amount",
+            "platformFee",
+            "netAmount",
+            "currency",
+            "status",
+            "createdAt"
+          ],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Include subject amount, fee, net, type, direction, currency, status and microsecond timestamp with exact decimals.",
+          "reason": "These are the subject's own shared-account transaction facts.",
+          "evidence": [
+            "apps/payments/src/entities/transaction.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": ["referenceId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include as an opaque reference only.",
+          "reason": "Reference supports receipt reconciliation without interpreting related content.",
+          "evidence": ["apps/payments/src/entities/transaction.entity.ts"]
+        },
+        {
+          "fields": ["feePercentage"],
+          "classification": "owned",
+          "action": "exclude",
+          "handling": "Omit internal fee calculation detail.",
+          "reason": "Not needed for the receipt and outside the explicitly selected output fields.",
+          "evidence": ["apps/payments/src/entities/transaction.entity.ts"]
+        },
+        {
+          "fields": ["financeTransactionId"],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Omit internal finance ledger reference.",
+          "reason": "Private internal accounting linkage is excluded.",
+          "evidence": ["apps/payments/src/entities/transaction.entity.ts"]
+        },
+        {
+          "fields": ["description"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Omit freeform description.",
+          "reason": "Freeform content is excluded.",
+          "evidence": ["apps/payments/src/entities/transaction.entity.ts"]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "Offer",
+      "table": "offers",
+      "source": "apps/payments/src/entities/offer.entity.ts",
+      "columns": [
+        {
+          "fields": ["id", "classifiedId", "acceptedPaymentId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include opaque offer, classified and accepted-payment references.",
+          "reason": "A receipt context requires opaque references only.",
+          "evidence": [
+            "apps/payments/src/entities/offer.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": [
+            "buyerId",
+            "sellerId",
+            "offeredAmount",
+            "status",
+            "expiresAt",
+            "createdAt",
+            "updatedAt"
+          ],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Select where subject is buyer or seller and include amount/status/times and subject role.",
+          "reason": "Offer is shared financial history for either participant.",
+          "evidence": [
+            "apps/payments/src/entities/offer.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": ["message", "counterMessage"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Omit all offer messages.",
+          "reason": "Private freeform content is excluded.",
+          "evidence": ["apps/payments/src/entities/offer.entity.ts"]
+        },
+        {
+          "fields": ["counterOfferAmount"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Omit counteroffer details.",
+          "reason": "Only the offer's own amount is in the safe receipt projection.",
+          "evidence": ["apps/payments/src/entities/offer.entity.ts"]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "PayoutRequest",
+      "table": "payout_requests",
+      "source": "apps/payments/src/entities/payout-request.entity.ts",
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "sellerId",
+            "amount",
+            "status",
+            "createdAt",
+            "processedAt"
+          ],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Include subject payout amount/status/times as a receipt.",
+          "reason": "Own payout history is safe account financial history.",
+          "evidence": [
+            "apps/payments/src/entities/payout-request.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": [
+            "payoutMethod",
+            "payoutEmail",
+            "bankAccountLast4",
+            "bankRoutingLast4",
+            "transactionId",
+            "processedBy"
+          ],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Omit payment destination, credentials, provider/internal references and operator identity.",
+          "reason": "Credentials and other identities are explicitly excluded.",
+          "evidence": ["apps/payments/src/entities/payout-request.entity.ts"]
+        },
+        {
+          "fields": ["rejectionReason"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Omit freeform rejection reason.",
+          "reason": "Private dispute/review text is excluded.",
+          "evidence": ["apps/payments/src/entities/payout-request.entity.ts"]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "BusinessPage",
+      "table": "business_pages",
+      "source": "apps/payments/src/entities/business-page.entity.ts",
+      "columns": [
+        {
+          "fields": ["id", "communityId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include business/ community references opaquely.",
+          "reason": "Stewardship receipt may link the account's owned page without exposing other identity.",
+          "evidence": [
+            "apps/payments/src/entities/business-page.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": [
+            "ownerId",
+            "name",
+            "tier",
+            "subscriptionStatus",
+            "createdAt",
+            "updatedAt",
+            "subscriptionExpiresAt"
+          ],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Include bounded stewardship receipt fields for pages owned by subject.",
+          "reason": "Shows the subject's business stewardship and subscription state.",
+          "evidence": [
+            "apps/payments/src/entities/business-page.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": [
+            "description",
+            "logoUrl",
+            "website",
+            "phone",
+            "email",
+            "address",
+            "pinnedPostId",
+            "isCommunity",
+            "isFeatured",
+            "featuredSpotType",
+            "customSpotContent",
+            "customSpotImageUrl",
+            "customSpotGradient",
+            "businessThemeId"
+          ],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Omit content, contact, feature and theme/provider configuration.",
+          "reason": "Not part of the narrow stewardship receipt; may expose private/contact/content data.",
+          "evidence": ["apps/payments/src/entities/business-page.entity.ts"]
+        },
+        {
+          "fields": ["lemonSqueezySubscriptionId"],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Omit provider subscription identifier.",
+          "reason": "Provider IDs are excluded.",
+          "evidence": ["apps/payments/src/entities/business-page.entity.ts"]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "BusinessTheme",
+      "table": "business_themes",
+      "source": "apps/payments/src/entities/business-theme.entity.ts",
+      "columns": [
+        {
+          "fields": ["id", "businessPageId", "createdAt", "updatedAt"],
+          "classification": "opaque",
+          "action": "typed-projection",
+          "handling": "Select only through a BusinessPage owned by subject; emit narrow configuration reference.",
+          "reason": "Confirms own configuration reference without exporting theme values.",
+          "evidence": [
+            "apps/payments/src/entities/business-theme.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": [
+            "personalityId",
+            "primaryColor",
+            "accentColor",
+            "backgroundColor",
+            "customCss",
+            "customFontFamily"
+          ],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Omit raw theme configuration and CSS.",
+          "reason": "Theme content is excluded from this safe source capture.",
+          "evidence": ["apps/payments/src/entities/business-theme.entity.ts"]
+        }
+      ],
+      "relations": [
+        {
+          "fields": ["businessPage"],
+          "classification": "owned",
+          "action": "exclude",
+          "handling": "Use owner-verified join only; do not serialize relation object.",
+          "reason": "Join proves ownership without leaking parent data.",
+          "evidence": [
+            "apps/payments/src/entities/business-theme.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CommunitySponsorship",
+      "table": "community_sponsorships",
+      "source": "apps/payments/src/entities/community-sponsorship.entity.ts",
+      "columns": [
+        {
+          "fields": ["id", "communityId", "businessPageId"],
+          "classification": "opaque",
+          "action": "opaque-reference",
+          "handling": "Include opaque sponsorship/context references only.",
+          "reason": "Context references support the subject's own sponsorship receipt.",
+          "evidence": [
+            "apps/payments/src/entities/community-sponsorship.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": [
+            "userId",
+            "type",
+            "amount",
+            "status",
+            "createdAt",
+            "startsAt",
+            "expiresAt",
+            "months"
+          ],
+          "classification": "owned",
+          "action": "typed-projection",
+          "handling": "Include the subject's own sponsorship amount/type/status/time/months.",
+          "reason": "Own sponsorship transaction facts are safe account history.",
+          "evidence": [
+            "apps/payments/src/entities/community-sponsorship.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        },
+        {
+          "fields": ["adContent", "lemonSqueezyOrderId"],
+          "classification": "shared",
+          "action": "exclude",
+          "handling": "Omit ad content and provider ID.",
+          "reason": "Ad content and provider IDs are explicitly excluded.",
+          "evidence": [
+            "apps/payments/src/entities/community-sponsorship.entity.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "LemonSqueezyProduct",
+      "table": "lemon_squeezy_products",
+      "source": "apps/payments/src/entities/lemon-squeezy-product.entity.ts",
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "appScope",
+            "tier",
+            "lemonSqueezyProductId",
+            "lemonSqueezyVariantId",
+            "name",
+            "isActive",
+            "createdAt",
+            "updatedAt"
+          ],
+          "classification": "nonpersonal",
+          "action": "exclude",
+          "handling": "Explicitly excluded provider configuration source; query is constant FALSE and emits no rows.",
+          "reason": "Shared catalog/provider configuration is nonpersonal and not an account receipt.",
+          "evidence": [
+            "apps/payments/src/entities/lemon-squeezy-product.entity.ts",
+            "apps/payments/src/app/account-export-sources.ts"
+          ]
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "stores": [
+    {
+      "name": "typeorm_migrations_store",
+      "fields": ["id", "timestamp", "name"],
+      "action": "exclude",
+      "handling": "Schema bookkeeping is not account data.",
+      "reason": "Migration metadata is excluded from source capture.",
+      "evidence": ["apps/payments/src/app/loadDatabase.ts"]
+    },
+    {
+      "name": "processOutput",
+      "fields": ["stdout", "stderr", "logs"],
+      "action": "exclude",
+      "handling": "Runtime output is not queried by account source capture.",
+      "reason": "Operational logs may contain unrelated data.",
+      "evidence": ["apps/payments/src/app/loadDatabase.ts"]
+    },
+    {
+      "name": "configurationInputs",
+      "fields": ["database credentials", "service endpoints"],
+      "action": "exclude",
+      "handling": "Configuration is not queried or serialized.",
+      "reason": "Credentials and private operational configuration are excluded.",
+      "evidence": ["apps/payments/src/app/loadDatabase.ts"]
+    }
+  ]
+}

@@ -43,6 +43,7 @@ export declare type AuthConfigType = {
     workspace?: { host: string; port: number };
     app_configurator?: { host: string; port: number };
     classifieds?: { host: string; port: number };
+    payments?: { host: string; port: number };
     chat_collector?: { host: string; port: number };
   };
 };
@@ -270,6 +271,16 @@ const loadConfig = () => {
           Number(process.env.SERVICE_CLASSIFIEDS_PORT) ||
           configData.services?.classifieds?.port ||
           3017,
+      },
+      payments: {
+        host:
+          process.env.SERVICE_PAYMENTS_HOST ||
+          configData.services?.payments?.host ||
+          'payments',
+        port:
+          Number(process.env.SERVICE_PAYMENTS_PORT) ||
+          configData.services?.payments?.port ||
+          3004,
       },
       app_configurator: {
         host:

@@ -146,6 +146,7 @@ export {
   CLASSIFIEDS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
 } from './lib/libs/classifieds';
 export { BillingCommands } from './lib/libs/billing';
+export { PAYMENTS_ACCOUNT_EXPORT_CAPTURE_SOURCES } from './lib/libs/payments';
 
 export {
   PLATFORM_FEE_PERCENTAGE,

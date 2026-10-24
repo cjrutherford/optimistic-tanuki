@@ -11,6 +11,7 @@ import {
   AccountExportJobStatus,
   AccountExportJobState,
   evaluateAccountExportCompleteness,
+  evaluateAccountExportReleaseCoverage,
 } from '@optimistic-tanuki/models';
 import { DataSource, Repository } from 'typeorm';
 import { randomUUID } from 'node:crypto';
@@ -36,7 +37,12 @@ import { ForumAccountExportSnapshotClient } from './forum-account-export-snapsho
 import { WorkspaceAccountExportSnapshotClient } from './workspace-account-export-snapshot.client';
 import { AppConfiguratorAccountExportSnapshotClient } from './app-configurator-account-export-snapshot.client';
 import { ClassifiedsAccountExportSnapshotClient } from './classifieds-account-export-snapshot.client';
+import { PaymentsAccountExportSnapshotClient } from './payments-account-export-snapshot.client';
 import { ChatAccountExportSnapshotClient } from './chat-account-export-snapshot.client';
+import {
+  ACCOUNT_EXPORT_RELEASE_COVERAGE_VERSION,
+  ACCOUNT_EXPORT_RELEASE_SOURCE_REGISTRY,
+} from './account-export-release-registry';
 
 const LEASE_MS = 60_000;
 
@@ -60,7 +66,8 @@ export class AccountExportJobService {
     private readonly workspaceCapture: WorkspaceAccountExportSnapshotClient,
     private readonly appConfiguratorCapture: AppConfiguratorAccountExportSnapshotClient,
     private readonly chatCapture: ChatAccountExportSnapshotClient,
-    private readonly classifiedsCapture: ClassifiedsAccountExportSnapshotClient
+    private readonly classifiedsCapture: ClassifiedsAccountExportSnapshotClient,
+    private readonly paymentsCapture: PaymentsAccountExportSnapshotClient
   ) {}
 
   async create(request: unknown): Promise<AccountExportJobStatus> {
@@ -103,7 +110,10 @@ export class AccountExportJobService {
         kind: 'export',
         idempotencyKey: input.idempotencyKey,
         state: 'queued',
-        coverageVersion: ACCOUNT_EXPORT_COVERAGE_INVENTORY.version,
+        coverageVersion:
+          input.appId === 'client-interface' || input.appId === 'local-hub'
+            ? ACCOUNT_EXPORT_RELEASE_COVERAGE_VERSION
+            : ACCOUNT_EXPORT_COVERAGE_INVENTORY.version,
         coverageSummary: {
           blockers: ['not-started'],
           participantCount: 0,
@@ -356,27 +366,6 @@ export class AccountExportJobService {
           errorCode = 'owner-capture-unavailable';
           state = 'failed';
         }
-      } finally {
-        if (ownerHandle) {
-          try {
-            await ownerHandle.cleanup();
-          } catch {
-            if (!leaseLost) {
-              const blockers = Array.isArray(summary.blockers)
-                ? summary.blockers.filter(
-                    (blocker): blocker is string => typeof blocker === 'string'
-                  )
-                : [];
-              summary = {
-                ...summary,
-                blockers: [...blockers, 'owner-capture-unavailable'],
-              };
-              delete summary.capturedDatabaseOwners;
-              errorCode = 'owner-capture-unavailable';
-              state = 'failed';
-            }
-          }
-        }
       }
     }
     if (state === 'incomplete' && !leaseLost) {
@@ -410,6 +399,9 @@ export class AccountExportJobService {
             ReturnType<AppConfiguratorAccountExportSnapshotClient['capture']>
           >
         | undefined;
+      let payments:
+        | Awaited<ReturnType<PaymentsAccountExportSnapshotClient['capture']>>
+        | undefined;
       let stage:
         | 'profile'
         | 'assets'
@@ -420,7 +412,8 @@ export class AccountExportJobService {
         | 'workspace'
         | 'app-configurator'
         | 'chat-collector'
-        | 'classifieds' = 'profile';
+        | 'classifieds'
+        | 'payments' = 'profile';
       try {
         if (!claimed.leaseOwner) {
           leaseLost = true;
@@ -704,6 +697,82 @@ export class AccountExportJobService {
             'classifieds',
           ],
         };
+        if (input.appId === 'client-interface' || input.appId === 'local-hub') {
+          stage = 'payments';
+          payments = await this.paymentsCapture.capture(
+            {
+              accountId: input.accountId,
+              token: input.token,
+              appId: input.appId,
+              jobId: claimed.id,
+              attempt: claimed.attempt,
+              leaseOwner: claimed.leaseOwner,
+            },
+            profile.descriptor,
+            async () => {
+              const renewed = await this.renewLease(claimed);
+              if (!renewed) leaseLost = true;
+              return renewed;
+            }
+          );
+          summary = {
+            ...summary,
+            capturedDatabaseOwners: [
+              'authentication',
+              'profile',
+              'assets',
+              'videos',
+              'permissions',
+              'social',
+              'forum',
+              'workspace',
+              'app-configurator',
+              'chat-collector',
+              'classifieds',
+              'payments',
+            ],
+          };
+          const captureCoverage = evaluateAccountExportReleaseCoverage(
+            input.appId,
+            input.accountId,
+            [
+              ownerHandle?.metadata,
+              profile?.handle.metadata,
+              assets?.handle.metadata,
+              videos?.handle.metadata,
+              permissions?.handle.metadata,
+              social?.handle.metadata,
+              forum?.handle.metadata,
+              workspace?.handle.metadata,
+              appConfigurator?.handle.metadata,
+              chat?.handle.metadata,
+              classifieds?.handle.metadata,
+              payments?.handle.metadata,
+            ].filter((metadata): metadata is NonNullable<typeof metadata> =>
+              Boolean(metadata)
+            ),
+            ACCOUNT_EXPORT_RELEASE_SOURCE_REGISTRY
+          );
+          summary = {
+            ...summary,
+            captureCoverage: {
+              coverageVersion: captureCoverage.coverageVersion,
+              complete: captureCoverage.complete,
+              blockers: captureCoverage.blockers,
+            },
+          };
+          if (!captureCoverage.complete) {
+            summary = {
+              ...summary,
+              blockers: [
+                ...(Array.isArray(summary.blockers) ? summary.blockers : []),
+                ...captureCoverage.blockers,
+              ],
+            };
+            state = 'failed';
+            errorCode = 'capture-coverage-incomplete';
+          }
+        }
       } catch {
         if (!leaseLost) {
           summary = {
@@ -717,6 +786,36 @@ export class AccountExportJobService {
           errorCode = `${stage}-capture-unavailable`;
         }
       } finally {
+        if (payments) {
+          try {
+            await payments.cleanup();
+          } catch {
+            if (!leaseLost) {
+              summary = {
+                ...summary,
+                capturedDatabaseOwners: [
+                  'authentication',
+                  'profile',
+                  'assets',
+                  'videos',
+                  'permissions',
+                  'social',
+                  'forum',
+                  'workspace',
+                  'app-configurator',
+                  'chat-collector',
+                  'classifieds',
+                ],
+                blockers: [
+                  ...(Array.isArray(summary.blockers) ? summary.blockers : []),
+                  'payments-capture-unavailable',
+                ],
+              };
+              state = 'failed';
+              errorCode = 'payments-capture-unavailable';
+            }
+          }
+        }
         if (classifieds) {
           try {
             await classifieds.cleanup();
@@ -950,6 +1049,26 @@ export class AccountExportJobService {
               };
               state = 'failed';
               errorCode = 'profile-capture-unavailable';
+            }
+          }
+        }
+        if (ownerHandle) {
+          try {
+            await ownerHandle.cleanup();
+          } catch {
+            if (!leaseLost) {
+              const blockers = Array.isArray(summary.blockers)
+                ? summary.blockers.filter(
+                    (blocker): blocker is string => typeof blocker === 'string'
+                  )
+                : [];
+              summary = {
+                ...summary,
+                blockers: [...blockers, 'owner-capture-unavailable'],
+              };
+              delete summary.capturedDatabaseOwners;
+              errorCode = 'owner-capture-unavailable';
+              state = 'failed';
             }
           }
         }

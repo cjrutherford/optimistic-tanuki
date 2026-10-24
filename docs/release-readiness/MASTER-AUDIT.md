@@ -1,6 +1,6 @@
 # OT + Towne Square Public Release Readiness Audit
 
-**Active release scope:** Optimistic Tanuki = `client-interface`; Towne Square = `local-hub`. **N04–N07 are locally verified; A01 is next** ([N04](./findings/DF-007-N04.md), [N05](./findings/DF-007-N05.md), [N06](./findings/DF-007-N06.md), [N07](./findings/DF-007-N07.md)). N01, N02 and O09-P/C/I remain accepted. Only services/data needed by these two applications enter the remaining release work. The historical platform inventory is reference material, not a count of required release slices.
+**Active release scope:** Optimistic Tanuki = `client-interface`; Towne Square = `local-hub`. **N04–N07 and A01 are locally verified; A02 is active** ([N04](./findings/DF-007-N04.md), [N05](./findings/DF-007-N05.md), [N06](./findings/DF-007-N06.md), [N07](./findings/DF-007-N07.md)). N01, N02 and O09-P/C/I remain accepted. Only services/data needed by these two applications enter the remaining release work. The historical platform inventory is reference material, not a count of required release slices.
 
 **Scope clarification (2026-10-23):** The authoritative audit scope is `client-interface` (Optimistic Tanuki), `local-hub` (Towne Square), their required shared services and shared HAI navigation. Historical platform records retain their IDs and accepted evidence as reference. Another product does not become release work through queue position or shared infrastructure alone.
 

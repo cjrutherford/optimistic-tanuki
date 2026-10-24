@@ -13,7 +13,8 @@
     "workspace",
     "app-configurator",
     "chat-collector",
-    "classifieds"
+    "classifieds",
+    "payments"
   ],
   "targets": {
     "e2e": {
@@ -35,7 +36,8 @@
         "workspace:build",
         "app-configurator:build",
         "chat-collector:build",
-        "classifieds:build"
+        "classifieds:build",
+        "payments:build"
       ]
     }
   },

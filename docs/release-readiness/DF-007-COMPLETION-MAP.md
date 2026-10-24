@@ -1,6 +1,6 @@
 # DF-007 account-rights completion map
 
-**Active release scope:** Optimistic Tanuki = `client-interface`; Towne Square = `local-hub`. **N04–N07 are locally verified; A01 is next** ([N04](./findings/DF-007-N04.md), [N05](./findings/DF-007-N05.md), [N06](./findings/DF-007-N06.md), [N07](./findings/DF-007-N07.md)). N01, N02 and O09-P/C/I remain accepted. Only services/data needed by these two applications enter the remaining release work. The historical platform inventory is reference material, not a count of required release slices.
+**Active release scope:** Optimistic Tanuki = `client-interface`; Towne Square = `local-hub`. **N04–N07 and A01 are locally verified; A02 is active** ([N04](./findings/DF-007-N04.md), [N05](./findings/DF-007-N05.md), [N06](./findings/DF-007-N06.md), [N07](./findings/DF-007-N07.md)). N01, N02 and O09-P/C/I remain accepted. Only services/data needed by these two applications enter the remaining release work. The historical platform inventory is reference material, not a count of required release slices.
 
 **Scope clarification (2026-10-23):** The authoritative audit scope is `client-interface` (Optimistic Tanuki), `local-hub` (Towne Square), their required shared services and shared HAI navigation. Historical platform records retain their IDs and accepted evidence as reference. Another product does not become release work through queue position or shared infrastructure alone.
 
@@ -114,3 +114,11 @@ Owner policies remain controlling: delete the account's own content, preserve ot
 ## N04 local closeout — 2026-10-24
 
 The user approved preserving shared audit history while erasing identifying fields. Four owner contracts and eight sources passed private PostgreSQL erasure, rollback/retry, counterpart preservation and independent readback. Four generated migrations passed reviewed fresh up/down/up; 47 focused tests and 34 pre-E2E checks passed. See the [N04 final finding](./findings/DF-007-N04.md). This supersedes earlier N04 pending-policy notes. N04–N07 are locally verified. A01–A07 are next; selected OT/TS deletion slices, U01–U03, retention, journey and claim checks remain. Full account deletion and artifact availability remain incomplete. External flows and production qualification stay outside this local loop.
+
+## A01 started — 2026-10-24
+
+The committed branch was pushed at `3070fe316`. The scoped capture gate now checks the existing eleven owners and exact source evidence, without changing the unaccepted platform-wide preview inventory. A reachable TS Payments dependency is explicitly blocked as `unaccepted-owner:payments`; it is the existing O10 owner. Its legacy records/wallet totals lack durable product scope. See the [A01 finding](./findings/DF-007-A01.md) and [pending Payments export policy](./decisions/A01-PAYMENTS-EXPORT-POLICY.md). A01 is not accepted; A02–A07 remain pending. No artifact readiness or download availability is claimed.
+
+## A01 local closeout — 2026-10-24
+
+The user approved own shared-account financial receipts and wallet totals. Existing O10 Payments capture and leased integration passed the private twelve-service case; A01 now requires all twelve owners and exact source evidence. The catalog matched ten Payments entities/eleven tables/142 columns, and all twelve database baselines were restored with zero project resources left. Fifty-six focused tests and 34 pre-E2E checks passed. See the [A01 finding](./findings/DF-007-A01.md). This supersedes earlier pending-policy/A01-active notes. A02–A07 remain the existing next export deliveries; no downloadable artifact or full deletion claim is made. The existing D17 Payments owner is required later for the demonstrated TS path.
