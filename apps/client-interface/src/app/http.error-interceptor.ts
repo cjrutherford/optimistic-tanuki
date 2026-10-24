@@ -89,12 +89,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         type: errorType,
       });
 
-      console.error('HTTP Error:', {
-        status: error.status,
-        message: errorMessage,
-        url: req.url,
-        error: error.error,
-      });
+      console.error('HTTP Error:', error.status);
 
       return throwError(() => error);
     })

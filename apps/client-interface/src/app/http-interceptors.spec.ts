@@ -120,6 +120,19 @@ describe('client HTTP interceptors', () => {
         messages.addMessage.mock.calls.length - 1
       ][0];
 
+    it('keeps private URLs and error bodies out of browser diagnostics', () => {
+      const sentinel = 'N04_PRIVATE_REQUEST_RESPONSE_SENTINEL';
+      runError(
+        '/api/social/feed?query=' + sentinel,
+        new HttpErrorResponse({
+          status: 500,
+          url: '/api/social/feed?query=' + sentinel,
+          error: { message: sentinel, token: sentinel },
+        })
+      );
+      expect(JSON.stringify(consoleError.mock.calls)).not.toContain(sentinel);
+    });
+
     it('passes successful responses through untouched', (done) => {
       TestBed.runInInjectionContext(() =>
         errorInterceptor(new HttpRequest('GET', '/api/social/feed'), () =>
@@ -251,13 +264,10 @@ describe('client HTTP interceptors', () => {
       expect(lastMessage().content).toBe('teapot');
     });
 
-    it('logs the failure with request context', () => {
+    it('logs only the failure status', () => {
       runError('/api/social/feed', new HttpErrorResponse({ status: 500 }));
 
-      expect(consoleError).toHaveBeenCalledWith(
-        'HTTP Error:',
-        expect.objectContaining({ status: 500, url: '/api/social/feed' })
-      );
+      expect(consoleError).toHaveBeenCalledWith('HTTP Error:', 500);
     });
   });
 });

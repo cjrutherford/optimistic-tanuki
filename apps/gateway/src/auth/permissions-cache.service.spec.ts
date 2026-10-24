@@ -83,6 +83,21 @@ describe('PermissionsCacheService', () => {
     expect(service).toBeDefined();
   });
 
+  it.each([{}, 'true', 1, null])(
+    'rejects a non-boolean authoritative reply (%p)',
+    async (reply) => {
+      await expect(
+        service.getOrLoad(
+          'profile',
+          'permission',
+          'scope',
+          undefined,
+          async () => reply as unknown as boolean
+        )
+      ).resolves.toBe(false);
+    }
+  );
+
   it('always loads authoritative decisions across independent cache providers', async () => {
     const second = new PermissionsCacheService(cacheProvider);
     await service.set('profile-independent', 'p', 's', true);

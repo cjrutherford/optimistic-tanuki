@@ -1,0 +1,136 @@
+{
+  "slice": "N04",
+  "scope": ["client-interface", "local-hub"],
+  "status": "ACTIVE",
+  "accepted": false,
+  "baseline": "34206b41438d925ad36e81f7b0c0491ac248da45",
+  "checks": {
+    "backend-final-unit": {
+      "summary": [
+        "Test Suites: 4 passed, 4 total",
+        "Tests:       95 passed, 95 total",
+        "NX   Successfully ran target test for project gateway"
+      ],
+      "log": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/backend-final-unit.log",
+      "sha256": "9a45a45afb7b88e0b108c96f76143e4eb6fd1edeb6e696fbddfb841fad628d71"
+    },
+    "logger-final-unit": {
+      "summary": [
+        "Test Suites: 4 passed, 4 total",
+        "Tests:       15 passed, 15 total",
+        "NX   Successfully ran target test for project logger"
+      ],
+      "log": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/logger-final-unit.log",
+      "sha256": "70c2864be1751b82f359317eeb0bd363cee23fadf291f6e548fae33d6fc82f44"
+    },
+    "interceptor-corrected-unit": {
+      "summary": [
+        "Test Suites: 1 passed, 1 total",
+        "Tests:       35 passed, 35 total",
+        "NX   Successfully ran target test for project client-interface"
+      ],
+      "log": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/interceptor-corrected-unit.log",
+      "sha256": "04a78e2102acc39311804584dcac70174bdc5b9b0c31e8ae1246ef50808aa36c"
+    },
+    "frontend-client-unit": {
+      "summary": [
+        "Test Suites: 2 passed, 2 total",
+        "Tests:       60 passed, 60 total",
+        "NX   Successfully ran target test for project client-interface"
+      ],
+      "log": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/frontend-client-unit.log",
+      "sha256": "95b8b4a8bea45eb599b6e5220788a23d71105635437c9cc244a05983324a7900"
+    },
+    "frontend-hub-unit": {
+      "summary": [
+        "Test Suites: 1 passed, 1 total",
+        "Tests:       13 passed, 13 total",
+        "NX   Successfully ran target test for project local-hub"
+      ],
+      "log": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/frontend-hub-unit.log",
+      "sha256": "5be5750748fd7819b5c00b2389733bcf72aba428f4d355f71f758de74148ca62"
+    },
+    "backend-profile-unit": {
+      "summary": [
+        "Test Suites: 3 skipped, 16 passed, 16 of 19 total",
+        "Tests:       11 skipped, 96 passed, 107 total",
+        "NX   Successfully ran target test for project profile"
+      ],
+      "log": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/backend-profile-unit.log",
+      "sha256": "3b3eee8569828c9465fb1a95fe2a24fbead4e34d3c0558ca555b4d1ee4cba92e"
+    },
+    "backend-build": {
+      "summary": ["NX   Successfully ran target build for 3 projects"],
+      "log": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/backend-build.log",
+      "sha256": "c51071fc0887fc445001a1cd2a6599292670372e998f1600b92ec7390c8715b5"
+    },
+    "frontend-build": {
+      "summary": [
+        "NX   Successfully ran target build for 2 projects and 16 tasks they depend on"
+      ],
+      "log": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/frontend-build.log",
+      "sha256": "7ffe532af7f297ab854bbb6fea8d842e5d60df121481bedfbb2152747af7f7ab"
+    },
+    "lint": {
+      "summary": ["NX   Successfully ran target lint for 5 projects"],
+      "log": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/lint.log",
+      "sha256": "ad4a039d4316f2a8dc154c50231b442b938767c5717a78bd93d33c18cbb8f52b"
+    },
+    "pre-e2e-contracts": {
+      "summary": ["\u2139 tests 34", "\u2139 pass 34", "\u2139 fail 0"],
+      "log": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/pre-e2e-contracts.log",
+      "sha256": "a7a3ee8f35922e22c1b8b4ace4d54a7303db90a354096348f9fb9e5b308bb168"
+    },
+    "migrations": {
+      "summary": ["TypeORM migration validation passed."],
+      "log": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/migrations.log",
+      "sha256": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9"
+    },
+    "added-tests-lint": {
+      "summary": ["Successfully ran target lint for 2 projects"],
+      "log": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/added-tests-lint.log",
+      "sha256": "0dda9b218a3f7e72fefa73b81b96d1b935f1cf5c888466afba03d57277981596"
+    }
+  },
+  "review": "Corrected flat Luna source review inspected three logger files and eight production diffs; no concrete P1/P2. First review inspected only app.routes and was discarded as insufficient. No runtime acceptance claim.",
+  "testLimits": [
+    "RPC/repository mocks in owning unit tests; real Nest console and temporary filesystem fixture only",
+    "No authenticated deployed whole-account deletion, collector purge, or physical audit DB deletion proof",
+    "Profile worker selected 16 suites (96 tests), not a narrow single suite",
+    "Initial Gateway invocation selected 116 suites with five failures; corrected four-file run passed95",
+    "Initial interceptor run passed34/failed1 on obsolete payload logging expectation; corrected35 passed",
+    "Malformed permission reply regressions failed4 before literaltrue repair",
+    "Frontend build used cache for10 of18 tasks; Nx flagged constants/models as historical flaky tasks"
+  ],
+  "acceptanceGaps": [
+    "Complete reachable producer and sink inventory",
+    "Historical stdout/rotation/collector copy disposition and purge/readback",
+    "Ownership-safe shared audit adapters and failure/retry/counterpart preservation proof",
+    "Authenticated account deletion integration under later D00 fencing"
+  ],
+  "nextSlice": "N04 remains active; N05 follows acceptance, no new IDs",
+  "sourceHashes": {
+    "apps/client-interface/src/app/app.routes.ts": "413dabf920ad90f0bbd75b558b92f1bca18ba93b6e909afa727701ed7ee87374",
+    "apps/client-interface/src/app/http-interceptors.spec.ts": "798ab584ebac790a42ba11e65fa526bdf42f8f76044978f8035c9fc283f6a9a8",
+    "apps/client-interface/src/app/http.error-interceptor.ts": "6e13795c9b96e200c5f3c989f42418c037d8c6ab663eccce8960945749f84e40",
+    "apps/client-interface/src/app/social-websocket.service.spec.ts": "1ff9b5d5caf366793e6828bd9d90a464f2ea76ab3edca090cab1f61665a607b3",
+    "apps/client-interface/src/app/social-websocket.service.ts": "cfa769100d061960b52c0531fca300b77814f77a8bff6eb95d804fb2d442873c",
+    "apps/gateway/src/auth/permissions-cache.service.spec.ts": "caf278d05ac5a87127f2088e6911599f969958432d74b4a003369af8ad601acc",
+    "apps/gateway/src/auth/permissions-cache.service.ts": "683c88ce7fb0d49c36eb29b96c79f91891bcaa47ddbf00b56a17a1001b1b58e1",
+    "apps/gateway/src/controllers/social/follow/follow.controller.spec.ts": "2d2a8c7cae575318fc96d85fc8b89ccdb0cff4a9e0359106972cf29c12fbc6c7",
+    "apps/gateway/src/controllers/social/follow/follow.controller.ts": "49f5fdb847fc6103d4c38200397c35ae4bfeeac95eec3a3f977165e622991d87",
+    "apps/gateway/src/controllers/social/social.controller.test.ts": "cbf25f38fb9a1973eb8054fcf3c8ebd434b65c22b22f55a8247a339d1bf35dc9",
+    "apps/gateway/src/controllers/social/social.controller.ts": "2ff7c9ee266c7d73e63d86ca9960b92b227a9be3b499289cd22b3d076d68bb0f",
+    "apps/gateway/src/guards/permissions.guard.spec.ts": "22703305f343a054040b59a51fdef1beea88e5e3007ac287dae30d96432976fb",
+    "apps/gateway/src/guards/permissions.guard.ts": "c1083bbfaceb573ee8f69d5181a9340e3c9cd9f0d1ba6e2a7b9b97278e5c7e84",
+    "apps/local-hub/src/app/components/payment-method-selector/payment-method-selector.component.ts": "830bbe9a0eb039018d21a0de3d9b317e040ced339b0c2fd1ad140e554c3ac353",
+    "apps/profile/src/app/profile.service.test.ts": "ba5f3a2772fcdca615ea4495bd6839b964be88dc8d1a75d7922bc5a05106ba00",
+    "apps/profile/src/app/profile.service.ts": "41e6b965017ca7d88136388d9b89451b4737346643b44ab116d27fb05a5f8aca",
+    "libs/logger/src/index.ts": "e7177794828bfae7e7d13f27d0bf4ebf39b2f37cc05ec1d8dc48315a8400aed9",
+    "libs/logger/src/lib/log-sink-deletion.spec.ts": "becd9d3659326abe84f32ce80aa9100af5bb9a1dbc8560a15931a27c4531c0d3",
+    "libs/logger/src/lib/log-sink-deletion.ts": "22af992d3b62ed092466297c867172cb6efdde32024d5498e7bc98c362b8a0eb",
+    "libs/logger/src/lib/log-sink-integration.spec.ts": "5d32921c48b5d1e61b2a55d1757e68cc94ccdf3394d6d19e283f31e0f8197087",
+    "libs/logger/src/lib/safe-diagnostic.spec.ts": "7bf84e785c6b31b9f2255391603132fc8ff70eb13856399f593205b0a951de5b",
+    "libs/logger/src/lib/safe-diagnostic.ts": "0002017c964eacfe29480c985633af886b0c380907f74b8c0ec6753310461261"
+  }
+}

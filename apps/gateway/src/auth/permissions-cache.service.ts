@@ -98,7 +98,7 @@ export class PermissionsCacheService {
         const granted = await load();
         if (generation !== state.generation || state.invalidations > 0)
           continue;
-        return granted;
+        return granted === true;
       }
     } finally {
       state.activeLookups--;

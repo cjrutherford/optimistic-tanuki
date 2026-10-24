@@ -92,6 +92,22 @@ describe('ProfileService', () => {
     });
   });
 
+  it('does not emit profile identity values in operation diagnostics', async () => {
+    const marker = 'profile-user-secret-marker';
+    mockProfileRepository.findOne.mockResolvedValue({
+      id: 'profile-secret-marker',
+      userId: marker,
+      appScope: 'local-hub',
+    });
+    const logger = (service as any).logger;
+    await service.findByUserIdAndAppScope(marker, 'local-hub');
+    const emitted = ['log', 'debug', 'warn', 'error'].flatMap((level) =>
+      logger[level].mock.calls.flat()
+    );
+    expect(emitted.join(' ')).not.toContain(marker);
+    expect(emitted.join(' ')).not.toContain('profile-secret-marker');
+  });
+
   describe('guardian profile access', () => {
     const profile = {
       id: 'profile-1',

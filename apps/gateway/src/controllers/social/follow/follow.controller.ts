@@ -10,6 +10,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { emitSafeDiagnostic } from '@optimistic-tanuki/logger';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
   ServiceTokens,
@@ -55,7 +56,12 @@ export class FollowController {
       throw new Error('Profile not found');
     }
     if (followingProfile.userId != user.userId) {
-      console.log(followingProfile.userId, user.userId);
+      emitSafeDiagnostic(
+        this.logger,
+        'social.follow.rejected',
+        { outcome: 'denied' },
+        'warn'
+      );
       throw new Error(
         "You can't add a follow for someone else as the follower!"
       );
@@ -72,7 +78,14 @@ export class FollowController {
           followDto.followeeId,
           'follow'
         )
-      ).catch(() => this.logger.warn('Live follow delivery unavailable'));
+      ).catch(() =>
+        emitSafeDiagnostic(
+          this.logger,
+          'social.follow.rejected',
+          { outcome: 'unavailable' },
+          'warn'
+        )
+      );
     }
 
     return result;
@@ -117,7 +130,14 @@ export class FollowController {
           followDto.followeeId,
           'unfollow'
         )
-      ).catch(() => this.logger.warn('Live follow delivery unavailable'));
+      ).catch(() =>
+        emitSafeDiagnostic(
+          this.logger,
+          'social.follow.rejected',
+          { outcome: 'unavailable' },
+          'warn'
+        )
+      );
     }
 
     return result;

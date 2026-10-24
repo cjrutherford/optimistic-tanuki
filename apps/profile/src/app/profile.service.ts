@@ -37,6 +37,7 @@ import {
   AccountProfileOwnershipResult,
 } from '@optimistic-tanuki/profile-contracts';
 import { GuardianProfileActivity } from '../profiles/entities/guardian-profile-activity.entity';
+import { emitSafeDiagnostic } from '@optimistic-tanuki/logger';
 
 const DEFAULT_SEARCH_LIMIT = 20;
 const MAX_SEARCH_LIMIT = 100;
@@ -74,13 +75,23 @@ export class ProfileService implements OnModuleInit, OnModuleDestroy {
     this.cleanupTimer = setInterval(
       () =>
         void this.purgeGuardianActivity().catch(() =>
-          this.logger.error('Guardian activity retention cleanup failed')
+          emitSafeDiagnostic(
+            this.logger,
+            'profile.operation',
+            { outcome: 'failed' },
+            'error'
+          )
         ),
       60 * 1000
     );
     this.cleanupTimer.unref?.();
     void this.purgeGuardianActivity().catch(() =>
-      this.logger.error('Guardian activity retention cleanup failed')
+      emitSafeDiagnostic(
+        this.logger,
+        'profile.operation',
+        { outcome: 'failed' },
+        'error'
+      )
     );
   }
 
@@ -376,10 +387,11 @@ export class ProfileService implements OnModuleInit, OnModuleDestroy {
     const profile = await this.profileRepository.findOne({
       where: this.buildScopeWhere(userId, normalizedScope),
     });
-    this.logger.debug(
-      `findByUserIdAndAppScope userId=${userId} appScope=${normalizedScope} => profile=${JSON.stringify(
-        profile
-      )}`
+    emitSafeDiagnostic(
+      this.logger,
+      'profile.operation',
+      { outcome: profile ? 'ok' : 'unavailable' },
+      'debug'
     );
     return profile;
   }
@@ -412,8 +424,11 @@ export class ProfileService implements OnModuleInit, OnModuleDestroy {
       normalizedScope
     );
     if (existingProfile) {
-      this.logger.warn(
-        `Profile already exists for user ${profile.userId} in scope ${normalizedScope}, returning existing profile`
+      emitSafeDiagnostic(
+        this.logger,
+        'profile.operation',
+        { outcome: 'ok' },
+        'warn'
       );
       return existingProfile;
     }
@@ -446,8 +461,11 @@ export class ProfileService implements OnModuleInit, OnModuleDestroy {
         normalizedScope
       );
       if (recoveredProfile) {
-        this.logger.warn(
-          `Recovered existing profile for user ${profile.userId} in scope ${normalizedScope} after unique violation`
+        emitSafeDiagnostic(
+          this.logger,
+          'profile.operation',
+          { outcome: 'ok' },
+          'warn'
         );
         return recoveredProfile;
       }
@@ -486,8 +504,11 @@ export class ProfileService implements OnModuleInit, OnModuleDestroy {
       });
 
       if (!globalProfile) {
-        this.logger.debug(
-          `No global profile found for user ${userId}, skipping permission copy`
+        emitSafeDiagnostic(
+          this.logger,
+          'profile.operation',
+          { outcome: 'unavailable' },
+          'debug'
         );
         return;
       }
@@ -497,9 +518,11 @@ export class ProfileService implements OnModuleInit, OnModuleDestroy {
         targetProfileId
       );
     } catch (error) {
-      this.logger.error(
-        `Failed to copy permissions from global profile for user ${userId}: ${error.message}`,
-        error.stack
+      emitSafeDiagnostic(
+        this.logger,
+        'profile.operation',
+        { outcome: 'failed' },
+        'error'
       );
       // Don't throw - permission copying failure shouldn't prevent profile creation
     }
@@ -524,14 +547,20 @@ export class ProfileService implements OnModuleInit, OnModuleDestroy {
       );
 
       if (!userRoles || userRoles.length === 0) {
-        this.logger.debug(
-          `No roles found on source profile ${sourceProfileId} to copy`
+        emitSafeDiagnostic(
+          this.logger,
+          'profile.operation',
+          { outcome: 'unavailable', count: 0 },
+          'debug'
         );
         return;
       }
 
-      this.logger.log(
-        `Copying ${userRoles.length} role(s) from profile ${sourceProfileId} to ${targetProfileId}`
+      emitSafeDiagnostic(
+        this.logger,
+        'profile.operation',
+        { outcome: 'ok', count: userRoles.length },
+        'log'
       );
 
       // Assign each role to the target profile
@@ -549,24 +578,35 @@ export class ProfileService implements OnModuleInit, OnModuleDestroy {
               assignRoleDto
             )
           );
-          this.logger.debug(
-            `Assigned role ${userRole.roleId} to profile ${targetProfileId}`
+          emitSafeDiagnostic(
+            this.logger,
+            'profile.operation',
+            { outcome: 'ok' },
+            'debug'
           );
         } catch (roleError) {
-          this.logger.warn(
-            `Failed to assign role ${userRole.roleId} to profile ${targetProfileId}: ${roleError.message}`
+          emitSafeDiagnostic(
+            this.logger,
+            'profile.operation',
+            { outcome: 'failed' },
+            'warn'
           );
           // Continue with other roles even if one fails
         }
       }
 
-      this.logger.log(
-        `Successfully copied ${userRoles.length} role(s) from profile ${sourceProfileId} to ${targetProfileId}`
+      emitSafeDiagnostic(
+        this.logger,
+        'profile.operation',
+        { outcome: 'ok', count: userRoles.length },
+        'log'
       );
     } catch (error) {
-      this.logger.error(
-        `Failed to copy permissions between profiles: ${error.message}`,
-        error.stack
+      emitSafeDiagnostic(
+        this.logger,
+        'profile.operation',
+        { outcome: 'failed' },
+        'error'
       );
     }
   }

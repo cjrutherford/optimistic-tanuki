@@ -28,7 +28,6 @@ const forumPermissionResolver: ResolveFn<
   const permissionsService = inject(UserPermissionsService);
   try {
     const permissions = await permissionsService.searchPermissions('forum.');
-    console.log('Forum permissionsResolver:', permissions);
     return permissions;
   } catch (error) {
     const status = (error as { status?: number } | null)?.status;
@@ -48,14 +47,12 @@ const forumPermissionResolver: ResolveFn<
 const forumIsLoggedInResolver: ResolveFn<boolean> = () => {
   const authState = inject(AuthStateService);
   const isLoggedIn = authState.isAuthenticated;
-  console.log('Forum isLoggedInResolver:', isLoggedIn);
   return isLoggedIn;
 };
 
 const forumUserIdResolver: ResolveFn<string> = () => {
   const authState = inject(AuthStateService);
   const profile = authState.getPersistedSelectedProfile();
-  console.log('Forum userIdResolver, profile:', profile);
   // Cookie-authenticated first-time sessions may not have a persisted profile
   // selection yet. The session response carries the account's profile id.
   return profile?.id || authState.getDecodedTokenValue()?.profileId || '';

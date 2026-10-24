@@ -16,6 +16,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { emitSafeDiagnostic } from '@optimistic-tanuki/logger';
 import {
   AttachmentCommands,
   CommentCommands,
@@ -118,7 +119,9 @@ export class SocialController {
   private invalidateSocialContent(): void {
     void Promise.resolve(
       this.socialGateway?.broadcastSocialContentInvalidated()
-    ).catch(() => this.l.warn('Live social invalidation unavailable'));
+    ).catch(() =>
+      emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+    );
   }
 
   private async requireVisiblePost(postId: string, viewerProfileId?: string) {
@@ -156,11 +159,11 @@ export class SocialController {
         'A verified Social application session is required'
       );
     }
-    this.l.log(`Creating post for user: ${user.userId}`);
+    emitSafeDiagnostic(this.l, 'social.operation', undefined, 'log');
     postDto.userId = user.userId;
     postDto.profileId = user.profileId;
     postDto.appScope = user.appId;
-    this.l.log(`Post Data: ${JSON.stringify(postDto)}`);
+    emitSafeDiagnostic(this.l, 'social.operation', undefined, 'log');
     const result = await firstValueFrom(
       this.socialClient.send({ cmd: PostCommands.CREATE }, postDto)
     );
@@ -169,7 +172,9 @@ export class SocialController {
     if (this.socialGateway && result) {
       await Promise.resolve(
         this.socialGateway.broadcastPostCreated(result)
-      ).catch(() => this.l.warn('Live post delivery unavailable'));
+      ).catch(() =>
+        emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+      );
     }
 
     return result;
@@ -192,7 +197,7 @@ export class SocialController {
   @RequirePermissions('social.vote.create')
   @Throttle(VOTE_THROTTLE)
   async vote(@User() user: UserDetails, @Body() voteDto: CreateVoteDto) {
-    this.l.debug('Vote Received. Vote DTO: ' + JSON.stringify(voteDto));
+    emitSafeDiagnostic(this.l, 'social.operation', undefined, 'debug');
     await this.requireVisiblePost(voteDto.postId, user.profileId);
     voteDto.userId = user.userId;
     voteDto.profileId = user.profileId;
@@ -212,7 +217,9 @@ export class SocialController {
     if (this.socialGateway && result) {
       await Promise.resolve(
         this.socialGateway.broadcastVoteUpdated(result)
-      ).catch(() => this.l.warn('Live vote delivery unavailable'));
+      ).catch(() =>
+        emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+      );
     }
 
     return result;
@@ -321,7 +328,7 @@ export class SocialController {
       userId: user.userId,
       profileId: user.profileId,
     };
-    console.log('🚀 ~ SocialController ~ comment ~ commentDto:', finalComment);
+    emitSafeDiagnostic(this.l, 'social.comment.requested', { outcome: 'ok' });
     const result = await firstValueFrom(
       this.socialClient.send({ cmd: CommentCommands.CREATE }, finalComment)
     );
@@ -330,7 +337,9 @@ export class SocialController {
     if (this.socialGateway && result) {
       await Promise.resolve(
         this.socialGateway.broadcastCommentCreated(result)
-      ).catch(() => this.l.warn('Live comment delivery unavailable'));
+      ).catch(() =>
+        emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+      );
     }
 
     return result;
@@ -698,7 +707,9 @@ export class SocialController {
     if (this.socialGateway && result) {
       await Promise.resolve(
         this.socialGateway.broadcastPostUpdated(result)
-      ).catch(() => this.l.warn('Live post delivery unavailable'));
+      ).catch(() =>
+        emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+      );
     }
 
     return result;
@@ -798,7 +809,7 @@ export class SocialController {
     // Broadcast post deleted event via WebSocket
     if (this.socialGateway) {
       await Promise.resolve(this.socialGateway.broadcastPostDeleted(id)).catch(
-        () => this.l.warn('Live post delivery unavailable')
+        () => emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
       );
     }
 
@@ -832,7 +843,7 @@ export class SocialController {
       );
       commentPostId = comment?.post?.id ?? comment?.postId;
     } catch (error) {
-      this.l.warn('Unable to resolve comment parent before deletion');
+      emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn');
     }
 
     const result = await firstValueFrom(
@@ -847,7 +858,9 @@ export class SocialController {
       if (commentPostId) {
         await Promise.resolve(
           this.socialGateway.broadcastCommentDeleted(id, commentPostId)
-        ).catch(() => this.l.warn('Live comment delivery unavailable'));
+        ).catch(() =>
+          emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+        );
       } else {
         this.invalidateSocialContent();
       }

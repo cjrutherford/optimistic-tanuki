@@ -204,13 +204,19 @@ describe('SocialController', () => {
       profileId: mockUser.profileId,
     };
     (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: '1' }));
-    await socialController.comment(mockUser, commentDto);
+    await expect(
+      socialController.comment(mockUser, commentDto)
+    ).resolves.toBeDefined();
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.CREATE },
       expect.objectContaining({
         ...commentDto,
         profileId: mockUser.profileId,
       })
+    );
+    expect(consoleLogSpy).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ content: expect.any(String) })
     );
   });
 

@@ -70,7 +70,7 @@ export class SocialWebSocketService implements OnDestroy {
       socketEnvironment?.SOCKET_URL || `${url.protocol}//${url.hostname}:3301`;
     const socketPath = socketEnvironment?.SOCKET_PATH || '/socket.io';
 
-    console.log('Connecting to Social WebSocket at:', wsUrl);
+    console.log('Connecting to Social WebSocket');
 
     this.socket = io(`${wsUrl}/social`, {
       path: socketPath,
@@ -109,7 +109,7 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('Disconnected from Social WebSocket:', reason);
+      console.log('Disconnected from Social WebSocket');
       this.connected$.next(false);
       this.clearCachedPosts();
       this.contentInvalidated$.next();
@@ -121,8 +121,8 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
-      this.connectionError$.next('Connection error ' + error.message);
+      console.error('Connection error');
+      this.connectionError$.next('Connection error');
 
       // Check if this is an authentication error
       if (
@@ -153,7 +153,7 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     this.socket.on('error', (error) => {
-      console.error('Socket error:', error);
+      console.error('Socket error');
 
       // Handle authorization errors from the server
       if (typeof error === 'object' && error !== null) {
@@ -176,7 +176,7 @@ export class SocialWebSocketService implements OnDestroy {
     });
     // Post events
     this.socket.on('post_created', (post: PostDto) => {
-      console.log('Post created:', post);
+      console.log('Post created');
       const currentPosts = this.posts$.value;
       if (!currentPosts.some((p) => p.id === post.id)) {
         this.posts$.next([post, ...currentPosts]);
@@ -184,7 +184,7 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     this.socket.on('post_updated', (post: PostDto) => {
-      console.log('Post updated:', post);
+      console.log('Post updated');
       const currentPosts = this.posts$.value;
       const index = currentPosts.findIndex((p) => p.id === post.id);
       if (index !== -1) {
@@ -194,7 +194,7 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     this.socket.on('post_deleted', (data: { postId: string }) => {
-      console.log('Post deleted:', data.postId);
+      console.log('Post deleted');
       const currentPosts = this.posts$.value;
       this.posts$.next(currentPosts.filter((p) => p.id !== data.postId));
     });
@@ -206,54 +206,54 @@ export class SocialWebSocketService implements OnDestroy {
 
     // Comment events
     this.socket.on('comment_created', (comment: CommentDto) => {
-      console.log('Comment created:', comment);
+      console.log('Comment created');
     });
 
     this.socket.on('comment_updated', (comment: CommentDto) => {
-      console.log('Comment updated:', comment);
+      console.log('Comment updated');
     });
 
     this.socket.on(
       'comment_deleted',
       (data: { commentId: string; postId: string }) => {
-        console.log('Comment deleted:', data);
+        console.log('Comment deleted');
       }
     );
 
     // Vote events
     this.socket.on('vote_updated', (vote: VoteDto) => {
-      console.log('Vote updated:', vote);
+      console.log('Vote updated');
     });
 
     // Follow events
     this.socket.on('user_follow', (data: FollowEventDto) => {
-      console.log('User followed:', data);
+      console.log('User followed');
     });
 
     this.socket.on('user_unfollow', (data: FollowEventDto) => {
-      console.log('User unfollowed:', data);
+      console.log('User unfollowed');
     });
 
     // Feed response
     this.socket.on('feed', (posts: PostDto[]) => {
-      console.log('Feed received:', posts);
+      console.log('Feed received');
       this.posts$.next(posts);
     });
 
     // Subscription confirmations
     this.socket.on('subscribed', (data: any) => {
-      console.log('Subscribed:', data);
+      console.log('Subscribed');
     });
 
     this.socket.on('unsubscribed', (data: any) => {
-      console.log('Unsubscribed:', data);
+      console.log('Unsubscribed');
     });
 
     // Typing indicators
     this.socket.on(
       'typing',
       (data: { conversationId: string; userId: string; isTyping: boolean }) => {
-        console.log('Typing indicator:', data);
+        console.log('Typing indicator');
         this.typingIndicators.next(data);
       }
     );

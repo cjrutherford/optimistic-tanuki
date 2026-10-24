@@ -1,0 +1,97 @@
+{
+  "slice": "N04",
+  "scope": ["client-interface", "local-hub"],
+  "status": "ACTIVE_NOT_ACCEPTED",
+  "inventoryComplete": false,
+  "sinks": [
+    {
+      "id": "application.console",
+      "owner": "Gateway and required Nest services",
+      "identity": "Arbitrary legacy diagnostics may contain account/profile IDs, credentials and free text",
+      "disposition": "Concrete Gateway/Profile producers repaired; no complete producer sweep or historical purge proof",
+      "status": "unverified"
+    },
+    {
+      "id": "browser.console",
+      "owner": "client-interface/local-hub",
+      "identity": "Social events, HTTP error bodies, resolved profiles and payment errors",
+      "disposition": "Named producers contained; browser persistence/account switching remains N06",
+      "status": "partial"
+    },
+    {
+      "id": "ssr.telemetry",
+      "owner": "client-interface/local-hub SSR and runtime monitoring",
+      "identity": "Configuration-dependent logs and optional OTEL telemetry",
+      "disposition": "Collector routing/retention and account-keyed purge not established",
+      "status": "unverified"
+    },
+    {
+      "id": "docker.stdout",
+      "owner": "Local Docker/operator",
+      "identity": "Historical application stdout/stderr",
+      "disposition": "Observed default driver json-file; no account-keyed purge adapter. No existing logs read or deleted",
+      "status": "unsupported"
+    },
+    {
+      "id": "downstream.collectors",
+      "owner": "Operator",
+      "identity": "Configured forwarding, files, collectors, rotations/backups unknown",
+      "disposition": "Source presence is not deployed routing proof. No absence or deletion claim",
+      "status": "unknown"
+    },
+    {
+      "id": "profile.guardian_activity",
+      "owner": "Profile",
+      "identity": "actorUserId/dependentUserId account UUIDs; profileId profile UUID",
+      "disposition": "guardian_profile_activity: participation is not sole ownership; no accepted immediate purge adapter",
+      "status": "ownership-unverified"
+    },
+    {
+      "id": "assets.guardian_activity",
+      "owner": "Assets",
+      "identity": "actorUserId/dependentUserId account UUIDs; profileId profile UUID; asset reference",
+      "disposition": "guardian_asset_activity: preserve counterpart boundaries; no accepted immediate purge adapter",
+      "status": "ownership-unverified"
+    },
+    {
+      "id": "social.activity",
+      "owner": "Social",
+      "identity": "Activity profileId with free-text description/resource references; profile-view viewer account differs from viewed profile",
+      "disposition": "Typed participation/deletion policy and real purge/readback remain required",
+      "status": "ownership-unverified"
+    },
+    {
+      "id": "social.membership_audit",
+      "owner": "Social",
+      "identity": "actorId account UUID; subjectId profile UUID; workspace/community context",
+      "disposition": "Separate actor/subject branches; do not delete shared rows solely because either matches",
+      "status": "ownership-unverified"
+    },
+    {
+      "id": "social.moderation_guardian_audit",
+      "owner": "Social",
+      "identity": "Moderation actorProfileId; subjectId is content reference; Guardian audit/grant actor/dependent fields",
+      "disposition": "Export receipts do not authorize erasing shared audit rows; typed deletion adapters remain required",
+      "status": "ownership-unverified"
+    },
+    {
+      "id": "forum.moderation_audit",
+      "owner": "Forum",
+      "identity": "actorProfileId profile UUID; subjectId content reference; private details JSON",
+      "disposition": "No raw JSON export or whole-row deletion based solely on moderated subject",
+      "status": "ownership-unverified"
+    },
+    {
+      "id": "social.search_history",
+      "owner": "Social",
+      "identity": "SearchHistory profileId",
+      "disposition": "N03 accepted bounded cleanup; D00 distributed permanent fencing and account workflow still separate",
+      "status": "prior-bounded-proof"
+    }
+  ],
+  "limitations": [
+    "Bounded source inventory, not exhaustive deployed sink discovery",
+    "No deployed collector or immediate whole-account deletion proof",
+    "No real production purge adapter registered by this change"
+  ]
+}

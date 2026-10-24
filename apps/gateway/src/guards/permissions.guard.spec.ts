@@ -653,100 +653,99 @@ describe('PermissionsGuard', () => {
     });
   });
 
-  describe('canActivate - caching', () => {
+  describe('canActivate - authoritative permission lookups', () => {
+    const grants = new Map<string, boolean>();
     beforeEach(() => {
-      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue({
-        permissions: ['test.permission'],
-      });
+      grants.clear();
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue({ permissions: ['test.permission'] });
+      const profiles = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
+      jest
+        .spyOn(profiles, 'send')
+        .mockImplementation((_pattern: any, payload: any) =>
+          of([
+            {
+              id: payload.where.userId === 'account2' ? 'user2' : 'user1',
+              appScope: 'test-scope',
+            },
+          ])
+        );
+      permissionsClient.send.mockImplementation((pattern: any, payload: any) =>
+        pattern.cmd === RoleCommands.CheckPermission
+          ? of(grants.get(payload.profileId) === true)
+          : of({ id: 'scope1', name: payload.name })
+      );
     });
-
-    it('should use cached permission result on second call', async () => {
-      permissionsClient.send
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope (first call)
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope (first call)
-        .mockReturnValueOnce(of(true)) // CheckPermission (first call)
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope (second call)
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })); // GetByName for fullEffectiveScope (second call)
-
-      const context1 = createMockContext(
-        { profileId: 'user1' },
-        { 'x-ot-appscope': 'test-scope' }
-      );
-
-      // First call - should query permissions service
-      await guard.canActivate(context1);
-      expect(permissionsClient.send).toHaveBeenCalledTimes(3);
-
-      // Second call - should use cache
-      const context2 = createMockContext(
-        { profileId: 'user1' },
-        { 'x-ot-appscope': 'test-scope' }
-      );
-
-      await guard.canActivate(context2);
-
-      // Two additional calls for GetByName (appScope and fullEffectiveScope), no CheckPermission call
-      expect(permissionsClient.send).toHaveBeenCalledTimes(5);
+    it('reloads authorization on a second request instead of reusing a grant', async () => {
+      grants.set('user1', true);
+      await expect(
+        guard.canActivate(
+          createMockContext(
+            { userId: 'account1', profileId: 'user1' },
+            { 'x-ot-appscope': 'test-scope' }
+          )
+        )
+      ).resolves.toBe(true);
+      grants.set('user1', false);
+      await expect(
+        guard.canActivate(
+          createMockContext(
+            { userId: 'account1', profileId: 'user1' },
+            { 'x-ot-appscope': 'test-scope' }
+          )
+        )
+      ).rejects.toThrow(ForbiddenException);
+      expect(
+        permissionsClient.send.mock.calls.filter(
+          ([pattern]: any) => pattern.cmd === RoleCommands.CheckPermission
+        )
+      ).toHaveLength(2);
     });
-
-    it('should cache denied permissions', async () => {
-      permissionsClient.send
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope (first call)
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope (first call)
-        .mockReturnValueOnce(of(false)) // CheckPermission (first call - denied)
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope (second call)
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })); // GetByName for fullEffectiveScope (second call)
-
-      const context1 = createMockContext(
-        { profileId: 'user1' },
-        { 'x-ot-appscope': 'test-scope' }
-      );
-
-      // First call - should fail
-      await expect(guard.canActivate(context1)).rejects.toThrow(
-        ForbiddenException
-      );
-
-      // Second call - should use cached denial and fail immediately
-      const context2 = createMockContext(
-        { profileId: 'user1' },
-        { 'x-ot-appscope': 'test-scope' }
-      );
-
-      await expect(guard.canActivate(context2)).rejects.toThrow(
-        ForbiddenException
-      );
-
-      // Should have made one CheckPermission call on first, cached on second
-      expect(permissionsClient.send).toHaveBeenCalledTimes(5);
+    it('rechecks denied permissions without persisting an authoritative negative cache', async () => {
+      for (let i = 0; i < 2; i++)
+        await expect(
+          guard.canActivate(
+            createMockContext(
+              { userId: 'account1', profileId: 'user1' },
+              { 'x-ot-appscope': 'test-scope' }
+            )
+          )
+        ).rejects.toThrow(ForbiddenException);
+      expect(
+        permissionsClient.send.mock.calls.filter(
+          ([pattern]: any) => pattern.cmd === RoleCommands.CheckPermission
+        )
+      ).toHaveLength(2);
+      expect(
+        await cacheService.get('user1', 'test.permission', 'scope1')
+      ).toBeNull();
     });
-
-    it('should differentiate cache by profile, permission, and appScope', async () => {
-      permissionsClient.send
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope (user1)
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope (user1)
-        .mockReturnValueOnce(of(true)) // CheckPermission (user1)
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'test-scope' })) // GetByName for appScope (user2)
-        .mockReturnValueOnce(of({ id: 'scope1', name: 'global' })) // GetByName for fullEffectiveScope (user2)
-        .mockReturnValueOnce(of(false)); // CheckPermission (user2)
-
-      // User1 - should pass
-      const context1 = createMockContext(
-        { profileId: 'user1' },
-        { 'x-ot-appscope': 'test-scope' }
-      );
-      await guard.canActivate(context1);
-
-      // User2 with same permission - should query service (different cache key)
-      const context2 = createMockContext(
-        { profileId: 'user2' },
-        { 'x-ot-appscope': 'test-scope' }
-      );
-      await expect(guard.canActivate(context2)).rejects.toThrow(
-        ForbiddenException
-      );
-
-      expect(permissionsClient.send).toHaveBeenCalledTimes(6);
+    it('keeps decisions bound to each selected account profile', async () => {
+      grants.set('user1', true);
+      await expect(
+        guard.canActivate(
+          createMockContext(
+            { userId: 'account1', profileId: 'user1' },
+            { 'x-ot-appscope': 'test-scope' }
+          )
+        )
+      ).resolves.toBe(true);
+      await expect(
+        guard.canActivate(
+          createMockContext(
+            { userId: 'account2', profileId: 'user2' },
+            { 'x-ot-appscope': 'test-scope' }
+          )
+        )
+      ).rejects.toThrow(ForbiddenException);
+      expect(
+        permissionsClient.send.mock.calls
+          .filter(
+            ([pattern]: any) => pattern.cmd === RoleCommands.CheckPermission
+          )
+          .map(([, payload]: any) => payload.profileId)
+      ).toEqual(['user1', 'user2']);
     });
   });
 

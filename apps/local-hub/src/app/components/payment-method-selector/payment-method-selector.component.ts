@@ -473,7 +473,7 @@ export class PaymentMethodSelectorComponent {
           'Card checkout is not configured yet. Please choose another payment method.'
         );
       } catch (error) {
-        console.error('Payment failed:', error);
+        console.error('Payment failed');
       } finally {
         this.processing.set(false);
       }
@@ -502,7 +502,7 @@ export class PaymentMethodSelectorComponent {
       this.payment.set(payment);
       this.step.set('success');
     } catch (error) {
-      console.error('Payment confirmation failed:', error);
+      console.error('Payment confirmation failed');
     } finally {
       this.processing.set(false);
     }

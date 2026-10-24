@@ -1,6 +1,6 @@
 # DF-007 account-rights completion map
 
-**Active release scope:** Optimistic Tanuki = `client-interface`; Towne Square = `local-hub`. **N03 is locally verified; N04 is next** ([finding](./findings/DF-007-N03.md), [receipt](./evidence/df-007/checkpoint-n03.json)). N01, N02 and O09-P/C/I remain accepted. Only services/data needed by these two applications enter the remaining release work. The historical platform inventory is reference material, not a count of required release slices.
+**Active release scope:** Optimistic Tanuki = `client-interface`; Towne Square = `local-hub`. **N03 is locally verified; N04 is active and not accepted** ([progress finding](./findings/DF-007-N04.md), [progress receipt](./evidence/df-007/checkpoint-n04-progress.json)). N01, N02 and O09-P/C/I remain accepted. Only services/data needed by these two applications enter the remaining release work. The historical platform inventory is reference material, not a count of required release slices.
 
 **Scope clarification (2026-10-23):** The authoritative audit scope is `client-interface` (Optimistic Tanuki), `local-hub` (Towne Square), their required shared services and shared HAI navigation. Historical platform records retain their IDs and accepted evidence as reference. Another product does not become release work through queue position or shared infrastructure alone.
 
