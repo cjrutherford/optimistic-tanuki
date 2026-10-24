@@ -19,7 +19,7 @@ const app = express();
 // Trust nginx `x-forwarded-*` headers so SSR sees the public scheme/host.
 const ssrOptions = applySsrProxyTrust(app);
 app.use(oauthCallbackReferrerPolicy);
-const angularApp = new AngularNodeAppEngine(ssrOptions as never);
+const angularApp = new AngularNodeAppEngine(ssrOptions);
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 startNodeRuntimeMonitoring({
   appId: 'hai',

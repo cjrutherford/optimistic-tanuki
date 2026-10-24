@@ -90,6 +90,27 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'web-design',
+    loadComponent: () =>
+      import('./pages/web-design/web-design.component').then(
+        (m) => m.WebDesignComponent
+      ),
+  },
+  {
+    path: 'hardware-support-and-repair',
+    loadComponent: () =>
+      import('./pages/hardware-support/hardware-support.component').then(
+        (m) => m.HardwareSupportComponent
+      ),
+  },
+  {
+    path: 'technical-training',
+    loadComponent: () =>
+      import('./pages/training/training.component').then(
+        (m) => m.TrainingComponent
+      ),
+  },
+  {
     path: 'contact',
     loadComponent: () =>
       import('./pages/contact/contact-page.component').then(

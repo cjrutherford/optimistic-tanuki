@@ -109,6 +109,13 @@ export const CONTACT_SUBJECTS: ContactSubject[] = [
   { value: 'infrastructure', label: 'Independent Infrastructure' },
   { value: 'tailored-software', label: 'Tailored Software' },
   { value: 'partner-inquiry', label: 'Partner Inquiry' },
+  { value: 'technical-training', label: 'Technical Training' },
+  { value: 'web-design', label: 'Web Design' },
+  {
+    value: 'hardware-support-and-repair',
+    label: 'Hardware Support and Repair',
+  },
+  { value: 'partnerships', label: 'Partnership Opportunities' },
 ];
 
 export interface Offering {
@@ -168,6 +175,30 @@ export const OFFERINGS: Offering[] = [
       'White-label software and infrastructure delivery behind your client relationship.',
     route: '/partners',
     linkLabel: 'Partner with us',
+  },
+  {
+    name: 'Technical Training',
+    headline: 'Learn from the experts.',
+    summary:
+      'Hands-on workshops, tutorials, and guidance to help you make the most of your infrastructure and software.',
+    route: '/technical-training',
+    linkLabel: 'Explore technical training',
+  },
+  {
+    name: 'Web Design',
+    headline: 'Crafting beautiful websites.',
+    summary:
+      'Design and development services to create visually appealing and user-friendly websites.',
+    route: '/web-design',
+    linkLabel: 'Explore web design',
+  },
+  {
+    name: 'Hardware Support and Repair',
+    headline: 'Keeping your hardware running smoothly.',
+    summary:
+      'On-site and remote support for hardware issues, repairs, and maintenance.',
+    route: '/hardware-support-and-repair',
+    linkLabel: 'Get hardware support',
   },
 ];
 
