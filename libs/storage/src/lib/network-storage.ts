@@ -108,7 +108,7 @@ export class NetworkStorageAdapter implements StorageAdapter {
 
     try {
       const s3Key = this.s3Service.getKeyFromPath(data.storagePath); // Use S3Service helper
-      await this.s3Service.deleteObject(s3Key); // Use S3Service
+      await this.s3Service.purgeObjectVersions(s3Key);
     } catch (error: any) {
       this.l.error(
         `NetworkStorageAdapter (S3): Failed to remove asset at ${data.storagePath}: ${error.message}`

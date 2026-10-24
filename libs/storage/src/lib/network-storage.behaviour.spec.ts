@@ -25,7 +25,7 @@ process.env[VAULT_STORAGE_KEK_ENV] = 'network-storage-spec-kek';
 describe('NetworkStorageAdapter behaviour', () => {
   interface S3Mock {
     uploadObject: jest.Mock;
-    deleteObject: jest.Mock;
+    purgeObjectVersions: jest.Mock;
     getObject: jest.Mock;
     getKeyFromPath: jest.Mock;
     bucketName: string;
@@ -50,7 +50,7 @@ describe('NetworkStorageAdapter behaviour', () => {
   beforeEach(() => {
     s3 = {
       uploadObject: jest.fn().mockResolvedValue(undefined),
-      deleteObject: jest.fn().mockResolvedValue(undefined),
+      purgeObjectVersions: jest.fn().mockResolvedValue(undefined),
       getObject: jest.fn().mockResolvedValue(Buffer.from('content')),
       getKeyFromPath: jest.fn((p: string) => p.replace(/^s3:\/\/[^/]+\//, '')),
       bucketName: 'test-bucket',
@@ -233,13 +233,13 @@ describe('NetworkStorageAdapter behaviour', () => {
       await adapter.remove(asset());
 
       expect(s3.getKeyFromPath).toHaveBeenCalledWith(asset().storagePath);
-      expect(s3.deleteObject).toHaveBeenCalledWith(
+      expect(s3.purgeObjectVersions).toHaveBeenCalledWith(
         'assets/profile-1/uuid-1-123/file.png'
       );
     });
 
     it('propagates a delete failure', async () => {
-      s3.deleteObject.mockRejectedValue(new Error('access denied'));
+      s3.purgeObjectVersions.mockRejectedValue(new Error('access denied'));
 
       await expect(adapter.remove(asset())).rejects.toThrow('access denied');
       expect(logger.error).toHaveBeenCalled();

@@ -132,5 +132,179 @@
     "libs/logger/src/lib/log-sink-integration.spec.ts": "5d32921c48b5d1e61b2a55d1757e68cc94ccdf3394d6d19e283f31e0f8197087",
     "libs/logger/src/lib/safe-diagnostic.spec.ts": "7bf84e785c6b31b9f2255391603132fc8ff70eb13856399f593205b0a951de5b",
     "libs/logger/src/lib/safe-diagnostic.ts": "0002017c964eacfe29480c985633af886b0c380907f74b8c0ec6753310461261"
+  },
+  "continuedAt": "2026-10-24",
+  "sourceHashesContinuation": {
+    "apps/app-configurator/src/main.ts": "a93b6376464129674fc4d35601c08b346049ccc657e0f833dd03f460ffd3f504",
+    "apps/assets/src/main.ts": "b47b79e50d9c735e95d0cc3c6db6815f09d90fe6b3b1868a694a48f2ad6069aa",
+    "apps/authentication-e2e/src/authentication/media-stores.worker.ts": "5a6e1bd75962b499788e032347d7ce8d91275d163c56bd623c51eaefb235b314",
+    "apps/authentication-e2e/src/authentication/provider-grants.worker.ts": "74b92a40dcf185c0060b31587175ce09f8363f54167b4eff50387103ec0205ca",
+    "apps/authentication/src/app/oauth.service.spec.ts": "795962bd13c20542963af1f260b5a50e72241ccb41b42f8b8204e032ca704c11",
+    "apps/authentication/src/app/oauth.service.ts": "30c6f198966d92874f33ef16a7222f39d64d642fc8d6bba3840eb27b333b4592",
+    "apps/authentication/src/main.ts": "3656e8e11202a1012ea04fcf0c764c585568961a0f91c770e861ddf2801ae03c",
+    "apps/chat-collector/src/main.ts": "6ef27b39bb5a1645f95b557a006646d1f9159d51ce6f9740d322578db2899bab",
+    "apps/classifieds/src/main.ts": "a33f3d19392dae29b7e0d6301c494481149115ea937650d3b2fc931b544362b1",
+    "apps/client-interface-e2e/src/n06-browser-state.spec.ts": "6cc0c5eaf1d72d9d8e25e1dc09970fa204e455d7a258eee670527c5909eff655",
+    "apps/client-interface/src/app/presence.service.spec.ts": "20d6443f4d1899c93e473730efdbf7cb54829f1a7a74492c9d27fd214332291f",
+    "apps/client-interface/src/app/presence.service.ts": "d42da43c771d581c1f6129f823b97c78bed81acea7a0d60f6cce8bac4413674b",
+    "apps/client-interface/src/app/state/auth-state.service.spec.ts": "e43959122c499ea86fcc6e0d6471e51783c2eac3b1eb09e48dcfcb35a4ce8ae1",
+    "apps/client-interface/src/app/state/auth-state.service.ts": "74ab7adf4dec6c781bb03833517bd02a25b6346f44e69227334630e5c2923c89",
+    "apps/client-interface/src/main.ts": "1a871a72e32d21d2286bc7e71d654dac612afacfa439c32cf55f12ebd38336c0",
+    "apps/client-interface/src/server.ts": "12690712f1fc4d93718828ce09719fdfa932848cfaafa4f80effcdcefb10a291",
+    "apps/forum/src/main.ts": "95f23a8c8719acb71ecfb0ba73220d79ce77ac1d92a79f101ac505f1ff6d39bd",
+    "apps/gateway/src/controllers/oauth/oauth.controller.spec.ts": "bda718ba99b9b3c0c0fedf13c61963924b993a6bcdcb15ea654b7f14a5c1ec62",
+    "apps/gateway/src/main.ts": "ffcd78f665bd1a0b5810095a6e8e5f54ea9387524585d7305571293f6bbf670d",
+    "apps/local-hub/src/app/services/auth-state.service.spec.ts": "83a8e5fbc54d5974d56a218731ce05a0e28ff93547b286dac29bf5aeef73fffe",
+    "apps/local-hub/src/app/services/auth-state.service.ts": "99ce1e1131a8e0b788fe3c7b594856ca4aeca30018963d88be04216fa3576821",
+    "apps/local-hub/src/main.ts": "38e8b4db84cde69afd42440f0b5610d78fc0e83b33575c7b36b6808646ce23d8",
+    "apps/local-hub/src/server.ts": "7d912f310d93a01a4c43139d19a606c011a01ed779e7d1ef3668a865365c0697",
+    "apps/permissions/src/main.ts": "555097886647dd3ac26e1ee6c4fdbee596922328cba02afea472ec3847d16c5e",
+    "apps/profile/src/main.ts": "148bd1916a0aaf3210248344059c531a051a9618e9500569a77d8a496cba2c6a",
+    "apps/social/src/main.ts": "1b08ebe9bfb1c80ca09e6dcd5734429d40f9651e577d2586f6a2f360b30d0934",
+    "apps/videos/src/main.ts": "dc971dcf88f565c990e54ab68ef402c2181a71eaf119a96aa4ecd225bfd5510e",
+    "apps/workspace/src/main.ts": "19e771d197a978ecd7eedcb5251327d9e3a55ca5a02e6850ae69e44e998a6a9d",
+    "libs/common-ui/src/index.ts": "25dd149886a28953d8416e52918b89d8b202610481a3e9aef94303cab59b053a",
+    "libs/common-ui/src/lib/browser-diagnostics.ts": "c10d9c987dd0d1cc58ca37ecdc23cf8e69ce1001df2ae6bfeba8df473704b4cb",
+    "libs/common-ui/src/lib/session-state.spec.ts": "79e967b06c51eec149080820840917297aee33fa03ff4a74c59c74d21b3c17c3",
+    "libs/common-ui/src/lib/session-state.ts": "27a0976d5fed03f2713520eac391fdcf41c5192ef23e309f36c9752e88c14d6f",
+    "libs/forum-ui/src/lib/forum-ui/services/auth-state.service.spec.ts": "21881d543da3b167b71a9b592935ac6eabcc0a2418f7090ae85de4c43b5d16e0",
+    "libs/forum-ui/src/lib/forum-ui/services/auth-state.service.ts": "597299f20d5d463de23145fced0306afff989a6739d21d7a8feb7058c2949876",
+    "libs/logger/src/index.ts": "a5dbd27469fff56fbfc340335741b693b4193e89cd6d87d9a806e3f771e9ebea",
+    "libs/logger/src/lib/payload-free-logging.spec.ts": "90dbf3f87841990b7ce09fc1e7bcd8206846143c3233cb544757cdd1f067d5d0",
+    "libs/logger/src/lib/payload-free-logging.ts": "1f7d5d0ceff196867e6146f24bedf30a849dcae13f8ab60a14f70f6b5d6dd92b",
+    "libs/logger/src/lib/payload-free-runtime.spec.ts": "764ddcfbaff1a3010a67d215571cdc160deac4f007ca05912a3c6c425a368adf",
+    "libs/notification-ui/src/lib/notification.service.spec.ts": "3f7d962ee82f414317202d6c3c7732cd43df6549642667b286d4ad935ca288f2",
+    "libs/notification-ui/src/lib/notification.service.ts": "4646b43806a4f3e991a1a30fc6e464295947565cf21a12864742a7ee3cfd468c",
+    "libs/search-ui/src/lib/search.service.spec.ts": "e96892d23b828e4fb85f395556dffc1e78fe04e7cde876157c22fecc633cde3e",
+    "libs/search-ui/src/lib/search.service.ts": "1c2380bf33dfe7e52be9eca0029a9275717ff43b5a589841af5a8046526a8083",
+    "libs/storage/src/lib/network-storage.behaviour.spec.ts": "7b63e36a07bd6d398675fcfc47d2440c7712fec576c9af9efcf23741e2f4d9ba",
+    "libs/storage/src/lib/network-storage.spec.ts": "4d3f220ae986601c6a9beab731f1b19f1d351cef5810dd34dd1e72673637a45a",
+    "libs/storage/src/lib/network-storage.ts": "b9a84d1a18be1603ec3cbc0381dfbfefec867ee5dba3867136f4090b53059296",
+    "libs/storage/src/lib/s3.service.spec.ts": "03a0f63a0e3ee2f57b9ccbb39ffefbb4bf55d1d90ddce34ae4648edb7c2b352e",
+    "libs/storage/src/lib/s3.service.ts": "2cf6a979ae7d4893ee1e2980558b2930d7b507302d02239bf7ba7b9916b594b0"
+  },
+  "continuationChecks": [
+    {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/completion/frozen-logger-unit.log",
+      "sha256": "814dd9e439495b4e6420753535c1156b9521b9186df6954891fa2dd91a907218",
+      "summary": [
+        "Test Suites: 6 passed, 6 total",
+        "Tests:       18 passed, 18 total",
+        "NX   Successfully ran target test for project logger"
+      ]
+    },
+    {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/completion/runtime-http.log",
+      "sha256": "a0014b1654249a6380723d1e4c70d27188d174245631f646c4ae54a422d982fc",
+      "summary": [
+        "Test Suites: 1 passed, 1 total",
+        "Tests:       1 passed, 1 total",
+        "NX   Successfully ran target test for project logger"
+      ]
+    },
+    {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/completion/backend-build.log",
+      "sha256": "ad97e9afea374b42e2d49f0a92fe6ce8934fb5da3e0e32eff9430a7b2847d485",
+      "summary": [
+        "NX   Successfully ran target build for 13 projects and 12 tasks they depend on"
+      ]
+    },
+    {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/completion/all-owning-lint.log",
+      "sha256": "72bc685f6be0052d088ce9e06bb86363006e7c2b26adf1a1932e3312ba0c8e54",
+      "summary": []
+    },
+    {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/completion/final-changed-lint.log",
+      "sha256": "606c97d824e87b94cdd98dcc8b841007b020e7a2c37c1884e0082f62a6df9be3",
+      "summary": ["NX   Successfully ran target lint for 6 projects"]
+    },
+    {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/completion/pre-e2e-contracts.log",
+      "sha256": "7f490c0f5f4e208502d23d0bc8d60489d8be291523ce851e0fdb60feb258aeda",
+      "summary": ["\u2139 tests 34", "\u2139 pass 34", "\u2139 fail 0"]
+    },
+    {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/completion/migrations.log",
+      "sha256": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9",
+      "summary": ["TypeORM migration validation passed."]
+    }
+  ],
+  "localSinkMetadata": {
+    "path": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/completion/local-sink-metadata.json",
+    "sha256": "40261e5919c5632a17791b3d26a785c8c31185295b4107aff71a110a9edeb5d0"
+  },
+  "policyDecision": "Pending: preserve a minimal counterpart receipt after removing own identifiers/unreviewed payload, or delete participant-linked audit rows. No purge policy assumed from silence.",
+  "sourceReviewResponse": {
+    "path": ".runtime-artifacts/account-rights/finish-sequence/log-sinks/completion/review-response.json",
+    "sha256": "e5c2a210f7caa5fb73937450e5f84d1e9a9bde65bd1b0bd3247d2f3be11e5088"
+  },
+  "currentSourceHashes": {
+    "apps/app-configurator/src/main.ts": "a93b6376464129674fc4d35601c08b346049ccc657e0f833dd03f460ffd3f504",
+    "apps/assets/src/main.ts": "b47b79e50d9c735e95d0cc3c6db6815f09d90fe6b3b1868a694a48f2ad6069aa",
+    "apps/authentication-e2e/src/authentication/media-stores.worker.ts": "5a6e1bd75962b499788e032347d7ce8d91275d163c56bd623c51eaefb235b314",
+    "apps/authentication-e2e/src/authentication/provider-grants.worker.ts": "74b92a40dcf185c0060b31587175ce09f8363f54167b4eff50387103ec0205ca",
+    "apps/authentication/src/app/oauth.service.spec.ts": "928a6d43e69843fced546df421481358691416473838dbec6de153f1dc75a168",
+    "apps/authentication/src/app/oauth.service.ts": "30c6f198966d92874f33ef16a7222f39d64d642fc8d6bba3840eb27b333b4592",
+    "apps/authentication/src/main.ts": "3656e8e11202a1012ea04fcf0c764c585568961a0f91c770e861ddf2801ae03c",
+    "apps/chat-collector/src/main.ts": "6ef27b39bb5a1645f95b557a006646d1f9159d51ce6f9740d322578db2899bab",
+    "apps/classifieds/src/main.ts": "a33f3d19392dae29b7e0d6301c494481149115ea937650d3b2fc931b544362b1",
+    "apps/client-interface-e2e/src/n06-browser-state.spec.ts": "3ba014cabf95700024f74046f2ea1d3b3c7cead27a90854ec6d8e4015cf0cb87",
+    "apps/client-interface/src/app/presence.service.spec.ts": "20d6443f4d1899c93e473730efdbf7cb54829f1a7a74492c9d27fd214332291f",
+    "apps/client-interface/src/app/presence.service.ts": "d42da43c771d581c1f6129f823b97c78bed81acea7a0d60f6cce8bac4413674b",
+    "apps/client-interface/src/app/state/auth-state.service.spec.ts": "fc35dbf60555dceff47cd7c6c576653b1b592ac2e6ebf0cb567bcf281a8fac4c",
+    "apps/client-interface/src/app/state/auth-state.service.ts": "74ab7adf4dec6c781bb03833517bd02a25b6346f44e69227334630e5c2923c89",
+    "apps/client-interface/src/main.ts": "2c7b671e72c404f15d75073a596061a15b6e5a28a8b6c37b8f554e53fda3cc23",
+    "apps/client-interface/src/server.ts": "12690712f1fc4d93718828ce09719fdfa932848cfaafa4f80effcdcefb10a291",
+    "apps/forum/src/main.ts": "95f23a8c8719acb71ecfb0ba73220d79ce77ac1d92a79f101ac505f1ff6d39bd",
+    "apps/gateway/src/controllers/oauth/oauth.controller.spec.ts": "4edf2c883e53a5d9cd02f471334c18133289f48dddc2f12094989418b91c6683",
+    "apps/gateway/src/main.ts": "ffcd78f665bd1a0b5810095a6e8e5f54ea9387524585d7305571293f6bbf670d",
+    "apps/local-hub/src/app/services/auth-state.service.spec.ts": "83a8e5fbc54d5974d56a218731ce05a0e28ff93547b286dac29bf5aeef73fffe",
+    "apps/local-hub/src/app/services/auth-state.service.ts": "fe3eee85c954467512fa3b6044f6a6ec354520c045609ff1a2dd66ca1ff49284",
+    "apps/local-hub/src/main.ts": "4b18ca8a8716410de75246994909e8a633dd06d642d886e36272aa44747cf386",
+    "apps/local-hub/src/server.ts": "7d912f310d93a01a4c43139d19a606c011a01ed779e7d1ef3668a865365c0697",
+    "apps/permissions/src/main.ts": "555097886647dd3ac26e1ee6c4fdbee596922328cba02afea472ec3847d16c5e",
+    "apps/profile/src/main.ts": "148bd1916a0aaf3210248344059c531a051a9618e9500569a77d8a496cba2c6a",
+    "apps/social/src/main.ts": "1b08ebe9bfb1c80ca09e6dcd5734429d40f9651e577d2586f6a2f360b30d0934",
+    "apps/videos/src/main.ts": "dc971dcf88f565c990e54ab68ef402c2181a71eaf119a96aa4ecd225bfd5510e",
+    "apps/workspace/src/main.ts": "19e771d197a978ecd7eedcb5251327d9e3a55ca5a02e6850ae69e44e998a6a9d",
+    "libs/common-ui/src/index.ts": "25dd149886a28953d8416e52918b89d8b202610481a3e9aef94303cab59b053a",
+    "libs/common-ui/src/lib/browser-diagnostics.ts": "c10d9c987dd0d1cc58ca37ecdc23cf8e69ce1001df2ae6bfeba8df473704b4cb",
+    "libs/common-ui/src/lib/session-state.spec.ts": "79e967b06c51eec149080820840917297aee33fa03ff4a74c59c74d21b3c17c3",
+    "libs/common-ui/src/lib/session-state.ts": "27a0976d5fed03f2713520eac391fdcf41c5192ef23e309f36c9752e88c14d6f",
+    "libs/forum-ui/src/lib/forum-ui/services/auth-state.service.spec.ts": "2b866be09c384894d8a234089f528cc39ce72f95fefe33a32d4da027c2dbadb0",
+    "libs/forum-ui/src/lib/forum-ui/services/auth-state.service.ts": "597299f20d5d463de23145fced0306afff989a6739d21d7a8feb7058c2949876",
+    "libs/logger/src/index.ts": "a5dbd27469fff56fbfc340335741b693b4193e89cd6d87d9a806e3f771e9ebea",
+    "libs/logger/src/lib/payload-free-logging.spec.ts": "90dbf3f87841990b7ce09fc1e7bcd8206846143c3233cb544757cdd1f067d5d0",
+    "libs/logger/src/lib/payload-free-logging.ts": "1f7d5d0ceff196867e6146f24bedf30a849dcae13f8ab60a14f70f6b5d6dd92b",
+    "libs/logger/src/lib/payload-free-runtime.spec.ts": "764ddcfbaff1a3010a67d215571cdc160deac4f007ca05912a3c6c425a368adf",
+    "libs/notification-ui/src/lib/notification.service.spec.ts": "3f7d962ee82f414317202d6c3c7732cd43df6549642667b286d4ad935ca288f2",
+    "libs/notification-ui/src/lib/notification.service.ts": "4646b43806a4f3e991a1a30fc6e464295947565cf21a12864742a7ee3cfd468c",
+    "libs/search-ui/src/lib/search.service.spec.ts": "e96892d23b828e4fb85f395556dffc1e78fe04e7cde876157c22fecc633cde3e",
+    "libs/search-ui/src/lib/search.service.ts": "1c2380bf33dfe7e52be9eca0029a9275717ff43b5a589841af5a8046526a8083",
+    "libs/storage/src/lib/network-storage.behaviour.spec.ts": "7b63e36a07bd6d398675fcfc47d2440c7712fec576c9af9efcf23741e2f4d9ba",
+    "libs/storage/src/lib/network-storage.spec.ts": "4d3f220ae986601c6a9beab731f1b19f1d351cef5810dd34dd1e72673637a45a",
+    "libs/storage/src/lib/network-storage.ts": "b9a84d1a18be1603ec3cbc0381dfbfefec867ee5dba3867136f4090b53059296",
+    "libs/storage/src/lib/s3.service.spec.ts": "03a0f63a0e3ee2f57b9ccbb39ffefbb4bf55d1d90ddce34ae4648edb7c2b352e",
+    "libs/storage/src/lib/s3.service.ts": "2cf6a979ae7d4893ee1e2980558b2930d7b507302d02239bf7ba7b9916b594b0"
+  },
+  "formattingOnlyPaths": [
+    "apps/authentication/src/app/oauth.service.spec.ts",
+    "apps/client-interface/src/app/state/auth-state.service.spec.ts",
+    "apps/client-interface/src/main.ts",
+    "apps/gateway/src/controllers/oauth/oauth.controller.spec.ts",
+    "apps/local-hub/src/main.ts",
+    "libs/forum-ui/src/lib/forum-ui/services/auth-state.service.spec.ts"
+  ],
+  "formattingReview": {
+    "path": ".runtime-artifacts/account-rights/finish-sequence/combined-closeout/format-proof.json",
+    "sha256": "285b5b6a77c10959fff87cc675fedee68543d672171bc0a4b5414c008cb3fb8d"
+  },
+  "postFormattingImplementationFollowup": {
+    "paths": [
+      "apps/local-hub/src/app/services/auth-state.service.ts",
+      "apps/client-interface-e2e/src/n06-browser-state.spec.ts"
+    ],
+    "reason": "Rejected-session path now invalidates caches and other tabs; final12unit and six rebuilt-browser cases passed"
   }
 }

@@ -1,4 +1,12 @@
 export * from './lib/common-ui/index';
+export { installBrowserDiagnosticBoundary } from './lib/browser-diagnostics';
+export {
+  SessionGeneration,
+  clearOwnedBrowserSessionKeys,
+  notifyBrowserSessionReset,
+  watchBrowserSessionBoundary,
+  publishBrowserSessionBoundary,
+} from './lib/session-state';
 // Re-export theme interfaces from theme-lib for backward compatibility
 export type { ThemeColors, ThemeGradients } from '@optimistic-tanuki/theme-lib';
 export * from './lib/common-ui/gradient-builder';

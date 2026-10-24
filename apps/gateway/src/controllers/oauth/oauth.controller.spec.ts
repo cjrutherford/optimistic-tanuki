@@ -2056,4 +2056,55 @@ describe('OAuthController', () => {
       ).toEqual(expect.arrayContaining([AuthGuard]));
     });
   });
+  it('projects provider identity without retaining upstream grant material', async () => {
+    const secret = 'N07_PRIVATE_UPSTREAM_GRANT_SENTINEL';
+    jest.spyOn(controller as any, 'getProviderConfig').mockReturnValue({
+      clientId: 'fixture-client',
+      clientSecret: 'fixture-secret',
+      tokenEndpoint: 'https://provider.example.test/token',
+      userInfoEndpoint: 'https://provider.example.test/user',
+    });
+    const fetch = jest
+      .spyOn(controller as any, 'fetchProvider')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          access_token: secret,
+          refresh_token: secret,
+          id_token: secret,
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          sub: 'provider-subject',
+          email: 'fixture@example.test',
+          email_verified: true,
+          name: 'Fixture',
+          access_token: secret,
+          refresh_token: secret,
+        }),
+      });
+    const identity = await (controller as any).exchangeProviderCode(
+      'google',
+      'fixture-code',
+      undefined,
+      'a'.repeat(43),
+      'https://client.example.test/callback'
+    );
+    expect(identity.providerUserId).toBe('provider-subject');
+    expect(JSON.stringify(identity)).not.toContain(secret);
+    expect(Object.keys(identity).sort()).toEqual(
+      [
+        'providerUserId',
+        'email',
+        'emailVerified',
+        'displayName',
+        'firstName',
+        'lastName',
+      ].sort()
+    );
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(authClient.send).not.toHaveBeenCalled();
+  });
 });

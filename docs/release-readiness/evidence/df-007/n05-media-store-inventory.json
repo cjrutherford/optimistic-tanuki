@@ -1,0 +1,31 @@
+{
+  "slice": "N05",
+  "scope": ["client-interface", "local-hub"],
+  "sources": [
+    {
+      "owner": "Assets",
+      "metadata": "AssetEntity.storagePath/profileId/lifecycleState/lease",
+      "localKey": "assets/<asset UUID>/<safe filename>",
+      "remoteKey": "assets/<profile UUID>/<asset UUID>/<safe filename>",
+      "versions": "Local atomic encrypted file; remote exact S3 key versions plus delete markers",
+      "keyCustody": "Random per-envelope DEK is wrapped in the envelope with the shared configured KEK; all object versions/envelopes must be removed before metadata acknowledgement. Shared KEK remains for counterparts."
+    },
+    {
+      "owner": "N01 lifecycle",
+      "fence": "Pending-upload reservation and row lock through write/activation; pending-delete row retained on storage failure, retry cleanup; prior real local-adapter proof retained"
+    },
+    {
+      "owner": "Videos/transcoder",
+      "disposition": "No create-video producer in either scoped client per accepted N01; no hypothetical worker added or video/deployed-volume absence asserted"
+    },
+    {
+      "owner": "ZFS/host backups/operator replication",
+      "disposition": "ZFS adapter reports actual capability and creates no snapshot during a write; operator-created snapshots/backups and deployed replication are not proven absent by the local fixture"
+    }
+  ],
+  "limits": [
+    "No physical disk-block wipe or forensic/backup crypto-erasure claim",
+    "No shared KEK destruction; deleting it would harm counterparts",
+    "No external S3 provider qualification or whole-account job wiring"
+  ]
+}

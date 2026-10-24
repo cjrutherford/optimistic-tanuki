@@ -158,6 +158,31 @@ describe('AuthStateService', () => {
     expect(service.getUserData()).toBeNull();
   });
 
+  it('clears local session state even when logout transport fails', async () => {
+    const currentSession = jest.fn().mockResolvedValue({
+      data: { userId: 'user-1', email: 'member@example.test' },
+    });
+    TestBed.configureTestingModule({
+      providers: [
+        AuthStateService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: AuthenticationService, useValue: { currentSession } },
+      ],
+    });
+    const service = TestBed.inject(AuthStateService);
+    await service.waitForSessionRestore();
+    service.logout();
+    expect(service.isAuthenticated).toBe(false);
+    expect(service.getUserData()).toBeNull();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/authentication/logout')
+      .flush(null, { status: 503, statusText: 'Unavailable' });
+    expect(service.isAuthenticated).toBe(false);
+    expect(service.getUserData()).toBeNull();
+  });
+
   it('rejects login when the session cannot be restored', async () => {
     TestBed.configureTestingModule({
       providers: [

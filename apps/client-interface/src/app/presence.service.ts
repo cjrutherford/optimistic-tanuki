@@ -24,12 +24,7 @@ export class PresenceService {
   constructor(private http: HttpClient) {}
 
   setPresence(status: PresenceStatus): Observable<UserPresence> {
-    const currentUser = this.getCurrentUserId();
-    if (!currentUser) {
-      return new Observable();
-    }
     return this.http.post<UserPresence>(`${this.baseUrl}`, {
-      userId: currentUser,
       status,
     });
   }
@@ -74,18 +69,5 @@ export class PresenceService {
     const current = this.presences.value;
     current.set(presence.userId, presence);
     this.presences.next(new Map(current));
-  }
-
-  private getCurrentUserId(): string | null {
-    const userJson = localStorage.getItem('user');
-    if (userJson) {
-      try {
-        const user = JSON.parse(userJson);
-        return user.id || user.profileId || null;
-      } catch {
-        return null;
-      }
-    }
-    return null;
   }
 }

@@ -26,7 +26,7 @@ describe('NetworkStorageAdapter', () => {
     // Reset mocks before each test
     mockS3Service = {
       uploadObject: jest.fn(),
-      deleteObject: jest.fn(),
+      purgeObjectVersions: jest.fn(),
       getObject: jest.fn(),
       getKeyFromPath: jest.fn(),
       // Mock the bucketName property if accessed directly

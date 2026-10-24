@@ -1,8 +1,11 @@
 import {
+  DeleteObjectsCommand,
   DeleteObjectCommand,
   GetBucketVersioningCommand,
   GetObjectCommand,
   GetObjectLockConfigurationCommand,
+  HeadObjectCommand,
+  ListObjectVersionsCommand,
   ObjectLockEnabled,
   ObjectLockLegalHoldStatus,
   ObjectLockMode,
@@ -177,6 +180,8 @@ export function resolveS3ServiceOptions(
 
 @Injectable()
 export class S3Service {
+  private static readonly VERSION_PURGE_MAX_PAGES = 100;
+  private static readonly VERSION_PURGE_MAX_ENTRIES = 1000;
   private s3Client: S3Client;
   private bucketName: string;
   private objectLockReadiness?: Promise<ObjectLockReadiness>;
@@ -355,6 +360,122 @@ export class S3Service {
         );
         throw error;
       }
+    }
+  }
+
+  /** Permanently removes all versions and delete markers for one exact key. */
+  async purgeObjectVersions(key: string): Promise<void> {
+    const entries: Array<{ Key: string; VersionId?: string }> = [];
+    let KeyMarker: string | undefined;
+    let VersionIdMarker: string | undefined;
+    let pages = 0;
+    let truncated = true;
+
+    while (truncated) {
+      if (pages >= S3Service.VERSION_PURGE_MAX_PAGES) {
+        throw new ServiceUnavailableException(
+          'S3 version purge exceeded its page limit.'
+        );
+      }
+      const page = await this.s3Client.send(
+        new ListObjectVersionsCommand({
+          Bucket: this.bucketName,
+          Prefix: key,
+          ...(KeyMarker ? { KeyMarker } : {}),
+          ...(VersionIdMarker ? { VersionIdMarker } : {}),
+        })
+      );
+      pages++;
+      for (const item of [
+        ...(page.Versions ?? []),
+        ...(page.DeleteMarkers ?? []),
+      ]) {
+        if (item.Key !== key) continue;
+        if (!item.VersionId) {
+          throw new ServiceUnavailableException(
+            'S3 returned a matching version without a version ID.'
+          );
+        }
+        const lock = item as {
+          ObjectLockLegalHoldStatus?: string;
+          ObjectLockRetainUntilDate?: Date;
+        };
+        if (
+          lock.ObjectLockLegalHoldStatus === 'ON' ||
+          (lock.ObjectLockRetainUntilDate &&
+            lock.ObjectLockRetainUntilDate > new Date())
+        ) {
+          throw new ServiceUnavailableException(
+            `S3 version is retained or under legal hold; refusing purge for ${key}.`
+          );
+        }
+        entries.push({ Key: key, VersionId: item.VersionId });
+        if (entries.length > S3Service.VERSION_PURGE_MAX_ENTRIES) {
+          throw new ServiceUnavailableException(
+            'S3 version purge exceeded its version limit.'
+          );
+        }
+      }
+      truncated = page.IsTruncated === true;
+      if (truncated) {
+        if (!page.NextKeyMarker)
+          throw new ServiceUnavailableException(
+            'S3 version listing was truncated without a continuation marker.'
+          );
+        KeyMarker = page.NextKeyMarker;
+        VersionIdMarker = page.NextVersionIdMarker;
+      }
+    }
+
+    // No governance bypass is ever sent. S3 itself rejects any concurrent lock.
+
+    for (let offset = 0; offset < entries.length; offset += 100) {
+      const result = await this.s3Client.send(
+        new DeleteObjectsCommand({
+          Bucket: this.bucketName,
+          Delete: {
+            Objects: entries.slice(offset, offset + 100),
+            Quiet: false,
+          },
+        })
+      );
+      if (result.Errors?.length) {
+        throw new ServiceUnavailableException(
+          `S3 version purge partially failed for ${key}; retry after resolving the reported version errors.`
+        );
+      }
+    }
+
+    // Independent readback: listing establishes version absence, HEAD establishes
+    // that no current object remains. Missing is accepted only for recognized 404s.
+    const readback = await this.s3Client.send(
+      new ListObjectVersionsCommand({ Bucket: this.bucketName, Prefix: key })
+    );
+    if (
+      readback.IsTruncated === true ||
+      [...(readback.Versions ?? []), ...(readback.DeleteMarkers ?? [])].some(
+        (item) => item.Key === key
+      )
+    ) {
+      throw new ServiceUnavailableException(
+        `S3 version purge readback still finds versions for ${key}.`
+      );
+    }
+    try {
+      await this.s3Client.send(
+        new HeadObjectCommand({ Bucket: this.bucketName, Key: key })
+      );
+      throw new ServiceUnavailableException(
+        `S3 version purge readback still finds a current object for ${key}.`
+      );
+    } catch (error: any) {
+      if (error instanceof ServiceUnavailableException) throw error;
+      if (
+        error?.name !== 'NotFound' &&
+        error?.name !== 'NoSuchKey' &&
+        error?.$metadata?.httpStatusCode !== 404
+      )
+        throw error;
     }
   }
 

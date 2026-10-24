@@ -8,15 +8,15 @@
       "id": "application.console",
       "owner": "Gateway and required Nest services",
       "identity": "Arbitrary legacy diagnostics may contain account/profile IDs, credentials and free text",
-      "disposition": "Concrete Gateway/Profile producers repaired; no complete producer sweep or historical purge proof",
-      "status": "unverified"
+      "disposition": "Closed projection installed before12required service bootstraps; real isolated Nest HTTP process proves console/Nest sentinel containment; not historical or host-runtime erasure",
+      "status": "bootstrap-boundary-verified"
     },
     {
       "id": "browser.console",
       "owner": "client-interface/local-hub",
       "identity": "Social events, HTTP error bodies, resolved profiles and payment errors",
-      "disposition": "Named producers contained; browser persistence/account switching remains N06",
-      "status": "partial"
+      "disposition": "Shared browser boundary in both app bootstraps; allsixrebuilt Chrome cases exclude sentinel; not browser-managed network panels/extensions",
+      "status": "chrome-boundary-verified"
     },
     {
       "id": "ssr.telemetry",
@@ -93,5 +93,6 @@
     "Bounded source inventory, not exhaustive deployed sink discovery",
     "No deployed collector or immediate whole-account deletion proof",
     "No real production purge adapter registered by this change"
-  ]
+  ],
+  "updatedAt": "2026-10-24"
 }

@@ -32,47 +32,21 @@ describe('PresenceService', () => {
   });
 
   describe('setPresence', () => {
-    it('posts the status for the stored user id', (done) => {
-      localStorage.setItem('user', JSON.stringify({ id: 'u1' }));
-      service.setPresence('busy').subscribe((res) => {
-        expect(res.userId).toBe('u1');
-        done();
-      });
-      const req = httpMock.expectOne('/api/presence');
-      expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ userId: 'u1', status: 'busy' });
-      req.flush({ ...presence('u1'), status: 'busy' });
-    });
-
-    it('falls back to profileId when the stored user has no id', (done) => {
-      localStorage.setItem('user', JSON.stringify({ profileId: 'p9' }));
-      service.setPresence('away').subscribe(() => done());
-      const req = httpMock.expectOne('/api/presence');
-      expect(req.request.body).toEqual({ userId: 'p9', status: 'away' });
-      req.flush(presence('p9'));
-    });
-
-    it('returns a never-emitting observable when nothing is stored', () => {
-      const next = jest.fn();
-      const complete = jest.fn();
-      service.setPresence('online').subscribe({ next, complete });
-      expect(next).not.toHaveBeenCalled();
-      expect(complete).not.toHaveBeenCalled();
-    });
-
-    it('returns a never-emitting observable when the stored user is not JSON', () => {
-      localStorage.setItem('user', 'not-json');
-      const next = jest.fn();
-      service.setPresence('online').subscribe({ next });
-      expect(next).not.toHaveBeenCalled();
-    });
-
-    it('returns a never-emitting observable when the stored user has no ids', () => {
-      localStorage.setItem('user', JSON.stringify({ name: 'nobody' }));
-      const next = jest.fn();
-      service.setPresence('online').subscribe({ next });
-      expect(next).not.toHaveBeenCalled();
-    });
+    it.each([
+      null,
+      'not-json',
+      JSON.stringify({ id: 'foreign-account', profileId: 'foreign-profile' }),
+    ])(
+      'lets the authenticated Gateway bind identity despite legacy storage (%s)',
+      (stored) => {
+        if (stored !== null) localStorage.setItem('user', stored);
+        service.setPresence('busy').subscribe();
+        const req = httpMock.expectOne('/api/presence');
+        expect(req.request.method).toBe('POST');
+        expect(req.request.body).toEqual({ status: 'busy' });
+        req.flush(presence('authenticated-account'));
+      }
+    );
   });
 
   it('gets a single presence', (done) => {

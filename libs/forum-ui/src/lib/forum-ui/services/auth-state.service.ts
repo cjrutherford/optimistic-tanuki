@@ -1,4 +1,10 @@
-import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
+import {
+  DestroyRef,
+  Injectable,
+  PLATFORM_ID,
+  inject,
+  signal,
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 @Injectable({
@@ -9,8 +15,28 @@ export class AuthStateService {
   private tokenKey = 'auth_token';
 
   private _currentUser = signal<any>(null);
+  private sessionInvalidated = false;
+
+  constructor() {
+    if (!isPlatformBrowser(this.platformId) || typeof window === 'undefined')
+      return;
+    const reset = () => {
+      this.sessionInvalidated = true;
+      try {
+        this.clearToken();
+      } catch {
+        /* Browser storage may be unavailable. */
+      }
+      this._currentUser.set(null);
+    };
+    window.addEventListener('ot:session-reset', reset);
+    inject(DestroyRef).onDestroy(() =>
+      window.removeEventListener('ot:session-reset', reset)
+    );
+  }
 
   getDecodedTokenValue(): any {
+    if (this.sessionInvalidated) return null;
     if (!this.hasLocalStorage()) {
       return null;
     }
@@ -40,6 +66,7 @@ export class AuthStateService {
   }
 
   setToken(token: string): void {
+    this.sessionInvalidated = false;
     if (!this.hasLocalStorage()) {
       return;
     }
@@ -49,6 +76,7 @@ export class AuthStateService {
   }
 
   clearToken(): void {
+    this.sessionInvalidated = true;
     if (!this.hasLocalStorage()) {
       this._currentUser.set(null);
       return;

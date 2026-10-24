@@ -1,6 +1,6 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { DestroyRef, Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, Subscription } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { WebSocketSubject } from 'rxjs/webSocket';
 import { Notification, CreateNotificationDto } from './notification.model';
@@ -13,6 +13,8 @@ export class NotificationService {
   private baseUrl = '/api/notifications';
   private ws: WebSocketSubject<Notification> | null = null;
   private activeProfileId: string | null = null;
+  private generation = 0;
+  private loadSubscription?: Subscription;
 
   notifications = signal<Notification[]>([]);
   unreadCount = signal<number>(0);
@@ -22,6 +24,22 @@ export class NotificationService {
 
   constructor() {
     this.connectWebSocket();
+    if (typeof window !== 'undefined') {
+      const reset = () => {
+        this.generation++;
+        this.loadSubscription?.unsubscribe();
+        this.activeProfileId = null;
+        this.notifications.set([]);
+        this.unreadCount.set(0);
+        this.ws?.complete();
+        this.ws = null;
+      };
+      window.addEventListener('ot:session-reset', reset);
+      inject(DestroyRef).onDestroy(() => {
+        window.removeEventListener('ot:session-reset', reset);
+        reset();
+      });
+    }
   }
 
   private connectWebSocket(): void {
@@ -47,7 +65,7 @@ export class NotificationService {
 
   private handleNewNotification(notification: Notification): void {
     if (
-      this.activeProfileId &&
+      !this.activeProfileId ||
       notification.recipientId !== this.activeProfileId
     ) {
       return;
@@ -58,14 +76,25 @@ export class NotificationService {
   }
 
   loadNotifications(profileId: string): void {
+    const generation = ++this.generation;
+    this.loadSubscription?.unsubscribe();
+    this.notifications.set([]);
+    this.unreadCount.set(0);
     this.activeProfileId = profileId;
-    this.http.get<Notification[]>(`${this.baseUrl}/${profileId}`).subscribe({
-      next: (notifications) => {
-        this.notifications.set(notifications);
-        this.unreadCount.set(notifications.filter((n) => !n.isRead).length);
-      },
-      error: (err) => console.error('Failed to load notifications:', err),
-    });
+    this.loadSubscription = this.http
+      .get<Notification[]>(`${this.baseUrl}/${profileId}`)
+      .subscribe({
+        next: (notifications) => {
+          if (
+            generation !== this.generation ||
+            profileId !== this.activeProfileId
+          )
+            return;
+          this.notifications.set(notifications);
+          this.unreadCount.set(notifications.filter((n) => !n.isRead).length);
+        },
+        error: (err) => console.error('Failed to load notifications:', err),
+      });
   }
 
   getNotifications(profileId: string): Observable<Notification[]> {
@@ -80,10 +109,12 @@ export class NotificationService {
   }
 
   markAsRead(notificationId: string): Observable<void> {
+    const generation = this.generation;
     return this.http
       .put<void>(`${this.baseUrl}/${notificationId}/read`, {})
       .pipe(
         tap(() => {
+          if (generation !== this.generation) return;
           this.notifications.update((list) =>
             list.map((n) =>
               n.id === notificationId ? { ...n, isRead: true } : n
@@ -95,11 +126,13 @@ export class NotificationService {
   }
 
   markAllAsRead(profileId: string): Observable<void> {
+    const generation = this.generation;
     this.activeProfileId = profileId;
     return this.http
       .put<void>(`${this.baseUrl}/${profileId}/read-all`, {})
       .pipe(
         tap(() => {
+          if (generation !== this.generation) return;
           this.notifications.update((list) =>
             list.map((n) => ({ ...n, isRead: true }))
           );
@@ -109,8 +142,10 @@ export class NotificationService {
   }
 
   deleteNotification(notificationId: string): Observable<void> {
+    const generation = this.generation;
     return this.http.delete<void>(`${this.baseUrl}/${notificationId}`).pipe(
       tap(() => {
+        if (generation !== this.generation) return;
         const currentNotifications = this.notifications();
         const notification = currentNotifications.find(
           (n) => n.id === notificationId

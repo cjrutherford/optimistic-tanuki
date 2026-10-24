@@ -19,8 +19,24 @@ describe('OAuthService', () => {
   let tokenRepo: Repository<TokenEntity>;
   let jwtService: JwtService;
   let profileOwnershipVerifier: { resolveSelection: jest.Mock };
+  let transactionManager: { getRepository: jest.Mock };
+  let transaction: jest.Mock;
+  let transactionOAuthRepo: Record<string, jest.Mock>;
+  let transactionUserRepo: Record<string, jest.Mock>;
 
   beforeEach(async () => {
+    transactionOAuthRepo = {
+      findOne: jest.fn(),
+      count: jest.fn(),
+      remove: jest.fn(),
+    };
+    transactionUserRepo = { findOne: jest.fn() };
+    transactionManager = {
+      getRepository: jest.fn((entity) =>
+        entity === UserEntity ? transactionUserRepo : transactionOAuthRepo
+      ),
+    };
+    transaction = jest.fn((callback) => callback(transactionManager));
     profileOwnershipVerifier = {
       resolveSelection: jest.fn((_accountId, selectedProfile) =>
         Promise.resolve(selectedProfile || undefined)
@@ -38,6 +54,7 @@ describe('OAuthService', () => {
             save: jest.fn(),
             remove: jest.fn(),
             count: jest.fn(),
+            manager: { transaction },
           },
         },
         {
@@ -451,42 +468,103 @@ describe('OAuthService', () => {
 
   describe('unlinkProvider', () => {
     it('should unlink a provider from a user', async () => {
-      (oauthRepo.findOne as jest.Mock).mockResolvedValue({
-        provider: 'github',
-        userId: 'user-1',
-      });
-      (userRepo.findOne as jest.Mock).mockResolvedValue({
+      transactionUserRepo.findOne.mockResolvedValue({
         id: 'user-1',
         password: 'hash',
       });
-      (oauthRepo.count as jest.Mock).mockResolvedValue(2);
-      (oauthRepo.remove as jest.Mock).mockResolvedValue({});
+      transactionOAuthRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'oauth-1',
+          provider: 'github',
+          userId: 'user-1',
+        })
+        .mockResolvedValueOnce(null);
+      transactionOAuthRepo.count.mockResolvedValue(2);
+      transactionOAuthRepo.remove.mockResolvedValue({});
 
       const result = await service.unlinkProvider('user-1', 'github');
 
       expect(result.code).toBe(0);
       expect(result.message).toContain('unlinked successfully');
+      expect(transaction).toHaveBeenCalledTimes(1);
+      expect(transactionUserRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        lock: { mode: 'pessimistic_write' },
+      });
+      expect(transactionOAuthRepo.findOne).toHaveBeenLastCalledWith({
+        where: { id: 'oauth-1', provider: 'github', userId: 'user-1' },
+        select: ['id'],
+      });
     });
 
-    it('should throw if provider not linked', async () => {
-      (oauthRepo.findOne as jest.Mock).mockResolvedValue(null);
+    it('throws when the user account is missing', async () => {
+      transactionUserRepo.findOne.mockResolvedValue(null);
+      await expect(service.unlinkProvider('user-1', 'github')).rejects.toThrow(
+        RpcException
+      );
+      expect(transactionOAuthRepo.findOne).not.toHaveBeenCalled();
+    });
 
+    it('surfaces provider deletion failure', async () => {
+      transactionUserRepo.findOne.mockResolvedValue({
+        id: 'user-1',
+        password: 'hash',
+      });
+      transactionOAuthRepo.findOne.mockResolvedValue({
+        id: 'oauth-1',
+        provider: 'github',
+        userId: 'user-1',
+      });
+      transactionOAuthRepo.count.mockResolvedValue(2);
+      transactionOAuthRepo.remove.mockRejectedValue(
+        new Error('database unavailable')
+      );
+      await expect(service.unlinkProvider('user-1', 'github')).rejects.toThrow(
+        'database unavailable'
+      );
+    });
+
+    it('scopes counterpart count to the account', async () => {
+      transactionUserRepo.findOne.mockResolvedValue({
+        id: 'user-1',
+        password: null,
+      });
+      transactionOAuthRepo.findOne.mockResolvedValue({
+        id: 'oauth-1',
+        provider: 'github',
+        userId: 'user-1',
+      });
+      transactionOAuthRepo.count.mockResolvedValue(1);
+      await expect(service.unlinkProvider('user-1', 'github')).rejects.toThrow(
+        RpcException
+      );
+      expect(transactionOAuthRepo.count).toHaveBeenCalledWith({
+        where: { userId: 'user-1' },
+      });
+    });
+
+    it('throws if provider not linked', async () => {
+      transactionUserRepo.findOne.mockResolvedValue({
+        id: 'user-1',
+        password: 'hash',
+      });
+      transactionOAuthRepo.findOne.mockResolvedValue(null);
       await expect(service.unlinkProvider('user-1', 'github')).rejects.toThrow(
         RpcException
       );
     });
 
-    it('should throw if trying to unlink last auth method without password', async () => {
-      (oauthRepo.findOne as jest.Mock).mockResolvedValue({
-        provider: 'github',
-        userId: 'user-1',
-      });
-      (userRepo.findOne as jest.Mock).mockResolvedValue({
+    it('throws if trying to unlink last auth method without password', async () => {
+      transactionUserRepo.findOne.mockResolvedValue({
         id: 'user-1',
         password: null,
       });
-      (oauthRepo.count as jest.Mock).mockResolvedValue(1);
-
+      transactionOAuthRepo.findOne.mockResolvedValue({
+        id: 'oauth-1',
+        provider: 'github',
+        userId: 'user-1',
+      });
+      transactionOAuthRepo.count.mockResolvedValue(1);
       await expect(service.unlinkProvider('user-1', 'github')).rejects.toThrow(
         RpcException
       );

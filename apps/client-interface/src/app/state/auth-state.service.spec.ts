@@ -139,12 +139,18 @@ describe('AuthStateService', () => {
       await service.restoreSession();
       service.persistProfiles([PROFILE]);
       service.persistSelectedProfile(PROFILE);
+      localStorage.setItem('theme', 'dark');
+      localStorage.setItem('user-preferences', '{"density":"compact"}');
       const pending = service.restoreSession();
       httpMock
         .expectOne(SESSION_URL)
         .flush({}, { status: 401, statusText: 'Unauthorized' });
       await pending;
       expect(localStorage.getItem('ot-client-selectedProfile')).toBeNull();
+      expect(localStorage.getItem('theme')).toBe('dark');
+      expect(localStorage.getItem('user-preferences')).toBe(
+        '{"density":"compact"}'
+      );
       expect(localStorage.getItem('ot-client-profiles')).toBeNull();
       expect(await firstValueFrom(service.currentProfile$)).toBeNull();
     });
@@ -163,6 +169,21 @@ describe('AuthStateService', () => {
       await Promise.resolve();
       expect(service.getPersistedSelectedProfile()).toBeNull();
       expect(service.getPersistedProfiles()).toBeNull();
+    });
+
+    it('does not let an older account restore overwrite account B', async () => {
+      const service = configure('browser');
+      const initial = httpMock.expectOne(SESSION_URL);
+      const oldRestore = service.restoreSession();
+      const accountB = { ...USER, userId: 'account-b', profileId: 'profile-b' };
+      service.setSession(accountB);
+      const newerRestore = service.restoreSession();
+      httpMock.expectOne(SESSION_URL).flush({ data: accountB });
+      await newerRestore;
+      initial.flush({ data: { ...USER, userId: 'account-a' } });
+      await oldRestore;
+      expect(service.getDecodedTokenValue()?.userId).toBe('account-b');
+      expect(service.isAuthenticated).toBe(true);
     });
     it('logs in through the authentication service and then restores the session', async () => {
       const service = configure('browser');
@@ -358,10 +379,7 @@ describe('AuthStateService', () => {
         .expectOne(LOGOUT_URL)
         .flush(null, { status: 500, statusText: 'Server Error' });
 
-      expect(errorSpy).toHaveBeenCalledWith(
-        'Failed to invalidate session on gateway:',
-        expect.anything()
-      );
+      expect(errorSpy).toHaveBeenCalledWith('Session invalidation failed');
       expect(service.isAuthenticated).toBe(false);
       httpMock.verify();
     });

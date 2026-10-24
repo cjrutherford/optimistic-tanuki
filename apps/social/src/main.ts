@@ -1,3 +1,4 @@
+import { installPayloadFreeLogging } from '@optimistic-tanuki/logger';
 /**
  * This is not a production server yet!
  * This is only a minimal backend to get started.
@@ -11,6 +12,7 @@ import { Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
+  installPayloadFreeLogging();
   const config = (await NestFactory.createApplicationContext(AppModule)).get(
     ConfigService
   );

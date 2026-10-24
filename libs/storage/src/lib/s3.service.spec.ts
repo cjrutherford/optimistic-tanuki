@@ -3,11 +3,14 @@ import { Logger, ServiceUnavailableException } from '@nestjs/common';
 import {
   ObjectLockMode,
   S3Client,
+  DeleteObjectsCommand,
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   GetBucketVersioningCommand,
   GetObjectLockConfigurationCommand,
+  HeadObjectCommand,
+  ListObjectVersionsCommand,
 } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
 import {
@@ -182,6 +185,86 @@ describe('S3Service', () => {
 
       await expect(service.deleteObject(key)).rejects.toThrow('Delete failed');
       expect(mockLogger.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('purgeObjectVersions', () => {
+    it('paginates versions and delete markers and only deletes the exact key', async () => {
+      mockS3Client.send
+        .mockResolvedValueOnce({
+          Versions: [{ Key: 'asset', VersionId: 'v1' }],
+          DeleteMarkers: [
+            { Key: 'asset', VersionId: 'd1' },
+            { Key: 'asset-neighbor', VersionId: 'neighbor' },
+          ],
+          IsTruncated: true,
+          NextKeyMarker: 'asset',
+          NextVersionIdMarker: 'd1',
+        })
+        .mockResolvedValueOnce({
+          Versions: [{ Key: 'asset', VersionId: 'v2' }],
+          IsTruncated: false,
+        })
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({ Versions: [], DeleteMarkers: [] })
+        .mockRejectedValueOnce(
+          Object.assign(new Error('missing'), {
+            name: 'NotFound',
+            $metadata: { httpStatusCode: 404 },
+          })
+        );
+      await service.purgeObjectVersions('asset');
+      const deletes = mockS3Client.send.mock.calls.filter(
+        ([command]: any[]) => command instanceof DeleteObjectsCommand
+      );
+      expect(deletes).toHaveLength(1);
+      expect(
+        (DeleteObjectsCommand as unknown as jest.Mock).mock.calls[0][0].Delete
+          .Objects
+      ).toEqual([
+        { Key: 'asset', VersionId: 'v1' },
+        { Key: 'asset', VersionId: 'd1' },
+        { Key: 'asset', VersionId: 'v2' },
+      ]);
+      expect(
+        (ListObjectVersionsCommand as unknown as jest.Mock).mock.calls[1][0]
+      ).toMatchObject({
+        KeyMarker: 'asset',
+        VersionIdMarker: 'd1',
+      });
+      expect(mockS3Client.send.mock.calls.at(-1)[0]).toBeInstanceOf(
+        HeadObjectCommand
+      );
+    });
+
+    it('fails on partial delete response and permits retry', async () => {
+      mockS3Client.send
+        .mockResolvedValueOnce({
+          Versions: [{ Key: 'asset', VersionId: 'v1' }],
+        })
+        .mockResolvedValueOnce({
+          Errors: [{ Key: 'asset', VersionId: 'v1', Code: 'AccessDenied' }],
+        });
+      await expect(service.purgeObjectVersions('asset')).rejects.toThrow(
+        'partially failed'
+      );
+
+      mockS3Client.send
+        .mockReset()
+        .mockResolvedValueOnce({
+          Versions: [{ Key: 'asset', VersionId: 'v1' }],
+        })
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({ Versions: [] })
+        .mockRejectedValueOnce(
+          Object.assign(new Error('missing'), {
+            name: 'NotFound',
+            $metadata: { httpStatusCode: 404 },
+          })
+        );
+      await expect(
+        service.purgeObjectVersions('asset')
+      ).resolves.toBeUndefined();
     });
   });
 

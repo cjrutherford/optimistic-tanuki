@@ -1,4 +1,4 @@
-import { Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { DestroyRef, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 import { AuthenticationService } from '../authentication.service';
 import {
@@ -8,7 +8,14 @@ import {
 } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
-import { setPerformanceMonitoringEligibility } from '@optimistic-tanuki/common-ui';
+import {
+  clearOwnedBrowserSessionKeys,
+  notifyBrowserSessionReset,
+  watchBrowserSessionBoundary,
+  publishBrowserSessionBoundary,
+  SessionGeneration,
+  setPerformanceMonitoringEligibility,
+} from '@optimistic-tanuki/common-ui';
 
 export interface UserData {
   userId: string;
@@ -34,7 +41,7 @@ export class AuthStateService {
   isAuthenticated$: Observable<boolean>;
   decodedToken$: Observable<UserData | null>;
   currentProfile$: Observable<ProfileDto | null>;
-  private sessionRestoreGeneration = 0;
+  private readonly sessionGeneration = new SessionGeneration();
   private inflightRestore: Promise<boolean> | undefined;
 
   private authService = inject(AuthenticationService);
@@ -55,6 +62,12 @@ export class AuthStateService {
       return;
     }
 
+    const stopBoundary = watchBrowserSessionBoundary('client-interface', () => {
+      this.sessionGeneration.invalidate();
+      this.inflightRestore = undefined;
+      this.clearClientSession(false);
+    });
+    inject(DestroyRef).onDestroy(stopBoundary);
     this.tokenSubject = new BehaviorSubject<string | null>(null);
     this.isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
     this.decodedTokenSubject = new BehaviorSubject<UserData | null>(null);
@@ -79,14 +92,14 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return Promise.reject('Login is not available on this platform.');
     }
-    const generation = ++this.sessionRestoreGeneration;
+    const generation = this.sessionGeneration.next();
     this.inflightRestore = undefined;
     const response = await this.authService.login(loginRequest);
     if ((response as any)?.data?.guardianConsentPending) return response;
-    if (generation !== this.sessionRestoreGeneration)
+    if (!this.sessionGeneration.isCurrent(generation))
       throw new Error('Sign-in was cancelled.');
     // A pre-login anonymous probe must not satisfy the post-login restore.
-    ++this.sessionRestoreGeneration;
+    this.sessionGeneration.invalidate();
     this.inflightRestore = undefined;
     if (!(await this.restoreSession())) {
       throw new Error(
@@ -107,7 +120,7 @@ export class AuthStateService {
       return this.inflightRestore;
     }
 
-    const restoreGeneration = ++this.sessionRestoreGeneration;
+    const restoreGeneration = this.sessionGeneration.next();
     const pending = this.executeRestore(restoreGeneration);
     this.inflightRestore = pending;
     const clearInflight = () => {
@@ -150,7 +163,7 @@ export class AuthStateService {
         )
       );
     const invalidatePendingRestore = () => {
-      ++this.sessionRestoreGeneration;
+      this.sessionGeneration.invalidate();
       this.inflightRestore = undefined;
     };
 
@@ -213,13 +226,15 @@ export class AuthStateService {
           { withCredentials: true }
         )
       );
-      if (restoreGeneration !== this.sessionRestoreGeneration) {
+      if (!this.sessionGeneration.isCurrent(restoreGeneration)) {
         return this._isAuthenticated;
       }
+      if (!response?.data?.userId)
+        throw new Error('Session identity is missing.');
       this.setSession(response.data);
       return true;
     } catch {
-      if (restoreGeneration !== this.sessionRestoreGeneration) {
+      if (!this.sessionGeneration.isCurrent(restoreGeneration)) {
         return this._isAuthenticated;
       }
       this.clearClientSession();
@@ -233,7 +248,7 @@ export class AuthStateService {
     profileId: string
   ): Promise<boolean> {
     if (!isPlatformBrowser(this.platformId)) return false;
-    const restoreGeneration = ++this.sessionRestoreGeneration;
+    const restoreGeneration = this.sessionGeneration.next();
     this.inflightRestore = undefined;
     try {
       const response = await firstValueFrom(
@@ -242,7 +257,7 @@ export class AuthStateService {
           { withCredentials: true }
         )
       );
-      if (restoreGeneration !== this.sessionRestoreGeneration) {
+      if (!this.sessionGeneration.isCurrent(restoreGeneration)) {
         return this._isAuthenticated;
       }
       if (
@@ -262,7 +277,11 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    localStorage.removeItem(this.tokenKey);
+    // Any externally published identity supersedes pending restores, including
+    // the initial anonymous probe where there is no previous user yet.
+    this.sessionGeneration.invalidate();
+    this.inflightRestore = undefined;
+    clearOwnedBrowserSessionKeys(() => localStorage, [this.tokenKey]);
     this.tokenSubject.next(null);
     const saved = this.readStoredProfile<ProfileDto>(this.selectedProfileKey);
     const cached = this.readStoredProfile<ProfileDto[]>(this.profilesKey);
@@ -272,8 +291,16 @@ export class AuthStateService {
         (!Array.isArray(cached) ||
           cached.some((p) => p?.userId !== user.userId)))
     ) {
-      localStorage.removeItem(this.selectedProfileKey);
-      localStorage.removeItem(this.profilesKey);
+      clearOwnedBrowserSessionKeys(
+        () => localStorage,
+        [this.selectedProfileKey, this.profilesKey]
+      );
+    }
+    if (this.decodedTokenSubject.value?.userId !== user.userId) {
+      clearOwnedBrowserSessionKeys(() => localStorage, ['auth_token']);
+      notifyBrowserSessionReset();
+      if (this.decodedTokenSubject.value?.userId)
+        publishBrowserSessionBoundary('client-interface');
     }
     this._isAuthenticated = true;
     // The session endpoint is protected by the gateway and its token
@@ -288,9 +315,9 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    ++this.sessionRestoreGeneration;
+    this.sessionGeneration.invalidate();
     this.inflightRestore = undefined;
-    localStorage.removeItem(this.tokenKey);
+    clearOwnedBrowserSessionKeys(() => localStorage, [this.tokenKey]);
     this.tokenSubject.next(token);
     this.isAuthenticatedSubject.next(true);
     this.decodedTokenSubject.next(null);
@@ -303,10 +330,12 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    ++this.sessionRestoreGeneration;
+    this.sessionGeneration.invalidate();
     this.inflightRestore = undefined;
 
     const token = this.getToken();
+
+    this.clearClientSession();
 
     this.http
       .post(
@@ -316,18 +345,24 @@ export class AuthStateService {
       )
       .subscribe({
         next: () => console.log('Session invalidated on gateway'),
-        error: (err) =>
-          console.error('Failed to invalidate session on gateway:', err),
+        error: () => console.error('Session invalidation failed'),
       });
-
-    this.clearClientSession();
   }
 
-  private clearClientSession() {
+  private clearClientSession(announce = true) {
+    notifyBrowserSessionReset();
+    if (announce) publishBrowserSessionBoundary('client-interface');
     setPerformanceMonitoringEligibility('client-interface', false);
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.profilesKey);
-    localStorage.removeItem(this.selectedProfileKey);
+    clearOwnedBrowserSessionKeys(
+      () => localStorage,
+      [
+        this.tokenKey,
+        this.profilesKey,
+        this.selectedProfileKey,
+        'user', // Retired PresenceService identity cache; never trusted.
+        'auth_token', // Retired shared Forum/Notification bearer cache.
+      ]
+    );
     this._isAuthenticated = false;
     this.tokenSubject.next(null);
     this.decodedTokenSubject.next(null);
@@ -340,7 +375,7 @@ export class AuthStateService {
       const value = localStorage.getItem(key);
       return value ? (JSON.parse(value) as T) : null;
     } catch {
-      localStorage.removeItem(key);
+      clearOwnedBrowserSessionKeys(() => localStorage, [key]);
       return null;
     }
   }
@@ -366,6 +401,14 @@ export class AuthStateService {
     return this.decodedTokenSubject.value;
   }
   persistProfiles(profiles: ProfileDto[] | null) {
+    const accountId = this.decodedTokenSubject.value?.userId;
+    if (
+      profiles &&
+      (!this._isAuthenticated ||
+        !accountId ||
+        profiles.some((profile) => profile.userId !== accountId))
+    )
+      return;
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }

@@ -1,3 +1,4 @@
+import { installPayloadFreeLogging } from '@optimistic-tanuki/logger';
 /**
  * App Configurator Microservice
  * Manages application configurations for multi-tenant configurable web clients
@@ -11,6 +12,7 @@ import loadConfig from './config';
 import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
+  installPayloadFreeLogging();
   const logger = new Logger('AppConfigurator');
   const configApp = await NestFactory.createApplicationContext(AppModule);
   const config = configApp.get(ConfigService);

@@ -366,3 +366,35 @@ describe('SearchService', () => {
     });
   });
 });
+
+describe('SearchService account boundaries', () => {
+  it('clears cached results and invalidates old observable references on session reset', () => {
+    TestBed.configureTestingModule({ imports: [HttpClientTestingModule] });
+    const service = TestBed.inject(SearchService);
+    const http = TestBed.inject(HttpTestingController);
+    const old = service.getSuggestedUsers();
+    const delivered: unknown[] = [];
+    old.subscribe((rows) => delivered.push(rows));
+    http
+      .expectOne((req) => req.url.endsWith('/suggested-users'))
+      .flush([{ id: 'account-a-private-profile' }]);
+    window.dispatchEvent(new Event('ot:session-reset'));
+    expect(delivered.at(-1)).toEqual([]);
+    old.subscribe((rows) => expect(rows).toEqual([]));
+    service.getSuggestedUsers().subscribe();
+    http.expectOne((req) => req.url.endsWith('/suggested-users')).flush([]);
+    http.verify();
+  });
+  it('cancels pending account-specific suggestions on reset', () => {
+    TestBed.configureTestingModule({ imports: [HttpClientTestingModule] });
+    const service = TestBed.inject(SearchService);
+    const http = TestBed.inject(HttpTestingController);
+    const delivered: unknown[] = [];
+    service.getTrending().subscribe((rows) => delivered.push(rows));
+    const pending = http.expectOne((req) => req.url.endsWith('/trending'));
+    window.dispatchEvent(new Event('ot:session-reset'));
+    expect(pending.cancelled).toBe(true);
+    expect(delivered).toEqual([[]]);
+    http.verify();
+  });
+});

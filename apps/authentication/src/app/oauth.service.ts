@@ -10,6 +10,7 @@ import { OAuthConfigValidator } from './oauth-config.validator';
 import { randomUUID } from 'crypto';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
+import { emitSafeDiagnostic } from '@optimistic-tanuki/logger';
 
 @Injectable()
 export class OAuthService {
@@ -215,37 +216,47 @@ export class OAuthService {
 
   async unlinkProvider(userId: string, provider: string) {
     try {
-      this.l.debug(`Unlinking provider=${provider} from userId=${userId}`);
+      await this.oauthRepo.manager.transaction(async (manager) => {
+        const users = manager.getRepository(UserEntity);
+        const providers = manager.getRepository(OAuthProviderEntity);
+        const user = await users.findOne({
+          where: { id: userId },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (!user) throw new RpcException('User account not found');
 
-      const linked = await this.oauthRepo.findOne({
-        where: { provider, userId },
+        const linked = await providers.findOne({
+          where: { provider, userId },
+        });
+        if (!linked) {
+          throw new RpcException(
+            `Provider ${provider} is not linked to this account`
+          );
+        }
+
+        // The user row lock serializes unlink attempts for this account.
+        const otherProviders = await providers.count({ where: { userId } });
+        if (!user.password && otherProviders <= 1) {
+          throw new RpcException(
+            'Cannot unlink the last authentication provider. Set a password first.'
+          );
+        }
+
+        const linkId = linked.id;
+        await providers.remove(linked);
+        const remaining = await providers.findOne({
+          where: { id: linkId, provider, userId },
+          select: ['id'],
+        });
+        if (remaining) throw new Error('Provider unlink did not complete');
       });
-      if (!linked) {
-        throw new RpcException(
-          `Provider ${provider} is not linked to this account`
-        );
-      }
-
-      // Ensure user has at least a password or another provider before unlinking
-      const user = await this.userRepo.findOne({ where: { id: userId } });
-      const otherProviders = await this.oauthRepo.count({
-        where: { userId },
-      });
-
-      if (!user.password && otherProviders <= 1) {
-        throw new RpcException(
-          'Cannot unlink the last authentication provider. Set a password first.'
-        );
-      }
-
-      await this.oauthRepo.remove(linked);
 
       return {
         message: `Provider ${provider} unlinked successfully`,
         code: 0,
       };
     } catch (e) {
-      this.l.error('Error in unlinkProvider:', e);
+      emitSafeDiagnostic(this.l, 'profile.operation', undefined, 'warn');
       if (e instanceof RpcException) throw e;
       throw new RpcException(e.message || e);
     }
