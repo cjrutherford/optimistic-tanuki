@@ -19,6 +19,7 @@ import { PersonalitiesController } from '../controllers/personalities.controller
 import { AuthGuard } from '../auth/auth.guard';
 import { SocketSessionAuthService } from '../auth/socket-session-auth.service';
 import { AuthenticationController } from '../controllers/authentication/authentication.controller';
+import { AccountExportDownloadController } from '../controllers/authentication/account-export-download.controller';
 import { JwtService } from '@nestjs/jwt';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import {
@@ -169,6 +170,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'authentication',
         requiredServices: ['authentication', 'profile'],
         value: AuthenticationController,
+      },
+      {
+        id: 'account-export-download',
+        requiredServices: ['authentication'],
+        value: AccountExportDownloadController,
       },
       {
         id: 'profile',

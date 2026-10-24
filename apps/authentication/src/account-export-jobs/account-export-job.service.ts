@@ -1,6 +1,11 @@
 import { VideosAccountExportSnapshotClient } from './videos-account-export-snapshot.client';
 import { AssetsAccountExportSnapshotClient } from './assets-account-export-snapshot.client';
-import { Inject, Injectable } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
@@ -17,6 +22,7 @@ import { DataSource, Repository } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import validator from 'validator';
 import { AppService } from '../app/app.service';
+import { TokenEntity } from '../tokens/entities/token.entity';
 import { AccountExportService } from '../app/account-export.service';
 import { AccountExportJobEntity } from './entities/account-export-job.entity';
 import {
@@ -26,6 +32,7 @@ import {
 import {
   AccountExportOwnerSpoolService,
   OwnerSpoolHandle,
+  ArtifactDescriptor,
 } from '@optimistic-tanuki/storage';
 import {
   ProfileAccountExportSnapshotClient,
@@ -38,6 +45,7 @@ import { WorkspaceAccountExportSnapshotClient } from './workspace-account-export
 import { AppConfiguratorAccountExportSnapshotClient } from './app-configurator-account-export-snapshot.client';
 import { ClassifiedsAccountExportSnapshotClient } from './classifieds-account-export-snapshot.client';
 import { PaymentsAccountExportSnapshotClient } from './payments-account-export-snapshot.client';
+import { AccountExportArtifactService } from './account-export-artifact.service';
 import { ChatAccountExportSnapshotClient } from './chat-account-export-snapshot.client';
 import {
   ACCOUNT_EXPORT_RELEASE_COVERAGE_VERSION,
@@ -47,7 +55,13 @@ import {
 const LEASE_MS = 60_000;
 
 @Injectable()
-export class AccountExportJobService {
+export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
+  private initialRecoveryTimer?: ReturnType<typeof setTimeout>;
+  private recoveryTimer?: ReturnType<typeof setInterval>;
+  private recovering = false;
+  private closing = false;
+  private activeLaunches = 0;
+  private readonly background = new Set<Promise<void>>();
   constructor(
     @Inject(getRepositoryToken(AccountExportJobEntity))
     private readonly jobs: Repository<AccountExportJobEntity>,
@@ -67,12 +81,16 @@ export class AccountExportJobService {
     private readonly appConfiguratorCapture: AppConfiguratorAccountExportSnapshotClient,
     private readonly chatCapture: ChatAccountExportSnapshotClient,
     private readonly classifiedsCapture: ClassifiedsAccountExportSnapshotClient,
-    private readonly paymentsCapture: PaymentsAccountExportSnapshotClient
+    private readonly paymentsCapture: PaymentsAccountExportSnapshotClient,
+    private readonly artifacts: AccountExportArtifactService
   ) {}
 
   async create(request: unknown): Promise<AccountExportJobStatus> {
     const input = this.validate(request);
     await this.authorize(input.accountId, input.token, input.appId);
+    const sessionRef = this.releaseScope(input.appId)
+      ? await this.sessionReference(input)
+      : undefined;
     const result = await this.dataSource.transaction(async (manager) => {
       await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
         this.lockKey(input.accountId),
@@ -115,6 +133,7 @@ export class AccountExportJobService {
             ? ACCOUNT_EXPORT_RELEASE_COVERAGE_VERSION
             : ACCOUNT_EXPORT_COVERAGE_INVENTORY.version,
         coverageSummary: {
+          ...(sessionRef ? { privateSessionRef: sessionRef } : {}),
           blockers: ['not-started'],
           participantCount: 0,
           artifactAvailable: false,
@@ -123,7 +142,9 @@ export class AccountExportJobService {
       return { row: await repo.save(job), created: true };
     });
     if (!result.created) return this.status(result.row);
-    return this.run(input, result.row);
+    return this.releaseScope(input.appId)
+      ? this.launch(input, result.row)
+      : this.run(input, result.row);
   }
 
   async get(request: unknown): Promise<AccountExportJobStatus> {
@@ -168,7 +189,9 @@ export class AccountExportJobService {
     if (!row)
       this.raise(404, 'EXPORT_JOB_NOT_FOUND', 'Export operation not found');
     if (row.state === 'complete') return this.status(row);
-    return this.run(input, row);
+    return this.releaseScope(input.appId)
+      ? this.launch(input, row)
+      : this.run(input, row);
   }
 
   async cancel(request: unknown): Promise<AccountExportJobStatus> {
@@ -225,11 +248,196 @@ export class AccountExportJobService {
     return this.status(row);
   }
 
-  private async run(
+  private releaseScope(appId: string): boolean {
+    return appId === 'client-interface' || appId === 'local-hub';
+  }
+
+  onModuleInit(): void {
+    if (this.recoveryTimer) return;
+    this.recoveryTimer = setInterval(() => {
+      void this.recoverBackground().catch(() => undefined);
+    }, 15000);
+    this.recoveryTimer.unref();
+    this.initialRecoveryTimer = setTimeout(() => {
+      void this.recoverBackground().catch(() => undefined);
+    }, 1000);
+    this.initialRecoveryTimer.unref();
+  }
+  onModuleDestroy(): void {
+    this.closing = true;
+    if (this.initialRecoveryTimer) clearTimeout(this.initialRecoveryTimer);
+    if (this.recoveryTimer) clearInterval(this.recoveryTimer);
+  }
+
+  private async sessionReference(
+    input: Pick<AccountExportJobRequest, 'accountId' | 'token' | 'appId'>
+  ): Promise<string> {
+    const token = await this.dataSource.getRepository(TokenEntity).findOneBy({
+      tokenData: input.token,
+      userId: input.accountId,
+      revoked: false,
+    });
+    if (!token || !validator.isUUID(token.id))
+      this.raise(
+        403,
+        'EXPORT_JOB_SESSION_INVALID',
+        'Account session is invalid for this operation'
+      );
+    return token.id;
+  }
+
+  private async recoverBackground(): Promise<void> {
+    if (this.closing || this.recovering) return;
+    this.recovering = true;
+    try {
+      const candidates = await this.jobs
+        .createQueryBuilder('job')
+        .where(
+          `job.kind = :kind AND job.appId IN (:...apps) AND (job.state = :queued OR (job.state = :running AND (job.leaseExpiresAt IS NULL OR job.leaseExpiresAt <= clock_timestamp())) OR (job.state = :failed AND "job"."coverageSummary"->>'artifactState' = :cleanup))`,
+          {
+            kind: 'export',
+            apps: ['client-interface', 'local-hub'],
+            queued: 'queued',
+            running: 'running',
+            failed: 'failed',
+            cleanup: 'cleanup-pending',
+          }
+        )
+        .orderBy('job.createdAt', 'ASC')
+        .take(25)
+        .getMany();
+      for (const job of candidates) {
+        if (this.closing || this.activeLaunches >= 2) break;
+        if (job.state === 'failed') {
+          await this.cleanupUnavailableSession(job);
+          continue;
+        }
+        let authorized = false;
+        try {
+          const ref = job.coverageSummary?.privateSessionRef;
+          if (typeof ref !== 'string' || !validator.isUUID(ref))
+            throw new Error('Session reference unavailable');
+          const token = await this.dataSource
+            .getRepository(TokenEntity)
+            .findOneBy({ id: ref, userId: job.accountId, revoked: false });
+          if (!token) throw new Error('Session unavailable');
+          await this.authorize(job.accountId, token.tokenData, job.appId);
+          authorized = true;
+          await this.launch(
+            {
+              accountId: job.accountId,
+              token: token.tokenData,
+              appId: job.appId,
+              idempotencyKey: job.idempotencyKey,
+            },
+            job
+          );
+        } catch {
+          if (!authorized) await this.cleanupUnavailableSession(job);
+        }
+      }
+    } finally {
+      this.recovering = false;
+    }
+  }
+
+  // Removing server-held bytes needs ledger authority, never a still-active user session.
+  private async cleanupUnavailableSession(
+    row: AccountExportJobEntity
+  ): Promise<void> {
+    const claim = await this.claim(row.id);
+    if (!claim) return;
+    let summary: Record<string, unknown> = {
+      ...claim.coverageSummary,
+      artifactAvailable: false,
+    };
+    let code = 'export-session-unavailable';
+    try {
+      await this.artifacts.recover(claim, () => this.renewLease(claim));
+      delete summary.privateArtifact;
+      delete summary.artifactState;
+    } catch {
+      summary = { ...summary, artifactState: 'cleanup-pending' };
+      code = 'artifact-cleanup-unavailable';
+    }
+    await this.finish(claim, 'failed', summary, code);
+  }
+
+  private async launch(
     input: ReturnType<AccountExportJobService['validate']>,
     row: AccountExportJobEntity
   ): Promise<AccountExportJobStatus> {
-    const claimed = await this.claim(row.id);
+    if (this.closing || this.activeLaunches >= 2)
+      this.raise(
+        409,
+        'EXPORT_JOB_BUSY',
+        'Export worker capacity is currently occupied'
+      );
+    this.activeLaunches++;
+    let handedOff = false;
+    try {
+      const claimed = await this.claim(row.id);
+      if (!claimed) {
+        const current = await this.jobs.findOneByOrFail({ id: row.id });
+        if (current.state === 'running' || current.state === 'complete')
+          return this.status(current);
+        this.raise(
+          409,
+          'EXPORT_JOB_BUSY',
+          'Another export operation is already active'
+        );
+      }
+      const ref = await this.sessionReference(input);
+      const currentSummary = {
+        ...claimed.coverageSummary,
+        privateSessionRef: ref,
+      };
+      const referenced = await this.jobs
+        .createQueryBuilder()
+        .update()
+        .set({ coverageSummary: currentSummary })
+        .where(
+          '"id"=:id AND "state"=:running AND "attempt"=:attempt AND "leaseOwner"=:owner AND "leaseExpiresAt">clock_timestamp()',
+          {
+            id: claimed.id,
+            running: 'running',
+            attempt: claimed.attempt,
+            owner: claimed.leaseOwner,
+          }
+        )
+        .execute();
+      if (referenced.affected !== 1)
+        this.raise(
+          409,
+          'EXPORT_JOB_LEASE_LOST',
+          'Export operation lease is no longer current'
+        );
+      claimed.coverageSummary = currentSummary;
+      // The token stays only in this bounded request closure; DB lease state permits explicit recovery after process death.
+      const work = Promise.resolve()
+        .then(() => this.run(input, claimed, claimed))
+        .then(
+          () => undefined,
+          () => undefined
+        )
+        .finally(() => {
+          this.background.delete(work);
+          this.activeLaunches--;
+        });
+      this.background.add(work);
+      handedOff = true;
+      return this.status(claimed);
+    } finally {
+      if (!handedOff) this.activeLaunches--;
+    }
+  }
+
+  private async run(
+    input: ReturnType<AccountExportJobService['validate']>,
+    row: AccountExportJobEntity,
+    ownedClaim?: AccountExportJobEntity
+  ): Promise<AccountExportJobStatus> {
+    const claimed = ownedClaim ?? (await this.claim(row.id));
     if (!claimed) {
       const latest = await this.jobs.findOneByOrFail({ id: row.id });
       if (latest.state === 'running')
@@ -243,11 +451,24 @@ export class AccountExportJobService {
     let state: AccountExportJobState = 'incomplete';
     let summary: Record<string, unknown>;
     let errorCode: string | null = null;
-    let previewFailureCode: 'preview-unavailable' | 'preview-invalid' =
-      'preview-unavailable';
+    let previewFailureCode:
+      | 'preview-unavailable'
+      | 'preview-invalid'
+      | 'artifact-recovery-unavailable' = 'preview-unavailable';
     let ownerHandle: OwnerSpoolHandle<string> | undefined;
     let leaseLost = false;
+    let preparedArtifact: ArtifactDescriptor | undefined;
+    const renew = async () => {
+      const current = !this.closing && (await this.renewLease(claimed));
+      if (!current) leaseLost = true;
+      return current;
+    };
     try {
+      if (input.appId === 'client-interface' || input.appId === 'local-hub') {
+        previewFailureCode = 'artifact-recovery-unavailable';
+        await this.artifacts.recover(claimed, renew);
+        previewFailureCode = 'preview-unavailable';
+      }
       const result = await this.preview.previewAccountExport(
         input.accountId,
         input.token,
@@ -320,6 +541,11 @@ export class AccountExportJobService {
       errorCode = previewFailureCode;
       state = 'failed';
     }
+    if (typeof claimed.coverageSummary?.privateSessionRef === 'string')
+      summary = {
+        ...summary,
+        privateSessionRef: claimed.coverageSummary.privateSessionRef,
+      };
     if (state === 'incomplete') {
       try {
         if (!(await this.renewLease(claimed))) {
@@ -413,7 +639,8 @@ export class AccountExportJobService {
         | 'app-configurator'
         | 'chat-collector'
         | 'classifieds'
-        | 'payments' = 'profile';
+        | 'payments'
+        | 'artifact' = 'profile';
       try {
         if (!claimed.leaseOwner) {
           leaseLost = true;
@@ -771,6 +998,38 @@ export class AccountExportJobService {
             };
             state = 'failed';
             errorCode = 'capture-coverage-incomplete';
+          } else {
+            stage = 'artifact';
+            const handles: Array<OwnerSpoolHandle<string> | undefined> = [
+              ownerHandle,
+              profile?.handle,
+              assets?.handle,
+              videos?.handle,
+              permissions?.handle,
+              social?.handle,
+              forum?.handle,
+              workspace?.handle,
+              appConfigurator?.handle,
+              chat?.handle,
+              classifieds?.handle,
+              payments?.handle,
+            ];
+            const prepared = await this.artifacts.prepare({
+              claim: claimed,
+              handles: handles.filter(
+                (handle): handle is OwnerSpoolHandle<string> => Boolean(handle)
+              ),
+              summary,
+              renewLease: renew,
+            });
+            preparedArtifact = prepared.descriptor;
+            state = 'complete';
+            summary = {
+              ...prepared.summary,
+              participantCount: handles.length,
+              blockers: [],
+              artifactAvailable: true,
+            };
           }
         }
       } catch {
@@ -1074,6 +1333,25 @@ export class AccountExportJobService {
         }
       }
     }
+    if (preparedArtifact && (state === 'failed' || leaseLost)) {
+      try {
+        await this.artifacts.discard(claimed, preparedArtifact);
+        delete summary.privateArtifact;
+        delete summary.artifactState;
+      } catch {
+        state = 'failed';
+        errorCode = 'artifact-cleanup-unavailable';
+        summary = {
+          ...summary,
+          artifactState: 'cleanup-pending',
+          artifactAvailable: false,
+          blockers: [
+            ...(Array.isArray(summary.blockers) ? summary.blockers : []),
+            'artifact-cleanup-unavailable',
+          ],
+        };
+      }
+    }
     if (leaseLost) {
       this.raise(
         409,
@@ -1081,12 +1359,18 @@ export class AccountExportJobService {
         'Export operation lease is no longer current'
       );
     }
-    const updated = await this.finish(claimed, state, summary, errorCode);
-    return this.status(updated);
+    try {
+      const updated = await this.finish(claimed, state, summary, errorCode);
+      return this.status(updated);
+    } catch (error) {
+      if (preparedArtifact)
+        await this.artifacts.discard(claimed, preparedArtifact);
+      throw error;
+    }
   }
 
   private async renewLease(claim: AccountExportJobEntity): Promise<boolean> {
-    if (!claim.leaseOwner) return false;
+    if (this.closing || !claim.leaseOwner) return false;
     const result = await this.jobs
       .createQueryBuilder()
       .update()
@@ -1164,7 +1448,24 @@ export class AccountExportJobService {
     coverageSummary: Record<string, unknown>,
     error: string | null
   ): Promise<AccountExportJobEntity> {
-    await this.jobs
+    coverageSummary = { ...coverageSummary };
+    delete coverageSummary.privateSessionRef;
+    if (state !== 'complete') coverageSummary.artifactAvailable = false;
+    if (state === 'failed' && !coverageSummary.privateArtifact) {
+      const latest = await this.jobs.findOneBy({
+        id: claim.id,
+        accountId: claim.accountId,
+        appId: claim.appId,
+      });
+      if (latest?.coverageSummary?.privateArtifact)
+        coverageSummary = {
+          ...coverageSummary,
+          privateArtifact: latest.coverageSummary.privateArtifact,
+          artifactState: 'cleanup-pending',
+          artifactAvailable: false,
+        };
+    }
+    const result = await this.jobs
       .createQueryBuilder()
       .update()
       .set({
@@ -1185,6 +1486,12 @@ export class AccountExportJobService {
         }
       )
       .execute();
+    if (result.affected !== 1)
+      this.raise(
+        409,
+        'EXPORT_JOB_LEASE_LOST',
+        'Export operation lease is no longer current'
+      );
     return this.jobs.findOneByOrFail({ id: claim.id });
   }
 
@@ -1260,6 +1567,19 @@ export class AccountExportJobService {
     return `${accountId}:export`;
   }
   private status(row: AccountExportJobEntity): AccountExportJobStatus {
+    const artifact = row.coverageSummary?.privateArtifact as
+      | ArtifactDescriptor
+      | undefined;
+    const available =
+      this.releaseScope(row.appId) &&
+      row.state === 'complete' &&
+      row.coverageSummary?.artifactAvailable === true &&
+      row.coverageSummary?.artifactState === 'verified' &&
+      artifact?.jobId === row.id &&
+      artifact?.accountId === row.accountId &&
+      artifact?.appId === row.appId &&
+      artifact?.attempt === row.attempt &&
+      Date.parse(artifact?.expiresAt ?? '') > Date.now();
     return {
       contractVersion: ACCOUNT_EXPORT_JOB_CONTRACT_VERSION,
       jobId: row.id,
@@ -1269,11 +1589,31 @@ export class AccountExportJobService {
       state: row.state,
       attempt: row.attempt,
       coverageVersion: row.coverageVersion,
-      coverageSummary: row.coverageSummary,
+      coverageSummary: {
+        ...Object.fromEntries(
+          [
+            'blockers',
+            'participantCount',
+            'capturedDatabaseOwners',
+            'captureCoverage',
+            'artifactAvailable',
+          ]
+            .filter((key) =>
+              Object.prototype.hasOwnProperty.call(
+                row.coverageSummary ?? {},
+                key
+              )
+            )
+            .map((key) => [key, row.coverageSummary[key]])
+        ),
+        artifactAvailable: available,
+      },
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       completedAt: row.completedAt?.toISOString() ?? null,
-      artifactUrl: null,
+      artifactUrl: available
+        ? `/api/authentication/account-export/${row.id}/download`
+        : null,
     };
   }
 }

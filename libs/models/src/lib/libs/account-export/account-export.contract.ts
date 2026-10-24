@@ -174,7 +174,7 @@ export interface AccountExportJobStatus {
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
-  artifactUrl: null;
+  artifactUrl: string | null;
 }
 
 export type AccountExportJobErrorCode =

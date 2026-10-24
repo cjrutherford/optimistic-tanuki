@@ -7,27 +7,22 @@ import { Logger } from '@nestjs/common';
 
 export async function bootstrap() {
   installPayloadFreeLogging();
-  const configApp = await NestFactory.create(AppModule);
-  const config = configApp.get(ConfigService);
-
-  const httpApp = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule);
+  const config = app.get(ConfigService);
   const httpPort = Number(config.get('BOOTSTRAP_HTTP_PORT') || '3099');
   const httpHost = process.env.BOOTSTRAP_HTTP_HOST || '127.0.0.1';
-  await httpApp.listen(httpPort, httpHost);
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.TCP,
+    options: {
+      host: '0.0.0.0',
+      port: Number(config.get('listenPort')) || 3001,
+    },
+  });
+  app.enableShutdownHooks();
+  await app.startAllMicroservices();
+  await app.listen(httpPort, httpHost);
   Logger.log(`Bootstrap HTTP server listening on port ${httpPort}`);
-
-  const microserviceApp =
-    await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
-      transport: Transport.TCP,
-      options: {
-        host: '0.0.0.0',
-        port: Number(config.get('listenPort')) || 3001,
-      },
-    });
-  await microserviceApp.listen();
-  Logger.log(
-    'Microservice is listening On Port: ' + (config.get('listenPort') || 3001)
-  );
+  Logger.log('Authentication microservice is listening');
 }
 
 export async function start() {

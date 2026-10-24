@@ -13,6 +13,9 @@ describe('bootstrap', () => {
     appMock = {
       listen: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
+      connectMicroservice: jest.fn(),
+      enableShutdownHooks: jest.fn(),
+      startAllMicroservices: jest.fn().mockResolvedValue(undefined),
       get: jest.fn((token) => {
         if (token === ConfigService) {
           return {
@@ -47,7 +50,11 @@ describe('bootstrap', () => {
 
   it('should bootstrap the application and start listening', async () => {
     await bootstrap();
-    expect(createMicroserviceSpy).toHaveBeenCalled();
+    expect(createSpy).toHaveBeenCalledTimes(1);
+    expect(appMock.connectMicroservice).toHaveBeenCalledWith(
+      expect.objectContaining({ options: { host: '0.0.0.0', port: 3001 } })
+    );
+    expect(appMock.startAllMicroservices).toHaveBeenCalledTimes(1);
     expect(listenSpy).toHaveBeenCalled();
   });
 

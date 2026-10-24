@@ -1,5 +1,11 @@
 # OT and Towne Square release completion sequence
 
+**Current OT/TS position:** A01–A07 backend export slices are locally qualified; D00 is next. Use the [scoped remaining register](../release-readiness/REMAINING-SLICES.md). The historical 75-delivery table below is not the current two-product release denominator.
+
+**Current OT/TS position:** A01–A07 backend export slices are locally qualified; D00 is next. Use the [scoped remaining register](../release-readiness/REMAINING-SLICES.md). The historical 75-delivery table below is not the current two-product release denominator.
+
+**Current OT/TS position:** A01–A07 backend export slices are locally qualified; D00 is next. Use the [scoped remaining register](../release-readiness/REMAINING-SLICES.md). The historical 75-delivery table below is not the current two-product release denominator.
+
 **Scope clarification (2026-10-23):** The authoritative audit scope is `client-interface` (Optimistic Tanuki), `local-hub` (Towne Square), their required shared services and shared HAI navigation. Historical platform records retain their IDs and accepted evidence as reference. Another product does not become release work through queue position or shared infrastructure alone.
 
 Updated: 2026-10-23. Sequence starting accepted baseline: `661853166a332596ffe1cbfd172a98a6f339bc28` (J28).

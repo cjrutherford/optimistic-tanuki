@@ -50,6 +50,7 @@ describe('AccountExportJobService authorization boundary', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
   });
@@ -316,6 +317,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
     classifiedsCleanup: jest.Mock;
     paymentsCapture: jest.Mock;
     paymentsCleanup: jest.Mock;
+    artifacts: { recover: jest.Mock; prepare: jest.Mock; discard: jest.Mock };
   } {
     const captureMetadata = (participantId: string) => {
       const sources = ACCOUNT_EXPORT_RELEASE_SOURCE_REGISTRY[participantId];
@@ -476,6 +478,41 @@ describe('AccountExportJobService Authentication owner staging', () => {
       cleanup: jest.fn(async () => undefined),
     };
     const profileCapture = { capture: jest.fn(async () => profileResult) };
+    const artifacts = {
+      recover: jest.fn(async () => undefined),
+      prepare: jest.fn(
+        async ({
+          claim,
+          summary,
+        }: {
+          claim: AccountExportJobEntity;
+          summary: Record<string, unknown>;
+        }) => {
+          const descriptor = {
+            artifactId: randomUUID(),
+            jobId: claim.id,
+            accountId: claim.accountId,
+            appId: claim.appId,
+            attempt: claim.attempt,
+            expiresAt: '2099-01-01T00:00:00.000Z',
+            sizeBytes: 1024,
+            sha256: 'a'.repeat(64),
+            frameCount: 1,
+            framingVersion: 1 as const,
+          };
+          return {
+            descriptor,
+            summary: {
+              ...summary,
+              privateArtifact: descriptor,
+              artifactState: 'verified',
+              artifactAvailable: false,
+            },
+          };
+        }
+      ),
+      discard: jest.fn(async () => undefined),
+    };
     const service = new AccountExportJobService(
       jobs as never,
       {} as never,
@@ -493,7 +530,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       appConfiguratorCapture as never,
       chatCapture as never,
       classifiedsCapture as never,
-      paymentsCapture as never
+      paymentsCapture as never,
+      artifacts as never
     );
     const state = service as unknown as {
       run: (
@@ -544,6 +582,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       classifiedsCleanup: classifiedsResult.cleanup,
       paymentsCapture: paymentsCapture.capture,
       paymentsCleanup: paymentsResult.cleanup,
+      artifacts,
     };
   }
 
@@ -596,12 +635,14 @@ describe('AccountExportJobService Authentication owner staging', () => {
     );
     const test = harness(async () => true, ownerCapture);
     const result = await test.run(input(), activeClaim);
-    expect(result.state).toBe('incomplete');
+    expect(result.state).toBe('complete');
     expect(result.coverageSummary.captureCoverage).toMatchObject({
       complete: true,
       blockers: [],
     });
-    expect(result.artifactUrl).toBeNull();
+    expect(result.artifactUrl).toBe(
+      `/api/authentication/account-export/${activeClaim.id}/download`
+    );
     expect(result.coverageSummary).toMatchObject({
       capturedDatabaseOwners: [
         'authentication',
@@ -617,12 +658,12 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'classifieds',
         'payments',
       ],
-      artifactAvailable: false,
+      artifactAvailable: true,
       captureCoverage: {
         complete: true,
         blockers: [],
       },
-      blockers: expect.arrayContaining(['portable-media-unverified']),
+      blockers: [],
     });
     expect(test.renewLease).toHaveBeenCalledTimes(
       1 + AUTHENTICATION_ACCOUNT_EXPORT_SOURCES.length + 5
@@ -773,7 +814,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
     activeClaim.leaseOwner = randomUUID();
     activeClaim.leaseExpiresAt = new Date(Date.now() + 60_000);
     const second = await test.run(input(), activeClaim);
-    expect(second.state).toBe('incomplete');
+    expect(second.state).toBe('complete');
     expect(second.coverageSummary.captureCoverage).toMatchObject({
       complete: true,
       blockers: [],
@@ -837,7 +878,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       activeClaim.leaseOwner = randomUUID();
       activeClaim.leaseExpiresAt = new Date(Date.now() + 60_000);
       const second = await test.run(input(), activeClaim);
-      expect(second.state).toBe('incomplete');
+      expect(second.state).toBe('complete');
       expect(second.coverageSummary.captureCoverage).toMatchObject({
         complete: true,
         blockers: [],
@@ -856,8 +897,10 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'classifieds',
         'payments',
       ]);
-      expect(second.coverageSummary.artifactAvailable).toBe(false);
-      expect(second.artifactUrl).toBeNull();
+      expect(second.coverageSummary.artifactAvailable).toBe(true);
+      expect(second.artifactUrl).toBe(
+        `/api/authentication/account-export/${activeClaim.id}/download`
+      );
       expect(test.forumCapture).toHaveBeenCalledTimes(2);
       expect(test.forumCleanup.mock.invocationCallOrder[0]).toBeLessThan(
         test.socialCleanup.mock.invocationCallOrder[0]
@@ -1127,7 +1170,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       activeClaim.leaseOwner = randomUUID();
       activeClaim.leaseExpiresAt = new Date(Date.now() + 60_000);
       const second = await test.run(input(), activeClaim);
-      expect(second.state).toBe('incomplete');
+      expect(second.state).toBe('complete');
       expect(second.coverageSummary.captureCoverage).toMatchObject({
         complete: true,
         blockers: [],
@@ -1146,8 +1189,10 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'classifieds',
         'payments',
       ]);
-      expect(second.coverageSummary.artifactAvailable).toBe(false);
-      expect(second.artifactUrl).toBeNull();
+      expect(second.coverageSummary.artifactAvailable).toBe(true);
+      expect(second.artifactUrl).toBe(
+        `/api/authentication/account-export/${activeClaim.id}/download`
+      );
       expect(test.workspaceCapture).toHaveBeenCalledTimes(2);
       expect(test.workspaceCleanup.mock.invocationCallOrder[0]).toBeLessThan(
         test.forumCleanup.mock.invocationCallOrder[0]
@@ -1422,6 +1467,194 @@ describe('AccountExportJobService Authentication owner staging', () => {
     expect(await readdir(root)).toEqual([]);
   });
 
+  it('fails without publishing an artifact when artifact preparation throws and cleans every owner', async () => {
+    const ownerCapture = jest.fn(
+      async ({
+        onChunk,
+        signal,
+      }: {
+        onChunk: (
+          chunk: AccountExportOwnerChunk<AuthenticationAccountExportSource>,
+          signal?: AbortSignal
+        ) => Promise<void>;
+        signal?: AbortSignal;
+      }) => {
+        const chunks = createOwnerChunks(ACCOUNT_ID);
+        for (const chunk of chunks) await onChunk(chunk, signal);
+        return chunks[chunks.length - 1];
+      }
+    );
+    const test = harness(async () => true, ownerCapture);
+    test.artifacts.prepare.mockRejectedValueOnce(
+      new Error('private prepare failure')
+    );
+
+    const result = await test.run(input(), activeClaim);
+
+    expect(result.state).toBe('failed');
+    expect(result.artifactUrl).toBeNull();
+    expect(result.coverageSummary.artifactAvailable).toBe(false);
+    expect(test.artifacts.discard).not.toHaveBeenCalled();
+    for (const cleanup of [
+      test.profileCleanup,
+      test.assetsCleanup,
+      test.videosCleanup,
+      test.permissionsCleanup,
+      test.socialCleanup,
+      test.forumCleanup,
+      test.workspaceCleanup,
+      test.appConfiguratorCleanup,
+      test.chatCleanup,
+      test.classifiedsCleanup,
+      test.paymentsCleanup,
+    ])
+      expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+
+  it('discards a prepared artifact when owner cleanup fails', async () => {
+    const ownerCapture = jest.fn(
+      async ({
+        onChunk,
+        signal,
+      }: {
+        onChunk: (
+          chunk: AccountExportOwnerChunk<AuthenticationAccountExportSource>,
+          signal?: AbortSignal
+        ) => Promise<void>;
+        signal?: AbortSignal;
+      }) => {
+        const chunks = createOwnerChunks(ACCOUNT_ID);
+        for (const chunk of chunks) await onChunk(chunk, signal);
+        return chunks[chunks.length - 1];
+      }
+    );
+    const test = harness(async () => true, ownerCapture);
+    test.profileCleanup.mockRejectedValueOnce(
+      new Error('private cleanup failure')
+    );
+
+    const result = await test.run(input(), activeClaim);
+
+    expect(result.state).toBe('failed');
+    expect(test.artifacts.prepare).toHaveBeenCalledTimes(1);
+    expect(test.artifacts.discard).toHaveBeenCalledWith(
+      activeClaim,
+      expect.objectContaining({ jobId: activeClaim.id })
+    );
+    expect(result.artifactUrl).toBeNull();
+  });
+
+  it('discards a prepared artifact when persisting completion fails', async () => {
+    const ownerCapture = jest.fn(
+      async ({
+        onChunk,
+        signal,
+      }: {
+        onChunk: (
+          chunk: AccountExportOwnerChunk<AuthenticationAccountExportSource>,
+          signal?: AbortSignal
+        ) => Promise<void>;
+        signal?: AbortSignal;
+      }) => {
+        const chunks = createOwnerChunks(ACCOUNT_ID);
+        for (const chunk of chunks) await onChunk(chunk, signal);
+        return chunks[chunks.length - 1];
+      }
+    );
+    const test = harness(async () => true, ownerCapture);
+    test.finish.mockRejectedValueOnce(new Error('finish rejected'));
+
+    await expect(test.run(input(), activeClaim)).rejects.toThrow(
+      'finish rejected'
+    );
+    expect(test.artifacts.discard).toHaveBeenCalledWith(
+      activeClaim,
+      expect.objectContaining({ jobId: activeClaim.id })
+    );
+  });
+
+  it('refuses acknowledgement when the real finish compare-and-set affects zero rows', async () => {
+    const builder = {
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 0 }),
+    };
+    const service = new AccountExportJobService(
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      spool,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never
+    );
+    (service as unknown as { jobs: unknown }).jobs = {
+      createQueryBuilder: () => builder,
+    };
+    await expect(
+      (service as unknown as { finish: Function }).finish(
+        activeClaim,
+        'complete',
+        {},
+        null
+      )
+    ).rejects.toMatchObject({
+      message: 'Export operation lease is no longer current',
+    });
+    expect(builder.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('strips private artifact and session references from public status', () => {
+    const service = new AccountExportJobService(
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      spool,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never
+    );
+    const row = Object.assign(new AccountExportJobEntity(), activeClaim, {
+      coverageSummary: {
+        blockers: [],
+        artifactAvailable: false,
+        privateArtifact: { secret: 'artifact' },
+        privateSessionRef: 'session-ref',
+      },
+    });
+    const status = (
+      service as unknown as {
+        status(value: AccountExportJobEntity): AccountExportJobStatus;
+      }
+    ).status(row);
+    expect(status.coverageSummary).not.toHaveProperty('privateArtifact');
+    expect(status.coverageSummary).not.toHaveProperty('privateSessionRef');
+    expect(JSON.stringify(status)).not.toContain('session-ref');
+  });
+
   it('stops a stale lease attempt, discards staged bytes, and never finishes it', async () => {
     const ownerCapture = jest.fn(
       async ({
@@ -1468,6 +1701,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       {} as never,
       {} as never,
       spool,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,
@@ -1532,6 +1766,7 @@ describe('AccountExportJobService database lease fence', () => {
       service = new AccountExportJobService(
         repository,
         dataSource,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,
@@ -1643,7 +1878,7 @@ describe('AccountExportJobService database lease fence', () => {
           artifactAvailable: false,
         },
       });
-      await finish(row);
+      await expect(finish(row)).rejects.toBeInstanceOf(RpcException);
       expect(await repository.findOneByOrFail({ id })).toEqual(cancelled);
 
       const resumed = await (
@@ -1759,7 +1994,7 @@ describe('AccountExportJobService database lease fence', () => {
         })
       );
       const older = { ...row, attempt: 7, leaseOwner: randomUUID() };
-      await finish(older);
+      await expect(finish(older)).rejects.toBeInstanceOf(RpcException);
       const unchanged = await repository.findOneByOrFail({ id });
       expect(unchanged).toMatchObject({
         state: 'running',
@@ -1791,7 +2026,7 @@ describe('AccountExportJobService database lease fence', () => {
           coverageSummary: { blockers: ['expired'], artifactAvailable: false },
         })
       );
-      await finish(row);
+      await expect(finish(row)).rejects.toBeInstanceOf(RpcException);
       const unchanged = await repository.findOneByOrFail({ id });
       expect(unchanged).toMatchObject({
         state: 'running',

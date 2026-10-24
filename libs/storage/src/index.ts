@@ -20,3 +20,6 @@ export * from './lib/account-export-profile-bound-snapshot.service';
 export * from './lib/account-export-profile-bound-snapshot.client';
 export * from './lib/account-export-postgres-owner.service';
 export * from './lib/account-export-hls';
+
+export * from './lib/account-export-artifact-builder.service';
+export * from './lib/account-export-artifact-store.service';

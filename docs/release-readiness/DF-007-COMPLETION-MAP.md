@@ -1,12 +1,18 @@
 # DF-007 account-rights completion map
 
-**Active release scope:** Optimistic Tanuki = `client-interface`; Towne Square = `local-hub`. **N04–N07 and A01 are locally verified; A02 is active** ([N04](./findings/DF-007-N04.md), [N05](./findings/DF-007-N05.md), [N06](./findings/DF-007-N06.md), [N07](./findings/DF-007-N07.md)). N01, N02 and O09-P/C/I remain accepted. Only services/data needed by these two applications enter the remaining release work. The historical platform inventory is reference material, not a count of required release slices.
+**Active release scope:** Optimistic Tanuki = `client-interface`; Towne Square = `local-hub`. **N04–N07 and A01–A07 are locally verified; D00 is next** ([N04](./findings/DF-007-N04.md), [N05](./findings/DF-007-N05.md), [N06](./findings/DF-007-N06.md), [N07](./findings/DF-007-N07.md)). N01, N02 and O09-P/C/I remain accepted. Only services/data needed by these two applications enter the remaining release work. The historical platform inventory is reference material, not a count of required release slices.
 
 **Scope clarification (2026-10-23):** The authoritative audit scope is `client-interface` (Optimistic Tanuki), `local-hub` (Towne Square), their required shared services and shared HAI navigation. Historical platform records retain their IDs and accepted evidence as reference. Another product does not become release work through queue position or shared infrastructure alone.
 
 **Status: open.** This map distinguishes bounded internal preview evidence from account-level export, deletion, media portability, and operational acceptance. The current participants and test receipts do not make the complete account-rights promise available to users. DF-007 remains a release prerequisite; RR-11 remains unaccepted.
 
 ## What is verified
+
+The current OT/TS job captures twelve required owners and publishes verified artifacts under [A01–A07](./findings/DF-007-A07.md). The older five-participant preview below remains partial; its completion flag is separate from export-job readiness. U01 still owns the public account/settings flow.
+
+The current OT/TS job captures twelve required owners and publishes verified artifacts under [A01–A07](./findings/DF-007-A07.md). The older five-participant preview below remains partial; its completion flag is separate from export-job readiness. U01 still owns the public account/settings flow.
+
+The current OT/TS job captures twelve required owners and publishes verified artifacts under [A01–A07](./findings/DF-007-A07.md). The older five-participant preview below remains partial; its completion flag is separate from export-job readiness. U01 still owns the public account/settings flow.
 
 Authentication coordinates five internal participants: Authentication, Profile, Permissions, Social, and Forum. They return partial previews. Social B4 and B5 add eleven bounded arrays in one existing participant: six authored-content/interaction projections and five personal-state projections. Results are always partial and unfenced. Social relationship rows are actor-side only; counterpart IDs remain opaque, and the projection omits inbound relationships, copied counterpart content, `itemTitle`, `resultCount`, and `isMutual`. B5's new stores use selected columns, bounded pages and a 1,000-row cap plus one truncation probe per store. That bound is not a claim about rows scanned or memory used inside the database. The existing 15-second deadline does not prove SQL cancellation.
 

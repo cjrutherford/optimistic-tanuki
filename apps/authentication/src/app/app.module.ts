@@ -51,6 +51,16 @@ import { SocialAccountExportSnapshotClient } from '../account-export-jobs/social
 import { ForumAccountExportSnapshotClient } from '../account-export-jobs/forum-account-export-snapshot.client';
 import { WorkspaceAccountExportSnapshotClient } from '../account-export-jobs/workspace-account-export-snapshot.client';
 import { AppConfiguratorAccountExportSnapshotClient } from '../account-export-jobs/app-configurator-account-export-snapshot.client';
+import { AccountExportArtifactService } from '../account-export-jobs/account-export-artifact.service';
+import { AccountExportDownloadService } from '../account-export-jobs/account-export-download.service';
+import { AccountExportArtifactRetentionService } from '../account-export-jobs/account-export-artifact-retention.service';
+import {
+  AccountExportArtifactBuilderService,
+  AccountExportArtifactStoreService,
+  EnvelopeEncryptionService,
+} from '@optimistic-tanuki/storage';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { ClassifiedsAccountExportSnapshotClient } from '../account-export-jobs/classifieds-account-export-snapshot.client';
 import { PaymentsAccountExportSnapshotClient } from '../account-export-jobs/payments-account-export-snapshot.client';
 import { ChatAccountExportSnapshotClient } from '../account-export-jobs/chat-account-export-snapshot.client';
@@ -131,6 +141,24 @@ import {
     ChatAccountExportSnapshotClient,
     ClassifiedsAccountExportSnapshotClient,
     PaymentsAccountExportSnapshotClient,
+    AccountExportArtifactService,
+    AccountExportDownloadService,
+    AccountExportArtifactRetentionService,
+    AccountExportArtifactBuilderService,
+    {
+      provide: EnvelopeEncryptionService,
+      useFactory: () => new EnvelopeEncryptionService(),
+    },
+    {
+      provide: AccountExportArtifactStoreService,
+      useFactory: (encryption: EnvelopeEncryptionService) =>
+        new AccountExportArtifactStoreService(encryption, {
+          root:
+            process.env['ACCOUNT_EXPORT_ARTIFACT_DIR'] ||
+            join(tmpdir(), 'ot-account-export-artifacts'),
+        }),
+      inject: [EnvelopeEncryptionService],
+    },
     {
       provide: AuthenticationAccountExportOwnerService,
       useFactory: (dataSource: DataSource, auth: AppService) =>
