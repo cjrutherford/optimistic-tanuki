@@ -810,7 +810,10 @@ export class ProfileAccountExportOwnerService {
         const id = this.uuid(row['id'], 'guardian activity id');
         const isActor = this.isAccountId(row['actorUserId'], accountId);
         const isDependent = this.isAccountId(row['dependentUserId'], accountId);
-        if (isActor === isDependent || row['verifiedProfileId'] == null) {
+        if (
+          isActor === isDependent ||
+          (row['profileId'] != null && row['verifiedProfileId'] == null)
+        ) {
           this.relationshipFailure(accountId);
         }
         if (
@@ -827,7 +830,11 @@ export class ProfileAccountExportOwnerService {
           createdAt: this.dateString(row['createdAt'], 'createdAt'),
         };
         if (isDependent) {
-          data['profileId'] = this.uuid(row['profileId'], 'profileId');
+          if (row['profileId'] == null) {
+            // Erasure may redact the selected account's profile reference on a
+            // retained counterpart row; account identity remains the selector.
+            data['profileId'] = null;
+          } else data['profileId'] = this.uuid(row['profileId'], 'profileId');
           const changed = row['changedFieldNames'];
           if (
             !Array.isArray(changed) ||

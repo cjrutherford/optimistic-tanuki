@@ -803,7 +803,7 @@
       "subject": {
         "kind": "profile",
         "fields": ["profileId"],
-        "rule": "Select profileId in currently owned profiles; raw descriptions have no reliable provenance.",
+        "rule": "Select profileId in currently owned profiles; N04 deletes matching private activity facts without traversing resource references. Raw descriptions have no reliable provenance.",
         "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
         "evidence": [
           "apps/social/src/entities/activity.entity.ts",
@@ -815,7 +815,7 @@
           "fields": ["id", "profileId", "type", "createdAt"],
           "classification": "owned",
           "action": "include-owned",
-          "handling": "Include only after the declared subject selector, with recorded-attribution integrity labeling.",
+          "handling": "Include only after the declared subject selector; erased rows are deleted. Legacy null identity is projected as null with no subject attribution.",
           "reason": "Subject-side activity envelope; bounded allowlisted types and personal time.",
           "evidence": [
             "apps/social/src/entities/activity.entity.ts",
@@ -1024,7 +1024,7 @@
       "subject": {
         "kind": "viewer-account",
         "fields": ["viewerId"],
-        "rule": "Select viewerId equal to authenticated account only; analytics ownership of target profile is a separate J19 path.",
+        "rule": "Select viewerId equal to authenticated account only; N04 clears only the matched viewer account or viewed profile identifier and clears source on a touched row. Preserve unmatched counterpart identity and event time.",
         "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
         "evidence": [
           "apps/social/src/entities/profile-view.entity.ts",
@@ -1136,7 +1136,7 @@
       "subject": {
         "kind": "profile",
         "fields": ["actorProfileId"],
-        "rule": "Select actorProfileId in currently owned profiles for an actor-action receipt only; being moderated does not confer ownership of the private audit.",
+        "rule": "Select actorProfileId in currently owned profiles for an actor-action receipt only; after N04 actorProfileId, subjectId, reportId and workspaceId are null and details is {}; being moderated does not confer ownership of the private audit.",
         "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
         "evidence": [
           "apps/social/src/entities/content-moderation-action.entity.ts",
@@ -1523,7 +1523,7 @@
       "subject": {
         "kind": "recorded-attribution-only",
         "fields": ["subjectId", "actorId"],
-        "rule": "Two separate projections: subjectId in current owned profiles receives own lifecycle receipt; actorId equal to account receives own admin-action receipt. Do not interchange profile subjectId and account actorId or expose unmatched participant IDs.",
+        "rule": "Two separate projections: subjectId in current owned profiles receives own lifecycle receipt; actorId equal to account receives own admin-action receipt. N04 removes only matched identities; a counterpart receipt still requires its own matching actor or subject selector. Do not interchange profile subjectId and account actorId or expose unmatched participant IDs.",
         "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
         "evidence": [
           "apps/social/src/entities/community-membership-audit.entity.ts",
@@ -1546,8 +1546,8 @@
           "fields": ["workspaceId"],
           "classification": "opaque",
           "action": "opaque-reference",
-          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
-          "reason": "Opaque community/workspace reference.",
+          "handling": "Include validated identifiers before erasure; erased rows have null workspaceId. Never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque community/workspace reference, cleared during N04 erasure.",
           "evidence": [
             "apps/social/src/entities/community-membership-audit.entity.ts",
             "apps/social/src/app/services/community-membership-lifecycle.ts"
@@ -1574,7 +1574,7 @@
       "subject": {
         "kind": "recorded-attribution-only",
         "fields": ["actorUserId", "dependentUserId"],
-        "rule": "Actor branch: actorUserId equals account. Dependent branch: dependentUserId equals account. Project only branch-safe action receipt; do not infer current guardian relationship or consent from the row.",
+        "rule": "Actor branch: actorUserId equals account. Dependent branch: dependentUserId equals account. Erased identities and resourceId are null; changedFields is reset to an empty serialized array. Project only branch-safe action receipt; do not infer current guardian relationship or consent from the row.",
         "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
         "evidence": [
           "apps/social/src/entities/guardian-content-audit.entity.ts",
@@ -1597,8 +1597,8 @@
           "fields": ["resourceId"],
           "classification": "opaque",
           "action": "opaque-reference",
-          "handling": "Include validated identifiers only; never fetch counterpart content or treat a reference as consent/access.",
-          "reason": "Opaque affected resource reference; no media/content fetch.",
+          "handling": "Include validated identifiers before erasure; erased resourceId is null. Never fetch counterpart content or treat a reference as consent/access.",
+          "reason": "Opaque affected resource reference, cleared during N04 erasure; no media/content fetch.",
           "evidence": [
             "apps/social/src/entities/guardian-content-audit.entity.ts",
             "apps/social/src/app/services/guardian-content.service.ts"
@@ -1636,7 +1636,7 @@
       "subject": {
         "kind": "recorded-attribution-only",
         "fields": ["actorUserId", "dependentProfileId"],
-        "rule": "Actor branch selects actorUserId equal to account; dependent branch selects dependentProfileId in currently owned profiles. Grant history does not authorize present asset access or prove consent.",
+        "rule": "Actor branch selects actorUserId equal to account; dependent branch selects dependentProfileId in currently owned profiles. This active authorization record is not passive audit: N04 leaves it untouched. D00 requires owner revocation before global erasure acknowledgement. Grant history does not authorize present asset access or prove consent.",
         "legacyProvenance": "Recorded attribution only: per-row origin, legacy authorship and consent are unverified. A current selector is not historical identity proof; never infer consent.",
         "evidence": [
           "apps/social/src/entities/guardian-published-asset-grant.entity.ts",

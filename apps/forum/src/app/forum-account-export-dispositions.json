@@ -416,7 +416,7 @@
       "subject": {
         "kind": "profile",
         "fields": ["actorProfileId"],
-        "rule": "actorProfileId is a PROFILE UUID from moderatedBy authenticated Gateway actor. Select only actorProfileId in captured owned Profile identities; preserve recorded action fact, not current moderator role or authority. Being moderated does not grant subject access to private audit records.",
+        "rule": "actorProfileId is a PROFILE UUID from moderatedBy authenticated Gateway actor. Select only actorProfileId in captured owned Profile identities; after N04 actorProfileId and subjectId may be null and the receipt is unattributed. Preserve recorded action fact, not current moderator role or authority. Being moderated does not grant subject access to private audit records.",
         "legacyProvenance": "Recorded attribution only: historical authorship, per-row origin and consent are unverified. Current profile binding is selection evidence, not historical identity, exclusive ownership or current authority.",
         "evidence": [
           "apps/forum/src/entities/forum-moderation-action.entity.ts",
@@ -436,7 +436,7 @@
           ],
           "classification": "owned",
           "action": "typed-projection",
-          "handling": "Typed actor-side receipt with allowlisted action/subjectType, bounded scope and timestamp; historical attribution remains unverified.",
+          "handling": "Typed actor-side receipt with allowlisted action/subjectType, bounded scope and timestamp; erased actor identity is null and historical attribution remains unverified.",
           "reason": "Typed actor-side receipt with allowlisted action/subjectType, bounded scope and timestamp; historical attribution remains unverified.",
           "evidence": [
             "apps/forum/src/entities/forum-moderation-action.entity.ts",
@@ -448,7 +448,7 @@
           "fields": ["subjectId"],
           "classification": "opaque",
           "action": "opaque-reference",
-          "handling": "Opaque target identifier only; never traverse target or copied report content.",
+          "handling": "Opaque target identifier before erasure; subjectId is null after N04. Never traverse target or copied report content.",
           "reason": "Opaque target identifier only; never traverse target or copied report content.",
           "evidence": [
             "apps/forum/src/entities/forum-moderation-action.entity.ts",

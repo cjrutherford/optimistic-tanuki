@@ -155,6 +155,25 @@ describe('Social personal/community/safety receipt policies', () => {
       { role: 'subject', profileId: profile },
     ]);
     expect(audit).not.toHaveProperty('actorId');
+    const erasedActor = source('CommunityMembershipAudit').project(
+      {
+        id,
+        actor: 'member',
+        action: 'join',
+        from: 'none',
+        to: 'active',
+        createdAt: at,
+        workspaceId: null,
+        actorMatches: false,
+        matchedSubjectId: profile,
+        actorId: null,
+      },
+      account
+    );
+    expect(erasedActor['participation']).toEqual([
+      { role: 'subject', profileId: profile },
+    ]);
+    expect(erasedActor).toHaveProperty('workspaceId', null);
   });
   it('fails paired community identities and excludes shared governance fields', () => {
     expect(() =>
@@ -169,6 +188,23 @@ describe('Social personal/community/safety receipt policies', () => {
     expect(source('CommunityElection').sql).not.toContain('winnerId');
   });
   it('keeps guardian history branch-safe without implying current access', () => {
+    const erased = source('GuardianContentAudit').project(
+      {
+        id,
+        appId: 'social',
+        resourceType: 'post',
+        operation: 'grant',
+        createdAt: at,
+        resourceId: null,
+        actorMatches: true,
+        dependentMatches: false,
+      },
+      account
+    );
+    expect(erased).toHaveProperty('resourceId', null);
+    expect(erased['participation']).toEqual([
+      { role: 'actor', accountId: account },
+    ]);
     const out = source('GuardianPublishedAssetGrant').project(
       {
         id,
@@ -197,6 +233,21 @@ describe('Social personal/community/safety receipt policies', () => {
     expect(source('ContentModerationAction').sql).not.toMatch(
       /details|reportId/
     );
+    const redacted = source('ContentModerationAction').project(
+      {
+        id,
+        appScope: 'social',
+        action: 'content_moderation',
+        subjectType: 'post',
+        actorProfileId: profile,
+        createdAt: at,
+        workspaceId: null,
+        subjectId: null,
+      },
+      account
+    );
+    expect(redacted).toHaveProperty('actorProfileId', profile);
+    expect(redacted).toHaveProperty('subjectId', null);
   });
   it('fails malformed, oversized or object values rather than silently completing', () => {
     const s = receiptSource({
@@ -220,6 +271,54 @@ describe('Social personal/community/safety receipt policies', () => {
           blockedId: 'https://private.example',
           reason: null,
           createdAt: at,
+        },
+        account
+      )
+    ).toThrow();
+  });
+  it('rejects unattributed audit rows instead of widening an account export', () => {
+    expect(() =>
+      source('CommunityMembershipAudit').project(
+        {
+          id,
+          actor: 'member',
+          action: 'join',
+          from: 'none',
+          to: 'active',
+          createdAt: at,
+          workspaceId: null,
+          actorMatches: false,
+          matchedSubjectId: null,
+        },
+        account
+      )
+    ).toThrow();
+    expect(() =>
+      source('GuardianContentAudit').project(
+        {
+          id,
+          appId: 'client-interface',
+          resourceType: 'post',
+          operation: 'update',
+          createdAt: at,
+          resourceId: null,
+          actorMatches: false,
+          dependentMatches: false,
+        },
+        account
+      )
+    ).toThrow();
+    expect(() =>
+      source('ContentModerationAction').project(
+        {
+          id,
+          appScope: 'client-interface',
+          action: 'content_moderation',
+          subjectType: 'post',
+          actorProfileId: null,
+          createdAt: at,
+          workspaceId: null,
+          subjectId: null,
         },
         account
       )

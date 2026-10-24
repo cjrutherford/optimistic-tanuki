@@ -6,14 +6,14 @@ export class GuardianProfileActivity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid' })
-  actorUserId!: string;
+  @Column({ type: 'uuid', nullable: true })
+  actorUserId!: string | null;
 
-  @Column({ type: 'uuid' })
-  dependentUserId!: string;
+  @Column({ type: 'uuid', nullable: true })
+  dependentUserId!: string | null;
 
-  @Column({ type: 'uuid' })
-  profileId!: string;
+  @Column({ type: 'uuid', nullable: true })
+  profileId!: string | null;
 
   @Column({ type: 'varchar', length: 64 })
   appId!: string;

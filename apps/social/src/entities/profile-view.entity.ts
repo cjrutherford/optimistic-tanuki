@@ -12,11 +12,11 @@ export class ProfileView {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  profileId: string;
+  @Column({ type: 'varchar', nullable: true })
+  profileId: string | null;
 
-  @Column()
-  viewerId: string;
+  @Column({ type: 'varchar', nullable: true })
+  viewerId: string | null;
 
   @Column()
   source: string;

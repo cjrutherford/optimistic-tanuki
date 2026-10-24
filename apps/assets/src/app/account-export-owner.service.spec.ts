@@ -267,6 +267,38 @@ describe('AssetsAccountExportOwnerService', () => {
     ).toBe(true);
   });
 
+  it('exports an erased counterpart receipt without restoring identity or asset references', async () => {
+    activityRows = [
+      activity({
+        id: nextUuid,
+        actorUserId: accountId,
+        dependentUserId: null,
+        dependentLength: null,
+        profileId: null,
+        profileLength: null,
+        assetId: null,
+        assetLength: null,
+        fieldsLength: 2,
+      }),
+    ];
+    const chunks: any[] = [];
+    await service.captureAccount({
+      grant,
+      profileSnapshot: descriptor,
+      onChunk: async (chunk) => {
+        chunks.push(chunk);
+      },
+    });
+    const record = chunks.find((chunk) => chunk.source === 'guardianActivity')
+      .records[0].data;
+    expect(record.accountRoles).toEqual(['actor']);
+    expect(record.dependentRole).toBe('erased');
+    expect(record.ownedProfileId).toBeNull();
+    expect(record.assetReference).toBeNull();
+    expect(record.changedFieldNames).toEqual([]);
+    expect(profileSend).not.toHaveBeenCalled();
+  });
+
   it('matches uppercase varchar profile and guardian account UUIDs and emits canonical values', async () => {
     const ownedProfile = 'abcdefab-cdef-4abc-8def-abcdefabcdef';
     ownedProfileIds = [ownedProfile];

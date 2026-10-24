@@ -1,21 +1,21 @@
 {
   "slice": "N04",
   "scope": ["client-interface", "local-hub"],
-  "status": "ACTIVE_NOT_ACCEPTED",
+  "status": "VERIFIED_LOCAL_OT_TS",
   "inventoryComplete": false,
   "sinks": [
     {
       "id": "application.console",
       "owner": "Gateway and required Nest services",
       "identity": "Arbitrary legacy diagnostics may contain account/profile IDs, credentials and free text",
-      "disposition": "Closed projection installed before12required service bootstraps; real isolated Nest HTTP process proves console/Nest sentinel containment; not historical or host-runtime erasure",
+      "disposition": "Closed projection installed before 12 required service bootstraps; real isolated Nest HTTP process proves console/Nest sentinel containment; not historical or host-runtime erasure",
       "status": "bootstrap-boundary-verified"
     },
     {
       "id": "browser.console",
       "owner": "client-interface/local-hub",
       "identity": "Social events, HTTP error bodies, resolved profiles and payment errors",
-      "disposition": "Shared browser boundary in both app bootstraps; allsixrebuilt Chrome cases exclude sentinel; not browser-managed network panels/extensions",
+      "disposition": "Shared browser boundary in both app bootstraps; all six rebuilt Chrome cases exclude sentinel; not browser-managed network panels/extensions",
       "status": "chrome-boundary-verified"
     },
     {
@@ -43,50 +43,50 @@
       "id": "profile.guardian_activity",
       "owner": "Profile",
       "identity": "actorUserId/dependentUserId account UUIDs; profileId profile UUID",
-      "disposition": "guardian_profile_activity: participation is not sole ownership; no accepted immediate purge adapter",
-      "status": "ownership-unverified"
+      "disposition": "Approved preserve-history identity/payload transform; real PostgreSQL rollback/retry/readback and counterpart preservation verified. See checkpoint-n04.json for exact source policies. No reference cascade.",
+      "status": "local-owner-contract-verified"
     },
     {
       "id": "assets.guardian_activity",
       "owner": "Assets",
       "identity": "actorUserId/dependentUserId account UUIDs; profileId profile UUID; asset reference",
-      "disposition": "guardian_asset_activity: preserve counterpart boundaries; no accepted immediate purge adapter",
-      "status": "ownership-unverified"
+      "disposition": "Approved preserve-history identity/payload transform; real PostgreSQL rollback/retry/readback and counterpart preservation verified. See checkpoint-n04.json for exact source policies. No reference cascade.",
+      "status": "local-owner-contract-verified"
     },
     {
       "id": "social.activity",
       "owner": "Social",
       "identity": "Activity profileId with free-text description/resource references; profile-view viewer account differs from viewed profile",
-      "disposition": "Typed participation/deletion policy and real purge/readback remain required",
-      "status": "ownership-unverified"
+      "disposition": "Owned-profile private activity facts are deleted without traversing resource references; profile-view participation is separately redacted. Real PostgreSQL rollback/retry/readback verified.",
+      "status": "local-owner-contract-verified"
     },
     {
       "id": "social.membership_audit",
       "owner": "Social",
       "identity": "actorId account UUID; subjectId profile UUID; workspace/community context",
-      "disposition": "Separate actor/subject branches; do not delete shared rows solely because either matches",
-      "status": "ownership-unverified"
+      "disposition": "Approved preserve-history identity/payload transform; real PostgreSQL rollback/retry/readback and counterpart preservation verified. See checkpoint-n04.json for exact source policies. No reference cascade.",
+      "status": "local-owner-contract-verified"
     },
     {
       "id": "social.moderation_guardian_audit",
       "owner": "Social",
-      "identity": "Moderation actorProfileId; subjectId is content reference; Guardian audit/grant actor/dependent fields",
-      "disposition": "Export receipts do not authorize erasing shared audit rows; typed deletion adapters remain required",
-      "status": "ownership-unverified"
+      "identity": "Moderation actorProfileId; subjectId is content reference; passive Guardian audit actor/dependent fields. Active grants excluded.",
+      "disposition": "Approved preserve-history identity/payload transform; real PostgreSQL rollback/retry/readback and counterpart preservation verified. See checkpoint-n04.json for exact source policies. No reference cascade.",
+      "status": "local-owner-contract-verified"
     },
     {
       "id": "forum.moderation_audit",
       "owner": "Forum",
       "identity": "actorProfileId profile UUID; subjectId content reference; private details JSON",
-      "disposition": "No raw JSON export or whole-row deletion based solely on moderated subject",
-      "status": "ownership-unverified"
+      "disposition": "Approved preserve-history identity/payload transform; real PostgreSQL rollback/retry/readback and counterpart preservation verified. See checkpoint-n04.json for exact source policies. No reference cascade.",
+      "status": "local-owner-contract-verified"
     },
     {
       "id": "social.search_history",
       "owner": "Social",
       "identity": "SearchHistory profileId",
-      "disposition": "N03 accepted bounded cleanup; D00 distributed permanent fencing and account workflow still separate",
-      "status": "prior-bounded-proof"
+      "disposition": "Approved preserve-history identity/payload transform; real PostgreSQL rollback/retry/readback and counterpart preservation verified. See checkpoint-n04.json for exact source policies. No reference cascade.",
+      "status": "local-owner-contract-verified"
     }
   ],
   "limitations": [
@@ -94,5 +94,19 @@
     "No deployed collector or immediate whole-account deletion proof",
     "No real production purge adapter registered by this change"
   ],
-  "updatedAt": "2026-10-24"
+  "updatedAt": "2026-10-24",
+  "localDeclaredAuditSourcesVerified": 8,
+  "qualificationBoundary": "Declared local owner contracts only; deployed collectors, historical copies and backups remain operator qualification.",
+  "auditSources": {
+    "profile.guardian_profile_activity": "actorUserId/dependentUserId account; profileId profile; dependent binding; changedFieldNames cleared",
+    "assets.guardian_asset_activity": "actorUserId/dependentUserId account; profileId profile; dependent binding; assetId and changedFieldNames cleared",
+    "social.activity": "owned profile private facts deleted; referenced resources untouched",
+    "social.community_membership_audit": "actorId account; subjectId profile; workspaceId cleared",
+    "social.guardian_content_audit": "actor/dependent account; dependent profile binding; resourceId and changedFields cleared",
+    "social.content_moderation_action": "actorProfileId profile; subjectId/reportId/workspaceId/details cleared",
+    "social.profile_view": "viewerId account; profileId viewed profile; only matched participation cleared; source removed",
+    "forum.forum_moderation_action": "actorProfileId profile; subjectId/details cleared"
+  },
+  "activeAuthorizationExclusion": "guardian_published_asset_grant remains untouched; requires owner revocation and D00/D06 fencing.",
+  "dockerMetadata": "No current/stopped containers with inspected OT/TS compose service labels; no payload inspection and no absence claim for unlabelled/forwarded/backup copies."
 }

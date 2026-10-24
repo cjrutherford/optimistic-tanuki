@@ -6,14 +6,14 @@ export class GuardianContentAudit {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
-  actorUserId: string;
+  @Column({ type: 'uuid', nullable: true })
+  actorUserId: string | null;
 
-  @Column({ type: 'uuid' })
-  dependentUserId: string;
+  @Column({ type: 'uuid', nullable: true })
+  dependentUserId: string | null;
 
-  @Column({ type: 'uuid' })
-  dependentProfileId: string;
+  @Column({ type: 'uuid', nullable: true })
+  dependentProfileId: string | null;
 
   @Column({ type: 'varchar' })
   appId: string;
@@ -21,8 +21,8 @@ export class GuardianContentAudit {
   @Column({ type: 'varchar' })
   resourceType: 'post' | 'comment';
 
-  @Column({ type: 'uuid' })
-  resourceId: string;
+  @Column({ type: 'uuid', nullable: true })
+  resourceId: string | null;
 
   @Column({ type: 'varchar' })
   operation: string;

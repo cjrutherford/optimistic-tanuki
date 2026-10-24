@@ -72,6 +72,7 @@ import { SocialAccountExportController } from './account-export.controller';
 import { SocialAccountExportOwnerService } from './account-export-owner.service';
 import { SocialAccountExportSnapshotController } from './account-export-snapshot.controller';
 import { SocialAccountExportSnapshotService } from './account-export-snapshot.service';
+import { SocialAuditErasureService } from './audit-erasure.service';
 import {
   AccountExportOwnerSpoolService,
   AccountExportProfileSnapshotClient,
@@ -115,6 +116,7 @@ import {
     BusinessContentService,
     GuardianContentService,
     SocialAccountExportService,
+    SocialAuditErasureService,
     AccountExportOwnerSpoolService,
     AccountExportProfileSnapshotClient,
     {
@@ -356,5 +358,6 @@ import {
       inject: ['SOCIAL_CONNECTION'],
     },
   ],
+  exports: [SocialAuditErasureService],
 })
 export class AppModule {}

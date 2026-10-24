@@ -241,7 +241,7 @@ function receipt(
             'content_moderation',
           ]),
           subjectType: enumeration(row.subjectType, ['thread', 'post']),
-          subjectId: id(row.subjectId),
+          subjectId: row.subjectId === null ? null : id(row.subjectId),
         });
       return result;
     },

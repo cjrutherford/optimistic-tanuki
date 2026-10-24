@@ -101,7 +101,7 @@ export function createCommunitySources(
         from: f.text(),
         to: f.text(),
         createdAt: f.time(),
-        workspaceId: f.ref(),
+        workspaceId: f.ref(true),
       },
       extraSelect: [
         `(${auditActor}) AS "actorMatches"`,

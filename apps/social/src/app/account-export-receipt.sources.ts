@@ -115,6 +115,9 @@ export function receiptSource(options: {
       const projected = options.transform
         ? options.transform(data, row, accountId)
         : data;
+      // Identity erasure can clear identifiers from mixed-party receipts.
+      // Nulls are accepted only where the field's reviewed source policy marks
+      // it nullable; all non-null values retain the normal strict validation.
       return {
         ...projected,
         attribution: 'recorded-unverified',

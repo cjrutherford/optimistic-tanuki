@@ -29,6 +29,7 @@ import { AssetsAccountExportOwnerService } from './account-export-owner.service'
 import { AssetsAccountExportProfileSnapshotClient } from './account-export-profile-snapshot.client';
 import { AssetsAccountExportMediaReader } from './account-export-media-reader';
 import { AccountExportOwnerSpoolService } from '@optimistic-tanuki/storage';
+import { AssetsAuditErasureService } from './audit-erasure.service';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { AccountExportOwnerSpoolService } from '@optimistic-tanuki/storage';
   ],
   providers: [
     AppService,
+    AssetsAuditErasureService,
     AccountExportOwnerSpoolService,
     AssetsAccountExportProfileSnapshotClient,
     {
@@ -182,5 +184,6 @@ import { AccountExportOwnerSpoolService } from '@optimistic-tanuki/storage';
       inject: ['ASSETS_CONNECTION'],
     },
   ],
+  exports: [AssetsAuditErasureService],
 })
 export class AppModule {}

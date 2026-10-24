@@ -17,14 +17,14 @@ export class ContentModerationAction {
   @Column({ type: 'varchar' })
   subjectType: string;
 
-  @Column({ type: 'varchar' })
-  subjectId: string;
+  @Column({ type: 'varchar', nullable: true })
+  subjectId: string | null;
 
   @Column({ type: 'varchar', nullable: true })
   reportId: string | null;
 
-  @Column({ type: 'varchar' })
-  actorProfileId: string;
+  @Column({ type: 'varchar', nullable: true })
+  actorProfileId: string | null;
 
   @Column({ type: 'jsonb' })
   details: Record<string, unknown>;

@@ -69,7 +69,7 @@ export function createSafetySources(
         resourceType: f.text(),
         operation: f.text(),
         createdAt: f.time(),
-        resourceId: f.ref(),
+        resourceId: f.ref(true),
       },
       extraSelect: [
         `(${guardianActor}) AS "actorMatches"`,
@@ -81,6 +81,7 @@ export function createSafetySources(
           participation.push({ role: 'actor', accountId });
         if (row['dependentMatches'] === true)
           participation.push({ role: 'dependent', accountId });
+        // Redacted counterpart fields are allowed, but a current branch must still match.
         if (!participation.length) captureInvalid();
         return { ...data, participation };
       },
@@ -144,7 +145,7 @@ export function createSafetySources(
         actorProfileId: f.uuid(),
         createdAt: f.time(),
         workspaceId: f.ref(true),
-        subjectId: f.ref(),
+        subjectId: f.ref(true),
       },
     }),
   ];

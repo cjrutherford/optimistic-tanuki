@@ -115,7 +115,7 @@ export function createPersonalSources(
       selector: accountMatch('viewerId'),
       fields: {
         viewerId: f.uuid(),
-        profileId: f.ref(),
+        profileId: f.ref(true),
         source: f.text(),
         viewedAt: f.time(),
       },

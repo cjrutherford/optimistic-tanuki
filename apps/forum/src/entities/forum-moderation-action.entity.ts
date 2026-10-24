@@ -14,11 +14,11 @@ export class ForumModerationAction {
   @Column({ type: 'varchar' })
   subjectType: 'thread' | 'post';
 
-  @Column({ type: 'varchar' })
-  subjectId: string;
+  @Column({ type: 'varchar', nullable: true })
+  subjectId: string | null;
 
-  @Column({ type: 'varchar' })
-  actorProfileId: string;
+  @Column({ type: 'varchar', nullable: true })
+  actorProfileId: string | null;
 
   @Column({ type: 'jsonb' })
   details: Record<string, unknown>;

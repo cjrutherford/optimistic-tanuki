@@ -25,6 +25,7 @@ import { ForumAccountExportController } from './account-export.controller';
 import { ForumAccountExportOwnerService } from './account-export-owner.service';
 import { ForumAccountExportSnapshotService } from './account-export-snapshot.service';
 import { ForumAccountExportSnapshotController } from './account-export-snapshot.controller';
+import { ForumAuditErasureService } from './audit-erasure.service';
 import {
   AccountExportOwnerSpoolService,
   AccountExportProfileSnapshotClient,
@@ -70,6 +71,7 @@ import {
         }),
     },
     ForumAccountExportService,
+    ForumAuditErasureService,
     AccountExportOwnerSpoolService,
     AccountExportProfileSnapshotClient,
     {
@@ -146,5 +148,6 @@ import {
       inject: ['FORUM_CONNECTION'],
     },
   ],
+  exports: [ForumAuditErasureService],
 })
 export class AppModule {}

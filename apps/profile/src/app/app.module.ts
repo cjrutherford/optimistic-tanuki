@@ -26,6 +26,7 @@ import { ProfileAccountExportOwnerService } from './account-export-owner.service
 import { ProfileAccountExportSnapshotService } from './account-export-snapshot.service';
 import { AccountExportOwnerSpoolService } from '@optimistic-tanuki/storage';
 import { AccountExportController } from '../profiles/account-export.controller';
+import { ProfileAuditErasureService } from './audit-erasure.service';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { AccountExportController } from '../profiles/account-export.controller';
     AppService,
     ProfileService,
     TimelineService,
+    ProfileAuditErasureService,
     ProfileAccountExportService,
     {
       provide: AccountExportOwnerSpoolService,
@@ -118,5 +120,6 @@ import { AccountExportController } from '../profiles/account-export.controller';
       inject: [ConfigService],
     },
   ],
+  exports: [ProfileAuditErasureService],
 })
 export class AppModule {}

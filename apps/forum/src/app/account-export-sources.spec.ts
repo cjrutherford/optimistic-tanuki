@@ -105,6 +105,22 @@ describe('Forum account export sources', () => {
     );
     expect(action).not.toHaveProperty('details');
     expect(action).toHaveProperty('actorProfileId', other);
+    const erasedAction = sources[5].project(
+      {
+        id,
+        actorProfileId: other,
+        appScope: 'forum',
+        createdAt: '2026-10-22 12:00:00',
+        action: 'content_moderation',
+        subjectType: 'thread',
+        subjectId: null,
+        details: {},
+      },
+      id
+    );
+    expect(erasedAction).toHaveProperty('actorProfileId', other);
+    expect(erasedAction).toHaveProperty('subjectId', null);
+    expect(erasedAction).not.toHaveProperty('details');
   });
 
   it('uses associated-post identity and scope for links and keeps the composite cursor', () => {
@@ -134,5 +150,22 @@ describe('Forum account export sources', () => {
     expect(() => createForumAccountExportSources('bad-name;--')).toThrow(
       'FORUM_EXPORT_INVALID_PROFILE_TABLE'
     );
+  });
+  it('does not export a retained receipt whose actor identity is erased', () => {
+    const sources = createForumAccountExportSources('profile');
+    expect(() =>
+      sources[5].project(
+        {
+          id,
+          actorProfileId: null,
+          appScope: 'client-interface',
+          createdAt: '2026-10-22 12:00:00',
+          action: 'content_moderation',
+          subjectType: 'post',
+          subjectId: null,
+        },
+        id
+      )
+    ).toThrow();
   });
 });

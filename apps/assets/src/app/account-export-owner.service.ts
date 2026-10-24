@@ -479,12 +479,12 @@ export class AssetsAccountExportOwnerService {
       profileId = this.uuid(x.profileId);
     if (
       !UUID.test(id) ||
-      !UUID.test(actor) ||
-      !UUID.test(dependent) ||
-      !UUID.test(profileId) ||
-      Number(x.actorLength) > 36 ||
-      Number(x.dependentLength) > 36 ||
-      Number(x.profileLength) > 36 ||
+      (x.actorUserId != null && !UUID.test(actor)) ||
+      (x.dependentUserId != null && !UUID.test(dependent)) ||
+      (x.profileId != null && !UUID.test(profileId)) ||
+      (x.actorUserId != null && Number(x.actorLength) > 36) ||
+      (x.dependentUserId != null && Number(x.dependentLength) > 36) ||
+      (x.profileId != null && Number(x.profileLength) > 36) ||
       (Number(x.assetLength) > 36 && x.assetId !== '*') ||
       Number(x.appLength) > 120 ||
       Number(x.operationLength) > 64 ||
@@ -509,14 +509,23 @@ export class AssetsAccountExportOwnerService {
       fields.some((f) => typeof f !== 'string' || !FIELD_NAMES.has(f))
     )
       throw new AssetsAccountExportOwnerError('OWNER_RELATIONSHIP_AMBIGUOUS');
-    const profile = await this.profileLookup(profileId, signal, deadline);
-    if (profile.userId !== dependent)
-      throw new AssetsAccountExportOwnerError('OWNER_RELATIONSHIP_AMBIGUOUS');
+    const erasedReference = x.profileId == null;
+    if (!erasedReference) {
+      const profile = await this.profileLookup(profileId, signal, deadline);
+      if (profile.userId !== dependent)
+        throw new AssetsAccountExportOwnerError('OWNER_RELATIONSHIP_AMBIGUOUS');
+    }
     const owned = dependent === account;
-    if (owned && !(await this.scopeHas(r, temp, profileId, signal, deadline)))
+    if (
+      owned &&
+      profileId &&
+      !(await this.scopeHas(r, temp, profileId, signal, deadline))
+    )
       throw new AssetsAccountExportOwnerError('OWNER_RELATIONSHIP_AMBIGUOUS');
     const assetId = String(x.assetId ?? '');
-    if (x.operation === 'list') {
+    if (assetId === '') {
+      // The erasure receipt retains the activity row but clears its asset link.
+    } else if (x.operation === 'list') {
       if (assetId !== '*')
         throw new AssetsAccountExportOwnerError('OWNER_RELATIONSHIP_AMBIGUOUS');
     } else {
@@ -539,10 +548,17 @@ export class AssetsAccountExportOwnerService {
           ...(actor === account ? ['actor'] : []),
           ...(dependent === account ? ['dependent'] : []),
         ],
-        actorRole: actor === account ? 'account' : 'counterpart',
-        dependentRole: dependent === account ? 'account' : 'counterpart',
-        ownedProfileId: owned ? profileId : null,
-        assetReference: owned ? assetId : 'counterpart-asset',
+        actorRole:
+          actor === account ? 'account' : actor ? 'counterpart' : 'erased',
+        dependentRole:
+          dependent === account
+            ? 'account'
+            : dependent
+            ? 'counterpart'
+            : 'erased',
+        ownedProfileId: owned && profileId ? profileId : null,
+        assetReference:
+          assetId === '' ? null : owned ? assetId : 'counterpart-asset',
         appId: x.appId,
         operation: x.operation,
         changedFieldNames: fields,
