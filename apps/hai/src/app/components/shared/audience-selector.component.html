@@ -24,7 +24,9 @@
         <li>{{ audience }}</li>
         }
       </ul>
+      @if (path.route && path.linkLabel) {
       <a class="path-link" [routerLink]="path.route">{{ path.linkLabel }}</a>
+      }
     </article>
     }
   </div>

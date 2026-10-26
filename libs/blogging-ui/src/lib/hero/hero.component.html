@@ -1,9 +1,17 @@
 <otui-glass-container>
   <div class="background-image">
     <div class="background-filter">
-      <otui-heading [size]="'4em'" [text]="title"></otui-heading>
+      <otui-heading
+        [size]="'4em'"
+        [color]="'var(--foreground)'"
+        [text]="title"
+      ></otui-heading>
       @if(subtitle) {
-      <otui-heading [size]="'2em'" [text]="subtitle"></otui-heading>
+      <otui-heading
+        [size]="'2em'"
+        [text]="subtitle"
+        [color]="'var(--foreground)'"
+      ></otui-heading>
       }
       <p>{{ description }}</p>
       <otui-button [variant]="'primary'">{{ buttonText }}</otui-button>

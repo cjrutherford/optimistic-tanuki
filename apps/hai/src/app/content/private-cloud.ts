@@ -13,8 +13,8 @@ export interface AudiencePath {
   title: string;
   message: string;
   audiences: string[];
-  route: string;
-  linkLabel: string;
+  route?: string;
+  linkLabel?: string;
 }
 
 export interface ProcessStep {
