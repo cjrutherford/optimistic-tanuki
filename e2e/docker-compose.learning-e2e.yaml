@@ -103,7 +103,7 @@ services:
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: ot_authentication
       AUTH_AUTO_VERIFY_EMAILS: 'true'
-      JWT_SECRET: c3VwZXJzZWNyZXRzdHJpbmc=
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
     depends_on:
       db:
         condition: service_healthy
@@ -203,7 +203,7 @@ services:
       # Not production: the registry's callback URLs are localhost, which the
       # gateway rightly refuses to send verification email against in prod.
       NODE_ENV: test
-      JWT_SECRET: c3VwZXJzZWNyZXRzdHJpbmc=
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
       # The gateway refuses to boot without this, even with no OAuth provider
       # configured. Test-only value.
       OAUTH_STATE_SECRET: e2e-learning-oauth-state-secret-value

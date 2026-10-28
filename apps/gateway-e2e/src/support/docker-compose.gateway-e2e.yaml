@@ -45,7 +45,7 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
-      JWT_SECRET: e2e-test-jwt-secret
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
     depends_on:
       db:
         condition: service_healthy
@@ -119,7 +119,7 @@ services:
     volumes:
       - ./e2e-config.yaml:/usr/src/app/assets/config.yaml
     environment:
-      JWT_SECRET: e2e-test-jwt-secret
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
     depends_on:
       db:
         condition: service_healthy

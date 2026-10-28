@@ -45,7 +45,7 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: authentication_e2e
-      JWT_SECRET: e2e-test-jwt-secret
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
     networks:
       - authentication-e2e
     ports:

@@ -47,7 +47,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ot_authentication
-      JWT_SECRET: e2e-test-jwt-secret
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
       AUTH_AUTO_VERIFY_EMAILS: 'true'
       SERVICE_PROFILE_HOST: profile
       SERVICE_PROFILE_PORT: 3002

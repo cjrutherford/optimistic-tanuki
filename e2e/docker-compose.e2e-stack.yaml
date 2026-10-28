@@ -62,7 +62,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ot_authentication
       AUTH_AUTO_VERIFY_EMAILS: 'true'
-      JWT_SECRET: e2e-test-jwt-secret
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
       SERVICE_PROFILE_HOST: profile
       SERVICE_PROFILE_PORT: 3002
       SERVICE_PERMISSIONS_HOST: permissions
@@ -690,7 +690,7 @@ services:
       # so the isolated stack lifts this backstop while E2E drives hundreds
       # of navigations from shared runner IPs.
       THROTTLE_SESSION_LIMIT: 100000
-      JWT_SECRET: e2e-test-jwt-secret
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
       OAUTH_STATE_SECRET: e2e-oauth-state-secret
       # These must match the origin the suites actually drive. Every UI target
       # in scripts/e2e-environment-manifest.mjs uses a 127.0.0.1 baseUrl, but

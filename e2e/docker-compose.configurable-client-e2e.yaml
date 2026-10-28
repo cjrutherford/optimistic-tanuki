@@ -57,7 +57,7 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: ot_authentication
-      JWT_SECRET: e2e-test-jwt-secret
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
     depends_on:
       db:
         condition: service_healthy
@@ -120,7 +120,7 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
-      JWT_SECRET: e2e-test-jwt-secret
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
       AUTHENTICATION_HOST: authentication
       AUTHENTICATION_PORT: 3001
       PROFILE_HOST: profile
