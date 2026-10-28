@@ -1,3 +1,4 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { DataSource } from 'typeorm';
 import fs from 'fs';
 import path from 'path';
@@ -19,9 +20,9 @@ const config = yaml.load(
 const {
   database: {
     host: configHost,
-    port,
-    username,
-    password,
+    port: configPort,
+    username: configUsername,
+    password: configPassword,
     name: configName,
     database: configDatabase,
   },
@@ -31,6 +32,7 @@ const host = process.env.POSTGRES_HOST || configHost;
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
 const entities = [
+  AccountDeletionWriteFenceEntity,
   Donation,
   ClassifiedPayment,
   BusinessPage,
@@ -46,9 +48,9 @@ const entities = [
 const staticSource = new DataSource({
   type: 'postgres',
   host: host,
-  port: Number(port),
-  username,
-  password,
+  port: Number(process.env.POSTGRES_PORT || configPort),
+  username: process.env.POSTGRES_USER || configUsername,
+  password: process.env.POSTGRES_PASSWORD || configPassword,
   database: database,
   entities,
   migrations: ['./migrations/*.ts'],

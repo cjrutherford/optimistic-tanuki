@@ -39,6 +39,14 @@
         "classifieds:build",
         "payments:build"
       ]
+    },
+    "deletion-private": {
+      "executor": "@nx/jest:jest",
+      "cache": false,
+      "options": {
+        "jestConfig": "apps/authentication-e2e/jest.deletion-private.config.ts",
+        "passWithNoTests": false
+      }
     }
   },
   "tags": ["type:e2e"]

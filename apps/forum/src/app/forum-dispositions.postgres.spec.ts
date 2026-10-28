@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import 'reflect-metadata';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -85,7 +86,7 @@ describePrivate('J26 Forum dispositions against the migrated catalog', () => {
     ).toEqual([]);
     expect(
       source.entityMetadatas.filter((m) => m.tableType !== 'junction')
-    ).toHaveLength(6);
+    ).toHaveLength(7);
     expect(
       source.entityMetadatas.filter((m) => m.tableType === 'junction')
     ).toHaveLength(1);
@@ -110,7 +111,7 @@ describePrivate('J26 Forum dispositions against the migrated catalog', () => {
     ).toBe(true);
     const after = await counts();
     expect(after).toEqual(before);
-    expect(rows).toHaveLength(8);
+    expect(rows).toHaveLength(9);
     expect(rows.reduce((sum, row) => sum + row.columns.length, 0)).toBe(71);
     const reportPath = process.env.FORUM_DISPOSITIONS_J26_REPORT_PATH;
     if (!reportPath) throw new Error('J26 private report path required');
@@ -120,7 +121,7 @@ describePrivate('J26 Forum dispositions against the migrated catalog', () => {
         {
           result: 'PASS',
           readOnly: true,
-          entities: 6,
+          entities: 7,
           relations: 6,
           associationTables: 1,
           junctionConstraints,

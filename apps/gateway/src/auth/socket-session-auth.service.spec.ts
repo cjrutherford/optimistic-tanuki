@@ -47,7 +47,12 @@ describe('SocketSessionAuthService', () => {
     expect(jwt.verifyAsync).toHaveBeenCalledWith('cookie-token');
     expect(authenticationService.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Validate },
-      { token: 'cookie-token', userId: 'user-1', appId: 'client-interface' }
+      {
+        token: 'cookie-token',
+        userId: 'user-1',
+        appId: 'client-interface',
+        activity: false,
+      }
     );
     expect(socket.data.user).toEqual({
       userId: 'user-1',

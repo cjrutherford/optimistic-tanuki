@@ -17,7 +17,7 @@ import {
 } from '@optimistic-tanuki/storage';
 import { AuthCommands } from '@optimistic-tanuki/constants';
 import { firstValueFrom, timeout } from 'rxjs';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   PROFILE_ACCOUNT_EXPORT_SOURCES,
   ProfileAccountExportOwnerService,
@@ -60,7 +60,8 @@ export class ProfileAccountExportSnapshotError extends RpcException {
 @Injectable()
 export class ProfileAccountExportSnapshotService implements OnModuleDestroy {
   private readonly entries = new Map<string, Entry>();
-  private readonly opening = new Set<AbortController>();
+  private readonly opening = new Map<AbortController, string>();
+  private readonly purgedAccounts = new Set<string>();
   private openingDrained?: () => void;
   private reservedBytes = 0;
   private closing = false;
@@ -76,6 +77,8 @@ export class ProfileAccountExportSnapshotService implements OnModuleDestroy {
       throw new ProfileAccountExportSnapshotError('OWNER_SNAPSHOT_CLOSED');
     }
     const grant = this.grant(grantValue);
+    if (this.purgedAccounts.has(this.purgeKey(grant.accountId)))
+      throw new ProfileAccountExportSnapshotError('OWNER_ACCOUNT_PURGED');
     await this.assertLease(grant);
     if (this.closing) {
       throw new ProfileAccountExportSnapshotError('OWNER_SNAPSHOT_CLOSED');
@@ -90,7 +93,7 @@ export class ProfileAccountExportSnapshotService implements OnModuleDestroy {
     }
     this.reservedBytes += ACCOUNT_EXPORT_SNAPSHOT_LIMITS.captureBytes;
     const controller = new AbortController();
-    this.opening.add(controller);
+    this.opening.set(controller, this.purgeKey(grant.accountId));
     let spool: OwnerSpoolHandle<ProfileAccountExportSource> | undefined;
     let controlledFailureCode: string | undefined;
     try {
@@ -353,7 +356,7 @@ export class ProfileAccountExportSnapshotService implements OnModuleDestroy {
 
   async onModuleDestroy(): Promise<void> {
     this.closing = true;
-    for (const controller of this.opening) controller.abort();
+    for (const controller of this.opening.keys()) controller.abort();
     if (this.opening.size > 0) {
       await new Promise<void>((resolve) => {
         this.openingDrained = resolve;
@@ -469,6 +472,8 @@ export class ProfileAccountExportSnapshotService implements OnModuleDestroy {
   }
 
   private assertLive(entry: Entry): void {
+    if (this.purgedAccounts.has(this.purgeKey(entry.grantScope.accountId)))
+      throw new ProfileAccountExportSnapshotError('OWNER_ACCOUNT_PURGED');
     if (this.closing) {
       throw new ProfileAccountExportSnapshotError('OWNER_SNAPSHOT_CLOSED');
     }
@@ -547,6 +552,64 @@ export class ProfileAccountExportSnapshotService implements OnModuleDestroy {
       throw new ProfileAccountExportSnapshotError('OWNER_READ_FAILED');
     }
     return chunk.records;
+  }
+
+  private purgeKey(accountId: string) {
+    return createHash('sha256').update(accountId).digest('hex');
+  }
+  async purgeAccount(accountId: string): Promise<{ remaining: 0 }> {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+        accountId
+      )
+    )
+      throw new ProfileAccountExportSnapshotError('OWNER_AUTHORIZATION_FAILED');
+    const key = this.purgeKey(accountId);
+    if (this.purgedAccounts.size >= 10000 && !this.purgedAccounts.has(key))
+      throw new ProfileAccountExportSnapshotError('OWNER_SNAPSHOT_CAPACITY');
+    this.purgedAccounts.add(key);
+    for (const [controller, account] of this.opening)
+      if (account === key) controller.abort();
+    let expired = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        (async () => {
+          while ([...this.opening.values()].includes(key)) {
+            if (expired)
+              throw new ProfileAccountExportSnapshotError(
+                'OWNER_SNAPSHOT_DRAIN_TIMEOUT'
+              );
+            await new Promise((r) => setTimeout(r, 10));
+          }
+          for (const entry of [...this.entries.values()])
+            if (entry.grantScope.accountId === accountId)
+              await this.remove(entry);
+          if (
+            [...this.entries.values()].some(
+              (e) => e.grantScope.accountId === accountId
+            )
+          )
+            throw new ProfileAccountExportSnapshotError(
+              'OWNER_SNAPSHOT_CLEANUP_FAILED'
+            );
+        })(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            expired = true;
+            reject(
+              new ProfileAccountExportSnapshotError(
+                'OWNER_SNAPSHOT_DRAIN_TIMEOUT'
+              )
+            );
+          }, 56000);
+          timer.unref();
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+    return { remaining: 0 };
   }
 
   private async expire(handleId: string): Promise<void> {

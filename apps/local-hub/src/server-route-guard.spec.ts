@@ -12,6 +12,24 @@ describe('createProtectedRouteGate', () => {
     ({ path, originalUrl, query, cookies: {}, headers: {} } as any);
   const response = () => ({ redirect: jest.fn() } as any);
 
+  it('keeps the exact public receipt route reachable after revocation without opening account routes', async () => {
+    const validateSession = jest.fn().mockResolvedValue(false);
+    for (const path of ['/account-deletion', '/account-deletion/']) {
+      const next = jest.fn();
+      const res = response();
+      await createProtectedRouteGate({ validateSession })(
+        request(path),
+        res,
+        next
+      );
+      expect(next).toHaveBeenCalledWith();
+      expect(res.redirect).not.toHaveBeenCalled();
+    }
+    expect(validateSession).not.toHaveBeenCalled();
+    expect(requiresSessionValidation('/account')).toBe(true);
+    expect(requiresSessionValidation('/account/profile')).toBe(true);
+  });
+
   it('continues SSR rendering when the gateway validates a protected session', async () => {
     const next = jest.fn();
     const res = response();

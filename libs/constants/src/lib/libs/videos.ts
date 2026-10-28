@@ -1,5 +1,8 @@
 // Video Service Commands
 export const VideoCommands = {
+  FENCE_ACCOUNT_DELETION: 'videos.deletion.fence',
+  ERASE_ACCOUNT_DELETION: 'videos.deletion.erase',
+  READBACK_ACCOUNT_DELETION: 'videos.deletion.readback',
   OPEN_ACCOUNT_EXPORT_CAPTURE: 'video.export.open',
   READ_ACCOUNT_EXPORT_CAPTURE: 'video.export.read',
   RELEASE_ACCOUNT_EXPORT_CAPTURE: 'video.export.release',

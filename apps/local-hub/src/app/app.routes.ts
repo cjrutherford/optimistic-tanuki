@@ -1,3 +1,7 @@
+import {
+  AccountDeletionStatusComponent,
+  ReleaseInformationComponent,
+} from '@optimistic-tanuki/profile-ui';
 import { Route } from '@angular/router';
 import {
   emailAuthRoutes,
@@ -9,6 +13,21 @@ import { MemberGuard } from './guards/member.guard';
 import { PublicContactPageComponent } from '@optimistic-tanuki/common-ui';
 
 export const appRoutes: Route[] = [
+  {
+    path: 'help',
+    component: ReleaseInformationComponent,
+    data: { appId: 'local-hub', view: 'guide' },
+  },
+  {
+    path: 'privacy',
+    component: ReleaseInformationComponent,
+    data: { appId: 'local-hub', view: 'policy' },
+  },
+  {
+    path: 'account-deletion',
+    component: AccountDeletionStatusComponent,
+    data: { appId: 'local-hub' },
+  },
   ...emailAuthRoutes('ot-local-hub-authToken', true),
   ...guardianConsentRoutes(),
   {

@@ -1,10 +1,11 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { ConfigService } from '@nestjs/config';
 import { ClassifiedAdEntity } from './entities/classified-ad.entity';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
-  const entities = [ClassifiedAdEntity];
+  const entities = [ClassifiedAdEntity, AccountDeletionWriteFenceEntity];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',
     host: database.host,

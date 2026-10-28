@@ -55,11 +55,30 @@ func handleConnection(conn net.Conn, worker *transcode.Worker) {
 	}
 
 	if request.Command != "transcode-video" {
+		if request.Command == "fence-video" {
+			var fenceRequest protocol.FenceVideoRequest
+			if err := json.Unmarshal(request.Request, &fenceRequest); err != nil {
+				writeResponse(conn, protocol.Response{OK: false, Error: "fence rejected"})
+				return
+			}
+			result, err := worker.Fence(context.Background(), fenceRequest)
+			if err != nil {
+				writeResponse(conn, protocol.Response{OK: false, Error: "fence rejected"})
+				return
+			}
+			writeResponse(conn, protocol.Response{OK: true, Deletion: result})
+			return
+		}
 		writeResponse(conn, protocol.Response{OK: false, Error: "unsupported command"})
 		return
 	}
 
-	result, err := worker.Process(context.Background(), request.Request)
+	var job protocol.TranscodeJob
+	if err := json.Unmarshal(request.Request, &job); err != nil {
+		writeResponse(conn, protocol.Response{OK: false, Error: "request rejected"})
+		return
+	}
+	result, err := worker.Process(context.Background(), job)
 	if err != nil {
 		writeResponse(conn, protocol.Response{OK: false, Error: err.Error()})
 		return

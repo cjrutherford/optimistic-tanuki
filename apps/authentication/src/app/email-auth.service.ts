@@ -17,6 +17,7 @@ import {
 } from '../email-auth/entities/auth-action-token.entity';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
+import { AccountDeletionFenceService } from '../account-deletion/account-deletion-fence.service';
 
 export interface AuthEmailContext {
   appId: string;
@@ -49,7 +50,8 @@ export class EmailAuthService {
     private readonly passwordTools: PasswordTools,
     private readonly tokenIssuer: TokenIssuerService,
     private readonly guardianPermissions: GuardianPermissionService,
-    private readonly profileOwnershipVerifier: ProfileOwnershipVerifier
+    private readonly profileOwnershipVerifier: ProfileOwnershipVerifier,
+    private readonly accountDeletionFence: AccountDeletionFenceService
   ) {}
 
   async requestAction(
@@ -151,6 +153,7 @@ export class EmailAuthService {
     appId?: string
   ) {
     const action = await this.inspect(rawToken, purpose);
+    await this.accountDeletionFence.assertActiveAccount(action.user.id);
     if (appId && appId !== action.appId) {
       throw new RpcException({ code: 'ACTION_APP_MISMATCH' });
     }
@@ -212,6 +215,7 @@ export class EmailAuthService {
 
   async confirmVerification(rawToken: string) {
     const action = await this.inspect(rawToken, AuthActionPurpose.Verification);
+    await this.accountDeletionFence.assertActiveAccount(action.user.id);
     const consumed = await this.actions.update(
       { id: action.id, consumedAt: IsNull() },
       { consumedAt: new Date() }
@@ -239,6 +243,7 @@ export class EmailAuthService {
       rawToken,
       AuthActionPurpose.PasswordReset
     );
+    await this.accountDeletionFence.assertActiveAccount(action.user.id);
     const consumed = await this.actions.update(
       { id: action.id, consumedAt: IsNull() },
       { consumedAt: new Date() }

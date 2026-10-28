@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import { of, throwError } from 'rxjs';
 import { Repository } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
@@ -30,6 +31,14 @@ describe('VideoProcessingService', () => {
         assetStorageRoot,
       }
     );
+    Object.defineProperty(service, 'deletionFence', {
+      value: {
+        run: jest.fn(
+          async (_id: string, work: (profile: string) => Promise<void>) =>
+            work('profile-1')
+        ),
+      },
+    });
 
     return { service, videoRepository, assetsClient, transcodeClient };
   };
@@ -92,7 +101,7 @@ describe('VideoProcessingService', () => {
     await fs.writeFile(segmentPath, Buffer.from('ts'));
 
     videoRepository.findOne.mockResolvedValue({
-      id: 'video-1',
+      id: 'a7f11775-b96d-4fc3-848d-86bd37d88488',
       title: 'Demo',
       assetId: 'source-asset',
       sourceAssetId: 'source-asset',
@@ -126,10 +135,10 @@ describe('VideoProcessingService', () => {
       encoding: 'h264+aac',
     });
 
-    await service.processVideo('video-1');
+    await service.processVideo('a7f11775-b96d-4fc3-848d-86bd37d88488');
 
     expect(transcodeClient.transcode).toHaveBeenCalledWith({
-      videoId: 'video-1',
+      videoId: 'a7f11775-b96d-4fc3-848d-86bd37d88488',
       sourcePath: path.join(assetStorageRoot, 'assets/source-asset/upload.mkv'),
     });
     expect(assetsClient.send).toHaveBeenCalledWith(
@@ -159,7 +168,7 @@ describe('VideoProcessingService', () => {
       })
     );
     expect(videoRepository.update).toHaveBeenCalledWith(
-      'video-1',
+      'a7f11775-b96d-4fc3-848d-86bd37d88488',
       expect.objectContaining({
         assetId: 'created-playback.mp4',
         playbackAssetId: 'created-playback.mp4',
@@ -174,7 +183,7 @@ describe('VideoProcessingService', () => {
       createService();
 
     videoRepository.findOne.mockResolvedValue({
-      id: 'video-1',
+      id: 'a7f11775-b96d-4fc3-848d-86bd37d88488',
       assetId: 'source-asset',
       sourceAssetId: 'source-asset',
     } as Video);
@@ -188,10 +197,10 @@ describe('VideoProcessingService', () => {
     );
     transcodeClient.transcode.mockRejectedValue(new Error('ffmpeg failed'));
 
-    await service.processVideo('video-1');
+    await service.processVideo('a7f11775-b96d-4fc3-848d-86bd37d88488');
 
     expect(videoRepository.update).toHaveBeenCalledWith(
-      'video-1',
+      'a7f11775-b96d-4fc3-848d-86bd37d88488',
       expect.objectContaining({
         processingStatus: 'failed',
         processingError: 'ffmpeg failed',

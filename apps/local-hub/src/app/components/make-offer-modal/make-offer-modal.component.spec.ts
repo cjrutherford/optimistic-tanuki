@@ -27,6 +27,22 @@ describe('MakeOfferModalComponent', () => {
     fixture.detectChanges();
   });
 
+  it('uses the shared labelled dialog and announces submit errors', async () => {
+    expect(
+      fixture.nativeElement.querySelector('[role="dialog"][aria-modal="true"]')
+    ).not.toBeNull();
+    await component.onSubmit();
+    fixture.detectChanges();
+    expect(
+      fixture.nativeElement.querySelector('[role="alert"]')?.textContent
+    ).toContain('valid offer amount');
+    const closed = jest.spyOn(component.closed, 'emit');
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    );
+    expect(closed).toHaveBeenCalled();
+  });
+
   it('computes the platform fee and seller payout', () => {
     component.offerAmount = 100;
     expect(component.getTotalFee()).toBeCloseTo(10.5, 2);

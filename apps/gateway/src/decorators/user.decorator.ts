@@ -34,4 +34,5 @@ export declare type UserDetails = {
   profileId: string;
   appId?: string;
   emailVerified?: boolean;
+  sessionExpiresAt?: string;
 };

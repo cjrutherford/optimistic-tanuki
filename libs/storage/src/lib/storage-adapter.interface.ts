@@ -7,6 +7,13 @@ export interface AuthenticatedMediaReadOptions {
 }
 
 export interface StorageAdapter {
+  custodyProbe?(
+    nonce: string,
+    mode: 'write' | 'read' | 'remove'
+  ): Promise<string>;
+  /** Internal deletion capability: prove exclusive key custody and verify removal before metadata disposal. */
+  purgeOwnedAsset?(data: AssetDto): Promise<{ verifiedAbsent: true }>;
+
   /** Returns the immutable storage key for a server-reserved asset ID. */
   reservationPath?(data: CreateAssetDto): string;
   /***

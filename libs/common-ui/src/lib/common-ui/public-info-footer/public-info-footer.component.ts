@@ -10,4 +10,5 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 export class PublicInfoFooterComponent {
   @Input() productName = '';
   @Input() tagline = '';
+  @Input() accountRightsAvailable = false;
 }

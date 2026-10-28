@@ -46,6 +46,23 @@ export class PayloadFreeLogger implements LoggerService {
 /** Install before Nest bootstrap. Deliberately no environment bypass: a debug
  * setting must not re-enable payload-bearing diagnostics in a release process. */
 let installed = false;
+const installedMethods = new Map<string, unknown>();
+/** Current-process boundary only; not an assertion about historical or external sinks. */
+export function payloadFreeLoggingStatus(): {
+  policyVersion: 1;
+  active: boolean;
+} {
+  return {
+    policyVersion: 1,
+    active:
+      installed &&
+      installedMethods.size > 0 &&
+      [...installedMethods].every(
+        ([name, method]) =>
+          (console as unknown as Record<string, unknown>)[name] === method
+      ),
+  };
+}
 export function installPayloadFreeLogging(): void {
   if (installed) return;
   installed = true;
@@ -74,4 +91,28 @@ export function installPayloadFreeLogging(): void {
   console.timeLog = () => logger.debug(undefined);
   console.count = () => logger.debug(undefined);
   console.countReset = () => undefined;
+  for (const name of [
+    'log',
+    'info',
+    'warn',
+    'error',
+    'debug',
+    'trace',
+    'dir',
+    'dirxml',
+    'table',
+    'assert',
+    'group',
+    'groupCollapsed',
+    'groupEnd',
+    'time',
+    'timeEnd',
+    'timeLog',
+    'count',
+    'countReset',
+  ])
+    installedMethods.set(
+      name,
+      (console as unknown as Record<string, unknown>)[name]
+    );
 }

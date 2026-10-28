@@ -84,6 +84,18 @@ describe('client HTTP interceptors', () => {
       expect(router.navigate).toHaveBeenCalledWith(['/login']);
     });
 
+    it('does not log out a newer account on account-control or receipt failures', () => {
+      for (const path of [
+        '/api/authentication/account-deletion/status',
+        '/api/authentication/account-export/latest',
+      ])
+        runAuth(path, () =>
+          throwError(() => new HttpErrorResponse({ status: 401 }))
+        ).subscribe({ error: () => undefined });
+      expect(authState.logout).not.toHaveBeenCalled();
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
     it('does not log out on a 403', () => {
       runAuth('/api/social/feed', () =>
         throwError(() => new HttpErrorResponse({ status: 403 }))
@@ -119,6 +131,18 @@ describe('client HTTP interceptors', () => {
       messages.addMessage.mock.calls[
         messages.addMessage.mock.calls.length - 1
       ][0];
+
+    it('leaves account-control errors to the accessible form instead of showing expiry toasts', () => {
+      runError(
+        '/api/authentication/account-deletion/status',
+        new HttpErrorResponse({ status: 401 })
+      );
+      runError(
+        '/api/authentication/account-export',
+        new HttpErrorResponse({ status: 409 })
+      );
+      expect(messages.addMessage).not.toHaveBeenCalled();
+    });
 
     it('keeps private URLs and error bodies out of browser diagnostics', () => {
       const sentinel = 'N04_PRIVATE_REQUEST_RESPONSE_SENTINEL';

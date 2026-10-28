@@ -476,8 +476,26 @@ describe('AppController', () => {
       const validateTokenResponse = await appController.validate(
         validateTokenRequest
       );
-      expect(appService.validateToken).toHaveBeenCalledWith('token', undefined);
+      expect(appService.validateToken).toHaveBeenCalledWith(
+        'token',
+        undefined,
+        false
+      );
       expect(validateTokenResponse).toEqual({ userId: 'userId', valid: true });
+    });
+
+    it('advances activity only for an explicit inbound activity flag', async () => {
+      await appController.validate({
+        token: 'token',
+        userId: 'userId',
+        appId: 'local-hub',
+        activity: true,
+      });
+      expect(appService.validateToken).toHaveBeenCalledWith(
+        'token',
+        'local-hub',
+        true
+      );
     });
 
     it('should throw RpcException on error', async () => {

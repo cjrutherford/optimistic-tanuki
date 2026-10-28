@@ -20,6 +20,7 @@ describe('EmailAuthService', () => {
   let password: any;
   let service: EmailAuthService;
   let profileOwnershipVerifier: { resolveSelection: jest.Mock };
+  let accountDeletionFence: { assertActiveAccount: jest.Mock };
 
   beforeEach(() => {
     users = {
@@ -59,6 +60,9 @@ describe('EmailAuthService', () => {
         Promise.resolve(selectedProfile || undefined)
       ),
     };
+    accountDeletionFence = {
+      assertActiveAccount: jest.fn().mockResolvedValue(undefined),
+    };
     service = new EmailAuthService(
       users,
       actions,
@@ -70,7 +74,8 @@ describe('EmailAuthService', () => {
         issueForUser: jest.fn().mockReturnValue('session-token'),
       } as any,
       { assertAccountAccess: jest.fn().mockResolvedValue(undefined) } as any,
-      profileOwnershipVerifier as any
+      profileOwnershipVerifier as any,
+      accountDeletionFence as any
     );
   });
 
@@ -182,6 +187,25 @@ describe('EmailAuthService', () => {
       { id: 'action-1', consumedAt: expect.anything() },
       expect.anything()
     );
+  });
+
+  it('does not consume an email action or mint a session for a fenced account', async () => {
+    actions.findOne.mockResolvedValue({
+      id: 'action-1',
+      purpose: AuthActionPurpose.MagicLink,
+      appId: 'forgeofwill',
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      user: { ...user },
+    });
+    const denied = new RpcException('ACCOUNT_DELETION_FENCED');
+    accountDeletionFence.assertActiveAccount.mockRejectedValue(denied);
+
+    await expect(
+      service.consumeLoginAction('raw-token', AuthActionPurpose.MagicLink)
+    ).rejects.toBe(denied);
+    expect(actions.update).not.toHaveBeenCalled();
+    expect(sessions.save).not.toHaveBeenCalled();
   });
 
   it('consumes a magic link before downstream profile work without issuing a session', async () => {

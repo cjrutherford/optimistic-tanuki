@@ -31,9 +31,15 @@ const matchesRoute = (path: string, route: string): boolean => {
   return new RegExp(`^${pattern}$`).test(path);
 };
 
-export const requiresSessionValidation = (path: string): boolean =>
-  PROTECTED_ROUTES.some((route) => matchesRoute(path, route)) ||
-  MEMBER_ROUTES.some((route) => matchesRoute(path, route));
+export const requiresSessionValidation = (path: string): boolean => {
+  // Receipt recovery must survive session revocation. Keep this exact public
+  // route separate from the existing /account prefix protection.
+  if (/^\/account-deletion\/?$/.test(path)) return false;
+  return (
+    PROTECTED_ROUTES.some((route) => matchesRoute(path, route)) ||
+    MEMBER_ROUTES.some((route) => matchesRoute(path, route))
+  );
+};
 
 export function createProtectedRouteGate({
   validateSession,

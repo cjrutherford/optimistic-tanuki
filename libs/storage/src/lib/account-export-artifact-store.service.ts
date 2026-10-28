@@ -1,3 +1,8 @@
+import {
+  localCustodyIdentity,
+  localCustodyProbe,
+  CustodyProbeMode,
+} from './local-custody-identity';
 import { createHash, randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
 import { lstat, mkdir, open, readdir, unlink, link } from 'node:fs/promises';
@@ -47,6 +52,130 @@ export interface VerifiedArtifact {
 
 /** Encrypted, immutable account-export artifact storage. */
 export class AccountExportArtifactStoreService {
+  private readonly runtimeFiles = new Map<
+    Awaited<ReturnType<typeof open>>,
+    string
+  >();
+  private readonly runtimeOperations = new Map<
+    AbortController,
+    { key: string; work: Promise<unknown> }
+  >();
+  private readonly deletedAccounts = new Set<string>();
+  private accountKey(accountId: string): string {
+    return createHash('sha256')
+      .update('ot:artifact-runtime:' + accountId.toLowerCase())
+      .digest('hex');
+  }
+  private ownFile(
+    accountId: string,
+    file: Awaited<ReturnType<typeof open>>
+  ): void {
+    if (this.runtimeFiles.has(file)) return;
+    this.runtimeFiles.set(file, this.accountKey(accountId));
+    const close = file.close.bind(file);
+    file.close = async () => {
+      await close();
+      this.runtimeFiles.delete(file);
+    };
+  }
+  private async runtimeOperation<T>(
+    accountId: string,
+    signal: AbortSignal | undefined,
+    run: (signal: AbortSignal) => Promise<T>
+  ): Promise<T> {
+    const key = this.accountKey(accountId);
+    if (this.deletedAccounts.has(key)) throw Error('ARTIFACT_ACCOUNT_FENCED');
+    const controller = new AbortController();
+    const combined = signal
+      ? AbortSignal.any([signal, controller.signal])
+      : controller.signal;
+    const work = run(combined);
+    this.runtimeOperations.set(controller, { key, work });
+    try {
+      return await work;
+    } finally {
+      this.runtimeOperations.delete(controller);
+    }
+  }
+  async put(input: PutArtifactInput): Promise<ArtifactDescriptor> {
+    input = { ...input };
+    validateInput(input);
+    return this.runtimeOperation(
+      input.accountId,
+      input.signal,
+      async (signal) => {
+        const result = await this.putCurrent({ ...input, signal });
+        assertLive(signal);
+        return result;
+      }
+    );
+  }
+  async openVerified(
+    descriptor: ArtifactDescriptor,
+    options: OpenArtifactOptions = {}
+  ): Promise<VerifiedArtifact> {
+    descriptor = Object.freeze({ ...descriptor });
+    validateDescriptor(descriptor);
+    return this.runtimeOperation(
+      descriptor.accountId,
+      options.signal,
+      async (signal) => {
+        const result = await this.openVerifiedCurrent(descriptor, {
+          ...options,
+          signal,
+        });
+        if (signal.aborted) {
+          await result.cleanup();
+          throw Error('ARTIFACT_ACCOUNT_FENCED');
+        }
+        return result;
+      }
+    );
+  }
+  async purgeAccountRuntime(accountId: string): Promise<{ remaining: 0 }> {
+    if (!UUID.test(accountId)) throw Error('ARTIFACT_DELETION_ACCOUNT_INVALID');
+    const key = this.accountKey(accountId);
+    if (!this.deletedAccounts.has(key) && this.deletedAccounts.size >= 10000)
+      throw Error('ARTIFACT_DELETION_BOUND');
+    this.deletedAccounts.add(key);
+    const pending = [...this.runtimeOperations].filter(
+      ([, value]) => value.key === key
+    );
+    for (const [controller] of pending) controller.abort();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const drain = async () => {
+        await Promise.allSettled(pending.map(([, value]) => value.work));
+        for (const [file, owner] of this.runtimeFiles)
+          if (owner === key) await file.close();
+        if ((await this.readbackAccountRuntime(accountId)) !== 0)
+          throw Error('ARTIFACT_RUNTIME_READBACK');
+        return { remaining: 0 as const };
+      };
+      return await Promise.race([
+        drain(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(Error('ARTIFACT_RUNTIME_DRAIN_TIMEOUT')),
+            56000
+          );
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+  async readbackAccountRuntime(accountId: string): Promise<number> {
+    if (!UUID.test(accountId)) throw Error('ARTIFACT_DELETION_ACCOUNT_INVALID');
+    const key = this.accountKey(accountId);
+    if (!this.deletedAccounts.has(key))
+      throw Error('ARTIFACT_RUNTIME_FENCE_REQUIRED');
+    return (
+      [...this.runtimeOperations.values()].filter((value) => value.key === key)
+        .length +
+      [...this.runtimeFiles.values()].filter((owner) => owner === key).length
+    );
+  }
   private readonly maxBytes: number;
   private readonly now: () => number;
   constructor(
@@ -67,7 +196,9 @@ export class AccountExportArtifactStoreService {
       throw new Error('ARTIFACT_STORE_BUDGET_INVALID');
   }
 
-  async put(input: PutArtifactInput): Promise<ArtifactDescriptor> {
+  private async putCurrent(
+    input: PutArtifactInput
+  ): Promise<ArtifactDescriptor> {
     input = { ...input };
     validateInput(input);
     if (Date.parse(input.expiresAt) <= this.now())
@@ -87,6 +218,7 @@ export class AccountExportArtifactStoreService {
           (constants.O_NOFOLLOW ?? 0),
         0o600
       );
+      this.ownFile(input.accountId, file);
     };
     if (input.withCurrentLease) await input.withCurrentLease(reserve);
     else await reserve();
@@ -163,6 +295,7 @@ export class AccountExportArtifactStoreService {
         tempPath,
         constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0)
       );
+      this.ownFile(input.accountId, verifyFile);
       const verifyPath = join(root, `.verified${randomUUID()}`);
       const verifySpool = await open(
         verifyPath,
@@ -172,6 +305,7 @@ export class AccountExportArtifactStoreService {
           (constants.O_NOFOLLOW ?? 0),
         0o600
       );
+      this.ownFile(input.accountId, verifySpool);
       try {
         await unlink(verifyPath);
         await this.decryptAndVerify(
@@ -237,7 +371,7 @@ export class AccountExportArtifactStoreService {
     }
   }
 
-  async openVerified(
+  private async openVerifiedCurrent(
     descriptor: ArtifactDescriptor,
     options: OpenArtifactOptions = {}
   ): Promise<VerifiedArtifact> {
@@ -253,6 +387,7 @@ export class AccountExportArtifactStoreService {
       path,
       constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0)
     );
+    this.ownFile(descriptor.accountId, handle);
     let spoolPath: string | undefined;
     let spool: Awaited<ReturnType<typeof open>> | undefined;
     try {
@@ -267,6 +402,7 @@ export class AccountExportArtifactStoreService {
           (constants.O_NOFOLLOW ?? 0),
         0o600
       );
+      this.ownFile(descriptor.accountId, spool);
       await unlink(spoolPath);
       await this.decryptAndVerify(handle, spool, descriptor, options.signal);
       await spool.sync();
@@ -341,6 +477,14 @@ export class AccountExportArtifactStoreService {
     }
   }
 
+  async custodyProbe(nonce: string, mode: CustodyProbeMode): Promise<string> {
+    return localCustodyProbe(await this.ensureRoot(), nonce, mode);
+  }
+
+  async custodyIdentity(): Promise<string> {
+    return localCustodyIdentity(await this.ensureRoot());
+  }
+
   async remove(
     descriptor: ArtifactDescriptor,
     authorizeIncomplete?: () => Promise<boolean>
@@ -359,6 +503,7 @@ export class AccountExportArtifactStoreService {
           path,
           constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0)
         );
+        this.ownFile(descriptor.accountId, handle);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
         throw error;
@@ -438,7 +583,11 @@ export class AccountExportArtifactStoreService {
       throw new Error('ARTIFACT_SWEEP_DEADLINE_INVALID');
     const root = await this.ensureRoot();
     for (const name of await readdir(root)) {
-      if (!/^\.pending[0-9a-f-]{36}$/i.test(name)) continue;
+      if (
+        !/^\.pending[0-9a-f-]{36}$/i.test(name) &&
+        !/^\.ot-store-probe-[0-9a-f-]{36}$/i.test(name)
+      )
+        continue;
       const path = join(root, name);
       try {
         const st = await lstat(path);

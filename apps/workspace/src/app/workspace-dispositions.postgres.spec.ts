@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import 'reflect-metadata';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -86,8 +87,11 @@ describePrivate(
           catalog
         )
       ).toEqual([]);
-      expect(source.entityMetadatas).toHaveLength(1);
-      expect(source.entityMetadatas[0].columns).toHaveLength(12);
+      expect(source.entityMetadatas).toHaveLength(2);
+      expect(
+        source.entityMetadatas.find((item) => item.name === 'Workspace')!
+          .columns
+      ).toHaveLength(12);
       const indexes: Array<{
         is_primary: boolean;
         is_unique: boolean;
@@ -110,10 +114,10 @@ describePrivate(
       );
       const after = await counts();
       expect(after).toEqual(before);
-      expect(catalog).toHaveLength(2);
+      expect(catalog).toHaveLength(3);
       expect(
         catalog.reduce((total, row) => total + row.columns.length, 0)
-      ).toBe(15);
+      ).toBe(19);
       const reportRoot = process.env.WORKSPACE_DISPOSITIONS_RUNTIME_ROOT;
       if (!reportRoot) throw new Error('O01-P runtime report root required');
       const output = path.resolve(reportRoot);
@@ -125,7 +129,7 @@ describePrivate(
             result: 'PASS',
             marker,
             readOnly: true,
-            entities: 1,
+            entities: 2,
             relations: 0,
             physicalTables: catalog,
             uniqueIndexes: indexes,

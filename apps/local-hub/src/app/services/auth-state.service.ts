@@ -1,3 +1,4 @@
+import { watchAuthenticatedActivity } from '@optimistic-tanuki/common-ui';
 import { DestroyRef, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
@@ -8,6 +9,7 @@ import {
   SessionGeneration,
   clearOwnedBrowserSessionKeys,
   notifyBrowserSessionReset,
+  watchAccountDeletion,
   watchBrowserSessionBoundary,
   publishBrowserSessionBoundary,
   setPerformanceMonitoringEligibility,
@@ -50,7 +52,7 @@ export class AuthStateService {
     this.userDataSubject = new BehaviorSubject<UserData | null>(null);
     this.isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
     this.userData$ = this.userDataSubject.asObservable();
-    const stopBoundary = watchBrowserSessionBoundary('local-hub', () => {
+    const clearLocalSession = () => {
       this.sessionGeneration.invalidate();
       this.sessionRestorePromise = Promise.resolve();
       clearOwnedBrowserSessionKeys(
@@ -62,8 +64,25 @@ export class AuthStateService {
       setPerformanceMonitoringEligibility('local-hub', false);
       this.isAuthenticatedSubject.next(false);
       this.userDataSubject.next(null);
-    });
+    };
+    const stopBoundary = watchBrowserSessionBoundary(
+      'local-hub',
+      clearLocalSession
+    );
+    const stopDeletion = watchAccountDeletion(
+      () => this.userDataSubject.value?.userId,
+      () => {
+        clearLocalSession();
+        publishBrowserSessionBoundary('local-hub');
+      }
+    );
     inject(DestroyRef).onDestroy(stopBoundary);
+    inject(DestroyRef).onDestroy(stopDeletion);
+    const stopActivity = watchAuthenticatedActivity(
+      () => this.isAuthenticated,
+      () => this.restoreSession()
+    );
+    inject(DestroyRef).onDestroy(stopActivity);
     this.sessionRestorePromise = this.restoreSession();
   }
 

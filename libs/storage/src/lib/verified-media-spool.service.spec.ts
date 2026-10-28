@@ -1,5 +1,12 @@
 import { Readable } from 'node:stream';
-import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -25,7 +32,27 @@ describe('VerifiedMediaSpoolService', () => {
 
   afterEach(async () => rm(root, { recursive: true, force: true }));
 
-  it('releases authenticated bytes from a bounded spool and removes it on cleanup', async () => {
+  it('starts each unbounded read at byte zero after writing or a prior ranged read', async () => {
+    const plaintext = Buffer.from('whole authenticated media stream');
+    const handle = await service.create(() =>
+      Readable.from([encryption.encrypt(plaintext)])
+    );
+    const read = async (start?: number, end?: number) => {
+      const chunks: Buffer[] = [];
+      for await (const chunk of handle.createReadStream(start, end))
+        chunks.push(Buffer.from(chunk));
+      return Buffer.concat(chunks);
+    };
+    try {
+      expect(await read()).toEqual(plaintext);
+      expect(await read(3, 8)).toEqual(plaintext.subarray(3, 9));
+      expect(await read()).toEqual(plaintext);
+    } finally {
+      await handle.cleanup();
+    }
+  });
+
+  it('keeps authenticated bytes on an anonymous FD through ranged reads and cleanup', async () => {
     const plaintext = Buffer.from('authenticated media');
     const handle = await service.create(
       () => Readable.from([encryption.encrypt(plaintext)]),
@@ -33,11 +60,56 @@ describe('VerifiedMediaSpoolService', () => {
     );
 
     expect(handle.size).toBe(plaintext.length);
+    expect(handle.path).toMatch(
+      process.platform === 'linux' ? /^\/proc\/self\/fd\// : /^\/dev\/fd\//
+    );
     expect(await readFile(handle.path)).toEqual(plaintext);
-    expect((await stat(handle.path)).mode & 0o777).toBe(0o600);
+    expect(await readdir(service.processDirectory)).toEqual([]);
     expect((await stat(service.processDirectory)).mode & 0o777).toBe(0o700);
+    const range = handle.createReadStream(2, 8);
+    const chunks: Buffer[] = [];
+    range.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+    await new Promise<void>((resolve, reject) => {
+      range.once('end', resolve);
+      range.once('error', reject);
+    });
+    expect(Buffer.concat(chunks)).toEqual(plaintext.subarray(2, 9));
     await handle.cleanup();
     await expect(stat(handle.path)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('destroys active readers before closing the anonymous FD', async () => {
+    const handle = await service.create(
+      () => Readable.from([encryption.encrypt(Buffer.alloc(256 * 1024, 0x61))]),
+      { maxPlaintextBytes: 512 * 1024 }
+    );
+    const stream = handle.createReadStream();
+    await handle.cleanup();
+    expect(stream.destroyed).toBe(true);
+    await expect(stat(handle.path)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('blocks deletion verification while legacy named plaintext remains', async () => {
+    await service.onModuleInit();
+    const legacyPath = join(service.processDirectory, 'legacy.plain');
+    await writeFile(legacyPath, 'private media', { mode: 0o600 });
+    await expect(service.assertDeletionReady()).rejects.toThrow(
+      'Legacy named media'
+    );
+    await rm(legacyPath);
+    await expect(service.assertDeletionReady()).resolves.toBeUndefined();
+  });
+
+  it('leaves anonymous active readers to their database read leases', async () => {
+    const handle = await service.create(() =>
+      Readable.from([encryption.encrypt(Buffer.from('active'))])
+    );
+    try {
+      await expect(service.assertDeletionReady()).resolves.toBeUndefined();
+      expect(await readFile(handle.path)).toEqual(Buffer.from('active'));
+    } finally {
+      await handle.cleanup();
+    }
   });
 
   it('never returns a spool when the whole-object GCM tag is invalid', async () => {
@@ -91,32 +163,29 @@ describe('VerifiedMediaSpoolService', () => {
     expect(await readdir(service.processDirectory)).toEqual([]);
   });
 
-  it('quarantines the process and retains its slot when plaintext cleanup fails', async () => {
-    class CleanupFailureSpool extends VerifiedMediaSpoolService {
+  it('quarantines before source creation when anonymous unlink fails', async () => {
+    class UnlinkFailureSpool extends VerifiedMediaSpoolService {
       protected override async removeSpoolFile(): Promise<void> {
         throw new Error('disk denied unlink');
       }
     }
-    const failing = new CleanupFailureSpool(encryption, {
+    const failing = new UnlinkFailureSpool(encryption, {
       spoolRoot: join(root, 'cleanup-failure'),
       maxPlaintextBytes: 1024,
       maxConcurrent: 1,
       spoolBudgetBytes: 1024,
     });
-    const handle = await failing.create(
-      () => Readable.from([encryption.encrypt(Buffer.from('private'))]),
-      { maxPlaintextBytes: 1024 }
-    );
-
-    await expect(handle.cleanup()).rejects.toThrow('disk denied unlink');
     let sourceOpened = false;
     await expect(
       failing.create(() => {
         sourceOpened = true;
-        return Readable.from([]);
+        return Readable.from([encryption.encrypt(Buffer.from('private'))]);
       })
-    ).rejects.toThrow(/cleanup failed/i);
+    ).rejects.toThrow('disk denied unlink');
     expect(sourceOpened).toBe(false);
-    expect(await readFile(handle.path)).toEqual(Buffer.from('private'));
+    expect(await readdir(failing.processDirectory)).toEqual([]);
+    await expect(failing.create(() => Readable.from([]))).rejects.toThrow(
+      /cleanup failed/i
+    );
   });
 });

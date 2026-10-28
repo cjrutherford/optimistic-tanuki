@@ -17,10 +17,11 @@ import {
   OwnerSpoolHandle,
 } from './account-export-owner-spool.service';
 import { firstValueFrom, timeout } from 'rxjs';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 const AUTH_TIMEOUT_MS = 3000;
 const CAPTURE_TIMEOUT_MS = 45_000;
+const PURGE_DRAIN_TIMEOUT_MS = CAPTURE_TIMEOUT_MS + AUTH_TIMEOUT_MS * 2 + 5000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type Scope = Pick<
   AccountExportCaptureGrant,
@@ -40,6 +41,7 @@ type Entry<TSource extends string> = {
   retired: boolean;
   timer?: NodeJS.Timeout;
   cleanupPromise?: Promise<void>;
+  readChain: Promise<void>;
 };
 
 export interface ProfileBoundSnapshotOwner<TSource extends string> {
@@ -69,7 +71,10 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
   implements OnModuleDestroy
 {
   private readonly entries = new Map<string, Entry<TSource>>();
-  private readonly opening = new Set<AbortController>();
+  private readonly opening = new Map<AbortController, string>();
+  private readonly purgedAccounts = new Set<string>();
+  private readonly accountOpenDrains = new Map<string, Set<() => void>>();
+  private readonly accountReadDrains = new Map<string, Set<Promise<void>>>();
   private reservedBytes = 0;
   private closing = false;
   private openDrain?: () => void;
@@ -97,8 +102,11 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
   ): Promise<ProfileBoundAccountExportSnapshotDescriptor> {
     if (this.closing) this.fail('OWNER_SNAPSHOT_CLOSED');
     const { grant, profile, binding } = this.openRequest(value);
+    const accountKey = this.accountKey(grant.accountId);
+    if (this.purgedAccounts.has(accountKey)) this.fail('OWNER_ACCOUNT_PURGED');
     await this.assertLease(grant);
     if (this.closing) this.fail('OWNER_SNAPSHOT_CLOSED');
+    if (this.purgedAccounts.has(accountKey)) this.fail('OWNER_ACCOUNT_PURGED');
     if (
       this.entries.size + this.opening.size >=
         ACCOUNT_EXPORT_SNAPSHOT_LIMITS.entries ||
@@ -109,7 +117,7 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
     }
     this.reservedBytes += ACCOUNT_EXPORT_SNAPSHOT_LIMITS.captureBytes;
     const controller = new AbortController();
-    this.opening.add(controller);
+    this.opening.set(controller, accountKey);
     let spool: OwnerSpoolHandle<TSource> | undefined;
     let ownerPromise: Promise<unknown> | undefined;
     try {
@@ -140,11 +148,20 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
         }
       );
       spool = await capture;
+      if (this.purgedAccounts.has(accountKey)) controller.abort();
       if (this.closing || controller.signal.aborted)
-        this.fail('OWNER_SNAPSHOT_CLOSED');
+        this.fail(
+          this.purgedAccounts.has(accountKey)
+            ? 'OWNER_ACCOUNT_PURGED'
+            : 'OWNER_SNAPSHOT_CLOSED'
+        );
       await this.assertLease(grant);
       if (this.closing || controller.signal.aborted)
-        this.fail('OWNER_SNAPSHOT_CLOSED');
+        this.fail(
+          this.purgedAccounts.has(accountKey)
+            ? 'OWNER_ACCOUNT_PURGED'
+            : 'OWNER_SNAPSHOT_CLOSED'
+        );
       const handleId = randomUUID();
       const expiresAtMs = Date.now() + ACCOUNT_EXPORT_SNAPSHOT_LIMITS.ttlMs;
       const entry: Entry<TSource> = {
@@ -161,6 +178,7 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
         expiresAtMs,
         reservedBytes: spool.metadata.sizeBytes,
         retired: false,
+        readChain: Promise.resolve(),
         timer: setTimeout(
           () => void this.expire(handleId).catch(() => undefined),
           ACCOUNT_EXPORT_SNAPSHOT_LIMITS.ttlMs
@@ -200,6 +218,12 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
         this.openDrain?.();
         this.openDrain = undefined;
       }
+      const accountKey = this.accountKey(grant.accountId);
+      if (![...this.opening.values()].includes(accountKey)) {
+        for (const resolve of this.accountOpenDrains.get(accountKey) ?? [])
+          resolve();
+        this.accountOpenDrains.delete(accountKey);
+      }
     }
   }
 
@@ -223,19 +247,38 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
       request.length,
       entry.spool.metadata.sizeBytes - request.offset
     );
-    const bytes = length
-      ? await entry.spool.readChunk(request.offset, length)
-      : Buffer.alloc(0);
-    this.assertLive(entry);
-    await this.assertLease(request);
-    this.assertLive(entry);
-    return {
-      handleId: entry.handleId,
-      captureId: entry.spool.metadata.captureId,
-      offset: request.offset,
-      bytesBase64: bytes.toString('base64'),
-      eof: request.offset + bytes.length === entry.spool.metadata.sizeBytes,
-    };
+    let release!: () => void;
+    const previous = entry.readChain;
+    entry.readChain = new Promise<void>((resolve) => (release = resolve));
+    const readKey = this.accountKey(entry.scope.accountId);
+    const accountReads =
+      this.accountReadDrains.get(readKey) ?? new Set<Promise<void>>();
+    let finishRead!: () => void;
+    const readDone = new Promise<void>((resolve) => (finishRead = resolve));
+    accountReads.add(readDone);
+    this.accountReadDrains.set(readKey, accountReads);
+    await previous;
+    try {
+      this.assertLive(entry);
+      const bytes = length
+        ? await entry.spool.readChunk(request.offset, length)
+        : Buffer.alloc(0);
+      this.assertLive(entry);
+      await this.assertLease(request);
+      this.assertLive(entry);
+      return {
+        handleId: entry.handleId,
+        captureId: entry.spool.metadata.captureId,
+        offset: request.offset,
+        bytesBase64: bytes.toString('base64'),
+        eof: request.offset + bytes.length === entry.spool.metadata.sizeBytes,
+      };
+    } finally {
+      release();
+      finishRead();
+      accountReads.delete(readDone);
+      if (!accountReads.size) this.accountReadDrains.delete(readKey);
+    }
   }
 
   async release(value: unknown): Promise<{ handleId: string; released: true }> {
@@ -247,9 +290,94 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
     return { handleId: request.handleId, released: true };
   }
 
+  /** Trusted-internal, irreversible process-local purge fence. */
+  async purgeAccount(accountId: string): Promise<{ remaining: 0 }> {
+    if (
+      typeof accountId !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+        accountId
+      )
+    )
+      this.fail('OWNER_AUTHORIZATION_FAILED');
+    const accountKey = this.accountKey(accountId);
+    if (
+      this.purgedAccounts.size >= 10000 &&
+      !this.purgedAccounts.has(accountKey)
+    )
+      this.fail('OWNER_SNAPSHOT_CAPACITY');
+    this.purgedAccounts.add(accountKey);
+    for (const [controller, ownerKey] of this.opening)
+      if (ownerKey === accountKey) controller.abort();
+
+    const drain = async (): Promise<void> => {
+      while (true) {
+        const opens = [...this.opening.entries()]
+          .filter(([, key]) => key === accountKey)
+          .map(([controller]) => controller);
+        const entries = [...this.entries.values()].filter(
+          (entry) => this.accountKey(entry.scope.accountId) === accountKey
+        );
+        if (!opens.length && !entries.length) return;
+        const openDrain = opens.length
+          ? this.waitForAccountOpen(accountKey)
+          : undefined;
+        const readDrain = entries.length
+          ? this.waitForAccountReads(accountKey)
+          : undefined;
+        await Promise.all([
+          ...(openDrain ? [openDrain] : []),
+          ...(readDrain ? [readDrain] : []),
+          ...entries.map((entry) => this.remove(entry)),
+        ]);
+      }
+    };
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        drain(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () =>
+              reject(
+                new AccountExportProfileBoundSnapshotError(
+                  'OWNER_SNAPSHOT_DRAIN_TIMEOUT'
+                )
+              ),
+            PURGE_DRAIN_TIMEOUT_MS
+          );
+          timer.unref?.();
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+    return { remaining: 0 };
+  }
+
+  private accountKey(accountId: string): string {
+    return createHash('sha256').update(accountId.toLowerCase()).digest('hex');
+  }
+
+  private waitForAccountOpen(accountKey: string): Promise<void> {
+    if (![...this.opening.values()].includes(accountKey))
+      return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      const drains = this.accountOpenDrains.get(accountKey) ?? new Set();
+      drains.add(resolve);
+      this.accountOpenDrains.set(accountKey, drains);
+    });
+  }
+
+  private waitForAccountReads(accountKey: string): Promise<void> {
+    const reads = this.accountReadDrains.get(accountKey);
+    return reads?.size
+      ? Promise.all([...reads]).then(() => undefined)
+      : Promise.resolve();
+  }
+
   async onModuleDestroy(): Promise<void> {
     this.closing = true;
-    for (const controller of this.opening) controller.abort();
+    for (const controller of this.opening.keys()) controller.abort();
     if (this.opening.size)
       await new Promise<void>((resolve) => {
         this.openDrain = resolve;
@@ -513,6 +641,7 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
     entry.timer = undefined;
     if (!entry.cleanupPromise)
       entry.cleanupPromise = (async () => {
+        await entry.readChain;
         let ok = false;
         for (let i = 0; i < 2 && !ok; i++) {
           try {
@@ -561,6 +690,7 @@ export class AccountExportProfileBoundSnapshotService<TSource extends string>
       expiresAtMs: 0,
       reservedBytes: ACCOUNT_EXPORT_SNAPSHOT_LIMITS.captureBytes,
       retired: true,
+      readChain: Promise.resolve(),
     };
     this.entries.set(handleId, entry);
     entry.timer = setTimeout(

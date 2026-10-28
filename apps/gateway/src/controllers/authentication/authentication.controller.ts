@@ -1,4 +1,8 @@
 import {
+  sessionCookieOptions,
+  issuedSessionCookieOptions,
+} from '../../auth/session-policy';
+import {
   Body,
   Controller,
   Get,
@@ -505,6 +509,7 @@ export class AuthenticationController {
         email: user.email,
         name: user.name,
         profileId: user.profileId,
+        sessionExpiresAt: user.sessionExpiresAt,
       },
     };
   }
@@ -1100,17 +1105,7 @@ export class AuthenticationController {
   }
 
   private browserSessionCookieOptions() {
-    const configuredSecure = process.env.AUTH_COOKIE_SECURE;
-    return {
-      httpOnly: true,
-      secure:
-        configuredSecure === undefined
-          ? process.env.NODE_ENV === 'production'
-          : configuredSecure === 'true',
-      sameSite: 'lax' as const,
-      path: '/',
-      maxAge: 60 * 60 * 1000,
-    };
+    return sessionCookieOptions();
   }
 
   private withBrowserSession(
@@ -1130,7 +1125,7 @@ export class AuthenticationController {
       );
     }
 
-    response.cookie('ot_session', token, this.browserSessionCookieOptions());
+    response.cookie('ot_session', token, issuedSessionCookieOptions(token));
     const data = result?.data;
     if (data && typeof data === 'object') {
       const { newToken: _newToken, token: _token, ...safeData } = data;

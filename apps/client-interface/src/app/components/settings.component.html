@@ -31,5 +31,30 @@
         <lib-theme-designer></lib-theme-designer>
       </div>
     </section>
+    <div settings-postlude>
+      @if(accountId) {
+      <lib-account-rights
+        [accountId]="accountId"
+        [accountLabel]="accountLabel"
+        appId="client-interface"
+        (deletionReceiptReady)="router.navigate(['/account-deletion'])"
+      ></lib-account-rights>
+      }
+    </div>
   </lib-settings-shell>
 </div>
+
+<nav
+  aria-label="Getting started and privacy"
+  style="
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+    justify-content: center;
+  "
+>
+  <a href="/help">Getting started</a>
+  <a href="/privacy">Privacy and account data</a>
+  <a href="/contact">Contact and support</a>
+</nav>

@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import * as fs from 'node:fs';
@@ -28,7 +29,7 @@ describe('Forum account export dispositions J26', () => {
     const metas = source.entityMetadatas,
       policy = inventory();
     expect(validateForumDispositions(metas, policy)).toEqual([]);
-    expect(metas.filter((m) => m.tableType !== 'junction')).toHaveLength(6);
+    expect(metas.filter((m) => m.tableType !== 'junction')).toHaveLength(7);
     expect(metas.filter((m) => m.tableType === 'junction')).toHaveLength(1);
     const staticText = fs.readFileSync(
       path.join(__dirname, 'staticDatabase.ts'),

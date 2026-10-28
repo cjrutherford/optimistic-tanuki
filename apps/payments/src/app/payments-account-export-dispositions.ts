@@ -14,6 +14,12 @@ const safePath = (value: unknown): value is string =>
   /^(apps|libs|docs)\/[A-Za-z0-9_./-]+$/.test(value) &&
   !value.split('/').includes('..');
 const sourceActions: Record<string, Record<string, string>> = {
+  AccountDeletionWriteFenceEntity: {
+    key: 'exclude',
+    kind: 'exclude',
+    operationId: 'exclude',
+    installedAt: 'exclude',
+  },
   Donation: {
     id: 'include-owned',
     userId: 'typed-projection',

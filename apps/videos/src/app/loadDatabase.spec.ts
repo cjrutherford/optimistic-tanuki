@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import loadDatabase from './loadDatabase';
 
 describe('loadDatabase', () => {
@@ -39,10 +40,10 @@ describe('loadDatabase', () => {
         password: database.password,
         database: database.database,
         connectTimeoutMS: 3000,
-        synchronize: mode !== 'production',
+        synchronize: false,
         logging: mode === 'development',
       });
-      expect(options.entities).toHaveLength(7);
+      expect(options.entities).toHaveLength(8);
       expect(log).toHaveBeenCalledWith(
         'Database configuration:',
         expect.objectContaining({ password: '[REDACTED]' })

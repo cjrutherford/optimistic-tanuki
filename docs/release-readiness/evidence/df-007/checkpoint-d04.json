@@ -1,0 +1,109 @@
+{
+  "slice": "D04",
+  "date": "2026-10-25",
+  "scope": ["client-interface", "local-hub"],
+  "status": "verified-local-owner-adapter",
+  "evidence": {
+    "videosFocusedTests": 18,
+    "goWorkerTests": 9,
+    "realAuthVideosTcpPostgresGoFilesystem": 1,
+    "preE2E": 41,
+    "build": "videos production and video-transcoder-worker passed",
+    "lint": "videos constants authentication-e2e passed",
+    "migrationCycle": "owning Nx generated; current frozen up/down/up passed",
+    "migrationGovernance": "passed",
+    "frozenSqlParity": "source helper and generated migration match",
+    "review": "r3 Luna source GO; no independent runtime reproduction"
+  },
+  "realGoProof": {
+    "unsignedAndNilRejected": true,
+    "realFfmpegInheritedLock": true,
+    "workerCrashDrained": true,
+    "drainSeconds": 5.616,
+    "lateTranscodeDenied": true,
+    "counterpartOutputPreserved": true,
+    "realTranscodeAfterRestart": true,
+    "realRemoveFailureRetry": true,
+    "privateMediaRootRemoved": true,
+    "privateWorkerStopped": true,
+    "status": "PASS-for-Go-runtime-only"
+  },
+  "databaseRuntimeProof": {
+    "fixtureExit": 0,
+    "status": "PASS",
+    "privateMediaRootRemoved": true,
+    "privateWorkerStopped": true
+  },
+  "independentFinalCounts": {
+    "d00": {
+      "user_entity": 0,
+      "token": 0,
+      "oauth_provider": 0,
+      "auth_action_token": 0,
+      "guardian_permission": 0,
+      "guardian_policy_notice": 0,
+      "account_export_jobs": 0,
+      "account_deletion_operations": 0,
+      "account_deletion_write_fence": 0
+    },
+    "d04_videos": {
+      "channel": 0,
+      "video": 0,
+      "channel_subscription": 0,
+      "video_view": 0,
+      "channel_feed": 0,
+      "program_block": 0,
+      "live_session": 0,
+      "account_deletion_write_fence": 0
+    }
+  },
+  "protectedFilesUnchanged": 43,
+  "privateContainersRemaining": 0,
+  "operationalDispositions": [
+    {
+      "owner": "videos",
+      "store": "account_deletion_write_fence",
+      "disposition": "permanent hashed producer fence; operational exclusion"
+    },
+    {
+      "owner": "video-transcoder-worker",
+      "store": ".deletion-fences hashed tombstones and lock files",
+      "disposition": "durable producer tombstones; constant marker contents; operational exclusion"
+    },
+    {
+      "owner": "videos",
+      "store": ".video-processing-imports/<videoId>",
+      "disposition": "attributable temporary plaintext; drained and purged before acknowledgement"
+    },
+    {
+      "owner": "videos",
+      "store": "legacy random video-processing-import-*",
+      "disposition": "unproven attribution blocks verification; no blanket purge"
+    }
+  ],
+  "limitations": [
+    "Profile scope and other-owner acknowledgements are fixture preconditions",
+    "Deployment must configure matching internal worker endpoint and deletion secret; protected configuration unchanged",
+    "Imported Assets bytes rely on D03; no global deletion, public UI or final D26 identity/key disposal claim"
+  ],
+  "sourceHashes": {
+    "apps/videos/src/app/account-deletion-owner.service.ts": "f4b26a958aee077f481a321952445534eb79bca40db3f41af5a83763f4941b0d",
+    "apps/videos/src/app/account-deletion-owner.controller.ts": "969079d4517baeba3fc58d8638a14f003235d53ab40dc44ef180d3dfb81b9f9d",
+    "apps/videos/src/app/account-deletion-fence.sql.ts": "4649e03cb8218323e7a79c112d4d46adc45c9f42acff5bcf57cfb9a357bc7a40",
+    "apps/videos/src/app/services/video-deletion-processing-fence.service.ts": "1bc7f07b1838f31b03a278a6c3f1697375c13960b84db55dce1163a6754f2ebc",
+    "apps/videos/src/app/services/video-processing.service.ts": "2df805ad4c26eea0528cfb53186f178a919ebb7d4b1967530928ff5463cae9e3",
+    "apps/videos/src/app/services/video-transcode-client.service.ts": "c2549f8431dfb26e86cd7831e5cd7ac229bc6c1457f79cddb0b2114cf1340368",
+    "apps/videos/src/app/app.module.ts": "8ca34702d9acfe7712845c5eb3b0d3e8da770107d1124daa94a48e25336cabe9",
+    "apps/videos/src/app/loadDatabase.ts": "c4273ca0245bd54f689dd4cafca82444d605c6ef5f0038b8ccb25b32d6fd5845",
+    "apps/videos/src/app/staticDatabase.ts": "d41228427854bf94764d46f35e227a0ff11b3ae72185e308ea0efcbba08d6771",
+    "apps/videos/migrations/1792932755812-AccountDeletionWriteFence.ts": "133ed3580f3152177b871a7e782663d886927be48d1db5056222d9292d6eef42",
+    "apps/video-transcoder-worker/main.go": "8db5b88cbc9db0efa7812e1c19043641e1e21f161df1b99fc8463b9e4a36ef6a",
+    "apps/video-transcoder-worker/internal/protocol/protocol.go": "35ab832daca1ec3c16746a9907866179833768ac9fb1feb1c6e6a1dbbcd6f4c3",
+    "apps/video-transcoder-worker/internal/transcode/worker.go": "dcb6f02994dd6a422869c15e9fa3dc2ae10846243cfe505a714839d38d15021f",
+    "apps/video-transcoder-worker/internal/transcode/worker_test.go": "737a9a7d1e4493e30ebd231475a663ee927f55b7a38c0caf73b9095de53ac408",
+    "libs/constants/src/lib/libs/videos.ts": "1365d1493d0d6e76a98246f48f391268650c449d8f440dafefae8cb0c7d9d9dd",
+    "apps/authentication-e2e/jest.deletion-private.config.ts": "e8103da5a9076ebf941950c3ced489c6e1c2461744479a95c454a0282de8f1d1",
+    "apps/authentication-e2e/src/support/deletion-private-setup.ts": "19742e056efe069ea187e742383d2b044b14ec012419294c8121b6f3ee509d45",
+    "apps/authentication-e2e/src/authentication/videos-account-deletion.spec.ts": "ea0fa42655379f90a02733b5cb84d2b80f6371b571b9222126edd4e81c1705af"
+  }
+}

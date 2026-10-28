@@ -28,6 +28,9 @@ export {
 
 /** Internal TCP-only commands; never expose through the public gateway. */
 export const SocialCommands = {
+  FENCE_ACCOUNT_DELETION: 'social.deletion.fence',
+  ERASE_ACCOUNT_DELETION: 'social.deletion.erase',
+  READBACK_ACCOUNT_DELETION: 'social.deletion.readback',
   GetAccountExportSnapshot: 'Get:SocialAccountExportSnapshot',
   OPEN_ACCOUNT_EXPORT_CAPTURE: 'Social:OpenAccountExportCapture',
   READ_ACCOUNT_EXPORT_CAPTURE: 'Social:ReadAccountExportCapture',

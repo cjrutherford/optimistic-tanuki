@@ -1,3 +1,10 @@
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import { PaymentsAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { PaymentsAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { AccountDeletionAuthorityClient } from '@optimistic-tanuki/storage';
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
@@ -46,8 +53,34 @@ import { PaymentsAccountExportSnapshotController } from './account-export-snapsh
       factory: loadDatabase,
     }),
   ],
-  controllers: [AppController, PaymentsAccountExportSnapshotController],
+  controllers: [
+    AccountDeletionSnapshotController,
+    PaymentsAccountDeletionOwnerController,
+    AppController,
+    PaymentsAccountExportSnapshotController,
+  ],
   providers: [
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: PaymentsAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        database: { query(sql: string): Promise<unknown> }
+      ) => ({ owner: 'payments', snapshot, authority, spool, database }),
+      inject: [
+        PaymentsAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        'PAYMENTS_CONNECTION',
+      ],
+    },
+    PaymentsAccountDeletionOwnerService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: any) => new AccountDeletionAuthorityClient(auth),
+      inject: [ServiceTokens.AUTHENTICATION_SERVICE],
+    },
     AccountExportOwnerSpoolService,
     AccountExportProfileSnapshotClient,
     {

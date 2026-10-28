@@ -87,7 +87,7 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
     allowedHeaders:
-      'Authorization,Content-Type,X-Requested-With,X-ot-appscope,X-ot-app-id,X-ot-session-mode',
+      'Authorization,Content-Type,X-Requested-With,X-ot-appscope,X-ot-app-id,X-ot-session-mode,X-ot-deletion-receipt',
     preflightContinue: false,
     optionsSuccessStatus: 204,
   });

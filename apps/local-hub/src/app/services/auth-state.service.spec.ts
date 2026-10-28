@@ -42,6 +42,34 @@ describe('AuthStateService', () => {
     eligibility.mockRestore();
   });
 
+  it('clears the current deleting account locally and leaves preferences and newer-cookie transport alone', async () => {
+    const accountId = '41000000-0000-4000-8000-000000000001';
+    const currentSession = jest.fn().mockResolvedValue({
+      data: { userId: accountId, name: 'Member', email: 'own@example.test' },
+    });
+    TestBed.configureTestingModule({
+      providers: [
+        AuthStateService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: AuthenticationService, useValue: { currentSession } },
+        { provide: API_BASE_URL, useValue: '/api' },
+      ],
+    });
+    const service = TestBed.inject(AuthStateService);
+    await service.waitForSessionRestore();
+    localStorage.setItem('theme', 'keep');
+    CommonUi.notifyAccountDeletion('41000000-0000-4000-8000-000000000002');
+    expect(service.isAuthenticated).toBe(true);
+    CommonUi.notifyAccountDeletion(accountId);
+    expect(service.isAuthenticated).toBe(false);
+    expect(localStorage.getItem('theme')).toBe('keep');
+    TestBed.inject(HttpTestingController).expectNone(
+      '/api/authentication/logout'
+    );
+  });
+
   it('shares the pending browser session restore with all guards', async () => {
     let resolveSession!: (value: unknown) => void;
     const currentSession = jest.fn(

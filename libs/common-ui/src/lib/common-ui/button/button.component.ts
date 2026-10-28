@@ -1,6 +1,11 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import {
+  Themeable,
+  ThemeColors,
+  resolveReadableText,
+  getSuggestedTextColor,
+} from '@optimistic-tanuki/theme-lib';
 import {
   BUTTON_VARIANT_BRIDGE,
   type Emphasis,
@@ -35,6 +40,14 @@ export type ButtonVariant =
     '[class.variant-outlined]': 'variant === "outlined"',
     '[class.variant-text]': 'variant === "text"',
     '[style.--background]': 'background',
+    '[style.--primary-text]': "controlTheme['--primary-text']",
+    '[style.--danger-text]': "controlTheme['--danger-text']",
+    '[style.--success-text]': "controlTheme['--success-text']",
+    '[style.--warning-text]': "controlTheme['--warning-text']",
+    '[style.--on-primary]': "controlTheme['--on-primary']",
+    '[style.--on-danger]': "controlTheme['--on-danger']",
+    '[style.--on-success]': "controlTheme['--on-success']",
+    '[style.--on-warning]': "controlTheme['--on-warning']",
     '[style.--foreground]': 'foreground',
     '[style.--accent]': 'accent',
     '[style.--complement]': 'complement',
@@ -104,7 +117,26 @@ export class ButtonComponent extends Themeable {
     return this._variant === 'rounded';
   }
 
+  controlTheme: Record<string, string> = {};
+
   override applyTheme(colors: ThemeColors): void {
+    this.background = colors.background;
+    const tones = {
+      primary: colors.accent,
+      danger: colors.danger,
+      success: colors.success,
+      warning: colors.warning,
+    };
+    const variables: Record<string, string> = {
+      '--background': colors.background,
+      '--surface': colors.background,
+    };
+    for (const [name, color] of Object.entries(tones))
+      variables['--' + name] = color;
+    this.controlTheme = resolveReadableText(variables);
+    for (const [name, color] of Object.entries(tones))
+      this.controlTheme['--on-' + name] = getSuggestedTextColor(color).color;
+
     this.foreground = colors.foreground;
     this.accent = colors.accent;
     this.complement = colors.complementary;

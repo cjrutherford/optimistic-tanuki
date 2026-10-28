@@ -188,6 +188,65 @@ describe('S3Service', () => {
     });
   });
 
+  describe('shared-store custody probe', () => {
+    const nonce = '9a5bfbf1-4f4a-4aa9-8fab-7d769ee03232';
+    it('writes exclusively, reads the exact bounded nonce and returns no credentials', async () => {
+      mockS3Client.send
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({ Body: Readable.from([Buffer.from(nonce)]) });
+      const written = await service.custodyProbe(nonce, 'write');
+      expect(written).toMatch(/^s3:[0-9a-f]{64}$/);
+      expect(written).not.toContain(s3Options.secretAccessKey);
+      expect(PutObjectCommand).toHaveBeenCalledWith(
+        expect.objectContaining({
+          Key: '.ot-store-probe/' + nonce,
+          Body: nonce,
+          IfNoneMatch: '*',
+        })
+      );
+      await expect(service.custodyProbe(nonce, 'read')).resolves.toBe(written);
+    });
+    it('rejects a mismatched or oversized response and invalid nonce without a request', async () => {
+      await expect(service.custodyProbe('../unsafe', 'read')).rejects.toThrow(
+        'CUSTODY_PROBE_INVALID'
+      );
+      expect(mockS3Client.send).not.toHaveBeenCalled();
+      mockS3Client.send.mockResolvedValueOnce({
+        Body: Readable.from([Buffer.alloc(37)]),
+      });
+      await expect(service.custodyProbe(nonce, 'read')).rejects.toThrow(
+        'CUSTODY_PROBE_INVALID'
+      );
+      mockS3Client.send.mockResolvedValueOnce({
+        Body: Readable.from([Buffer.from(nonce.replace('9', '8'))]),
+      });
+      await expect(service.custodyProbe(nonce, 'read')).rejects.toThrow(
+        'CUSTODY_PROBE_INVALID'
+      );
+    });
+    it('removes the probe through version-aware purge with independent absence readback', async () => {
+      const key = '.ot-store-probe/' + nonce;
+      mockS3Client.send
+        .mockResolvedValueOnce({ Versions: [{ Key: key, VersionId: 'v1' }] })
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({ Versions: [] })
+        .mockRejectedValueOnce(
+          Object.assign(new Error('absent'), {
+            name: 'NotFound',
+            $metadata: { httpStatusCode: 404 },
+          })
+        );
+      await expect(service.custodyProbe(nonce, 'remove')).resolves.toMatch(
+        /^s3:[0-9a-f]{64}$/
+      );
+      expect(DeleteObjectsCommand).toHaveBeenCalledWith(
+        expect.objectContaining({
+          Delete: { Objects: [{ Key: key, VersionId: 'v1' }], Quiet: false },
+        })
+      );
+    });
+  });
+
   describe('purgeObjectVersions', () => {
     it('paginates versions and delete markers and only deletes the exact key', async () => {
       mockS3Client.send

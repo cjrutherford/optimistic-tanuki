@@ -1,3 +1,4 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { DataSource } from 'typeorm';
 import { AppConfigurationEntity } from '../configurations/entities/app-configuration.entity';
 import { AppInstanceEntity } from '../configurations/entities/app-instance.entity';
@@ -10,14 +11,11 @@ const password = process.env.POSTGRES_PASSWORD || 'postgres';
 const database = process.env.POSTGRES_DB || 'ot_app_configurator';
 
 const entities = [
+  AccountDeletionWriteFenceEntity,
   AppConfigurationEntity,
   AppInstanceEntity,
   AppMembershipEntity,
 ];
-
-console.log(
-  `Using database configuration: host=${host}, port=${port}, username=${username}, database=${database}`
-);
 
 const staticSource = new DataSource({
   type: 'postgres',

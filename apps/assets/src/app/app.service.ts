@@ -4,6 +4,7 @@ import {
   Logger,
   BadRequestException,
   PayloadTooLargeException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -22,7 +23,7 @@ import {
   GuardianAssetActor,
 } from './guardian-asset-authorization.service';
 import { GuardianAssetActivity } from '../entities/guardian-asset-activity.entity';
-import { LessThan, IsNull } from 'typeorm';
+import { LessThanOrEqual, IsNull } from 'typeorm';
 import { OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import {
   STORAGE_ADAPTERS,
@@ -34,11 +35,11 @@ import {
 import * as fs from 'node:fs/promises';
 import { constants as fsConstants } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { AssetMediaReadFenceService } from './asset-media-read-fence.service';
 
 @Injectable()
 export class AppService implements OnModuleInit, OnModuleDestroy {
   private cleanupTimer?: NodeJS.Timeout;
-  private auditCleanupTimer?: NodeJS.Timeout;
   constructor(
     private readonly l: Logger,
     @Inject(getRepositoryToken(AssetEntity))
@@ -51,6 +52,9 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     private readonly guardianAssetAuthorization?: GuardianAssetAuthorizationService
   ) {}
 
+  @Inject(AssetMediaReadFenceService)
+  private readonly mediaReadFence!: AssetMediaReadFenceService;
+
   onModuleInit(): void {
     void this.cleanupPendingAssets().catch(() =>
       this.l.error('Asset lifecycle startup cleanup failed')
@@ -62,23 +66,10 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
         ),
       60_000
     );
-    void this.cleanupExpiredGuardianActivity().catch(() =>
-      this.l.error('Guardian asset audit cleanup failed')
-    );
-    this.auditCleanupTimer = setInterval(
-      () =>
-        void this.cleanupExpiredGuardianActivity().catch(() =>
-          this.l.error('Guardian asset audit cleanup failed')
-        ),
-      24 * 60 * 60 * 1000
-    );
-    this.auditCleanupTimer.unref?.();
-    this.cleanupTimer.unref?.();
   }
 
   onModuleDestroy(): void {
     if (this.cleanupTimer) clearInterval(this.cleanupTimer);
-    if (this.auditCleanupTimer) clearInterval(this.auditCleanupTimer);
   }
 
   async createGuardianAsset(
@@ -278,7 +269,7 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     const cutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
     const result = await this.assetRepo.manager
       .getRepository(GuardianAssetActivity)
-      .delete({ createdAt: LessThan(cutoff) });
+      .delete({ createdAt: LessThanOrEqual(cutoff) });
     return result.affected ?? 0;
   }
 
@@ -537,6 +528,11 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
       if (error instanceof BadRequestException) {
         throw new RpcException({ statusCode: 400, message: error.message });
       }
+      if (error instanceof ServiceUnavailableException)
+        throw new RpcException({
+          statusCode: 503,
+          message: 'Asset processing unavailable; please retry',
+        });
       throw new RpcException('Failed to create asset');
     }
   }
@@ -963,6 +959,8 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
         'Configured storage adapter cannot safely stream authenticated media.'
       );
     }
-    return this.storageAdapter.openAuthenticatedMedia(asset, options);
+    return this.mediaReadFence.open(asset, options, () =>
+      this.storageAdapter.openAuthenticatedMedia!(asset, options)
+    );
   }
 }

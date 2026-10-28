@@ -2,8 +2,11 @@ export * from './lib/common-ui/index';
 export { installBrowserDiagnosticBoundary } from './lib/browser-diagnostics';
 export {
   SessionGeneration,
+  isAccountRightsRequest,
   clearOwnedBrowserSessionKeys,
   notifyBrowserSessionReset,
+  notifyAccountDeletion,
+  watchAccountDeletion,
   watchBrowserSessionBoundary,
   publishBrowserSessionBoundary,
 } from './lib/session-state';
@@ -17,3 +20,4 @@ export const MIXINS_SCSS_PATH = './lib/styles/mixins.scss';
 export * from './lib/common-ui/public-info-footer/public-info-footer.component';
 
 export * from './lib/common-ui/public-contact-page/public-contact-page.component';
+export * from './lib/authenticated-activity';

@@ -1,3 +1,18 @@
+import {
+  ActivityRetentionService,
+  activityRetentionRule,
+} from '@optimistic-tanuki/logger';
+import type { DataSource as RetentionDataSource } from 'typeorm';
+import { ActivityRetentionController } from './activity-retention.controller';
+import { GuardianProfileActivity as RetentionEntity0 } from '../profiles/entities/guardian-profile-activity.entity';
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import { ProfileAccountDeletionFinalizerService } from './account-deletion-finalizer.service';
+import { ProfileAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { ProfileAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { AccountDeletionAuthorityClient } from '@optimistic-tanuki/storage';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import {
   ClientProxy,
@@ -41,16 +56,70 @@ import { ProfileAuditErasureService } from './audit-erasure.service';
     LoggerModule,
   ],
   controllers: [
+    ActivityRetentionController,
+    AccountDeletionSnapshotController,
     AppController,
     ProfilesController,
     TimelinesController,
     AccountExportController,
+    ProfileAccountDeletionOwnerController,
   ],
   providers: [
+    {
+      provide: ActivityRetentionService,
+      useFactory: (db: RetentionDataSource) =>
+        new ActivityRetentionService('profile', db, [
+          activityRetentionRule(db.getMetadata(RetentionEntity0), 'createdAt'),
+        ]),
+      inject: ['PROFILE_CONNECTION'],
+    },
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: ProfileAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        audit: ProfileAuditErasureService,
+        database: {
+          query(sql: string, parameters?: unknown[]): Promise<unknown>;
+        }
+      ) => ({
+        owner: 'profile',
+        snapshot,
+        authority,
+        spool,
+        database,
+        scopeReadback: async (accountId: string) => {
+          const rows = (await database.query(
+            `SELECT count(*)::text n FROM (SELECT 1 FROM profile WHERE lower(btrim("userId"::text))=$1 AND ("appScope" IS NULL OR "appScope" NOT IN ('client-interface','local-hub')) LIMIT 100001) AS unresolved`,
+            [accountId]
+          )) as { n: string }[];
+          return Array.isArray(rows) && rows.length === 1 && rows[0]?.n === '0'
+            ? 0
+            : 1;
+        },
+        audit,
+      }),
+      inject: [
+        ProfileAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        ProfileAuditErasureService,
+        'PROFILE_CONNECTION',
+      ],
+    },
+    ProfileAccountDeletionFinalizerService,
     AppService,
     ProfileService,
     TimelineService,
     ProfileAuditErasureService,
+    ProfileAccountDeletionOwnerService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: ClientProxy) =>
+        new AccountDeletionAuthorityClient(auth),
+      inject: [ServiceTokens.AUTHENTICATION_SERVICE],
+    },
     ProfileAccountExportService,
     {
       provide: AccountExportOwnerSpoolService,

@@ -42,6 +42,7 @@ const row = (overrides: Partial<AccountExportJobEntity> = {}) =>
 function fixture(initial: AccountExportJobEntity[]) {
   const rows = new Map(initial.map((r) => [r.id, r]));
   const qb: any = {
+    select: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
@@ -52,6 +53,9 @@ function fixture(initial: AccountExportJobEntity[]) {
     getRepository: () => txRepo,
     transaction: async (callback: (m: any) => unknown) => callback(manager),
     query: jest.fn(async (sql: string, values: any[]) => {
+      if (sql.startsWith('WITH history_due')) return [[], 0];
+      if (sql.includes('AS "historyRemaining"'))
+        return [{ historyRemaining: '0' }];
       if (sql.startsWith('SELECT')) {
         const r = rows.get(values[0]);
         return [
@@ -113,10 +117,29 @@ function fixture(initial: AccountExportJobEntity[]) {
     store as never,
     downloads
   );
-  return { service, rows, qb, locked, store, downloads };
+  return { service, rows, qb, locked, store, downloads, manager };
 }
 
 describe('AccountExportArtifactRetentionService', () => {
+  it('prunes only old terminal history after artifact custody is clear', async () => {
+    const f = fixture([]);
+    f.manager.query.mockImplementation(async (sql: string) =>
+      sql.includes('AS "historyRemaining"')
+        ? [{ historyRemaining: '0' }]
+        : [[{ id: ID }], 1]
+    );
+    await expect(f.service.pruneHistory()).resolves.toEqual({
+      removed: 1,
+      remaining: 0,
+    });
+    const sql = f.manager.query.mock.calls[0][0];
+    expect(sql).toContain('FOR UPDATE SKIP LOCKED');
+    expect(sql).toContain('privateArtifact');
+    expect(sql).toContain('cleanup-pending');
+    expect(sql).toContain("interval '90 days'");
+    expect(f.store.purgeOwnedArtifact).not.toHaveBeenCalled();
+  });
+
   it('removes an expired artifact, preserving unrelated coverage only after purge readback', async () => {
     const f = fixture([row()]);
     await expect(f.service.sweep()).resolves.toEqual({ removed: 1, failed: 0 });
@@ -160,6 +183,16 @@ describe('AccountExportArtifactRetentionService', () => {
     });
     expect(f.rows.get(ID)?.state).toBe('failed');
     expect(f.rows.get(ID)?.leaseOwner).toBeNull();
+  });
+
+  it('sets the deletion operation inside each artifact purge transaction', async () => {
+    const f = fixture([row()]);
+    const operationId = '55555555-5555-4555-8555-555555555555';
+    await f.service.purgeAccount(ACCOUNT, operationId);
+    expect(f.manager.query).toHaveBeenCalledWith(
+      "SELECT set_config('ot.deletion_operation', $1, true)",
+      [operationId]
+    );
   });
 
   it('does not expire a live running lease or an unexpired artifact', async () => {

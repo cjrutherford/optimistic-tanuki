@@ -1,0 +1,42 @@
+{
+  "slice": "D01",
+  "scope": ["client-interface", "local-hub"],
+  "status": "verified-local-owner-adapter",
+  "evidence": {
+    "ownerUnit": "10 passed",
+    "retentionUnit": "6 passed",
+    "postgresTcp": "5 passed, no skips",
+    "build": "authentication passed",
+    "lint": "authentication passed",
+    "preE2E": "40 passed",
+    "review": "r5 no concrete P1/P2; source only"
+  },
+  "independentFinalCounts": {
+    "user_entity": 0,
+    "token": 0,
+    "oauth_provider": 0,
+    "auth_action_token": 0,
+    "guardian_permission": 0,
+    "guardian_policy_notice": 0,
+    "account_export_jobs": 0,
+    "account_deletion_operations": 0,
+    "account_deletion_write_fence": 0
+  },
+  "privateContainersRemaining": 0,
+  "protectedFilesUnchanged": 43,
+  "sourceHashes": {
+    "apps/authentication/src/account-deletion/account-deletion-owner.service.ts": "8f2bd895f1f917b47eda6209bd815ec09bb86b08e0e4e78cb164662282f6bd82",
+    "apps/authentication/src/account-deletion/account-deletion-owner.service.spec.ts": "1ac7d96f0eff3fc28bdc868af4a51cc5a125d6b1c2c57db34ad2d0a20568fcb8",
+    "apps/authentication/src/account-deletion/account-deletion-owner.controller.ts": "f32904aada942347d2ad0a62de1e6acadcadf61a3c975d877e4c338846934953",
+    "apps/authentication/src/account-deletion/account-deletion-owner.postgres.spec.ts": "ca0390289579f545be0ffbc2f51341c412ed7d9708448ab6f463c058aa6c54ad",
+    "apps/authentication/src/account-export-jobs/account-export-artifact-retention.service.ts": "9eb584741abec1da98722bb5a8b0dadd678fbaa78c4f2ac69cdd2f6b2c3a31a7",
+    "apps/authentication/src/account-export-jobs/account-export-artifact-retention.service.spec.ts": "3d1e3d61cf7450cf25f6bab91e6b25935b1a8e35d7380c1673dcbcd7971fc30b",
+    "apps/authentication/src/app/app.module.ts": "27c22deb6f6f6570fdb7f18c6921263c69262b61c7f9c99edee1a8052190a4e1",
+    "libs/constants/src/lib/libs/authentication.ts": "e6262caa054070adac4be4ddaf41d2fff5dc77b3c90440db4aef3bbe5557aa4d"
+  },
+  "limits": [
+    "Other-owner acknowledgements are fixture preconditions, not global runtime proof.",
+    "Public delete UI, full multi-owner orchestration and D26 root/key destruction remain future slices.",
+    "Unbound guardian email-only rows or conflicting legacy token bindings block completeness."
+  ]
+}

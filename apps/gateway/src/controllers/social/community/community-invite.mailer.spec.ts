@@ -39,6 +39,7 @@ describe('CommunityInviteMailer', () => {
   }
 
   const invite = {
+    actorAccountId: '41000000-0000-4000-8000-000000000001',
     email: 'someone@example.com',
     token: 'a-token',
     communityName: 'Savannah Gardeners',
@@ -145,4 +146,43 @@ describe('communityInvitationUrl', () => {
       'http://localhost:8080/invitation/tok%20en'
     );
   });
+});
+
+it('drains an admitted own invitation, rejects late sends, and preserves another account delivery', async () => {
+  let release!: () => void;
+  const blocked = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const sendEmail = jest
+    .fn()
+    .mockImplementationOnce(() => blocked)
+    .mockResolvedValue({ success: true });
+  const mailer = new CommunityInviteMailer(
+    { sendEmail } as never,
+    {
+      apps: [{ appId: 'local-hub', uiBaseUrl: 'http://localhost:8087' }],
+    } as never
+  );
+  const accountId = '41000000-0000-4000-8000-000000000001';
+  const invite = {
+    actorAccountId: accountId,
+    email: 'private@example.test',
+    token: 'private-token',
+    appScope: 'local-hub',
+  };
+  const work = mailer.send(invite);
+  await Promise.resolve();
+  const purge = mailer.purgeAccount(accountId);
+  expect(mailer.readbackAccount(accountId)).toBe(1);
+  await mailer.send(invite);
+  expect(sendEmail).toHaveBeenCalledTimes(1);
+  release();
+  await work;
+  await purge;
+  expect(mailer.readbackAccount(accountId)).toBe(0);
+  await mailer.send({
+    ...invite,
+    actorAccountId: '41000000-0000-4000-8000-000000000002',
+  });
+  expect(sendEmail).toHaveBeenCalledTimes(2);
 });

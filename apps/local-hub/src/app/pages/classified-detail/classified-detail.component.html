@@ -237,28 +237,21 @@
 
 <!-- Offers List -->
 @if (showOffersList()) {
-<div class="offers-modal-overlay" (click)="showOffersList.set(false)">
-  <div class="offers-modal" (click)="$event.stopPropagation()">
-    <div class="offers-modal-header">
-      <h2>Offers for "{{ ad()!.title }}"</h2>
-      <button
-        class="close-btn"
-        (click)="showOffersList.set(false)"
-        aria-label="Close"
-      >
-        ×
-      </button>
-    </div>
-    <div class="offers-modal-body">
-      <app-offer-list
-        [offers]="offers"
-        [loading]="offersLoading"
-        [canManage]="isOwner()"
-        (acceptOffer)="onAcceptOffer($event)"
-        (rejectOffer)="onRejectOffer($event)"
-        (counterOffer)="onCounterOffer($event)"
-      ></app-offer-list>
-    </div>
+<otui-modal
+  [visible]="true"
+  [heading]="'Offers for ' + ad()!.title"
+  ariaDescribedBy="listing-offers-description"
+  (close)="showOffersList.set(false)"
+>
+  <div class="offers-modal-body">
+    <app-offer-list
+      [offers]="offers"
+      [loading]="offersLoading"
+      [canManage]="isOwner()"
+      (acceptOffer)="onAcceptOffer($event)"
+      (rejectOffer)="onRejectOffer($event)"
+      (counterOffer)="onCounterOffer($event)"
+    ></app-offer-list>
   </div>
-</div>
+</otui-modal>
 }

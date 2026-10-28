@@ -111,6 +111,11 @@ export function isResolvedWorkspace(
   }
 
   const workspace = value as Partial<ResolvedWorkspace>;
+  const erasedSource =
+    workspace.ownerUserId === '00000000-0000-0000-0000-000000000000' &&
+    workspace.ownerProfileId === '00000000-0000-0000-0000-000000000000' &&
+    workspace.source?.service === 'app-configurator' &&
+    workspace.source.sourceId === '00000000-0000-0000-0000-000000000000';
   return (
     typeof workspace.workspaceId === 'string' &&
     CANONICAL_WORKSPACE_ID.test(workspace.workspaceId) &&
@@ -121,6 +126,6 @@ export function isResolvedWorkspace(
     typeof workspace.ownerProfileId === 'string' &&
     isWorkspaceKind(workspace.kind) &&
     isWorkspaceStatus(workspace.status) &&
-    isWorkspaceSource(workspace.source)
+    (isWorkspaceSource(workspace.source) || erasedSource)
   );
 }

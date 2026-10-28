@@ -1,3 +1,10 @@
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import { ChatAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { ChatAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { AccountDeletionAuthorityClient } from '@optimistic-tanuki/storage';
 import { Module } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
@@ -54,8 +61,35 @@ import { ChatAccountExportSnapshotController } from './account-export-snapshot.c
       factory: loadDatabase,
     }),
   ],
-  controllers: [AppController, ChatAccountExportSnapshotController],
+  controllers: [
+    AccountDeletionSnapshotController,
+    ChatAccountDeletionOwnerController,
+    AppController,
+    ChatAccountExportSnapshotController,
+  ],
   providers: [
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: ChatAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        database: { query(sql: string): Promise<unknown> }
+      ) => ({ owner: 'chat-collector', snapshot, authority, spool, database }),
+      inject: [
+        ChatAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        'CHAT_COLLECTOR_CONNECTION',
+      ],
+    },
+    ChatAccountDeletionOwnerService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: ClientProxy) =>
+        new AccountDeletionAuthorityClient(auth),
+      inject: ['CHAT_COLLECTOR_AUTH_PROXY'],
+    },
     AppService,
     AccountExportOwnerSpoolService,
     {

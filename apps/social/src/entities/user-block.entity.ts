@@ -3,11 +3,14 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  Unique,
+  Index,
 } from 'typeorm';
 
 @Entity()
-@Unique(['blockerId', 'blockedId'])
+@Index(['blockerId', 'blockedId'], {
+  unique: true,
+  where: '"blockedId" <> \'00000000-0000-0000-0000-000000000000\'',
+})
 export class UserBlock {
   @PrimaryGeneratedColumn('uuid')
   id: string;

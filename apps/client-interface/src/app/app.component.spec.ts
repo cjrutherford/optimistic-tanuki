@@ -114,6 +114,7 @@ describe('AppComponent', () => {
           provide: SocketChatService,
           useValue: {
             sendMessage: jest.fn(),
+            destroy: jest.fn(),
             onMessage: jest.fn(),
           },
         },
@@ -253,7 +254,11 @@ describe('AppComponent behaviour', () => {
   };
   let profileService: { getCurrentUserProfile: jest.Mock };
   let chatService: { getConversations: jest.Mock; startDirectChat: jest.Mock };
-  let socketChatService: { sendMessage: jest.Mock; onMessage: jest.Mock };
+  let socketChatService: {
+    destroy: jest.Mock;
+    sendMessage: jest.Mock;
+    onMessage: jest.Mock;
+  };
   let notificationService: {
     notifications: jest.Mock;
     unreadCount: jest.Mock;
@@ -290,6 +295,7 @@ describe('AppComponent behaviour', () => {
       startDirectChat: jest.fn(),
     };
     socketChatService = {
+      destroy: jest.fn(),
       sendMessage: jest.fn(),
       onMessage: jest.fn((cb: (message: unknown) => void) => {
         onMessage = cb;
@@ -619,6 +625,25 @@ describe('AppComponent behaviour', () => {
       app.toggleChat();
       expect(app.showChat()).toBe(false);
       expect(chatService.getConversations).not.toHaveBeenCalled();
+    });
+
+    it('clears session views and rejects a chat load that completes after account invalidation', async () => {
+      let resolve!: (value: any[]) => void;
+      chatService.getConversations.mockReturnValue(
+        new Promise<any[]>((r) => {
+          resolve = r;
+        })
+      );
+      app.chatContacts = [{ id: 'private', name: 'private' }];
+      app.showChat.set(true);
+      const work = app.loadChatData();
+      app.clearSessionViews();
+      resolve([conversation('old', [])]);
+      await work;
+      expect(app.chatContacts).toEqual([]);
+      expect(app.chatConversations).toEqual([]);
+      expect(app.selectedProfile()).toBeNull();
+      expect(app.showChat()).toBe(false);
     });
 
     it('does nothing without a current profile', async () => {

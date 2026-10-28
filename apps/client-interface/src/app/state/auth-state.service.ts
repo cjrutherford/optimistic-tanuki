@@ -1,3 +1,4 @@
+import { watchAuthenticatedActivity } from '@optimistic-tanuki/common-ui';
 import { DestroyRef, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 import { AuthenticationService } from '../authentication.service';
@@ -11,6 +12,7 @@ import { isPlatformBrowser } from '@angular/common';
 import {
   clearOwnedBrowserSessionKeys,
   notifyBrowserSessionReset,
+  watchAccountDeletion,
   watchBrowserSessionBoundary,
   publishBrowserSessionBoundary,
   SessionGeneration,
@@ -76,6 +78,20 @@ export class AuthStateService {
     this.decodedToken$ = this.decodedTokenSubject.asObservable();
     this.currentProfile$ = this.currentProfileSubject.asObservable();
 
+    const stopDeletion = watchAccountDeletion(
+      () => this.decodedTokenSubject.value?.userId,
+      () => {
+        this.sessionGeneration.invalidate();
+        this.inflightRestore = undefined;
+        this.clearClientSession();
+      }
+    );
+    inject(DestroyRef).onDestroy(stopDeletion);
+    const stopActivity = watchAuthenticatedActivity(
+      () => this.isAuthenticated,
+      () => this.restoreSession()
+    );
+    inject(DestroyRef).onDestroy(stopActivity);
     void this.restoreSession();
   }
 

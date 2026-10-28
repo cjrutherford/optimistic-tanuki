@@ -350,4 +350,16 @@ describe('ProfileAccountExportSnapshotService', () => {
     expect(registry.entries.size).toBe(0);
     expect(registry.reservedBytes).toBe(0);
   });
+  it('purges all actual account spools, denies old reads and prevents later account opens', async () => {
+    const one = await service.open(grant);
+    await service.open(grant);
+    expect(await service.purgeAccount(ACCOUNT_ID)).toEqual({ remaining: 0 });
+    await expect(
+      service.read({ ...grant, handleId: one.handleId, offset: 0, length: 1 })
+    ).rejects.toBeDefined();
+    await expect(service.open(grant)).rejects.toMatchObject({
+      code: 'OWNER_ACCOUNT_PURGED',
+    });
+    expect(await service.purgeAccount(ACCOUNT_ID)).toEqual({ remaining: 0 });
+  });
 });

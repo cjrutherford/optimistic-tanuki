@@ -16,83 +16,84 @@ import {
   LEMON_SQUEEZY_FLAT_FEE,
 } from '@optimistic-tanuki/payment-fees';
 
+import { ModalComponent } from '@optimistic-tanuki/common-ui';
+
 @Component({
   selector: 'app-make-offer-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ModalComponent],
   template: `
-    <div class="modal-overlay" (click)="onClose()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3>Make an Offer</h3>
-          <button class="close-btn" (click)="onClose()" aria-label="Close">
-            &times;
-          </button>
-        </div>
+    <otui-modal
+      [visible]="true"
+      heading="Make an Offer"
+      ariaDescribedBy="make-offer-description"
+      [closable]="!loading()"
+      [closeOnEscape]="!loading()"
+      [closeOnBackdrop]="!loading()"
+      (close)="onClose()"
+    >
+      <div class="modal-body">
+        <p class="listing-info">
+          Offer for: <strong>{{ listingTitle }}</strong>
+        </p>
+        <p class="asking-price">
+          Asking price: <strong>\${{ askingPrice }}</strong>
+        </p>
 
-        <div class="modal-body">
-          <p class="listing-info">
-            Offer for: <strong>{{ listingTitle }}</strong>
-          </p>
-          <p class="asking-price">
-            Asking price: <strong>\${{ askingPrice }}</strong>
-          </p>
-
-          <div class="form-group">
-            <label for="offerAmount">Your Offer *</label>
-            <div class="input-wrapper">
-              <span class="currency">$</span>
-              <input
-                type="number"
-                id="offerAmount"
-                [(ngModel)]="offerAmount"
-                placeholder="Enter amount"
-                min="1"
-                step="0.01"
-                [disabled]="loading()"
-              />
-            </div>
-            <p class="fee-notice" *ngIf="offerAmount && offerAmount > 0">
-              Platform fee (10% + $0.50):
-              <strong>\${{ getTotalFee() | number : '1.2-2' }}</strong
-              ><br />
-              Seller receives:
-              <strong>\${{ getSellerReceives() | number : '1.2-2' }}</strong>
-            </p>
-          </div>
-
-          <div class="form-group">
-            <label for="message">Message (optional)</label>
-            <textarea
-              id="message"
-              [(ngModel)]="message"
-              placeholder="Add a message to the seller..."
-              rows="3"
+        <div class="form-group">
+          <label for="offerAmount">Your Offer *</label>
+          <div class="input-wrapper">
+            <span class="currency">$</span>
+            <input
+              type="number"
+              id="offerAmount"
+              [(ngModel)]="offerAmount"
+              placeholder="Enter amount"
+              min="1"
+              step="0.01"
               [disabled]="loading()"
-            ></textarea>
+            />
           </div>
-
-          <p class="error" *ngIf="error()">{{ error() }}</p>
+          <p class="fee-notice" *ngIf="offerAmount && offerAmount > 0">
+            Platform fee (10% + $0.50):
+            <strong>\${{ getTotalFee() | number : '1.2-2' }}</strong
+            ><br />
+            Seller receives:
+            <strong>\${{ getSellerReceives() | number : '1.2-2' }}</strong>
+          </p>
         </div>
 
-        <div class="modal-footer">
-          <button
-            class="btn-secondary"
-            (click)="onClose()"
+        <div class="form-group">
+          <label for="message">Message (optional)</label>
+          <textarea
+            id="message"
+            [(ngModel)]="message"
+            placeholder="Add a message to the seller..."
+            rows="3"
             [disabled]="loading()"
-          >
-            Cancel
-          </button>
-          <button
-            class="btn-primary"
-            (click)="onSubmit()"
-            [disabled]="loading() || !offerAmount || offerAmount <= 0"
-          >
-            {{ loading() ? 'Submitting...' : 'Submit Offer' }}
-          </button>
+          ></textarea>
         </div>
+
+        <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
       </div>
-    </div>
+
+      <div class="modal-footer" modal-footer>
+        <button
+          class="btn-secondary"
+          (click)="onClose()"
+          [disabled]="loading()"
+        >
+          Cancel
+        </button>
+        <button
+          class="btn-primary"
+          (click)="onSubmit()"
+          [disabled]="loading() || !offerAmount || offerAmount <= 0"
+        >
+          {{ loading() ? 'Submitting...' : 'Submit Offer' }}
+        </button>
+      </div>
+    </otui-modal>
   `,
   styles: [
     `

@@ -76,6 +76,22 @@ describe('AuthStateService', () => {
       eligibility.mockRestore();
     });
 
+    it('clears deleted-account state locally without making a logout request with a newer cookie', async () => {
+      const service = configure('browser');
+      const accountId = '41000000-0000-4000-8000-000000000001';
+      httpMock
+        .expectOne(SESSION_URL)
+        .flush({ data: { ...USER, userId: accountId } });
+      await service.restoreSession();
+      localStorage.setItem('theme', 'keep');
+      CommonUi.notifyAccountDeletion('41000000-0000-4000-8000-000000000002');
+      expect(service.isAuthenticated).toBe(true);
+      CommonUi.notifyAccountDeletion(accountId);
+      expect(service.isAuthenticated).toBe(false);
+      expect(localStorage.getItem('theme')).toBe('keep');
+      httpMock.expectNone(LOGOUT_URL);
+    });
+
     it('restores the session on construction and marks the user authenticated', async () => {
       const service = configure('browser');
 

@@ -218,4 +218,45 @@ describe('AccountExportDownloadService', () => {
       })
     ).rejects.toBeInstanceOf(RpcException);
   });
+  it('drains a pending read without returning bytes after account purge', async () => {
+    const opened = await service.open(request);
+    let release!: (value: Buffer) => void;
+    let entered!: () => void;
+    const started = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    (handle.readChunk as jest.Mock).mockImplementationOnce(async () => {
+      entered();
+      return new Promise<Buffer>((resolve) => {
+        release = resolve;
+      });
+    });
+    const read = service.read({
+      ...request,
+      downloadId: opened.downloadId,
+      offset: 0,
+      length: 1,
+    });
+    const denied = expect(read).rejects.toBeInstanceOf(RpcException);
+    await started;
+    const purge = (service as any).purgeAccount(ACCOUNT);
+    release(Buffer.from('x'));
+    await denied;
+    await purge;
+    expect(await (service as any).readbackAccount(ACCOUNT)).toBe(0);
+    await expect(service.open(request)).rejects.toBeInstanceOf(RpcException);
+  });
+  it('retains a failed cleanup of an unpublished open for account retry', async () => {
+    (auth.validateToken as jest.Mock)
+      .mockResolvedValueOnce({
+        isValid: true,
+        data: { userId: ACCOUNT, appId: 'client-interface' },
+      })
+      .mockResolvedValueOnce({ isValid: false });
+    (handle.cleanup as jest.Mock).mockRejectedValueOnce(Error('CLOSE_FAILED'));
+    await expect(service.open(request)).rejects.toThrow();
+    await (service as any).purgeAccount(ACCOUNT);
+    expect(await (service as any).readbackAccount(ACCOUNT)).toBe(0);
+    expect(handle.cleanup).toHaveBeenCalledTimes(2);
+  });
 });

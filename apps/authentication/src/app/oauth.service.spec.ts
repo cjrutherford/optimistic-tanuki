@@ -11,6 +11,7 @@ import { TokenEntity } from '../tokens/entities/token.entity';
 import { OAuthConfigValidator } from './oauth-config.validator';
 import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { AccountDeletionFenceService } from '../account-deletion/account-deletion-fence.service';
 
 describe('OAuthService', () => {
   let service: OAuthService;
@@ -23,6 +24,7 @@ describe('OAuthService', () => {
   let transaction: jest.Mock;
   let transactionOAuthRepo: Record<string, jest.Mock>;
   let transactionUserRepo: Record<string, jest.Mock>;
+  let accountDeletionFence: { assertActiveAccount: jest.Mock };
 
   beforeEach(async () => {
     transactionOAuthRepo = {
@@ -41,6 +43,9 @@ describe('OAuthService', () => {
       resolveSelection: jest.fn((_accountId, selectedProfile) =>
         Promise.resolve(selectedProfile || undefined)
       ),
+    };
+    accountDeletionFence = {
+      assertActiveAccount: jest.fn().mockResolvedValue(undefined),
     };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -97,6 +102,10 @@ describe('OAuthService', () => {
           provide: ProfileOwnershipVerifier,
           useValue: profileOwnershipVerifier,
         },
+        {
+          provide: AccountDeletionFenceService,
+          useValue: accountDeletionFence,
+        },
       ],
     }).compile();
 
@@ -109,6 +118,22 @@ describe('OAuthService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  it('does not link or mint a token for a fenced existing OAuth account', async () => {
+    (oauthRepo.findOne as jest.Mock).mockResolvedValue({
+      provider: 'google',
+      providerUserId: 'google-123',
+      user: { id: 'user-1', emailVerifiedAt: new Date() },
+    });
+    const denied = new RpcException('ACCOUNT_DELETION_FENCED');
+    accountDeletionFence.assertActiveAccount.mockRejectedValue(denied);
+
+    await expect(
+      service.oauthLogin('google', 'google-123', 'person@example.com', 'Pat')
+    ).rejects.toBe(denied);
+    expect(oauthRepo.save).not.toHaveBeenCalled();
+    expect(tokenRepo.save).not.toHaveBeenCalled();
   });
 
   describe('oauthLogin', () => {

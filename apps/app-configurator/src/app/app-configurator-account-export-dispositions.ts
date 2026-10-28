@@ -70,6 +70,12 @@ export function validateAppConfiguratorDispositions(
         /^[A-Za-z0-9._/-]+$/.test(path)
     );
   const expected: Record<string, string[]> = {
+    AccountDeletionWriteFenceEntity: [
+      'key',
+      'kind',
+      'operationId',
+      'installedAt',
+    ],
     AppConfigurationEntity: [
       'id',
       'name',
@@ -115,9 +121,12 @@ export function validateAppConfiguratorDispositions(
       'updatedAt',
     ],
   };
-  if (raw.length !== 3)
-    errors.push('registered entities must contain exactly three entities');
+  if (raw.length !== 4)
+    errors.push(
+      'registered entities must contain three content entities and their operational fence'
+    );
   const entityNames = [
+    'AccountDeletionWriteFenceEntity',
     'AppConfigurationEntity',
     'AppInstanceEntity',
     'AppMembershipEntity',
@@ -247,6 +256,18 @@ export function validateAppConfiguratorDispositions(
     AppMembershipEntity: ['userId', 'profileId'],
   };
   for (const entity of policy.entities) {
+    if (entity.name === 'AccountDeletionWriteFenceEntity') {
+      if (
+        entity.subject?.kind !== 'none' ||
+        entity.subject.fields.length ||
+        entity.columns.some(
+          (g: any) =>
+            g.action !== 'exclude' || g.classification !== 'nonpersonal'
+        )
+      )
+        errors.push('operational fence must be excluded');
+      continue;
+    }
     const entityRelations = Array.isArray(entity.relations)
       ? entity.relations
       : [];

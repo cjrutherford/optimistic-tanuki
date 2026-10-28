@@ -288,11 +288,12 @@ export class AuthenticationAccountExportOwnerService {
       }> = [
         {
           source: 'session',
-          sql: `SELECT "id", "userId", "revoked" FROM "token" WHERE "userId" = $1 AND ($2::uuid IS NULL OR "id" > $2::uuid) ORDER BY "id" LIMIT $3`,
+          sql: `SELECT "id", "userId", "revoked", "lastActivityAt" FROM "token" WHERE "userId" = $1 AND ($2::uuid IS NULL OR "id" > $2::uuid) ORDER BY "id" LIMIT $3`,
           ownerField: 'userId',
           map: (row) => ({
             id: row.id,
             revoked: this.booleanValue(row.revoked, 'revoked'),
+            lastActivityAt: this.dateValue(row.lastActivityAt),
           }),
         },
         {

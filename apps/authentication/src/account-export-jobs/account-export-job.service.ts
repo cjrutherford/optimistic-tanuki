@@ -19,7 +19,7 @@ import {
   evaluateAccountExportReleaseCoverage,
 } from '@optimistic-tanuki/models';
 import { DataSource, Repository } from 'typeorm';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import validator from 'validator';
 import { AppService } from '../app/app.service';
 import { TokenEntity } from '../tokens/entities/token.entity';
@@ -62,6 +62,8 @@ export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
   private closing = false;
   private activeLaunches = 0;
   private readonly background = new Set<Promise<void>>();
+  private readonly deletedAccounts = new Set<string>();
+  private readonly accountWork = new Map<string, Set<Promise<unknown>>>();
   constructor(
     @Inject(getRepositoryToken(AccountExportJobEntity))
     private readonly jobs: Repository<AccountExportJobEntity>,
@@ -145,6 +147,17 @@ export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
     return this.releaseScope(input.appId)
       ? this.launch(input, result.row)
       : this.run(input, result.row);
+  }
+
+  async latest(request: unknown): Promise<AccountExportJobStatus | null> {
+    const input = this.validate(request, false);
+    await this.authorize(input.accountId, input.token, input.appId);
+    const row = await this.jobs.findOne({
+      where: { accountId: input.accountId, appId: input.appId, kind: 'export' },
+      order: { createdAt: 'DESC', id: 'DESC' },
+    });
+    await this.authorize(input.accountId, input.token, input.appId);
+    return row ? this.status(row) : null;
   }
 
   async get(request: unknown): Promise<AccountExportJobStatus> {
@@ -363,7 +376,87 @@ export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
     await this.finish(claim, 'failed', summary, code);
   }
 
-  private async launch(
+  private accountKey(accountId: string): string {
+    return createHash('sha256')
+      .update('ot:export-work:' + accountId.toLowerCase())
+      .digest('hex');
+  }
+  private async trackAccount<T>(
+    accountId: string,
+    task: () => Promise<T>
+  ): Promise<T> {
+    const key = this.accountKey(accountId);
+    if (this.deletedAccounts.has(key))
+      this.raise(
+        403,
+        'EXPORT_ACCOUNT_DELETION_FENCED',
+        'Export account is unavailable'
+      );
+    const work = task();
+    const pending = this.accountWork.get(key) ?? new Set<Promise<unknown>>();
+    pending.add(work);
+    this.accountWork.set(key, pending);
+    try {
+      return await work;
+    } finally {
+      pending.delete(work);
+      if (!pending.size) this.accountWork.delete(key);
+    }
+  }
+  private launch(
+    input: ReturnType<AccountExportJobService['validate']>,
+    row: AccountExportJobEntity
+  ): Promise<AccountExportJobStatus> {
+    return this.trackAccount(input.accountId, () =>
+      this.launchCurrent(input, row)
+    );
+  }
+  private run(
+    input: ReturnType<AccountExportJobService['validate']>,
+    row: AccountExportJobEntity,
+    claim?: AccountExportJobEntity
+  ): Promise<AccountExportJobStatus> {
+    return this.trackAccount(input.accountId, () =>
+      this.runCurrent(input, row, claim)
+    );
+  }
+  async purgeAccount(accountId: string): Promise<{ remaining: 0 }> {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        accountId
+      )
+    )
+      throw Error('EXPORT_DELETION_ACCOUNT_INVALID');
+    const key = this.accountKey(accountId);
+    if (!this.deletedAccounts.has(key) && this.deletedAccounts.size >= 10000)
+      throw Error('EXPORT_DELETION_BOUND');
+    this.deletedAccounts.add(key);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        Promise.allSettled([...(this.accountWork.get(key) ?? [])]),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(Error('EXPORT_DELETION_DRAIN_TIMEOUT')),
+            56000
+          );
+        }),
+      ]);
+      if ((await this.readbackAccount(accountId)) !== 0)
+        throw Error('EXPORT_DELETION_READBACK');
+      return { remaining: 0 };
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+  async readbackAccount(accountId: string): Promise<number> {
+    const key = this.accountKey(accountId);
+    if (!this.deletedAccounts.has(key))
+      throw Error('EXPORT_DELETION_FENCE_REQUIRED');
+    return this.accountWork.get(key)?.size ?? 0;
+  }
+
+  private async launchCurrent(
     input: ReturnType<AccountExportJobService['validate']>,
     row: AccountExportJobEntity
   ): Promise<AccountExportJobStatus> {
@@ -432,7 +525,7 @@ export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async run(
+  private async runCurrent(
     input: ReturnType<AccountExportJobService['validate']>,
     row: AccountExportJobEntity,
     ownedClaim?: AccountExportJobEntity
@@ -459,7 +552,10 @@ export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
     let leaseLost = false;
     let preparedArtifact: ArtifactDescriptor | undefined;
     const renew = async () => {
-      const current = !this.closing && (await this.renewLease(claimed));
+      const current =
+        !this.closing &&
+        !this.deletedAccounts.has(this.accountKey(input.accountId)) &&
+        (await this.renewLease(claimed));
       if (!current) leaseLost = true;
       return current;
     };

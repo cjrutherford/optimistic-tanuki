@@ -41,7 +41,8 @@ describe('OAuth callback session references', () => {
       {} as never,
       {} as never,
       {} as never,
-      ownership as never
+      ownership as never,
+      { assertActiveAccount: jest.fn().mockResolvedValue(undefined) } as never
     );
     jest.spyOn(service, 'issueToken').mockResolvedValue({
       message: 'Issued token',

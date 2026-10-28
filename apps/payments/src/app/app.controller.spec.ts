@@ -5,6 +5,8 @@ import { AppController } from './app.controller';
 describe('AppController classified payment read handlers', () => {
   const paymentService = {
     getPayment: jest.fn(),
+    confirmOutOfPlatformPayment: jest.fn(),
+    releaseFunds: jest.fn(),
   };
   const offerService = {
     getOffersForClassified: jest.fn(),
@@ -105,6 +107,63 @@ describe('AppController classified payment read handlers', () => {
       });
     }
   });
+
+  it('preserves a classified service denial received as a serialized RPC error', async () => {
+    offerService.acceptOffer.mockRejectedValue({
+      statusCode: 404,
+      message: 'Private classified unavailable',
+    });
+    await expect(
+      controller.acceptOffer({ offerId: 'offer-1', sellerId: 'stranger' })
+    ).rejects.toBeInstanceOf(RpcException);
+    try {
+      await controller.acceptOffer({
+        offerId: 'offer-1',
+        sellerId: 'stranger',
+      });
+    } catch (error) {
+      expect((error as RpcException).getError()).toEqual({
+        statusCode: 404,
+        message: 'Offer or classified not found',
+      });
+    }
+  });
+  it('keeps serialized private-listing denial opaque on payment readback', async () => {
+    paymentService.getPayment.mockRejectedValue({
+      statusCode: 404,
+      message: 'Private classified unavailable',
+    });
+    try {
+      await controller.getPayment({
+        paymentId: 'payment-1',
+        userId: 'stranger',
+      });
+    } catch (error) {
+      expect(error).toBeInstanceOf(RpcException);
+      expect((error as RpcException).getError()).toEqual({
+        statusCode: 404,
+        message: 'Payment not found',
+      });
+    }
+  });
+
+  it.each(['confirmOutOfPlatformPayment', 'releaseFunds'] as const)(
+    'preserves local payment %s state rejection',
+    async (method) => {
+      paymentService[method].mockRejectedValue(
+        new BadRequestException('Payment state cannot change')
+      );
+      try {
+        await controller[method]({ paymentId: 'payment-1', userId: 'buyer-1' });
+      } catch (error) {
+        expect(error).toBeInstanceOf(RpcException);
+        expect((error as RpcException).getError()).toEqual({
+          statusCode: 400,
+          message: 'Payment state cannot change',
+        });
+      }
+    }
+  );
 
   it('does not forward a client-supplied seller to CREATE_OFFER', async () => {
     await controller.createOffer({

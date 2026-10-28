@@ -1,3 +1,5 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import 'reflect-metadata';
 import { writeFileSync } from 'node:fs';
 import { DataSource } from 'typeorm';
@@ -41,6 +43,7 @@ describePrivate('O02 App Configurator migrated physical catalog', () => {
         AppConfigurationEntity,
         AppInstanceEntity,
         AppMembershipEntity,
+        AccountDeletionWriteFenceEntity,
       ],
       synchronize: false,
       migrationsRun: false,
@@ -90,7 +93,7 @@ describePrivate('O02 App Configurator migrated physical catalog', () => {
       'app_memberships',
       'migrations',
     ]);
-    expect(source.entityMetadatas).toHaveLength(3);
+    expect(source.entityMetadatas).toHaveLength(4);
     const foreignKeys = await source.query(
       `SELECT c.conrelid::regclass::text AS "table",c.confrelid::regclass::text AS parent,array_agg(a.attname::text ORDER BY k.ordinality) AS columns,array_agg(b.attname::text ORDER BY k.ordinality) AS "parentColumns" FROM pg_constraint c JOIN pg_namespace n ON n.oid=c.connamespace JOIN LATERAL unnest(c.conkey,c.confkey) WITH ORDINALITY AS k(child,parent,ordinality) ON true JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=k.child JOIN pg_attribute b ON b.attrelid=c.confrelid AND b.attnum=k.parent WHERE n.nspname='public' AND c.contype='f' GROUP BY c.oid,c.conrelid,c.confrelid ORDER BY c.conrelid::regclass::text`
     );
@@ -116,7 +119,7 @@ describePrivate('O02 App Configurator migrated physical catalog', () => {
         {
           result: 'PASS',
           readOnly: true,
-          entities: 3,
+          entities: 4,
           physicalTables: catalog,
           foreignKeys,
           countsBefore: before,

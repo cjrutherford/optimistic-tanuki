@@ -1,3 +1,4 @@
+import { deletionProfiles, cacheKeySelected } from './cache-deletion';
 import { Injectable, Logger } from '@nestjs/common';
 import { ICacheProvider, CacheStats } from './cache-provider.interface';
 import * as fs from 'fs/promises';
@@ -22,6 +23,7 @@ export class FileCacheProvider implements ICacheProvider {
   private readonly maxCacheSize: number;
   private hits = 0;
   private misses = 0;
+  private readonly ready: Promise<void>;
   private cacheIndex: Map<string, string> = new Map(); // key -> filename mapping
 
   constructor(
@@ -32,7 +34,7 @@ export class FileCacheProvider implements ICacheProvider {
     this.cacheDir = cacheDir;
     this.cacheTTL = ttl;
     this.maxCacheSize = maxSize;
-    this.initCacheDir();
+    this.ready = this.initCacheDir();
     this.logger.log(
       `FileCacheProvider initialized with dir=${cacheDir}, TTL=${ttl}ms, maxSize=${maxSize}`
     );
@@ -69,6 +71,58 @@ export class FileCacheProvider implements ICacheProvider {
     } catch (error) {
       this.logger.error(`Failed to build cache index: ${error.message}`);
     }
+  }
+
+  private async deletionInventory(profileIds: readonly string[]) {
+    const profiles = deletionProfiles(profileIds);
+    await this.ready;
+    const root = await fs.lstat(this.cacheDir);
+    if (
+      !root.isDirectory() ||
+      root.isSymbolicLink() ||
+      (await fs.realpath(this.cacheDir)) !== path.resolve(this.cacheDir)
+    )
+      throw Error('PERMISSION_CACHE_CUSTODY_INVALID');
+    const selected = new Map<string, string>();
+    const dir = await fs.opendir(this.cacheDir);
+    let count = 0;
+    try {
+      for await (const entry of dir) {
+        if (++count > 10000) throw Error('PERMISSION_CACHE_BOUND');
+        if (
+          !/^(?:[0-9a-f]{2}){1,2048}\.json$/.test(entry.name) ||
+          !entry.isFile()
+        )
+          throw Error('PERMISSION_CACHE_CUSTODY_INVALID');
+        const key = Buffer.from(entry.name.slice(0, -5), 'hex').toString(
+          'utf8'
+        );
+        if (Buffer.from(key).toString('hex') + '.json' !== entry.name)
+          throw Error('PERMISSION_CACHE_CUSTODY_INVALID');
+        if (cacheKeySelected(key, profiles)) selected.set(key, entry.name);
+      }
+    } finally {
+      await dir.close().catch((error) => {
+        if (error.code !== 'ERR_DIR_CLOSED') throw error;
+      });
+    }
+    if (this.cacheIndex.size > 10000) throw Error('PERMISSION_CACHE_BOUND');
+    for (const [key, name] of this.cacheIndex)
+      if (cacheKeySelected(key, profiles)) selected.set(key, name);
+    return selected;
+  }
+  async purgeProfiles(profileIds: readonly string[]): Promise<void> {
+    for (const [key, name] of await this.deletionInventory(profileIds)) {
+      try {
+        await fs.unlink(path.join(this.cacheDir, name));
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      }
+      this.cacheIndex.delete(key);
+    }
+  }
+  async countProfiles(profileIds: readonly string[]): Promise<number> {
+    return (await this.deletionInventory(profileIds)).size;
   }
 
   private getFilePath(key: string): string {

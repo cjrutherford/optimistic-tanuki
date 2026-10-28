@@ -862,7 +862,8 @@ describe('ClassifiedDetailComponent behaviour', () => {
         (offer: Offer) => component.onAcceptOffer(offer),
         () => paymentServiceMock.acceptOffer,
         {
-          content: 'Offer accepted! Payment has been initiated.',
+          content:
+            'Offer accepted. Card payment is pending and has not been processed.',
           type: 'success',
         },
       ],

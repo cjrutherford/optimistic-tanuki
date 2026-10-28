@@ -160,4 +160,21 @@ describe('LocalHub MessagesComponent', () => {
       'reply from local hub'
     );
   });
+  it('clears loaded conversation content at the session reset boundary', () => {
+    component.chatContacts.set([{ id: 'private', name: 'private' }]);
+    component.chatConversations.set([
+      {
+        id: 'private',
+        participants: ['self-profile'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    component.clearSessionViews();
+    expect(component.currentProfileId).toBeNull();
+    expect(component.chatContacts()).toEqual([]);
+    expect(component.chatConversations()).toEqual([]);
+    expect(socketChatServiceMock.destroy).toHaveBeenCalled();
+  });
 });

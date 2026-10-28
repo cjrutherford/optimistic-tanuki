@@ -27,7 +27,6 @@ export class GuardianPolicyNoticeService
 {
   private readonly logger = new Logger(GuardianPolicyNoticeService.name);
   private deliveryTimer?: ReturnType<typeof setInterval>;
-  private cleanupTimer?: ReturnType<typeof setInterval>;
   private stopping = false;
   private readonly activeDeliveries = new Set<Promise<number>>();
 
@@ -46,20 +45,13 @@ export class GuardianPolicyNoticeService
       () => void this.runDeliverySafely(),
       30_000
     );
-    this.cleanupTimer = setInterval(
-      () => void this.runCleanupSafely(),
-      60 * 60 * 1000
-    );
     this.deliveryTimer.unref?.();
-    this.cleanupTimer.unref?.();
     void this.runDeliverySafely();
-    void this.runCleanupSafely();
   }
 
   async onModuleDestroy(): Promise<void> {
     this.stopping = true;
     if (this.deliveryTimer) clearInterval(this.deliveryTimer);
-    if (this.cleanupTimer) clearInterval(this.cleanupTimer);
     await Promise.allSettled([...this.activeDeliveries]);
   }
 
@@ -380,14 +372,6 @@ export class GuardianPolicyNoticeService
       await this.deliverDueNotices();
     } catch {
       this.logger.error('Guardian policy notice delivery pass failed');
-    }
-  }
-
-  private async runCleanupSafely(): Promise<void> {
-    try {
-      await this.cleanupExpiredNotices();
-    } catch {
-      this.logger.error('Guardian policy notice retention cleanup failed');
     }
   }
 

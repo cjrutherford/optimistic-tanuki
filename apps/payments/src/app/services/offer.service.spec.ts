@@ -116,6 +116,35 @@ function createService(
 describe('OfferService classified offer authorization', () => {
   const competingOffer = buildOffer({ id: 'offer-2', buyerId: 'buyer-2' });
 
+  it.each([-1, 0, 0.01, NaN, Infinity, 100000000])(
+    'rejects an unsafe offer amount %s before persistence',
+    async (amount) => {
+      const { service, offerRepository } = createService([]);
+      await expect(
+        service.createOffer({
+          classifiedId: 'classified-1',
+          buyerId: 'buyer-1',
+          amount,
+        })
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(offerRepository.save).not.toHaveBeenCalled();
+    }
+  );
+  it('rejects unsafe persisted and countered amounts before creating payment or changing the offer', async () => {
+    const offer = buildOffer({ offeredAmount: -10 });
+    const { service, offerRepository, classifiedPaymentRepository } =
+      createService([offer]);
+    offerRepository.findOne.mockResolvedValue(offer as never);
+    await expect(
+      service.acceptOffer(offer.id, 'seller-1')
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.counterOffer(offer.id, 'seller-1', { counterAmount: 0.01 })
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(classifiedPaymentRepository.save).not.toHaveBeenCalled();
+    expect(offer.status).toBe('pending');
+  });
+
   it('derives an offer seller from the classified rather than the caller payload', async () => {
     const { service, offerRepository, classifiedsClient } = createService([]);
 

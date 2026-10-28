@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import {
   EmailService,
@@ -21,6 +22,46 @@ import type { AppRegistry } from '@optimistic-tanuki/app-registry-backend';
  */
 @Injectable()
 export class CommunityInviteMailer {
+  private readonly deleted = new Set<string>();
+  private readonly pending = new Map<Promise<void>, readonly string[]>();
+  private accountKey(accountId: string): string {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        accountId
+      )
+    )
+      throw Error('INVITATION_ACCOUNT_INVALID');
+    return createHash('sha256').update(accountId.toLowerCase()).digest('hex');
+  }
+  async purgeAccount(accountId: string): Promise<void> {
+    const key = this.accountKey(accountId);
+    this.deleted.add(key);
+    const work = [...this.pending]
+      .filter(([, keys]) => keys.includes(key))
+      .map(([promise]) => promise);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        Promise.allSettled(work),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(Error('INVITATION_DRAIN_TIMEOUT')),
+            56000
+          );
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+    if (this.readbackAccount(accountId) !== 0)
+      throw Error('INVITATION_DRAIN_UNVERIFIED');
+  }
+  readbackAccount(accountId: string): number {
+    const key = this.accountKey(accountId);
+    if (!this.deleted.has(key)) throw Error('INVITATION_ACCOUNT_NOT_FENCED');
+    return [...this.pending.values()].filter((keys) => keys.includes(key))
+      .length;
+  }
   private readonly logger = new Logger(CommunityInviteMailer.name);
 
   constructor(
@@ -38,6 +79,36 @@ export class CommunityInviteMailer {
    * thing that matters to protect the thing that does not.
    */
   async send(invite: {
+    actorAccountId: string;
+    recipientAccountId?: string;
+    email: string;
+    token: string;
+    communityName?: string;
+    invitedByName?: string;
+    appScope?: string;
+  }): Promise<void> {
+    // Best-effort delivery still fails closed on missing or deleted attribution.
+    let keys: string[];
+    try {
+      keys = [this.accountKey(invite.actorAccountId)];
+      if (invite.recipientAccountId)
+        keys.push(this.accountKey(invite.recipientAccountId));
+    } catch {
+      return;
+    }
+    if (keys.some((key) => this.deleted.has(key))) return;
+    const work = Promise.resolve().then(async () => {
+      if (keys.some((key) => this.deleted.has(key))) return;
+      await this.sendCurrent(invite);
+    });
+    this.pending.set(work, keys);
+    try {
+      await work;
+    } finally {
+      this.pending.delete(work);
+    }
+  }
+  private async sendCurrent(invite: {
     email: string;
     token: string;
     communityName?: string;

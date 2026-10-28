@@ -218,6 +218,28 @@
           ]
         }
       ]
+    },
+    {
+      "name": "AccountDeletionWriteFenceEntity",
+      "table": "account_deletion_write_fence",
+      "source": "libs/storage/src/lib/account-deletion-write-fence.ts",
+      "subject": {
+        "kind": "none",
+        "fields": [],
+        "rule": "Operational deletion producer fence, excluded from portable content.",
+        "evidence": ["libs/storage/src/lib/account-deletion-write-fence.ts"]
+      },
+      "columns": [
+        {
+          "fields": ["key", "kind", "operationId", "installedAt"],
+          "classification": "nonpersonal",
+          "action": "exclude",
+          "handling": "Exclude operational hashes, operation references and timestamps.",
+          "reason": "Permanent enforcement state is not portable personal content.",
+          "evidence": ["libs/storage/src/lib/account-deletion-write-fence.ts"]
+        }
+      ],
+      "relations": []
     }
   ],
   "associations": [],

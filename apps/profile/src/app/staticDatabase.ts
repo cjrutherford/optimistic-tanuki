@@ -1,3 +1,4 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import * as yaml from 'js-yaml';
 
 import { DataSource } from 'typeorm';
@@ -29,7 +30,12 @@ const password = process.env.POSTGRES_PASSWORD || configPassword;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [Profile, Timeline, GuardianProfileActivity];
+const entities = [
+  Profile,
+  Timeline,
+  GuardianProfileActivity,
+  AccountDeletionWriteFenceEntity,
+];
 
 const staticSource = new DataSource({
   type: 'postgres',

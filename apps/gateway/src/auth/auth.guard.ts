@@ -1,3 +1,5 @@
+import { verifySessionToken, sessionCookieOptions } from './session-policy';
+import { isRollingSessionApp } from '@optimistic-tanuki/models';
 import {
   CanActivate,
   ForbiddenException,
@@ -85,16 +87,25 @@ export class AuthGuard implements CanActivate {
     token: string,
     userId: string,
     appId?: string
-  ): Promise<{ isValid: boolean; emailVerified: boolean }> {
+  ): Promise<{
+    isValid: boolean;
+    emailVerified: boolean;
+    sessionExpiresAt?: string;
+  }> {
     const response = (await firstValueFrom(
       this.authService.send(
         { cmd: AuthCommands.Validate },
-        { token, userId, appId }
+        { token, userId, appId, activity: true }
       )
-    )) as { isValid?: boolean; emailVerified?: boolean };
+    )) as {
+      isValid?: boolean;
+      emailVerified?: boolean;
+      sessionExpiresAt?: string;
+    };
     return {
       isValid: Boolean(response?.isValid),
       emailVerified: response?.emailVerified === true,
+      sessionExpiresAt: response?.sessionExpiresAt,
     };
   }
 
@@ -143,7 +154,7 @@ export class AuthGuard implements CanActivate {
   }
 
   async parseToken(token: string): Promise<UserDetails> {
-    return await this.jwt.verifyAsync<UserDetails>(token);
+    return await verifySessionToken<UserDetails>(this.jwt, token);
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -171,7 +182,10 @@ export class AuthGuard implements CanActivate {
     // can influence membership-aware responses.
     if (credential) {
       try {
-        const user = await this.jwt.verifyAsync<UserDetails>(credential);
+        const user = await verifySessionToken<UserDetails>(
+          this.jwt,
+          credential
+        );
         const origin = request.headers?.origin;
         const hostAppId = this.registeredHostAppId(request.headers?.host);
         const originAppId = this.requestAppId(request);
@@ -212,6 +226,7 @@ export class AuthGuard implements CanActivate {
           roles: [],
         };
         userContext.emailVerified = authentication.emailVerified;
+        userContext.sessionExpiresAt = authentication.sessionExpiresAt;
         request.user = userContext;
         // The credential itself, whichever way it arrived.
         //
@@ -237,6 +252,20 @@ export class AuthGuard implements CanActivate {
     }
 
     if (isPublic) {
+      if (
+        request.user &&
+        cookieToken &&
+        credential === cookieToken &&
+        isRollingSessionApp(request.user.appId)
+      ) {
+        const response = context.switchToHttp().getResponse?.();
+        if (typeof response?.cookie === 'function')
+          response.cookie(
+            'ot_session',
+            cookieToken,
+            sessionCookieOptions(request.user.appId)
+          );
+      }
       return true;
     }
 
@@ -255,6 +284,19 @@ export class AuthGuard implements CanActivate {
       request.user.profileId
     );
 
+    if (
+      cookieToken &&
+      credential === cookieToken &&
+      isRollingSessionApp(request.user.appId)
+    ) {
+      const response = context.switchToHttp().getResponse?.();
+      if (typeof response?.cookie === 'function')
+        response.cookie(
+          'ot_session',
+          cookieToken,
+          sessionCookieOptions(request.user.appId)
+        );
+    }
     return true;
   }
 }

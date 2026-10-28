@@ -86,3 +86,5 @@ The physical gate accounts for the current Social database and the declared sour
 ## Acceptance boundary
 
 The local gate checks every physical table/column and mapped relation, source evidence, identity-domain decisions and drift rejection. It does not prove any J24 capture enforces these rules. Each later capture needs its own real row-selection, privacy, pagination and integrity evidence before acceptance.
+
+The D06 registration adds `account_deletion_write_fence` as an explicitly excluded operational entity. Its hashes, operation references and timestamps are not portable content. The catalog now contains 34 registered entities, the post/link junction and migration bookkeeping. This changes neither the accepted personal-data projections nor their identity predicates. See [D06](./findings/DF-007-D06.md) for the separately verified erasure contract.

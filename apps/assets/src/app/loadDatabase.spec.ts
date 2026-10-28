@@ -33,7 +33,7 @@ describe('loadDatabase', () => {
         expect.any(Function),
       ]),
     });
-    expect(options.entities).toHaveLength(2);
+    expect(options.entities).toHaveLength(3);
     expect(log).toHaveBeenCalledTimes(1);
     expect(log).toHaveBeenCalledWith('Database configuration:', {
       host: database.host,

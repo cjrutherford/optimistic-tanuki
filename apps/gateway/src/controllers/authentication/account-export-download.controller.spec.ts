@@ -115,6 +115,32 @@ describe('AccountExportDownloadController HTTP regression proof', () => {
     expect(callsFor(AuthCommands.CloseAccountExportDownload)).toHaveLength(1);
   });
 
+  it('checks download readiness without reading chunks and closes before responding', async () => {
+    const response = await fetch(
+      `${baseUrl}/authentication/account-export/${JOB_ID}/download`,
+      { method: 'HEAD' }
+    );
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('');
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(callsFor(AuthCommands.ReadAccountExportDownload)).toHaveLength(0);
+    expect(callsFor(AuthCommands.CloseAccountExportDownload)).toHaveLength(1);
+  });
+
+  it('does not approve malformed readiness metadata and still closes its handle', async () => {
+    scenario = (cmd) =>
+      cmd === AuthCommands.OpenAccountExportDownload
+        ? { ...META, sizeBytes: 0 }
+        : { closed: true };
+    const response = await fetch(
+      `${baseUrl}/authentication/account-export/${JOB_ID}/download`,
+      { method: 'HEAD' }
+    );
+    expect(response.status).toBe(502);
+    expect(callsFor(AuthCommands.ReadAccountExportDownload)).toHaveLength(0);
+    expect(callsFor(AuthCommands.CloseAccountExportDownload)).toHaveLength(1);
+  });
+
   it.each([
     ['closed', 'bytes=3-3', 3, 3],
     ['open-ended', 'bytes=5-', 5, 15],

@@ -1,3 +1,5 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { DataSource } from 'typeorm';
 import { AppConfigurationEntity } from '../configurations/entities/app-configuration.entity';
 import { AppInstanceEntity } from '../configurations/entities/app-instance.entity';
@@ -10,7 +12,12 @@ import {
 const source = () =>
   new DataSource({
     type: 'postgres',
-    entities: [AppConfigurationEntity, AppInstanceEntity, AppMembershipEntity],
+    entities: [
+      AppConfigurationEntity,
+      AppInstanceEntity,
+      AppMembershipEntity,
+      AccountDeletionWriteFenceEntity,
+    ],
   });
 const policy = () =>
   JSON.parse(JSON.stringify(APP_CONFIGURATOR_ACCOUNT_EXPORT_INVENTORY));
@@ -23,7 +30,7 @@ const buildMetadata = async (ds: DataSource) =>
   (ds as unknown as { buildMetadatas: () => Promise<void> }).buildMetadatas();
 
 describe('App Configurator disposition policy', () => {
-  it('accepts all four physical tables and rejects malformed inventories and undeclared stores', async () => {
+  it('accepts all five physical tables and rejects malformed inventories and undeclared stores', async () => {
     const ds = source();
     await buildMetadata(ds);
     const catalog = [

@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { RpcException } from '@nestjs/microservices';
 import {
@@ -12,13 +7,7 @@ import {
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom, timeout } from 'rxjs';
-import {
-  DataSource,
-  EntityManager,
-  IsNull,
-  LessThan,
-  LessThanOrEqual,
-} from 'typeorm';
+import { DataSource, EntityManager, IsNull, LessThanOrEqual } from 'typeorm';
 import DOMPurify from 'isomorphic-dompurify';
 import { Inject } from '@nestjs/common';
 import { GuardianContentAudit } from '../../entities/guardian-content-audit.entity';
@@ -47,8 +36,7 @@ const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 @Injectable()
-export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
-  private cleanupTimer?: NodeJS.Timeout;
+export class GuardianContentService {
   private readonly logger = new Logger(GuardianContentService.name);
 
   constructor(
@@ -60,25 +48,12 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
     private readonly postService: PostService
   ) {}
 
-  onModuleInit(): void {
-    void this.cleanupExpiredAudit().catch(() => undefined);
-    this.cleanupTimer = setInterval(
-      () => void this.cleanupExpiredAudit().catch(() => undefined),
-      24 * 60 * 60 * 1000
-    );
-    this.cleanupTimer.unref?.();
-  }
-
-  onModuleDestroy(): void {
-    if (this.cleanupTimer) clearInterval(this.cleanupTimer);
-  }
-
   async cleanupExpiredAudit(now = new Date()): Promise<number> {
     const threshold = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
     try {
       const result = await this.dataSource
         .getRepository(GuardianContentAudit)
-        .delete({ createdAt: LessThan(threshold) });
+        .delete({ createdAt: LessThanOrEqual(threshold) });
       return result.affected ?? 0;
     } catch (error) {
       this.logger.error('Guardian content audit retention cleanup failed');

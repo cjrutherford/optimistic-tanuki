@@ -1,3 +1,6 @@
+// The pure browser contract avoids evaluating Nest DTO exports in Angular bundles.
+// eslint-disable-next-line @nx/enforce-module-boundaries -- shared contract has no package subpath; barrel pulls Node builtins into browsers
+import { ACCOUNT_DELETION_BROWSER_BOUNDARY } from '../../../models/src/lib/libs/account-deletion/browser-session-boundary.contract';
 /** Small browser-session primitives shared by app auth state services. */
 export class SessionGeneration {
   private current = 0;
@@ -13,6 +16,13 @@ export class SessionGeneration {
   isCurrent(generation: number): boolean {
     return generation === this.current;
   }
+}
+
+/** Account controls own their errors; a receipt 401 never invalidates a newer login. */
+export function isAccountRightsRequest(url: string): boolean {
+  return /\/authentication\/account-(?:export|deletion)(?:\/|$)/.test(
+    url.split(/[?#]/, 1)[0]
+  );
 }
 
 /** Remove only keys explicitly owned by the caller; storage failures are contained. */
@@ -86,4 +96,42 @@ export function publishBrowserSessionBoundary(appId: string): void {
   } catch {
     /* Browser policy may disable cross-tab messaging. */
   }
+}
+
+/** The server emits this only to a socket authenticated as the deleting account.
+ * Compare the current identity again so delayed account-A events cannot clear B. */
+export function notifyAccountDeletion(accountId: unknown): void {
+  if (
+    typeof window !== 'undefined' &&
+    typeof accountId === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      accountId
+    )
+  )
+    window.dispatchEvent(
+      new CustomEvent(
+        ACCOUNT_DELETION_BROWSER_BOUNDARY.currentAccountDeletionEvent,
+        { detail: accountId.toLowerCase() }
+      )
+    );
+}
+export function watchAccountDeletion(
+  accountId: () => string | null | undefined,
+  clear: () => void
+): () => void {
+  if (typeof window === 'undefined') return () => undefined;
+  const listener = (event: Event) => {
+    const current = accountId();
+    if (current && (event as CustomEvent).detail === current.toLowerCase())
+      clear();
+  };
+  window.addEventListener(
+    ACCOUNT_DELETION_BROWSER_BOUNDARY.currentAccountDeletionEvent,
+    listener
+  );
+  return () =>
+    window.removeEventListener(
+      ACCOUNT_DELETION_BROWSER_BOUNDARY.currentAccountDeletionEvent,
+      listener
+    );
 }

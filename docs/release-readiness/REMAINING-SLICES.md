@@ -1,12 +1,12 @@
 # Remaining local delivery slices
 
-**Active release scope:** Optimistic Tanuki = `client-interface`; Towne Square = `local-hub`. **N04–N07 and A01–A07 are locally verified; D00 is next** ([N04](./findings/DF-007-N04.md), [N05](./findings/DF-007-N05.md), [N06](./findings/DF-007-N06.md), [N07](./findings/DF-007-N07.md)). N01, N02 and O09-P/C/I remain accepted. Only services/data needed by these two applications enter the remaining release work. The historical platform inventory is reference material, not a count of required release slices.
+**Active release scope:** Optimistic Tanuki = `client-interface`; Towne Square = `local-hub`. **N04–N07, A01–A07, D00–D09, D11, D16, D17, D25–D27, U01–U03, R2-01–R2-03, R4-01–R4-05 and R6-01–R6-05 are locally verified; no local slice remains.** Only services/data needed by these two applications enter the remaining release work. The historical platform inventory is reference material, not a count of required release slices. See the [R6 handoff](./R6-LAUNCH-HANDOFF.md).
 
 **Scope clarification (2026-10-23):** The authoritative audit scope is `client-interface` (Optimistic Tanuki), `local-hub` (Towne Square), their required shared services and shared HAI navigation. Historical platform records retain their IDs and accepted evidence as reference. Another product does not become release work through queue position or shared infrastructure alone.
 
-Updated: 2026-10-23. Source-inventory reference: `ec543b0df5059ca75d163aa11a9931626cec3d88` (J16). Sequence starting accepted implementation baseline: `661853166a332596ffe1cbfd172a98a6f339bc28` (J28); later accepted deliveries are linked by their receipts. The inventory reference identifies the ownership reconciliation; it is not the starting revision for the remaining deliveries. This register makes the remaining selected recommendations **1 → 2 → 4 → 6** executable. The [master audit](./MASTER-AUDIT.md) remains the acceptance authority; the [completion map](./DF-007-COMPLETION-MAP.md) records accepted evidence. Real external flows and production release qualification remain separately owned.
+Updated: 2026-10-26. Source-inventory reference: `ec543b0df5059ca75d163aa11a9931626cec3d88` (J16). Sequence starting accepted implementation baseline: `661853166a332596ffe1cbfd172a98a6f339bc28` (J28); later accepted deliveries are linked by their receipts. The inventory reference identifies the ownership reconciliation; it is not the starting revision for the remaining deliveries. This register makes the remaining selected recommendations **1 → 2 → 4 → 6** executable. The [master audit](./MASTER-AUDIT.md) remains the acceptance authority; the [completion map](./DF-007-COMPLETION-MAP.md) records accepted evidence. Real external flows and production release qualification remain separately owned.
 
-Earlier captures retain acceptance only at their recorded scopes. O09 now adds Classifieds capture for the two explicit OT/TS scopes. Downloads, deletion and lifecycle controls remain unavailable. Directory service/worker/libraries remain excluded stubs; preserve the forty-three protected paths.
+Earlier captures retain acceptance only at their recorded scopes. O09 now adds Classifieds capture for the two explicit OT/TS scopes. Backend export/downloads are locally qualified through A07; the backend deletion protocol is locally qualified through D27; public settings/deletion controls are now locally qualified through U01–U03. Directory service/worker/libraries remain excluded stubs; preserve the forty-three protected paths.
 
 ## How to use the register
 
@@ -96,88 +96,84 @@ O17 also includes migration-backed `compliance_audit_logs` and `vault_documents`
 
 ### Implement deletion per owner, then prove the whole operation
 
-**Next scoped sequence:** D00–D09, D11, D16–D17, D25–D27, then U01–U03 and the existing R2/R4/R6 gates. The other owner rows below remain historical platform inventory, outside this release. External X qualification stays outside the local loop.
-
-**Next scoped sequence:** D00–D09, D11, D16–D17, D25–D27, then U01–U03 and the existing R2/R4/R6 gates. The other owner rows below remain historical platform inventory, outside this release. External X qualification stays outside the local loop.
-
-**Next scoped sequence:** D00–D09, D11, D16–D17, D25–D27, then U01–U03 and the existing R2/R4/R6 gates. The other owner rows below remain historical platform inventory, outside this release. External X qualification stays outside the local loop.
+**Local scoped sequence complete:** no local slice remains. R6-01–R6-05 are locally verified. R4-01–R4-05, R2-01–R2-03, D25–D27 and U01–U03 are locally verified. The other owner rows below remain historical platform inventory, outside this release. External X qualification stays outside the local loop.
 
 D00 adds the authorized durable deletion ledger, idempotency, operation/write fences and counterpart-placeholder contract. It depends on A07 and N01–N07; revoking sessions must not destroy the operation's recovery capability. Keys needed for media cleanup and account/profile identities needed for attribution remain available until their dependent work is acknowledged.
 
 Every D row is its own adapter/readback slice, depending on D00 and that owner's accepted capture/policy. Each must delete the account's own records/bytes, preserve other people's content, tolerate retries and interrupted writes, and prove results with independent queries/store reads. Owner D slices include their write/job-fence enforcement. No shared-container cascade may erase another contributor's records.
 
-| Slice | Deletion/readback owner                        | Specific ordering or preservation requirement                                                                                                                                                                                        |
-| ----- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| D00   | Durable deletion job and operation/write fence | Depends on A07 and N01–N07; revoke sessions while preserving recoverable operation authority, idempotency and counterpart placeholders.                                                                                              |
-| D01   | Authentication                                 | Revoke all sessions/grants early; defer root account/key destruction to D26. Include the export/deletion ledgers themselves.                                                                                                         |
-| D02   | Profile/current and retained legacy stores     | Preserve attribution until children finish; remove own profiles/legacy links after counterpart placeholders are established.                                                                                                         |
-| D03   | Assets                                         | Remove owned bytes/versions and guardian history under approved actor/dependent policy; keep keys until reads/deletes can recover.                                                                                                   |
-| D04   | Videos                                         | Remove owned channels/videos/derivatives and personal interactions without deleting others' contributions. Fence processors first.                                                                                                   |
-| D05   | Permissions                                    | Remove personal assignments; retain shared definitions that belong to other users/app scopes.                                                                                                                                        |
-| D06   | Social                                         | Remove own content/state across all accepted sources; preserve other contributors and deleted-account placeholders.                                                                                                                  |
-| D07   | Forum                                          | Remove own contributions/reports as approved; preserve other authors and conversation containers/placeholders.                                                                                                                       |
-| D08   | `workspace`                                    | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D09   | `app-configurator`                             | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D10   | `blogging`                                     | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D11   | `chat-collector`                               | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D12   | `telos-docs-service`                           | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D13   | `project-planning`                             | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D14   | `learning-service`                             | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D15   | `wellness`                                     | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D16   | `classifieds`                                  | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D17   | `payments`                                     | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D18   | `store`                                        | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D19   | `billing`                                      | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D20   | `finance`                                      | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D21   | `system-configurator-api`                      | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D22   | `lead-tracker`                                 | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D23   | `civic`                                        | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D24   | `compliance-audit`                             | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                              |
-| D25   | Non-ORM store cleanup                          | Apply N01–N07 deletion contracts; queues, caches, logs, browser state, indexes and versions cannot silently survive.                                                                                                                 |
-| D26   | Final root identities and key removal          | Require all participant readbacks; destroy remaining keys/account identifiers in recoverable order and publish only the minimal permitted deletion receipt.                                                                          |
-| D27   | End-to-end deletion recovery                   | Inject failures/restarts across boundaries; prove all sessions revoked, no stranded bytes, counterpart preservation and independent final readback. External backup/provider obligations remain explicitly pending until X evidence. |
+| Slice                                                        | Deletion/readback owner                        | Specific ordering or preservation requirement                                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------ | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D00 **VERIFIED LOCAL** ([finding](./findings/DF-007-D00.md)) | Durable deletion job and operation/write fence | Depends on A07 and N01–N07; revoke sessions while preserving recoverable operation authority, idempotency and counterpart placeholders.                                                                                                                                                            |
+| D01 **VERIFIED LOCAL** ([finding](./findings/DF-007-D01.md)) | Authentication                                 | Revoke all sessions/grants early; defer root account/key destruction to D26. Include the export/deletion ledgers themselves.                                                                                                                                                                       |
+| D02 **VERIFIED LOCAL** ([finding](./findings/DF-007-D02.md)) | Profile/current and retained legacy stores     | Preserve attribution until children finish; remove own profiles/legacy links after counterpart placeholders are established.                                                                                                                                                                       |
+| D03 **VERIFIED LOCAL** ([finding](./findings/DF-007-D03.md)) | Assets                                         | Remove owned bytes/versions and guardian history under approved actor/dependent policy; keep keys until reads/deletes can recover.                                                                                                                                                                 |
+| D04 **VERIFIED LOCAL** ([finding](./findings/DF-007-D04.md)) | Videos                                         | Remove owned channels/videos/derivatives and personal interactions without deleting others' contributions. Fence processors first.                                                                                                                                                                 |
+| D05 **VERIFIED LOCAL** ([finding](./findings/DF-007-D05.md)) | Permissions                                    | Remove personal assignments; retain shared definitions that belong to other users/app scopes.                                                                                                                                                                                                      |
+| D06 **VERIFIED LOCAL** ([finding](./findings/DF-007-D06.md)) | Social                                         | Remove own content/state across all accepted sources; preserve other contributors and deleted-account placeholders.                                                                                                                                                                                |
+| D07 **VERIFIED LOCAL** ([finding](./findings/DF-007-D07.md)) | Forum                                          | Remove own contributions/reports as approved; preserve other authors and conversation containers/placeholders.                                                                                                                                                                                     |
+| D08 **VERIFIED LOCAL** ([finding](./findings/DF-007-D08.md)) | `workspace`                                    | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D09 **VERIFIED LOCAL** ([finding](./findings/DF-007-D09.md)) | `app-configurator`                             | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D10                                                          | `blogging`                                     | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D11                                                          | `chat-collector`                               | **VERIFIED LOCAL** — own/shared erasure, permanent producer fencing and independent readback ([D11 finding](./findings/DF-007-D11.md)); global coordination remains D25–D27.                                                                                                                       |
+| D12                                                          | `telos-docs-service`                           | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D13                                                          | `project-planning`                             | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D14                                                          | `learning-service`                             | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D15                                                          | `wellness`                                     | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D16                                                          | `classifieds`                                  | **VERIFIED LOCAL** — own/shared erasure, permanent producer fencing and independent readback ([D16 finding](./findings/DF-007-D16.md)); global coordination remains D25–D27.                                                                                                                       |
+| D17                                                          | `payments`                                     | **VERIFIED LOCAL** — own/shared erasure, permanent producer fencing and independent readback ([D17 finding](./findings/DF-007-D17.md)); global coordination remains D25–D27.                                                                                                                       |
+| D18                                                          | `store`                                        | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D19                                                          | `billing`                                      | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D20                                                          | `finance`                                      | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D21                                                          | `system-configurator-api`                      | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D22                                                          | `lead-tracker`                                 | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D23                                                          | `civic`                                        | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D24                                                          | `compliance-audit`                             | Follow its accepted O-P dispositions and independent owned/shared readback; remove account-held data without a new retention exception.                                                                                                                                                            |
+| D25                                                          | Non-ORM store cleanup                          | **VERIFIED LOCAL** ([D25 finding](./findings/DF-007-D25.md)). Apply N01–N07 deletion contracts; queues, caches, logs, browser state, indexes and versions cannot silently survive.                                                                                                                 |
+| D26                                                          | Final root identities and key removal          | **VERIFIED LOCAL** ([D26 finding](./findings/DF-007-D26.md)). Require all participant readbacks; destroy remaining keys/account identifiers in recoverable order and publish only the minimal permitted deletion receipt.                                                                          |
+| D27                                                          | End-to-end deletion recovery                   | **VERIFIED LOCAL** ([D27 finding](./findings/DF-007-D27.md)). Inject failures/restarts across boundaries; prove all sessions revoked, no stranded bytes, counterpart preservation and independent final readback. External backup/provider obligations remain explicitly pending until X evidence. |
 
 ### Reuse shared account controls
 
-| Slice | Deliverable                                                                             | Depends on | Required evidence                                                                                                              |
-| ----- | --------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| U01   | Connect existing shared account/settings controls to real export status/retry/download. | A07        | Authenticated OT/Towne Square flows, errors, keyboard/focus and no false completion.                                           |
-| U02   | Connect deletion confirmation/status/recovery to real deletion jobs.                    | D27        | Clear consequences, correct account, explicit confirmation, failure/retry and revoked-session behavior.                        |
-| U03   | Validate both products and affected primary clients together.                           | U01, U02   | Browser evidence at relevant viewports, accessibility and account isolation. New reusable elements belong in shared libraries. |
+| Slice | Deliverable                                                                             | Depends on | Required evidence                                                                                                                                                                    |
+| ----- | --------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| U01   | Connect existing shared account/settings controls to real export status/retry/download. | A07        | **VERIFIED LOCAL** ([U01](./findings/DF-007-U01.md)). Authenticated OT/Towne Square flows, errors, keyboard/focus and no false completion.                                           |
+| U02   | Connect deletion confirmation/status/recovery to real deletion jobs.                    | D27        | **VERIFIED LOCAL** ([U02](./findings/DF-007-U02.md)). Clear consequences, correct account, explicit confirmation, failure/retry and revoked-session behavior.                        |
+| U03   | Validate both products and affected primary clients together.                           | U01, U02   | **VERIFIED LOCAL** ([U03](./findings/DF-007-U03.md)). Browser evidence at relevant viewports, accessibility and account isolation. New reusable elements belong in shared libraries. |
 
 ## Recommendation 2: inactivity and log retention
 
 Start after recommendation 1's local implementation gates; separately owned external acceptance remains visibly open.
 
-| Slice | Deliverable                                                            | Acceptance                                                                                                                            |
-| ----- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| R2-01 | Seven-day rolling inactivity expiry, without an absolute lifetime cap. | Natural expiry, activity/refresh boundaries, revocation and cross-replica/session compatibility.                                      |
-| R2-02 | Ninety-day removal for every inventoried account-activity log sink.    | Exact cutoff, scheduling, retry, independent readback and no retained-data exceptions.                                                |
-| R2-03 | Integrate retention with deletion, jobs and shared status.             | Account deletion wins over retention windows; no stale replica/job can restore removed data. External execution/sinks are X evidence. |
+| Slice                                                            | Deliverable                                                            | Acceptance                                                                                                                            |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| R2-01 **VERIFIED LOCAL** ([finding](./findings/DF-007-R2-01.md)) | Seven-day rolling inactivity expiry, without an absolute lifetime cap. | Natural expiry, activity/refresh boundaries, revocation and cross-replica/session compatibility.                                      |
+| R2-02 **VERIFIED LOCAL** ([finding](./findings/DF-007-R2-02.md)) | Ninety-day removal for every inventoried account-activity log sink.    | Exact cutoff, scheduling, retry, independent readback and no retained-data exceptions.                                                |
+| R2-03 **VERIFIED LOCAL** ([finding](./findings/DF-007-R2-03.md)) | Integrate retention with deletion, jobs and shared status.             | Account deletion wins over retention windows; no stale replica/job can restore removed data. External execution/sinks are X evidence. |
 
 ## Recommendation 4: integrated journeys, accessibility and recovery
 
-| Slice | Deliverable                                      | Acceptance                                                                                                           |
-| ----- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| R4-01 | Account switching and session/account isolation. | Both products, owned secondary profiles, cookie restore and stale-state denial.                                      |
-| R4-02 | Locality, membership and owner journeys.         | Authorized owner/member/nonmember boundaries and recoverable local errors.                                           |
-| R4-03 | Buyer/seller journeys.                           | Counterpart isolation, purchase/sale local failure contracts and accurate status.                                    |
-| R4-04 | Shared accessibility closeout.                   | Keyboard navigation, focus restoration, error/status announcements and responsive controls.                          |
-| R4-05 | Upload/realtime/deep-link recovery.              | Upload retry, network interruption, route restoration and socket reconnect without duplicate writes or stale access. |
+| Slice                                                            | Deliverable                                      | Acceptance                                                                                                           |
+| ---------------------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| R4-01 **VERIFIED LOCAL** ([finding](./findings/DF-007-R4-01.md)) | Account switching and session/account isolation. | Both products, owned secondary profiles, cookie restore and stale-state denial.                                      |
+| R4-02 **VERIFIED LOCAL** ([finding](./findings/DF-007-R4-02.md)) | Locality, membership and owner journeys.         | Authorized owner/member/nonmember boundaries and recoverable local errors.                                           |
+| R4-03 **VERIFIED LOCAL** ([finding](./findings/DF-007-R4-03.md)) | Buyer/seller journeys.                           | Counterpart isolation, purchase/sale local failure contracts and accurate status.                                    |
+| R4-04 **VERIFIED LOCAL** ([finding](./findings/DF-007-R4-04.md)) | Shared accessibility closeout.                   | Keyboard navigation, focus restoration, error/status announcements and responsive controls.                          |
+| R4-05 **VERIFIED LOCAL** ([finding](./findings/DF-007-R4-05.md)) | Upload/realtime/deep-link recovery.              | Upload retry, network interruption, route restoration and socket reconnect without duplicate writes or stale access. |
 
 Use only `client-interface` (OT) and `local-hub` (TS) as release UX targets, with their required shared libraries/services. R4 slices follow R2 local acceptance in order. External OAuth/email/invitation delivery is X01, not mocked local acceptance.
 
 ## Recommendation 6: claims, onboarding and launch materials
 
-| Slice | Deliverable                            | Acceptance                                                                                                                |
-| ----- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| R6-01 | Reconcile all remaining claims.        | Every advertised claim has VERIFY/COMPLETE/REWORD/RETRACT/DEFER disposition linked to evidence.                           |
-| R6-02 | Complete first-session guidance.       | Both products describe and lead to accepted behavior; no invented counts or unavailable rights.                           |
-| R6-03 | Align public policy/support text.      | Privacy, account rights, retention and support promises match accepted behavior and open external obligations.            |
-| R6-04 | Capture verified screenshots/demos.    | Exact reviewed revision and real usable workflows, with no staged unsupported claims.                                     |
-| R6-05 | Assemble launch checklist and handoff. | Local slice evidence, unresolved external checks and explicit release decision owner; no premature release qualification. |
+| Slice                                                            | Deliverable                            | Acceptance                                                                                                                |
+| ---------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| R6-01 **VERIFIED LOCAL** ([finding](./findings/DF-007-R6-01.md)) | Reconcile all remaining claims.        | Every advertised claim has VERIFY/COMPLETE/REWORD/RETRACT/DEFER disposition linked to evidence.                           |
+| R6-02 **VERIFIED LOCAL** ([finding](./findings/DF-007-R6-02.md)) | Complete first-session guidance.       | Both products describe and lead to accepted behavior; no invented counts or unavailable rights.                           |
+| R6-03 **VERIFIED LOCAL** ([finding](./findings/DF-007-R6-03.md)) | Align public policy/support text.      | Privacy, account rights, retention and support promises match accepted behavior and open external obligations.            |
+| R6-04 **VERIFIED LOCAL** ([finding](./findings/DF-007-R6-04.md)) | Capture verified screenshots/demos.    | Exact reviewed revision and real usable workflows, with no staged unsupported claims.                                     |
+| R6-05 **VERIFIED LOCAL** ([finding](./findings/DF-007-R6-05.md)) | Assemble launch checklist and handoff. | Local slice evidence, unresolved external checks and explicit release decision owner; no premature release qualification. |
 
-R6 follows R4 local acceptance. Claims about unavailable features remain withdrawn until their acceptance gates close.
+R6 is locally verified after R4 local acceptance. Claims about unavailable features remain withdrawn until their acceptance gates close.
 
 ## Separately owned external acceptance
 
@@ -188,7 +184,7 @@ R6 follows R4 local acceptance. Claims about unavailable features remain withdra
 | X03   | Backups, object-store operational retention/versioning, remote log sinks and executed purge evidence. | No retention exception is inferred. Keep account-rights/release acceptance open until the required external evidence exists. |
 | X04   | Operational support and final release qualification.                                                  | Link the release audit and make an explicit operator decision after required evidence.                                       |
 
-The next delivery is **O02 App Configurator**, including its existing P/C/I checks. J17–J22 and J25 are locally verified; J23 and J26 cover policy/schema approval, and J24-A–D cover Social owner components. SCOPE-01 is verified as a source-only reconciliation. Every later slice stays planned until its own acceptance evidence is recorded.
+The scoped local sequence is complete under the existing IDs; no local slice remains. X01–X04 remain separately owned external acceptance. No other product enters this denominator.
 
 ### Deferred notification delivery qualification
 
@@ -221,3 +217,90 @@ J24-A/B/C/D owner components and J25 Social leased snapshot/job integration are 
 **2026-10-23 N02:** locally verified for OT/TS only. Authorization reloads current Permissions state; OAuth callback grants store session references rather than bearer tokens. One private two-process HTTP case passed seven stages with zero skips, including replica revocation, cookie/bearer logout, OAuth replay/expiry/revocation, changed-profile ownership and account invalidation. Independent three-database counts matched; Redis, temporary tables and private resources were zero. See [finding](./findings/DF-007-N02.md) and [receipt](./evidence/df-007/checkpoint-n02.json). D00 permanent fencing/deletion and N06 browser cleanup remain open. **Next: N03.**
 
 **2026-10-23 N03:** locally verified for OT/TS only. Eleven fresh catalogs reconciled 87 tables, 781 columns and 161 native indexes, including explicit migration-only Profile structures. One private case passed without skips, proving scoped history cleanup, counterpart/excluded-scope preservation, query/write races, SQL failure/retry, index reads and restart. Independent counts/schema shape were restored; private resources were zero. Community discovery now excludes private communities. See [finding](./findings/DF-007-N03.md) and [receipt](./evidence/df-007/checkpoint-n03.json). D00 permanent fencing/deletion and N06 browser cleanup remain open. **Next: N04.**
+
+## 2026-10-26 — U01–U03 locally verified
+
+OT Settings and TS My Account now use shared export/deletion controls. The real
+12-owner browser/backend run passed native export downloads, independent TAR
+digests, explicit confirmation, revoked-session receipt status, manual receipt
+restore, UI retry, coordinator restart and a surviving different-account session.
+Scoped accessibility checks passed at 390/1280 widths and in both dialogs; the
+completed receipt page passed as well. Independent 99-table readback and teardown
+passed, with all 43 protected paths unchanged. The media descriptor full-read
+regression and exact TS public SSR receipt route were fixed and covered by tests.
+
+See [U01](./findings/DF-007-U01.md), [U02](./findings/DF-007-U02.md),
+[U03](./findings/DF-007-U03.md) and the [U03 receipt](./evidence/df-007/checkpoint-u03.json).
+At the U closeout, R2-01 was next and thirteen local slices remained. That
+count is historical; the R2 closeout below gives the current remaining work.
+X01–X04 remain separate external acceptance; other products do not enter this
+denominator.
+
+## 2026-10-27 — R2-01–R2-03 locally verified
+
+Seven-day rolling session inactivity, ninety-day activity/history retention and
+retention/deletion/job integration are locally qualified for OT and TS. Database
+cutoff, legacy bootstrap, revocation, failure/retry and independent readback
+checks passed. The real twelve-owner replica/browser fixture also passed,
+including seven post-deletion sweepers and denial of old session activity on
+both Auth replicas. Shared status reconciles eleven history sources.
+
+See [R2-01](./findings/DF-007-R2-01.md), [R2-02](./findings/DF-007-R2-02.md),
+[R2-03](./findings/DF-007-R2-03.md) and the
+[R2-03 receipt](./evidence/df-007/checkpoint-r2-03.json). Historical U/D receipts
+remain snapshots; they were not rewritten to match later source changes.
+
+At the R2 closeout, R4-01 was next and ten local slices remained. The R4
+closeout below supersedes that historical position. X01–X04 remain separately owned
+external acceptance. No other product enters this denominator. DF-007/RR-11
+remain open until the remaining release gates are satisfied.
+
+## 2026-10-27 R4-01–R4-05 local closeout
+
+R4-01 account isolation, R4-02 locality/membership, R4-03 buyer/seller journeys,
+R4-04 shared accessibility and R4-05 upload/realtime/route recovery are **VERIFIED
+LOCAL** for OT (`client-interface`) and TS (`local-hub`). The coupled system-Chrome
+case passed all five gates with twelve migrated owner databases and real services;
+214 focused unit tests passed. Eight scoped axe reports contain no violations.
+Independent teardown read all 99 application tables empty, removed private
+resources and confirmed 43 protected files unchanged.
+
+Receipts: [R4-01](./evidence/df-007/checkpoint-r4-01.json),
+[R4-02](./evidence/df-007/checkpoint-r4-02.json),
+[R4-03](./evidence/df-007/checkpoint-r4-03.json),
+[R4-04](./evidence/df-007/checkpoint-r4-04.json),
+[R4-05](./evidence/df-007/checkpoint-r4-05.json).
+Historical D/U/R2 receipts remain revision snapshots and were not rewritten.
+
+At the R4 closeout, R6-01–R6-05 were the five remaining local slices. The R6 closeout below supersedes that historical position. These cover claim
+reconciliation, first-session guidance, policy/support text, verified demos and
+launch handoff. X01–X04 remain separately owned external acceptance. Real local
+cash records do not establish money movement; the isolated one-signature ClamAV
+engine does not qualify production malware definitions. DF-007/RR-11 remain open.
+
+## 2026-10-27 R6-01–R6-05 local closeout
+
+**R6-01 through R6-05 are VERIFIED LOCAL for OT and TS. No local slice remains
+in this scoped sequence.** The 58-statement claim ledger, shared first-session
+and privacy pages, real rebuilt demos and operator handoff are complete locally.
+Four focused tests and both app builds passed; three owning lint targets passed
+before the final copy-only clarification. One private real-service/browser case
+passed with zero skips, sixteen zero-violation light/dark accessibility reports
+and twenty source-linked screenshots. Diagnostics show only expected anonymous
+session 401s. Teardown read all 99 application tables empty, removed its resources
+and confirmed 43 protected files unchanged.
+
+See [the launch handoff](./R6-LAUNCH-HANDOFF.md),
+[claim ledger](./evidence/df-007/r6-claim-ledger.json),
+[screenshot provenance](./evidence/r6-local/manifest.json), and receipts
+[R6-01](./evidence/df-007/checkpoint-r6-01.json),
+[R6-02](./evidence/df-007/checkpoint-r6-02.json),
+[R6-03](./evidence/df-007/checkpoint-r6-03.json),
+[R6-04](./evidence/df-007/checkpoint-r6-04.json),
+[R6-05](./evidence/df-007/checkpoint-r6-05.json).
+
+**X01–X04 remain open and separately owned.** Local completion does not qualify
+provider/email/payment operations, deployment/load/production AV definitions,
+backups/remote copies or operational support. The project owner/operator must
+record the external evidence and final release decision. DF-007/RR-11 remain
+open. Earlier D/U/R2/R4 receipts remain immutable revision snapshots.

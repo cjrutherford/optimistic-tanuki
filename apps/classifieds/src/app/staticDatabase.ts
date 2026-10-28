@@ -1,3 +1,4 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import * as yaml from 'js-yaml';
 
 import { DataSource } from 'typeorm';
@@ -11,9 +12,9 @@ const config = yaml.load(
 const {
   database: {
     host: configHost, // Renamed to avoid conflict
-    port,
-    username,
-    password,
+    port: configPort,
+    username: configUsername,
+    password: configPassword,
     name: configName, // Renamed to avoid conflict
     database: configDatabase, // Renamed to avoid conflict
   },
@@ -24,14 +25,14 @@ const host = process.env['POSTGRES_HOST'] || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env['POSTGRES_DB'] || configDatabase || configName;
 
-const entities = [ClassifiedAdEntity];
+const entities = [ClassifiedAdEntity, AccountDeletionWriteFenceEntity];
 
 const staticSource = new DataSource({
   type: 'postgres',
   host: host, // Use the potentially overridden host
-  port: Number(port),
-  username,
-  password,
+  port: Number(process.env['POSTGRES_PORT'] || configPort),
+  username: process.env['POSTGRES_USER'] || configUsername,
+  password: process.env['POSTGRES_PASSWORD'] || configPassword,
   database: database, // Use the potentially overridden database name
   entities,
   migrations: ['./migrations/*.ts'],

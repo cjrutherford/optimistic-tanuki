@@ -99,7 +99,7 @@ services:
       - ./dist/apps:/app/dist/apps # Mount the shared dist root so rebuilt app directories stay visible
       - /usr/src/app/node_modules # Keep node_modules from the image
     ports:
-      - '8080:4000' # Match the new exposed port
+      - '${CLIENT_INTERFACE_PORT:-8080}:4000' # Local review port may differ from 8080
       - '9240:9240'
     environment:
       - NODE_ENV=development
@@ -923,7 +923,7 @@ services:
     volumes:
       - ./dist/apps:/usr/src/app/dist/apps
       - ./apps/gateway/src/assets/config.yaml:/usr/src/app/dist/apps/gateway/assets/config.yaml:ro
-      - ./libs/app-registry/src/lib/default-registry.json:/usr/src/app/config/app-registry.json:ro
+      - ${APP_REGISTRY_HOST_PATH:-./libs/app-registry/src/lib/default-registry.json}:/usr/src/app/config/app-registry.json:ro
       - ./scripts/wait-for-node-entrypoint.sh:/usr/src/app/scripts/wait-for-node-entrypoint.sh:ro
       - /usr/src/app/node_modules
     command:
@@ -963,7 +963,7 @@ services:
       - DEV_ALLOW_ALL_BROWSER_ORIGINS=true
       - APP_SCOPE_ORIGINS={"forgeofwill":"http://forgeofwill.localhost:8081"}
       - CORS_ALLOWED_ORIGINS=http://forgeofwill.localhost:8081
-      - CLIENT_INTERFACE_UI_BASE_URL=http://localhost:8080
+      - CLIENT_INTERFACE_UI_BASE_URL=${CLIENT_INTERFACE_UI_BASE_URL:-http://localhost:8080}
       - CLIENT_INTERFACE_DOMAIN=localhost
       - GATEWAY_REQUEST_TIMEOUT_MS=${GATEWAY_REQUEST_TIMEOUT_MS:-30000}
       - ASSETS_INTERNAL_MEDIA_URL=${ASSETS_INTERNAL_MEDIA_URL:-http://assets:3006}

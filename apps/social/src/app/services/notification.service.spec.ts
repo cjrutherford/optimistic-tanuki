@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import { NotificationService } from './notification.service';
 import {
   Notification,
@@ -21,6 +22,11 @@ const stored = (overrides: Record<string, unknown> = {}) =>
 
 describe('NotificationService safe persistence and projection', () => {
   const repo = () => ({
+    manager: {
+      transaction: jest.fn(async (run) =>
+        run({ query: jest.fn(async () => []) })
+      ),
+    },
     create: jest.fn((data) => ({
       id: notificationId,
       isRead: false,
@@ -199,6 +205,11 @@ describe('N01 volatile notification work', () => {
     actionUrl: 'https://PRIVATE.example',
   };
   const repository = () => ({
+    manager: {
+      transaction: jest.fn(async (run) =>
+        run({ query: jest.fn(async () => []) })
+      ),
+    },
     create: jest.fn((value) => ({
       ...value,
       id: notificationId,

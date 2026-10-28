@@ -28,7 +28,9 @@ describe('NetworkStorageAdapter', () => {
       uploadObject: jest.fn(),
       purgeObjectVersions: jest.fn(),
       getObject: jest.fn(),
-      getKeyFromPath: jest.fn(),
+      getKeyFromPath: jest.fn((s3Path: string) =>
+        s3Path.replace('s3://test-bucket/', '')
+      ),
       // Mock the bucketName property if accessed directly
       bucketName: 'test-bucket',
     } as any;
@@ -64,6 +66,77 @@ describe('NetworkStorageAdapter', () => {
 
   it('should be defined', () => {
     expect(adapter).toBeDefined();
+  });
+
+  describe('purgeOwnedAsset', () => {
+    const owned = (overrides: Partial<AssetDto> = {}) =>
+      ({
+        id: '11111111-1111-4111-8111-111111111111',
+        profileId: '22222222-2222-4222-8222-222222222222',
+        name: 'owned.png',
+        storageStrategy: 'remote_block_storage',
+        storagePath:
+          's3://test-bucket/assets/22222222-2222-4222-8222-222222222222/11111111-1111-4111-8111-111111111111/owned.png',
+        type: 'image',
+        ...overrides,
+      } as AssetDto);
+
+    it('validates exact custody before purging and returns the receipt after success', async () => {
+      mockS3Service.purgeObjectVersions.mockResolvedValue(undefined);
+      await expect(adapter.purgeOwnedAsset!(owned())).resolves.toEqual({
+        verifiedAbsent: true,
+      });
+      expect(mockS3Service.purgeObjectVersions).toHaveBeenCalledWith(
+        'assets/22222222-2222-4222-8222-222222222222/11111111-1111-4111-8111-111111111111/owned.png'
+      );
+      mockS3Service.purgeObjectVersions.mockClear();
+      await expect(
+        adapter.purgeOwnedAsset!(
+          owned({ storagePath: 's3://test-bucket/assets/other' })
+        )
+      ).rejects.toThrow('custody');
+      await expect(
+        adapter.purgeOwnedAsset!(owned({ id: 'legacy-id' }))
+      ).rejects.toThrow('custody');
+      expect(mockS3Service.purgeObjectVersions).not.toHaveBeenCalled();
+    });
+
+    it('purges the normalized reservation key when the asset name contains spaces', async () => {
+      mockS3Service.purgeObjectVersions.mockResolvedValue(undefined);
+      const spaced = owned({
+        name: 'photo name.png',
+        storagePath:
+          's3://test-bucket/assets/22222222-2222-4222-8222-222222222222/11111111-1111-4111-8111-111111111111/photo_name.png',
+      });
+      await expect(adapter.purgeOwnedAsset!(spaced)).resolves.toEqual({
+        verifiedAbsent: true,
+      });
+      expect(mockS3Service.getKeyFromPath).toHaveBeenCalledWith(
+        spaced.storagePath
+      );
+      expect(mockS3Service.purgeObjectVersions).toHaveBeenCalledWith(
+        'assets/22222222-2222-4222-8222-222222222222/11111111-1111-4111-8111-111111111111/photo_name.png'
+      );
+      mockS3Service.purgeObjectVersions.mockClear();
+      await expect(
+        adapter.purgeOwnedAsset!(
+          owned({
+            ...spaced,
+            storagePath: 's3://test-bucket/assets/wrong/path',
+          })
+        )
+      ).rejects.toThrow('custody');
+      expect(mockS3Service.purgeObjectVersions).not.toHaveBeenCalled();
+    });
+
+    it('propagates purge failures without returning a receipt', async () => {
+      mockS3Service.purgeObjectVersions.mockRejectedValue(
+        new Error('versions remain')
+      );
+      await expect(adapter.purgeOwnedAsset!(owned())).rejects.toThrow(
+        'versions remain'
+      );
+    });
   });
 
   it('authenticates an S3 response stream without calling the Buffer reader', async () => {

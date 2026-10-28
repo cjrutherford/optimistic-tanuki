@@ -1,3 +1,32 @@
+import {
+  ActivityRetentionService,
+  activityRetentionRule,
+} from '@optimistic-tanuki/logger';
+import type { DataSource as RetentionDataSource } from 'typeorm';
+import { ActivityRetentionStatusService } from './activity-retention-status.service';
+import { AccountDeletionBrowserBoundaryAdapter } from '../account-deletion/account-deletion-browser-boundary.adapter';
+import { AccountDeletionRuntimeService } from '../account-deletion/account-deletion-runtime.service';
+import { AccountDeletionOwnerReadbacksAdapter } from '../account-deletion/account-deletion-owner-readbacks.adapter';
+import { AccountDeletionGatewayAdapter } from '../account-deletion/account-deletion-gateway.adapter';
+import type { DeletionNonOrmAdapter } from '../account-deletion/account-deletion-non-orm.service';
+import { AccountDeletionProviderGrantsAdapter } from '../account-deletion/account-deletion-provider-grants.adapter';
+import {
+  AccountDeletionNonOrmService,
+  DELETION_NON_ORM_ADAPTERS,
+} from '../account-deletion/account-deletion-non-orm.service';
+import { AccountDeletionFinalizerService } from '../account-deletion/account-deletion-finalizer.service';
+import {
+  AccountDeletionRunnerService,
+  DELETION_OWNER_PORTS,
+} from '../account-deletion/account-deletion-runner.service';
+import { AccountDeletionRpcOwnersService } from '../account-deletion/account-deletion-rpc-owners.service';
+import { AccountDeletionOwnerController } from '../account-deletion/account-deletion-owner.controller';
+import { AccountDeletionOwnerService } from '../account-deletion/account-deletion-owner.service';
+import { AccountDeletionController } from '../account-deletion/account-deletion.controller';
+import { AccountDeletionFenceService } from '../account-deletion/account-deletion-fence.service';
+import { AccountDeletionOperationEntity } from '../account-deletion/account-deletion-operation.entity';
+import { AccountDeletionAuthorityService } from '../account-deletion/account-deletion-authority.service';
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { VideosAccountExportSnapshotClient } from '../account-export-jobs/videos-account-export-snapshot.client';
 import { AssetsAccountExportSnapshotClient } from '../account-export-jobs/assets-account-export-snapshot.client';
 import { Module } from '@nestjs/common';
@@ -65,6 +94,8 @@ import { ClassifiedsAccountExportSnapshotClient } from '../account-export-jobs/c
 import { PaymentsAccountExportSnapshotClient } from '../account-export-jobs/payments-account-export-snapshot.client';
 import { ChatAccountExportSnapshotClient } from '../account-export-jobs/chat-account-export-snapshot.client';
 import { AccountExportJobEntity } from '../account-export-jobs/entities/account-export-job.entity';
+import { AccountDeletionPublicController } from '../account-deletion/account-deletion-public.controller';
+import { AccountDeletionReceiptService } from '../account-deletion/account-deletion-receipt.service';
 import { AuthenticationAccountExportOwnerService } from '../account-export-owner/account-export-owner.service';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
@@ -111,8 +142,94 @@ import {
       },
     }),
   ],
-  controllers: [AppController, BootstrapController, AccountExportController],
+  controllers: [
+    AppController,
+    BootstrapController,
+    AccountExportController,
+    AccountDeletionController,
+    AccountDeletionPublicController,
+    AccountDeletionOwnerController,
+  ],
   providers: [
+    {
+      provide: ActivityRetentionService,
+      useFactory: (db: RetentionDataSource) =>
+        new ActivityRetentionService('authentication', db, [
+          activityRetentionRule(db.getMetadata(GuardianPolicyNoticeEntity)),
+        ]),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    ActivityRetentionStatusService,
+    AccountDeletionNonOrmService,
+    AccountDeletionReceiptService,
+    AccountDeletionRuntimeService,
+    AccountDeletionFinalizerService,
+    AccountDeletionRunnerService,
+    AccountDeletionRpcOwnersService,
+    AccountDeletionProviderGrantsAdapter,
+    AccountDeletionGatewayAdapter,
+    AccountDeletionBrowserBoundaryAdapter,
+    AccountDeletionOwnerReadbacksAdapter,
+    {
+      provide: DELETION_NON_ORM_ADAPTERS,
+      useFactory: (
+        provider: AccountDeletionProviderGrantsAdapter,
+        gateway: AccountDeletionGatewayAdapter,
+        readbacks: AccountDeletionOwnerReadbacksAdapter,
+        browser: AccountDeletionBrowserBoundaryAdapter
+      ) => {
+        const adapters = new Map<string, DeletionNonOrmAdapter>([
+          ['provider-grants', provider],
+          ['search-copies', readbacks.forFamily('search-copies')],
+          [
+            'media-versions-and-keys',
+            readbacks.forFamily('media-versions-and-keys'),
+          ],
+        ]);
+        if (gateway.origins.length) {
+          adapters.set('oauth-and-sessions', gateway);
+          adapters.set('permission-caches', gateway.permissionAdapter());
+          for (const family of [
+            'jobs-and-spools',
+            'diagnostics-and-audits',
+          ] as const) {
+            const sources = readbacks.forFamily(family);
+            const processes = gateway.runtimeAdapter(
+              family === 'diagnostics-and-audits'
+            );
+            adapters.set(family, {
+              purge: async (subject) => {
+                await sources.purge(subject);
+                await processes.purge(subject);
+              },
+              readback: async (subject) => {
+                const counts = await Promise.all([
+                  sources.readback(subject),
+                  processes.readback(subject),
+                ]);
+                if (counts.some((count) => count !== 0))
+                  throw Error('DELETION_RUNTIME_UNVERIFIED');
+                return 0;
+              },
+            });
+          }
+        }
+        if (browser.origins.length && gateway.origins.length)
+          adapters.set('browser-owned-state', browser);
+        return adapters;
+      },
+      inject: [
+        AccountDeletionProviderGrantsAdapter,
+        AccountDeletionGatewayAdapter,
+        AccountDeletionOwnerReadbacksAdapter,
+        AccountDeletionBrowserBoundaryAdapter,
+      ],
+    },
+    {
+      provide: DELETION_OWNER_PORTS,
+      useFactory: (owners: AccountDeletionRpcOwnersService) => owners.ports,
+      inject: [AccountDeletionRpcOwnersService],
+    },
     {
       provide: JwtService,
       useFactory: (config: ConfigService) => {
@@ -122,6 +239,9 @@ import {
       inject: [ConfigService],
     },
     AppService,
+    AccountDeletionAuthorityService,
+    AccountDeletionOwnerService,
+    AccountDeletionFenceService,
     AccountExportService,
     AccountExportOwnerSpoolService,
     {
@@ -374,6 +494,18 @@ import {
     {
       provide: getRepositoryToken(OAuthProviderEntity),
       useFactory: (ds: DataSource) => ds.getRepository(OAuthProviderEntity),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AccountDeletionOperationEntity),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(AccountDeletionOperationEntity),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AccountDeletionWriteFenceEntity),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(AccountDeletionWriteFenceEntity),
       inject: ['AUTHENTICATION_CONNECTION'],
     },
     {

@@ -1,3 +1,4 @@
+import { deletionProfiles } from './cache-deletion';
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ICacheProvider, CacheStats } from './cache-provider.interface';
 import { createClient, RedisClientType } from 'redis';
@@ -75,6 +76,53 @@ export class RedisCacheProvider implements ICacheProvider, OnModuleDestroy {
       this.logger.error(`Failed to initialize Redis: ${error.message}`);
       this.isConnected = false;
     }
+  }
+
+  async purgeProfiles(profileIds: readonly string[]): Promise<void> {
+    await this.deletionInventory(profileIds, true);
+  }
+  async countProfiles(profileIds: readonly string[]): Promise<number> {
+    return this.deletionInventory(profileIds, false);
+  }
+  private async deletionInventory(
+    profileIds: readonly string[],
+    purge: boolean
+  ): Promise<number> {
+    const profiles = [...deletionProfiles(profileIds)];
+    if (!this.isConnected || !this.client.isReady)
+      throw Error('PERMISSION_CACHE_UNAVAILABLE');
+    const result = await this.client.sendCommand([
+      'EVAL',
+      `
+      local profiles = {}; for _,id in ipairs(cjson.decode(ARGV[2])) do profiles[id] = true end
+      local cursor = '0'; local pages = 0; local found = {}; local remaining = 0; local count = 0
+      repeat
+        local page = redis.call('SCAN', cursor, 'MATCH', ARGV[1]..'*', 'COUNT', 100)
+        cursor = page[1]; pages = pages + 1; if pages > 1000 then return -1 end
+        for _,key in ipairs(page[2]) do
+          if not found[key] then
+            found[key] = true; count = count + 1; if count > 10000 then return -1 end
+            local suffix = string.sub(key, string.len(ARGV[1]) + 1)
+            local profile = string.match(suffix, '^([^:]+):')
+            if profile and profiles[string.lower(profile)] then
+              if ARGV[3] == 'purge' then redis.call('DEL', key) else remaining = remaining + 1 end
+            end
+          end
+        end
+      until cursor == '0'
+      return remaining`,
+      '0',
+      this.keyPrefix,
+      JSON.stringify(profiles),
+      purge ? 'purge' : 'readback',
+    ]);
+    if (
+      typeof result !== 'number' ||
+      !Number.isSafeInteger(result) ||
+      result < 0
+    )
+      throw Error('PERMISSION_CACHE_READBACK_INVALID');
+    return result;
   }
 
   private getPrefixedKey(key: string): string {
@@ -221,7 +269,7 @@ export class RedisCacheProvider implements ICacheProvider, OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
-    if (this.client && this.isConnected) {
+    if (this.client?.isOpen) {
       await this.client.quit();
       this.logger.log('Disconnected from Redis');
     }

@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ButtonComponent } from './button.component';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import {
+  ThemeService,
+  ThemeColors,
+  getContrastRatio,
+} from '@optimistic-tanuki/theme-lib';
 
 describe('ButtonComponent', () => {
   let component: ButtonComponent;
@@ -22,6 +26,42 @@ describe('ButtonComponent', () => {
   function btn(): HTMLButtonElement {
     return fixture.nativeElement.querySelector('button');
   }
+
+  it('keeps restored pastel-theme action text readable on its actual surfaces', () => {
+    const colors = {
+      background: '#f7f4ee',
+      foreground: '#7c7a77',
+      accent: '#989baf',
+      danger: '#dda9a2',
+      success: '#9aaa99',
+      warning: '#c4b989',
+      complementary: '#aa9988',
+    } as ThemeColors;
+    component.applyTheme(colors);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.style.getPropertyValue('--primary-text')).toMatch(
+      /^#[0-9a-f]{6}$/i
+    );
+    expect(['#000000', '#ffffff']).toContain(
+      host.style.getPropertyValue('--on-danger')
+    );
+    expect(host.style.getPropertyValue('--on-danger')).toMatch(
+      /^#[0-9a-f]{6}$/i
+    );
+    expect(
+      getContrastRatio(
+        host.style.getPropertyValue('--primary-text'),
+        colors.background
+      )
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      getContrastRatio(
+        host.style.getPropertyValue('--on-danger'),
+        colors.danger
+      )
+    ).toBeGreaterThanOrEqual(4.5);
+  });
 
   it('should create', () => {
     expect(component).toBeTruthy();

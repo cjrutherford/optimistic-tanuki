@@ -136,7 +136,8 @@ postgresDescribe(
           send: () => {
             throw new Error('This account-only fixture has no Profile service');
           },
-        } as never)
+        } as never),
+        { assertActiveAccount: jest.fn().mockResolvedValue(undefined) } as never
       );
       service = new AuthenticationAccountExportOwnerService(
         dataSource,

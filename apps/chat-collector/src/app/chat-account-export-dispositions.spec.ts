@@ -1,3 +1,5 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import Conversation from './entities/conversation.entity';
@@ -15,13 +17,13 @@ describe('O04 Chat Collector disposition inventory', () => {
       database: 'offline_metadata',
       username: 'none',
       password: 'none',
-      entities: [Conversation, Message],
+      entities: [Conversation, Message, AccountDeletionWriteFenceEntity],
       synchronize: false,
       migrationsRun: false,
       migrations: [],
     });
     await (source as any).buildMetadatas();
-    expect(source.entityMetadatas).toHaveLength(2);
+    expect(source.entityMetadatas).toHaveLength(3);
     expect(validateChatDispositions(source.entityMetadatas)).toEqual([]);
     const message = source.entityMetadatas.find(
       (meta) => meta.name === 'Message'
@@ -44,7 +46,7 @@ describe('O04 Chat Collector disposition inventory', () => {
       database: 'offline_metadata',
       username: 'none',
       password: 'none',
-      entities: [Conversation, Message],
+      entities: [Conversation, Message, AccountDeletionWriteFenceEntity],
       synchronize: false,
       migrationsRun: false,
       migrations: [],

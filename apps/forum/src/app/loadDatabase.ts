@@ -1,3 +1,4 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { ConfigService } from '@nestjs/config';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { Topic } from '../entities/topic.entity';
@@ -10,6 +11,7 @@ import { ForumModerationAction } from '../entities/forum-moderation-action.entit
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
   const entities = [
+    AccountDeletionWriteFenceEntity,
     Topic,
     Thread,
     ForumPost,
@@ -19,6 +21,7 @@ const loadDatabase = (config: ConfigService) => {
   ];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',
+    synchronize: false,
     host: database.host,
     port: database.port,
     username: database.username,

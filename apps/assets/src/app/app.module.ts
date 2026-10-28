@@ -1,3 +1,19 @@
+import {
+  ActivityRetentionService,
+  activityRetentionRule,
+} from '@optimistic-tanuki/logger';
+import type { DataSource as RetentionDataSource } from 'typeorm';
+import { ActivityRetentionController } from './activity-retention.controller';
+import { GuardianAssetActivity as RetentionEntity0 } from '../entities/guardian-asset-activity.entity';
+import { STORAGE_ADAPTERS, StorageAdapter } from '@optimistic-tanuki/storage';
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import { AssetMediaReadFenceService } from './asset-media-read-fence.service';
+import { AssetsAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { AssetsAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { AccountDeletionAuthorityClient } from '@optimistic-tanuki/storage';
 import { Logger, Module } from '@nestjs/common';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -83,13 +99,62 @@ import { AssetsAuditErasureService } from './audit-erasure.service';
     }),
   ],
   controllers: [
+    ActivityRetentionController,
+    AccountDeletionSnapshotController,
     AppController,
     InternalMediaController,
     AccountExportController,
+    AssetsAccountDeletionOwnerController,
   ],
   providers: [
+    {
+      provide: ActivityRetentionService,
+      useFactory: (db: RetentionDataSource) =>
+        new ActivityRetentionService('assets', db, [
+          activityRetentionRule(db.getMetadata(RetentionEntity0), 'createdAt'),
+        ]),
+      inject: ['ASSETS_CONNECTION'],
+    },
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: AssetsAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        audit: AssetsAuditErasureService,
+        adapter: StorageAdapter,
+        database: { query(sql: string): Promise<unknown> }
+      ) => ({
+        owner: 'assets',
+        snapshot,
+        authority,
+        spool,
+        database,
+        audit,
+        custodyProbe: (nonce: string, mode: 'write' | 'read' | 'remove') => {
+          if (!adapter.custodyProbe) throw Error('ASSETS_CUSTODY_UNSUPPORTED');
+          return adapter.custodyProbe(nonce, mode);
+        },
+      }),
+      inject: [
+        AssetsAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        AssetsAuditErasureService,
+        STORAGE_ADAPTERS,
+        'ASSETS_CONNECTION',
+      ],
+    },
     AppService,
     AssetsAuditErasureService,
+    AssetsAccountDeletionOwnerService,
+    AssetMediaReadFenceService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: ClientProxy) =>
+        new AccountDeletionAuthorityClient(auth),
+      inject: [ServiceTokens.AUTHENTICATION_SERVICE],
+    },
     AccountExportOwnerSpoolService,
     AssetsAccountExportProfileSnapshotClient,
     {

@@ -1,4 +1,7 @@
 export const PermissionCommands = {
+  FENCE_ACCOUNT_DELETION: 'permissions.deletion.fence',
+  ERASE_ACCOUNT_DELETION: 'permissions.deletion.erase',
+  READBACK_ACCOUNT_DELETION: 'permissions.deletion.readback',
   Create: 'Create:Permission',
   Update: 'Update:Permission',
   Delete: 'Delete:Permission',

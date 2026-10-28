@@ -1,3 +1,5 @@
+import { AccountDeletionOperationEntity } from '../account-deletion/account-deletion-operation.entity';
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { DataSource } from 'typeorm';
 import fs from 'fs';
 import path from 'path';
@@ -61,6 +63,8 @@ const entities = [
   GuardianPermissionEntity,
   GuardianPolicyNoticeEntity,
   AccountExportJobEntity,
+  AccountDeletionOperationEntity,
+  AccountDeletionWriteFenceEntity,
 ];
 
 console.log(

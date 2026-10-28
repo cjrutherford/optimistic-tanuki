@@ -146,6 +146,7 @@ export class StorageModule {
       providers: [adapterProvider, ...VAULT_SERVICES, ...extraProviders],
       exports: [
         STORAGE_ADAPTERS,
+        VerifiedMediaSpoolService,
         EnvelopeEncryptionService,
         TaxDocumentClassifierService,
         ZfsStorageService,
@@ -246,6 +247,7 @@ export class StorageModule {
       ],
       exports: [
         STORAGE_ADAPTERS,
+        VerifiedMediaSpoolService,
         EnvelopeEncryptionService,
         TaxDocumentClassifierService,
         ZfsStorageService,

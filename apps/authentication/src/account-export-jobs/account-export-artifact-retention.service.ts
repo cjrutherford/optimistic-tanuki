@@ -18,6 +18,7 @@ const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const HASH = /^[0-9a-f]{64}$/i;
 const MAX_BATCH = 25;
+const MAX_ACCOUNT_PURGE = 10_000;
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 @Injectable()
@@ -92,34 +93,89 @@ export class AccountExportArtifactRetentionService
       } catch {
         failed++;
       }
+      try {
+        await this.pruneHistory();
+      } catch {
+        failed++;
+      }
       return { removed, failed };
     } finally {
       this.sweeping = false;
     }
   }
 
+  /** Terminal history is eligible only after custody metadata has been cleared.
+   * Missing/malformed descriptors remain visible to cleanup; never drop that intent. */
+  async pruneHistory(): Promise<{ removed: number; remaining: number }> {
+    const raw = await this.jobs.manager.query(
+      `WITH history_due AS (SELECT "id" FROM "account_export_jobs"
+       WHERE "kind"='export' AND "appId" IN ('client-interface','local-hub')
+       AND "state" IN ('complete','failed','incomplete')
+       AND COALESCE("completedAt","updatedAt","createdAt")<=clock_timestamp()-interval '90 days'
+       AND ("leaseExpiresAt" IS NULL OR "leaseExpiresAt"<=clock_timestamp())
+       AND ("coverageSummary"->'privateArtifact' IS NULL OR "coverageSummary"->'privateArtifact'='null'::jsonb)
+       AND COALESCE("coverageSummary"->>'artifactState','') NOT IN ('cleanup-pending','assembling')
+       ORDER BY COALESCE("completedAt","updatedAt","createdAt"),"id" LIMIT 25 FOR UPDATE SKIP LOCKED)
+       DELETE FROM "account_export_jobs" j USING history_due h WHERE j."id"=h."id" RETURNING j."id"`
+    );
+    if (
+      !Array.isArray(raw) ||
+      raw.length !== 2 ||
+      !Array.isArray(raw[0]) ||
+      !Number.isSafeInteger(raw[1]) ||
+      raw[1] !== raw[0].length ||
+      raw[1] > 25
+    )
+      throw Error('JOB_HISTORY_DELETE_UNVERIFIED');
+    const result = await this.jobs.manager.query(
+      `SELECT count(*)::text AS "historyRemaining" FROM "account_export_jobs" WHERE "kind"='export' AND "appId" IN ('client-interface','local-hub') AND "state" IN ('complete','failed','incomplete') AND COALESCE("completedAt","updatedAt","createdAt")<=clock_timestamp()-interval '90 days'`
+    );
+    const value = result?.[0]?.historyRemaining;
+    if (
+      !Array.isArray(result) ||
+      result.length !== 1 ||
+      !/^\d+$/.test(String(value)) ||
+      !Number.isSafeInteger(Number(value))
+    )
+      throw Error('JOB_HISTORY_READBACK_UNVERIFIED');
+    return { removed: raw[1], remaining: Number(value) };
+  }
+
   async purgeAccount(
-    accountId: string
+    accountId: string,
+    deletionOperationId?: string
   ): Promise<{ removed: number; failed: number }> {
     if (!UUID.test(accountId)) throw new Error('ACCOUNT_ID_INVALID');
+    if (deletionOperationId !== undefined && !UUID.test(deletionOperationId))
+      throw new Error('DELETION_OPERATION_ID_INVALID');
     let removed = 0;
     let failed = 0;
     const candidates = await this.jobs
       .createQueryBuilder('job')
+      .select(['job.id'])
       .where(
         `job.accountId = :accountId AND job.kind = :kind AND job.appId IN (:...apps)`,
         { accountId, kind: 'export', apps: APPS }
       )
       .orderBy('job.createdAt', 'ASC')
-      .take(MAX_BATCH + 1)
+      .take(MAX_ACCOUNT_PURGE + 1)
       .getMany();
-    if (candidates.length > MAX_BATCH)
+    if (candidates.length > MAX_ACCOUNT_PURGE)
       throw new Error('ARTIFACT_PURGE_BOUND_EXCEEDED');
     for (const candidate of candidates) {
       try {
-        const outcome = await this.removeLocked(candidate.id, true, accountId);
+        const outcome = await this.removeLocked(
+          candidate.id,
+          true,
+          accountId,
+          deletionOperationId
+        );
         if (outcome === 'removed') removed++;
-        if (outcome === 'failed') failed++;
+        if (
+          outcome === 'failed' ||
+          (deletionOperationId && outcome === 'skipped')
+        )
+          failed++;
       } catch {
         failed++;
       }
@@ -135,9 +191,15 @@ export class AccountExportArtifactRetentionService
   private async removeLocked(
     jobId: string,
     accountPurge: boolean,
-    expectedAccount?: string
+    expectedAccount?: string,
+    deletionOperationId?: string
   ): Promise<'removed' | 'skipped' | 'failed'> {
     return this.jobs.manager.transaction(async (manager) => {
+      if (deletionOperationId)
+        await manager.query(
+          "SELECT set_config('ot.deletion_operation', $1, true)",
+          [deletionOperationId]
+        );
       const repo = manager.getRepository(AccountExportJobEntity);
       const row = await repo
         .createQueryBuilder('job')

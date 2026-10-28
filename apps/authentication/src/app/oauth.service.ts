@@ -1,3 +1,4 @@
+import { isRollingSessionApp } from '@optimistic-tanuki/models';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,6 +12,7 @@ import { randomUUID } from 'crypto';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
 import { emitSafeDiagnostic } from '@optimistic-tanuki/logger';
+import { AccountDeletionFenceService } from '../account-deletion/account-deletion-fence.service';
 
 @Injectable()
 export class OAuthService {
@@ -26,7 +28,8 @@ export class OAuthService {
     private readonly jsonWebToken: JwtService,
     private readonly configValidator: OAuthConfigValidator,
     private readonly guardianPermissions: GuardianPermissionService,
-    private readonly profileOwnershipVerifier: ProfileOwnershipVerifier
+    private readonly profileOwnershipVerifier: ProfileOwnershipVerifier,
+    private readonly accountDeletionFence: AccountDeletionFenceService
   ) {}
 
   async oauthLogin(
@@ -52,9 +55,7 @@ export class OAuthService {
         );
       }
 
-      this.l.debug(
-        `OAuth login attempt: provider=${provider}, providerUserId=${providerUserId}`
-      );
+      this.l.debug(`OAuth login attempt: provider=${provider}`);
 
       // Find existing linked account
       const linked = await this.oauthRepo.findOne({
@@ -63,6 +64,7 @@ export class OAuthService {
       });
 
       if (linked && linked.user) {
+        await this.accountDeletionFence.assertActiveAccount(linked.user.id);
         await this.applyEligibility(
           linked.user,
           appId,
@@ -80,6 +82,7 @@ export class OAuthService {
         });
 
         if (existingUser) {
+          await this.accountDeletionFence.assertActiveAccount(existingUser.id);
           // Account-takeover guard: only auto-link when the provider asserts
           // the email is verified. Otherwise an attacker who controls an
           // unverified provider account with a victim's email could seize the
@@ -87,7 +90,7 @@ export class OAuthService {
           if (!emailVerified) {
             const providerLabel = this.getProviderDisplayName(provider);
             this.l.warn(
-              `Refused OAuth auto-link: provider=${provider} did not verify email for existing userId=${existingUser.id}`
+              `Refused OAuth auto-link: provider=${provider} did not verify email for an existing account`
             );
             throw new RpcException(
               `We found an existing account for ${email}, but ${providerLabel} did not confirm you own this email address. Please sign in with your password, then link ${providerLabel} from your account settings.`
@@ -114,7 +117,7 @@ export class OAuthService {
 
           // Audit trail: a verified-email auto-link just occurred.
           this.l.log(
-            `OAuth auto-link: linked verified ${provider} identity (${providerUserId}) to existing userId=${existingUser.id}`
+            `OAuth auto-link: linked verified ${provider} identity to an existing account`
           );
 
           return await this.issueTokenForUser(existingUser, profileId, appId);
@@ -155,6 +158,7 @@ export class OAuthService {
       if (!user) {
         throw new RpcException('User not found');
       }
+      await this.accountDeletionFence.assertActiveAccount(user.id);
 
       // Check if this provider is already linked to this user
       const existing = await this.oauthRepo.findOne({
@@ -216,6 +220,7 @@ export class OAuthService {
 
   async unlinkProvider(userId: string, provider: string) {
     try {
+      await this.accountDeletionFence.assertActiveAccount(userId);
       await this.oauthRepo.manager.transaction(async (manager) => {
         const users = manager.getRepository(UserEntity);
         const providers = manager.getRepository(OAuthProviderEntity);
@@ -294,6 +299,7 @@ export class OAuthService {
     profileId?: string,
     appId?: string
   ) {
+    await this.accountDeletionFence.assertActiveAccount(user.id);
     if (!user.emailVerifiedAt) {
       return {
         message: 'Email verification required',
@@ -320,7 +326,7 @@ export class OAuthService {
 
     const tk = this.jsonWebToken.sign(pl, {
       secret: this.jwtSecret,
-      expiresIn: '1h',
+      ...(isRollingSessionApp(appId) ? {} : { expiresIn: '1h' as const }),
     });
 
     const ntk = {

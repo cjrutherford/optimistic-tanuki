@@ -1,3 +1,4 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { ConfigService } from '@nestjs/config';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { Attachment } from '../entities/attachment.entity';
@@ -40,6 +41,7 @@ import { ElectionVote } from '../entities/election-vote.entity';
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
   const entities = [
+    AccountDeletionWriteFenceEntity,
     Attachment,
     Comment,
     Post,
@@ -81,6 +83,7 @@ const loadDatabase = (config: ConfigService) => {
     username: database.username,
     password: database.password,
     database: database.database,
+    synchronize: false,
     entities,
   };
   return ormConfig;

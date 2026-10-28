@@ -1,3 +1,5 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import 'reflect-metadata';
 import { writeFileSync } from 'node:fs';
 import { DataSource } from 'typeorm';
@@ -38,7 +40,7 @@ describePrivate('O04 Chat Collector migrated physical catalog', () => {
       database: env.CHAT_PARITY_PG_DATABASE,
       username: env.CHAT_PARITY_PG_USER,
       password: env.CHAT_PARITY_PG_PASSWORD,
-      entities: [Conversation, Message],
+      entities: [Conversation, Message, AccountDeletionWriteFenceEntity],
       migrations: [],
       migrationsRun: false,
       synchronize: false,
@@ -81,7 +83,7 @@ describePrivate('O04 Chat Collector migrated physical catalog', () => {
         catalog
       )
     ).toEqual([]);
-    expect(source.entityMetadatas).toHaveLength(2);
+    expect(source.entityMetadatas).toHaveLength(3);
     const foreignKeys = await source.query(
       `SELECT c.conrelid::regclass::text AS "table",c.confrelid::regclass::text AS parent,array_agg(a.attname::text ORDER BY k.ordinality) AS columns,array_agg(b.attname::text ORDER BY k.ordinality) AS "parentColumns",min(c.confdeltype::text) AS "deleteAction" FROM pg_constraint c JOIN pg_namespace n ON n.oid=c.connamespace JOIN LATERAL unnest(c.conkey,c.confkey) WITH ORDINALITY AS k(child,parent,ordinality) ON true JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=k.child JOIN pg_attribute b ON b.attrelid=c.confrelid AND b.attnum=k.parent WHERE n.nspname='public' AND c.contype='f' AND c.conrelid='public.message'::regclass GROUP BY c.oid,c.conrelid,c.confrelid ORDER BY c.conrelid::regclass::text`
     );

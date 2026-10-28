@@ -1,0 +1,181 @@
+{
+  "date": "2026-10-27",
+  "scope": ["client-interface", "local-hub"],
+  "baselineHead": "2d3876243878f2590c006e6a19cdbe4fc6c5c1a9",
+  "revision": "uncommitted source snapshot identified by sourceSha256; not a clean HEAD-only or deployed revision",
+  "runtimeRoot": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06",
+  "command": "python3 tools/account-deletion-private-fixture.py --run --skip-build --release-guide",
+  "browser": "system Chrome, real guarded HTTP/TCP and migrated private owner databases",
+  "accounts": "synthetic verified test accounts, not customers; no successful response mocks",
+  "screenshots": [
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-client-interface-account-1280.png",
+      "sha256": "af8779cc8513f8bf3851e54058d6d155aa151cd728c081884c97528d26d524f1",
+      "width": 1170,
+      "height": 380,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-client-interface-account-1280.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-client-interface-account-390.png",
+      "sha256": "212327035f7bbb5d5f975d906e334c2adafa916dea639adb73730e63af8fe4e3",
+      "width": 318,
+      "height": 526,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-client-interface-account-390.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-client-interface-help-1280.png",
+      "sha256": "f41592d9d8928f9b4c8c20bd79113d1488412709b9fda1793e4e76cf6112d43b",
+      "width": 1244,
+      "height": 738,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-client-interface-help-1280.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-client-interface-help-390.png",
+      "sha256": "cbe436aff7abe9e3201db822f7898cde007f2b5e4c0bfe7e1f732db77882938c",
+      "width": 354,
+      "height": 1124,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-client-interface-help-390.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-client-interface-help-dark-1280.png",
+      "sha256": "14b5bfe68a410dd21c90f7fbc9a371dcfcff47b40325b85db514e37cef1eba18",
+      "width": 1244,
+      "height": 738,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-client-interface-help-dark-1280.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-client-interface-help-dark-390.png",
+      "sha256": "1a8baf54519cd2162f84f03afcdc4fc388193b206b579ba1145d6f8f56c4a457",
+      "width": 354,
+      "height": 1124,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-client-interface-help-dark-390.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-client-interface-privacy-1280.png",
+      "sha256": "c91292092acdb6f605f4e0324d22dcada2e31156217582b4cc84ae1ecf968450",
+      "width": 1244,
+      "height": 1476,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-client-interface-privacy-1280.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-client-interface-privacy-390.png",
+      "sha256": "b7e0a8ca9d6479f1b2f10869bf27e67955fd24b89263eb2b6414b2bc7716db2c",
+      "width": 354,
+      "height": 2784,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-client-interface-privacy-390.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-client-interface-privacy-dark-1280.png",
+      "sha256": "a2418a38b629c947a4bbad0600eb09560b4973cbbdf68ed0d3bcffd9c9353438",
+      "width": 1244,
+      "height": 1476,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-client-interface-privacy-dark-1280.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-client-interface-privacy-dark-390.png",
+      "sha256": "972fb8a9d01194c471129b51acabee695008c6e8bc19b890925bf6e533c50725",
+      "width": 354,
+      "height": 2784,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-client-interface-privacy-dark-390.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-local-hub-account-1280.png",
+      "sha256": "1441654683bef510f112a00850e377c0b15e0b5709356f6e384ccc00285574d0",
+      "width": 652,
+      "height": 379,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-local-hub-account-1280.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-local-hub-account-390.png",
+      "sha256": "0a94fb5a4fc897fee4a5c3ec34d5d8af68c884c22dfaa596357f3eb15edf906c",
+      "width": 342,
+      "height": 552,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-local-hub-account-390.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-local-hub-help-1280.png",
+      "sha256": "51f9be27e6f8662ddcc903d2c6de714ca114a5c7e70372d677ac974bbca9b26b",
+      "width": 1280,
+      "height": 855,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-local-hub-help-1280.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-local-hub-help-390.png",
+      "sha256": "9b50588d2b9e97302f709b1e27da2ca0377c42021649b6433af8a1abec8732cd",
+      "width": 390,
+      "height": 1189,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-local-hub-help-390.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-local-hub-help-dark-1280.png",
+      "sha256": "f013de51d817164d9fc5ed235c82f606f97190bfe9cebc2510c8d3122dbb5230",
+      "width": 1280,
+      "height": 855,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-local-hub-help-dark-1280.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-local-hub-help-dark-390.png",
+      "sha256": "6792837e2c83bd2d6c92bfa8223140be2cd107aaca1f09ace24f48d31a8df55b",
+      "width": 390,
+      "height": 1189,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-local-hub-help-dark-390.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-local-hub-privacy-1280.png",
+      "sha256": "96f541023ae7b5f2a026c2c1db85b0a4447392c23b5df320f8131ca451617a08",
+      "width": 1280,
+      "height": 1476,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-local-hub-privacy-1280.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-local-hub-privacy-390.png",
+      "sha256": "a2fba4577bef86cd3db2bc148f85c354961b85c993f8fdbea6f682df8ff5d177",
+      "width": 390,
+      "height": 2411,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-local-hub-privacy-390.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-local-hub-privacy-dark-1280.png",
+      "sha256": "dee6625aabfb3e2ed1ff469cc7c479d26bea2836644a893effe1ac0a9bca303d",
+      "width": 1280,
+      "height": 1476,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-local-hub-privacy-dark-1280.png"
+    },
+    {
+      "path": "docs/release-readiness/evidence/r6-local/r6-local-hub-privacy-dark-390.png",
+      "sha256": "604fc2424fc1cab0da79036071c8e51a8e0c4b11657a87c80ec8aedf9d2727ce",
+      "width": 390,
+      "height": 2411,
+      "sourceArtifact": ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-local-hub-privacy-dark-390.png"
+    }
+  ],
+  "sourceSha256": {
+    "apps/authentication-e2e/src/authentication/d27-gateway.worker.ts": "af5953a2fbbc0013bb5f29a0d9b7cfd782e38a492e9dbfce38895451619cc8c5",
+    "apps/authentication-e2e/src/authentication/d27-multiprocess.spec.ts": "7237e07ae357ac2dab33a1e394473b9c3572f0fa4c269715de933cbd5029d5f8",
+    "apps/authentication-e2e/src/authentication/r4-gateway-composition.ts": "b45c653ae3c4cb77a33dd2a966c718c9d6fe5e5e77270141d5e5a2106dc14e29",
+    "apps/authentication-e2e/src/authentication/r6-release.ts": "3622aa01843c23d1b1454537e48316b72c3242caf21e8afb705226dd0cf9e7cb",
+    "apps/client-interface/src/app/app.routes.ts": "9a398daac9ea574da52e9d030052e0e652dcf5c63db03084b64493c7406641d4",
+    "apps/client-interface/src/app/components/landing.component.html": "062f608461d1a74443bd547c2d631be5adecfc7f840424fb990e9eaffda7ff45",
+    "apps/client-interface/src/app/components/settings.component.html": "abde949682511e34a5aab6ae06b722abd16b9c8586082d7d4339e05472cfa966",
+    "apps/client-interface/src/index.html": "f19cb486e08287cf75acfcb8ae6c108f69ef05cecdfa658efa17c44c3781867b",
+    "apps/local-hub/src/app/app.routes.ts": "5f49ba55c7aa5d7ad70cc99483c307abdb7b82a8618e30dcdc8a1efd6a772cef",
+    "apps/local-hub/src/app/pages/account/account.component.html": "093cc799b228e88c87374b8079c5cc2e343b6d824a6b99cf813af1321f1ba6e7",
+    "apps/local-hub/src/app/pages/landing/landing.component.html": "0cd17a8ed2c9fda5a7197f30329554f3dbf2f26c954aa8e81bb12308f5c5d693",
+    "apps/local-hub/src/index.html": "7add0f4455315d89686917d622f82bc7bfaa2f9596c9a71c2f60318290f749d1",
+    "libs/common-ui/src/lib/common-ui/public-contact-page/public-contact-page.component.html": "7b6b6ecd113482341e70f84c40b10b0f451f2c2973ade5ed6fed6d0c883087c6",
+    "libs/hai-ui/src/lib/hai-types/hai-app.directory.ts": "263ca806034e9332fa6c3d70b4eab5c2cc6c05e41dc022ca40de316dfdc18181",
+    "libs/profile-ui/src/index.ts": "c5532749c17140a12853f514c31a187f8e5871fc89bb6cea64c2a84399d2ddac",
+    "libs/profile-ui/src/lib/profile-ui/release-information.component.spec.ts": "eb5a22f6b945fe90f22e3d41242a1948c478ef66c6c5427ab3bd135b017e714a",
+    "libs/profile-ui/src/lib/profile-ui/release-information.component.ts": "2979830f168fe34dd0b7605f93c94d072a30ab1d59b1367b46e70f9e5cd0333c",
+    "tools/account-deletion-private-fixture.py": "902628ea1cccb03ee098f4218bc26f7b1fe25c034ed63a5184e377dc15eab599"
+  },
+  "buildLogs": {
+    ".runtime-artifacts/release-r6/build-final.log": "ef387e0e86520ff48f42a19b47cd1084a3e1b521eb793632a1fc6c06f0f47800"
+  },
+  "limits": [
+    "Cropped real components, not fabricated mockups. Fixed bug-report controls may remain visible.",
+    "Light/dark soft-touch preferences at 390 and 1280 only; not all themes/browsers/pages.",
+    "R6 navigation/demo proof, not a new D27 deletion or R4 payment/provider acceptance.",
+    "No credentials, deletion receipts, private account content or real financial records in images."
+  ]
+}

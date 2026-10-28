@@ -1,3 +1,4 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { ConfigService } from '@nestjs/config';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import AssetEntity from '../entities/asset.entity';
@@ -5,7 +6,11 @@ import { GuardianAssetActivity } from '../entities/guardian-asset-activity.entit
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
-  const entities = [AssetEntity, GuardianAssetActivity];
+  const entities = [
+    AssetEntity,
+    GuardianAssetActivity,
+    AccountDeletionWriteFenceEntity,
+  ];
   console.log('Database configuration:', {
     host: database.host,
     port: database.port,

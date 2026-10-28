@@ -1,0 +1,747 @@
+{
+  "scope": ["client-interface", "local-hub"],
+  "date": "2026-10-27",
+  "baselineHead": "2d3876243878f2590c006e6a19cdbe4fc6c5c1a9",
+  "coverage": "47 existing RR-01 public claim IDs plus 11 explicit account-data/support/guide claims. Public landing templates, index metadata, OT/TS shared HAI descriptions, contact and account-rights copy; no claim about other products.",
+  "releaseQualified": false,
+  "items": [
+    {
+      "id": "OT01",
+      "historicalClaim": "Group-only hero: \u201cOne Network, Just for Your People\u201d; social network built for groups",
+      "disposition": "REWORD",
+      "currentTreatment": "\u201cYou are the social network\u201d; people, relationships, interests; communities explicitly optional.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT02",
+      "historicalClaim": "\u201cYour space. Your people.\u201d / real connections",
+      "disposition": "REWORD",
+      "currentTreatment": "Values and relationship-centered positioning, under an early-stage description; no maturity or adoption measure.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT03",
+      "historicalClaim": "Infinity beside \u201cCommunities\u201d",
+      "disposition": "RETRACT",
+      "currentTreatment": "Replace with \u201cYou / At the Center\u201d; no unlimited capacity or community-count implication.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "OT04",
+      "historicalClaim": "\u201cYours Forever\u201d hero and ownership card; connections do not disappear",
+      "disposition": "RETRACT",
+      "currentTreatment": "Early access / early-stage invitation. No permanent hosting, ownership, export, or federation guarantee.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "OT05",
+      "historicalClaim": "Create own network and invite people",
+      "disposition": "REWORD",
+      "currentTreatment": "Create an account/profile; community membership optional. CTA \u2192 `/register`; no invitation capability promised.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT06",
+      "historicalClaim": "Engage exclusively in a trusted community; posts/events/discussions within group",
+      "disposition": "REWORD",
+      "currentTreatment": "Try following people and joining communities. No blanket exclusivity or trust guarantee.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT07",
+      "historicalClaim": "Public posts reach beyond community / discover other networks",
+      "disposition": "REWORD",
+      "currentTreatment": "Explore is separate from the primary feed; discovery behavior explicitly under test.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT08",
+      "historicalClaim": "Churches: share sermons, coordinate events",
+      "disposition": "REWORD",
+      "currentTreatment": "Example of an optional interest space; no event-coordination feature.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT09",
+      "historicalClaim": "School clubs: organize meetings, share updates",
+      "disposition": "REWORD",
+      "currentTreatment": "Example of optional shared interests; no meeting scheduler promise.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT10",
+      "historicalClaim": "Neighborhoods: block watches, HOA updates, local events",
+      "disposition": "REWORD",
+      "currentTreatment": "Place as an interest; locality-centered alternative through the existing HAI menu.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT11",
+      "historicalClaim": "Teams: internal communications",
+      "disposition": "REWORD",
+      "currentTreatment": "Example of people with a common goal; no enterprise/internal-security guarantee.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT12",
+      "historicalClaim": "\u201cPrivate by Default\u201d, yours alone, no algorithm/no noise",
+      "disposition": "REWORD",
+      "currentTreatment": "\u201cOur Privacy Standard\u201d: private-community isolation and explicit author choice in public communities are intended requirements, still being validated. No assertion that defaults/enforcement are already accepted.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT13",
+      "historicalClaim": "Founder shapes social web",
+      "disposition": "REWORD",
+      "currentTreatment": "Feed intended for chosen relationships/communities; feed ordering explicitly under validation.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT14",
+      "historicalClaim": "Public Discovery feature card",
+      "disposition": "REWORD",
+      "currentTreatment": "Optional communities, available to try in early access.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT15",
+      "historicalClaim": "Rich content: posts/images/events/discussions",
+      "disposition": "REWORD",
+      "currentTreatment": "Posts/images to try; publishing/uploads under test. Event functionality withdrawn.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT16",
+      "historicalClaim": "Real-time notifications; \u201cNever miss\u201d",
+      "disposition": "RETRACT",
+      "currentTreatment": "Describe different conversational tempos instead, without guaranteed notification delivery.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "OT17",
+      "historicalClaim": "New main-forum/message description",
+      "disposition": "REWORD",
+      "currentTreatment": "Explicitly under test; main forum rather than per-community forums.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": [
+        "docs/release-readiness/findings/RR-01-CLAIMS.md",
+        "docs/release-readiness/evidence/df-007/checkpoint-r4-05.json",
+        "docs/release-readiness/findings/RR-05-I01.md"
+      ],
+      "limits": "Early-access description. Local Chat recovery is verified; this does not accept the historical full RR-05 forum audit."
+    },
+    {
+      "id": "OT18",
+      "historicalClaim": "\u201cJoin thousands of groups\u201d",
+      "disposition": "RETRACT",
+      "currentTreatment": "Honest early-stage invitation without fabricated adoption figures.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "OT19",
+      "historicalClaim": "Start/Create Network, Sign In, See How It Works",
+      "disposition": "REWORD",
+      "currentTreatment": "Create an Account \u2192 `/register`; Sign In \u2192 `/login`; scroll action \u2192 `#how-it-works`.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT20",
+      "historicalClaim": "Footer \u201cBuilt for communities that care\u201d",
+      "disposition": "REWORD",
+      "currentTreatment": "Built around people and shared interests.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT21",
+      "historicalClaim": "Metadata title \u201cClient Interface\u201d and absent description",
+      "disposition": "REWORD",
+      "currentTreatment": "OT-branded title and early-access description; route title service may set \u201cOptimistic Tanuki\u201d after hydration.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "OT22",
+      "historicalClaim": "Free/free-forever pricing",
+      "disposition": "RETRACT",
+      "currentTreatment": "Neither current landing nor new copy promises free pricing or perpetual availability. No payment field is required by the presented signup flow, but billing policy is not accepted from source alone.",
+      "sources": [
+        "apps/client-interface/src/app/components/landing.component.html",
+        "apps/client-interface/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "TS01",
+      "historicalClaim": "Local commerce and civic participation in one place",
+      "disposition": "REWORD",
+      "currentTreatment": "Place-centered communities, classifieds, messaging; explicitly early access. No released civic/Daylight capability.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "TS02",
+      "historicalClaim": "Belong locally: place-based communities",
+      "disposition": "COMPLETE",
+      "currentTreatment": "Supported localities/communities, with live/work/visit relationships rather than strict residency.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": [
+        "docs/release-readiness/findings/RR-01-CLAIMS.md",
+        "docs/release-readiness/evidence/df-007/checkpoint-r4-02.json"
+      ],
+      "limits": "Local owner/member/nonmember boundaries only; no universal deployment or invitation-delivery qualification."
+    },
+    {
+      "id": "TS03",
+      "historicalClaim": "Trade nearby: buy/sell/message",
+      "disposition": "REWORD",
+      "currentTreatment": "Retained under prominent early-access qualification; listing and messaging cards explicitly describe ongoing tests.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "TS04",
+      "historicalClaim": "Coordinate/support projects/events/local needs in one hub",
+      "disposition": "REWORD",
+      "currentTreatment": "Locality relationship explanation; no project/event tooling or funding promise.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "TS05",
+      "historicalClaim": "Total localities and communities",
+      "disposition": "RETRACT",
+      "currentTreatment": "Remove aggregate promotion until live dataset semantics are verified. Source derives counts from `/api/communities`, not a hard-coded adoption number; runtime was unverified.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "TS06",
+      "historicalClaim": "\u201cMembers\u201d sum across communities",
+      "disposition": "RETRACT",
+      "currentTreatment": "Remove it: memberships can count the same person multiple times; it cannot prove unique member adoption.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "TS07",
+      "historicalClaim": "Featured cards \u201cN residents\u201d",
+      "disposition": "RETRACT",
+      "currentTreatment": "Remove demographic counts: mapper turns missing population into zero, and source provenance/freshness is not verified.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "TS08",
+      "historicalClaim": "\u201cShowing N of M\u201d / featured locality names and images",
+      "disposition": "REWORD",
+      "currentTreatment": "Counts describe the actual returned carousel array, not adoption. Keep API-derived locality cards; distinguish API failure from a successful empty set.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Names and counts derive from configured locality results; no residents, unique members or adoption count is advertised."
+    },
+    {
+      "id": "TS09",
+      "historicalClaim": "Explore Map / Explore the Map; no account required",
+      "disposition": "REWORD",
+      "currentTreatment": "`/cities`; public locality browsing invitation.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": [
+        "docs/release-readiness/findings/RR-01-CLAIMS.md",
+        "apps/local-hub/src/app/app.routes.ts",
+        "apps/local-hub/src/app/pages/cities/cities.component.ts"
+      ],
+      "limits": "Public locality browsing entry point; locality availability depends on configured data. No demographic or adoption claim."
+    },
+    {
+      "id": "TS10",
+      "historicalClaim": "Local Classifieds: buy/sell/share",
+      "disposition": "REWORD",
+      "currentTreatment": "Try nearby listings; posting/seller contact explicitly under test. No in-platform payment guarantee.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "TS11",
+      "historicalClaim": "Direct Messaging / no immediate third-party channels",
+      "disposition": "REWORD",
+      "currentTreatment": "Try contacting a seller/conversation; delivery and replies under test.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "TS12",
+      "historicalClaim": "\u201cSafe & Moderated\u201d: moderation/reputation/accountability",
+      "disposition": "RETRACT",
+      "currentTreatment": "Remove card, including broad safety and reputation guarantees.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "TS13",
+      "historicalClaim": "Support community: fund initiatives, monthly project goals",
+      "disposition": "RETRACT",
+      "currentTreatment": "Remove entire funding section and the misleading locality-navigation CTA.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "TS14",
+      "historicalClaim": "Transparent contributions, secure one-time/recurring donations",
+      "disposition": "RETRACT",
+      "currentTreatment": "Remove donation progress widget, donation links, and fundraising copy.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "TS15",
+      "historicalClaim": "Default monthly funding target 5000 / donor count",
+      "disposition": "RETRACT",
+      "currentTreatment": "Remove placeholder goal and donor social proof. Stop fetching the donation goal on the landing route.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "TS16",
+      "historicalClaim": "Pro Tier business demo, featured/open-now shop, delivery example",
+      "disposition": "RETRACT",
+      "currentTreatment": "Remove demo rather than presenting a fictional business as factual evidence.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "TS17",
+      "historicalClaim": "Grow business; professional business page",
+      "disposition": "RETRACT",
+      "currentTreatment": "Remove outreach block and registration CTA implying it creates a business page.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "TS18",
+      "historicalClaim": "Basic free listing; Pro placement/analytics",
+      "disposition": "RETRACT",
+      "currentTreatment": "Remove tier promotion and pricing promise.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Claim remains withdrawn. No replacement capacity, user-count, money, safety or permanence promise."
+    },
+    {
+      "id": "TS19",
+      "historicalClaim": "Join community / unlock all features",
+      "disposition": "REWORD",
+      "currentTreatment": "Account creation to try membership in early access. `/register`; actual join action lives on community/locality pages.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "TS20",
+      "historicalClaim": "Connect & Trade step",
+      "disposition": "REWORD",
+      "currentTreatment": "Under the early-access explanation; classifieds and messaging named without payment/checkout promises.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": [
+        "docs/release-readiness/findings/RR-01-CLAIMS.md",
+        "docs/release-readiness/evidence/df-007/checkpoint-r4-03.json"
+      ],
+      "limits": "Offers and cash ledger lifecycle verified locally; card charge, settlement and payout are unqualified."
+    },
+    {
+      "id": "TS21",
+      "historicalClaim": "Document meta description",
+      "disposition": "REWORD",
+      "currentTreatment": "Explicit early access; no maturity or civic guarantee.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Qualified early-access wording; no production, adoption, delivery, payment or permanence guarantee."
+    },
+    {
+      "id": "TS22",
+      "historicalClaim": "Daylight, locality expansion",
+      "disposition": "DEFER",
+      "currentTreatment": "No released Daylight claim found on `/`; do not add one before RR-07.",
+      "sources": [
+        "apps/local-hub/src/app/pages/landing/landing.component.html",
+        "apps/local-hub/src/index.html"
+      ],
+      "evidence": ["docs/release-readiness/findings/RR-01-CLAIMS.md"],
+      "limits": "Not advertised as released; remains in the deferred feature register."
+    },
+    {
+      "id": "HAI01",
+      "historicalClaim": "HAI app descriptions and sibling navigation",
+      "disposition": "REWORD",
+      "currentTreatment": "Both shells configure `HaiAboutTagComponent` from `hai-ui`. Existing OT architecture-oriented language is F-003; copy/link/focus/shared-login work belongs to RR-02. No new shared-session claim introduced here.",
+      "sources": [
+        "libs/hai-ui/src/lib/hai-types/hai-app.directory.ts",
+        "libs/common-ui/src/lib/common-ui/public-contact-page/public-contact-page.component.html"
+      ],
+      "evidence": [
+        "docs/release-readiness/findings/RR-01-CLAIMS.md",
+        "libs/hai-ui/src/lib/hai-types/hai-app.directory.ts"
+      ],
+      "limits": "OT/TS early-access descriptions only. Sibling products and external shared-session qualification are outside this release."
+    },
+    {
+      "id": "HAI02",
+      "historicalClaim": "Sign-in/register and appearance controls",
+      "disposition": "REWORD",
+      "currentTreatment": "Shell actions map to auth routes and the shared appearance menu. RR-03 validates identity; RR-09 validates accessibility/themes.",
+      "sources": [
+        "libs/hai-ui/src/lib/hai-types/hai-app.directory.ts",
+        "libs/common-ui/src/lib/common-ui/public-contact-page/public-contact-page.component.html"
+      ],
+      "evidence": [
+        "docs/release-readiness/findings/RR-01-CLAIMS.md",
+        "docs/release-readiness/evidence/df-007/checkpoint-r4-01.json"
+      ],
+      "limits": "Entry points and local session/profile controls. External provider signup/login/delivery remains X01."
+    },
+    {
+      "id": "HAI03",
+      "historicalClaim": "Report a bug",
+      "disposition": "REWORD",
+      "currentTreatment": "Existing `bug-report-ui` control in both shells; engineering bug reporting is not advertised as moderation or abuse-report coverage. Minimum abuse handling RR-08/11.",
+      "sources": [
+        "libs/hai-ui/src/lib/hai-types/hai-app.directory.ts",
+        "libs/common-ui/src/lib/common-ui/public-contact-page/public-contact-page.component.html"
+      ],
+      "evidence": [
+        "docs/release-readiness/findings/RR-01-CLAIMS.md",
+        "libs/common-ui/src/lib/common-ui/public-contact-page/public-contact-page.component.html"
+      ],
+      "limits": "Support contact/report entry point, not verified mail receipt or a response-time promise."
+    },
+    {
+      "id": "DATA01",
+      "historicalClaim": "Export covered OT/TS and shared-account data",
+      "disposition": "COMPLETE",
+      "currentTreatment": "Export covered OT/TS and shared-account data",
+      "sources": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "evidence": [
+        "docs/release-readiness/evidence/df-007/checkpoint-a01.json",
+        "docs/release-readiness/evidence/df-007/checkpoint-a07.json",
+        "docs/release-readiness/evidence/df-007/checkpoint-u01.json"
+      ],
+      "limits": "A01\u2013A07 and U01 local archive/status/download evidence; private counterpart material excluded."
+    },
+    {
+      "id": "DATA02",
+      "historicalClaim": "Accepted deletion signs out both apps and removes covered data",
+      "disposition": "COMPLETE",
+      "currentTreatment": "Accepted deletion removes covered data and retains minimal deidentified records to block stale activity.",
+      "sources": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "evidence": [
+        "docs/release-readiness/evidence/df-007/checkpoint-d27.json",
+        "docs/release-readiness/evidence/df-007/checkpoint-u02.json",
+        "docs/release-readiness/evidence/df-007/checkpoint-d26.json"
+      ],
+      "limits": "D00\u2013D27 and U02 local protocol; completion stays blocked on unverified cleanup. Backups/provider/offline copies excluded. Minimal deidentified operational fence/receipt records remain; no account content is retained by that statement."
+    },
+    {
+      "id": "DATA03",
+      "historicalClaim": "Shared audit history retains history with identifying fields removed",
+      "disposition": "COMPLETE",
+      "currentTreatment": "Shared audit history retains history with identifying fields removed",
+      "sources": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "evidence": [
+        "docs/release-readiness/evidence/df-007/checkpoint-n04.json"
+      ],
+      "limits": "Approved N04 policy removes the deleting account identifying fields while retaining shared history."
+    },
+    {
+      "id": "DATA04",
+      "historicalClaim": "Seven-day rolling inactivity expiry",
+      "disposition": "COMPLETE",
+      "currentTreatment": "Seven-day rolling inactivity expiry",
+      "sources": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "evidence": [
+        "docs/release-readiness/evidence/df-007/checkpoint-r2-01.json"
+      ],
+      "limits": "No absolute session lifetime claim; current-session logout can end access earlier."
+    },
+    {
+      "id": "DATA05",
+      "historicalClaim": "Rolling 90-day inventoried account-activity retention",
+      "disposition": "COMPLETE",
+      "currentTreatment": "Rolling 90-day inventoried account-activity retention",
+      "sources": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "evidence": [
+        "docs/release-readiness/evidence/df-007/checkpoint-r2-02.json",
+        "docs/release-readiness/evidence/df-007/checkpoint-r2-03.json"
+      ],
+      "limits": "Account deletion wins over retention. No historical/external log-copy erasure claim."
+    },
+    {
+      "id": "DATA06",
+      "historicalClaim": "Shared financial receipts belong to the account",
+      "disposition": "COMPLETE",
+      "currentTreatment": "Shared financial receipts belong to the account",
+      "sources": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "evidence": [
+        "docs/release-readiness/evidence/df-007/checkpoint-a01.json"
+      ],
+      "limits": "Own receipts/wallet totals only; excludes counterpart IDs, credentials and private dispute/proof content."
+    },
+    {
+      "id": "DATA07",
+      "historicalClaim": "Downloaded, offline, backup and provider copies",
+      "disposition": "REWORD",
+      "currentTreatment": "Downloaded, offline, backup and provider copies",
+      "sources": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "evidence": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "limits": "Explicitly outside the completed in-app cleanup guarantee; X02/X03 require separate evidence."
+    },
+    {
+      "id": "DATA08",
+      "historicalClaim": "Encryption and guaranteed delivery",
+      "disposition": "RETRACT",
+      "currentTreatment": "Encryption and guaranteed delivery",
+      "sources": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "evidence": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "limits": "No end-to-end encryption or guaranteed delivery promise."
+    },
+    {
+      "id": "DATA09",
+      "historicalClaim": "Session cookie, preferences and recovery receipt",
+      "disposition": "COMPLETE",
+      "currentTreatment": "Session cookie, preferences and recovery receipt",
+      "sources": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "evidence": [
+        "docs/release-readiness/evidence/df-007/checkpoint-n06.json",
+        "docs/release-readiness/evidence/df-007/checkpoint-u02.json"
+      ],
+      "limits": "Session-boundary state reset; receipt is private. No physical remote/offline device wipe."
+    },
+    {
+      "id": "SUP01",
+      "historicalClaim": "Contact HAI for support and privacy requests",
+      "disposition": "REWORD",
+      "currentTreatment": "Contact HAI for support and privacy requests",
+      "sources": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "evidence": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "limits": "Existing support address and no response-time promise; actual delivery remains external qualification."
+    },
+    {
+      "id": "GUIDE01",
+      "historicalClaim": "First-session links to existing workflows",
+      "disposition": "COMPLETE",
+      "currentTreatment": "First-session links to existing workflows",
+      "sources": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts"
+      ],
+      "evidence": [
+        "libs/profile-ui/src/lib/profile-ui/release-information.component.ts",
+        "docs/release-readiness/evidence/r6-local/manifest.json",
+        ".runtime-artifacts/account-rights/deletion/d27-live-50f03fee9e06/r6-browser.json"
+      ],
+      "limits": "Both apps guide to same-app account controls, starting workflow and recovery; real R6 browser proof required."
+    }
+  ]
+}

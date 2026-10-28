@@ -1,3 +1,10 @@
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import { WorkspaceAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { WorkspaceAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { AccountDeletionAuthorityClient } from '@optimistic-tanuki/storage';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -8,7 +15,11 @@ import { Workspace } from '../entities/workspace.entity';
 import { AppController } from './app.controller';
 import loadDatabase from './loadDatabase';
 import { WorkspaceService } from './services/workspace.service';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   AccountExportOwnerSpoolService,
@@ -23,8 +34,35 @@ import { WorkspaceAccountExportSnapshotController } from './account-export-snaps
     ConfigModule.forRoot({ isGlobal: true, load: [loadConfig] }),
     DatabaseModule.register({ name: 'workspace', factory: loadDatabase }),
   ],
-  controllers: [AppController, WorkspaceAccountExportSnapshotController],
+  controllers: [
+    AccountDeletionSnapshotController,
+    WorkspaceAccountDeletionOwnerController,
+    AppController,
+    WorkspaceAccountExportSnapshotController,
+  ],
   providers: [
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: WorkspaceAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        database: { query(sql: string): Promise<unknown> }
+      ) => ({ owner: 'workspace', snapshot, authority, spool, database }),
+      inject: [
+        WorkspaceAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        'WORKSPACE_CONNECTION',
+      ],
+    },
+    WorkspaceAccountDeletionOwnerService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: ClientProxy) =>
+        new AccountDeletionAuthorityClient(auth),
+      inject: [ServiceTokens.AUTHENTICATION_SERVICE],
+    },
     WorkspaceService,
     AccountExportOwnerSpoolService,
     AccountExportProfileSnapshotClient,

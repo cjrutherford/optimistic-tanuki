@@ -29,6 +29,7 @@ import {
   localityRouteContext,
 } from '../../utils/locality-route-context';
 
+import { ModalComponent } from '@optimistic-tanuki/common-ui';
 @Component({
   selector: 'app-classified-detail',
   standalone: true,
@@ -40,6 +41,7 @@ import {
     ClassifiedFormComponent,
     MakeOfferModalComponent,
     OfferListComponent,
+    ModalComponent,
   ],
   templateUrl: './classified-detail.component.html',
   styleUrls: ['./classified-detail.component.scss'],
@@ -458,7 +460,8 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
       if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
         return;
       this.messageService.addMessage({
-        content: 'Offer accepted! Payment has been initiated.',
+        content:
+          'Offer accepted. Card payment is pending and has not been processed.',
         type: 'success',
       });
       await this.loadOffers();

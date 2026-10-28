@@ -16,15 +16,43 @@ export class AssetsAuditErasureService {
     this.table = dataSource.getMetadata(GuardianAssetActivity).tableName;
   }
 
-  eraseParticipation(selection: LogSubjectSelection) {
-    return this.runner.erase(selection, [
+  readbackParticipation(subject: LogSubjectSelection): Promise<number> {
+    return this.runner.readback(subject, [
       {
         table: this.table,
         accountColumns: ['actorUserId', 'dependentUserId'],
         profileColumns: ['profileId'],
-        profileAccountBindings: { profileId: 'dependentUserId' },
-        clearColumns: { assetId: 'null', changedFieldNames: 'json-array' },
       },
     ]);
+  }
+
+  eraseParticipation(selection: LogSubjectSelection, operationId?: string) {
+    if (
+      operationId !== undefined &&
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+        operationId
+      )
+    )
+      throw new Error('ACCOUNT_DELETION_OPERATION_ID_INVALID');
+    return this.runner.erase(
+      selection,
+      [
+        {
+          table: this.table,
+          accountColumns: ['actorUserId', 'dependentUserId'],
+          profileColumns: ['profileId'],
+          profileAccountBindings: { profileId: 'dependentUserId' },
+          clearColumns: { assetId: 'null', changedFieldNames: 'json-array' },
+        },
+      ],
+      operationId
+        ? async (transaction) => {
+            await transaction.query(
+              "SELECT set_config('ot.deletion_operation', $1, true)",
+              [operationId]
+            );
+          }
+        : undefined
+    );
   }
 }

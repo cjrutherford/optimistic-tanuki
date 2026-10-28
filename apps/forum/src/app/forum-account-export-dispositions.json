@@ -470,6 +470,29 @@
         }
       ],
       "relations": []
+    },
+    {
+      "name": "AccountDeletionWriteFenceEntity",
+      "table": "account_deletion_write_fence",
+      "source": "libs/storage/src/lib/account-deletion-write-fence.ts",
+      "subject": {
+        "kind": "none",
+        "fields": [],
+        "rule": "Operational permanent deletion fence, excluded from portable content.",
+        "legacyProvenance": "Not historical authorship evidence; legacy attribution remains unverified.",
+        "evidence": ["libs/storage/src/lib/account-deletion-write-fence.ts"]
+      },
+      "columns": [
+        {
+          "fields": ["key", "kind", "operationId", "installedAt"],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Exclude operational hashes, operation identifiers and timestamps.",
+          "reason": "Internal permanent producer enforcement is not portable personal content.",
+          "evidence": ["libs/storage/src/lib/account-deletion-write-fence.ts"]
+        }
+      ],
+      "relations": []
     }
   ],
   "associations": [

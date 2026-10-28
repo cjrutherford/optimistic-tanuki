@@ -8,3 +8,7 @@ export {
 } from './lib/profile-ui/profile-photo/generated-avatar';
 export { ProfileEditorComponent } from './lib/profile-ui/profile-editor.component';
 export { SettingsShellComponent } from './lib/profile-ui/settings-shell.component';
+export { AccountRightsComponent } from './lib/profile-ui/account-rights.component';
+export { AccountDeletionStatusComponent } from './lib/profile-ui/account-deletion-status.component';
+
+export { ReleaseInformationComponent } from './lib/profile-ui/release-information.component';

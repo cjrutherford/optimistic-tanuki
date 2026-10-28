@@ -1,3 +1,4 @@
+import { notifyAccountDeletion } from '@optimistic-tanuki/common-ui';
 import { Injectable, OnDestroy, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { io, Socket } from 'socket.io-client';
@@ -35,8 +36,14 @@ export class SocialWebSocketService implements OnDestroy {
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
 
+  private readonly resetSession = () => {
+    if (this.reconnectTimeoutId) clearTimeout(this.reconnectTimeoutId);
+    this.reconnectTimeoutId = null;
+    this.disconnect();
+  };
   constructor() {
-    // Service initializes on demand via connect()
+    if (isPlatformBrowser(this.platformId))
+      window.addEventListener('ot:session-reset', this.resetSession);
   }
 
   /**
@@ -90,6 +97,7 @@ export class SocialWebSocketService implements OnDestroy {
    */
   disconnect(): void {
     if (this.socket) {
+      this.socket.removeAllListeners?.();
       this.socket.disconnect();
       this.socket = null;
       this.connected$.next(false);
@@ -101,6 +109,9 @@ export class SocialWebSocketService implements OnDestroy {
   private setupSocketListeners(): void {
     if (!this.socket) return;
 
+    this.socket.on('account_deleted', (value: { accountId?: unknown }) =>
+      notifyAccountDeletion(value?.accountId)
+    );
     this.socket.on('connect', () => {
       console.log('Connected to Social WebSocket');
       this.connected$.next(true);
@@ -392,6 +403,8 @@ export class SocialWebSocketService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (isPlatformBrowser(this.platformId))
+      window.removeEventListener('ot:session-reset', this.resetSession);
     this.disconnect();
 
     if (this.reconnectTimeoutId) {

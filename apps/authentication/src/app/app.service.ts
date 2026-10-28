@@ -1,3 +1,5 @@
+import { isRollingSessionApp } from '@optimistic-tanuki/models';
+import { assertRollingSession } from '../tokens/session-activity';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken, InjectRepository } from '@nestjs/typeorm';
@@ -24,6 +26,7 @@ import { randomBytes } from 'crypto';
 import { authenticator } from 'otplib';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
+import { AccountDeletionFenceService } from '../account-deletion/account-deletion-fence.service';
 
 @Injectable()
 export class AppService {
@@ -46,7 +49,8 @@ export class AppService {
     private readonly jsonWebToken: JwtService,
     private readonly emailService: EmailService,
     private readonly guardianPermissionService: GuardianPermissionService,
-    private readonly profileOwnershipVerifier: ProfileOwnershipVerifier
+    private readonly profileOwnershipVerifier: ProfileOwnershipVerifier,
+    private readonly accountDeletionFence: AccountDeletionFenceService
   ) {}
 
   private normalizeEmail(email: string): string {
@@ -136,6 +140,7 @@ export class AppService {
       if (!user) {
         throw new RpcException('User not found');
       }
+      await this.accountDeletionFence.assertActiveAccount(user.id);
 
       this.l.debug(`Found user ID ${user.id} for email ${normalizedEmail}`);
       return user.id;
@@ -160,6 +165,7 @@ export class AppService {
     });
 
     if (existingUser) {
+      await this.accountDeletionFence.assertActiveAccount(existingUser.id);
       await this.userRepo.update(existingUser.id, {
         firstName: fn,
         lastName: ln,
@@ -204,6 +210,7 @@ export class AppService {
       if (!user) {
         throw new RpcException('User not found');
       }
+      await this.accountDeletionFence.assertActiveAccount(user.id);
 
       // Per-account brute-force protection: reject while the account is locked.
       this.assertNotLocked(user);
@@ -442,6 +449,7 @@ export class AppService {
     if (!user || !user.keyData) {
       throw new RpcException('User not found');
     }
+    await this.accountDeletionFence.assertActiveAccount(user.id);
 
     const valid = await this.saltedHashService.validateHash(
       oldPass,
@@ -497,6 +505,7 @@ export class AppService {
     appId: string;
   }) {
     const identity = this.oauthCallbackIdentity(data);
+    await this.accountDeletionFence.assertActiveAccount(identity.userId);
     const issued = await this.issueToken(
       identity.userId,
       identity.profileId,
@@ -522,6 +531,7 @@ export class AppService {
     appId: string;
   }) {
     const identity = this.oauthCallbackIdentity(data);
+    await this.accountDeletionFence.assertActiveAccount(identity.userId);
     if (
       typeof data.sessionId !== 'string' ||
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -559,11 +569,26 @@ export class AppService {
     return { token: row.tokenData };
   }
 
-  async validateToken(token: string, appId?: string) {
+  async validateToken(token: string, appId?: string, activity = false) {
     try {
-      const valid = await this.jsonWebToken.verifyAsync(token, {
-        secret: this.jwtSecret,
-      });
+      let valid: {
+        userId?: string;
+        appId?: string;
+        profileId?: string;
+        iat?: number;
+      };
+      try {
+        valid = await this.jsonWebToken.verifyAsync(token, {
+          secret: this.jwtSecret,
+        });
+      } catch (error) {
+        if ((error as Error)?.name !== 'TokenExpiredError') throw error;
+        valid = await this.jsonWebToken.verifyAsync(token, {
+          secret: this.jwtSecret,
+          ignoreExpiration: true,
+        });
+        if (!isRollingSessionApp(valid.appId)) throw error;
+      }
       if (!valid) {
         throw new RpcException('Invalid token');
       }
@@ -574,6 +599,8 @@ export class AppService {
         throw new RpcException('Token is invalid or revoked');
       }
       const userId = String((valid as { userId?: string }).userId || '');
+      if (!userId) throw new RpcException('Token user was not found');
+      await this.accountDeletionFence.assertActiveAccount(userId);
       const tokenAppId = (valid as { appId?: string }).appId;
       if (tokenAppId && appId && tokenAppId !== appId) {
         throw new RpcException(
@@ -590,7 +617,16 @@ export class AppService {
         user.id,
         tokenAppId || appId
       );
+      const sessionExpiresAt = isRollingSessionApp(tokenAppId)
+        ? await assertRollingSession(
+            this.tokenRepo,
+            storedToken.id,
+            valid,
+            activity === true
+          )
+        : undefined;
       return {
+        ...(sessionExpiresAt ? { sessionExpiresAt } : {}),
         message: 'Token is valid',
         code: 0,
         data: valid,
@@ -610,6 +646,7 @@ export class AppService {
         where: { id: userId },
       });
       if (!existingUser) throw new RpcException('User not found');
+      await this.accountDeletionFence.assertActiveAccount(existingUser.id);
       if (existingUser.totpSecret)
         throw new RpcException('TOTP already set up');
       await this.userRepo.update(userId, { totpSecret: newSecret });
@@ -650,6 +687,7 @@ export class AppService {
     if (!user || !user.totpSecret) {
       throw new RpcException('User not found or TOTP not set up');
     }
+    await this.accountDeletionFence.assertActiveAccount(user.id);
     try {
       this.mfaService.validateToken(user.totpSecret, token);
     } catch (e) {
@@ -662,6 +700,7 @@ export class AppService {
     try {
       const user = await this.userRepo.findOne({ where: { id: userId } });
       if (!user) throw new RpcException('User not found');
+      await this.accountDeletionFence.assertActiveAccount(user.id);
 
       const template = this.renderSecurityEmail(
         'Multi-Factor Authentication Setup',
@@ -694,6 +733,7 @@ export class AppService {
     try {
       const user = await this.userRepo.findOne({ where: { id: userId } });
       if (!user) throw new RpcException('User not found');
+      await this.accountDeletionFence.assertActiveAccount(user.id);
 
       const template = this.renderSecurityEmail(
         'Security Alert: MFA Verification',
@@ -744,6 +784,7 @@ export class AppService {
         relations: ['keyData'],
       });
       if (!user) throw new RpcException('User not found');
+      await this.accountDeletionFence.assertActiveAccount(user.id);
       if (!user.emailVerifiedAt) {
         throw new RpcException('EMAIL_VERIFICATION_REQUIRED');
       }

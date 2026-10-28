@@ -1,5 +1,7 @@
 # RR-01 public claim inventory
 
+Current OT/TS claim dispositions are recorded in the [R6-01 reconciliation](./DF-007-R6-01.md). The dated audit below remains historical; its earlier evidence is not rewritten.
+
 **Reviewed:** 2026-10-05, starting from `e16279992`. Scope: OT and TS `/` templates, their route/action handlers, document metadata, and the shared HAI surface reachable from the public shells.
 
 `VERIFY` means verification remains due in the named behavior slice; it is not acceptance. Reworded descriptions of workflows are explicitly early access. No capability is assigned `COMPLETE` as a way to retain an unfinished present-tense promise.

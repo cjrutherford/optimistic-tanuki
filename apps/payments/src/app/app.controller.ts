@@ -35,6 +35,13 @@ export class AppController {
     private readonly flowDepositService?: FlowDepositService
   ) {}
 
+  private classifiedDenial(error: unknown): 403 | 404 | undefined {
+    const value = error instanceof RpcException ? error.getError() : error;
+    if (!value || typeof value !== 'object') return undefined;
+    const status = (value as { statusCode?: unknown }).statusCode;
+    return status === 403 || status === 404 ? status : undefined;
+  }
+
   private async relayOfferCommand<T>(
     command: () => Promise<T>,
     notFoundMessage?: string
@@ -54,6 +61,15 @@ export class AppController {
           });
         }
       }
+      const denial = this.classifiedDenial(error);
+      if (denial)
+        throw new RpcException({
+          statusCode: denial,
+          message:
+            denial === 404
+              ? notFoundMessage ?? 'Offer or classified not found'
+              : 'Offer access denied',
+        });
       throw error;
     }
   }
@@ -68,6 +84,11 @@ export class AppController {
           message: 'Payment not found',
         });
       }
+      if (this.classifiedDenial(error))
+        throw new RpcException({
+          statusCode: 404,
+          message: 'Payment not found',
+        });
       throw error;
     }
   }
@@ -144,14 +165,18 @@ export class AppController {
       amount?: number;
     }
   ) {
-    return this.paymentService.createClassifiedPayment(
-      data.buyerId,
-      data.classifiedId,
-      data.paymentMethod,
-      data.amount,
-      data.sellerId,
-      undefined,
-      data.appScope
+    return this.relayOfferCommand(
+      () =>
+        this.paymentService.createClassifiedPayment(
+          data.buyerId,
+          data.classifiedId,
+          data.paymentMethod,
+          data.amount,
+          data.sellerId,
+          undefined,
+          data.appScope
+        ),
+      'Payment not found'
     );
   }
 
@@ -164,26 +189,37 @@ export class AppController {
       proofImageUrl?: string;
     }
   ) {
-    return this.paymentService.confirmOutOfPlatformPayment(
-      data.paymentId,
-      data.userId,
-      data.proofImageUrl
+    return this.relayOfferCommand(
+      () =>
+        this.paymentService.confirmOutOfPlatformPayment(
+          data.paymentId,
+          data.userId,
+          data.proofImageUrl
+        ),
+      'Payment not found'
     );
   }
 
   @MessagePattern({ cmd: PaymentCommands.RELEASE_FUNDS })
   async releaseFunds(@Payload() data: { paymentId: string; userId: string }) {
-    return this.paymentService.releaseFunds(data.paymentId, data.userId);
+    return this.relayOfferCommand(
+      () => this.paymentService.releaseFunds(data.paymentId, data.userId),
+      'Payment not found'
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.DISPUTE_PAYMENT })
   async disputePayment(
     @Payload() data: { paymentId: string; userId: string; reason: string }
   ) {
-    return this.paymentService.disputePayment(
-      data.paymentId,
-      data.userId,
-      data.reason
+    return this.relayOfferCommand(
+      () =>
+        this.paymentService.disputePayment(
+          data.paymentId,
+          data.userId,
+          data.reason
+        ),
+      'Payment not found'
     );
   }
 
@@ -335,13 +371,15 @@ export class AppController {
       message?: string;
     }
   ) {
-    return this.offerService.createOffer({
-      classifiedId: data.classifiedId,
-      buyerId: data.buyerId,
-      appScope: data.appScope,
-      amount: data.amount,
-      message: data.message,
-    });
+    return this.relayOfferCommand(() =>
+      this.offerService.createOffer({
+        classifiedId: data.classifiedId,
+        buyerId: data.buyerId,
+        appScope: data.appScope,
+        amount: data.amount,
+        message: data.message,
+      })
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.ACCEPT_OFFER })

@@ -1,7 +1,15 @@
 import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import {
   AccountExportOwnerSpoolService,
   AccountExportProfileSnapshotClient,
+  AccountDeletionAuthorityClient,
 } from '@optimistic-tanuki/storage';
+import { VideosAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { VideosAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { VideoDeletionProcessingFenceService } from './services/video-deletion-processing-fence.service';
 import { VideosAccountExportOwnerService } from './account-export-owner.service';
 import { VideosAccountExportSnapshotService } from './account-export-snapshot.service';
 import { AccountExportController } from './account-export.controller';
@@ -49,9 +57,37 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
     }),
     LoggerModule,
   ],
-  controllers: [AppController, AccountExportController],
+  controllers: [
+    AccountDeletionSnapshotController,
+    AppController,
+    AccountExportController,
+    VideosAccountDeletionOwnerController,
+  ],
   providers: [
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: VideosAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        database: { query(sql: string): Promise<unknown> }
+      ) => ({ owner: 'videos', snapshot, authority, spool, database }),
+      inject: [
+        VideosAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        'VIDEOS_CONNECTION',
+      ],
+    },
     AppService,
+    VideosAccountDeletionOwnerService,
+    VideoDeletionProcessingFenceService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: ClientProxy) =>
+        new AccountDeletionAuthorityClient(auth),
+      inject: [ServiceTokens.AUTHENTICATION_SERVICE],
+    },
     AccountExportOwnerSpoolService,
     AccountExportProfileSnapshotClient,
     {

@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import { DataSource } from 'typeorm';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -14,10 +15,10 @@ describe('Social account export disposition contract', () => {
   });
   const validate = (policy: unknown) =>
     validateSocialDispositions(source.entityMetadatas, policy);
-  it('accounts for all 33 registered entities and the actual junction metadata', () => {
+  it('accounts for all 34 registered entities including the excluded operational fence and the actual junction metadata', () => {
     expect(
       source.entityMetadatas.filter((m) => m.tableType !== 'junction')
-    ).toHaveLength(33);
+    ).toHaveLength(34);
     expect(
       source.entityMetadatas.filter((m) => m.tableType === 'junction')
     ).toHaveLength(1);

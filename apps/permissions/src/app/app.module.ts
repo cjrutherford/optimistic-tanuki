@@ -1,3 +1,7 @@
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
@@ -27,7 +31,10 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   AccountExportOwnerSpoolService,
   AccountExportProfileSnapshotClient,
+  AccountDeletionAuthorityClient,
 } from '@optimistic-tanuki/storage';
+import { PermissionsAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { PermissionsAccountDeletionOwnerController } from './account-deletion-owner.controller';
 import { PermissionsAccountExportOwnerService } from './account-export-owner.service';
 import { PermissionsAccountExportSnapshotService } from './account-export-snapshot.service';
 import { AccountExportSnapshotController } from './account-export-snapshot.controller';
@@ -45,14 +52,38 @@ import { AccountExportSnapshotController } from './account-export-snapshot.contr
     LoggerModule,
   ],
   controllers: [
+    AccountDeletionSnapshotController,
     PermissionsController,
     RolesController,
     AppScopesController,
     AccountExportController,
     AccountExportSnapshotController,
+    PermissionsAccountDeletionOwnerController,
   ],
   providers: [
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: PermissionsAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        database: { query(sql: string): Promise<unknown> }
+      ) => ({ owner: 'permissions', snapshot, authority, spool, database }),
+      inject: [
+        PermissionsAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        'PERMISSIONS_CONNECTION',
+      ],
+    },
     PermissionsService,
+    PermissionsAccountDeletionOwnerService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: ClientProxy) =>
+        new AccountDeletionAuthorityClient(auth),
+      inject: [ServiceTokens.AUTHENTICATION_SERVICE],
+    },
     RolesService,
     AppScopesService,
     AccountExportService,

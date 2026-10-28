@@ -304,4 +304,37 @@ describe('AccountExportArtifactStoreService', () => {
       }
     }
   }, 20000);
+  it('drains only owned plaintext FDs with retry while leaving encrypted deletion to ledger custody', async () => {
+    const store = service();
+    const ownDescriptor = await store.put(descriptorInput());
+    const foreignDescriptor = await store.put({
+      ...descriptorInput(),
+      accountId: randomUUID(),
+    });
+    const own = await store.openVerified(ownDescriptor),
+      foreign = await store.openVerified(foreignDescriptor);
+    try {
+      const file = [...(store as any).runtimeFiles.keys()][0];
+      jest.spyOn(file, 'close').mockRejectedValueOnce(Error('CLOSE_FAILED'));
+      await expect(
+        (store as any).purgeAccountRuntime(accountId)
+      ).rejects.toThrow('CLOSE_FAILED');
+      expect(await (store as any).readbackAccountRuntime(accountId)).toBe(1);
+      await (store as any).purgeAccountRuntime(accountId);
+      expect(await (store as any).readbackAccountRuntime(accountId)).toBe(0);
+      await expect(own.readChunk(0, 1)).rejects.toThrow();
+      expect(await foreign.readChunk(0, 1)).toEqual(content.subarray(0, 1));
+      expect(
+        (await readFile(join(root, ownDescriptor.artifactId))).equals(content)
+      ).toBe(false);
+      await expect(store.openVerified(ownDescriptor)).rejects.toThrow(
+        'ARTIFACT_ACCOUNT_FENCED'
+      );
+      await store.remove(ownDescriptor, async () => true);
+      expect(await store.inspectAbsent(ownDescriptor.artifactId)).toBe(true);
+    } finally {
+      await own.cleanup();
+      await foreign.cleanup();
+    }
+  });
 });

@@ -1,4 +1,7 @@
 export const AssetCommands = {
+  FENCE_ACCOUNT_DELETION: 'asset.deletion.fence',
+  ERASE_ACCOUNT_DELETION: 'asset.deletion.erase',
+  READBACK_ACCOUNT_DELETION: 'asset.deletion.readback',
   OPEN_ACCOUNT_EXPORT_CAPTURE: 'asset.export.open',
   READ_ACCOUNT_EXPORT_CAPTURE: 'asset.export.read',
   RELEASE_ACCOUNT_EXPORT_CAPTURE: 'asset.export.release',

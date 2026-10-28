@@ -35,10 +35,13 @@ describe('loadDatabase', () => {
     expect(dbConfig.database).toBe('testdb');
     expect(dbConfig.entities).toBeInstanceOf(Array);
     expect(dbConfig.migrationsRun).toBe(false);
-    expect(dbConfig.migrations).toHaveLength(13);
+    expect(dbConfig.migrations).toHaveLength(15);
     expect(
       (dbConfig.migrations as Function[]).map((migration) => migration.name)
     ).toContain('AccountExportJobs1792435947180');
+    expect((dbConfig.migrations as Function[]).map((m) => m.name)).toContain(
+      'RollingSessionActivity1793105343107'
+    );
   });
 
   it('runs the bundled version-matched migrations only when opted in', () => {

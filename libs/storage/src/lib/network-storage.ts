@@ -33,6 +33,13 @@ export class NetworkStorageAdapter implements StorageAdapter {
     this.l.log(`NetworkStorageAdapter initialized with S3Service`);
   }
 
+  custodyProbe(
+    nonce: string,
+    mode: 'write' | 'read' | 'remove'
+  ): Promise<string> {
+    return this.s3Service.custodyProbe(nonce, mode);
+  }
+
   async create(data: CreateAssetDto): Promise<AssetDto> {
     data.name = this.normalizeSafeFilename(data.name);
     this.l.log(
@@ -115,6 +122,33 @@ export class NetworkStorageAdapter implements StorageAdapter {
       );
       throw error;
     }
+  }
+
+  async purgeOwnedAsset(data: AssetDto): Promise<{ verifiedAbsent: true }> {
+    if (
+      !data ||
+      !isUuid(data.id) ||
+      !isUuid(data.profileId) ||
+      data.storageStrategy !== StorageStrategy.REMOTE_BLOCK_STORAGE ||
+      typeof data.name !== 'string'
+    ) {
+      throw new Error('Asset custody cannot be proven');
+    }
+    let expected: string;
+    try {
+      expected = this.reservationPath({
+        id: data.id,
+        profileId: data.profileId,
+        name: data.name,
+      } as CreateAssetDto);
+    } catch {
+      throw new Error('Asset custody cannot be proven');
+    }
+    if (data.storagePath !== expected)
+      throw new Error('Asset custody cannot be proven');
+    const key = this.s3Service.getKeyFromPath(expected);
+    await this.s3Service.purgeObjectVersions(key);
+    return { verifiedAbsent: true };
   }
 
   async retrieve(data: AssetDto): Promise<AssetDto> {

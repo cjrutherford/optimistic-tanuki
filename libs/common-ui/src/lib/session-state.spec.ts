@@ -1,6 +1,8 @@
 import {
   clearOwnedBrowserSessionKeys,
   SessionGeneration,
+  watchAccountDeletion,
+  notifyAccountDeletion,
 } from './session-state';
 
 describe('session state helpers', () => {
@@ -34,4 +36,24 @@ describe('session state helpers', () => {
       'owned-c',
     ]);
   });
+});
+
+it('clears only the current account on a deletion event, without clearing a newer account', () => {
+  const a = '41000000-0000-4000-8000-000000000001';
+  const b = '41000000-0000-4000-8000-000000000002';
+  let current = a;
+  const clear = jest.fn();
+  const stop = watchAccountDeletion(() => current, clear);
+  notifyAccountDeletion(a);
+  expect(clear).toHaveBeenCalledTimes(1);
+  current = b;
+  notifyAccountDeletion(a);
+  expect(clear).toHaveBeenCalledTimes(1);
+  notifyAccountDeletion('invalid');
+  expect(clear).toHaveBeenCalledTimes(1);
+  notifyAccountDeletion(b);
+  expect(clear).toHaveBeenCalledTimes(2);
+  stop();
+  notifyAccountDeletion(b);
+  expect(clear).toHaveBeenCalledTimes(2);
 });

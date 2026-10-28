@@ -4,6 +4,9 @@ export const CHAT_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
 ] as const;
 
 export const ChatCommands = {
+  FENCE_ACCOUNT_DELETION: 'chat.deletion.fence',
+  ERASE_ACCOUNT_DELETION: 'chat.deletion.erase',
+  READBACK_ACCOUNT_DELETION: 'chat.deletion.readback',
   OPEN_ACCOUNT_EXPORT_CAPTURE: 'chat.OpenAccountExportCapture',
   READ_ACCOUNT_EXPORT_CAPTURE: 'chat.ReadAccountExportCapture',
   RELEASE_ACCOUNT_EXPORT_CAPTURE: 'chat.ReleaseAccountExportCapture',

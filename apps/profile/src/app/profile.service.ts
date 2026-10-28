@@ -1,10 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
@@ -59,8 +53,7 @@ interface AssignRoleDto {
 }
 
 @Injectable()
-export class ProfileService implements OnModuleInit, OnModuleDestroy {
-  private cleanupTimer?: ReturnType<typeof setInterval>;
+export class ProfileService {
   constructor(
     @Inject(getRepositoryToken(Profile))
     private readonly profileRepository: Repository<Profile>,
@@ -70,34 +63,6 @@ export class ProfileService implements OnModuleInit, OnModuleDestroy {
     private readonly authClient: ClientProxy,
     private readonly logger: Logger
   ) {}
-
-  onModuleInit(): void {
-    this.cleanupTimer = setInterval(
-      () =>
-        void this.purgeGuardianActivity().catch(() =>
-          emitSafeDiagnostic(
-            this.logger,
-            'profile.operation',
-            { outcome: 'failed' },
-            'error'
-          )
-        ),
-      60 * 1000
-    );
-    this.cleanupTimer.unref?.();
-    void this.purgeGuardianActivity().catch(() =>
-      emitSafeDiagnostic(
-        this.logger,
-        'profile.operation',
-        { outcome: 'failed' },
-        'error'
-      )
-    );
-  }
-
-  onModuleDestroy(): void {
-    if (this.cleanupTimer) clearInterval(this.cleanupTimer);
-  }
 
   async checkAccountProfileOwnership(
     request: AccountProfileOwnershipRequest

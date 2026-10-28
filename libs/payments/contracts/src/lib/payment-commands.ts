@@ -1,4 +1,7 @@
 export const PaymentCommands = {
+  FENCE_ACCOUNT_DELETION: 'payments.deletion.fence',
+  ERASE_ACCOUNT_DELETION: 'payments.deletion.erase',
+  READBACK_ACCOUNT_DELETION: 'payments.deletion.readback',
   OPEN_ACCOUNT_EXPORT_CAPTURE: 'payments.openAccountExportCapture',
   READ_ACCOUNT_EXPORT_CAPTURE: 'payments.readAccountExportCapture',
   RELEASE_ACCOUNT_EXPORT_CAPTURE: 'payments.releaseAccountExportCapture',

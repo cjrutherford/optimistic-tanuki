@@ -5,6 +5,9 @@ export const APP_CONFIGURATOR_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
 ] as const;
 
 export const AppConfigCommands = {
+  FENCE_ACCOUNT_DELETION: 'app-configurator.deletion.fence',
+  ERASE_ACCOUNT_DELETION: 'app-configurator.deletion.erase',
+  READBACK_ACCOUNT_DELETION: 'app-configurator.deletion.readback',
   OPEN_ACCOUNT_EXPORT_CAPTURE: 'app-config.OpenAccountExportCapture',
   READ_ACCOUNT_EXPORT_CAPTURE: 'app-config.ReadAccountExportCapture',
   RELEASE_ACCOUNT_EXPORT_CAPTURE: 'app-config.ReleaseAccountExportCapture',

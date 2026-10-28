@@ -207,6 +207,7 @@ export class AppComponent implements OnInit, OnDestroy {
   chatEverOpened = signal(false);
   conversationToOpen = signal<{ id: string; requestId: number } | null>(null);
   private conversationOpenRequestId = 0;
+  private sessionViewGeneration = 0;
   chatInitialized = signal(false);
   isMobileViewport = signal(false);
 
@@ -281,7 +282,7 @@ export class AppComponent implements OnInit, OnDestroy {
         if (isAuthenticated) {
           this.selectedProfile.set(this.profileService.getCurrentUserProfile());
           this.loadNotifications();
-        }
+        } else this.clearSessionViews();
         this.updateNavItems();
       },
     });
@@ -301,6 +302,21 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.urlSub) {
       this.urlSub.unsubscribe();
     }
+  }
+
+  @HostListener('window:ot:session-reset')
+  clearSessionViews() {
+    this.sessionViewGeneration++;
+    this.selectedProfile.set(null);
+    this.chatContacts = [];
+    this.chatConversations = [];
+    this.showChat.set(false);
+    this.chatEverOpened.set(false);
+    this.chatInitialized.set(false);
+    this.conversationToOpen.set(null);
+    this.notifications.set([]);
+    this.unreadCount.set(0);
+    this.socketChatService.destroy();
   }
 
   @HostListener('window:resize')
@@ -472,12 +488,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async loadChatData() {
+    const generation = this.sessionViewGeneration;
     const profile = this.profileService.getCurrentUserProfile();
     if (!profile) return;
 
     try {
       const conversations: AppChatConversation[] =
         await this.chatService.getConversations(profile.id);
+      if (generation !== this.sessionViewGeneration) return;
 
       const allParticipantIds = new Set<string>();
       conversations.forEach((c) => {
@@ -493,6 +511,7 @@ export class AppComponent implements OnInit, OnDestroy {
       }
 
       const profiles = await this.fetchProfiles(participantIds);
+      if (generation !== this.sessionViewGeneration) return;
       const profileMap = new Map(profiles.map((p) => [p.id, p]));
 
       this.chatContacts = conversations.map((conv) => {

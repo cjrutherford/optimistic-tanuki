@@ -59,7 +59,7 @@ export class SocialGateway {
   ) {}
 
   async handleConnection(client: Socket): Promise<void> {
-    const authentication = this.socketSessionAuth.authenticate(client);
+    const authentication = this.socketSessionAuth.authenticate(client, true);
     this.authenticationReady.set(client, authentication);
     try {
       const user = await authentication;
@@ -654,6 +654,8 @@ export class SocialGateway {
     client: Socket,
     userId: string
   ): ConnectedClient {
+    if (client.data?.deletionPurged)
+      throw new Error('Socket session unavailable');
     const connectedClient = this.clientToConnectedClient(client) ?? {
       id: profileId,
       userId,
@@ -697,7 +699,7 @@ export class SocialGateway {
       }
     }
     try {
-      await this.socketSessionAuth.authenticate(client);
+      await this.socketSessionAuth.authenticate(client, true);
     } catch (error) {
       this.disconnectClient(client);
       throw error;

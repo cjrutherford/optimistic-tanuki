@@ -5,6 +5,8 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
+import { createHash } from 'node:crypto';
+import { OAUTH_ACCOUNT_CLEANUP_SCRIPT } from './oauth-deletion.scripts';
 
 export type StoredOAuthState = {
   payload: {
@@ -53,6 +55,9 @@ export interface OAuthStateStore {
     nonceHash: string
   ): Promise<StoredOAuthCallbackGrant | undefined>;
   invalidateAccount(accountId: string): Promise<void>;
+  /** Trusted deletion coordinator only; permanently fences this account in this store. */
+  purgeAccount(accountId: string): Promise<{ remaining: 0 }>;
+  readbackAccount(accountId: string): Promise<number>;
 }
 
 const validUUID = (value: unknown): value is string =>
@@ -60,6 +65,14 @@ const validUUID = (value: unknown): value is string =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value
   );
+
+const accountFenceKey = (accountId: string): string => {
+  if (!validUUID(accountId))
+    throw new HttpException('Invalid account id', HttpStatus.BAD_REQUEST);
+  return createHash('sha256')
+    .update(`ot:oauth-deletion:${accountId.toLowerCase()}`)
+    .digest('hex');
+};
 
 export const OAUTH_STATE_STORE = Symbol('OAUTH_STATE_STORE');
 
@@ -117,9 +130,12 @@ export class LocalOAuthStateStore implements OAuthStateStore {
   private readonly states = new Map<string, StoredOAuthState>();
   private readonly callbackGrants = new Map<string, StoredOAuthCallbackGrant>();
   private readonly maxSize = 10_000;
+  private readonly deletedAccounts = new Set<string>();
 
   async create(stateId: string, state: StoredOAuthState): Promise<void> {
     this.prune();
+    if (state.payload.linkUserId)
+      this.assertAccountActive(state.payload.linkUserId);
     if (this.states.size >= this.maxSize) {
       throw new HttpException(
         'OAuth is temporarily busy',
@@ -152,6 +168,7 @@ export class LocalOAuthStateStore implements OAuthStateStore {
         'Invalid OAuth callback grant',
         HttpStatus.BAD_REQUEST
       );
+    this.assertAccountActive(grant.userId);
     if (this.callbackGrants.size >= this.maxSize) {
       throw new HttpException(
         'OAuth is temporarily busy',
@@ -201,6 +218,39 @@ export class LocalOAuthStateStore implements OAuthStateStore {
     }
   }
 
+  async purgeAccount(accountId: string): Promise<{ remaining: 0 }> {
+    const key = accountFenceKey(accountId);
+    if (
+      !this.deletedAccounts.has(key) &&
+      this.deletedAccounts.size >= this.maxSize
+    )
+      throw new Error('OAUTH_DELETION_FENCE_LIMIT');
+    this.deletedAccounts.add(key);
+    await this.invalidateAccount(accountId);
+    if ((await this.readbackAccount(accountId)) !== 0)
+      throw new Error('OAUTH_DELETION_READBACK');
+    return { remaining: 0 };
+  }
+
+  async readbackAccount(accountId: string): Promise<number> {
+    if (!this.deletedAccounts.has(accountFenceKey(accountId)))
+      throw new Error('OAUTH_DELETION_FENCE_REQUIRED');
+    const id = accountId.toLowerCase();
+    return (
+      [...this.states.values()].filter(
+        (s) => s.payload.linkUserId?.toLowerCase() === id
+      ).length +
+      [...this.callbackGrants.values()].filter(
+        (g) => g.userId.toLowerCase() === id
+      ).length
+    );
+  }
+
+  private assertAccountActive(accountId: string): void {
+    if (this.deletedAccounts.has(accountFenceKey(accountId)))
+      throw new Error('OAUTH_ACCOUNT_DELETION_FENCED');
+  }
+
   private prune(): void {
     const now = Date.now();
     for (const [id, state] of this.states) {
@@ -220,6 +270,7 @@ export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
   private readonly callbackGrantPrefix = 'gateway:oauth-callback-grant:';
   private readonly indexKey = 'gateway:oauth-state:index';
   private readonly grantIndexKey = 'gateway:oauth-callback-grant:index';
+  private readonly deletionFenceKey = 'gateway:oauth-deletion:fences';
   private readonly ttlMs = 10 * 60 * 1000;
   private readonly maxSize = 10_000;
 
@@ -252,10 +303,11 @@ export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
     // Existing states are never evicted to make room for a new request.
     const result = await this.client.sendCommand([
       'EVAL',
-      "redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1]); if redis.call('ZCARD', KEYS[1])>=tonumber(ARGV[4]) then return 0 end; redis.call('ZADD', KEYS[1], ARGV[2], ARGV[3]); redis.call('PEXPIRE', KEYS[1], ARGV[5]); redis.call('PSETEX', KEYS[2], ARGV[6], ARGV[7]); return 1",
-      '2',
+      "if ARGV[8] ~= '' and redis.call('HEXISTS', KEYS[3], ARGV[8]) == 1 then return -1 end; redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1]); if redis.call('ZCARD', KEYS[1])>=tonumber(ARGV[4]) then return 0 end; redis.call('ZADD', KEYS[1], ARGV[2], ARGV[3]); redis.call('PEXPIRE', KEYS[1], ARGV[5]); redis.call('PSETEX', KEYS[2], ARGV[6], ARGV[7]); return 1",
+      '3',
       this.indexKey,
       `${this.prefix}${stateId}`,
+      this.deletionFenceKey,
       String(Date.now()),
       String(state.expiresAt),
       stateId,
@@ -263,7 +315,9 @@ export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
       String(this.ttlMs),
       String(ttl),
       JSON.stringify(state),
+      state.payload.linkUserId ? accountFenceKey(state.payload.linkUserId) : '',
     ]);
+    if (Number(result) === -1) throw new Error('OAUTH_ACCOUNT_DELETION_FENCED');
     if (Number(result) !== 1) {
       throw new HttpException(
         'OAuth is temporarily busy',
@@ -304,10 +358,11 @@ export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
     const ttl = Math.max(1, grant.expiresAt - Date.now());
     const result = await this.client.sendCommand([
       'EVAL',
-      "redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1]); if redis.call('ZCARD', KEYS[1])>=tonumber(ARGV[4]) then return 0 end; redis.call('ZADD', KEYS[1], ARGV[2], ARGV[3]); redis.call('PEXPIRE', KEYS[1], ARGV[5]); redis.call('PSETEX', KEYS[2], ARGV[6], ARGV[7]); return 1",
-      '2',
+      "if ARGV[8] ~= '' and redis.call('HEXISTS', KEYS[3], ARGV[8]) == 1 then return -1 end; redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1]); if redis.call('ZCARD', KEYS[1])>=tonumber(ARGV[4]) then return 0 end; redis.call('ZADD', KEYS[1], ARGV[2], ARGV[3]); redis.call('PEXPIRE', KEYS[1], ARGV[5]); redis.call('PSETEX', KEYS[2], ARGV[6], ARGV[7]); return 1",
+      '3',
       this.grantIndexKey,
       `${this.callbackGrantPrefix}${code}`,
+      this.deletionFenceKey,
       String(Date.now()),
       String(grant.expiresAt),
       code,
@@ -315,7 +370,9 @@ export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
       String(this.ttlMs),
       String(ttl),
       JSON.stringify(grant),
+      accountFenceKey(grant.userId),
     ]);
+    if (Number(result) === -1) throw new Error('OAUTH_ACCOUNT_DELETION_FENCED');
     if (Number(result) !== 1)
       throw new HttpException(
         'OAuth is temporarily busy',
@@ -372,6 +429,47 @@ export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
       this.callbackGrantPrefix,
       accountId,
     ]);
+  }
+
+  async purgeAccount(accountId: string): Promise<{ remaining: 0 }> {
+    await this.accountCleanup(accountId, 'purge');
+    if ((await this.readbackAccount(accountId)) !== 0)
+      throw new Error('OAUTH_DELETION_READBACK');
+    return { remaining: 0 };
+  }
+
+  async readbackAccount(accountId: string): Promise<number> {
+    return this.accountCleanup(accountId, 'readback');
+  }
+
+  private async accountCleanup(
+    accountId: string,
+    mode: 'purge' | 'readback'
+  ): Promise<number> {
+    const key = accountFenceKey(accountId);
+    this.requireConnection();
+    const result = await this.client.sendCommand([
+      'EVAL',
+      OAUTH_ACCOUNT_CLEANUP_SCRIPT,
+      '3',
+      this.indexKey,
+      this.grantIndexKey,
+      this.deletionFenceKey,
+      this.prefix,
+      this.callbackGrantPrefix,
+      accountId.toLowerCase(),
+      key,
+      String(this.maxSize),
+      mode,
+    ]);
+    // Negative statuses include malformed data, missing fence and exhausted bounds.
+    if (
+      typeof result !== 'number' ||
+      !Number.isSafeInteger(result) ||
+      result < 0
+    )
+      throw new Error('OAUTH_DELETION_UNVERIFIED');
+    return result;
   }
 
   async onModuleDestroy(): Promise<void> {

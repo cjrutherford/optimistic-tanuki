@@ -69,12 +69,138 @@ export type OwnerChunkConsumer<TSource extends string> = (
  * Only a complete producer return with a matching terminal chunk releases a read handle.
  */
 export class AccountExportOwnerSpoolService {
+  private readonly deletedAccounts = new Set<string>();
+  private readonly openings = new Map<
+    AbortController,
+    { key: string; work: Promise<unknown> }
+  >();
+  private readonly resources = new Map<
+    Awaited<ReturnType<typeof open>>,
+    { key: string; cleanup: () => Promise<void> }
+  >();
+  private accountKey(accountId: string): string {
+    return createHash('sha256')
+      .update('ot:owner-spool:' + accountId.toLowerCase())
+      .digest('hex');
+  }
   async capture<TSource extends string>(
     options: OwnerSpoolOptions<TSource>,
     producer: (
       onChunk: OwnerChunkConsumer<TSource>,
       signal: AbortSignal
     ) => Promise<AccountExportOwnerChunk<TSource>>
+  ): Promise<OwnerSpoolHandle<TSource>> {
+    if (!options || typeof options.accountId !== 'string' || !options.accountId)
+      throw new OwnerSpoolError('OWNER_SPOOL_INVALID_CAPTURE');
+    const key = this.accountKey(options.accountId);
+    if (this.deletedAccounts.has(key))
+      throw Error('OWNER_SPOOL_ACCOUNT_FENCED');
+    const controller = new AbortController();
+    const signal = options.signal
+      ? AbortSignal.any([options.signal, controller.signal])
+      : controller.signal;
+    const work = (async () => {
+      const handle = await this.captureCurrent(
+        { ...options, signal },
+        producer,
+        (file, cleanup) => {
+          this.resources.set(file, {
+            key,
+            cleanup: async () => {
+              await cleanup();
+              this.resources.delete(file);
+            },
+          });
+        },
+        (file) => {
+          this.resources.delete(file);
+        },
+        (file, handle) => {
+          const close = handle.cleanup.bind(handle);
+          handle.cleanup = async () => {
+            await close();
+            this.resources.delete(file);
+          };
+          this.resources.set(file, { key, cleanup: handle.cleanup });
+        }
+      );
+      if (this.deletedAccounts.has(key)) {
+        await handle.cleanup();
+        throw Error('OWNER_SPOOL_ACCOUNT_FENCED');
+      }
+      return handle;
+    })();
+    this.openings.set(controller, { key, work });
+    try {
+      return await work;
+    } finally {
+      this.openings.delete(controller);
+    }
+  }
+  async purgeAccount(accountId: string): Promise<{ remaining: 0 }> {
+    const key = this.checkedAccountKey(accountId);
+    if (!this.deletedAccounts.has(key) && this.deletedAccounts.size >= 10000)
+      throw Error('OWNER_SPOOL_DELETION_BOUND');
+    this.deletedAccounts.add(key);
+    const pending = [...this.openings].filter(([, value]) => value.key === key);
+    for (const [controller] of pending) controller.abort();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const drain = async () => {
+        await Promise.allSettled(pending.map(([, value]) => value.work));
+        for (const resource of [...this.resources.values()])
+          if (resource.key === key) await resource.cleanup();
+        if ((await this.readbackAccount(accountId)) !== 0)
+          throw Error('OWNER_SPOOL_DELETION_READBACK');
+        return { remaining: 0 as const };
+      };
+      return await Promise.race([
+        drain(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(Error('OWNER_SPOOL_DELETION_DRAIN_TIMEOUT')),
+            56000
+          );
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+  async readbackAccount(accountId: string): Promise<number> {
+    const key = this.checkedAccountKey(accountId);
+    if (!this.deletedAccounts.has(key))
+      throw Error('OWNER_SPOOL_DELETION_FENCE_REQUIRED');
+    return (
+      [...this.openings.values()].filter((value) => value.key === key).length +
+      [...this.resources.values()].filter((value) => value.key === key).length
+    );
+  }
+  private checkedAccountKey(accountId: string): string {
+    if (
+      typeof accountId !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        accountId
+      )
+    )
+      throw Error('OWNER_SPOOL_DELETION_ACCOUNT_INVALID');
+    return this.accountKey(accountId);
+  }
+  private async captureCurrent<TSource extends string>(
+    options: OwnerSpoolOptions<TSource>,
+    producer: (
+      onChunk: OwnerChunkConsumer<TSource>,
+      signal: AbortSignal
+    ) => Promise<AccountExportOwnerChunk<TSource>>,
+    onFile: (
+      file: Awaited<ReturnType<typeof open>>,
+      cleanup: () => Promise<void>
+    ) => void,
+    onClosed: (file: Awaited<ReturnType<typeof open>>) => void,
+    onReady: (
+      file: Awaited<ReturnType<typeof open>>,
+      handle: OwnerSpoolHandle<TSource>
+    ) => void
   ): Promise<OwnerSpoolHandle<TSource>> {
     if (!options || typeof options !== 'object') {
       throw new OwnerSpoolError('OWNER_SPOOL_INVALID_CAPTURE');
@@ -156,6 +282,25 @@ export class AccountExportOwnerSpoolService {
         fsConstants.O_RDWR | fsConstants.O_CREAT | fsConstants.O_EXCL,
         0o600
       );
+      const ownedFile = fileHandle;
+      onFile(ownedFile, async () => {
+        if (pendingCallback) await Promise.allSettled([pendingCallback]);
+        await ownedFile.close();
+        if (filePath && !fileUnlinked) {
+          try {
+            await unlink(filePath);
+          } catch (e) {
+            if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+          }
+        }
+        if (directory && !directoryRemoved) {
+          try {
+            await rmdir(directory);
+          } catch (e) {
+            if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+          }
+        }
+      });
       await fileHandle.chmod(0o600);
       await unlink(filePath);
       fileUnlinked = true;
@@ -300,6 +445,7 @@ export class AccountExportOwnerSpoolService {
       } satisfies OwnerSpoolMetadata<TSource>;
 
       const handle = this.createHandle(fileHandle, summary);
+      onReady(fileHandle, handle);
       fileHandle = undefined;
       return handle;
     } catch (error) {
@@ -319,8 +465,9 @@ export class AccountExportOwnerSpoolService {
         if (pendingCallback) await Promise.allSettled([pendingCallback]);
         try {
           await fileHandle.close();
+          onClosed(fileHandle);
         } catch {
-          /* closed best-effort */
+          /* Resource remains registered for deletion retry. */
         }
       }
       if (filePath && !fileUnlinked) {
@@ -372,7 +519,10 @@ export class AccountExportOwnerSpoolService {
             opsDrained = resolve;
           });
         await fileHandle.close();
-      })();
+      })().catch((error) => {
+        cleanupPromise = undefined;
+        throw error;
+      });
       return cleanupPromise;
     };
     const api: OwnerSpoolHandle<TSource> = {

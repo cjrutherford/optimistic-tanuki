@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   Inject,
   Logger,
@@ -63,6 +64,7 @@ export class ChatGateway {
     { windowStartedAt: number; count: number }
   >();
   private lastChatWritePruneAt = 0;
+  private readonly deletedSecurityAccounts = new Set<string>();
 
   constructor(
     private readonly l: Logger,
@@ -79,7 +81,34 @@ export class ChatGateway {
     private readonly socketSessionAuth: SocketSessionAuthService
   ) {}
 
+  private securityAccountKey(accountId: string): string {
+    return createHash('sha256')
+      .update('ot:chat-security:' + accountId.toLowerCase())
+      .digest('hex');
+  }
+  purgeAccountSecurityState(accountId: string): void {
+    const key = this.securityAccountKey(accountId);
+    if (
+      !this.deletedSecurityAccounts.has(key) &&
+      this.deletedSecurityAccounts.size >= 10000
+    )
+      throw Error('CHAT_SECURITY_DELETION_BOUND');
+    this.deletedSecurityAccounts.add(key);
+    for (const id of this.chatWriteBuckets.keys())
+      if (id.toLowerCase() === accountId.toLowerCase())
+        this.chatWriteBuckets.delete(id);
+  }
+  readbackAccountSecurityState(accountId: string): number {
+    if (!this.deletedSecurityAccounts.has(this.securityAccountKey(accountId)))
+      throw Error('CHAT_SECURITY_FENCE_REQUIRED');
+    return [...this.chatWriteBuckets.keys()].filter(
+      (id) => id.toLowerCase() === accountId.toLowerCase()
+    ).length;
+  }
+
   private assertChatWriteAllowed(userId: string): void {
+    if (this.deletedSecurityAccounts.has(this.securityAccountKey(userId)))
+      throw new WsException('Account unavailable');
     const now = Date.now();
     if (now - this.lastChatWritePruneAt >= CHAT_WRITE_TTL_MS) {
       for (const [key, bucket] of this.chatWriteBuckets) {
@@ -133,7 +162,7 @@ export class ChatGateway {
 
   async handleConnection(client: Socket): Promise<void> {
     try {
-      const user = await this.socketSessionAuth.authenticate(client);
+      const user = await this.socketSessionAuth.authenticate(client, true);
       await client.join(user.profileId);
       this.updateConnectedSockets(user.profileId, client, 'connect');
     } catch {
@@ -251,7 +280,7 @@ export class ChatGateway {
     }) => void
   ): Promise<void> {
     const user = await this.socketSessionAuth
-      .authenticate(client)
+      .authenticate(client, true)
       .catch((error) => {
         this.acknowledgeMessageFailure(acknowledge, 401);
         throw new WsException(error.message);
@@ -592,7 +621,7 @@ export class ChatGateway {
     @ConnectedSocket() client: Socket
   ): Promise<void> {
     this.l.log('starting the call to get conversations.');
-    await this.socketSessionAuth.authenticate(client);
+    await this.socketSessionAuth.authenticate(client, true);
     const senderId = this.socketSessionAuth.assertProfile(
       client,
       payload.profileId
@@ -614,6 +643,8 @@ export class ChatGateway {
     client: Socket,
     type: 'connect' | 'disconnect'
   ) {
+    if (type === 'connect' && client.data?.deletionPurged)
+      throw new WsException('Socket session unavailable');
     console.log(
       `Updating connected sockets for '${senderId}' with event type '${type}'`
     );
@@ -644,7 +675,7 @@ export class ChatGateway {
     @ConnectedSocket() client: Socket
   ): Promise<void> {
     const user = await this.socketSessionAuth
-      .authenticate(client)
+      .authenticate(client, true)
       .catch((error) => {
         throw new WsException(error.message);
       });
@@ -698,7 +729,7 @@ export class ChatGateway {
     // The result was resolved and thrown away, so the socket path read any
     // conversation regardless of who was asking.
     const user = await this.socketSessionAuth
-      .authenticate(client)
+      .authenticate(client, true)
       .catch((error) => {
         throw new WsException(error.message);
       });

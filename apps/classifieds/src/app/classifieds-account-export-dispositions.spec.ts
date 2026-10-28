@@ -1,3 +1,5 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { ClassifiedAdEntity } from './entities/classified-ad.entity';
@@ -9,7 +11,7 @@ import {
 const metadata = async () => {
   const ds = new DataSource({
     type: 'postgres',
-    entities: [ClassifiedAdEntity],
+    entities: [ClassifiedAdEntity, AccountDeletionWriteFenceEntity],
   });
   await (ds as any).buildMetadatas();
   return ds.entityMetadatas;
@@ -17,9 +19,13 @@ const metadata = async () => {
 
 it('covers the actual registered ORM columns and relations offline', async () => {
   const actual = await metadata();
-  expect(actual).toHaveLength(1);
-  expect(actual[0].columns).toHaveLength(18);
-  expect(actual[0].relations).toEqual([]);
+  expect(actual).toHaveLength(2);
+  expect(
+    actual.find((e) => e.name === 'ClassifiedAdEntity')!.columns
+  ).toHaveLength(18);
+  expect(
+    actual.find((e) => e.name === 'ClassifiedAdEntity')!.relations
+  ).toEqual([]);
   expect(validateClassifiedsDispositions(actual)).toEqual([]);
   expect(
     CLASSIFIEDS_ACCOUNT_EXPORT_INVENTORY.entities[0].columns.flatMap(
@@ -31,12 +37,22 @@ it('covers the actual registered ORM columns and relations offline', async () =>
 it('rejects entity and complete physical-catalog drift', async () => {
   const actual = await metadata();
   expect(
-    validateClassifiedsDispositions([{ ...actual[0], tableName: 'other' }])
+    validateClassifiedsDispositions(
+      actual.map((e) =>
+        e.name === 'ClassifiedAdEntity' ? { ...e, tableName: 'other' } : e
+      )
+    )
   ).toContain('ClassifiedAdEntity metadata drift');
   const catalog = [
     {
+      table: 'account_deletion_write_fence',
+      columns: ['key', 'kind', 'operationId', 'installedAt'],
+    },
+    {
       table: 'classified_ad',
-      columns: actual[0].columns.map((c) => c.databaseName),
+      columns: actual
+        .find((e) => e.name === 'ClassifiedAdEntity')!
+        .columns.map((c) => c.databaseName),
     },
     { table: 'migrations', columns: ['id', 'timestamp', 'name'] },
   ];
@@ -82,4 +98,25 @@ it('fails closed on malformed or weakened subject/store policies', async () => {
       validateClassifiedsDispositions(actual, copy).length
     ).toBeGreaterThan(0);
   }
+});
+
+it('rejects malformed or missing operational fence metadata without throwing', async () => {
+  const actual = await metadata();
+  expect(validateClassifiedsDispositions(null as never)).toEqual([
+    'invalid inventory shape',
+  ]);
+  expect(
+    validateClassifiedsDispositions(
+      actual.filter((e) => e.name !== 'AccountDeletionWriteFenceEntity')
+    )
+  ).toContain('operational fence drift');
+  expect(
+    validateClassifiedsDispositions(
+      actual.map((e) =>
+        e.name === 'AccountDeletionWriteFenceEntity'
+          ? { ...e, columns: null }
+          : e
+      )
+    )
+  ).toContain('operational fence drift');
 });

@@ -47,3 +47,36 @@ describe('Payload-free Nest logging boundary', () => {
     });
   });
 });
+
+it('attests only the currently installed console boundary and detects its replacement', () => {
+  const originals = Object.getOwnPropertyDescriptors(console);
+  jest.isolateModules(() => {
+    const { Logger } = require('@nestjs/common');
+    const override = jest
+      .spyOn(Logger, 'overrideLogger')
+      .mockImplementation(() => undefined);
+    const {
+      installPayloadFreeLogging,
+      payloadFreeLoggingStatus,
+    } = require('./payload-free-logging');
+    try {
+      expect(payloadFreeLoggingStatus()).toEqual({
+        policyVersion: 1,
+        active: false,
+      });
+      installPayloadFreeLogging();
+      expect(payloadFreeLoggingStatus()).toEqual({
+        policyVersion: 1,
+        active: true,
+      });
+      console.warn = jest.fn();
+      expect(payloadFreeLoggingStatus()).toEqual({
+        policyVersion: 1,
+        active: false,
+      });
+    } finally {
+      Object.defineProperties(console, originals);
+      override.mockRestore();
+    }
+  });
+});

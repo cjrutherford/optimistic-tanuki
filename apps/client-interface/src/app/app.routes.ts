@@ -1,3 +1,7 @@
+import {
+  AccountDeletionStatusComponent,
+  ReleaseInformationComponent,
+} from '@optimistic-tanuki/profile-ui';
 import { ResolveFn, Route } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard'; // Import the AuthGuard
 import { ProfileGuard } from './guards/profile.guard';
@@ -76,6 +80,21 @@ const communityUserIdResolver: ResolveFn<string> = () => {
 };
 
 export const appRoutes: Route[] = [
+  {
+    path: 'help',
+    component: ReleaseInformationComponent,
+    data: { appId: 'client-interface', view: 'guide' },
+  },
+  {
+    path: 'privacy',
+    component: ReleaseInformationComponent,
+    data: { appId: 'client-interface', view: 'policy' },
+  },
+  {
+    path: 'account-deletion',
+    component: AccountDeletionStatusComponent,
+    data: { appId: 'client-interface' },
+  },
   ...emailAuthRoutes('ot-client-authToken', true),
   ...guardianConsentRoutes(),
   {

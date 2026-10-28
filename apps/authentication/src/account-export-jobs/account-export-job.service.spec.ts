@@ -25,11 +25,54 @@ const IDEMPOTENCY_KEY = '67e12d87-82e8-442f-99e9-921c01f2d690';
 const TOKEN = 'transient-session-token';
 
 describe('AccountExportJobService authorization boundary', () => {
-  const jobs = {};
+  const jobs = { findOne: jest.fn() };
   const dataSource = { transaction: jest.fn() };
   const auth = { validateToken: jest.fn() };
   const preview = { previewAccountExport: jest.fn() };
   let service: AccountExportJobService;
+
+  it('restores only the latest export for the authenticated account and app', async () => {
+    auth.validateToken.mockResolvedValue({
+      isValid: true,
+      data: { userId: ACCOUNT_ID, appId: 'client-interface' },
+    });
+    jobs.findOne.mockResolvedValueOnce(null);
+    expect(
+      await service.latest({
+        accountId: ACCOUNT_ID,
+        appId: 'client-interface',
+        token: TOKEN,
+      })
+    ).toBeNull();
+    expect(jobs.findOne).toHaveBeenCalledWith({
+      where: {
+        accountId: ACCOUNT_ID,
+        appId: 'client-interface',
+        kind: 'export',
+      },
+      order: { createdAt: 'DESC', id: 'DESC' },
+    });
+    expect(auth.validateToken).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not publish a latest-job read if its session is revoked during lookup', async () => {
+    auth.validateToken
+      .mockResolvedValueOnce({
+        isValid: true,
+        data: { userId: ACCOUNT_ID, appId: 'client-interface' },
+      })
+      .mockResolvedValueOnce({ isValid: false });
+    jobs.findOne.mockResolvedValueOnce({
+      coverageSummary: { privateArtifact: 'must-never-be-projected' },
+    });
+    await expect(
+      service.latest({
+        accountId: ACCOUNT_ID,
+        appId: 'client-interface',
+        token: TOKEN,
+      })
+    ).rejects.toBeInstanceOf(RpcException);
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();

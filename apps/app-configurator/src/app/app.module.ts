@@ -1,3 +1,10 @@
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import { AppConfiguratorAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { AppConfiguratorAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { AccountDeletionAuthorityClient } from '@optimistic-tanuki/storage';
 import { Module, Logger } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DataSource } from 'typeorm';
@@ -38,10 +45,40 @@ import { AppConfiguratorAccountExportSnapshotController } from './account-export
     LoggerModule,
   ],
   controllers: [
+    AccountDeletionSnapshotController,
+    AppConfiguratorAccountDeletionOwnerController,
     ConfigurationsController,
     AppConfiguratorAccountExportSnapshotController,
   ],
   providers: [
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: AppConfiguratorAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        database: { query(sql: string): Promise<unknown> }
+      ) => ({
+        owner: 'app-configurator',
+        snapshot,
+        authority,
+        spool,
+        database,
+      }),
+      inject: [
+        AppConfiguratorAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        'APP-CONFIGURATOR_CONNECTION',
+      ],
+    },
+    AppConfiguratorAccountDeletionOwnerService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: ClientProxy) =>
+        new AccountDeletionAuthorityClient(auth),
+      inject: ['APP_CONFIGURATOR_AUTH_PROXY'],
+    },
     ConfigurationsService,
     Logger,
     AccountExportOwnerSpoolService,

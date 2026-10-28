@@ -437,7 +437,10 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: AuthCommands.Validate })
-  async validate(@Payload() data: ValidateTokenRequest & { appId?: string }) {
+  async validate(
+    @Payload()
+    data: ValidateTokenRequest & { appId?: string; activity?: boolean }
+  ) {
     try {
       const missingFields = validateRequiredFields<ValidateTokenRequest>(data, [
         'token',
@@ -451,7 +454,8 @@ export class AppController {
       const { token } = data;
       const tokenValidation = await this.appService.validateToken(
         token,
-        data.appId
+        data.appId,
+        data.activity === true
       );
       return tokenValidation;
     } catch (e) {

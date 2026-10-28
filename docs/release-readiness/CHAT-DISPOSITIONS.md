@@ -28,3 +28,7 @@ The inventory must reconcile both entities, their relations, the physical messag
 The existing message-to-conversation foreign key cascades on conversation deletion. O04 is read-only and does not authorize using that cascade for account erasure. The later deletion adapter must preserve counterpart messages and prove its own recovery/readback behavior.
 
 Full O04 acceptance requires real migrated source reads, bounded multi-page capture, the leased Profile-bound transport and job integration, denial/retry/restart/revocation cases, and independent cleanup. Policy or unit tests alone do not complete O04. Global export stays incomplete, with no artifact or deletion claim.
+
+## D11 local erasure qualification
+
+Sent messages are removed; counterpart message content remains. Matched recipient/participant and steward IDs use the inert nil placeholder; direct/owned titles are cleared. The permanent operational fence is excluded from captured user content. See [the owner finding](./findings/DF-007-D11.md) for real database/TCP evidence and its limits. Full-account coordination remains later work.

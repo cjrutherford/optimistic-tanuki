@@ -1,4 +1,5 @@
 import { DataSource } from 'typeorm';
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import fs from 'fs';
 import path from 'path';
 import * as yaml from 'js-yaml';
@@ -14,6 +15,7 @@ import {
 import { Initial1770152975983 } from '../../migrations/1770152975983-initial';
 import { CommunityBroadcast1786715103205 } from '../../migrations/1786715103205-community-broadcast';
 import { VideoProcessingPipeline1786715106275 } from '../../migrations/1786715106275-video-processing-pipeline';
+import { AccountDeletionWriteFence1792932755812 } from '../../migrations/1792932755812-AccountDeletionWriteFence';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -35,6 +37,7 @@ const host = process.env.POSTGRES_HOST || 'localhost';
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
 const entities = [
+  AccountDeletionWriteFenceEntity,
   Channel,
   ChannelFeed,
   ChannelSubscription,
@@ -47,14 +50,15 @@ const migrations = [
   Initial1770152975983,
   CommunityBroadcast1786715103205,
   VideoProcessingPipeline1786715106275,
+  AccountDeletionWriteFence1792932755812,
 ];
 
 const staticSource = new DataSource({
   type: 'postgres',
   host: host, // Use the potentially overridden host
-  port: Number(port),
-  username,
-  password,
+  port: Number(process.env['POSTGRES_PORT'] || port),
+  username: process.env['POSTGRES_USER'] || username,
+  password: process.env['POSTGRES_PASSWORD'] || password,
   database: database, // Use the potentially overridden database name
   entities,
   migrations,

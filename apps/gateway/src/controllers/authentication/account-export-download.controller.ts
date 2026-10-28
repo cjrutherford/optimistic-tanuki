@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Head,
   Inject,
   Param,
   ParseUUIDPipe,
@@ -36,6 +37,46 @@ export class AccountExportDownloadController {
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
     private readonly auth: ClientProxy
   ) {}
+
+  @Head(':jobId/download')
+  async inspect(
+    @Param('jobId', new ParseUUIDPipe()) jobId: string,
+    @User() user: UserDetails,
+    @Req() request: Request & { credential?: string },
+    @Res() response: Response
+  ): Promise<void> {
+    if (
+      !user ||
+      !['client-interface', 'local-hub'].includes(user.appId || '') ||
+      !request.credential
+    )
+      throw new ForbiddenException('Export download is unavailable');
+    const context = {
+      jobId,
+      accountId: user.userId,
+      appId: user.appId,
+      token: request.credential,
+    };
+    const metadata = await this.rpc<DownloadMetadata>(
+      AuthCommands.OpenAccountExportDownload,
+      context
+    );
+    try {
+      if (!validMetadata(metadata))
+        throw new BadGatewayException('Invalid export download metadata');
+    } finally {
+      if (metadata?.downloadId)
+        await this.rpc(AuthCommands.CloseAccountExportDownload, {
+          ...context,
+          downloadId: metadata.downloadId,
+        });
+    }
+    response.setHeader('Cache-Control', 'private, no-store');
+    response.setHeader('Vary', 'Cookie, Authorization');
+    response.setHeader('Content-Type', 'application/x-tar');
+    response.setHeader('Content-Length', metadata.sizeBytes);
+    response.status(200).end();
+  }
 
   @Get(':jobId/download')
   async download(

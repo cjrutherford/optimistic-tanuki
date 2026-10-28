@@ -8,7 +8,7 @@ import {
   chmod,
   mkdir,
   open,
-  readdir,
+  opendir,
   rm,
   stat,
   lstat,
@@ -26,6 +26,13 @@ const DEFAULT_SPOOL_BUDGET_BYTES = 2 * 1024 * 1024 * 1024;
 const MAX_ENVELOPE_HEADER_BYTES = 64 * 1024;
 const MAX_DECRYPTION_CHUNK_BYTES = 1024;
 const VERIFIED_SPOOL_READ_HIGH_WATER_MARK = 1024;
+
+export class VerifiedMediaSpoolCleanupError extends Error {
+  readonly code = 'MEDIA_SPOOL_CLEANUP_UNVERIFIED';
+  constructor() {
+    super('Media spool cleanup could not be verified.');
+  }
+}
 
 export interface VerifiedMediaSpoolOptions {
   spoolRoot?: string;
@@ -120,6 +127,47 @@ export class VerifiedMediaSpoolService {
     );
   }
 
+  async onModuleInit(): Promise<void> {
+    await this.ensureDirectory();
+  }
+
+  /** Reject unverifiable named plaintext left by older readers; never erase active peer data. */
+  async assertDeletionReady(): Promise<void> {
+    if (this.quarantined)
+      throw new ServiceUnavailableException(
+        'Media spool cleanup failed; deletion cannot be verified.'
+      );
+    await this.ensureDirectory();
+    await this.cleanupOrphans();
+    let count = 0;
+    const directory = await opendir(this.spoolRoot);
+    for await (const entry of directory) {
+      if (++count > 1000)
+        throw new ServiceUnavailableException(
+          'Media spool inventory exceeds its bound.'
+        );
+      if (!/^spool-.+-\d+-[a-f0-9]{24}$/.test(entry.name)) continue;
+      const childPath = join(this.spoolRoot, entry.name);
+      const info = await lstat(childPath);
+      if (!info.isDirectory() || info.isSymbolicLink())
+        throw new ServiceUnavailableException(
+          'Media spool custody is unverified.'
+        );
+      const child = await opendir(childPath);
+      for await (const file of child) {
+        if (++count > 1000)
+          throw new ServiceUnavailableException(
+            'Media spool inventory exceeds its bound.'
+          );
+        const value = await lstat(join(childPath, file.name));
+        if (value.isSymbolicLink() || !value.isFile() || value.size > 0)
+          throw new ServiceUnavailableException(
+            'Legacy named media prevents deletion verification.'
+          );
+      }
+    }
+  }
+
   async create(
     sourceFactory: (signal?: AbortSignal) => Promise<Readable> | Readable,
     options: { maxPlaintextBytes?: number; signal?: AbortSignal } = {}
@@ -148,9 +196,18 @@ export class VerifiedMediaSpoolService {
       );
       fileHandle = await open(
         filePath,
-        fsConstants.O_WRONLY | fsConstants.O_CREAT | fsConstants.O_EXCL,
+        fsConstants.O_RDWR | fsConstants.O_CREAT | fsConstants.O_EXCL,
         0o600
       );
+      await fileHandle.chmod(0o600);
+      try {
+        await this.removeSpoolFile(filePath);
+      } catch (error) {
+        await unlink(filePath).catch(() => undefined);
+        throw error;
+      }
+      filePath = undefined;
+      const descriptorPath = descriptorPathFor(fileHandle.fd);
       source = await sourceFactory(options.signal);
       onAbort = () => source?.destroy(abortError());
       options.signal?.addEventListener('abort', onAbort, { once: true });
@@ -230,44 +287,83 @@ export class VerifiedMediaSpoolService {
         );
       }
       await fileHandle.sync();
-      await fileHandle.close();
-      fileHandle = undefined;
       keepSpool = true;
 
       let cleaned = false;
+      let cleaning = false;
+      let cleanupPromise: Promise<void> | undefined;
+      const streams = new Set<Readable>();
       return {
-        path: filePath,
+        path: descriptorPath,
         size: plainBytes,
-        createReadStream: (start?: number, end?: number) =>
-          createReadStream(filePath!, {
-            ...(start === undefined ? {} : { start }),
-            ...(end === undefined ? {} : { end }),
-            highWaterMark: VERIFIED_SPOOL_READ_HIGH_WATER_MARK,
-          }),
+        createReadStream: (start?: number, end?: number) => {
+          if (cleaning || cleaned || !fileHandle)
+            throw new Error('Media spool is closed.');
+          const stream =
+            end !== undefined && start !== undefined && end < start
+              ? Readable.from([])
+              : fileHandle.createReadStream({
+                  autoClose: false,
+                  // The retained descriptor is at EOF after staging; full reads need an explicit origin.
+                  start: start ?? 0,
+                  end,
+                  highWaterMark: VERIFIED_SPOOL_READ_HIGH_WATER_MARK,
+                });
+          streams.add(stream);
+          stream.once('close', () => streams.delete(stream));
+          return stream;
+        },
         cleanup: async () => {
-          if (cleaned) return;
+          if (cleanupPromise) return cleanupPromise;
+          cleaning = true;
+          cleanupPromise = (async () => {
+            for (const stream of streams) stream.destroy();
+            await Promise.all(
+              [...streams].map(
+                (stream) =>
+                  new Promise<void>((resolve) => {
+                    if (stream.closed) return resolve();
+                    stream.once('close', resolve);
+                  })
+              )
+            );
+            try {
+              await fileHandle!.close();
+              fileHandle = undefined;
+              cleaned = true;
+            } catch (error) {
+              this.quarantined = true;
+              throw error;
+            }
+            release();
+          })();
           try {
-            await this.removeSpoolFile(filePath!);
-            cleaned = true;
+            await cleanupPromise;
           } catch (error) {
             this.quarantined = true;
             throw error;
-          }
-          if (cleaned) {
-            release();
           }
         },
       };
     } catch (error) {
       source?.destroy();
       decipher?.destroy();
-      if (fileHandle) await fileHandle.close().catch(() => undefined);
       if (filePath) {
         try {
           await this.removeSpoolFile(filePath);
         } catch {
+          await unlink(filePath).catch(() => undefined);
           this.quarantined = true;
           reserveSlotAfterFailure = true;
+        }
+      }
+      if (fileHandle) {
+        try {
+          await fileHandle.close();
+        } catch {
+          this.quarantined = true;
+          reserveSlotAfterFailure = true;
+          throw new VerifiedMediaSpoolCleanupError();
         }
       }
       throw error;
@@ -300,8 +396,13 @@ export class VerifiedMediaSpoolService {
   }
 
   private async cleanupOrphans(): Promise<void> {
-    const entries = await readdir(this.spoolRoot, { withFileTypes: true });
-    for (const entry of entries) {
+    const entries = await opendir(this.spoolRoot);
+    let inspected = 0;
+    for await (const entry of entries) {
+      if (++inspected > 1000)
+        throw new ServiceUnavailableException(
+          'Media spool inventory exceeds its bound.'
+        );
       const match = /^spool-(.+)-(\d+)-[a-f0-9]{24}$/.exec(entry.name);
       if (!match || !entry.isDirectory()) continue;
       const candidate = join(this.spoolRoot, entry.name);
@@ -384,6 +485,10 @@ export class VerifiedMediaSpoolService {
       }
     };
   }
+}
+
+function descriptorPathFor(fd: number): string {
+  return process.platform === 'linux' ? `/proc/self/fd/${fd}` : `/dev/fd/${fd}`;
 }
 
 async function readEnvelopeHeader(

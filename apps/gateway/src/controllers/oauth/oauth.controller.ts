@@ -1,3 +1,4 @@
+import { sessionCookieOptions } from '../../auth/session-policy';
 import {
   Body,
   Controller,
@@ -775,13 +776,7 @@ export class OAuthController {
         request.headers['x-ot-session-mode'] === 'cookie') &&
       response
     ) {
-      response.cookie('ot_session', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 1000,
-      });
+      response.cookie('ot_session', token, sessionCookieOptions(grant.appId));
       return { session: true, returnOrigin: grant.returnOrigin };
     }
     return { token, returnOrigin: grant.returnOrigin };

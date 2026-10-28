@@ -8,6 +8,11 @@ type Metadata = {
   relations: Array<{ property: string }>;
 };
 const expected = {
+  AccountDeletionWriteFenceEntity: {
+    table: 'account_deletion_write_fence',
+    columns: ['key', 'kind', 'operationId', 'installedAt'],
+    relations: [],
+  },
   Conversation: {
     table: 'conversation',
     columns: [
@@ -40,6 +45,12 @@ const expected = {
   },
 } as const;
 const fieldActions: Record<string, Record<string, string>> = {
+  AccountDeletionWriteFenceEntity: {
+    key: 'exclude',
+    kind: 'exclude',
+    operationId: 'exclude',
+    installedAt: 'exclude',
+  },
   Conversation: {
     id: 'include-owned',
     type: 'typed-projection',
@@ -66,6 +77,7 @@ const fieldActions: Record<string, Record<string, string>> = {
   },
 };
 const tables: Record<string, string[]> = {
+  account_deletion_write_fence: ['key', 'kind', 'operationId', 'installedAt'],
   conversation: expected.Conversation.columns as unknown as string[],
   message: expected.Message.columns as unknown as string[],
   migrations: ['id', 'timestamp', 'name'],
@@ -296,7 +308,7 @@ export function validateChatDispositions(
       if (!tables[table.table] || !same(table.columns, tables[table.table]))
         errors.push(`physical columns drift: ${table.table}`);
     if (
-      physical.reduce((count, table) => count + table.columns.length, 0) !== 21
+      physical.reduce((count, table) => count + table.columns.length, 0) !== 25
     )
       errors.push('physical column count drift');
   }

@@ -1,3 +1,4 @@
+import { notifyAccountDeletion } from '@optimistic-tanuki/common-ui';
 import { Socket, io } from 'socket.io-client';
 
 import { ChatConversation, ChatMessage } from './types/message';
@@ -67,6 +68,8 @@ export class SocketChatService {
     { content: string; id: string }
   >();
   private readonly activeDraftConversations = new Set<string>();
+  private draftGeneration = 0;
+  private readonly resetSession = () => this.destroy();
   private typingSubject = new Subject<{
     conversationId: string;
     userId: string;
@@ -121,11 +124,15 @@ export class SocketChatService {
     }
 
     const socketUrl = this.buildSocketUrl();
+    window.addEventListener('ot:session-reset', this.resetSession);
     this.socket = this.ioInstance(socketUrl, {
       autoConnect: true,
       path: this.socketPath,
       withCredentials: true,
     });
+    this.socket.on('account_deleted', (value: { accountId?: unknown }) =>
+      notifyAccountDeletion(value?.accountId)
+    );
     this.socket.on('connect', () => {
       console.log(`Socket connected to ${socketUrl}`);
     });
@@ -263,6 +270,7 @@ export class SocketChatService {
       content: string;
     }
   ): Promise<ChatMessageAcknowledgement> {
+    const generation = this.draftGeneration;
     const conversationId = message.conversationId;
     if (this.activeDraftConversations.has(conversationId)) {
       return Promise.reject(
@@ -282,6 +290,8 @@ export class SocketChatService {
 
     return this.sendMessageWithAck({ ...message, id: draft.id })
       .then((acknowledgement) => {
+        if (generation !== this.draftGeneration)
+          throw Error('Chat session changed');
         if (acknowledgement.messageId !== draft.id) {
           throw new Error('Chat server acknowledged a different message');
         }
@@ -290,7 +300,10 @@ export class SocketChatService {
         }
         return acknowledgement;
       })
-      .finally(() => this.activeDraftConversations.delete(conversationId));
+      .finally(() => {
+        if (generation === this.draftGeneration)
+          this.activeDraftConversations.delete(conversationId);
+      });
   }
 
   private createMessageId(): string {
@@ -509,7 +522,16 @@ export class SocketChatService {
   /**
    * Disconnects the socket.
    */
+  ngOnDestroy(): void {
+    if (isPlatformBrowser(this.platformId))
+      window.removeEventListener('ot:session-reset', this.resetSession);
+    this.destroy();
+  }
+
   destroy(): void {
+    this.draftGeneration++;
+    this.draftMessageIds.clear();
+    this.activeDraftConversations.clear();
     if (this.socket) {
       this.socket.disconnect();
       console.log('Socket disconnected');

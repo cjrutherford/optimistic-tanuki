@@ -1,4 +1,11 @@
-import { Component, OnInit, signal, inject, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  signal,
+  inject,
+  OnDestroy,
+  HostListener,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import {
@@ -135,6 +142,17 @@ export class MessagesComponent implements OnInit, OnDestroy {
   error = signal<string | null>(null);
 
   currentProfileId: string | null = null;
+  private viewGeneration = 0;
+  @HostListener('window:ot:session-reset')
+  clearSessionViews() {
+    this.viewGeneration++;
+    this.currentProfileId = null;
+    this.chatContacts.set([]);
+    this.chatConversations.set([]);
+    this.loading.set(false);
+    this.error.set(null);
+    this.socketChatService.destroy();
+  }
 
   async ngOnInit() {
     this.socketChatService.onConversations((conversations) => {
@@ -149,7 +167,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.socketChatService.destroy();
+    this.clearSessionViews();
   }
 
   async handleMessageSubmission(
@@ -202,6 +220,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   private async handleConversationsLoaded(conversations: ChatConversation[]) {
+    const generation = this.viewGeneration;
     try {
       const userData = this.authStateService.getUserData();
       if (!userData?.profileId) return;
@@ -223,6 +242,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
         );
         profiles = profilesResponse;
       }
+      if (generation !== this.viewGeneration) return;
 
       const profileMap = new Map(profiles.map((p) => [p.id, p]));
 
@@ -252,6 +272,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
       const conversationMessages = await Promise.all(
         conversationMessagesPromises
       );
+      if (generation !== this.viewGeneration) return;
       const messagesMap = new Map(
         conversationMessages.map((cm) => [cm.id, cm.messages])
       );
@@ -286,6 +307,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
       this.loading.set(false);
     } catch (err) {
+      if (generation !== this.viewGeneration) return;
       console.error('Failed to load conversations:', err);
       this.error.set('Failed to load conversations. Please try again later.');
       this.loading.set(false);

@@ -1,4 +1,10 @@
 import {
+  OAuthDeletionController,
+  SocketSessionDeletionController,
+  PermissionCacheDeletionController,
+  GatewayRuntimeDeletionController,
+} from '../controllers/oauth/oauth-deletion.controller';
+import {
   ClientProxy,
   ClientProxyFactory,
   Transport,
@@ -20,6 +26,8 @@ import { AuthGuard } from '../auth/auth.guard';
 import { SocketSessionAuthService } from '../auth/socket-session-auth.service';
 import { AuthenticationController } from '../controllers/authentication/authentication.controller';
 import { AccountExportDownloadController } from '../controllers/authentication/account-export-download.controller';
+import { AccountExportJobsController } from '../controllers/authentication/account-export-jobs.controller';
+import { AccountDeletionHttpController } from '../controllers/authentication/account-deletion.controller';
 import { JwtService } from '@nestjs/jwt';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import {
@@ -175,6 +183,16 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'account-export-download',
         requiredServices: ['authentication'],
         value: AccountExportDownloadController,
+      },
+      {
+        id: 'account-export-jobs',
+        requiredServices: ['authentication'],
+        value: AccountExportJobsController,
+      },
+      {
+        id: 'account-deletion',
+        requiredServices: ['authentication'],
+        value: AccountDeletionHttpController,
       },
       {
         id: 'profile',
@@ -466,6 +484,10 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     ...createMcpToolImports(gatewayComposition),
   ],
   controllers: [
+    OAuthDeletionController,
+    SocketSessionDeletionController,
+    PermissionCacheDeletionController,
+    GatewayRuntimeDeletionController,
     ...controllerEntries.map((entry) => entry.value),
     SecurityTelemetryController,
     PerformanceTelemetryController,

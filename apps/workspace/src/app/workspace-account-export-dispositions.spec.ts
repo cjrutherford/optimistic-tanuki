@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import * as fs from 'node:fs';
@@ -29,12 +30,18 @@ describe('Workspace account export dispositions O01-P', () => {
   it('validates the actual loadDatabase registration and all 12 Workspace columns', () => {
     const metadata = source.entityMetadatas;
     expect(validateWorkspaceDispositions(metadata, inventory())).toEqual([]);
-    expect(metadata).toHaveLength(1);
+    expect(metadata).toHaveLength(2);
     expect(
-      metadata[0].columns.map((column) => column.databaseName)
+      metadata
+        .find((item) => item.name === 'Workspace')!
+        .columns.map((column) => column.databaseName)
     ).toHaveLength(12);
-    expect(metadata[0].relations).toHaveLength(0);
-    expect(metadata[0].tableName).toBe('workspaces');
+    expect(
+      metadata.find((item) => item.name === 'Workspace')!.relations
+    ).toHaveLength(0);
+    expect(metadata.find((item) => item.name === 'Workspace')!.tableName).toBe(
+      'workspaces'
+    );
   });
 
   it('rejects metadata, association, selector, exclusion, store, source and physical catalog drift', () => {
@@ -129,7 +136,9 @@ describe('Workspace account export dispositions O01-P', () => {
       validateWorkspaceDispositions(metadata, inventory(), [
         {
           table: 'workspaces',
-          columns: metadata[0].columns.map((c) => c.databaseName),
+          columns: metadata
+            .find((item) => item.name === 'Workspace')!
+            .columns.map((c) => c.databaseName),
         },
         { table: 'surprise', columns: ['secret'] },
       ]).some((error) => error.includes('unaccounted'))
@@ -138,7 +147,9 @@ describe('Workspace account export dispositions O01-P', () => {
       validateWorkspaceDispositions(metadata, inventory(), [
         {
           table: 'workspaces',
-          columns: metadata[0].columns.map((c) => c.databaseName),
+          columns: metadata
+            .find((item) => item.name === 'Workspace')!
+            .columns.map((c) => c.databaseName),
         },
       ]).some((error) => error.includes('physical table missing migrations'))
     ).toBe(true);
@@ -151,13 +162,15 @@ describe('Workspace account export dispositions O01-P', () => {
       validateWorkspaceDispositions(metadata, wrongMigrationKind, [
         {
           table: 'workspaces',
-          columns: metadata[0].columns.map((c) => c.databaseName),
+          columns: metadata
+            .find((item) => item.name === 'Workspace')!
+            .columns.map((c) => c.databaseName),
         },
       ]).some((error) => error.includes('physical table missing migrations'))
     ).toBe(true);
     expect(
       validateWorkspaceDispositions(
-        [...metadata, metadata[0]],
+        [...metadata, metadata.find((item) => item.name === 'Workspace')!],
         inventory()
       ).some((error) => error.includes('duplicate entity'))
     ).toBe(true);
@@ -189,16 +202,22 @@ describe('Workspace account export dispositions O01-P', () => {
         error.includes('duplicate')
       )
     ).toBe(true);
-    const duplicateTable = metadata[0].tableName;
+    const duplicateTable = metadata.find(
+      (item) => item.name === 'Workspace'
+    )!.tableName;
     expect(
       validateWorkspaceDispositions(metadata, inventory(), [
         {
           table: duplicateTable,
-          columns: metadata[0].columns.map((c) => c.databaseName),
+          columns: metadata
+            .find((item) => item.name === 'Workspace')!
+            .columns.map((c) => c.databaseName),
         },
         {
           table: duplicateTable,
-          columns: metadata[0].columns.map((c) => c.databaseName),
+          columns: metadata
+            .find((item) => item.name === 'Workspace')!
+            .columns.map((c) => c.databaseName),
         },
         { table: 'migrations', columns: ['id', 'timestamp', 'name'] },
       ]).some((error) => error.includes('duplicate physical table'))

@@ -57,6 +57,11 @@ export class AccountExportController {
     return this.jobs.get(data);
   }
 
+  @MessagePattern({ cmd: AuthCommands.GetLatestAccountExportJob })
+  latestExportJob(@Payload() data: Record<string, unknown>) {
+    return this.jobs.latest(data);
+  }
+
   @MessagePattern({ cmd: AuthCommands.ResumeAccountExportJob })
   resumeExportJob(@Payload() data: Record<string, unknown>) {
     return this.jobs.resume(data);

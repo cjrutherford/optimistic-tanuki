@@ -23,6 +23,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { EmailService } from '@optimistic-tanuki/email';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
+import { AccountDeletionFenceService } from '../account-deletion/account-deletion-fence.service';
 
 let service: AppService;
 let userRepo: Repository<UserEntity>;
@@ -35,6 +36,7 @@ let jwtHandle: typeof jwt;
 let jwtService: JwtService;
 let configService: ConfigService;
 let profileOwnershipVerifier: { resolveSelection: jest.Mock };
+let accountDeletionFence: { assertActiveAccount: jest.Mock };
 
 jest.mock('qrcode', () => ({
   toDataURL: jest.fn().mockResolvedValue('qrCodeDataUrl'),
@@ -113,7 +115,8 @@ describe('AppService.getPublicOAuthConfig', () => {
       {} as JwtService,
       {} as EmailService,
       { assertAccountAccess: jest.fn() } as never,
-      { resolveSelection: jest.fn() } as never
+      { resolveSelection: jest.fn() } as never,
+      { assertActiveAccount: jest.fn().mockResolvedValue(undefined) } as never
     );
 
     expect(service.getPublicOAuthConfig('tenant.example.com')).toEqual({
@@ -134,6 +137,9 @@ describe('AppService', () => {
       resolveSelection: jest.fn((_accountId, selectedProfile) =>
         Promise.resolve(selectedProfile || undefined)
       ),
+    };
+    accountDeletionFence = {
+      assertActiveAccount: jest.fn().mockResolvedValue(undefined),
     };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -179,6 +185,10 @@ describe('AppService', () => {
         {
           provide: ProfileOwnershipVerifier,
           useValue: profileOwnershipVerifier,
+        },
+        {
+          provide: AccountDeletionFenceService,
+          useValue: accountDeletionFence,
         },
         {
           provide: SaltedHashService,
@@ -716,6 +726,26 @@ describe('AppService', () => {
   });
 
   describe('issueToken', () => {
+    it('does not mint or persist a session for a fenced account', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue({
+        id: 'someUserId',
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        emailVerifiedAt: new Date('2026-01-01T00:00:00Z'),
+      } as any);
+      const denied = new RpcException('ACCOUNT_DELETION_FENCED');
+      accountDeletionFence.assertActiveAccount.mockRejectedValue(denied);
+      const issueForUser = jest.spyOn(
+        (service as any).tokenIssuerService,
+        'issueForUser'
+      );
+
+      await expect(service.issueToken('someUserId')).rejects.toBe(denied);
+      expect(issueForUser).not.toHaveBeenCalled();
+      expect(tokenRepo.save).not.toHaveBeenCalled();
+    });
+
     it('persists the profileId with issued app-scoped sessions', async () => {
       jest.spyOn(userRepo, 'findOne').mockResolvedValue({
         id: 'someUserId',

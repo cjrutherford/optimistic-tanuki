@@ -95,6 +95,7 @@ describe('AuthGuard', () => {
           token: 'optional-token',
           userId: mockUserDetails.userId,
           appId: undefined,
+          activity: true,
         }
       );
       expect(request.user).toEqual(
@@ -129,6 +130,7 @@ describe('AuthGuard', () => {
           token: 'revoked-token',
           userId: mockUserDetails.userId,
           appId: undefined,
+          activity: true,
         }
       );
       expect(request.user).toBeUndefined();
@@ -175,6 +177,7 @@ describe('AuthGuard', () => {
           token: 'valid-token',
           userId: mockUserDetails.userId,
           appId: 'client-interface',
+          activity: true,
         }
       );
       expect(request.user.appId).toBe('client-interface');
@@ -270,6 +273,7 @@ describe('AuthGuard', () => {
           token: 'valid-token',
           userId: mockUserDetails.userId,
           appId: undefined,
+          activity: true,
         }
       );
       expect(canActivate).toBe(true); // Assuming your guard validates 'valid-token'
@@ -336,6 +340,7 @@ describe('AuthGuard', () => {
           token: 'invalid-token',
           userId: mockUserDetails.userId,
           appId: undefined,
+          activity: true,
         }
       );
     });

@@ -137,5 +137,13 @@
       "reason": "Secrets and runtime configuration are not export records.",
       "evidence": ["apps/classifieds/src/app/app.module.ts"]
     }
+  ],
+  "operationalEntities": [
+    {
+      "name": "AccountDeletionWriteFenceEntity",
+      "table": "account_deletion_write_fence",
+      "action": "exclude",
+      "fields": ["key", "kind", "operationId", "installedAt"]
+    }
   ]
 }

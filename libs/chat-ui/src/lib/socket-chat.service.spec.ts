@@ -468,4 +468,37 @@ describe('SocketChatService', () => {
     TestBed.inject(SocketChatService);
     expect(nsIo).toHaveBeenCalledWith('/chat', expect.any(Object));
   });
+  it('rejects old-session draft completion without unlocking a new-session draft', async () => {
+    let finishOld!: (value: any) => void;
+    let finishNew!: (value: any) => void;
+    const acknowledgement = jest
+      .spyOn(service, 'sendMessageWithAck')
+      .mockImplementationOnce(
+        (message) =>
+          new Promise((resolve) => {
+            finishOld = () =>
+              resolve({ success: true, messageId: message.id! });
+          })
+      )
+      .mockImplementationOnce(
+        (message) =>
+          new Promise((resolve) => {
+            finishNew = () =>
+              resolve({ success: true, messageId: message.id! });
+          })
+      );
+    const message = { conversationId: 'shared', content: 'private draft' };
+    const old = service.sendDraftMessage(message);
+    const rejected = expect(old).rejects.toThrow('Chat session changed');
+    service.destroy();
+    const current = service.sendDraftMessage(message);
+    finishOld(undefined);
+    await rejected;
+    await expect(service.sendDraftMessage(message)).rejects.toThrow(
+      'A message is already being sent'
+    );
+    finishNew(undefined);
+    await expect(current).resolves.toMatchObject({ success: true });
+    expect(acknowledgement).toHaveBeenCalledTimes(2);
+  });
 });

@@ -70,8 +70,102 @@ type Entry = { name: string; size: number; sha256: string; stream(): Readable };
 
 /** Stages each verified stream once; no named plaintext survives a process exit. */
 export class AccountExportArtifactBuilderService {
+  private readonly deletedAccounts = new Set<string>();
+  private readonly openings = new Map<
+    AbortController,
+    { key: string; work: Promise<unknown> }
+  >();
+  private readonly resources = new Map<
+    () => Promise<void>,
+    { key: string; cleanup: () => Promise<void>; files: FileHandle[] }
+  >();
+  private accountKey(accountId: string): string {
+    return createHash('sha256')
+      .update('ot:artifact-build:' + accountId.toLowerCase())
+      .digest('hex');
+  }
   async build(
     options: AccountExportArtifactBuildOptions
+  ): Promise<AccountExportArtifactHandle> {
+    if (!options || typeof options.accountId !== 'string')
+      throw Error('ARTIFACT_INVALID_INPUT');
+    const key = this.accountKey(options.accountId);
+    if (this.deletedAccounts.has(key)) throw Error('ARTIFACT_ACCOUNT_FENCED');
+    const controller = new AbortController();
+    const signal = options.signal
+      ? AbortSignal.any([options.signal, controller.signal])
+      : controller.signal;
+    const work = this.buildCurrent({ ...options, signal }, (cleanup, files) => {
+      this.resources.set(cleanup, { key, cleanup, files });
+      return () => {
+        this.resources.delete(cleanup);
+      };
+    });
+    this.openings.set(controller, { key, work });
+    try {
+      const result = await work;
+      if (this.deletedAccounts.has(key)) {
+        await result.cleanup();
+        throw Error('ARTIFACT_ACCOUNT_FENCED');
+      }
+      return result;
+    } finally {
+      this.openings.delete(controller);
+    }
+  }
+  async purgeAccount(accountId: string): Promise<{ remaining: 0 }> {
+    const key = this.checkedAccountKey(accountId);
+    if (!this.deletedAccounts.has(key) && this.deletedAccounts.size >= 10000)
+      throw Error('ARTIFACT_DELETION_BOUND');
+    this.deletedAccounts.add(key);
+    const pending = [...this.openings].filter(([, value]) => value.key === key);
+    for (const [controller] of pending) controller.abort();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const drain = async () => {
+        await Promise.allSettled(pending.map(([, value]) => value.work));
+        for (const resource of [...this.resources.values()])
+          if (resource.key === key) await resource.cleanup();
+        if ((await this.readbackAccount(accountId)) !== 0)
+          throw Error('ARTIFACT_DELETION_READBACK');
+        return { remaining: 0 as const };
+      };
+      return await Promise.race([
+        drain(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(Error('ARTIFACT_DELETION_DRAIN_TIMEOUT')),
+            56000
+          );
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+  async readbackAccount(accountId: string): Promise<number> {
+    const key = this.checkedAccountKey(accountId);
+    if (!this.deletedAccounts.has(key))
+      throw Error('ARTIFACT_DELETION_FENCE_REQUIRED');
+    return (
+      [...this.openings.values()].filter((value) => value.key === key).length +
+      [...this.resources.values()].filter((value) => value.key === key).length
+    );
+  }
+  private checkedAccountKey(accountId: string): string {
+    if (
+      typeof accountId !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        accountId
+      )
+    )
+      throw Error('ARTIFACT_DELETION_ACCOUNT_INVALID');
+    return this.accountKey(accountId);
+  }
+
+  private async buildCurrent(
+    options: AccountExportArtifactBuildOptions,
+    register: (cleanup: () => Promise<void>, files: FileHandle[]) => () => void
   ): Promise<AccountExportArtifactHandle> {
     const maxBytes = options.maxArtifactBytes ?? TOTAL_LIMIT;
     if (
@@ -89,6 +183,7 @@ export class AccountExportArtifactBuilderService {
       throw new Error('ARTIFACT_SPOOL_ROOT_INVALID');
     const root = await mkdtemp(join(parent, 'ot-account-export-'));
     const files: FileHandle[] = [];
+    const pendingPaths = new Set<string>();
     const streams = new Set<Readable>();
     let media: AccountExportArtifactMediaCollector | undefined;
     let mediaRoot: string | undefined;
@@ -98,8 +193,20 @@ export class AccountExportArtifactBuilderService {
     const cleanup = (): Promise<void> =>
       (cleanupPromise ??= (async () => {
         cleaned = true;
-        for (const stream of streams) stream.destroy();
         const errors: unknown[] = [];
+        await Promise.all(
+          [...streams].map(
+            (stream) =>
+              new Promise<void>((resolve) => {
+                if (stream.closed) return resolve();
+                stream.once('error', (error) => {
+                  errors.push(error);
+                });
+                stream.once('close', () => resolve());
+                stream.destroy();
+              })
+          )
+        );
         for (const file of files) {
           try {
             await file.close();
@@ -114,6 +221,15 @@ export class AccountExportArtifactBuilderService {
             errors.push(e);
           }
         }
+        for (const path of pendingPaths) {
+          try {
+            await unlink(path);
+            pendingPaths.delete(path);
+          } catch (e) {
+            if ((e as NodeJS.ErrnoException).code !== 'ENOENT') errors.push(e);
+            else pendingPaths.delete(path);
+          }
+        }
         if (mediaRoot) {
           try {
             await rmdir(mediaRoot);
@@ -124,16 +240,23 @@ export class AccountExportArtifactBuilderService {
         try {
           await rmdir(root);
         } catch (e) {
-          errors.push(e);
+          if ((e as NodeJS.ErrnoException).code !== 'ENOENT') errors.push(e);
         }
         if (errors.length) throw cleanupError(errors[0]);
-      })());
+        retire();
+      })().catch((error) => {
+        cleanupPromise = undefined;
+        throw error;
+      }));
+    const retire = register(cleanup, files);
     const privateFile = async (): Promise<FileHandle> => {
       const path = join(root, randomUUID());
       const file = await open(path, 'wx+', 0o600);
       files.push(file);
+      pendingPaths.add(path);
       try {
         await unlink(path);
+        pendingPaths.delete(path);
       } catch (e) {
         await file.close();
         throw e;

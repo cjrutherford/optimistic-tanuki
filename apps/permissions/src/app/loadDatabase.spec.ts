@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import { ConfigService } from '@nestjs/config';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import loadDatabase from './loadDatabase';
@@ -19,7 +20,7 @@ describe('permissions loadDatabase', () => {
     else process.env.POSTGRES_DB = previous.database;
   });
 
-  it('bundles both permissions migrations and leaves automatic execution opt-in', () => {
+  it('bundles the permissions migrations and leaves automatic execution opt-in', () => {
     delete process.env.OT_RUN_MIGRATIONS_ON_START;
     process.env.POSTGRES_HOST = 'override-host';
     process.env.POSTGRES_DB = 'override-database';
@@ -36,7 +37,7 @@ describe('permissions loadDatabase', () => {
     const options = loadDatabase(config) as PostgresConnectionOptions;
 
     expect(options.migrationsRun).toBe(false);
-    expect(options.migrations).toHaveLength(2);
+    expect(options.migrations).toHaveLength(3);
     expect(options.synchronize).toBe(false);
     expect(options.connectTimeoutMS).toBe(3000);
     expect(options.host).toBe('override-host');

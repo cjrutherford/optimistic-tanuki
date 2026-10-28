@@ -401,4 +401,38 @@ describe('AccountExportArtifactBuilderService', () => {
       await artifact.cleanup();
     }
   });
+  it('retains failed artifact FD cleanup for account purge retry and refuses late assembly', async () => {
+    for (const owner of ACCOUNT_EXPORT_RELEASE_OWNERS)
+      owners.push(await capture(owner, root));
+    const builder = new AccountExportArtifactBuilderService();
+    const artifact = await builder.build({
+      appId: 'client-interface',
+      accountId,
+      owners,
+      expectedSourcesByOwner: expected,
+      spoolRoot: root,
+    });
+    try {
+      const resource = [...(builder as any).resources.values()][0];
+      jest
+        .spyOn(resource.files[0], 'close')
+        .mockRejectedValueOnce(Error('CLOSE_FAILED'));
+      await expect((builder as any).purgeAccount(accountId)).rejects.toThrow();
+      expect(await (builder as any).readbackAccount(accountId)).toBe(1);
+      await (builder as any).purgeAccount(accountId);
+      expect(await (builder as any).readbackAccount(accountId)).toBe(0);
+      expect(() => artifact.createReadStream()).toThrow('ARTIFACT_CLOSED');
+      await expect(
+        builder.build({
+          appId: 'client-interface',
+          accountId,
+          owners,
+          expectedSourcesByOwner: expected,
+          spoolRoot: root,
+        })
+      ).rejects.toThrow('ARTIFACT_ACCOUNT_FENCED');
+    } finally {
+      await artifact.cleanup();
+    }
+  });
 });

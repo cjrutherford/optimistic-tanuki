@@ -38,6 +38,8 @@ type AssetState = {
   sourceSha256?: string;
   sourceSizeBytes?: number;
   closed?: boolean;
+  closeComplete?: boolean;
+  closePromise?: Promise<void>;
 };
 
 export interface AccountExportArtifactMediaEntry {
@@ -55,6 +57,7 @@ export interface AccountExportArtifactMediaEntry {
 
 /** Collects bounded assetMedia owner records into private, unlinked file-backed artifact entries. */
 export class AccountExportArtifactMediaCollector {
+  private readonly pendingFiles = new Map<FileHandle, string | undefined>();
   private readonly assets = new Map<string, AssetState>();
   private readonly profiles = new Map<string, string>();
   private readonly entries: AccountExportArtifactMediaEntry[] = [];
@@ -173,6 +176,21 @@ export class AccountExportArtifactMediaCollector {
           errors.push(error);
         }
       }
+      for (const [file, path] of this.pendingFiles) {
+        try {
+          await file.close();
+          if (path) {
+            try {
+              await unlink(path);
+            } catch (e) {
+              if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+            }
+          }
+          this.pendingFiles.delete(file);
+        } catch (error) {
+          errors.push(error);
+        }
+      }
       if (this.privateRoot) {
         try {
           if ((await readdir(this.privateRoot)).length === 0)
@@ -185,7 +203,13 @@ export class AccountExportArtifactMediaCollector {
       }
       if (errors.length)
         throw new Error(`MEDIA_CLEANUP_FAILED: ${String(errors[0])}`);
-    })();
+      this.assets.clear();
+      this.profiles.clear();
+      this.entries.length = 0;
+    })().catch((error) => {
+      this.cleanupPromise = undefined;
+      throw error;
+    });
     return this.cleanupPromise;
   }
 
@@ -247,8 +271,10 @@ export class AccountExportArtifactMediaCollector {
       const root = await this.ensurePrivateRoot();
       const path = join(root, randomUUID());
       const handle = await open(path, 'wx+', 0o600);
+      this.pendingFiles.set(handle, path);
       // Keep only the descriptor: media bytes never have a directory entry.
       await unlink(path);
+      this.pendingFiles.set(handle, undefined);
       asset = {
         id,
         profileId: profile,
@@ -370,9 +396,19 @@ export class AccountExportArtifactMediaCollector {
   }
 
   private async closeAsset(asset: AssetState): Promise<void> {
-    if (asset.closed) return;
+    if (asset.closeComplete) return;
     asset.closed = true;
-    await asset.handle.close();
+    asset.closePromise ??= asset.handle
+      .close()
+      .then(() => {
+        asset.closeComplete = true;
+        this.pendingFiles.delete(asset.handle);
+      })
+      .catch((error) => {
+        asset.closePromise = undefined;
+        throw error;
+      });
+    await asset.closePromise;
   }
   private uuid(value: unknown): string {
     if (typeof value !== 'string' || !UUID.test(value))

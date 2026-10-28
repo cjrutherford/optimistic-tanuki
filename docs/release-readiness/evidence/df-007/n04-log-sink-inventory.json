@@ -35,9 +35,9 @@
     {
       "id": "downstream.collectors",
       "owner": "Operator",
-      "identity": "Configured forwarding, files, collectors, rotations/backups unknown",
-      "disposition": "Source presence is not deployed routing proof. No absence or deletion claim",
-      "status": "unknown"
+      "identity": "No forwarded log capture destination currently configured; operator-confirmed 2026-10-25",
+      "disposition": "Exclude an absent forwarded destination from the current local purge set. Future OTEL/Grafana setup is documented in docs/operators/ot-ts-observability.md. This does not establish local historical stdout/browser/container erasure.",
+      "status": "operator-confirmed-not-configured"
     },
     {
       "id": "profile.guardian_activity",
@@ -94,7 +94,7 @@
     "No deployed collector or immediate whole-account deletion proof",
     "No real production purge adapter registered by this change"
   ],
-  "updatedAt": "2026-10-24",
+  "updatedAt": "2026-10-26",
   "localDeclaredAuditSourcesVerified": 8,
   "qualificationBoundary": "Declared local owner contracts only; deployed collectors, historical copies and backups remain operator qualification.",
   "auditSources": {
@@ -108,5 +108,14 @@
     "forum.forum_moderation_action": "actorProfileId profile; subjectId/details cleared"
   },
   "activeAuthorizationExclusion": "guardian_published_asset_grant remains untouched; requires owner revocation and D00/D06 fencing.",
-  "dockerMetadata": "No current/stopped containers with inspected OT/TS compose service labels; no payload inspection and no absence claim for unlabelled/forwarded/backup copies."
+  "dockerMetadata": "No current/stopped containers with inspected OT/TS compose service labels; no payload inspection and no absence claim for unlabelled/forwarded/backup copies.",
+  "operatorConfirmation": {
+    "date": "2026-10-26",
+    "forwardedLogDestinationsConfigured": false,
+    "retainedLegacyOtTsLogs": false,
+    "manualLegacyOtTsLogCopies": false,
+    "setupOnly": "docs/operators/ot-ts-observability.md",
+    "evidenceKind": "operator-confirmed-local-inventory",
+    "qualificationBoundary": "This is an absence declaration, not historical purge execution or current replica logging proof."
+  }
 }

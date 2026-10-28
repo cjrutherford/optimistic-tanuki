@@ -56,8 +56,30 @@ export class SocialAuditErasureService {
     this.runner = new AuditErasureRunner(dataSource);
   }
 
-  eraseParticipation(subject: LogSubjectSelection) {
-    return this.runner.erase(subject, SOCIAL_POLICIES);
+  readbackParticipation(subject: LogSubjectSelection): Promise<number> {
+    return this.runner.readback(subject, SOCIAL_POLICIES);
+  }
+
+  eraseParticipation(subject: LogSubjectSelection, operationId?: string) {
+    if (
+      operationId !== undefined &&
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+        operationId
+      )
+    )
+      throw new Error('SOCIAL_DELETION_OPERATION_INVALID');
+    return this.runner.erase(
+      subject,
+      SOCIAL_POLICIES,
+      operationId
+        ? async (manager) => {
+            await manager.query(
+              "SELECT set_config('ot.deletion_operation',$1,true)",
+              [operationId]
+            );
+          }
+        : undefined
+    );
   }
 }
 

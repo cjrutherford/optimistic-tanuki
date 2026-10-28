@@ -1,10 +1,6 @@
 # OT and Towne Square release completion sequence
 
-**Current OT/TS position:** A01–A07 backend export slices are locally qualified; D00 is next. Use the [scoped remaining register](../release-readiness/REMAINING-SLICES.md). The historical 75-delivery table below is not the current two-product release denominator.
-
-**Current OT/TS position:** A01–A07 backend export slices are locally qualified; D00 is next. Use the [scoped remaining register](../release-readiness/REMAINING-SLICES.md). The historical 75-delivery table below is not the current two-product release denominator.
-
-**Current OT/TS position:** A01–A07 backend export slices are locally qualified; D00 is next. Use the [scoped remaining register](../release-readiness/REMAINING-SLICES.md). The historical 75-delivery table below is not the current two-product release denominator.
+**Current OT/TS position:** A01–A07 backend export, D00–D09, D11, D16, D17 and D25–D27 and U01–U03 plus R2-01–R2-03 and R4-01–R4-05 are locally qualified; R6-01–R6-05 are also locally qualified (no local slice remains). Use the [scoped remaining register](../release-readiness/REMAINING-SLICES.md). The historical 75-delivery table below is not the current two-product release denominator.
 
 **Scope clarification (2026-10-23):** The authoritative audit scope is `client-interface` (Optimistic Tanuki), `local-hub` (Towne Square), their required shared services and shared HAI navigation. Historical platform records retain their IDs and accepted evidence as reference. Another product does not become release work through queue position or shared infrastructure alone.
 
@@ -189,3 +185,53 @@ N01 acceptance is limited to the two-app inventory and per-work-item fencing/rec
 N02 backend replica/session/OAuth acceptance is recorded in the [receipt](../release-readiness/evidence/df-007/checkpoint-n02.json). Permanent account-wide fencing and browser cleanup remain D00 and N06.
 
 N03 store-level cleanup and catalog acceptance is recorded in the [receipt](../release-readiness/evidence/df-007/checkpoint-n03.json). D00 permanent fencing and N06 browser cleanup remain open.
+
+## 2026-10-27 R4-01–R4-05 local closeout
+
+R4-01 account isolation, R4-02 locality/membership, R4-03 buyer/seller journeys,
+R4-04 shared accessibility and R4-05 upload/realtime/route recovery are **VERIFIED
+LOCAL** for OT (`client-interface`) and TS (`local-hub`). The coupled system-Chrome
+case passed all five gates with twelve migrated owner databases and real services;
+214 focused unit tests passed. Eight scoped axe reports contain no violations.
+Independent teardown read all 99 application tables empty, removed private
+resources and confirmed 43 protected files unchanged.
+
+Receipts: [R4-01](../release-readiness/evidence/df-007/checkpoint-r4-01.json),
+[R4-02](../release-readiness/evidence/df-007/checkpoint-r4-02.json),
+[R4-03](../release-readiness/evidence/df-007/checkpoint-r4-03.json),
+[R4-04](../release-readiness/evidence/df-007/checkpoint-r4-04.json),
+[R4-05](../release-readiness/evidence/df-007/checkpoint-r4-05.json).
+Historical D/U/R2 receipts remain revision snapshots and were not rewritten.
+
+At the R4 closeout, five local R6 slices remained; the R6 closeout below supersedes that historical position. These cover claim
+reconciliation, first-session guidance, policy/support text, verified demos and
+launch handoff. X01–X04 remain separately owned external acceptance. Real local
+cash records do not establish money movement; the isolated one-signature ClamAV
+engine does not qualify production malware definitions. DF-007/RR-11 remain open.
+
+## 2026-10-27 R6-01–R6-05 local closeout
+
+**R6-01 through R6-05 are VERIFIED LOCAL for OT and TS. No local slice remains
+in this scoped sequence.** The 58-statement claim ledger, shared first-session
+and privacy pages, real rebuilt demos and operator handoff are complete locally.
+Four focused tests and both app builds passed; three owning lint targets passed
+before the final copy-only clarification. One private real-service/browser case
+passed with zero skips, sixteen zero-violation light/dark accessibility reports
+and twenty source-linked screenshots. Diagnostics show only expected anonymous
+session 401s. Teardown read all 99 application tables empty, removed its resources
+and confirmed 43 protected files unchanged.
+
+See [the launch handoff](../release-readiness/R6-LAUNCH-HANDOFF.md),
+[claim ledger](../release-readiness/evidence/df-007/r6-claim-ledger.json),
+[screenshot provenance](../release-readiness/evidence/r6-local/manifest.json), and receipts
+[R6-01](../release-readiness/evidence/df-007/checkpoint-r6-01.json),
+[R6-02](../release-readiness/evidence/df-007/checkpoint-r6-02.json),
+[R6-03](../release-readiness/evidence/df-007/checkpoint-r6-03.json),
+[R6-04](../release-readiness/evidence/df-007/checkpoint-r6-04.json),
+[R6-05](../release-readiness/evidence/df-007/checkpoint-r6-05.json).
+
+**X01–X04 remain open and separately owned.** Local completion does not qualify
+provider/email/payment operations, deployment/load/production AV definitions,
+backups/remote copies or operational support. The project owner/operator must
+record the external evidence and final release decision. DF-007/RR-11 remain
+open. Earlier D/U/R2/R4 receipts remain immutable revision snapshots.

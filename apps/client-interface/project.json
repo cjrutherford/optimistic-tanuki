@@ -34,6 +34,11 @@
           {
             "glob": "**/*",
             "input": "apps/client-interface/public"
+          },
+          {
+            "glob": "browser-session-boundary.json",
+            "input": "libs/models/src/lib/libs/account-deletion",
+            "output": "assets"
           }
         ],
         "styles": [

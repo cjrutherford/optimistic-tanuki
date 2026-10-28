@@ -588,6 +588,8 @@ export class CommunityController {
 
     // Courtesy only: the committed invitation works with or without the mail.
     await this.inviteMailer.send({
+      actorAccountId: user.userId,
+      recipientAccountId: inviteeUserId,
       email,
       token: created.token,
       communityName: community?.name,

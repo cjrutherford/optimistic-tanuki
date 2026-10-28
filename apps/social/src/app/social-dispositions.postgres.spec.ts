@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import 'reflect-metadata';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -62,10 +63,10 @@ describePrivate(
       const rows: Array<{ table: string; columns: string[] }> =
         await source.query(`SELECT table_name AS "table", array_agg(column_name::text ORDER BY ordinal_position) AS columns
       FROM information_schema.columns WHERE table_schema='public' GROUP BY table_name ORDER BY table_name`);
-      expect(rows).toHaveLength(35);
+      expect(rows).toHaveLength(36);
       expect(
         source.entityMetadatas.filter((m) => m.tableType !== 'junction')
-      ).toHaveLength(33);
+      ).toHaveLength(34);
       expect(
         source.entityMetadatas.filter((m) => m.tableType === 'junction')
       ).toHaveLength(1);
@@ -98,7 +99,7 @@ describePrivate(
       const report = {
         result: 'PASS',
         readOnly: true,
-        entities: 33,
+        entities: 34,
         junctions: 1,
         physicalTables: rows.length,
         physicalColumns: rows.reduce((n, r) => n + r.columns.length, 0),

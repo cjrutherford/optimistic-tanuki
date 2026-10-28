@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import loadDatabase from './loadDatabase';
 
 describe('loadDatabase', () => {

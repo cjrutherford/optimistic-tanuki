@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   DeleteObjectsCommand,
   DeleteObjectCommand,
@@ -211,6 +212,70 @@ export class S3Service {
   /**
    * Generate a pre-signed URL for uploading a file directly to S3
    */
+  async custodyProbe(
+    nonce: string,
+    mode: 'write' | 'read' | 'remove'
+  ): Promise<string> {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+        nonce
+      ) ||
+      !['write', 'read', 'remove'].includes(mode)
+    )
+      throw Error('CUSTODY_PROBE_INVALID');
+    const key = '.ot-store-probe/' + nonce;
+    if (mode === 'write')
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+          Body: nonce,
+          ContentType: 'text/plain',
+          IfNoneMatch: '*',
+        })
+      );
+    else if (mode === 'remove') await this.purgeObjectVersions(key);
+    else {
+      const response = await this.s3Client.send(
+        new GetObjectCommand({ Bucket: this.bucketName, Key: key })
+      );
+      const body = response.Body as AsyncIterable<Uint8Array> & {
+        destroy?: () => void;
+      };
+      if (!body || typeof body[Symbol.asyncIterator] !== 'function')
+        throw Error('CUSTODY_PROBE_INVALID');
+      const chunks: Buffer[] = [];
+      let size = 0;
+      try {
+        for await (const chunk of body) {
+          const bytes = Buffer.from(chunk);
+          size += bytes.length;
+          if (size > 36) throw Error('CUSTODY_PROBE_INVALID');
+          chunks.push(bytes);
+        }
+      } finally {
+        body.destroy?.();
+      }
+      if (size !== 36 || Buffer.concat(chunks).toString('utf8') !== nonce)
+        throw Error('CUSTODY_PROBE_INVALID');
+    }
+    const endpoint = new URL(this.options.endpoint);
+    if (endpoint.username || endpoint.password)
+      throw Error('CUSTODY_ENDPOINT_INVALID');
+    return (
+      's3:' +
+      createHash('sha256')
+        .update(
+          JSON.stringify([
+            endpoint.origin,
+            this.bucketName,
+            this.options.region,
+          ])
+        )
+        .digest('hex')
+    );
+  }
+
   async generateUploadUrl(options: SignedUrlOptions): Promise<SignedUrlResult> {
     const expiresIn = options.expiresIn || 3600; // Default 1 hour
     const expiresAt = new Date(Date.now() + expiresIn * 1000);

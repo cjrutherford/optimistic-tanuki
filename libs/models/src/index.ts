@@ -27,3 +27,7 @@ export * from './lib/libs/leads';
 export * from './lib/libs/workspaces';
 export * from './lib/libs/flow';
 export * from './lib/libs/vault';
+
+export * from './lib/libs/account-deletion/account-deletion.contract';
+
+export * from './lib/libs/account-deletion/browser-session-boundary.contract';

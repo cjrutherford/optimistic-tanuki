@@ -23,3 +23,7 @@ The machine inventory must reconcile the actual registered entity and every migr
 O09-P needs matching offline ORM metadata and a read-only fresh migrated catalog. O09-C needs real paged, bounded reads proving both allowed scopes, exclusion of other applications and foreign accounts, profile-binding failure, scalar/media exclusions and integrity. O09-I needs Profile-bound leased capture in the job, failure-prefix/retry, session and lease denial, restart invalidation and independent data/resource cleanup.
 
 Policy and unit tests alone do not accept O09. The overall export remains incomplete, with no downloadable artifact or deletion promise. This read-only capture does not implement Classifieds deletion or change listing CRUD, visibility or UI.
+
+## D16 local erasure qualification
+
+Erasure requires the authenticated deletion account, frozen current profile binding and explicit client-interface/local-hub scope. Counterpart and out-of-release listings are preserved. Image pointers do not authorize deleting media in another owner. The operational fence is excluded from portability. See [the owner finding](./findings/DF-007-D16.md) for real database/TCP evidence and its limits. Full-account coordination remains later work.

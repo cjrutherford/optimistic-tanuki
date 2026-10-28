@@ -1864,6 +1864,29 @@
           "action": "opaque-reference"
         }
       ]
+    },
+    {
+      "name": "AccountDeletionWriteFenceEntity",
+      "table": "account_deletion_write_fence",
+      "source": "libs/storage/src/lib/account-deletion-write-fence.ts",
+      "subject": {
+        "kind": "none",
+        "fields": [],
+        "rule": "Operational permanent producer fence; never a portable personal-data source.",
+        "legacyProvenance": "Operational hashes do not prove historical authorship; that remains unverified.",
+        "evidence": ["libs/storage/src/lib/account-deletion-write-fence.ts"]
+      },
+      "columns": [
+        {
+          "fields": ["key", "kind", "operationId", "installedAt"],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Exclude operational fence identities, hashes, operation references and timestamps from ordinary account exports.",
+          "reason": "Permanent deletion enforcement is operational state; exporting it would reveal internal deletion capabilities and identifiers.",
+          "evidence": ["libs/storage/src/lib/account-deletion-write-fence.ts"]
+        }
+      ],
+      "relations": []
     }
   ],
   "associations": [

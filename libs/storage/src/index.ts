@@ -23,3 +23,9 @@ export * from './lib/account-export-hls';
 
 export * from './lib/account-export-artifact-builder.service';
 export * from './lib/account-export-artifact-store.service';
+
+export * from './lib/account-deletion-write-fence';
+
+export * from './lib/account-deletion-authority.client';
+
+export * from './lib/account-deletion-snapshot.controller';

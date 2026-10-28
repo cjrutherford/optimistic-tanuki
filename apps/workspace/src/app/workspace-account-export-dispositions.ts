@@ -144,8 +144,15 @@ export function validateWorkspaceDispositions(
 
   const entities = index(inventory.entities, 'entities');
   const associations = index(inventory.associations, 'associations');
-  if (metadata.length !== 1 || metadata[0]?.name !== 'Workspace')
-    errors.push('registered entities must contain only Workspace');
+  if (
+    !same(
+      metadata.map((item) => item.name),
+      ['Workspace', 'AccountDeletionWriteFenceEntity']
+    )
+  )
+    errors.push(
+      'registered entities must contain Workspace and its operational fence'
+    );
   for (const item of metadata) {
     if (item.tableType === 'junction') {
       errors.push(`unexpected association metadata ${item.name}`);
@@ -169,6 +176,19 @@ export function validateWorkspaceDispositions(
     );
     if (item.relations.length)
       errors.push(`${item.name} relations are prohibited`);
+    if (item.name === 'AccountDeletionWriteFenceEntity') {
+      if (
+        policy.subject?.kind !== 'none' ||
+        !Array.isArray(policy.subject.fields) ||
+        policy.subject.fields.length ||
+        policy.columns.some(
+          (group: any) =>
+            group.action !== 'exclude' || group.classification !== 'opaque'
+        )
+      )
+        errors.push('operational fence must be excluded');
+      continue;
+    }
     const expectedPolicy: Record<string, string> = {
       id: 'include-owned:owned',
       kind: 'include-owned:owned',

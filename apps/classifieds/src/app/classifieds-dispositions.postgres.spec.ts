@@ -1,3 +1,5 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import 'reflect-metadata';
 import { writeFileSync } from 'node:fs';
 import { DataSource } from 'typeorm';
@@ -37,7 +39,7 @@ describePrivate('O09 Classifieds migrated physical catalog', () => {
       database: env['CLASSIFIEDS_PARITY_PG_DATABASE'],
       username: env['CLASSIFIEDS_PARITY_PG_USER'],
       password: env['CLASSIFIEDS_PARITY_PG_PASSWORD'],
-      entities: [ClassifiedAdEntity],
+      entities: [ClassifiedAdEntity, AccountDeletionWriteFenceEntity],
       migrations: [],
       migrationsRun: false,
       synchronize: false,

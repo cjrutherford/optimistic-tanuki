@@ -1,3 +1,7 @@
+import { RollingSessionActivity1793105343107 } from '../../migrations/1793105343107-RollingSessionActivity';
+import { AccountDeletionControl1792886267140 } from '../../migrations/1792886267140-AccountDeletionControl';
+import { AccountDeletionOperationEntity } from '../account-deletion/account-deletion-operation.entity';
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { ConfigService } from '@nestjs/config';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import { UserEntity } from '../user/entities/user.entity';
@@ -36,6 +40,8 @@ const loadDatabase = (config: ConfigService) => {
     GuardianPermissionEntity,
     GuardianPolicyNoticeEntity,
     AccountExportJobEntity,
+    AccountDeletionOperationEntity,
+    AccountDeletionWriteFenceEntity,
   ];
   console.log(
     `Using database configuration: host=${database.host}, port=${database.port}, username=${database.username}, database=${database.database}`
@@ -62,6 +68,8 @@ const loadDatabase = (config: ConfigService) => {
       GuardianAdultAccountBinding1792004425354,
       GuardianPolicyNoticeOutbox1792163157529,
       AccountExportJobs1792435947180,
+      AccountDeletionControl1792886267140,
+      RollingSessionActivity1793105343107,
     ],
     migrationsRun: process.env.OT_RUN_MIGRATIONS_ON_START === 'true',
   };

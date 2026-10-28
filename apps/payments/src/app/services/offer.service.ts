@@ -118,12 +118,27 @@ export class OfferService {
     );
   }
 
+  private validateAmount(amount: number): void {
+    if (
+      typeof amount !== 'number' ||
+      !Number.isFinite(amount) ||
+      amount <= 0 ||
+      amount > 99999999.99 ||
+      calculateNetAmount(amount).net < 0
+    ) {
+      throw new BadRequestException(
+        'Offer amount cannot produce a valid seller payment'
+      );
+    }
+  }
+
   async createOffer(dto: CreateOfferDto): Promise<Offer> {
     const sellerId = await this.getClassifiedSellerId(
       dto.classifiedId,
       dto.buyerId,
       dto.appScope
     );
+    this.validateAmount(dto.amount);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + DEFAULT_OFFER_EXPIRY_DAYS);
 
@@ -163,6 +178,7 @@ export class OfferService {
       throw new BadRequestException('Offer has expired');
     }
 
+    this.validateAmount(Number(offer.offeredAmount));
     const feeBreakdown = calculateNetAmount(Number(offer.offeredAmount));
 
     const payment = this.classifiedPaymentRepository.create({
@@ -224,6 +240,7 @@ export class OfferService {
       );
     }
 
+    this.validateAmount(dto.counterAmount);
     offer.status = 'countered';
     offer.counterOfferAmount = dto.counterAmount;
     offer.counterMessage = dto.message;

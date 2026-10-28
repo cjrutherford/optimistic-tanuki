@@ -46,9 +46,88 @@ const MAX_ROWS = 100_000;
 export class AuditErasureRunner {
   constructor(private readonly database: AuditDatabase) {}
 
-  async erase(
+  /** Independent identity readback; works after Profile root finalization too. */
+  async readback(
     subject: LogSubjectSelection,
     policies: readonly AuditErasurePolicy[]
+  ): Promise<number> {
+    if (
+      !subject ||
+      typeof subject.accountId !== 'string' ||
+      !UUID.test(subject.accountId) ||
+      !Array.isArray(subject.profileIds) ||
+      subject.profileIds.length > 10000 ||
+      subject.profileIds.some((id) => typeof id !== 'string' || !UUID.test(id))
+    )
+      throw Error('INVALID_LOG_SUBJECT_SELECTION');
+    if (!Array.isArray(policies) || !policies.length || policies.length > 16)
+      throw Error('INVALID_AUDIT_ERASURE_POLICY');
+    const parameters = [
+      subject.accountId.toLowerCase(),
+      [...new Set(subject.profileIds.map((id) => id.toLowerCase()))],
+    ];
+    const sources = policies.map((policy: AuditErasurePolicy) => {
+      const names = [...policy.accountColumns, ...policy.profileColumns];
+      if (
+        !IDENTIFIER.test(policy.table) ||
+        !names.length ||
+        names.length > 32 ||
+        names.some((name) => !IDENTIFIER.test(name)) ||
+        new Set(names).size !== names.length
+      )
+        throw Error('INVALID_AUDIT_ERASURE_POLICY');
+      const branches = [
+        ...policy.accountColumns.map(
+          (name) => `lower(btrim("${name}"::text))=$1::text`
+        ),
+        ...policy.profileColumns.map(
+          (name) => `lower(btrim("${name}"::text))=ANY($2::text[])`
+        ),
+      ];
+      // Both typed identity domains remain bound even for single-domain sources.
+      return {
+        table: policy.table,
+        predicate: `($1::text IS NOT NULL AND $2::text[] IS NOT NULL) AND (${branches.join(
+          ' OR '
+        )})`,
+      };
+    });
+    if (new Set(sources.map((source) => source.table)).size !== sources.length)
+      throw Error('INVALID_AUDIT_ERASURE_POLICY');
+    try {
+      return await this.database.transaction(async (transaction) => {
+        await transaction.query('SET TRANSACTION READ ONLY');
+        await transaction.query("SET LOCAL statement_timeout='12s'");
+        let total = 0;
+        for (const source of sources) {
+          const rows = await transaction.query(
+            `SELECT count(*)::text AS n FROM (SELECT 1 FROM "public"."${
+              source.table
+            }" WHERE ${source.predicate} LIMIT ${MAX_ROWS + 1}) AS matches`,
+            parameters
+          );
+          const n =
+            Array.isArray(rows) && rows.length === 1 ? rows[0]?.n : undefined;
+          if (
+            typeof n !== 'string' ||
+            !/^\d+$/.test(n) ||
+            !Number.isSafeInteger(Number(n)) ||
+            Number(n) > MAX_ROWS
+          )
+            throw Error('INVALID_AUDIT_READBACK');
+          total += Number(n);
+        }
+        return total;
+      });
+    } catch {
+      throw Error('AUDIT_READBACK_FAILED');
+    }
+  }
+
+  async erase(
+    subject: LogSubjectSelection,
+    policies: readonly AuditErasurePolicy[],
+    prepareTransaction?: (transaction: AuditTransaction) => Promise<void>
   ): Promise<AuditErasureReceipt> {
     if (
       !subject ||
@@ -154,6 +233,7 @@ export class AuditErasureRunner {
     };
     try {
       return await this.database.transaction(async (transaction) => {
+        if (prepareTransaction) await prepareTransaction(transaction);
         await transaction.query("SET LOCAL lock_timeout = '5s'");
         await transaction.query("SET LOCAL statement_timeout = '15s'");
         for (const source of sources)

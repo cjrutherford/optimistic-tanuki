@@ -1,3 +1,4 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { ConfigService } from '@nestjs/config';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { Donation } from '../entities/donation.entity';
@@ -15,6 +16,7 @@ import * as path from 'path';
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
   const entities = [
+    AccountDeletionWriteFenceEntity,
     Donation,
     ClassifiedPayment,
     BusinessPage,

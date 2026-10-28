@@ -4,7 +4,14 @@ import {
   AssetType,
   StorageStrategy,
 } from '@optimistic-tanuki/models';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  linkSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'fs';
 import * as fs from 'fs/promises';
 import { tmpdir } from 'os';
 import * as path from 'path';
@@ -213,6 +220,84 @@ describe('LocalStorageAdapter', () => {
           content: 'just a string',
         } as never)
       ).rejects.toThrow('Invalid content type');
+    });
+  });
+
+  describe('purgeOwnedAsset', () => {
+    const owned = (overrides: Partial<AssetDto> = {}) =>
+      asset({
+        id: '11111111-1111-4111-8111-111111111111',
+        name: 'owned.bin',
+        storagePath: 'assets/11111111-1111-4111-8111-111111111111/owned.bin',
+        ...overrides,
+      });
+
+    it('removes the owned directory contents, preserves siblings, and is idempotent', async () => {
+      const id = '11111111-1111-4111-8111-111111111111';
+      const directory = path.join(basePath, 'assets', id);
+      const other = path.join(
+        basePath,
+        'assets',
+        '22222222-2222-4222-8222-222222222222'
+      );
+      await fs.mkdir(directory, { recursive: true });
+      await fs.mkdir(other, { recursive: true });
+      await fs.writeFile(path.join(directory, 'owned.bin'), 'owned bytes');
+      await fs.writeFile(path.join(directory, 'extra'), 'owned sibling');
+      await fs.writeFile(path.join(other, 'keep'), 'other asset');
+
+      await expect(adapter.purgeOwnedAsset!(owned())).resolves.toEqual({
+        verifiedAbsent: true,
+      });
+      await expect(fs.lstat(directory)).rejects.toMatchObject({
+        code: 'ENOENT',
+      });
+      await expect(fs.readFile(path.join(other, 'keep'), 'utf8')).resolves.toBe(
+        'other asset'
+      );
+      await expect(adapter.purgeOwnedAsset!(owned())).resolves.toEqual({
+        verifiedAbsent: true,
+      });
+    });
+
+    it.each([
+      ['wrong id', { id: 'not-a-uuid' }],
+      [
+        'wrong path',
+        {
+          storagePath: 'assets/11111111-1111-4111-8111-111111111111/other.bin',
+        },
+      ],
+      [
+        'wrong strategy',
+        { storageStrategy: StorageStrategy.REMOTE_BLOCK_STORAGE },
+      ],
+    ])('rejects %s custody', async (_label, overrides) => {
+      await expect(
+        adapter.purgeOwnedAsset!(owned(overrides as Partial<AssetDto>))
+      ).rejects.toThrow('custody');
+    });
+
+    it('rejects symlinks and hard links without following them', async () => {
+      const id = '11111111-1111-4111-8111-111111111111';
+      const directory = path.join(basePath, 'assets', id);
+      const outside = path.join(basePath, 'outside');
+      await fs.mkdir(directory, { recursive: true });
+      await fs.writeFile(outside, 'keep');
+      symlinkSync(outside, path.join(directory, 'link'));
+      await expect(adapter.purgeOwnedAsset!(owned())).rejects.toThrow(
+        'Symlink'
+      );
+      await fs.unlink(path.join(directory, 'link'));
+      await fs.writeFile(path.join(directory, 'owned.bin'), 'owned');
+      linkSync(
+        path.join(directory, 'owned.bin'),
+        path.join(basePath, 'external-link')
+      );
+      await expect(adapter.purgeOwnedAsset!(owned())).rejects.toThrow(
+        'Hard-linked'
+      );
+      expect(await fs.readFile(outside, 'utf8')).toBe('keep');
     });
   });
 

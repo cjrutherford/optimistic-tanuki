@@ -1,6 +1,29 @@
 import { TokenIssuerService } from './token-issuer.service';
 
 describe('TokenIssuerService', () => {
+  it('leaves OT/TS lifetime to authoritative idle activity while preserving other app expiry', () => {
+    const signer = {
+      sign: jest.fn((_payload: unknown, _options: unknown) => 'session'),
+    };
+    const issuer = new TokenIssuerService(signer, 'secret');
+    const user = {
+      userId: 'account',
+      firstName: 'A',
+      lastName: 'B',
+      email: 'a@example.test',
+    };
+    for (const app of ['client-interface', 'local-hub']) {
+      issuer.issueForUser(user, 'profile', app);
+      expect(
+        signer.sign.mock.calls[signer.sign.mock.calls.length - 1][1]
+      ).toEqual({ secret: 'secret' });
+    }
+    issuer.issueForUser(user, 'profile', 'another-product');
+    expect(
+      signer.sign.mock.calls[signer.sign.mock.calls.length - 1][1]
+    ).toEqual({ secret: 'secret', expiresIn: '1h' });
+  });
+
   it('issues a one-hour token with normalized profile id', () => {
     const signer = {
       sign: jest.fn().mockReturnValue('signed-token'),

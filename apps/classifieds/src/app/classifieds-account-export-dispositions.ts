@@ -60,6 +60,35 @@ export function validateClassifiedsDispositions(
   physical?: Array<{ table: string; columns: string[] }>
 ): string[] {
   const errors: string[] = [];
+  if (!Array.isArray(raw)) return ['invalid inventory shape'];
+  const operational = raw.filter(
+    (e) => e?.name === 'AccountDeletionWriteFenceEntity'
+  );
+  if (
+    operational.length !== 1 ||
+    (operational[0].tableName ?? operational[0].table) !==
+      'account_deletion_write_fence' ||
+    !Array.isArray(operational[0].columns) ||
+    !Array.isArray(operational[0].relations) ||
+    !same(
+      operational[0].columns.map((c: any) => c.databaseName ?? c.database),
+      ['key', 'kind', 'operationId', 'installedAt']
+    ) ||
+    operational[0].relations.length ||
+    !record(value) ||
+    JSON.stringify(value['operationalEntities']) !==
+      JSON.stringify([
+        {
+          name: 'AccountDeletionWriteFenceEntity',
+          table: 'account_deletion_write_fence',
+          action: 'exclude',
+          fields: ['key', 'kind', 'operationId', 'installedAt'],
+        },
+      ])
+  )
+    errors.push('operational fence drift');
+  raw = raw.filter((e) => e?.name !== 'AccountDeletionWriteFenceEntity');
+
   if (
     !Array.isArray(raw) ||
     raw.length !== 1 ||
@@ -197,18 +226,24 @@ export function validateClassifiedsDispositions(
     if (
       !same(
         physical.map((t) => t.table),
-        ['classified_ad', 'migrations']
+        ['classified_ad', 'migrations', 'account_deletion_write_fence']
       )
     )
       errors.push('physical table catalog drift');
     const expected: Record<string, string[]> = {
+      account_deletion_write_fence: [
+        'key',
+        'kind',
+        'operationId',
+        'installedAt',
+      ],
       classified_ad: columns,
       migrations: ['id', 'timestamp', 'name'],
     };
     for (const table of physical)
       if (!expected[table.table] || !same(table.columns, expected[table.table]))
         errors.push(`physical columns drift: ${table.table}`);
-    if (physical.reduce((n, t) => n + t.columns.length, 0) !== 21)
+    if (physical.reduce((n, t) => n + t.columns.length, 0) !== 25)
       errors.push('physical column count drift');
   }
   return errors;

@@ -1,3 +1,4 @@
+import { localCustodyProbe, CustodyProbeMode } from './local-custody-identity';
 import {
   AssetDto,
   CreateAssetDto,
@@ -58,6 +59,10 @@ export class LocalStorageAdapter implements StorageAdapter {
       mkdirSync(path.join(this.basePath), { recursive: true });
       this.l.log(`LocalStorageAdapter: Created basePath at ${this.basePath}`);
     }
+  }
+
+  custodyProbe(nonce: string, mode: CustodyProbeMode): Promise<string> {
+    return localCustodyProbe(this.basePath, nonce, mode);
   }
 
   async create(data: CreateAssetDto): Promise<AssetDto> {
@@ -183,6 +188,94 @@ export class LocalStorageAdapter implements StorageAdapter {
           `LocalStorageAdapter: Failed to remove asset at ${absolutePath}: ${error.message}`
         );
         throw error; // Re-throw other errors
+      }
+    }
+  }
+
+  async purgeOwnedAsset(data: AssetDto): Promise<{ verifiedAbsent: true }> {
+    const assetDirectory = this.assertOwnedAssetPath(data);
+    const root = path.resolve(this.basePath);
+    const assetsDirectory = path.join(root, 'assets');
+    await this.assertTrustedDirectory(root);
+    await this.assertTrustedDirectory(assetsDirectory, true);
+    await this.assertTrustedDirectory(assetDirectory, true);
+    try {
+      await this.assertBoundedTree(assetDirectory, 0, { count: 0 });
+      await fs.rm(assetDirectory, { recursive: true, force: true });
+    } catch (error: any) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    try {
+      const stat = await fs.lstat(assetDirectory);
+      if (!stat.isDirectory() || stat.isSymbolicLink()) {
+        throw new Error('Owned asset directory remains after purge');
+      }
+      throw new Error('Owned asset directory remains after purge');
+    } catch (error: any) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    return { verifiedAbsent: true };
+  }
+
+  private assertOwnedAssetPath(data: AssetDto): string {
+    if (
+      !data ||
+      !isUuid(data.id) ||
+      data.storageStrategy !== StorageStrategy.LOCAL_BLOCK_STORAGE ||
+      typeof data.name !== 'string'
+    ) {
+      throw new Error('Asset custody cannot be proven');
+    }
+    let expected: string;
+    try {
+      expected = this.reservationPath({
+        id: data.id,
+        name: data.name,
+      } as CreateAssetDto);
+    } catch {
+      throw new Error('Asset custody cannot be proven');
+    }
+    if (data.storagePath !== expected)
+      throw new Error('Asset custody cannot be proven');
+    return path.join(path.resolve(this.basePath), 'assets', data.id);
+  }
+
+  private async assertTrustedDirectory(
+    directory: string,
+    missingOk = false
+  ): Promise<void> {
+    try {
+      const stat = await fs.lstat(directory);
+      if (!stat.isDirectory() || stat.isSymbolicLink())
+        throw new Error('Unsafe storage directory');
+    } catch (error: any) {
+      if (missingOk && error.code === 'ENOENT') return;
+      throw error;
+    }
+  }
+
+  private async assertBoundedTree(
+    directory: string,
+    depth: number,
+    state: { count: number }
+  ): Promise<void> {
+    if (depth > 8) throw new Error('Owned asset tree exceeds the depth limit');
+    const handle = await fs.opendir(directory);
+    // The async iterator closes its directory handle on completion or error.
+    for await (const entry of handle) {
+      state.count += 1;
+      if (state.count > 1000)
+        throw new Error('Owned asset tree exceeds the entry limit');
+      const entryPath = path.join(directory, entry.name);
+      const stat = await fs.lstat(entryPath);
+      if (stat.isSymbolicLink()) throw new Error('Symlink in owned asset tree');
+      if (stat.isFile()) {
+        if (stat.nlink !== 1)
+          throw new Error('Hard-linked file in owned asset tree');
+      } else if (stat.isDirectory()) {
+        await this.assertBoundedTree(entryPath, depth + 1, state);
+      } else {
+        throw new Error('Unsupported entry in owned asset tree');
       }
     }
   }

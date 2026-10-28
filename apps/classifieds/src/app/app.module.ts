@@ -1,3 +1,10 @@
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import { ClassifiedsAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { ClassifiedsAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { AccountDeletionAuthorityClient } from '@optimistic-tanuki/storage';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import {
@@ -36,10 +43,54 @@ import { ClassifiedsAccountExportSnapshotController } from './account-export-sna
     LoggerModule,
   ],
   controllers: [
+    AccountDeletionSnapshotController,
+    ClassifiedsAccountDeletionOwnerController,
     ClassifiedsController,
     ClassifiedsAccountExportSnapshotController,
   ],
   providers: [
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: ClassifiedsAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        database: {
+          query(sql: string, parameters?: unknown[]): Promise<unknown>;
+        }
+      ) => ({
+        owner: 'classifieds',
+        snapshot,
+        authority,
+        spool,
+        database,
+        scopeReadback: async (
+          accountId: string,
+          profiles: readonly string[] | null
+        ) => {
+          const rows = (await database.query(
+            `SELECT count(*)::text n FROM (SELECT 1 FROM classified_ad WHERE (lower(btrim("userId"::text))=$1 OR lower(btrim("profileId"::text))=ANY($2::text[])) AND ("appScope" IS NULL OR "appScope" NOT IN ('client-interface','local-hub')) LIMIT 100001) AS unresolved`,
+            [accountId, profiles ?? []]
+          )) as { n: string }[];
+          return Array.isArray(rows) && rows.length === 1 && rows[0]?.n === '0'
+            ? 0
+            : 1;
+        },
+      }),
+      inject: [
+        ClassifiedsAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        'CLASSIFIEDS_CONNECTION',
+      ],
+    },
+    ClassifiedsAccountDeletionOwnerService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: ClientProxy) =>
+        new AccountDeletionAuthorityClient(auth),
+      inject: ['CLASSIFIEDS_AUTH_PROXY'],
+    },
     ClassifiedsService,
     AccountExportOwnerSpoolService,
     {

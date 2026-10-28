@@ -1,4 +1,8 @@
 export const ProfileCommands = {
+  FinalizeAccountDeletion: 'profile.deletion.finalize',
+  FenceAccountDeletion: 'ProfileFenceAccountDeletion',
+  EraseAccountDeletion: 'ProfileEraseAccountDeletion',
+  ReadbackAccountDeletion: 'ProfileReadbackAccountDeletion',
   Create: 'Create:Profile',
   Update: 'Update:Profile',
   GetGuardian: 'Get:GuardianProfile',

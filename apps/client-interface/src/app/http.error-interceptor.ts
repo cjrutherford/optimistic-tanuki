@@ -2,12 +2,14 @@ import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { MessageService } from '@optimistic-tanuki/message-ui';
+import { isAccountRightsRequest } from '@optimistic-tanuki/common-ui';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const messageService = inject(MessageService);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
+      if (isAccountRightsRequest(req.url)) return throwError(() => error);
       // Cookie-session probes are expected to return 401 before sign-in and
       // while an OAuth callback is still redeeming. Authentication state
       // handles those responses; presenting a global expiry toast is wrong.

@@ -565,6 +565,22 @@
         }
       ],
       "relations": []
+    },
+    {
+      "name": "AccountDeletionWriteFenceEntity",
+      "table": "account_deletion_write_fence",
+      "source": "libs/storage/src/lib/account-deletion-write-fence.ts",
+      "columns": [
+        {
+          "fields": ["key", "kind", "operationId", "installedAt"],
+          "classification": "nonpersonal",
+          "action": "exclude",
+          "handling": "Permanent operational fence, never a financial receipt.",
+          "reason": "Deletion control state.",
+          "evidence": ["libs/storage/src/lib/account-deletion-write-fence.ts"]
+        }
+      ],
+      "relations": []
     }
   ],
   "stores": [

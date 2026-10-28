@@ -28,7 +28,10 @@
 }
 
 .public-info-footer nav {
-  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  flex: 0 1 auto;
 }
 
 .public-info-footer a {

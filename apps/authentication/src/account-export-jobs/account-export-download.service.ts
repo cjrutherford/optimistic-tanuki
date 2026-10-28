@@ -47,6 +47,9 @@ export class AccountExportDownloadService
 {
   private readonly capabilities = new Map<string, Capability>();
   private readonly opening = new Map<string, number>();
+  private readonly deletedAccounts = new Set<string>();
+  private readonly retired = new Map<VerifiedArtifact, string>();
+  private readonly openingWaiters = new Map<string, Set<() => void>>();
   private closing = false;
   private sweepTimer?: ReturnType<typeof setInterval>;
 
@@ -94,6 +97,8 @@ export class AccountExportDownloadService
     let handle: VerifiedArtifact | undefined;
     try {
       handle = await this.store.openVerified(descriptor);
+      if (this.deletedAccounts.has(this.accountKey(input.accountId)))
+        throw Error('ACCOUNT_DELETED');
       await this.authorize(input);
       const current = this.readyDescriptor(await this.findJob(input), input);
       if (this.closing || !sameDescriptor(current, descriptor))
@@ -129,12 +134,25 @@ export class AccountExportDownloadService
         expiresAt: new Date(expiresAtMs).toISOString(),
       };
     } catch {
-      if (handle) await handle.cleanup();
+      if (handle) {
+        this.retired.set(handle, this.accountKey(input.accountId));
+        try {
+          await handle.cleanup();
+          this.retired.delete(handle);
+        } catch {
+          return this.deny('EXPORT_DOWNLOAD_CLEANUP_FAILED');
+        }
+      }
       return this.deny('EXPORT_DOWNLOAD_UNAVAILABLE');
     } finally {
       const remaining = (this.opening.get(input.accountId) ?? 1) - 1;
       if (remaining) this.opening.set(input.accountId, remaining);
       else this.opening.delete(input.accountId);
+      const key = this.accountKey(input.accountId);
+      if (!this.ownOpenings(key)) {
+        for (const resolve of this.openingWaiters.get(key) ?? []) resolve();
+        this.openingWaiters.delete(key);
+      }
     }
   }
 
@@ -181,6 +199,13 @@ export class AccountExportDownloadService
           offset as number,
           length as number
         );
+        if (
+          this.deletedAccounts.has(this.accountKey(input.accountId)) ||
+          cap.expiresAtMs <= Date.now()
+        ) {
+          bytes.fill(0);
+          throw Error('ACCOUNT_DELETED');
+        }
         return {
           bytesBase64: bytes.toString('base64'),
           offset: offset as number,
@@ -214,6 +239,80 @@ export class AccountExportDownloadService
       [...this.capabilities.values()]
         .filter((cap) => cap.descriptor.jobId === jobId)
         .map((cap) => this.destroy(cap))
+    );
+  }
+
+  private accountKey(accountId: string): string {
+    return createHash('sha256')
+      .update('ot:download-account:' + accountId.toLowerCase())
+      .digest('hex');
+  }
+  private ownOpenings(key: string): number {
+    return [...this.opening].reduce(
+      (count, [id, n]) => count + (this.accountKey(id) === key ? n : 0),
+      0
+    );
+  }
+  async purgeAccount(accountId: string): Promise<{ remaining: 0 }> {
+    if (!isUuid(accountId)) throw Error('DOWNLOAD_DELETION_ACCOUNT_INVALID');
+    const key = this.accountKey(accountId);
+    if (!this.deletedAccounts.has(key) && this.deletedAccounts.size >= 10000)
+      throw Error('DOWNLOAD_DELETION_BOUND');
+    this.deletedAccounts.add(key);
+    const caps = [...this.capabilities.values()].filter(
+      (cap) => this.accountKey(cap.accountId) === key
+    );
+    for (const cap of caps) cap.expiresAtMs = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let waiter: (() => void) | undefined;
+    try {
+      const drain = async () => {
+        if (this.ownOpenings(key))
+          await new Promise<void>((resolve) => {
+            waiter = resolve;
+            const waiters =
+              this.openingWaiters.get(key) ?? new Set<() => void>();
+            waiters.add(resolve);
+            this.openingWaiters.set(key, waiters);
+          });
+        for (const cap of caps) {
+          await cap.serial;
+          await this.destroy(cap);
+        }
+        for (const [handle, owner] of this.retired)
+          if (owner === key) {
+            await handle.cleanup();
+            this.retired.delete(handle);
+          }
+        if ((await this.readbackAccount(accountId)) !== 0)
+          throw Error('DOWNLOAD_DELETION_READBACK');
+        return { remaining: 0 as const };
+      };
+      return await Promise.race([
+        drain(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(Error('DOWNLOAD_DELETION_DRAIN_TIMEOUT')),
+            56000
+          );
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+      if (waiter) this.openingWaiters.get(key)?.delete(waiter);
+    }
+  }
+  async readbackAccount(accountId: string): Promise<number> {
+    if (!isUuid(accountId)) throw Error('DOWNLOAD_DELETION_ACCOUNT_INVALID');
+    const key = this.accountKey(accountId);
+    if (!this.deletedAccounts.has(key))
+      throw Error('DOWNLOAD_DELETION_FENCE_REQUIRED');
+    return (
+      this.ownOpenings(key) +
+      [...this.capabilities.values()].filter(
+        (cap) => this.accountKey(cap.accountId) === key
+      ).length +
+      [...this.retired.values()].filter((owner) => owner === key).length
     );
   }
 
@@ -299,6 +398,7 @@ export class AccountExportDownloadService
     );
     if (
       this.closing ||
+      this.deletedAccounts.has(this.accountKey(accountId)) ||
       this.capabilities.size + pending >= MAX_PROCESS ||
       own.length + (this.opening.get(accountId) ?? 0) >= MAX_PER_ACCOUNT
     )

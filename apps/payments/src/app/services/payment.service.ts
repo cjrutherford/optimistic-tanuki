@@ -293,6 +293,15 @@ export class PaymentService {
     }
 
     const feeBreakdown = calculateNetAmount(resolvedAmount);
+    if (
+      !Number.isFinite(resolvedAmount) ||
+      resolvedAmount > 99999999.99 ||
+      feeBreakdown.net < 0
+    ) {
+      throw new BadRequestException(
+        'Classified price cannot produce a valid seller payment'
+      );
+    }
     const payment = this.classifiedPaymentRepository.create({
       buyerId,
       sellerId: resolvedSellerId,
@@ -405,6 +414,14 @@ export class PaymentService {
     if (payment.status !== 'pending') {
       throw new BadRequestException(
         `Cannot confirm payment with status: ${payment.status}`
+      );
+    }
+
+    if (
+      !['cash', 'cash-app', 'venmo', 'zelle'].includes(payment.paymentMethod)
+    ) {
+      throw new BadRequestException(
+        'This payment method requires provider confirmation'
       );
     }
 

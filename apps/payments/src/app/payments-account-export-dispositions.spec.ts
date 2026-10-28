@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import { getMetadataArgsStorage } from 'typeorm';
 import loadDatabase from './loadDatabase';
 import { validatePaymentsDispositions } from './payments-account-export-dispositions';
@@ -7,6 +8,7 @@ const registeredEntities = loadDatabase({ get: () => ({}) } as any)
 
 it('covers every registered TypeORM entity, field, and relation with a disposition', () => {
   expect(registeredEntities.map((entity) => entity.name)).toEqual([
+    'AccountDeletionWriteFenceEntity',
     'Donation',
     'ClassifiedPayment',
     'BusinessPage',
@@ -23,7 +25,7 @@ it('covers every registered TypeORM entity, field, and relation with a dispositi
 
 it('detects metadata and disposition drift', () => {
   const storage = getMetadataArgsStorage();
-  const donation = registeredEntities[0];
+  const donation = registeredEntities.find((e) => e.name === 'Donation')!;
   const columns = storage.columns.filter(
     (column) => column.target === donation
   );

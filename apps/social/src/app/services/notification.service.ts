@@ -1,3 +1,5 @@
+import { deletionIdentityKey } from '@optimistic-tanuki/storage';
+import { DELETED_ACCOUNT_ID } from '@optimistic-tanuki/models';
 import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -54,6 +56,7 @@ export class NotificationService implements OnModuleDestroy {
   }
 
   async queueNotification(data: CreateNotificationData): Promise<void> {
+    if (data?.recipientId === DELETED_ACCOUNT_ID) return;
     const recipientId = this.requireUuid(data?.recipientId);
     if (!this.isKnownType(data?.type))
       throw this.badRequest('Notification type is invalid');
@@ -75,22 +78,46 @@ export class NotificationService implements OnModuleDestroy {
           ? data.resourceId.slice(0, 255)
           : undefined,
     };
-    const key = this.getNotificationKey(data);
-    const pending = this.pendingNotifications.get(key);
-    if (pending) {
-      clearTimeout(pending.timeout);
-      pending.count++;
-      pending.timeout = setTimeout(
-        () => void this.flushNotification(key),
-        this.DEBOUNCE_MS
-      );
-    } else {
-      const timeout = setTimeout(
-        () => void this.flushNotification(key),
-        this.DEBOUNCE_MS
-      );
-      this.pendingNotifications.set(key, { data, timeout, count: 1 });
-    }
+    const subjects = [recipientId];
+    if (data.resourceType === 'profile')
+      subjects.push(this.requireUuid(data.resourceId));
+    await this.notificationRepo.manager.transaction(async (manager) => {
+      await manager.query("SET LOCAL lock_timeout='5s'");
+      for (const key of [
+        ...new Set(subjects.map((id) => deletionIdentityKey('profile', id))),
+      ].sort()) {
+        await manager.query(
+          'SELECT pg_advisory_xact_lock_shared(hashtextextended($1,0))',
+          [key]
+        );
+        const rows = await manager.query(
+          'SELECT 1 FROM account_deletion_write_fence WHERE "key"=$1',
+          [key]
+        );
+        if (!Array.isArray(rows))
+          throw this.badRequest('Notification fence read failed');
+        if (rows.length) return;
+      }
+      this.assertAcceptingWork(recipientId);
+      if (this.pendingNotifications.size >= 10000)
+        throw this.badRequest('Notification queue bound exceeded');
+      const key = this.getNotificationKey(data);
+      const pending = this.pendingNotifications.get(key);
+      if (pending) {
+        clearTimeout(pending.timeout);
+        pending.count++;
+        pending.timeout = setTimeout(
+          () => void this.flushNotification(key),
+          this.DEBOUNCE_MS
+        );
+      } else {
+        const timeout = setTimeout(
+          () => void this.flushNotification(key),
+          this.DEBOUNCE_MS
+        );
+        this.pendingNotifications.set(key, { data, timeout, count: 1 });
+      }
+    });
   }
 
   private async flushNotification(key: string): Promise<void> {
@@ -163,6 +190,41 @@ export class NotificationService implements OnModuleDestroy {
       return { cancelledPending, drainedWrites: writes.length };
     } finally {
       this.cancellingRecipients.delete(canonical);
+    }
+  }
+
+  /** Called after the durable owner fence commits; no database locks are held while draining. */
+  async cancelPendingForProfiles(profiles: readonly string[]): Promise<void> {
+    const subjects = new Set(profiles.map((id) => this.requireUuid(id)));
+    if (subjects.size > 999 || this.pendingNotifications.size > 10000)
+      throw this.badRequest('Notification cancellation bound exceeded');
+    for (const [key, pending] of this.pendingNotifications) {
+      if (
+        !subjects.has(pending.data.recipientId) &&
+        !(
+          pending.data.resourceType === 'profile' &&
+          subjects.has(this.canonicalUuid(pending.data.resourceId) ?? '')
+        )
+      )
+        continue;
+      clearTimeout(pending.timeout);
+      this.pendingNotifications.delete(key);
+    }
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        Promise.all(
+          [...subjects].map((id) => this.cancelPendingForRecipient(id))
+        ),
+        new Promise((_, reject) => {
+          timer = setTimeout(
+            () => reject(this.badRequest('Notification drain timed out')),
+            5000
+          );
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
 

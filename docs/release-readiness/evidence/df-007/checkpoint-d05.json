@@ -1,0 +1,54 @@
+{
+  "slice": "D05",
+  "date": "2026-10-25",
+  "scope": ["client-interface", "local-hub"],
+  "status": "verified-local-owner-adapter",
+  "evidence": {
+    "ownerUnit": 4,
+    "loaderUnit": 1,
+    "realAuthPermissionsTcpPostgres": 1,
+    "preE2E": 41,
+    "build": "Permissions production passed",
+    "lint": "Permissions Constants authentication-e2e passed",
+    "migrationCycle": "owning generated; reviewed frozen guard up/down/up passed",
+    "migrationGovernance": "passed",
+    "review": "D05/D06 bounded source-only review GO; no P1/P2; runtime not independently repeated"
+  },
+  "independentFinalCounts": {
+    "d00": {
+      "user_entity": 0,
+      "token": 0,
+      "oauth_provider": 0,
+      "auth_action_token": 0,
+      "guardian_permission": 0,
+      "guardian_policy_notice": 0,
+      "account_export_jobs": 0,
+      "account_deletion_operations": 0,
+      "account_deletion_write_fence": 0
+    },
+    "d05_permissions": {
+      "role": 0,
+      "permission": 0,
+      "app_scope": 0,
+      "role_permissions": 0,
+      "app_scope_permissions": 0,
+      "role_assignment": 0,
+      "account_deletion_write_fence": 0
+    }
+  },
+  "protectedFilesUnchanged": 43,
+  "privateContainersRemaining": 0,
+  "sharedDisposition": "role, permission, app_scope, role_permissions, app_scope_permissions are shared definitions; targetId is an opaque resource reference",
+  "operationalDisposition": "permanent hashed account/profile write fence; excluded from portable content",
+  "sourceHashes": {
+    "apps/permissions/src/app/account-deletion-owner.service.ts": "aba7b854cceec9fbb685e1922fe90f32d0a5fcd4570422b5d81cccaa03a31a4c",
+    "apps/permissions/src/app/account-deletion-owner.controller.ts": "b98e5f7c4eefb234582e42920f1a39ec343db6380aac75eb6e3aa245af20cd98",
+    "apps/permissions/src/app/app.module.ts": "0195f96563bbe5ef2f640015558d001306d709722eb8bca91ffddb493cc7382b",
+    "apps/permissions/src/app/loadDatabase.ts": "cd75003fb1572fb0c5d01b679c61cc09dff256c29cb9879085e7f51466a81bf5",
+    "apps/permissions/src/app/staticDatabase.ts": "3541dd127bcd60911d7754b87266afc344a63887bdf23e98d46fb35f3035fed7",
+    "apps/permissions/migrations/1792934694011-AccountDeletionWriteFence.ts": "ea6bebcf370824208bcb0d1b370b7a8a057f2132f60ea5043e41d83ecf20ba2e",
+    "apps/permissions/project.json": "62e1ad14ae9d441714d61076be686601e5be3e585d68c321727aaf10c9ae218c",
+    "libs/constants/src/lib/libs/permissions.ts": "b786a8ec5d86cdd31d59eefd6a24293521487f32853b1e9c65e0a46d9f322196",
+    "apps/authentication-e2e/src/authentication/permissions-account-deletion.spec.ts": "fb8d5843c1414d8cddb4f1034df0be34cf216823d60ba5f7a701881d3259b54b"
+  }
+}

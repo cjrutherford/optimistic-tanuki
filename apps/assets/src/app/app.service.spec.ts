@@ -6,10 +6,11 @@ import {
 } from '@optimistic-tanuki/storage';
 
 import { AppService } from './app.service';
+import { AssetMediaReadFenceService } from './asset-media-read-fence.service';
 import { GuardianAssetAuthorizationService } from './guardian-asset-authorization.service';
 import { GuardianAssetActivity } from '../entities/guardian-asset-activity.entity';
 import AssetEntity from '../entities/asset.entity';
-import { Logger } from '@nestjs/common';
+import { Logger, ServiceUnavailableException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
@@ -67,6 +68,10 @@ describe('AppService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         AppService,
+        {
+          provide: AssetMediaReadFenceService,
+          useValue: { open: jest.fn((_asset, _options, open) => open()) },
+        },
         { provide: Logger, useValue: logger },
         { provide: getRepositoryToken(AssetEntity), useValue: assetRepo },
         { provide: STORAGE_ADAPTERS, useValue: storageAdapter },
@@ -115,6 +120,28 @@ describe('AppService', () => {
     (assetRepo as any).delete = jest.fn().mockResolvedValue({ affected: 1 });
   });
 
+  it('always delegates authenticated media opening through the read fence', async () => {
+    const asset = { id: 'asset-1' } as AssetEntity;
+    const handle = { cleanup: jest.fn() };
+    storageAdapter.openAuthenticatedMedia = jest
+      .fn()
+      .mockResolvedValue(handle as any);
+    const fence = (appService as any).mediaReadFence;
+    const options = { maxPlaintextBytes: 10 };
+    await expect(
+      appService.openAuthenticatedMedia(asset, options)
+    ).resolves.toBe(handle);
+    expect(fence.open).toHaveBeenCalledWith(
+      asset,
+      options,
+      expect.any(Function)
+    );
+    expect(storageAdapter.openAuthenticatedMedia).toHaveBeenCalledWith(
+      asset,
+      options
+    );
+  });
+
   it('should be defined', () => {
     expect(appService).toBeDefined();
   });
@@ -129,6 +156,43 @@ describe('AppService', () => {
 
   it('should inject storageAdapter', () => {
     expect((appService as any).storageAdapter).toBe(storageAdapter);
+  });
+
+  it('preserves scanner unavailability as a retryable upload failure without reserving rows', async () => {
+    jest
+      .spyOn(virusScanService, 'scanFile')
+      .mockRejectedValueOnce(
+        new ServiceUnavailableException('Scanner unavailable')
+      );
+    await expect(
+      appService.createAsset({
+        name: 'retry.png',
+        profileId: 'profile-1',
+        type: 'image',
+        fileExtension: 'png',
+        content: Buffer.from('image'),
+      } as any)
+    ).rejects.toMatchObject({ message: expect.any(String) });
+    try {
+      jest
+        .spyOn(virusScanService, 'scanFile')
+        .mockRejectedValueOnce(
+          new ServiceUnavailableException('Scanner unavailable')
+        );
+      await appService.createAsset({
+        name: 'retry.png',
+        profileId: 'profile-1',
+        type: 'image',
+        fileExtension: 'png',
+        content: Buffer.from('image'),
+      } as any);
+    } catch (error) {
+      expect((error as RpcException).getError()).toEqual({
+        statusCode: 503,
+        message: 'Asset processing unavailable; please retry',
+      });
+    }
+    expect(assetRepo.save).not.toHaveBeenCalled();
   });
 
   it('rejects a guardian upload without bytes before reserving an asset row', async () => {

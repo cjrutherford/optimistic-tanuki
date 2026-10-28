@@ -9,6 +9,7 @@ export interface ForumDispositionMetadata {
 }
 
 const ENTITY_NAMES = [
+  'AccountDeletionWriteFenceEntity',
   'Topic',
   'Thread',
   'ForumPost',

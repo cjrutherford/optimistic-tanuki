@@ -5,6 +5,7 @@ import {
   inject,
   OnDestroy,
   computed,
+  HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -212,6 +213,16 @@ export class MessagesComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.socketListenerDisposers.forEach((dispose) => dispose());
     this.socketListenerDisposers = [];
+    this.clearSessionViews();
+  }
+
+  @HostListener('window:ot:session-reset')
+  clearSessionViews() {
+    this.historyLoadVersion++;
+    this.currentProfileId = null;
+    this.loading.set(false);
+    this.error.set(null);
+    this.clearAll();
     this.socketChatService.destroy();
   }
 

@@ -6,6 +6,9 @@ export const CLASSIFIEDS_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
  * Commands for the Classifieds microservice.
  */
 export const ClassifiedCommands = {
+  FENCE_ACCOUNT_DELETION: 'classified.deletion.fence',
+  ERASE_ACCOUNT_DELETION: 'classified.deletion.erase',
+  READBACK_ACCOUNT_DELETION: 'classified.deletion.readback',
   OPEN_ACCOUNT_EXPORT_CAPTURE: 'classified.OpenAccountExportCapture',
   READ_ACCOUNT_EXPORT_CAPTURE: 'classified.ReadAccountExportCapture',
   RELEASE_ACCOUNT_EXPORT_CAPTURE: 'classified.ReleaseAccountExportCapture',

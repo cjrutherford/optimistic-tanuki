@@ -1,6 +1,24 @@
+import {
+  ActivityRetentionService,
+  activityRetentionRule,
+} from '@optimistic-tanuki/logger';
+import type { DataSource as RetentionDataSource } from 'typeorm';
+import { ActivityRetentionController } from './activity-retention.controller';
+import { ForumModerationAction as RetentionEntity0 } from '../entities/forum-moderation-action.entity';
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import { ForumAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { ForumAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { AccountDeletionAuthorityClient } from '@optimistic-tanuki/storage';
 import { ForumAccessService } from './services/forum-access.service';
 import { Module } from '@nestjs/common';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
@@ -43,11 +61,46 @@ import {
     }),
   ],
   controllers: [
+    ActivityRetentionController,
+    AccountDeletionSnapshotController,
+    ForumAccountDeletionOwnerController,
     AppController,
     ForumAccountExportController,
     ForumAccountExportSnapshotController,
   ],
   providers: [
+    {
+      provide: ActivityRetentionService,
+      useFactory: (db: RetentionDataSource) =>
+        new ActivityRetentionService('forum', db, [
+          activityRetentionRule(db.getMetadata(RetentionEntity0), 'createdAt'),
+        ]),
+      inject: ['FORUM_CONNECTION'],
+    },
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: ForumAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        audit: ForumAuditErasureService,
+        database: { query(sql: string): Promise<unknown> }
+      ) => ({ owner: 'forum', snapshot, authority, spool, database, audit }),
+      inject: [
+        ForumAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        ForumAuditErasureService,
+        'FORUM_CONNECTION',
+      ],
+    },
+    ForumAccountDeletionOwnerService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: ClientProxy) =>
+        new AccountDeletionAuthorityClient(auth),
+      inject: [ServiceTokens.AUTHENTICATION_SERVICE],
+    },
     {
       provide: ServiceTokens.AUTHENTICATION_SERVICE,
       useFactory: () =>
