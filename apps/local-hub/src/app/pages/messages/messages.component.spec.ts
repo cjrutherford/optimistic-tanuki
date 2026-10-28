@@ -6,7 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { SocketChatService } from '@optimistic-tanuki/chat-ui';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 
 describe('LocalHub MessagesComponent', () => {
   let fixture: ComponentFixture<MessagesComponent>;
@@ -23,6 +23,7 @@ describe('LocalHub MessagesComponent', () => {
 
   const chatServiceMock = {
     sendMessage: jest.fn(),
+    getMessages: jest.fn(),
   };
 
   const httpMock = {
@@ -61,6 +62,72 @@ describe('LocalHub MessagesComponent', () => {
     fixture = TestBed.createComponent(MessagesComponent);
     component = fixture.componentInstance;
     (component as any).currentProfileId = 'self-profile';
+  });
+
+  it('hydrates historical authors and keeps messages when profiles fail', async () => {
+    const messages = ['self-profile', 'other', 'left'].map((senderId, i) => ({
+      id: `${i}`,
+      conversationId: 'room',
+      senderId,
+      content: 'hello',
+      createdAt: new Date(),
+    }));
+    chatServiceMock.getMessages.mockResolvedValue(messages);
+    httpMock.post.mockReturnValueOnce(
+      of(
+        ['self-profile', 'other', 'left'].map((id) => ({ id, profileName: id }))
+      )
+    );
+    const rooms = [
+      {
+        id: 'room',
+        type: 'community',
+        title: 'Room',
+        participants: ['other'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    await (component as any).handleConversationsLoaded(rooms);
+    expect(
+      component.chatConversations()[0].participantProfiles?.map((p) => p.name)
+    ).toEqual(['other', 'self-profile', 'left']);
+    expect(component.chatConversations()[0].messages).toHaveLength(3);
+    httpMock.post.mockImplementationOnce(() => {
+      throw new Error('unavailable');
+    });
+    await (component as any).handleConversationsLoaded(rooms);
+    expect(component.chatConversations()[0].messages).toHaveLength(3);
+  });
+
+  it('does not restore history after the session changes during profile lookup', async () => {
+    const response = new Subject<any[]>();
+    httpMock.post.mockReturnValueOnce(response);
+    chatServiceMock.getMessages.mockResolvedValue([
+      {
+        id: 'm',
+        conversationId: 'room',
+        senderId: 'other',
+        content: 'old',
+        createdAt: new Date(),
+      },
+    ]);
+    const loading = (component as any).handleConversationsLoaded([
+      {
+        id: 'room',
+        participants: ['other'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    for (let i = 0; i < 10 && !httpMock.post.mock.calls.length; i++)
+      await Promise.resolve();
+    expect(httpMock.post).toHaveBeenCalled();
+    component.clearSessionViews();
+    response.next([{ id: 'other', profileName: 'Old name' }]);
+    response.complete();
+    await loading;
+    expect(component.chatConversations()).toEqual([]);
   });
 
   it('tracks transport connection and disposes the listener', async () => {

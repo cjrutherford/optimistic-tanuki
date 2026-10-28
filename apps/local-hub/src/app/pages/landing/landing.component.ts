@@ -60,6 +60,10 @@ export class LandingComponent implements OnInit {
     return cities.slice(start, start + visibleCityCount);
   }
 
+  get daylightCities(): City[] {
+    return this.cities().filter((city) => !!city.localitySlug);
+  }
+
   get canScrollCitiesBackward(): boolean {
     return this.currentCityIndex() > 0;
   }
@@ -95,6 +99,10 @@ export class LandingComponent implements OnInit {
 
   navigateToCity(slug: string): void {
     this.router.navigate(['/city', slug]);
+  }
+
+  navigateToBriefing(slug: string): void {
+    this.router.navigate(['/city', slug, 'briefing']);
   }
 
   private updateVisibleCityCount(): void {

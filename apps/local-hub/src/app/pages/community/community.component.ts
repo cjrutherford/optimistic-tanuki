@@ -64,6 +64,13 @@ export class CommunityComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private communityService = inject(CommunityService);
   readonly authState = inject(AuthStateService);
+
+  get chatActorProfileId(): string {
+    return this.authState.isAuthenticated &&
+      this.authState.getUserData()?.profileId
+      ? this.authState.getActingProfileId()
+      : '';
+  }
   private messageService = inject(MessageService);
   private paymentService = inject(PaymentService);
   private destroy$ = new Subject<void>();

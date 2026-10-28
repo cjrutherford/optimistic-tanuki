@@ -52,7 +52,7 @@ describe('LandingComponent', () => {
       'Your space. Your people.'
     );
     expect(fixture.nativeElement.textContent).toContain(
-      'An early-stage social network organized around you'
+      'A social network organized around you'
     );
   });
 

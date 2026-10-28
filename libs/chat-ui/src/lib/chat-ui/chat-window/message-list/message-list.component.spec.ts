@@ -201,6 +201,20 @@ describe('MessageListComponent', () => {
       expect(component.getContactName('c1')).toBe('Contact One');
     });
 
+    it('uses sender profiles and never substitutes the room title for an unknown sender', () => {
+      component.contacts = [{ id: 'room', name: 'Room title' }];
+      component.conversation = {
+        id: 'room',
+        participants: ['known'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        participantProfiles: [{ id: 'known', name: 'Known' }],
+      };
+      expect(component.getContactName('known')).toBe('Known');
+      expect(component.getContactName('missing')).toBe('Unknown');
+    });
+
     it('returns Unknown when no contact matches', () => {
       component.contacts = [];
       expect(component.getContactName('missing')).toBe('Unknown');

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { By } from '@angular/platform-browser';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 import { CommunityChatComponent } from './community-chat.component';
 import { CommunityService } from '../services/community.service';
 import { ChatUiComponent, SocketChatService } from '@optimistic-tanuki/chat-ui';
@@ -9,6 +9,7 @@ import { ChatUiComponent, SocketChatService } from '@optimistic-tanuki/chat-ui';
 describe('CommunityChatComponent', () => {
   let fixture: ComponentFixture<CommunityChatComponent>;
   let component: CommunityChatComponent;
+  let routeData: BehaviorSubject<Record<string, string>>;
   let communityService: jest.Mocked<CommunityService>;
   let socketChatService: {
     onConversations: jest.Mock;
@@ -20,6 +21,9 @@ describe('CommunityChatComponent', () => {
   };
 
   beforeEach(async () => {
+    routeData = new BehaviorSubject<Record<string, string>>({
+      currentUserId: 'profile-1',
+    });
     const communityServiceMock = {
       findBySlug: jest.fn(),
       getCommunityChatRoom: jest.fn(),
@@ -46,7 +50,7 @@ describe('CommunityChatComponent', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            data: of({ currentUserId: 'profile-1' }),
+            data: routeData,
             paramMap: of(convertToParamMap({ communitySlug: 'general' })),
             snapshot: {
               paramMap: convertToParamMap({ communitySlug: 'general' }),
@@ -69,6 +73,107 @@ describe('CommunityChatComponent', () => {
     communityService = TestBed.inject(
       CommunityService
     ) as jest.Mocked<CommunityService>;
+  });
+
+  it('sends with the explicit profile when embedded route data has no actor', async () => {
+    routeData.next({});
+    communityService.findBySlug.mockResolvedValue({
+      id: 'community-1',
+      name: 'General',
+      ownerId: 'account-1',
+    } as any);
+    communityService.getCommunityChatRoom.mockResolvedValue({ id: 'room-1' });
+    communityService.getCommunityChatConversation.mockResolvedValue({
+      id: 'room-1',
+      participants: ['profile-1', 'profile-2'],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any);
+    communityService.getCommunityChatMessages.mockResolvedValue([]);
+    fixture.componentRef.setInput('actorProfileId', 'profile-1');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    routeData.next({});
+    const settle = jest.fn();
+    await component.handleMessageSubmitted({
+      conversationId: 'room-1',
+      content: 'hello',
+      settle,
+    });
+    expect(socketChatService.sendDraftMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ senderId: 'profile-1', content: 'hello' })
+    );
+    expect(settle).toHaveBeenCalledWith(true);
+  });
+
+  it('invalidates old profile loads and reloads on actor change', async () => {
+    let resolveOld!: (value: any) => void;
+    communityService.findBySlug
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOld = resolve;
+        })
+      )
+      .mockResolvedValue({
+        id: 'new-community',
+        name: 'New',
+        ownerId: 'account-2',
+        ownerProfileId: 'profile-2',
+      } as any);
+    communityService.getCommunityChatRoom.mockResolvedValue(null as any);
+    fixture.componentRef.setInput('actorProfileId', 'profile-1');
+    fixture.detectChanges();
+    fixture.componentRef.setInput('actorProfileId', 'profile-2');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    resolveOld({ id: 'old-community', name: 'Old', ownerId: 'account-1' });
+    await Promise.resolve();
+    expect(component.community()?.id).toBe('new-community');
+    expect(component.currentUserId).toBe('profile-2');
+    expect(component.isOwner()).toBe(true);
+    expect(socketChatService.getConversations).toHaveBeenCalledWith(
+      'profile-2'
+    );
+  });
+
+  it('uses route identity when no explicit profile is supplied', async () => {
+    communityService.findBySlug.mockResolvedValue(null as any);
+    await component.ngOnInit();
+    expect(component.currentUserId).toBe('profile-1');
+  });
+
+  it('can resolve an author after a temporary profile lookup failure', async () => {
+    const message = {
+      id: 'm1',
+      conversationId: 'room-1',
+      senderId: 'profile-2',
+      recipientId: [],
+      content: 'hello',
+      type: 'chat' as const,
+      timestamp: new Date(),
+    };
+    component.chatConversations.set([
+      {
+        id: 'room-1',
+        type: 'community',
+        participants: ['profile-1', 'profile-2'],
+        messages: [message],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    communityService.getProfilesByIds
+      .mockRejectedValueOnce(new Error('temporarily unavailable'))
+      .mockResolvedValueOnce([{ id: 'profile-2', profileName: 'Member Two' }]);
+    await (component as any).hydrateLiveAuthor(message);
+    expect(
+      component.chatConversations()[0].participantProfiles
+    ).toBeUndefined();
+    await (component as any).hydrateLiveAuthor(message);
+    expect(component.chatConversations()[0].participantProfiles).toEqual([
+      { id: 'profile-2', name: 'Member Two', profilePic: undefined },
+    ]);
+    expect(communityService.getProfilesByIds).toHaveBeenCalledTimes(2);
   });
 
   it('loads community chat messages once a chat room exists', async () => {

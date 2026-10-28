@@ -1,4 +1,11 @@
-import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  Input,
+  signal,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import {
@@ -102,6 +109,43 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
   );
 
   currentUserId = '';
+  private explicitProfileId: string | undefined;
+  private routeProfileId = '';
+  private initialized = false;
+  private socketListeners: (() => void)[] = [];
+  private socketListenerVersion = 0;
+
+  @Input() set actorProfileId(value: string | null | undefined) {
+    this.explicitProfileId = value ?? '';
+    this.updateActor();
+  }
+
+  private updateActor() {
+    const nextUserId = this.explicitProfileId ?? this.routeProfileId;
+    if (nextUserId === this.currentUserId) return;
+    this.currentUserId = nextUserId;
+    this.historyLoadVersion += 1;
+    this.communityLoadVersion += 1;
+    this.currentCommunityId = null;
+    this.community.set(null);
+    this.isOwner.set(false);
+    this.error.set(null);
+    this.chatConversations.set([]);
+    this.chatContacts.set([]);
+    this.chatRoomId.set(null);
+    this.loading.set(false);
+    if (this.initialized) {
+      this.bindSocketListeners();
+      if (nextUserId) this.reloadCommunity();
+    }
+  }
+
+  private reloadCommunity() {
+    const slug = this.route.snapshot.paramMap.get('communitySlug');
+    if (slug) void this.loadCommunityBySlug(slug);
+    else void this.loadUserCommunitiesChat();
+  }
+
   isOwner = signal(false);
   private currentCommunityId: string | null = null;
   private readonly listeners: (() => void)[] = [];
@@ -111,20 +155,8 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
 
   async ngOnInit() {
     const routeDataSubscription = this.route.data.subscribe((data: any) => {
-      const nextUserId = data['currentUserId'] || '';
-      if (this.currentUserId && this.currentUserId !== nextUserId) {
-        this.historyLoadVersion += 1;
-        this.communityLoadVersion += 1;
-        this.currentCommunityId = null;
-        this.community.set(null);
-        this.isOwner.set(false);
-        this.error.set(null);
-        this.chatConversations.set([]);
-        this.chatContacts.set([]);
-        this.chatRoomId.set(null);
-        this.loading.set(false);
-      }
-      this.currentUserId = nextUserId;
+      this.routeProfileId = data['currentUserId'] || '';
+      this.updateActor();
     });
     this.listeners.push(() => routeDataSubscription.unsubscribe());
     const routeParamsSubscription = this.route.paramMap
@@ -139,18 +171,40 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
       });
     this.listeners.push(() => routeParamsSubscription.unsubscribe());
 
-    this.listeners.push(
+    this.initialized = true;
+    this.bindSocketListeners();
+
+    const communitySlug = this.route.snapshot.paramMap.get('communitySlug');
+    if (!communitySlug) {
+      void this.loadUserCommunitiesChat();
+      return;
+    }
+
+    await this.loadCommunityBySlug(communitySlug);
+  }
+
+  private bindSocketListeners() {
+    this.socketListenerVersion += 1;
+    this.socketListeners.forEach((dispose) => dispose?.());
+    this.socketListeners = [];
+    const version = this.socketListenerVersion;
+    this.socketListeners.push(
       this.socketChatService.onConversations(async (conversations: any[]) => {
-        await this.handleConversationsLoaded(conversations);
+        if (version === this.socketListenerVersion)
+          await this.handleConversationsLoaded(conversations);
       })
     );
-    this.listeners.push(
+    this.socketListeners.push(
       this.socketChatService.onMessage((message) => {
-        this.appendMessageToConversation(message);
+        if (version === this.socketListenerVersion) {
+          this.appendMessageToConversation(message);
+          void this.hydrateLiveAuthor(message);
+        }
       })
     );
-    this.listeners.push(
+    this.socketListeners.push(
       this.socketChatService.onConnectionState((connected) => {
+        if (version !== this.socketListenerVersion) return;
         if (connected) {
           const reconnecting = this.hasConnectedOnce;
           this.hasConnectedOnce = true;
@@ -165,14 +219,6 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
         }
       })
     );
-
-    const communitySlug = this.route.snapshot.paramMap.get('communitySlug');
-    if (!communitySlug) {
-      void this.loadUserCommunitiesChat();
-      return;
-    }
-
-    await this.loadCommunityBySlug(communitySlug);
   }
 
   private async loadCommunityBySlug(slug: string) {
@@ -200,7 +246,9 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
 
       this.community.set(community);
       this.currentCommunityId = community.id;
-      this.isOwner.set(community.ownerId === this.currentUserId);
+      this.isOwner.set(
+        !!this.currentUserId && community.ownerProfileId === this.currentUserId
+      );
       const chatRoom = await this.communityService.getCommunityChatRoom(
         community.id
       );
@@ -242,7 +290,7 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
         const community = communities[0];
         this.community.set(community);
         this.currentCommunityId = community.id;
-        this.isOwner.set(community.ownerId === userId);
+        this.isOwner.set(!!userId && community.ownerProfileId === userId);
         const chatRoom = await this.communityService.getCommunityChatRoom(
           community.id
         );
@@ -260,6 +308,72 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
     } finally {
       if (isCurrentLoad()) this.loading.set(false);
     }
+  }
+
+  private readonly authorLookups = new Set<string>();
+
+  private async hydrateLiveAuthor(message: ChatMessage) {
+    const conversation = this.chatConversations().find(
+      (c) => c.id === message.conversationId
+    );
+    if (
+      !conversation ||
+      !message.senderId ||
+      conversation.participantProfiles?.some((p) => p.id === message.senderId)
+    )
+      return;
+    const version = this.communityLoadVersion;
+    const actor = this.currentUserId;
+    const key = `${version}:${actor}:${message.conversationId}:${message.senderId}`;
+    if (this.authorLookups.has(key)) return;
+    this.authorLookups.add(key);
+    try {
+      const profiles = await this.lookupProfiles([message.senderId]);
+      if (
+        version !== this.communityLoadVersion ||
+        actor !== this.currentUserId ||
+        !profiles.length
+      )
+        return;
+      const profile = profiles[0];
+      this.chatConversations.update((conversations) =>
+        conversations.map((c) => {
+          if (
+            c.id !== message.conversationId ||
+            c.participantProfiles?.some((p) => p.id === message.senderId)
+          )
+            return c;
+          return {
+            ...c,
+            participantProfiles: [...(c.participantProfiles || []), profile],
+          };
+        })
+      );
+    } finally {
+      this.authorLookups.delete(key);
+    }
+  }
+
+  private async lookupProfiles(ids: string[]) {
+    const profiles: { id: string; name: string; profilePic?: string }[] = [];
+    const uniqueIds = [...new Set(ids.filter(Boolean))];
+    for (let i = 0; i < uniqueIds.length; i += 100) {
+      try {
+        const batch = await this.communityService.getProfilesByIds(
+          uniqueIds.slice(i, i + 100)
+        );
+        profiles.push(
+          ...batch.map((profile) => ({
+            id: profile.id,
+            name: profile.profileName,
+            profilePic: profile.profilePic,
+          }))
+        );
+      } catch {
+        /* Missing profile metadata must not hide messages. */
+      }
+    }
+    return profiles;
   }
 
   private async loadChatRoom(
@@ -284,6 +398,22 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
         timestamp: new Date(message.createdAt),
       }));
 
+      const participantProfiles = await this.lookupProfiles([
+        ...conversation.participants,
+        this.currentUserId,
+        ...transformedMessages.map((message) => message.senderId),
+      ]);
+      if (!isCurrentLoad()) return;
+
+      const existing = this.chatConversations().find(
+        (item) => item.id === conversation.id
+      );
+      const mergedMessages = new Map(
+        transformedMessages.map((message) => [message.id, message])
+      );
+      for (const message of existing?.messages || [])
+        mergedMessages.set(message.id, message);
+
       this.chatContacts.set([
         {
           id: conversation.id,
@@ -297,11 +427,14 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
           id: conversation.id,
           type: 'community',
           participants: conversation.participants,
-          messages: transformedMessages,
+          messages: [...mergedMessages.values()],
+          participantProfiles,
           createdAt: new Date(conversation.createdAt),
           updatedAt: new Date(conversation.updatedAt),
         },
       ]);
+      for (const message of this.chatConversations()[0].messages)
+        void this.hydrateLiveAuthor(message);
     } catch (err) {
       if (!isCurrentLoad()) return;
       console.error('Failed to load chat room:', err);
@@ -417,28 +550,6 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const participantIds = Array.from(
-      new Set(
-        communityConversations.flatMap(
-          (conversation) => conversation.participants
-        )
-      )
-    ).filter((profileId) => profileId !== this.currentUserId);
-
-    const participantProfiles = participantIds.length
-      ? await this.communityService.getProfilesByIds(participantIds)
-      : [];
-    const profileMap = new Map(
-      participantProfiles.map((profile) => [
-        profile.id,
-        {
-          id: profile.id,
-          name: profile.profileName,
-          profilePic: profile.profilePic,
-        },
-      ])
-    );
-
     const conversationsWithMessages = await Promise.all(
       communityConversations.map(async (conversation) => {
         const messages = await this.communityService.getCommunityChatMessages(
@@ -460,13 +571,22 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
           messages: fetchedMessages,
           createdAt: new Date(conversation.createdAt),
           updatedAt: new Date(conversation.updatedAt),
-          participantProfiles: conversation.participants
-            .map((participantId: string) => profileMap.get(participantId))
-            .filter(Boolean),
         };
       })
     );
 
+    const participantProfiles = await this.lookupProfiles([
+      this.currentUserId,
+      ...communityConversations.flatMap(
+        (conversation) => conversation.participants
+      ),
+      ...conversationsWithMessages.flatMap((conversation) =>
+        conversation.messages.map((message) => message.senderId)
+      ),
+    ]);
+    const profileMap = new Map(
+      participantProfiles.map((profile) => [profile.id, profile])
+    );
     if (
       historyLoadVersion !== this.historyLoadVersion ||
       communityId !== this.currentCommunityId ||
@@ -492,6 +612,18 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
       );
     }
 
+    for (const conversation of conversationsWithMessages) {
+      (conversation as any).participantProfiles = [
+        ...new Set<string>([
+          ...conversation.participants,
+          userId,
+          ...conversation.messages.map((message) => message.senderId),
+        ]),
+      ]
+        .map((id) => profileMap.get(id))
+        .filter(Boolean);
+    }
+
     this.chatContacts.set(
       communityConversations.map((conversation) => ({
         id: conversation.id,
@@ -508,6 +640,10 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
       }))
     );
     this.chatConversations.set(conversationsWithMessages as any);
+    for (const conversation of this.chatConversations()) {
+      for (const message of conversation.messages)
+        void this.hydrateLiveAuthor(message);
+    }
     this.chatRoomId.set(communityConversations[0].id);
   }
 
@@ -567,6 +703,11 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.initialized = false;
+    this.socketListenerVersion += 1;
+    this.communityLoadVersion += 1;
+    this.historyLoadVersion += 1;
+    this.socketListeners.forEach((dispose) => dispose?.());
     this.listeners.forEach((dispose) => dispose?.());
   }
 

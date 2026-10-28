@@ -3,13 +3,13 @@
     <div class="hero-copy">
       <div class="hero-badge">Towne Square | Early access for local life</div>
       <h1 class="hero-title">
-        Find your people, your market, and your
-        <span class="highlight">neighborhood rhythm</span>
+        A shared space for
+        <span class="highlight">your local life</span>
       </h1>
       <p class="hero-subtitle">
-        Towne Square is organized around place: local communities, classifieds,
-        and neighbor-to-neighbor messaging. Explore the places that are part of
-        your life while we test these workflows in early access.
+        Explore cities and neighborhoods, find local communities, and browse
+        classifieds. Join a community to share updates and talk with its
+        members.
       </p>
       <div class="hero-actions">
         <button class="btn btn-primary" (click)="navigateToCities()">
@@ -28,27 +28,23 @@
           Explore Map
         </button>
         <button class="btn btn-outline" (click)="navigateToRegister()">
-          Join your community
+          Create an account
         </button>
       </div>
     </div>
     <div class="hero-aside">
       <div class="hero-trust-strip">
         <div class="trust-item">
-          <strong>Belong locally</strong>
-          <span
-            >Join real place-based communities instead of generic feeds.</span
-          >
+          <strong>Explore a place</strong>
+          <span>Find cities, towns, and neighborhoods available here.</span>
         </div>
         <div class="trust-item">
-          <strong>Trade nearby</strong>
-          <span
-            >Buy, sell, and message within a neighborhood-scale network.</span
-          >
+          <strong>Discover listings</strong>
+          <span>Browse classifieds and message about a listing.</span>
         </div>
         <div class="trust-item">
-          <strong>Coordinate together</strong>
-          <span>Start with the places you live, work, or visit often.</span>
+          <strong>Join the conversation</strong>
+          <span>Share posts and chat once your membership is approved.</span>
         </div>
       </div>
     </div>
@@ -145,15 +141,48 @@
   </div>
 </section>
 
+<section class="how-it-works public-story" aria-labelledby="daylight-heading">
+  <div class="section-container">
+    <div class="story-header">
+      <p class="story-eyebrow">Daylight · Preview</p>
+      <h2 id="daylight-heading" class="section-title">
+        A closer look at local affairs
+      </h2>
+      <p class="section-subtitle">
+        Explore local briefings based on public records and news, with resident
+        reports and past editions where available. Daylight is being developed
+        for a limited set of places; a linked town may not have a published
+        briefing yet.
+      </p>
+      @if (loading()) {
+      <p role="status">Loading Daylight places…</p>
+      } @else if (loadError()) {
+      <p role="status">Daylight places are unavailable right now.</p>
+      } @else if (daylightCities.length) {
+      <div class="hero-actions" aria-label="Places with Daylight">
+        @for (city of daylightCities; track city.id) {
+        <button class="btn btn-outline" (click)="navigateToBriefing(city.slug)">
+          {{ city.name }}, {{ city.adminArea }}
+        </button>
+        }
+      </div>
+      } @else {
+      <p role="status">
+        No places are linked to Daylight in this environment yet.
+      </p>
+      }
+    </div>
+  </div>
+</section>
+
 <section class="how-it-works public-story">
   <div class="section-container">
     <div class="story-header">
       <p class="story-eyebrow">How Towne Square works</p>
-      <h2 class="section-title">Find the Places That Matter to You</h2>
+      <h2 class="section-title">Find places that matter to you</h2>
       <p class="section-subtitle">
-        Browse supported localities without an account. Create an account to try
-        community membership, classifieds, and messaging during early access.
-        These workflows are still being validated.
+        Browse available places, public community posts, and listings without an
+        account. Create an account when you are ready to participate.
       </p>
     </div>
   </div>
@@ -161,7 +190,7 @@
 
 <section class="features">
   <h2 class="section-title">
-    Local Communities, Classifieds, and Conversation
+    Local communities, classifieds, and conversation
   </h2>
   <div class="feature-grid">
     <div class="feature-card">
@@ -179,10 +208,10 @@
           <line x1="16" y1="6" x2="16" y2="22" />
         </svg>
       </div>
-      <h3>City, Town & Regional Communities</h3>
+      <h3>Cities, towns, and neighborhoods</h3>
       <p>
-        Explore supported localities and their communities. A place can be part
-        of your life because you live there, work nearby, or visit often.
+        Find an available place, explore its communities, and read their public
+        posts. Community membership lets you take part.
       </p>
     </div>
     <div class="feature-card">
@@ -199,10 +228,10 @@
           <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
         </svg>
       </div>
-      <h3>Local Classifieds</h3>
+      <h3>Local classifieds</h3>
       <p>
-        Browse nearby listings and try posting your own. Listing creation and
-        seller contact are still being tested in early access.
+        Explore local listings, post a classified, and contact someone about a
+        listing through messages.
       </p>
     </div>
     <div class="feature-card">
@@ -220,44 +249,45 @@
           />
         </svg>
       </div>
-      <h3>Direct Messaging</h3>
+      <h3>Messages and community chat</h3>
       <p>
-        Try contacting a seller or starting a conversation. Message delivery and
-        replies are still being tested in early access.
+        Send direct messages, or use community chat once your membership is
+        approved.
       </p>
     </div>
   </div>
 </section>
 
 <section class="how-it-works" id="how-it-works">
-  <h2 class="section-title">How It Works</h2>
+  <h2 class="section-title">How it works</h2>
   <ol class="steps">
     <li class="step">
       <span class="step-number">1</span>
       <div class="step-content">
-        <h3>Explore the Map</h3>
+        <h3>Explore the map</h3>
         <p>
-          Browse our supported cities and discover communities in your area — no
-          account required.
+          Browse available places and their public communities — no account
+          required.
         </p>
       </div>
     </li>
     <li class="step">
       <span class="step-number">2</span>
       <div class="step-content">
-        <h3>Join a Community</h3>
+        <h3>Create an account and join</h3>
         <p>
-          Create an account to try community membership during early access.
+          Create an account and request membership. Once approved, participate
+          and chat.
         </p>
       </div>
     </li>
     <li class="step">
       <span class="step-number">3</span>
       <div class="step-content">
-        <h3>Connect & Trade</h3>
+        <h3>Share and connect</h3>
         <p>
-          Post classifieds, message neighbors, and become part of your local
-          community.
+          Share community posts, post classifieds, and message people about
+          local interests and listings.
         </p>
       </div>
     </li>

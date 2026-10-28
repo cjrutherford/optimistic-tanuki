@@ -70,6 +70,13 @@ app.get(
   express.static(browserDistFolder, {
     maxAge: '1y',
     index: 'index.html',
+    setHeaders: (res, path) => {
+      // Development builds use stable JavaScript filenames across rebuilds.
+      // Revalidate them so a browser cannot keep running an old app bundle.
+      if (path.endsWith('.js') || path.endsWith('.mjs')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    },
   })
 );
 

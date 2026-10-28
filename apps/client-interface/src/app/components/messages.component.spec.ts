@@ -227,6 +227,37 @@ describe('MessagesComponent', () => {
     ]);
   });
 
+  it('hydrates own and departed history authors and retains history on lookup failure', async () => {
+    const http = TestBed.inject(HttpClient) as unknown as { post: jest.Mock };
+    http.post.mockReturnValue(
+      of(['profile-1', 'other', 'left'].map((id) => ({ id, profileName: id })))
+    );
+    chatService.getMessages.mockResolvedValue(
+      ['profile-1', 'other', 'left'].map((senderId, i) => ({
+        id: `${i}`,
+        conversationId: 'room',
+        senderId,
+        content: 'hello',
+        createdAt: new Date(),
+      }))
+    );
+    const rooms = [
+      {
+        id: 'room',
+        participants: ['other'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    await (component as any).handleConversationsLoaded(rooms);
+    expect(
+      component.chatConversations()[0].participantProfiles?.map((p) => p.name)
+    ).toEqual(['other', 'profile-1', 'left']);
+    http.post.mockReturnValue(throwError(() => new Error('unavailable')));
+    await (component as any).handleConversationsLoaded(rooms);
+    expect(component.chatConversations()[0].messages).toHaveLength(3);
+  });
+
   it('loads presence per conversation and keeps messages available when presence fails', async () => {
     const http = TestBed.inject(HttpClient) as unknown as { post: jest.Mock };
     http.post.mockReturnValue(

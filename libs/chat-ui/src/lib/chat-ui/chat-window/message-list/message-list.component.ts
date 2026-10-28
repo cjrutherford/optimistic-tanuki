@@ -165,7 +165,7 @@ export class MessageListComponent {
   }
 
   getContactName(userId: string): string {
-    const contact = this.contacts.find((c) => c.id === userId);
+    const contact = this.getContact(userId);
     return contact?.name || 'Unknown';
   }
 

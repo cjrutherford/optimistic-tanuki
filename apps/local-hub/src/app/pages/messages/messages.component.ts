@@ -227,6 +227,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   handleIncomingMessage(message: ChatMessage) {
     this.appendMessageToConversation(message);
+    void this.hydrateLiveAuthor(message);
   }
 
   private async loadConversations() {
@@ -240,32 +241,81 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.socketChatService.getConversations(userData.profileId);
   }
 
+  private readonly authorLookups = new Set<string>();
+
+  private async hydrateLiveAuthor(message: ChatMessage) {
+    const conversation = this.chatConversations().find(
+      (c) => c.id === message.conversationId
+    );
+    if (
+      !conversation ||
+      !message.senderId ||
+      conversation.participantProfiles?.some((p) => p.id === message.senderId)
+    )
+      return;
+    const version = this.viewGeneration;
+    const actor = this.currentProfileId;
+    const key = `${version}:${actor}:${message.conversationId}:${message.senderId}`;
+    if (this.authorLookups.has(key)) return;
+    this.authorLookups.add(key);
+    try {
+      const profiles = await this.lookupProfiles([message.senderId]);
+      if (
+        version !== this.viewGeneration ||
+        actor !== this.currentProfileId ||
+        !profiles.length
+      )
+        return;
+      const profile = profiles[0];
+      this.chatConversations.update((conversations) =>
+        conversations.map((c) => {
+          if (
+            c.id !== message.conversationId ||
+            c.participantProfiles?.some((p) => p.id === message.senderId)
+          )
+            return c;
+          return {
+            ...c,
+            participantProfiles: [
+              ...(c.participantProfiles || []),
+              {
+                id: profile.id,
+                name: profile.profileName,
+                profilePic: profile.profilePic,
+              },
+            ],
+          };
+        })
+      );
+    } finally {
+      this.authorLookups.delete(key);
+    }
+  }
+
+  private async lookupProfiles(ids: string[]): Promise<ProfileDto[]> {
+    const profiles: ProfileDto[] = [];
+    for (let i = 0; i < ids.length; i += 100) {
+      try {
+        profiles.push(
+          ...(await firstValueFrom(
+            this.profiles.profileControllerGetProfilesByIds<ProfileDto[]>({
+              ids: ids.slice(i, i + 100),
+            })
+          ))
+        );
+      } catch {
+        /* Missing profile metadata must not hide messages. */
+      }
+    }
+    return profiles;
+  }
+
   private async handleConversationsLoaded(conversations: ChatConversation[]) {
     const generation = this.viewGeneration;
     try {
       const userData = this.authStateService.getUserData();
       if (!userData?.profileId) return;
-
-      const allParticipantIds = new Set<string>();
-      conversations.forEach((c) => {
-        c.participants.forEach((p) => allParticipantIds.add(p));
-      });
-
-      const participantIds = Array.from(allParticipantIds);
-
-      let profiles: ProfileDto[] = [];
-
-      if (participantIds.length > 0) {
-        const profilesResponse = await firstValueFrom(
-          this.profiles.profileControllerGetProfilesByIds<ProfileDto[]>({
-            ids: participantIds,
-          })
-        );
-        profiles = profilesResponse;
-      }
-      if (generation !== this.viewGeneration) return;
-
-      const profileMap = new Map(profiles.map((p) => [p.id, p]));
+      const profileId = userData.profileId;
 
       const conversationMessagesPromises = conversations.map(async (conv) => {
         try {
@@ -294,6 +344,33 @@ export class MessagesComponent implements OnInit, OnDestroy {
         conversationMessagesPromises
       );
       if (generation !== this.viewGeneration) return;
+      const ids = [
+        ...new Set(
+          [
+            userData.profileId,
+            ...conversations.flatMap((c) => c.participants),
+            ...conversationMessages.flatMap((c) =>
+              c.messages.map((m) => m.senderId)
+            ),
+          ].filter(Boolean)
+        ),
+      ];
+      const profiles = await this.lookupProfiles(ids);
+      if (
+        generation !== this.viewGeneration ||
+        userData.profileId !== this.currentProfileId
+      )
+        return;
+      const profileMap = new Map(profiles.map((p) => [p.id, p]));
+      for (const conversation of conversationMessages) {
+        const existing = this.chatConversations().find(
+          (c) => c.id === conversation.id
+        );
+        const merged = new Map(conversation.messages.map((m) => [m.id, m]));
+        for (const message of existing?.messages || [])
+          merged.set(message.id, message);
+        conversation.messages = [...merged.values()];
+      }
       const messagesMap = new Map(
         conversationMessages.map((cm) => [cm.id, cm.messages])
       );
@@ -326,9 +403,27 @@ export class MessagesComponent implements OnInit, OnDestroy {
           messages: messagesMap.get(c.id) || [],
           createdAt: c.createdAt,
           updatedAt: c.updatedAt,
+          participantProfiles: [
+            ...new Set([
+              ...c.participants,
+              profileId,
+              ...(messagesMap.get(c.id) || []).map((m) => m.senderId),
+            ]),
+          ]
+            .map((id) => profileMap.get(id))
+            .filter((p): p is ProfileDto => !!p)
+            .map((p) => ({
+              id: p.id,
+              name: p.profileName,
+              profilePic: p.profilePic,
+            })),
         }))
       );
 
+      for (const conversation of this.chatConversations()) {
+        for (const message of conversation.messages)
+          void this.hydrateLiveAuthor(message);
+      }
       this.loading.set(false);
     } catch (err) {
       if (generation !== this.viewGeneration) return;

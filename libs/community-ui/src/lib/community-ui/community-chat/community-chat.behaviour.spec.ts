@@ -32,7 +32,8 @@ interface CommunityServiceMock {
 const community = {
   id: 'community-1',
   name: 'General',
-  ownerId: 'profile-1',
+  ownerId: 'account-1',
+  ownerProfileId: 'profile-1',
   logoUrl: 'logo.png',
 };
 
@@ -154,7 +155,8 @@ describe('CommunityChatComponent behaviour', () => {
       setup();
       communityService.findBySlug.mockResolvedValue({
         ...community,
-        ownerId: 'profile-9',
+        ownerId: 'account-9',
+        ownerProfileId: 'profile-9',
       });
 
       await component.ngOnInit();
@@ -168,7 +170,8 @@ describe('CommunityChatComponent behaviour', () => {
         ...community,
         id: 'community-2',
         name: 'Next',
-        ownerId: 'profile-9',
+        ownerId: 'account-9',
+        ownerProfileId: 'profile-9',
       };
       let resolveInitialCommunity!: (value: typeof community) => void;
       communityService.findBySlug.mockImplementation((slug: string) =>
@@ -283,11 +286,13 @@ describe('CommunityChatComponent behaviour', () => {
     it('ignores a community-list response after the signed-in profile changes', async () => {
       const { routeData } = setup({});
       let resolveCommunities!: (value: (typeof community)[]) => void;
-      communityService.getUserCommunities.mockReturnValue(
+      communityService.getUserCommunities.mockReturnValueOnce(
         new Promise<(typeof community)[]>(
           (resolve) => (resolveCommunities = resolve)
         )
       );
+
+      communityService.getUserCommunities.mockResolvedValueOnce([]);
 
       await component.ngOnInit();
       routeData.next({ currentUserId: 'profile-2' });
@@ -330,7 +335,8 @@ describe('CommunityChatComponent behaviour', () => {
       setup();
       communityService.findBySlug.mockResolvedValue({
         ...community,
-        ownerId: 'profile-9',
+        ownerId: 'account-9',
+        ownerProfileId: 'profile-9',
       });
       communityService.getCommunityChatRoom.mockResolvedValue({ id: 'room-1' });
       communityService.getCommunityChatConversation.mockRejectedValue(
@@ -451,6 +457,37 @@ describe('CommunityChatComponent behaviour', () => {
 
       expect(component.chatContacts()).toEqual([]);
       expect(communityService.getCommunityChatMessages).not.toHaveBeenCalled();
+    });
+
+    it('hydrates initial room history including departed authors', async () => {
+      setup();
+      communityService.findBySlug.mockResolvedValue(community);
+      communityService.getCommunityChatRoom.mockResolvedValue({ id: 'room-1' });
+      communityService.getCommunityChatConversation.mockResolvedValue(
+        conversation
+      );
+      communityService.getCommunityChatMessages.mockResolvedValue(
+        ['profile-1', 'profile-2', 'left'].map((senderId, i) => ({
+          id: `${i}`,
+          conversationId: 'room-1',
+          senderId,
+          content: 'hello',
+          createdAt: new Date(),
+        }))
+      );
+      communityService.getProfilesByIds.mockResolvedValue(
+        ['profile-1', 'profile-2', 'left'].map((id) => ({
+          id,
+          profileName: id,
+        }))
+      );
+      await component.ngOnInit();
+      expect(
+        component.chatConversations()[0].participantProfiles?.map((p) => p.name)
+      ).toEqual(expect.arrayContaining(['profile-1', 'profile-2', 'left']));
+      expect(communityService.getProfilesByIds).toHaveBeenCalledWith(
+        expect.arrayContaining(['profile-1', 'profile-2', 'left'])
+      );
     });
 
     it('summarises each channel with its most recent message', async () => {
@@ -612,7 +649,7 @@ describe('CommunityChatComponent behaviour', () => {
       expect(component.error()).toBeNull();
     });
 
-    it('skips the profile lookup when the user is the only participant', async () => {
+    it('looks up the current actor when they are the only participant', async () => {
       const onConversations = await loadedConversations();
 
       await onConversations([
@@ -626,7 +663,9 @@ describe('CommunityChatComponent behaviour', () => {
         },
       ]);
 
-      expect(communityService.getProfilesByIds).not.toHaveBeenCalled();
+      expect(communityService.getProfilesByIds).toHaveBeenCalledWith([
+        'profile-1',
+      ]);
       expect(component.chatContacts()[0].name).toBe('General');
     });
 

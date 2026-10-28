@@ -75,8 +75,9 @@ const communityIsLoggedInResolver: ResolveFn<boolean> = () => {
 
 const communityUserIdResolver: ResolveFn<string> = () => {
   const authState = inject(AuthStateService);
-  const profile = authState.getPersistedSelectedProfile();
-  return profile?.id || '';
+  // Match the authenticated HTTP/socket actor; an old stored selection may
+  // still refer to the account's legacy global profile.
+  return authState.getDecodedTokenValue()?.profileId || '';
 };
 
 export const appRoutes: Route[] = [

@@ -1097,6 +1097,9 @@ services:
     volumes:
       - ./dist/apps/civic-briefing:/usr/src/app
       - /usr/src/app/node_modules
+      # Local review registry: the three Georgia edition towns and their parents.
+      - ./libs/civic/core/test/fixtures/localities/ga:/usr/src/app/daylight-localities/ga:ro
+      - ./libs/civic/core/test/fixtures/localities/us.yaml:/usr/src/app/daylight-localities/us.yaml:ro
     command:
       [
         'dumb-init',
@@ -1112,6 +1115,10 @@ services:
       ]
     environment:
       - NODE_ENV=development
+      - CIVIC_LOCALITIES_DIR=${CIVIC_LOCALITIES_DIR:-/usr/src/app/daylight-localities}
+      - PIPELINE_DAILY_AT=${PIPELINE_DAILY_AT:-05:30}
+      - PIPELINE_WEEKLY_ON=${PIPELINE_WEEKLY_ON:-monday}
+      - PIPELINE_TICK_MS=${PIPELINE_TICK_MS:-600000}
 
   civic-contributions:
     user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
@@ -1121,6 +1128,8 @@ services:
     volumes:
       - ./dist/apps/civic-contributions:/usr/src/app
       - /usr/src/app/node_modules
+      - ./libs/civic/core/test/fixtures/localities/ga:/usr/src/app/daylight-localities/ga:ro
+      - ./libs/civic/core/test/fixtures/localities/us.yaml:/usr/src/app/daylight-localities/us.yaml:ro
     command:
       [
         'dumb-init',
@@ -1136,6 +1145,7 @@ services:
       ]
     environment:
       - NODE_ENV=development
+      - CIVIC_LOCALITIES_DIR=${CIVIC_LOCALITIES_DIR:-/usr/src/app/daylight-localities}
 
   profile:
     container_name: ot_profile

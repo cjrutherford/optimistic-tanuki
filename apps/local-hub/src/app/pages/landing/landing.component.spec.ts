@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { LandingComponent } from './landing.component';
 import { RouterTestingModule } from '@angular/router/testing';
+import { Router } from '@angular/router';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { CommunityService } from '../../services/community.service';
 import { PaymentService } from '../../services/payment.service';
@@ -61,6 +62,46 @@ describe('LandingComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain(
       'Localities could not be loaded'
     );
+  });
+
+  it('offers Daylight only for linked places and opens their briefing', async () => {
+    jest.spyOn(communityService, 'getCommunities').mockResolvedValue([
+      {
+        id: 'linked',
+        name: 'Tifton',
+        slug: 'tifton-ga',
+        description: '',
+        localityType: 'city',
+        countryCode: 'US',
+        adminArea: 'GA',
+        city: 'Tifton',
+        memberCount: 0,
+        createdAt: '2024-01-01',
+        localitySlug: 'tifton-ga',
+      },
+      {
+        id: 'other',
+        name: 'Other',
+        slug: 'other-ga',
+        description: '',
+        localityType: 'city',
+        countryCode: 'US',
+        adminArea: 'GA',
+        city: 'Other',
+        memberCount: 0,
+        createdAt: '2024-01-01',
+      },
+    ]);
+    const navigate = jest.spyOn(TestBed.inject(Router), 'navigate');
+
+    await renderComponent();
+    const section = fixture.nativeElement.querySelector(
+      '[aria-labelledby="daylight-heading"]'
+    );
+    expect(section.textContent).toContain('Tifton, GA');
+    expect(section.textContent).not.toContain('Other, GA');
+    section.querySelector('button').click();
+    expect(navigate).toHaveBeenCalledWith(['/city', 'tifton-ga', 'briefing']);
   });
 
   it('keeps locality browsing available when the donation endpoint fails', async () => {
