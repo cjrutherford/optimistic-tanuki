@@ -425,6 +425,7 @@ describe('J21 Notification recipient and provenance against private services', (
     const email = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     const performance = new PerformanceTelemetryController(
       {} as never,
+      { prometheus: jest.fn().mockResolvedValue('') } as never,
       auth,
       profile,
       social,

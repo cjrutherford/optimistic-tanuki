@@ -37,6 +37,7 @@ describe('PerformanceTelemetryController owner notifications', () => {
     };
     const controller = new PerformanceTelemetryController(
       telemetry as any,
+      { prometheus: jest.fn().mockResolvedValue('') } as any,
       { send: authSend } as any,
       { send: profileSend } as any,
       { send: socialSend } as any,
