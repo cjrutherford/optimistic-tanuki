@@ -841,14 +841,21 @@ export type ActivityControllerGetActivityParams = {
   offset?: number;
 };
 
+export type PresenceControllerGetConversationPresenceBody = {
+  conversationId: string;
+  /** @maxItems 100 */
+  profileIds: string[];
+};
+
 export type ProfileAnalyticsControllerRecordViewBody = {
   profileId: string;
-  viewerId: string;
+  /** Ignored; set from authenticated account. */
+  viewerId?: string;
   source: string;
 };
 
 export type ProfileAnalyticsControllerGetRecentViewersParams = {
-  limit?: number;
+  limit?: unknown;
 };
 
 export type SocialEventControllerGetEventsParams = {
@@ -5452,18 +5459,18 @@ export class OptomisitcTanukiAPIService {
   }
 
   /**
-   * @summary Create a new notification
+   * @summary Notification creation is not available to public clients
    */
-  notificationControllerCreate<TData = void>(
+  notificationControllerCreate<TData = unknown>(
     options?: HttpClientBodyOptions
   ): Observable<TData>;
-  notificationControllerCreate<TData = void>(
+  notificationControllerCreate<TData = unknown>(
     options?: HttpClientEventOptions
   ): Observable<HttpEvent<TData>>;
-  notificationControllerCreate<TData = void>(
+  notificationControllerCreate<TData = unknown>(
     options?: HttpClientResponseOptions
   ): Observable<AngularHttpResponse<TData>>;
-  notificationControllerCreate<TData = void>(
+  notificationControllerCreate<TData = unknown>(
     options?: HttpClientObserveOptions
   ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
     if (options?.observe === 'events') {
@@ -6776,6 +6783,57 @@ export class OptomisitcTanukiAPIService {
       ...(options as Omit<NonNullable<typeof options>, 'observe'>),
       observe: 'body',
     });
+  }
+
+  /**
+   * @summary Get presence for participants in a conversation
+   */
+  presenceControllerGetConversationPresence<TData = void>(
+    presenceControllerGetConversationPresenceBody: PresenceControllerGetConversationPresenceBody,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  presenceControllerGetConversationPresence<TData = void>(
+    presenceControllerGetConversationPresenceBody: PresenceControllerGetConversationPresenceBody,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  presenceControllerGetConversationPresence<TData = void>(
+    presenceControllerGetConversationPresenceBody: PresenceControllerGetConversationPresenceBody,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  presenceControllerGetConversationPresence<TData = void>(
+    presenceControllerGetConversationPresenceBody: PresenceControllerGetConversationPresenceBody,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/presence/conversation`,
+        presenceControllerGetConversationPresenceBody,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/presence/conversation`,
+        presenceControllerGetConversationPresenceBody,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/presence/conversation`,
+      presenceControllerGetConversationPresenceBody,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
   }
 
   /**

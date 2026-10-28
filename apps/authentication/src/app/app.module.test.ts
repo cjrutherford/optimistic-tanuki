@@ -36,6 +36,7 @@ jest.mock('../config', () => {
       secret: 'testsecret',
       expiresIn: '1h',
     },
+    auth: { jwt_secret: 'test-deletion-receipt-secret-at-least-32-characters' },
     bcrypt: {
       saltRounds: 10,
     },
@@ -102,6 +103,13 @@ describe('AppModule', () => {
           },
         }),
         close: jest.fn().mockResolvedValue({}),
+        getMetadata: jest.fn(() => ({
+          tableName: 'guardian_policy_notice',
+          findColumnWithPropertyName: () => ({
+            databaseName: 'createdAt',
+            type: 'timestamptz',
+          }),
+        })),
         getRepository: jest.fn((entity) => ({ target: entity })),
       })
       .compile();

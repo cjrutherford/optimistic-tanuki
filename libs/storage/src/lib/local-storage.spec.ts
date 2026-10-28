@@ -22,13 +22,6 @@ import {
 } from './envelope-encryption.service';
 import { ZfsStorageService } from './zfs-storage.service';
 
-// uuid ships as ESM, which this project's jest transform does not parse, so it
-// has to be stubbed. Ids still increment so two assets remain distinguishable.
-let uuidCounter = 0;
-jest.mock('uuid', () => ({
-  v4: jest.fn(() => `uuid-${++uuidCounter}`),
-}));
-
 process.env[VAULT_STORAGE_KEK_ENV] = 'local-storage-spec-kek';
 
 /**

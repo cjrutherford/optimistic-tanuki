@@ -298,7 +298,7 @@ describe('AccountDeletionOwnerService', () => {
     });
     expect(
       f.queries.filter(({ sql }) => sql.includes('COUNT(*)'))
-    ).toHaveLength(7);
+    ).toHaveLength(8);
   });
 
   it('does not delete or revoke a token bound to another account through a captured profile', async () => {

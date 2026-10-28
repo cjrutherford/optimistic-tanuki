@@ -17,7 +17,7 @@ import { PresenceCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { AuthGuard } from '../../../auth/auth.guard';
 import { User, UserDetails } from '../../../decorators/user.decorator';
 import { firstValueFrom } from 'rxjs';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { GatewayPresenceAudienceService } from './gateway-presence-audience.service';
 
 export enum PresenceStatus {
@@ -195,6 +195,20 @@ export class PresenceController {
 
   @Post('conversation')
   @ApiOperation({ summary: 'Get presence for participants in a conversation' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['conversationId', 'profileIds'],
+      properties: {
+        conversationId: { type: 'string', format: 'uuid' },
+        profileIds: {
+          type: 'array',
+          maxItems: 100,
+          items: { type: 'string', format: 'uuid' },
+        },
+      },
+    },
+  })
   async getConversationPresence(
     @Body() body: { conversationId: string; profileIds: string[] },
     @User() user: UserDetails | null

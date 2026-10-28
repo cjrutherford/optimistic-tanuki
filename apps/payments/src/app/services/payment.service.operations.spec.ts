@@ -489,22 +489,21 @@ describe('PaymentService.createClassifiedPayment offer-derived path', () => {
     );
   });
 
-  it('defaults a missing offer amount to zero', async () => {
+  it('rejects a missing offer amount when it cannot produce a valid seller payment', async () => {
     const classifiedPaymentRepository = repository();
     const { service } = createHarness({ classifiedPaymentRepository });
 
-    await service.createClassifiedPayment(
-      'buyer-1',
-      'classified-1',
-      'card',
-      undefined,
-      undefined,
-      'offer-1'
-    );
-
-    expect(classifiedPaymentRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 0, sellerId: undefined })
-    );
+    await expect(
+      service.createClassifiedPayment(
+        'buyer-1',
+        'classified-1',
+        'card',
+        undefined,
+        undefined,
+        'offer-1'
+      )
+    ).rejects.toThrow('Classified price cannot produce a valid seller payment');
+    expect(classifiedPaymentRepository.create).not.toHaveBeenCalled();
   });
 });
 

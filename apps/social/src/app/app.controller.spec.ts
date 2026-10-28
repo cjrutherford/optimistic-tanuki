@@ -694,6 +694,7 @@ describe('AppController', () => {
     );
 
     expect(postService.findAll).toHaveBeenCalledWith({
+      relations: { links: true },
       where: [
         expect.objectContaining({
           title: Like('%Test%'),
@@ -720,7 +721,6 @@ describe('AppController', () => {
         title: 'Post 1',
         attachments: [],
         comments: [],
-        links: [],
         votes: [],
       },
       {
@@ -728,7 +728,6 @@ describe('AppController', () => {
         title: 'Post 2',
         attachments: [],
         comments: [],
-        links: [],
         votes: [],
       },
     ]);
@@ -741,6 +740,7 @@ describe('AppController', () => {
     );
 
     expect(postService.findAll).toHaveBeenCalledWith({
+      relations: { links: true },
       where: [
         expect.objectContaining({
           title: Like('%Test%'),
@@ -769,6 +769,7 @@ describe('AppController', () => {
     );
 
     expect(postService.findAll).toHaveBeenCalledWith({
+      relations: { links: true },
       where: [
         expect.objectContaining({
           title: Like('%Test%'),
@@ -794,6 +795,7 @@ describe('AppController', () => {
     const result = await controller.findAllPosts({ title: 'Test' }, undefined);
 
     expect(postService.findAll).toHaveBeenCalledWith({
+      relations: { links: true },
       where: [
         expect.objectContaining({
           title: Like('%Test%'),

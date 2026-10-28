@@ -136,12 +136,13 @@ export type ProfileControllerGetProfilesByIdsBody = {
 
 export type ProfileAnalyticsControllerRecordViewBody = {
   profileId: string;
-  viewerId: string;
+  /** Ignored; set from authenticated account. */
+  viewerId?: string;
   source: string;
 };
 
 export type ProfileAnalyticsControllerGetRecentViewersParams = {
-  limit?: number;
+  limit?: unknown;
 };
 
 interface HttpClientOptions {

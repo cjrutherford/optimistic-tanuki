@@ -34,6 +34,8 @@ describe('A04 background job session and restart boundary', () => {
       jobs: { createQueryBuilder: jest.fn(() => query) },
       dataSource: { getRepository: jest.fn(() => tokens) },
       background: new Set(),
+      deletedAccounts: new Set(),
+      accountWork: new Map(),
       closing: false,
       activeLaunches: 0,
       recovering: false,

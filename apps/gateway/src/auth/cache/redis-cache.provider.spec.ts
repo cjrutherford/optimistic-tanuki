@@ -11,6 +11,7 @@ const redisClient = {
   del: jest.fn(),
   keys: jest.fn(),
   quit: jest.fn(),
+  isOpen: false,
 };
 
 jest.mock('redis', () => ({
@@ -143,8 +144,10 @@ describe('RedisCacheProvider', () => {
   describe('errors and lifecycle', () => {
     it('onModuleDestroy quits when connected', async () => {
       (provider as any).isConnected = true;
+      redisClient.isOpen = true;
       await provider.onModuleDestroy();
       expect(redisClient.quit).toHaveBeenCalled();
+      redisClient.isOpen = false;
     });
 
     it('get handles redis error', async () => {

@@ -11,9 +11,6 @@ import {
 } from './envelope-encryption.service';
 import { S3Service } from './s3.service';
 
-// uuid ships as ESM, which this project's jest transform does not parse.
-jest.mock('uuid', () => ({ v4: jest.fn(() => 'uuid-1') }));
-
 process.env[VAULT_STORAGE_KEK_ENV] = 'network-storage-spec-kek';
 
 /**
@@ -95,7 +92,9 @@ describe('NetworkStorageAdapter behaviour', () => {
       } as never);
 
       const [key, body, type] = s3.uploadObject.mock.calls[0];
-      expect(key).toMatch(/^assets\/profile-9\/uuid-1-\d+\/photo\.png$/);
+      expect(key).toMatch(
+        /^assets\/profile-9\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}-\d+\/photo\.png$/
+      );
       expect(encryption.isEnvelope(body)).toBe(true);
       expect(encryption.decrypt(body).equals(content)).toBe(true);
       expect(type).toBe(AssetType.IMAGE);

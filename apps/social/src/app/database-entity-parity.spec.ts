@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import loadDatabase from './loadDatabase';
 import staticDatabase from './staticDatabase';
 import { AppModule } from './app.module';
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { Activity } from '../entities/activity.entity';
 import { Attachment } from '../entities/attachment.entity';
 import { BusinessPageContent } from '../entities/business-page-content.entity';
@@ -103,8 +104,12 @@ describe('Social TypeORM entity registration parity', () => {
         (token) => typeof token === 'string' && token.endsWith('Repository')
       );
 
-    expect(names(runtimeEntities)).toEqual(names(EXPECTED_SOCIAL_ENTITIES));
-    expect(names(migrationEntities)).toEqual(names(EXPECTED_SOCIAL_ENTITIES));
+    const databaseEntities = [
+      ...EXPECTED_SOCIAL_ENTITIES,
+      AccountDeletionWriteFenceEntity,
+    ];
+    expect(names(runtimeEntities)).toEqual(names(databaseEntities));
+    expect(names(migrationEntities)).toEqual(names(databaseEntities));
     expect(repositoryProviders.sort()).toEqual(
       EXPECTED_SOCIAL_ENTITIES.map((entity) =>
         getRepositoryToken(entity)
@@ -122,7 +127,16 @@ describe('Social TypeORM entity registration parity', () => {
     });
     await (source as any).buildMetadatas();
     expect(
-      names(source.entityMetadatas.map((metadata) => metadata.target))
-    ).toEqual(names(EXPECTED_SOCIAL_ENTITIES));
+      names(
+        source.entityMetadatas
+          .map((metadata) => metadata.target)
+          .filter((target) => typeof target === 'function')
+      )
+    ).toEqual(names(databaseEntities));
+    expect(
+      source.entityMetadatas.some(
+        (metadata) => metadata.tableName === 'post_link'
+      )
+    ).toBe(true);
   });
 });

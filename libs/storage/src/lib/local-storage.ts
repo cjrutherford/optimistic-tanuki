@@ -16,7 +16,6 @@ import { existsSync, mkdirSync } from 'fs';
 import * as fs from 'fs/promises';
 import { constants as fsConstants } from 'node:fs';
 import * as path from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import * as crypto from 'crypto';
 
 import { mimeTypeFromFileName, mimeTypeForAssetType } from './file-mime';
@@ -77,7 +76,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     );
     if (data.id && !isUuid(data.id))
       throw new Error('Reserved asset id must be a UUID');
-    const assetId = data.id ?? uuidv4();
+    const assetId = data.id ?? crypto.randomUUID();
     // Create a unique path for the file within the base path
     const relativePath = path.join('assets', assetId, data.name);
     const absolutePath = path.join(this.basePath, relativePath);

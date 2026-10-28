@@ -177,6 +177,16 @@ const COVERED: Array<{
   },
 ];
 
+// Internal owner RPCs validate capture or deletion grants at their handlers.
+const INTERNAL = [
+  'FENCE_ACCOUNT_DELETION',
+  'ERASE_ACCOUNT_DELETION',
+  'READBACK_ACCOUNT_DELETION',
+  'OPEN_ACCOUNT_EXPORT_CAPTURE',
+  'READ_ACCOUNT_EXPORT_CAPTURE',
+  'RELEASE_ACCOUNT_EXPORT_CAPTURE',
+];
+
 const DEFERRED = [
   'CREATE_CLASSIFIED_PAYMENT',
   'CONFIRM_OUT_OF_PLATFORM_PAYMENT',
@@ -225,6 +235,7 @@ describe('payments-contract-parity', () => {
     const coveredValues = new Set(COVERED.map((c) => c.pattern));
     const expected = new Set([
       ...coveredValues,
+      ...INTERNAL.map((k) => commands[k]),
       ...DEFERRED.map((k) => commands[k]),
     ]);
     expect(new Set(Object.values(commands))).toEqual(expected);

@@ -129,6 +129,9 @@ const KNOWN_UNIMPLEMENTED = [
 /** Internal security RPC: contract shape is an exported interface and its
  * boundary validator is implemented in chat-collector rather than a DTO. */
 const INTERNAL = [
+  'FENCE_ACCOUNT_DELETION',
+  'ERASE_ACCOUNT_DELETION',
+  'READBACK_ACCOUNT_DELETION',
   'GET_PRESENCE_AUDIENCE',
   'OPEN_ACCOUNT_EXPORT_CAPTURE',
   'READ_ACCOUNT_EXPORT_CAPTURE',

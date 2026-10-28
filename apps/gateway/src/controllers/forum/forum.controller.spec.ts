@@ -267,7 +267,12 @@ describe('ForumController', () => {
     expect(response.statusCode).toBe(200);
     expect(authService.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Validate },
-      { token: 'member-token', userId: 'member-user' }
+      {
+        token: 'member-token',
+        userId: 'member-user',
+        activity: true,
+        appId: undefined,
+      }
     );
     expect(forumClient.send).toHaveBeenCalledWith(
       { cmd: ForumPostCommands.FIND },

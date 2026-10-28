@@ -142,7 +142,7 @@ describe('docker compose oauth environment wiring', () => {
       'CORS_ALLOWED_ORIGINS=http://forgeofwill.localhost:8081'
     );
     expect(gatewaySection).toContain(
-      'CLIENT_INTERFACE_UI_BASE_URL=http://localhost:8080'
+      'CLIENT_INTERFACE_UI_BASE_URL=${CLIENT_INTERFACE_UI_BASE_URL:-http://localhost:8080}'
     );
     expect(gatewaySection).toContain('CLIENT_INTERFACE_DOMAIN=localhost');
     expect(gatewaySection).toContain(

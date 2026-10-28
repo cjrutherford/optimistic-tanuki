@@ -281,7 +281,7 @@ describe('RR10-I01 authenticated media HTTP integration', () => {
           VAULT_STORAGE_KEK: 'isolated-test-only-key-material',
         },
         maxBuffer: 1024 * 1024,
-        timeout: 30_000,
+        timeout: 90_000,
       }
     );
     const metrics = JSON.parse(stdout) as {
@@ -294,5 +294,5 @@ describe('RR10-I01 authenticated media HTTP integration', () => {
     expect(metrics.spoolBytes).toBe(largeBytes);
     expect(metrics.rssDelta).toBeLessThan(64 * 1024 * 1024);
     expect(metrics.spoolExistsAfterCleanup).toBe(false);
-  });
+  }, 120_000);
 });

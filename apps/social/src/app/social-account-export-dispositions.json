@@ -640,6 +640,7 @@
             "highlights",
             "imageUrl",
             "timezone",
+            "localitySlug",
             "memberCount",
             "bannerAssetId",
             "logoAssetId",

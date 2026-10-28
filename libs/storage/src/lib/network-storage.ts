@@ -5,7 +5,7 @@ import {
   StorageStrategy,
 } from '@optimistic-tanuki/models';
 import { Injectable, Logger } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 
 import { S3Service, S3ServiceOptions } from './s3.service'; // Import S3Service and its options
 import { EnvelopeEncryptionService } from './envelope-encryption.service';
@@ -49,7 +49,7 @@ export class NetworkStorageAdapter implements StorageAdapter {
 
     if (data.id && !isUuid(data.id))
       throw new Error('Reserved asset id must be a UUID');
-    const newAssetId = data.id ?? uuidv4();
+    const newAssetId = data.id ?? randomUUID();
     const s3Key = data.id
       ? `assets/${data.profileId}/${newAssetId}/${data.name}`
       : `assets/${data.profileId}/${newAssetId}-${Date.now()}/${data.name}`;

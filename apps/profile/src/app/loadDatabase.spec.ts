@@ -24,7 +24,7 @@ describe('profile loadDatabase', () => {
     const options = loadDatabase(config);
 
     expect(options.migrationsRun).toBe(true);
-    expect(options.migrations).toHaveLength(3);
+    expect(options.migrations).toHaveLength(5);
     expect(options.synchronize).not.toBe(true);
   });
 });

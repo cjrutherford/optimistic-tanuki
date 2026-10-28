@@ -16,6 +16,7 @@ import { SaltedHashService } from '@optimistic-tanuki/encryption';
 import { EmailService } from '@optimistic-tanuki/email';
 
 import { AppService } from './app.service';
+import { AccountDeletionFenceService } from '../account-deletion/account-deletion-fence.service';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
 import { KeyService } from './key.service';
@@ -172,6 +173,12 @@ describe('AppService flows', () => {
       providers: [
         Logger,
         AppService,
+        {
+          provide: AccountDeletionFenceService,
+          useValue: {
+            assertActiveAccount: jest.fn().mockResolvedValue(undefined),
+          },
+        },
         SaltedHashService,
         PasswordPolicyService,
         { provide: ConfigService, useValue: configService },

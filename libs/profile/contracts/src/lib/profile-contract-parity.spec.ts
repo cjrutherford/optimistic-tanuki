@@ -170,6 +170,7 @@ const FIND_MANY: string[] = [ProfileCommands.GetAll, TimelineCommands.GetAll];
 const SCALAR: string[] = [ProfileCommands.GetBlogRole, TimelineCommands.Get];
 /** Internal object payload with strict validation at the handler boundary. */
 const OBJECT: string[] = [
+  ProfileCommands.FinalizeAccountDeletion,
   ProfileCommands.FenceAccountDeletion,
   ProfileCommands.EraseAccountDeletion,
   ProfileCommands.ReadbackAccountDeletion,
