@@ -153,7 +153,7 @@ import {
       }
       .account-rights {
         padding: clamp(1rem, 3vw, 1.5rem);
-        border: 1px solid var(--border-color, #8886);
+        border: 1px solid var(--border-color, var(--border, currentColor));
         border-radius: var(--border-radius, 12px);
         color: var(--foreground, currentColor);
         background: var(--background, transparent);
