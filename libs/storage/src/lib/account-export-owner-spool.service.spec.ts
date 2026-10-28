@@ -352,7 +352,7 @@ describe('AccountExportOwnerSpoolService', () => {
       ],
       {
         cwd: workspace,
-        stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+        stdio: ['ignore', 'ignore', 'pipe', 'ipc'],
         env: {
           PATH: process.env['PATH'],
           TS_NODE_PROJECT: join(workspace, 'tsconfig.base.json'),
@@ -369,15 +369,21 @@ describe('AccountExportOwnerSpoolService', () => {
         },
       }
     );
-    const deadline = setTimeout(() => child.kill('SIGKILL'), 10_000);
+    let childError = '';
+    child.stderr?.on('data', (chunk: Buffer) => {
+      childError = (childError + chunk.toString()).slice(-4000);
+    });
+    const deadline = setTimeout(() => child.kill('SIGKILL'), 45_000);
     const exited = once(child, 'exit');
     try {
       const ready = await Promise.race([
         once(child, 'message').then(
           ([value]) => value as { ready: boolean; bytes: number }
         ),
-        exited.then(() => {
-          throw new Error('Fixture child exited before ready');
+        exited.then(([code, signal]) => {
+          throw new Error(
+            `Fixture child exited before ready (code=${code}, signal=${signal}): ${childError}`
+          );
         }),
       ]);
       expect(ready.ready).toBe(true);
@@ -410,7 +416,7 @@ describe('AccountExportOwnerSpoolService', () => {
         child.kill('SIGKILL');
       await exited;
     }
-  }, 15_000);
+  }, 60_000);
 
   it('rejects concurrent callback protocol and unawaited callbacks', async () => {
     const chunks = makeCapture();

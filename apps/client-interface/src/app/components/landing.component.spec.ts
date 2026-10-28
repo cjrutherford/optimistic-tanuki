@@ -49,10 +49,10 @@ describe('LandingComponent', () => {
 
   it('uses the current user-centered landing message', () => {
     expect(fixture.nativeElement.textContent).toContain(
-      'Your space. Your people.'
+      'Optimistic Tanuki | Early access'
     );
     expect(fixture.nativeElement.textContent).toContain(
-      'A social network organized around you'
+      'Follow people and interests, share posts'
     );
   });
 
