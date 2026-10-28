@@ -71,6 +71,7 @@ import { firstValueFrom } from 'rxjs';
         <lib-chat-ui
           [contacts]="chatContacts()"
           [conversations]="chatConversations()"
+          [connectionStatus]="connectionStatus()"
           [currentUserId]="currentProfileId || ''"
           [layout]="'embedded'"
           (messageSubmission)="handleMessageSubmitted($event)"
@@ -445,9 +446,12 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
           return {
             id: conv.id,
-            name: otherProfile?.profileName || conv.title || 'Unknown',
+            name:
+              conv.type && conv.type !== 'direct'
+                ? conv.title || 'Group chat'
+                : otherProfile?.profileName || conv.title || 'Unknown',
             profilePic: otherProfile?.profilePic,
-            presence: presence?.status || 'offline',
+            presence: presence?.status,
           };
         })
       );
@@ -455,6 +459,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
       this.chatConversations.set(
         conversations.map((c) => ({
           id: c.id,
+          type: c.type,
           participants: c.participants,
           messages: messagesMap.get(c.id) || [],
           createdAt: c.createdAt,

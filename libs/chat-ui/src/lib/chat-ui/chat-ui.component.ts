@@ -168,6 +168,8 @@ export class ChatUiComponent implements OnInit, OnChanges {
     },
   ];
   @Input() currentUserId = '';
+  @Input() connectionStatus: 'connecting' | 'connected' | 'reconnecting' =
+    'connecting';
   @Output() messageSubmitted = new EventEmitter<{
     conversationId: string;
     content: string;
@@ -388,6 +390,10 @@ export class ChatUiComponent implements OnInit, OnChanges {
 
   getParticipantContacts(contactId: string): ChatContact[] {
     const conversation = this.getConversation(contactId);
+    if (conversation.type) {
+      const contact = this.contacts.find((c) => c.id === contactId);
+      return contact ? [contact] : [];
+    }
     if (
       conversation.participantProfiles &&
       conversation.participantProfiles.length > 0

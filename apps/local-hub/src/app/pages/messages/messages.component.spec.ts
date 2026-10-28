@@ -35,6 +35,7 @@ describe('LocalHub MessagesComponent', () => {
   };
 
   const socketChatServiceMock = {
+    onConnectionState: jest.fn().mockReturnValue(() => {}),
     onConversations: jest.fn(),
     onMessage: jest.fn(),
     getConversations: jest.fn(),
@@ -60,6 +61,25 @@ describe('LocalHub MessagesComponent', () => {
     fixture = TestBed.createComponent(MessagesComponent);
     component = fixture.componentInstance;
     (component as any).currentProfileId = 'self-profile';
+  });
+
+  it('tracks transport connection and disposes the listener', async () => {
+    let update!: (connected: boolean) => void;
+    const dispose = jest.fn();
+    socketChatServiceMock.onConnectionState.mockImplementation((callback) => {
+      update = callback;
+      return dispose;
+    });
+    await component.ngOnInit();
+    expect(component.connectionStatus()).toBe('connecting');
+    update(true);
+    expect(component.connectionStatus()).toBe('connected');
+    update(false);
+    expect(component.connectionStatus()).toBe('reconnecting');
+    update(true);
+    expect(component.connectionStatus()).toBe('connected');
+    component.ngOnDestroy();
+    expect(dispose).toHaveBeenCalled();
   });
 
   it('sends outgoing messages through the acknowledged socket path', async () => {

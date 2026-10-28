@@ -222,7 +222,8 @@
     }
   }
 
-  &.status-offline {
+  &.status-offline,
+  &.status-unknown {
     color: var(--muted-foreground, var(--foreground));
     .status-dot {
       background: var(--muted-foreground, var(--foreground));

@@ -16,6 +16,28 @@ describe('ChatUiComponent', () => {
     component = fixture.componentInstance;
   });
 
+  it('passes group status and conversation title to the window', () => {
+    component.contacts = [{ id: 'room', name: 'Room title' }];
+    component.conversations = [
+      {
+        id: 'room',
+        type: 'community',
+        participants: ['self', 'other'],
+        participantProfiles: [{ id: 'other', name: 'Other' }],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    component.connectionStatus = 'connected';
+    component.openChat('room');
+    fixture.detectChanges();
+    const window = fixture.debugElement.query(By.directive(ChatWindowComponent))
+      .componentInstance as ChatWindowComponent;
+    expect(window.contact?.[0].name).toBe('Room title');
+    expect(window.connectionStatus).toBe('connected');
+  });
+
   it('forwards the ack completion only to an opted-in consumer', () => {
     const settle = jest.fn();
     const submission = { content: 'hello', settle };

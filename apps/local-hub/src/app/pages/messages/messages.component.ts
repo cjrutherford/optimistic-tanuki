@@ -55,6 +55,7 @@ import { ChatService } from '../../services/chat.service';
       <lib-chat-ui
         [contacts]="chatContacts()"
         [conversations]="chatConversations()"
+        [connectionStatus]="connectionStatus()"
         [currentUserId]="currentProfileId || ''"
         (messageSubmission)="handleMessageSubmission($event)"
       ></lib-chat-ui>
@@ -138,6 +139,11 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   chatContacts = signal<ChatContact[]>([]);
   chatConversations = signal<ChatConversation[]>([]);
+  connectionStatus = signal<'connecting' | 'connected' | 'reconnecting'>(
+    'connecting'
+  );
+  private hasConnectedOnce = false;
+  private disposeConnectionState?: () => void;
   loading = signal(true);
   error = signal<string | null>(null);
 
@@ -151,10 +157,24 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.chatConversations.set([]);
     this.loading.set(false);
     this.error.set(null);
+    this.connectionStatus.set('connecting');
+    this.hasConnectedOnce = false;
     this.socketChatService.destroy();
   }
 
   async ngOnInit() {
+    this.disposeConnectionState = this.socketChatService.onConnectionState(
+      (connected) => {
+        if (connected) this.hasConnectedOnce = true;
+        this.connectionStatus.set(
+          connected
+            ? 'connected'
+            : this.hasConnectedOnce
+            ? 'reconnecting'
+            : 'connecting'
+        );
+      }
+    );
     this.socketChatService.onConversations((conversations) => {
       this.handleConversationsLoaded(
         conversations as unknown as ChatConversation[]
@@ -167,6 +187,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.disposeConnectionState?.();
     this.clearSessionViews();
   }
 
@@ -288,9 +309,11 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
           return {
             id: conv.id,
-            name: otherProfile?.profileName || 'Unknown',
+            name:
+              conv.type && conv.type !== 'direct'
+                ? conv.title || 'Group chat'
+                : otherProfile?.profileName || conv.title || 'Unknown',
             profilePic: otherProfile?.profilePic,
-            presence: 'offline' as const,
           };
         })
       );
@@ -298,6 +321,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
       this.chatConversations.set(
         conversations.map((c) => ({
           id: c.id,
+          type: c.type,
           participants: c.participants,
           messages: messagesMap.get(c.id) || [],
           createdAt: c.createdAt,

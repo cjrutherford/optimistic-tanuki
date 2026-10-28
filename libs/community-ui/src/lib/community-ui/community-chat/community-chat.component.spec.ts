@@ -99,6 +99,7 @@ describe('CommunityChatComponent', () => {
 
     await component.ngOnInit();
 
+    expect(component.chatConversations()[0].type).toBe('community');
     expect(component.chatConversations()[0].messages).toHaveLength(1);
     expect(component.chatConversations()[0].messages[0]).toEqual(
       expect.objectContaining({

@@ -40,6 +40,7 @@ import { skip } from 'rxjs';
       <lib-chat-ui
         [contacts]="chatContacts()"
         [conversations]="chatConversations()"
+        [connectionStatus]="connectionStatus()"
         [currentUserId]="currentUserId"
         [autoOpenFirstConversation]="true"
         [layout]="'embedded'"
@@ -294,6 +295,7 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
       this.chatConversations.set([
         {
           id: conversation.id,
+          type: 'community',
           participants: conversation.participants,
           messages: transformedMessages,
           createdAt: new Date(conversation.createdAt),
@@ -453,6 +455,7 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
         }));
         return {
           id: conversation.id,
+          type: 'community',
           participants: conversation.participants,
           messages: fetchedMessages,
           createdAt: new Date(conversation.createdAt),

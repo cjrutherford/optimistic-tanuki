@@ -50,6 +50,7 @@
       *ngIf="selectedConversationId() === contact.id"
       [contact]="getParticipantContacts(contact.id)"
       [messages]="getConversation(contact.id)"
+      [connectionStatus]="connectionStatus"
       [currentUserId]="currentUserId"
       [windowState]="activeWindowState()"
       (windowStateChange)="handleWindowStateChange(contact.id, $event)"

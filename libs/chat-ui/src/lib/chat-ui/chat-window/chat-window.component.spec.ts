@@ -15,6 +15,39 @@ describe('ChatWindowComponent', () => {
     component = fixture.componentInstance;
   });
 
+  it('shows group transport changes independently of participant presence', () => {
+    component.contact = [{ id: 'room', name: 'Room' }];
+    component.messages = {
+      id: 'room',
+      type: 'community',
+      participants: ['self'],
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Connecting');
+    component.connectionStatus = 'connected';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Connected');
+    component.messages.participants.push('another');
+    component.connectionStatus = 'reconnecting';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Reconnecting');
+    component.connectionStatus = 'connected';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Connected');
+  });
+
+  it('distinguishes unknown and offline direct presence', () => {
+    component.contact = [{ id: 'person', name: 'Person' }];
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Unknown');
+    component.contact = [{ id: 'person', name: 'Person', presence: 'offline' }];
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Offline');
+  });
+
   it('should create', () => {
     expect(component).toBeTruthy();
   });

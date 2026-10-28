@@ -95,7 +95,11 @@ export interface ChatMessage {
 /**
  * Represents a chat conversation.
  */
+export type ChatConnectionStatus = 'connecting' | 'connected' | 'reconnecting';
+
 export interface ChatConversation {
+  type?: 'direct' | 'group' | 'community' | 'project';
+  title?: string;
   /**
    * The unique identifier for the conversation.
    */

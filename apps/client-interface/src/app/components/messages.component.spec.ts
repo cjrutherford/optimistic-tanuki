@@ -256,7 +256,7 @@ describe('MessagesComponent', () => {
       'conversation-1',
       ['other-profile']
     );
-    expect(component.chatContacts()[0].presence).toBe('offline');
+    expect(component.chatContacts()[0].presence).toBeUndefined();
     expect(component.chatConversations()).toHaveLength(1);
   });
 
@@ -287,7 +287,7 @@ describe('MessagesComponent', () => {
     await (component as any).handleConversationsLoaded(conversations);
 
     expect(component.chatContacts().map((contact) => contact.presence)).toEqual(
-      ['online', 'offline']
+      ['online', undefined]
     );
   });
 
