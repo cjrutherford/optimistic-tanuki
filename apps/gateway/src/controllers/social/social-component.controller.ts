@@ -10,10 +10,13 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  NotFoundException,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
+  PostCommands,
   ServiceTokens,
   SocialComponentCommands,
 } from '@optimistic-tanuki/constants';
@@ -47,6 +50,22 @@ export class SocialComponentController {
       .catch((e) => this.l.error('Error connecting to socialService', e));
   }
 
+  private async requireVisiblePost(postId: string, viewerProfileId?: string) {
+    if (typeof postId !== 'string' || postId.trim().length === 0) {
+      throw new NotFoundException('Post not found');
+    }
+    const post = await firstValueFrom(
+      this.socialService.send(
+        { cmd: PostCommands.FIND },
+        { id: postId, viewerProfileId }
+      )
+    );
+    if (!post || post.id !== postId) {
+      throw new NotFoundException('Post not found');
+    }
+    return post;
+  }
+
   @Post('')
   @RequirePermissions('social.post.create')
   async createSocialComponent(
@@ -72,8 +91,12 @@ export class SocialComponentController {
 
   @Get('post/:postId')
   @Public()
-  async getSocialComponents(@Param('postId') postId: string) {
+  async getSocialComponents(
+    @Param('postId') postId: string,
+    @Req() req?: { user?: { profileId?: string } }
+  ) {
     try {
+      await this.requireVisiblePost(postId, req?.user?.profileId);
       this.l.log('Getting social components for post:', postId);
       return await firstValueFrom(
         this.socialService.send(
@@ -92,12 +115,18 @@ export class SocialComponentController {
 
   @Get(':id')
   @Public()
-  async getSocialComponent(@Param('id') id: string) {
+  async getSocialComponent(
+    @Param('id') id: string,
+    @Req() req?: { user?: { profileId?: string } }
+  ) {
     try {
       this.l.log('Getting social component:', id);
-      return await firstValueFrom(
+      const component = await firstValueFrom(
         this.socialService.send({ cmd: SocialComponentCommands.FIND }, { id })
       );
+      if (!component) throw new NotFoundException('Social component not found');
+      await this.requireVisiblePost(component.postId, req?.user?.profileId);
+      return component;
     } catch (error) {
       this.l.error('Error getting social component:', error);
       throw new HttpException(
@@ -181,15 +210,32 @@ export class SocialComponentController {
 
   @Get('')
   @Public()
-  async findComponentsByQuery(@Query() query: SocialComponentQueryDto) {
+  async findComponentsByQuery(
+    @Query() query: SocialComponentQueryDto,
+    @Req() req?: { user?: { profileId?: string } }
+  ) {
     try {
       this.l.log('Finding social components by query:', query);
-      return await firstValueFrom(
+      const components = await firstValueFrom(
         this.socialService.send(
           { cmd: SocialComponentCommands.FIND_BY_QUERY },
           query
         )
       );
+      const visible = await Promise.all(
+        (components ?? []).map(async (component) => {
+          try {
+            await this.requireVisiblePost(
+              component.postId,
+              req?.user?.profileId
+            );
+            return component;
+          } catch {
+            return null;
+          }
+        })
+      );
+      return visible.filter((component) => !!component);
     } catch (error) {
       this.l.error('Error finding social components by query:', error);
       throw new HttpException(

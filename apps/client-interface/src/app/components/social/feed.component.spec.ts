@@ -11,7 +11,7 @@ import { AttachmentService } from '../../attachment.service';
 import { CommentService } from '../../comment.service';
 import { ProfileService } from '../../profile.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { Observable, of, Subject } from 'rxjs';
 import { OnDestroy } from '@angular/core';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { CommonModule } from '@angular/common';
@@ -26,6 +26,7 @@ import { ActivityService } from '../../activity.service';
 import { throwError } from 'rxjs';
 import { SocialFeedDataService } from '@optimistic-tanuki/social-data-access';
 import { MessageService } from '@optimistic-tanuki/message-ui';
+import { PrivacyService } from '../../privacy.service';
 
 describe('FeedComponent', () => {
   let component: FeedComponent & Partial<OnDestroy>;
@@ -40,6 +41,10 @@ describe('FeedComponent', () => {
     loadCommunityFeed: jest.Mock;
   };
   let messageService: { addMessage: jest.Mock };
+  let privacyService: {
+    getBlockedUsers: jest.Mock;
+    getMutedUsers: jest.Mock;
+  };
   let consoleLogSpy: jest.SpyInstance;
 
   class MockIntersectionObserver {
@@ -113,6 +118,7 @@ describe('FeedComponent', () => {
       disconnect: jest.fn(),
       isConnected: jest.fn().mockReturnValue(false),
       getConnectionStatus: jest.fn().mockReturnValue(of(false)),
+      getContentInvalidated: jest.fn().mockReturnValue(of()),
       getPosts: jest.fn().mockReturnValue(of([])),
       getFeed: jest.fn(),
       subscribeToPosts: jest.fn(),
@@ -145,6 +151,10 @@ describe('FeedComponent', () => {
       loadCommunityFeed: jest.fn().mockReturnValue(of([])),
     };
     messageService = { addMessage: jest.fn() };
+    privacyService = {
+      getBlockedUsers: jest.fn().mockReturnValue(of([])),
+      getMutedUsers: jest.fn().mockReturnValue(of([])),
+    };
 
     TestBed.overrideComponent(FeedComponent, {
       set: {
@@ -182,6 +192,7 @@ describe('FeedComponent', () => {
           { provide: ActivityService, useValue: {} },
           { provide: SocialFeedDataService, useValue: socialFeedData },
           { provide: MessageService, useValue: messageService },
+          { provide: PrivacyService, useValue: privacyService },
         ],
       },
     });
@@ -208,7 +219,7 @@ describe('FeedComponent', () => {
 
     fixture = TestBed.createComponent(FeedComponent);
     component = fixture.componentInstance;
-    postService = TestBed.inject(PostService);
+    postService = component.postService;
     profileService = TestBed.inject(ProfileService);
     router = TestBed.inject(Router);
   });
@@ -222,6 +233,186 @@ describe('FeedComponent', () => {
     tick();
     expect(component).toBeTruthy();
   }));
+
+  it('does not restore a focused post response started before invalidation', () => {
+    const staleResponse = new Subject<any>();
+    const currentResponse = new Subject<any>();
+    jest
+      .spyOn(postService, 'getPost')
+      .mockReturnValueOnce(staleResponse as any)
+      .mockReturnValueOnce(currentResponse as any);
+
+    (component as any).loadFocusedPost();
+    (component as any).loadFocusedPost();
+    staleResponse.next({ id: 'private-post', content: 'stale' });
+    expect(component.posts()).toEqual([]);
+    currentResponse.next({ id: 'private-post', content: 'current' });
+    expect(component.posts().map((post) => post.content)).toEqual(['current']);
+  });
+
+  it('clears a focused post immediately while its scoped reload is pending', () => {
+    jest.spyOn(postService, 'getPost').mockReturnValue(new Subject<any>());
+    component.posts.set([{ id: 'private-post', content: 'private' } as any]);
+    (component as any).loadFocusedPost();
+    expect(component.posts()).toEqual([]);
+  });
+
+  it('keeps denied focused content empty and ends loading', () => {
+    jest
+      .spyOn(postService, 'getPost')
+      .mockReturnValue(throwError(() => new Error('Denied')));
+    component.posts.set([{ id: 'private-post', content: 'private' } as any]);
+    (component as any).loadFocusedPost();
+    expect(component.posts()).toEqual([]);
+    expect(component.loading()).toBe(false);
+  });
+
+  it('does not restore an HTTP feed response started before revocation', fakeAsync(() => {
+    const invalidated = new Subject<void>();
+    const staleResponse = new Subject<any[]>();
+    (
+      component.socialWebSocketService.getContentInvalidated as jest.Mock
+    ).mockReturnValue(invalidated);
+    fixture.detectChanges();
+    const refreshPrivacyPreferences = jest.spyOn(
+      component as any,
+      'loadPrivacyPreferences'
+    );
+    socialFeedData.loadPublicFeed.mockReturnValueOnce(staleResponse);
+    component.loadPublicFeed();
+    invalidated.next();
+    expect(refreshPrivacyPreferences).toHaveBeenCalledTimes(1);
+    staleResponse.next([{ id: 'revoked-post', content: 'private' }]);
+    expect(component.posts()).toEqual([]);
+    tick(5001);
+  }));
+
+  it('keeps a delivered public post when an older public HTTP snapshot resolves later', () => {
+    const staleResponse = new Subject<any[]>();
+    const queryStarted = jest.fn();
+    const pendingQuery = new Observable<any[]>((subscriber) => {
+      queryStarted();
+      return staleResponse.subscribe(subscriber);
+    });
+    const publicPost = {
+      id: 'new-public-post',
+      profileId: 'author-profile',
+      visibility: 'public',
+      communityId: null,
+      content: 'published while feed request was pending',
+      comments: [],
+      votes: [],
+      attachments: [],
+    } as any;
+    const followerPost = {
+      id: 'following-only-post',
+      profileId: 'followed-profile',
+      visibility: 'followers',
+      communityId: null,
+      content: 'must not leak into the public feed',
+      comments: [],
+      votes: [],
+      attachments: [],
+    } as any;
+    const memberCommunityPost = {
+      id: 'member-community-post',
+      profileId: 'member-author',
+      visibility: 'community',
+      communityId: 'members-only-community',
+      publicAudienceExplicit: false,
+      content: 'must stay in the communities feed',
+      comments: [],
+      votes: [],
+      attachments: [],
+    } as any;
+    const legacyPublicCommunityPost = {
+      id: 'legacy-public-community-post',
+      profileId: 'community-author',
+      visibility: 'public',
+      communityId: 'community-id',
+      publicAudienceExplicit: false,
+      content: 'legacy community audience is not explicitly public',
+      comments: [],
+      votes: [],
+      attachments: [],
+    } as any;
+    const explicitPublicCommunityPost = {
+      id: 'explicit-public-community-post',
+      profileId: 'community-author',
+      visibility: 'public',
+      communityId: 'community-id',
+      publicAudienceExplicit: true,
+      content: 'explicitly public community post',
+      comments: [],
+      votes: [],
+      attachments: [],
+    } as any;
+    socialFeedData.loadPublicFeed.mockReturnValueOnce(pendingQuery);
+    (component as any).privacyPreferencesLoaded = true;
+
+    component.loadPublicFeed();
+    expect(queryStarted).toHaveBeenCalledTimes(1);
+    (component as any).receiveRealtimePosts([
+      publicPost,
+      followerPost,
+      memberCommunityPost,
+      legacyPublicCommunityPost,
+      explicitPublicCommunityPost,
+    ]);
+    expect(component.posts().map((post) => post.id)).toEqual([
+      'new-public-post',
+      'explicit-public-community-post',
+    ]);
+    staleResponse.next([
+      {
+        ...publicPost,
+        content: 'older duplicate copy',
+      },
+      {
+        id: 'old-public-post',
+        profileId: 'another-author',
+        visibility: 'public',
+        communityId: null,
+        content: 'snapshot taken before publication',
+        comments: [],
+        votes: [],
+        attachments: [],
+      },
+    ]);
+
+    expect(component.posts().map((post) => post.id)).toEqual([
+      'new-public-post',
+      'explicit-public-community-post',
+      'old-public-post',
+    ]);
+    const publicPostIds = component.posts().map((post) => post.id);
+    expect(publicPostIds).not.toContain('following-only-post');
+    expect(publicPostIds).not.toContain('member-community-post');
+    expect(publicPostIds).not.toContain('legacy-public-community-post');
+    expect(
+      component.posts().find((post) => post.id === 'new-public-post')?.content
+    ).toBe('published while feed request was pending');
+  });
+
+  it('keeps websocket posts gated and falls back to the filtered HTTP feed when privacy preferences fail', () => {
+    privacyService.getBlockedUsers.mockReturnValue(
+      throwError(() => new Error('Privacy service unavailable'))
+    );
+    const loadPublicFeed = jest.spyOn(component, 'loadPublicFeed');
+    const realtimePost = {
+      id: 'realtime-private',
+      profileId: 'muted-author',
+    } as any;
+
+    (component as any).loadPrivacyPreferences();
+    expect(loadPublicFeed).toHaveBeenCalledTimes(1);
+    expect((component as any).privacyPreferencesLoaded).toBe(false);
+
+    (component as any).receiveRealtimePosts([realtimePost]);
+
+    expect(component.posts()).toEqual([]);
+    expect((component as any).pendingRealtimePosts).toEqual([realtimePost]);
+  });
 
   it('loads the public tab through the shared social data-access layer', () => {
     component.loadPublicFeed();
@@ -392,5 +583,51 @@ describe('FeedComponent', () => {
         updatedAt: expect.any(Date),
       })
     );
+    expect(component.postSaveStates()['post-1']).toEqual({
+      status: 'saved',
+      requestId: 1,
+    });
+  });
+
+  it('keeps failed post edits retryable and reports the failure without rejecting the event handler', async () => {
+    const updateError = new Error('controlled update failure');
+    jest
+      .spyOn(component.postService, 'updatePost')
+      .mockReturnValue(throwError(() => updateError));
+    const consoleErrorSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    const original = {
+      id: 'post-1',
+      title: 'Original',
+      content: 'Original content',
+      profileId: '123',
+    } as any;
+    component.posts.set([original]);
+
+    await expect(
+      component.updatePost('post-1', {
+        title: 'Draft',
+        content: 'Draft content',
+      })
+    ).resolves.toBeUndefined();
+
+    expect(component.posts()).toEqual([original]);
+    expect(component.postSaveStates()['post-1']).toEqual({
+      status: 'error',
+      requestId: 1,
+      error:
+        'Your post could not be saved. Your draft is still here; try again.',
+    });
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content:
+        'Your post could not be saved. Your draft is still here; try again.',
+      type: 'error',
+    });
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to update post',
+      updateError
+    );
+    consoleErrorSpy.mockRestore();
   });
 });

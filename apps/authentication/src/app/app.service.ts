@@ -1,3 +1,5 @@
+import { isRollingSessionApp } from '@optimistic-tanuki/models';
+import { assertRollingSession } from '../tokens/session-activity';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken, InjectRepository } from '@nestjs/typeorm';
@@ -22,6 +24,9 @@ import { KeyService } from './key.service';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import { randomBytes } from 'crypto';
 import { authenticator } from 'otplib';
+import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
+import { AccountDeletionFenceService } from '../account-deletion/account-deletion-fence.service';
 
 @Injectable()
 export class AppService {
@@ -42,7 +47,10 @@ export class AppService {
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     @Inject('totp') private readonly totp: typeof authenticator,
     private readonly jsonWebToken: JwtService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly guardianPermissionService: GuardianPermissionService,
+    private readonly profileOwnershipVerifier: ProfileOwnershipVerifier,
+    private readonly accountDeletionFence: AccountDeletionFenceService
   ) {}
 
   private normalizeEmail(email: string): string {
@@ -132,6 +140,7 @@ export class AppService {
       if (!user) {
         throw new RpcException('User not found');
       }
+      await this.accountDeletionFence.assertActiveAccount(user.id);
 
       this.l.debug(`Found user ID ${user.id} for email ${normalizedEmail}`);
       return user.id;
@@ -156,6 +165,7 @@ export class AppService {
     });
 
     if (existingUser) {
+      await this.accountDeletionFence.assertActiveAccount(existingUser.id);
       await this.userRepo.update(existingUser.id, {
         firstName: fn,
         lastName: ln,
@@ -182,7 +192,14 @@ export class AppService {
     email: string,
     password: string,
     mfa?: string,
-    profileId?: string
+    profileId?: string,
+    appId?: string,
+    ageAssessment?: {
+      dateOfBirth?: string;
+      guardianEmail?: string;
+      context: import('../guardian-permissions/guardian-permission.service').GuardianPermissionContext;
+    },
+    deferSession = false
   ) {
     try {
       const normalizedEmail = this.normalizeEmail(email);
@@ -193,6 +210,7 @@ export class AppService {
       if (!user) {
         throw new RpcException('User not found');
       }
+      await this.accountDeletionFence.assertActiveAccount(user.id);
 
       // Per-account brute-force protection: reject while the account is locked.
       this.assertNotLocked(user);
@@ -228,6 +246,41 @@ export class AppService {
 
       // Successful authentication clears any accumulated failed attempts.
       await this.clearFailedLogins(user);
+      if (ageAssessment) {
+        const assessment =
+          await this.guardianPermissionService.assessUnassessedLogin({
+            userId: user.id,
+            email: normalizedEmail,
+            status: user.ageEligibilityStatus || 'legacy',
+            ageEligibilityEndsAt: user.ageEligibilityEndsAt,
+            dateOfBirth: ageAssessment.dateOfBirth,
+            guardianEmail: ageAssessment.guardianEmail,
+            context: ageAssessment.context,
+          });
+        if (assessment.pending) {
+          return {
+            message: assessment.sent
+              ? 'Guardian permission request sent.'
+              : 'Guardian permission email could not be sent. Please retry.',
+            data: {
+              guardianConsentPending: true,
+              guardianEmailSent: assessment.sent,
+            },
+          };
+        }
+      }
+      await this.guardianPermissionService.assertAccountAccess(user.id, appId);
+
+      if (deferSession) {
+        return {
+          message: 'Eligibility checked',
+          code: 0,
+          data: { eligibilityChecked: true },
+        };
+      }
+
+      const selectedProfileId =
+        await this.profileOwnershipVerifier.resolveSelection(userId, profileId);
 
       const tk = this.tokenIssuerService.issueForUser(
         {
@@ -236,7 +289,8 @@ export class AppService {
           lastName: user.lastName,
           email: normalizedEmail,
         },
-        profileId
+        selectedProfileId,
+        appId
       );
 
       delete user.keyData;
@@ -246,7 +300,7 @@ export class AppService {
         userId,
         user,
         revoked: false,
-        profileId: profileId || null,
+        profileId: selectedProfileId || null,
       };
       await this.tokenRepo.save(ntk);
 
@@ -266,7 +320,8 @@ export class AppService {
     ln: string,
     password: string,
     confirm: string,
-    bio = ''
+    bio = '',
+    ageEligibilityStatus: 'adult' | 'minor' | undefined = undefined
   ) {
     try {
       const normalizedEmail = this.normalizeEmail(email);
@@ -302,7 +357,11 @@ export class AppService {
       const existingUser = await this.userRepo.findOne({
         where: { email: normalizedEmail },
       });
-      this.l.log('Existing user check complete:', existingUser);
+      this.l.log(
+        existingUser
+          ? `Existing user found for bootstrap reconciliation: id=${existingUser.id}`
+          : 'No existing bootstrap user found'
+      );
       if (existingUser) {
         console.error('User already exists');
         throw new RpcException('User already exists');
@@ -322,6 +381,7 @@ export class AppService {
         keyData: { salt: hashData.salt },
         bio: bio,
         emailVerifiedAt: this.autoVerifyEmailsEnabled() ? new Date() : null,
+        ...(ageEligibilityStatus ? { ageEligibilityStatus } : {}),
       });
       this.l.log('User inserted successfully:', insertResult);
       const newUserId = insertResult.identifiers[0].id;
@@ -389,6 +449,7 @@ export class AppService {
     if (!user || !user.keyData) {
       throw new RpcException('User not found');
     }
+    await this.accountDeletionFence.assertActiveAccount(user.id);
 
     const valid = await this.saltedHashService.validateHash(
       oldPass,
@@ -413,11 +474,121 @@ export class AppService {
     return { message: 'Password reset successful', code: 0 };
   }
 
-  async validateToken(token: string) {
+  private oauthCallbackIdentity(data: {
+    userId: string;
+    profileId: string;
+    appId: string;
+  }) {
+    const uuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (
+      !data ||
+      typeof data.userId !== 'string' ||
+      !uuid.test(data.userId) ||
+      typeof data.profileId !== 'string' ||
+      !uuid.test(data.profileId) ||
+      typeof data.appId !== 'string' ||
+      !/^[a-z][a-z0-9_-]{0,127}$/.test(data.appId)
+    )
+      throw new RpcException('Invalid OAuth callback identity');
+    return {
+      userId: data.userId.toLowerCase(),
+      profileId: data.profileId.toLowerCase(),
+      appId: data.appId,
+    };
+  }
+
+  /** Internal RPC only. Transient Gateway stores receive a reference, never a bearer. */
+  async createOAuthCallbackSession(data: {
+    userId: string;
+    profileId: string;
+    appId: string;
+  }) {
+    const identity = this.oauthCallbackIdentity(data);
+    await this.accountDeletionFence.assertActiveAccount(identity.userId);
+    const issued = await this.issueToken(
+      identity.userId,
+      identity.profileId,
+      identity.appId
+    );
+    const row = await this.tokenRepo.findOne({
+      where: { tokenData: issued.data.newToken, revoked: false },
+    });
+    if (
+      !row ||
+      row.userId !== identity.userId ||
+      row.profileId !== identity.profileId
+    )
+      throw new RpcException('OAuth callback session unavailable');
+    return { sessionId: row.id, ...identity };
+  }
+
+  /** Resolve only after the Gateway has consumed its origin/nonce-bound one-time grant. */
+  async resolveOAuthCallbackSession(data: {
+    sessionId: string;
+    userId: string;
+    profileId: string;
+    appId: string;
+  }) {
+    const identity = this.oauthCallbackIdentity(data);
+    await this.accountDeletionFence.assertActiveAccount(identity.userId);
+    if (
+      typeof data.sessionId !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        data.sessionId
+      )
+    )
+      throw new RpcException('Invalid OAuth callback session');
+    const row = await this.tokenRepo.findOne({
+      where: {
+        id: data.sessionId.toLowerCase(),
+        userId: identity.userId,
+        profileId: identity.profileId,
+        revoked: false,
+      },
+    });
+    if (!row || row.revoked)
+      throw new RpcException('OAuth callback session unavailable');
+    const validation = await this.validateToken(row.tokenData, identity.appId);
+    const claims = validation.data as {
+      userId?: string;
+      profileId?: string;
+      appId?: string;
+    };
+    if (
+      !validation.isValid ||
+      claims.userId?.toLowerCase() !== identity.userId ||
+      claims.profileId?.toLowerCase() !== identity.profileId ||
+      claims.appId !== identity.appId
+    )
+      throw new RpcException('OAuth callback session binding mismatch');
+    await this.profileOwnershipVerifier.resolveSelection(
+      identity.userId,
+      identity.profileId
+    );
+    return { token: row.tokenData };
+  }
+
+  async validateToken(token: string, appId?: string, activity = false) {
     try {
-      const valid = await this.jsonWebToken.verifyAsync(token, {
-        secret: this.jwtSecret,
-      });
+      let valid: {
+        userId?: string;
+        appId?: string;
+        profileId?: string;
+        iat?: number;
+      };
+      try {
+        valid = await this.jsonWebToken.verifyAsync(token, {
+          secret: this.jwtSecret,
+        });
+      } catch (error) {
+        if ((error as Error)?.name !== 'TokenExpiredError') throw error;
+        valid = await this.jsonWebToken.verifyAsync(token, {
+          secret: this.jwtSecret,
+          ignoreExpiration: true,
+        });
+        if (!isRollingSessionApp(valid.appId)) throw error;
+      }
       if (!valid) {
         throw new RpcException('Invalid token');
       }
@@ -428,13 +599,34 @@ export class AppService {
         throw new RpcException('Token is invalid or revoked');
       }
       const userId = String((valid as { userId?: string }).userId || '');
+      if (!userId) throw new RpcException('Token user was not found');
+      await this.accountDeletionFence.assertActiveAccount(userId);
+      const tokenAppId = (valid as { appId?: string }).appId;
+      if (tokenAppId && appId && tokenAppId !== appId) {
+        throw new RpcException(
+          'Token application scope does not match request'
+        );
+      }
       const user = userId
         ? await this.userRepo.findOne({ where: { id: userId } })
         : null;
       if (!user) {
         throw new RpcException('Token user was not found');
       }
+      await this.guardianPermissionService.assertAccountAccess(
+        user.id,
+        tokenAppId || appId
+      );
+      const sessionExpiresAt = isRollingSessionApp(tokenAppId)
+        ? await assertRollingSession(
+            this.tokenRepo,
+            storedToken.id,
+            valid,
+            activity === true
+          )
+        : undefined;
       return {
+        ...(sessionExpiresAt ? { sessionExpiresAt } : {}),
         message: 'Token is valid',
         code: 0,
         data: valid,
@@ -454,6 +646,7 @@ export class AppService {
         where: { id: userId },
       });
       if (!existingUser) throw new RpcException('User not found');
+      await this.accountDeletionFence.assertActiveAccount(existingUser.id);
       if (existingUser.totpSecret)
         throw new RpcException('TOTP already set up');
       await this.userRepo.update(userId, { totpSecret: newSecret });
@@ -494,6 +687,7 @@ export class AppService {
     if (!user || !user.totpSecret) {
       throw new RpcException('User not found or TOTP not set up');
     }
+    await this.accountDeletionFence.assertActiveAccount(user.id);
     try {
       this.mfaService.validateToken(user.totpSecret, token);
     } catch (e) {
@@ -506,6 +700,7 @@ export class AppService {
     try {
       const user = await this.userRepo.findOne({ where: { id: userId } });
       if (!user) throw new RpcException('User not found');
+      await this.accountDeletionFence.assertActiveAccount(user.id);
 
       const template = this.renderSecurityEmail(
         'Multi-Factor Authentication Setup',
@@ -538,6 +733,7 @@ export class AppService {
     try {
       const user = await this.userRepo.findOne({ where: { id: userId } });
       if (!user) throw new RpcException('User not found');
+      await this.accountDeletionFence.assertActiveAccount(user.id);
 
       const template = this.renderSecurityEmail(
         'Security Alert: MFA Verification',
@@ -578,7 +774,7 @@ export class AppService {
     });
   }
 
-  async issueToken(userId: string, profileId?: string) {
+  async issueToken(userId: string, profileId?: string, appId?: string) {
     try {
       this.l.debug(
         `Issuing token for userId: ${userId}, profileId: ${profileId}`
@@ -588,9 +784,17 @@ export class AppService {
         relations: ['keyData'],
       });
       if (!user) throw new RpcException('User not found');
+      await this.accountDeletionFence.assertActiveAccount(user.id);
       if (!user.emailVerifiedAt) {
         throw new RpcException('EMAIL_VERIFICATION_REQUIRED');
       }
+      await this.guardianPermissionService.assertAccountAccess(user.id, appId);
+
+      const selectedProfileId =
+        await this.profileOwnershipVerifier.resolveSelection(
+          user.id,
+          profileId
+        );
 
       const tk = this.tokenIssuerService.issueForUser(
         {
@@ -599,7 +803,8 @@ export class AppService {
           lastName: user.lastName,
           email: user.email,
         },
-        profileId
+        selectedProfileId,
+        appId
       );
 
       // Save token
@@ -608,7 +813,7 @@ export class AppService {
         userId: user.id,
         user,
         revoked: false,
-        profileId: profileId || null,
+        profileId: selectedProfileId || null,
       };
       await this.tokenRepo.save(ntk);
 

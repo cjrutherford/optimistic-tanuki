@@ -34,6 +34,8 @@ export class LoginComponent implements OnDestroy, OnInit {
   private readonly messageService = inject(MessageService);
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
+  errorMessage = '';
+  enabledOAuthProviders: string[] = [];
   themeSub?: Subscription;
   themeStyles!: {
     backgroundColor: string;
@@ -76,60 +78,49 @@ export class LoginComponent implements OnDestroy, OnInit {
       const config: any = await this.http.get('/api/oauth/config').toPromise();
       if (config && this.oauthService) {
         this.oauthService.configureProviders(config);
+        this.enabledOAuthProviders = this.oauthService.getEnabledProviders();
       }
     } catch (e) {
-      console.log('OAuth config not loaded from server, using defaults');
+      console.log(
+        'OAuth configuration unavailable; provider buttons remain hidden'
+      );
     }
   }
 
   async onSubmit($event: LoginType) {
     const event = $event as any;
-    console.log(event);
+    this.errorMessage = '';
     const loginRequest: LoginRequest = {
       email: event.email,
       password: event.password,
+      dateOfBirth: event.dateOfBirth,
+      guardianEmail: event.guardianEmail,
     };
     try {
       const response = await this.authStateService.login(loginRequest);
-      console.log(response);
-      if (this.authStateService.isAuthenticated) {
-        const decoded = this.authStateService.getDecodedTokenValue();
-        // If profileId is empty string, show only the profile creation modal
-        if (decoded && decoded.profileId === '') {
-          this.router.navigate(['/settings'], {
-            state: {
-              showProfileModal: false,
-              profileMessage: 'Please create your profile to continue.',
-            },
-          });
-          return;
-        }
-        // Otherwise load profiles and redirect accordingly
-        await this.profileService.getAllProfiles();
-        const currentProfiles = this.profileService.getCurrentUserProfiles();
-        if (!currentProfiles.length) {
-          this.router.navigate(['/settings'], {
-            state: {
-              showProfileModal: true,
-              profileMessage:
-                'No profiles found. Please create a profile to continue.',
-            },
-          });
-          this.messageService.addMessage({
-            content: 'No profiles found. Please create a profile to continue.',
-            type: 'warning',
-          });
-        } else {
-          this.profileService.selectProfile(currentProfiles[0]);
-          this.router.navigate(['/feed']);
-          this.messageService.addMessage({
-            content: 'Login successful! Welcome back.',
-            type: 'success',
-          });
-        }
+      if (response?.data?.['guardianConsentPending']) {
+        this.errorMessage =
+          response?.data?.['guardianEmailSent'] === true
+            ? 'A parent or guardian permission request was sent. Sign in again after they approve it.'
+            : 'The guardian permission email could not be sent. Check the guardian address and try again.';
+        return;
       }
-    } catch (err) {
-      console.error(err);
+
+      if (this.authStateService.isAuthenticated) {
+        await this.completeAuthenticatedLogin();
+      }
+    } catch (err: any) {
+      const detail = err?.error?.message || err?.message || '';
+      this.errorMessage =
+        err?.status === 401
+          ? 'Invalid email or password. Please try again.'
+          : String(detail).includes('AGE_CHECK_REQUIRED')
+          ? 'For this newly registered account, enter your date of birth to continue.'
+          : String(detail).includes('GUARDIAN_EMAIL_REQUIRED')
+          ? 'A parent or guardian email is required to request permission.'
+          : String(detail).includes('AGE_UNDER_13')
+          ? 'Sign in is unavailable under age 13.'
+          : 'Sign-in could not be completed. Please try again.';
     }
   }
 
@@ -138,7 +129,8 @@ export class LoginComponent implements OnDestroy, OnInit {
       const result = await this.oauthService?.initiateOAuthLogin(
         event.provider,
         'client-interface',
-        true
+        true,
+        event.dateOfBirth
       );
       if (!result) {
         this.messageService.addMessage({
@@ -219,7 +211,21 @@ export class LoginComponent implements OnDestroy, OnInit {
       return;
     }
 
-    this.profileService.selectProfile(currentProfiles[0]);
+    const sessionProfileId = decoded?.profileId;
+    const sessionProfile = currentProfiles.find(
+      (profile) => profile.id === sessionProfileId
+    );
+    if (!sessionProfile) {
+      this.errorMessage =
+        'Your active profile could not be loaded. Please sign in again.';
+      this.messageService.addMessage({
+        content: this.errorMessage,
+        type: 'error',
+      });
+      return;
+    }
+
+    this.profileService.selectProfile(sessionProfile);
     this.router.navigate(['/feed']);
     this.messageService.addMessage({
       content: 'Login successful! Welcome back.',

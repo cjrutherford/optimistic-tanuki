@@ -3,11 +3,14 @@ import { Logger, ServiceUnavailableException } from '@nestjs/common';
 import {
   ObjectLockMode,
   S3Client,
+  DeleteObjectsCommand,
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   GetBucketVersioningCommand,
   GetObjectLockConfigurationCommand,
+  HeadObjectCommand,
+  ListObjectVersionsCommand,
 } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
 import {
@@ -70,6 +73,27 @@ describe('S3Service', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  it('returns the S3 body stream and forwards cancellation to the SDK request', async () => {
+    const body = Readable.from([Buffer.from('first'), Buffer.from('second')]);
+    const signal = new AbortController().signal;
+    mockS3Client.send.mockResolvedValueOnce({ Body: body });
+
+    const result = await service.getObjectStream('media/key', signal);
+
+    expect(result).toBe(body);
+    expect(mockS3Client.send).toHaveBeenCalledWith(
+      expect.any(GetObjectCommand),
+      { abortSignal: signal }
+    );
+  });
+
+  it('propagates an S3 body request failure instead of returning partial media', async () => {
+    const failure = new Error('controlled S3 stream failure');
+    mockS3Client.send.mockRejectedValueOnce(failure);
+
+    await expect(service.getObjectStream('media/key')).rejects.toBe(failure);
   });
 
   describe('uploadObject', () => {
@@ -161,6 +185,145 @@ describe('S3Service', () => {
 
       await expect(service.deleteObject(key)).rejects.toThrow('Delete failed');
       expect(mockLogger.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('shared-store custody probe', () => {
+    const nonce = '9a5bfbf1-4f4a-4aa9-8fab-7d769ee03232';
+    it('writes exclusively, reads the exact bounded nonce and returns no credentials', async () => {
+      mockS3Client.send
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({ Body: Readable.from([Buffer.from(nonce)]) });
+      const written = await service.custodyProbe(nonce, 'write');
+      expect(written).toMatch(/^s3:[0-9a-f]{64}$/);
+      expect(written).not.toContain(s3Options.secretAccessKey);
+      expect(PutObjectCommand).toHaveBeenCalledWith(
+        expect.objectContaining({
+          Key: '.ot-store-probe/' + nonce,
+          Body: nonce,
+          IfNoneMatch: '*',
+        })
+      );
+      await expect(service.custodyProbe(nonce, 'read')).resolves.toBe(written);
+    });
+    it('rejects a mismatched or oversized response and invalid nonce without a request', async () => {
+      await expect(service.custodyProbe('../unsafe', 'read')).rejects.toThrow(
+        'CUSTODY_PROBE_INVALID'
+      );
+      expect(mockS3Client.send).not.toHaveBeenCalled();
+      mockS3Client.send.mockResolvedValueOnce({
+        Body: Readable.from([Buffer.alloc(37)]),
+      });
+      await expect(service.custodyProbe(nonce, 'read')).rejects.toThrow(
+        'CUSTODY_PROBE_INVALID'
+      );
+      mockS3Client.send.mockResolvedValueOnce({
+        Body: Readable.from([Buffer.from(nonce.replace('9', '8'))]),
+      });
+      await expect(service.custodyProbe(nonce, 'read')).rejects.toThrow(
+        'CUSTODY_PROBE_INVALID'
+      );
+    });
+    it('removes the probe through version-aware purge with independent absence readback', async () => {
+      const key = '.ot-store-probe/' + nonce;
+      mockS3Client.send
+        .mockResolvedValueOnce({ Versions: [{ Key: key, VersionId: 'v1' }] })
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({ Versions: [] })
+        .mockRejectedValueOnce(
+          Object.assign(new Error('absent'), {
+            name: 'NotFound',
+            $metadata: { httpStatusCode: 404 },
+          })
+        );
+      await expect(service.custodyProbe(nonce, 'remove')).resolves.toMatch(
+        /^s3:[0-9a-f]{64}$/
+      );
+      expect(DeleteObjectsCommand).toHaveBeenCalledWith(
+        expect.objectContaining({
+          Delete: { Objects: [{ Key: key, VersionId: 'v1' }], Quiet: false },
+        })
+      );
+    });
+  });
+
+  describe('purgeObjectVersions', () => {
+    it('paginates versions and delete markers and only deletes the exact key', async () => {
+      mockS3Client.send
+        .mockResolvedValueOnce({
+          Versions: [{ Key: 'asset', VersionId: 'v1' }],
+          DeleteMarkers: [
+            { Key: 'asset', VersionId: 'd1' },
+            { Key: 'asset-neighbor', VersionId: 'neighbor' },
+          ],
+          IsTruncated: true,
+          NextKeyMarker: 'asset',
+          NextVersionIdMarker: 'd1',
+        })
+        .mockResolvedValueOnce({
+          Versions: [{ Key: 'asset', VersionId: 'v2' }],
+          IsTruncated: false,
+        })
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({ Versions: [], DeleteMarkers: [] })
+        .mockRejectedValueOnce(
+          Object.assign(new Error('missing'), {
+            name: 'NotFound',
+            $metadata: { httpStatusCode: 404 },
+          })
+        );
+      await service.purgeObjectVersions('asset');
+      const deletes = mockS3Client.send.mock.calls.filter(
+        ([command]: any[]) => command instanceof DeleteObjectsCommand
+      );
+      expect(deletes).toHaveLength(1);
+      expect(
+        (DeleteObjectsCommand as unknown as jest.Mock).mock.calls[0][0].Delete
+          .Objects
+      ).toEqual([
+        { Key: 'asset', VersionId: 'v1' },
+        { Key: 'asset', VersionId: 'd1' },
+        { Key: 'asset', VersionId: 'v2' },
+      ]);
+      expect(
+        (ListObjectVersionsCommand as unknown as jest.Mock).mock.calls[1][0]
+      ).toMatchObject({
+        KeyMarker: 'asset',
+        VersionIdMarker: 'd1',
+      });
+      expect(mockS3Client.send.mock.calls.at(-1)[0]).toBeInstanceOf(
+        HeadObjectCommand
+      );
+    });
+
+    it('fails on partial delete response and permits retry', async () => {
+      mockS3Client.send
+        .mockResolvedValueOnce({
+          Versions: [{ Key: 'asset', VersionId: 'v1' }],
+        })
+        .mockResolvedValueOnce({
+          Errors: [{ Key: 'asset', VersionId: 'v1', Code: 'AccessDenied' }],
+        });
+      await expect(service.purgeObjectVersions('asset')).rejects.toThrow(
+        'partially failed'
+      );
+
+      mockS3Client.send
+        .mockReset()
+        .mockResolvedValueOnce({
+          Versions: [{ Key: 'asset', VersionId: 'v1' }],
+        })
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({ Versions: [] })
+        .mockRejectedValueOnce(
+          Object.assign(new Error('missing'), {
+            name: 'NotFound',
+            $metadata: { httpStatusCode: 404 },
+          })
+        );
+      await expect(
+        service.purgeObjectVersions('asset')
+      ).resolves.toBeUndefined();
     });
   });
 

@@ -25,6 +25,12 @@ describe('ProfileCommands', () => {
   it('Should Have a GetAll command', () => {
     expect(ProfileCommands.GetAll).toBe('GetAll:Profile');
   });
+
+  it('Should Have an internal owned-profile-ID page command', () => {
+    expect(ProfileCommands.GetOwnedAccountProfileIdPage).toBe(
+      'Get:OwnedAccountProfileIdPage'
+    );
+  });
 });
 
 describe('ProjectCommands', () => {

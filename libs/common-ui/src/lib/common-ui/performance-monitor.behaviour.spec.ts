@@ -1,11 +1,14 @@
 import {
   startPerformanceMonitoring,
+  startGatedPerformanceMonitoring,
+  setPerformanceMonitoringEligibility,
   PerformanceRumPayload,
 } from './performance-monitor';
 
 /** One `new PerformanceObserver(...).observe({ type })` registration. */
 interface ObserverRegistration {
   type: string;
+  buffered: boolean | undefined;
   emit: (entries: Partial<PerformanceEntry>[]) => void;
   disconnect: jest.Mock<void, []>;
 }
@@ -49,6 +52,7 @@ describe('startPerformanceMonitoring', () => {
         }
         registrations.push({
           type: init.type,
+          buffered: init.buffered,
           emit: (entries) =>
             this.callback({ getEntries: () => entries as PerformanceEntry[] }),
           disconnect: this.disconnect,
@@ -137,6 +141,46 @@ describe('startPerformanceMonitoring', () => {
       delete (globalThis as unknown as { fetch?: unknown }).fetch;
     }
     window.history.replaceState({}, '', '/');
+  });
+
+  it('does not collect buffered metrics before an app-scoped session is verified and discards queued metrics on logout', () => {
+    const gate = startGatedPerformanceMonitoring({
+      appId: 'client-interface',
+      flushDelayMs: 4000,
+    });
+
+    expect(registrations).toHaveLength(0);
+    window.dispatchEvent(new Event('pagehide'));
+    expect(sendBeacon).not.toHaveBeenCalled();
+
+    setPerformanceMonitoringEligibility('client-interface', true);
+
+    expect(registrations).toHaveLength(4);
+    expect(
+      registrations.every((registration) => registration.buffered === false)
+    ).toBe(true);
+    expect(performance.getEntriesByType).not.toHaveBeenCalled();
+    registrations[0].emit([{ startTime: 300 } as Partial<PerformanceEntry>]);
+
+    setPerformanceMonitoringEligibility('client-interface', false);
+    window.dispatchEvent(new Event('pagehide'));
+
+    expect(sendBeacon).not.toHaveBeenCalled();
+    gate.stop();
+  });
+
+  it('starts a fresh observer after a verified session is restored again', () => {
+    const gate = startGatedPerformanceMonitoring({ appId: 'local-hub' });
+
+    setPerformanceMonitoringEligibility('local-hub', true);
+    expect(registrations).toHaveLength(4);
+
+    setPerformanceMonitoringEligibility('local-hub', false);
+    setPerformanceMonitoringEligibility('local-hub', true);
+    expect(registrations).toHaveLength(8);
+
+    gate.stop();
+    setPerformanceMonitoringEligibility('local-hub', false);
   });
 
   it('instruments nothing and returns an inert teardown when PerformanceObserver is unavailable', () => {

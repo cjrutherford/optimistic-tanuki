@@ -1,0 +1,96 @@
+{
+  "slice": "D08",
+  "date": "2026-10-25",
+  "scope": ["client-interface", "local-hub"],
+  "status": "verified-local-owner-component",
+  "evidence": {
+    "batchDispositionUnit": 4,
+    "resolvedPlaceholderUnit": 3,
+    "realAuthForumWorkspaceTcpPostgres": "1 combined scenario, 2 owner flows, 3 migrated databases",
+    "preE2E": 41,
+    "build": "Forum and Workspace production passed; affected Forum build repeated after late-context fix",
+    "lint": "Forum Workspace Models Constants authentication-e2e passed; affected final paths passed",
+    "migration": "1792953099614 owning CLI generated; reviewed frozen producer SQL; fresh up/down/up passed",
+    "migrationGovernance": "passed",
+    "review": "Independent source-only batch GO; subsequent Forum late-context delta root-reviewed and red/green PostgreSQL verified"
+  },
+  "independentFinalCounts": {
+    "d00": {
+      "account_deletion_operations": 0,
+      "account_deletion_write_fence": 0,
+      "account_export_jobs": 0,
+      "auth_action_token": 0,
+      "guardian_permission": 0,
+      "guardian_policy_notice": 0,
+      "key_datum": 0,
+      "oauth_provider": 0,
+      "token": 0,
+      "user_entity": 0
+    },
+    "d07_forum": {
+      "account_deletion_write_fence": 0,
+      "forum_link": 0,
+      "forum_moderation_action": 0,
+      "forum_post": 0,
+      "forum_post_links_forum_link": 0,
+      "forum_report": 0,
+      "thread": 0,
+      "topic": 0
+    },
+    "d08_workspace": {
+      "account_deletion_write_fence": 0,
+      "workspaces": 0
+    }
+  },
+  "teardown": {
+    "removedOwnLabeledContainerAndVolumes": true,
+    "privateContainersRemaining": 0,
+    "protectedFilesUnchanged": 43,
+    "independentDatabaseCount": 3,
+    "independentTableCount": 20,
+    "allApplicationCountsZero": true
+  },
+  "sourceHashes": {
+    "apps/authentication-e2e/jest.deletion-private.config.ts": "13d52e57dc693dcae83b67b244224725a75e29c03d95db18e45571f3b8f04d69",
+    "apps/authentication-e2e/src/authentication/forum-workspace-account-deletion.spec.ts": "5a6cee119d9a4b794b1a29d3736c302495e9130f551b50773a2d01246f4a33ba",
+    "apps/workspace/migrations/1792953099614-AccountDeletionWriteFence.ts": "c10b9dfcb7cc3db0724d411a9dec622b6fc23112138976a91658b83398b5d99a",
+    "apps/workspace/project.json": "94edbfdf9e3cae5e508b47bad0fa345b7fb35cdbe3becfeb2471da2d35c885ba",
+    "apps/workspace/src/app/account-deletion-owner.controller.ts": "7399c6f5b701ea0063b14be7e1d79be856b898cf62a36213269c4eea0bac340d",
+    "apps/workspace/src/app/account-deletion-owner.service.ts": "b6b9528c6667dfc11170bbce41b98755d665d5d3a115d148ffed06ec6d6bd722",
+    "apps/workspace/src/app/account-deletion-policy.ts": "a94f588b439de2bda1f8073d36a0a3b02445fbabb343a2a8f934ba68b1c7f71f",
+    "apps/workspace/src/app/app.module.ts": "17585a6a53973489cc0dc863837441c0c32520ae874f52b3f87c83f063b0ed3c",
+    "apps/workspace/src/app/loadDatabase.ts": "65edf1ca666e650fc1e1c6da3871bed0e2aad6fe6304cf9ca86450464d9e981a",
+    "apps/workspace/src/app/staticDatabase.ts": "1230a945bf16a53cf94011f5398af3f9e4504d6d29693745001d480056ff5962",
+    "apps/workspace/src/app/workspace-account-export-dispositions.json": "af2282728fca9ad99e815f81630b7a307c33a0bd70f6df17aa5ab96e85f1b5b8",
+    "apps/workspace/src/app/workspace-account-export-dispositions.spec.ts": "315077e4b71b6f60edc56dcdb5e00404b9785851e471bf048fb84392a30db9c9",
+    "apps/workspace/src/app/workspace-account-export-dispositions.ts": "fde6194bbe9e60214a910e331721a0ff4c93dac298a1993c0a179985b02eace9",
+    "apps/workspace/src/app/workspace-dispositions.postgres.spec.ts": "df66ac24eeae2170ba5ab6071da51ee3229a809d67a26cedbe5385e099379903",
+    "apps/workspace/src/entities/workspace.entity.ts": "f6d2b1268c20764264eaf1d9baaa54f44671b7d1557b3710ec73e08dde5afcc8",
+    "libs/constants/src/lib/libs/workspace.ts": "f05dda91acd09c3082b417eacca6e43da07727668df65704a59d1b340207d96c",
+    "libs/models/src/lib/libs/workspaces/workspace-deletion-placeholder.spec.ts": "91ace0d6353ac73e4b66d68ff9ad470295edd9e5ad9719e31f662114aab9b21b",
+    "libs/models/src/lib/libs/workspaces/workspace.dto.ts": "c8f225282d2321b69b54e500c276d8f92c0b7678b3aa41118d5a0a2c735f07d0"
+  },
+  "logHashes": {
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d07-d08-private-final.log": "cb2de9013aad1df03881f363bf6505ea78e5c26bb4a3ee3ca7e860e8690207a4",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d07-late-context-red.log": "9384cda046e258761bfb7d3e3d92896cea52ce1935e8deb36215ff929430a1f7",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/dispositions-final.log": "693908e074fd92ba1b1ceaf06ec6b22d81af5a4e6afdf438fb1f3d414bf0a33b",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/model-unit.log": "276bb0bb5ce9e9ab3ee5e7b8db301cfe4eb12661eee984a48357c5d6e9f83621",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/build.log": "f4f678eda334686843a5758284bdde9963dc17111f4a741c69651db187d56295",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/forum-final-build.log": "93a842713b04ead5fb7ceaaa98932547a554c910ed5fb25997d5c62b3475fddb",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/lint.log": "b99c36bbc270a9cedc67e70428f0f9b278452d45e0aeac1bcb36159fcff12f2e",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/final-lint.log": "133673855e9d40d38b4798f1b504b8987c4aa72e62c5c6dc74cd130d9f2d2fd4",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/migration-governance-final.log": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/pre-e2e.log": "613843a41f10adf9bcf7d55a57ed32a8abf8d26dd0a3b3a4e95aa4b4d822a3c7",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/source-review.md": "f7957d02e6e6b7fecfc441028c0ec910c457a842a20001f7bcc91d983a245e9a",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d08-down-declared.log": "b2965c24724fd282518811e426c1307df59f922fd4b1038d9cb18ea1e36c70ec",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d08-up-declared.log": "f13d61f56d8b28c75a4f4838bace07c25582e92b39c52d0f6aec319219bcde31"
+  },
+  "limitations": [
+    "Frozen Profile scope and other-owner fence acknowledgements are fixture premises.",
+    "Root identity/key removal and global coordinator/recovery/public controls remain later slices.",
+    "No whole-product browser, external-provider/backup or deployed qualification is claimed.",
+    "Stewardship erasure preserves shared source content; owned slug/display label become inert and only stable ID/source-based routing is preserved.",
+    "Populated downgrade must preserve duplicate erased-source history when restoring the old unique index."
+  ],
+  "targetRepair": "Required CLI generation name supplied; missing reversal target declared using the owning datasource."
+}

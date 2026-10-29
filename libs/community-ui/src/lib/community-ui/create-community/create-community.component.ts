@@ -55,6 +55,9 @@ import { CreateAssetDto } from '@optimistic-tanuki/ui-models';
   styleUrls: ['./create-community.component.scss'],
 })
 export class CreateCommunityComponent extends Variantable {
+  private static nextUploadId = 0;
+  readonly logoInputId = `community-logo-${++CreateCommunityComponent.nextUploadId}`;
+  readonly bannerInputId = `community-banner-${++CreateCommunityComponent.nextUploadId}`;
   private readonly communityService = inject(CommunityService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);

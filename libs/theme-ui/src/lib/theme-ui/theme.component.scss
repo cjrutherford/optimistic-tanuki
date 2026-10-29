@@ -254,8 +254,9 @@ input:checked + .slider {
   background-color: color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
-input:focus + .slider {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 10%, transparent);
+.switch input:focus-visible + .slider {
+  outline: 3px solid var(--foreground);
+  outline-offset: 3px;
 }
 
 input:checked + .slider:before {

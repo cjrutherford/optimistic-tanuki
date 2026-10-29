@@ -1,3 +1,4 @@
+import { installPayloadFreeLogging } from '@optimistic-tanuki/logger';
 import { APP_BASE_HREF } from '@angular/common';
 import { CommonEngine, isMainModule } from '@angular/ssr/node';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -16,6 +17,8 @@ import {
   getRequestUrl,
   isClientInterfaceProxyTrusted,
 } from './server-ssr';
+
+installPayloadFreeLogging();
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');

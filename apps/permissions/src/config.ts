@@ -11,6 +11,10 @@ export declare type PermissionsConfigType = {
     password: string;
     database: string;
   };
+  services: {
+    authentication: { host: string; port: number };
+    profile: { host: string; port: number };
+  };
 };
 
 const loadConfig = () => {
@@ -36,6 +40,23 @@ const loadConfig = () => {
   if (process.env.LISTEN_PORT) {
     configData.listenPort = parseInt(process.env.LISTEN_PORT, 10);
   }
+
+  configData.services = configData.services ?? {
+    authentication: { host: 'authentication', port: 3001 },
+    profile: { host: 'profile', port: 3002 },
+  };
+  configData.services.authentication.host =
+    process.env.SERVICE_AUTHENTICATION_HOST ||
+    configData.services.authentication.host;
+  configData.services.authentication.port = Number(
+    process.env.SERVICE_AUTHENTICATION_PORT ||
+      configData.services.authentication.port
+  );
+  configData.services.profile.host =
+    process.env.SERVICE_PROFILE_HOST || configData.services.profile.host;
+  configData.services.profile.port = Number(
+    process.env.SERVICE_PROFILE_PORT || configData.services.profile.port
+  );
 
   return configData;
 };

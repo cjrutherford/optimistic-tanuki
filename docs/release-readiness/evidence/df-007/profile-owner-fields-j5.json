@@ -1,0 +1,94 @@
+{
+  "owner": "profile",
+  "scope": "Five retained Profile migration-owned tables plus same-snapshot derived identities, text and media. Local reader proof only; no remote handle/job/global inventory acceptance.",
+  "sources": [
+    "profileIdentity",
+    "profileMedia",
+    "profileText",
+    "timelineText",
+    "profile",
+    "timeline",
+    "guardianActivity",
+    "legacyGoalText",
+    "legacyGoal",
+    "legacyProjectText",
+    "legacyProject"
+  ],
+  "tables": {
+    "profile": {
+      "retained": [
+        "id",
+        "userId",
+        "appScope",
+        "profileName",
+        "profilePic",
+        "coverPic",
+        "bio",
+        "location",
+        "occupation",
+        "interests",
+        "skills",
+        "blogRole",
+        "created_at"
+      ],
+      "fieldEncoding": "SQL-bounded prefixes/length metadata; large strings in ordered code-point chunks; exact SQL timestamp text; inline PNG/JPEG as decoded base64 byte chunks with SHA-256; original headers retained. Unsupported role/media values fail capture.",
+      "relationship": "timeLineEvents represented by account-owned Timeline rows, not eager relations"
+    },
+    "timeline": {
+      "retained": [
+        "id",
+        "userId",
+        "title",
+        "description",
+        "timeStamp",
+        "eventType"
+      ],
+      "relatedProfileId": "Owned reference retained; foreign reference explicitly redacted without UUID",
+      "relatedGoalIdAndRelatedProjectId": "Null preserved; owned target IDs included as typed references after ownership joins; foreign target IDs redacted.",
+      "timestamp": "Exact SQL timestamp text, including microseconds; no inferred host timezone"
+    },
+    "guardian_profile_activity": {
+      "retained": ["id", "appId", "operation", "createdAt"],
+      "derived": ["accountId", "role"],
+      "dependentOnly": ["profileId", "changedFieldNames"],
+      "omitted": [
+        "actorUserId",
+        "dependentUserId",
+        "guardian-side profileId",
+        "guardian-side changedFieldNames"
+      ],
+      "verification": "Exactly one role and profile owner matches dependent; operation allowlist; dependent array bounded before driver read; all retained rows, no preview row cap"
+    },
+    "goal": {
+      "retained": [
+        "id",
+        "name",
+        "description",
+        "target",
+        "progress",
+        "userId",
+        "startDate",
+        "endDate",
+        "completed",
+        "created_at"
+      ],
+      "references": ["relatedProfileId", "relatedProjectId"],
+      "fieldEncoding": "Complete text inline or bounded ordered Unicode chunks; exact SQL timestamps/microseconds/nulls and stored integers. References include only verified owned IDs; foreign references explicitly redacted."
+    },
+    "project": {
+      "retained": ["id", "name", "description", "userId", "created_at"],
+      "references": ["relatedProfileId", "timeLineEventsId", "goalsId"],
+      "fieldEncoding": "Complete text inline or bounded ordered Unicode chunks; exact SQL timestamp. References include only verified owned IDs; foreign references explicitly redacted. Circular references do not trigger eager traversal."
+    }
+  },
+  "legacyStores": {
+    "goal": "Export adapter integrated in same capture snapshot",
+    "project": "Export adapter integrated in same capture snapshot",
+    "timelineLegacyLinks": "Ownership-verified projection implemented",
+    "foreignLegacyRows": "Excluded without mutation",
+    "migration": "apps/profile/migrations/1730836292692-initial.ts",
+    "guard": "Temporary unsupported-data guard removed only after adapters and actual PG proof"
+  },
+  "media": "Strict canonical base64 and PNG/JPEG signatures, decoded-byte counts/hash. External/asset/opaque references preserved without fetching; no Assets/Videos byte coverage or full image-codec validation claimed.",
+  "ownerAcceptance": false
+}

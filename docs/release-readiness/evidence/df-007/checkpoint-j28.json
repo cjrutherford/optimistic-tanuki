@@ -1,0 +1,162 @@
+{
+  "accepted": true,
+  "slice": "DF-007-J28",
+  "status": "locally-verified-integration",
+  "date": "2026-10-22",
+  "baseRevision": "abb54c1bee2825682555ab43aa0210011f4c529f",
+  "sourceManifestSha256": "55c37ee0c1dd690f199117019919a92de3f428f03fa524de5281cdd8a53d4c77",
+  "sourceHashes": {
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "a43d9c736d865a2886838d16eb9a45641ef5085af63d2edf04178eec2a95112d",
+    "apps/authentication-e2e/src/authentication/assets-account-export.spec.ts": "916afd48df774b06fbdb66fca1713c07731a1eaeed6bc100c5639759962594c1",
+    "apps/authentication-e2e/src/authentication/forum-account-export.spec.ts": "0899d81c9731b1a504762aa37fad8177f91818c34126c29b150a5086a35580b1",
+    "apps/authentication-e2e/src/authentication/permissions-account-export.spec.ts": "b996e61ce31928fe6ee94af3e27e8e297935609e35b92ac3b98c3b636da4e861",
+    "apps/authentication-e2e/src/authentication/social-account-export.spec.ts": "fba80a2ccd379b311112efd245fd8fd9864f51870a298389106a06bf61bcccec",
+    "apps/authentication-e2e/src/authentication/videos-account-export.spec.ts": "f46342884b384f1d231634bd2454467eb76e820b2fb433ce1d4250ff58ddddc0",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "d68b2241f960058d486239bf7744a6f84e2d5843df5c2d05cc4c17c28f60f1fa",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "7fd427f23b762b301debf9046cb02bc26c14260396bbfa3b0979acb035d99189",
+    "apps/authentication/src/account-export-jobs/forum-account-export-snapshot.client.spec.ts": "1ac5872e2cdccb359398c9be74ccbecbd8d42f2245d38ac8d7b02ddcd83a89e2",
+    "apps/authentication/src/account-export-jobs/forum-account-export-snapshot.client.ts": "cd3e89dd3ce4a349e973b7a2cd922f5a4478ff42694549dd5e9f51567b5444b2",
+    "apps/authentication/src/app/app.module.ts": "f29bec3a37c2b0622e5d7dcbce77a7a75e5a730e2b72408bd637652eb50de581",
+    "apps/forum/src/app/account-export-snapshot.controller.spec.ts": "db7eefa12bb6b6761b687122de8c22fef58f6663eff71c0272b05ee81b59dfb3",
+    "apps/forum/src/app/account-export-snapshot.controller.ts": "49078aa2ad2e27f50e6ed9264245e88e06e1175ac8af4da802cd50d79ca24e9d",
+    "apps/forum/src/app/account-export-snapshot.service.spec.ts": "2f7939b54d369b89f47d66852870d7ad88708e36254028b1b7670948a7a33685",
+    "apps/forum/src/app/account-export-snapshot.service.ts": "403535258d0f6dbe300d59eaada5014bc940a9d0cd127d4822a0fda5b9ebb4a5",
+    "apps/forum/src/app/app.module.ts": "bcf2c39b094c6826b2f5d6a0275eb6ade7660fe33b44767fa337150cb62c4eec",
+    "libs/constants/src/lib/libs/forum.ts": "f5fc3c2003f87ae54b27c18638bdab3dba114ef80aac095c4e93780478efb02a",
+    "libs/models/src/lib/libs/account-export/account-export-snapshot.contract.ts": "1e55cedc81f7f8343af9f124b8827e59ba9ca11c7d7ee2ae2c6296cf67568d67",
+    "libs/storage/src/lib/account-export-profile-bound-snapshot.client.ts": "d5c951f53c0edfa64996527a3afd6bd60d8b5fdcab7a1061e4a02267fe9aca99"
+  },
+  "runtime": {
+    "attempt": "attempt-2",
+    "result": "PASS",
+    "testsPassed": 1,
+    "testsSkipped": 0,
+    "composeSha256": "0f252a7ce4360d3aa11754e5b0b4d040bae64ecc6b6add76ecb537f6da68bc50",
+    "fixtureConfigHashes": {
+      "apps/profile/src/assets/config.yaml": "4f322561d91db3aabcf8a5d6daf84b397e1f2a02984cd6dedad0bc72e4e67307",
+      "apps/permissions/src/assets/config.yaml": "461009841bd17af6f44b70dfb78a1573365b1deaa8db97e083c38c283e1b40a0",
+      "apps/social/src/assets/config.yaml": "59c4f45bd734c88ade4f46d72ec2537952861ea0207f716ec34365fa0c392a46",
+      "apps/forum/src/assets/config.yaml": "25d59375fe2dcdd6a9c291d33a5ab3ce2b55becf8783cfe998800262a7a5c728",
+      "apps/assets/src/assets/config.yaml": "70a106e2f559f0795fc2f78b8d9b04280dcda19558e2f78cf656fade62ddf138",
+      "apps/videos/src/assets/config.yaml": "270df8cae878a9c3add87652ff01332c36c10b154d8246c2854029c00afac013"
+    },
+    "dockerCopyInputsSha256": "4922d4b76f1dc42ba23bab5b73fe7ccaeb9c680b74a089b0316836ea11b2ec44",
+    "copyInputCounts": {
+      "authentication": 3036,
+      "profile": 2982,
+      "assets": 2974,
+      "videos": 2980,
+      "permissions": 2977,
+      "social": 3087,
+      "forum": 2985
+    },
+    "sourceManifestSha256": "55c37ee0c1dd690f199117019919a92de3f428f03fa524de5281cdd8a53d4c77",
+    "imageIds": {
+      "authentication": "sha256:d5205ace66f4fb158f64cd1b093cea298ba8684a59a72e2837c96b0e335d6e99",
+      "profile": "sha256:296d00d716caaf87b02ee34be5e26e52acad8eba37ba7ebf6fc5044ad087db04",
+      "assets": "sha256:663ca2505ec9b4eba45091434658ff5a2c8b8f182fd51225b143648511a26ceb",
+      "videos": "sha256:6ff1d9ce034f6f576f6bf01684789fbb9b3437e9b9cdedc228e7332cd2bccb02",
+      "permissions": "sha256:fd071f0cad77d3bb12a51e0f5da5a17e5071a7cd27b23a789d130feabfd12ca6",
+      "social": "sha256:c18dbf1a370bea6d37cc65c6961c61cca26095fdac11e1c0a23e1e187ecd7aa3",
+      "forum": "sha256:fd2e450e67acd80602277e03662f78e9dd199ef9457b31573b2790ef365a0f0a",
+      "db-setup": "sha256:3f33cecc1a90bc154fd4cb6878bd498829414c85749c98230e53f93484cadcac"
+    },
+    "fixtureReportSha256": "9ae193fb1d7c6fdfd5acb19c4e3ef95fb85e8ca973f7e82eb1f24a672fb47fb3",
+    "runtimeResultSha256": "8fc46135e10b28959d29677fcde9c96794e0f5626bbd8d6bfc882e7bd1adef65"
+  },
+  "capture": {
+    "owners": [
+      "authentication",
+      "profile",
+      "assets",
+      "videos",
+      "permissions",
+      "social",
+      "forum"
+    ],
+    "failurePrefix": [
+      "authentication",
+      "profile",
+      "assets",
+      "videos",
+      "permissions",
+      "social"
+    ],
+    "forumRepresentativeRows": {
+      "Topic": 1,
+      "Thread": 1,
+      "ForumPost": 1,
+      "ForumLink": 1,
+      "ForumReport": 2,
+      "ForumModerationAction": 1
+    },
+    "allSevenDatabaseTableCountsRestored": true,
+    "databaseCountsSha256": "5b1261b38ac4f5dce3b2466557974740fda87a7de3fe64d0f73165481e6de3aa",
+    "independentDatabaseCountsSha256": "9ae193fb1d7c6fdfd5acb19c4e3ef95fb85e8ca973f7e82eb1f24a672fb47fb3",
+    "privateResources": {},
+    "protectedFilesExcluded": 43
+  },
+  "logs": {
+    "auth-job-final-root.log": {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/forum-integration/auth-job-final-root.log",
+      "sha256": "828559a935d16e543072e9a5e1bc7f4b52dfb6009c112495798c42a582c6e85c",
+      "bytes": 15116
+    },
+    "worker-verification.json": {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/forum-integration/worker-verification.json",
+      "sha256": "60a5060d41f110d7ffff36129facf3fe2ac23319bdd89be1fb0aa099180c38e3",
+      "bytes": 10600
+    },
+    "implementation-worker-verification.json": {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/forum-integration/implementation-worker-verification.json",
+      "sha256": "2a5514bcab05fb0180ebed37ce7e94ff5034676b1869b4edeb25e8efc5151a52",
+      "bytes": 5379
+    },
+    "test.log": {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/forum-integration/test.log",
+      "sha256": "812c763e6e4b1828b3d85a07a13d08583acdb1ec75d7f5f275e3efa09d69a726",
+      "bytes": 1220
+    },
+    "shared-pre-e2e.log": {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/forum-integration/shared-pre-e2e.log",
+      "sha256": "7e1fa81116ece31338130198979f18e5dfe24bc03df59a26e4eca5adc7949a80",
+      "bytes": 6607
+    },
+    "build.log": {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/forum-integration/build.log",
+      "sha256": "5414fa8a2f36816e70289bf8c6f0039e114d1ea2f678ef450d04c6184eba350e",
+      "bytes": 2049
+    },
+    "lint-final.log": {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/forum-integration/lint-final.log",
+      "sha256": "231c14bc9c005e30b93f49fa1487d072da3b070bf3fe70f89f1789bdaec3d0a0",
+      "bytes": 557
+    },
+    "e2e-lint-final.log": {
+      "path": ".runtime-artifacts/account-rights/finish-sequence/forum-integration/e2e-lint-final.log",
+      "sha256": "faf97e5a176a819c1949ef27be9ec6dd0ff156dc31814bf1603ce3b55e1460f7",
+      "bytes": 717
+    }
+  },
+  "unitAndStaticEvidence": {
+    "rootAuthenticationJob": "25 passed; 3 DB-gated skips",
+    "forumClient": "3 passed (attested; worker log was overwritten)",
+    "forum": "2 passed",
+    "authenticationAndForumBuildLint": "worker logs recorded",
+    "constantsModelsBuildLintAndStorageLint": "shared-pre-e2e.log",
+    "e2eLint": "PASS",
+    "interpretation": "build/lint and unit evidence do not establish runtime acceptance"
+  },
+  "verificationHistory": [
+    "Initial Authentication spec failures were stale expectations and fixture constructor arity; corrected job suite passed 25 tests with three gated DB skips.",
+    "Forum client three tests passed per retained worker attestation; the worker overwrote its original raw test log.",
+    "Attempt 1 passed; a final formatter-only line wrap in the fixture required a new immutable capture and attempt 2."
+  ],
+  "limitations": [
+    "global job remains incomplete",
+    "no artifact was produced",
+    "no schema, UI, download, deletion, CI, or production qualification"
+  ],
+  "next": "O01-P workspace; seventeen other owners and non-ORM, artifacts/download, deletion, shared controls, and claims remain",
+  "runtimeFixtureSummary": "PASS; see digest-bound fixture report"
+}

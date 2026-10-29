@@ -2,6 +2,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test } from '@nestjs/testing';
 import { UpdateTopicDto } from '@optimistic-tanuki/models';
 import { Topic } from '../../entities/topic.entity';
+import { Thread } from '../../entities/thread.entity';
 import { TopicService } from './topic.service';
 
 // The workspace maps isomorphic-dompurify to an identity stub, which would make
@@ -19,10 +20,12 @@ const sanitize = DOMPurify.sanitize as unknown as jest.Mock;
 describe('TopicService app scoping', () => {
   it('passes the requested app scope to the topic repository', async () => {
     const topicRepo = { find: jest.fn().mockResolvedValue([]) };
+    const threadRepo = { count: jest.fn().mockResolvedValue(0) };
     const module = await Test.createTestingModule({
       providers: [
         TopicService,
         { provide: getRepositoryToken(Topic), useValue: topicRepo },
+        { provide: getRepositoryToken(Thread), useValue: threadRepo },
       ],
     }).compile();
 
@@ -48,6 +51,7 @@ interface TopicRepoMock {
 describe('TopicService', () => {
   let service: TopicService;
   let repo: TopicRepoMock;
+  let threadRepo: { count: jest.Mock };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -61,11 +65,13 @@ describe('TopicService', () => {
       update: jest.fn().mockResolvedValue({ affected: 1 }),
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
     };
+    threadRepo = { count: jest.fn().mockResolvedValue(0) };
 
     const module = await Test.createTestingModule({
       providers: [
         TopicService,
         { provide: getRepositoryToken(Topic), useValue: repo },
+        { provide: getRepositoryToken(Thread), useValue: threadRepo },
       ],
     }).compile();
 
@@ -226,10 +232,60 @@ describe('TopicService', () => {
   });
 
   describe('remove', () => {
+    it('returns conflict without deleting a topic that still has threads', async () => {
+      repo.findOne.mockResolvedValue({
+        id: 'topic-1',
+        title: 'Parent',
+        description: 'Parent topic',
+      });
+      threadRepo.count.mockResolvedValue(1);
+
+      await expect(service.remove('topic-1')).rejects.toMatchObject({
+        error: {
+          statusCode: 409,
+          message: expect.stringMatching(/thread/i),
+        },
+      });
+
+      expect(threadRepo.count).toHaveBeenCalledWith({
+        where: { topicId: 'topic-1' },
+      });
+      expect(repo.delete).not.toHaveBeenCalled();
+    });
+
+    it('maps a foreign-key race to conflict without masking other errors', async () => {
+      repo.findOne.mockResolvedValue({
+        id: 'topic-1',
+        title: 'Parent',
+        description: 'Parent topic',
+      });
+      threadRepo.count.mockResolvedValue(0);
+      repo.delete.mockRejectedValue({ code: '23503' });
+
+      await expect(service.remove('topic-1')).rejects.toMatchObject({
+        error: {
+          statusCode: 409,
+          message: expect.stringMatching(/thread/i),
+        },
+      });
+    });
+
     it('deletes the topic by id', async () => {
-      await expect(service.remove('topic-1')).resolves.toBeUndefined();
+      await expect(service.remove('topic-1')).resolves.toEqual({
+        id: 'topic-1',
+        deleted: true,
+      });
 
       expect(repo.delete).toHaveBeenCalledWith('topic-1');
+    });
+
+    it('returns an explicit negative acknowledgement when no topic was deleted', async () => {
+      repo.delete.mockResolvedValue({ affected: 0 });
+
+      await expect(service.remove('topic-1')).resolves.toEqual({
+        id: 'topic-1',
+        deleted: false,
+      });
     });
   });
 });

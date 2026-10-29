@@ -2,6 +2,8 @@
 
 set -eu
 
+node scripts/dev-env-defaults.mjs
+
 COMPOSE_FILES="-f docker-compose.yaml -f docker-compose.dev.yaml"
 DEV_SEED_SKIP_REFRESH="${DEV_SEED_SKIP_REFRESH:-false}"
 DEV_SEED_SKIP_OPTIONAL="${DEV_SEED_SKIP_OPTIONAL:-false}"
@@ -172,6 +174,7 @@ refresh_services() {
 }
 
 refresh_gateway_safely() {
+  docker compose ${COMPOSE_FILES} up -d --no-deps gateway
   gateway_health="$(docker inspect --format '{{.State.Health.Status}}' ot_gateway 2>/dev/null || true)"
 
   if [ "${gateway_health}" = "healthy" ]; then
@@ -296,6 +299,15 @@ wait_for_tcp_service() {
   return 1
 }
 
+seed_app_origin() {
+  curl -fsS --max-time 10 "${HOST_GATEWAY_BASE_URL}/api/registry/apps" | node -e '
+    const fs=require("node:fs");const body=JSON.parse(fs.readFileSync(0,"utf8"));
+    const apps=Array.isArray(body)?body:body.apps||body.data?.apps||body.data;
+    const app=Array.isArray(apps)&&apps.find(a=>a.appId===process.argv[1]);
+    if(!app?.uiBaseUrl)process.exit(1);process.stdout.write(new URL(app.uiBaseUrl).origin);
+  ' "$1"
+}
+
 seed_default_owner() {
   owner_name="${OWNER_BOOTSTRAP_NAME:-${DEV_OWNER_NAME:-Development Owner}}"
   owner_email="${OWNER_BOOTSTRAP_EMAIL:-${DEV_OWNER_EMAIL:-owner@optimistic-tanuki.local}}"
@@ -320,6 +332,7 @@ seed_default_owner() {
     curl -sS -w '\n%{http_code}' \
       -H 'content-type: application/json' \
       -H 'x-ot-appscope: owner-console' \
+      -H "origin: $(seed_app_origin owner-console)" \
       -H 'x-ot-app-id: owner-console' \
       -d "$owner_payload" \
       "${HOST_GATEWAY_BASE_URL}/api/authentication/register"
@@ -498,6 +511,7 @@ register_seed_identity() {
     curl -sS -w '\n%{http_code}' \
       -H 'content-type: application/json' \
       -H "x-ot-appscope: ${identity_app_scope}" \
+      -H "origin: $(seed_app_origin "$identity_app_scope")" \
       -H "x-ot-app-id: ${identity_app_scope}" \
       -d "$identity_payload" \
       "${HOST_GATEWAY_BASE_URL}/api/authentication/register"
@@ -533,6 +547,7 @@ authenticate_seed_identity() {
     curl -sS -w '\n%{http_code}' -c "$identity_cookie" \
       -H 'content-type: application/json' \
       -H "x-ot-appscope: ${identity_app_scope}" \
+      -H "origin: $(seed_app_origin "$identity_app_scope")" \
       -H "x-ot-app-id: ${identity_app_scope}" \
       -H 'x-ot-session-mode: cookie' \
       -d "$(node -e '
@@ -550,6 +565,7 @@ authenticate_seed_identity() {
   identity_session="$(
     curl -sS -w '\n%{http_code}' -b "$identity_cookie" \
       -H "x-ot-appscope: ${identity_app_scope}" \
+      -H "origin: $(seed_app_origin "$identity_app_scope")" \
       "${HOST_GATEWAY_BASE_URL}/api/authentication/session"
   )"
   identity_session_status="$(printf '%s\n' "$identity_session" | tail -n 1)"
@@ -574,6 +590,7 @@ attempt_seed_identity_login() {
     curl -sS -w '\n%{http_code}' -c "$identity_cookie" \
       -H 'content-type: application/json' \
       -H "x-ot-appscope: ${identity_app_scope}" \
+      -H "origin: $(seed_app_origin "$identity_app_scope")" \
       -H "x-ot-app-id: ${identity_app_scope}" \
       -H 'x-ot-session-mode: cookie' \
       -d "$(node -e '
@@ -607,6 +624,7 @@ attempt_seed_identity_login() {
   identity_session="$(
     curl -sS -w '\n%{http_code}' -b "$identity_cookie" \
       -H "x-ot-appscope: ${identity_app_scope}" \
+      -H "origin: $(seed_app_origin "$identity_app_scope")" \
       "${HOST_GATEWAY_BASE_URL}/api/authentication/session"
   )"
   identity_session_status="$(printf '%s\n' "$identity_session" | tail -n 1)"
@@ -703,6 +721,7 @@ provision_business_workspace() {
     workspace_list="$(
       curl -sS -w '\n%{http_code}' -b "$identity_cookie" \
         -H "x-ot-appscope: ${identity_app_scope}" \
+      -H "origin: $(seed_app_origin "$identity_app_scope")" \
         "${HOST_GATEWAY_BASE_URL}/api/workspaces"
     )"
     workspace_list_status="$(printf '%s\n' "$workspace_list" | tail -n 1)"
@@ -740,6 +759,7 @@ provision_business_workspace() {
     curl -sS -w '\n%{http_code}' -b "$identity_cookie" \
       -H 'content-type: application/json' \
       -H "x-ot-appscope: ${identity_app_scope}" \
+      -H "origin: $(seed_app_origin "$identity_app_scope")" \
       -H "x-ot-app-id: ${identity_app_scope}" \
       -d "$(node -e '
         const [appScope, slug, displayName] = process.argv.slice(1);
@@ -1388,6 +1408,12 @@ seed_optional_services() {
 }
 
 run_optional_seeders() {
+  if [ "${DEV_SEED_SCOPE:-}" = ot-ts ]; then
+    case "$1" in
+      post-core) node ./scripts/seed-otts-review.mjs; return ;;
+      videos) echo "Skipping video creation fixtures: no OT/TS create-video producer is in this review scope."; return ;;
+    esac
+  fi
   if [ "${DEV_SEED_SKIP_OPTIONAL}" = "true" ]; then
     echo "Skipping optional seeders (DEV_SEED_SKIP_OPTIONAL=true)."
   else

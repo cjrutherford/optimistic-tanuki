@@ -62,3 +62,11 @@ setup-console-step1-final.png
 
 # Build outputs are no longer used as Docker build inputs.
 dist
+
+# Local development credentials and private verification artifacts
+.env
+.env.*
+**/.env
+**/.env.*
+.runtime-artifacts
+.agent

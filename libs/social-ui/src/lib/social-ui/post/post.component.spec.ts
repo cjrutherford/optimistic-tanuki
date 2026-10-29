@@ -56,12 +56,105 @@ describe('PostComponent', () => {
       createdAt: new Date(),
       userId: '123',
       profileId: '456',
+      visibility: 'public',
     } as PostDto;
     fixture.detectChanges();
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('restricts pending comment images to the parent audience using the active profile id', async () => {
+    const upload = jest.fn().mockResolvedValue('/api/asset/image-id');
+    component.profileId = 'commenter-profile';
+    component.currentUserId = 'account-id';
+    component.imageUploadCallback = upload as any;
+    component.content = {
+      ...component.content,
+      visibility: 'followers',
+      profileId: 'parent-author',
+    } as PostDto;
+    await component.commentImageUploadCallback!(
+      'data:image/png;base64,AA==',
+      'image.png',
+      []
+    );
+    expect(upload).toHaveBeenCalledWith(
+      'data:image/png;base64,AA==',
+      'image.png',
+      [{ type: 'followers', profileId: 'parent-author' }]
+    );
+
+    component.content = {
+      ...component.content,
+      visibility: 'community',
+      communityId: 'community-id',
+    } as PostDto;
+    component.communityInfo = {
+      id: 'community-id',
+      name: 'Community',
+      isPrivate: false,
+    };
+    await component.commentImageUploadCallback!(
+      'data:image/png;base64,AA==',
+      'image.png',
+      []
+    );
+    expect(upload).toHaveBeenLastCalledWith(
+      'data:image/png;base64,AA==',
+      'image.png',
+      [
+        {
+          type: 'community',
+          profileId: 'commenter-profile',
+          communityId: 'community-id',
+        },
+      ]
+    );
+  });
+
+  it('fails closed while community privacy metadata has not loaded', async () => {
+    const upload = jest.fn().mockResolvedValue('/api/asset/image-id');
+    component.profileId = 'commenter-profile';
+    component.imageUploadCallback = upload as any;
+    component.content = {
+      ...component.content,
+      visibility: 'public',
+      publicAudienceExplicit: true,
+      communityId: 'private-community',
+    } as PostDto;
+
+    await expect(
+      component.commentImageUploadCallback!(
+        'data:image/png;base64,AA==',
+        'image.png',
+        []
+      )
+    ).rejects.toThrow('Community audience is still loading');
+    expect(upload).not.toHaveBeenCalled();
+
+    component.communityInfo = {
+      id: 'private-community',
+      name: 'Private Community',
+      isPrivate: true,
+    };
+    await component.commentImageUploadCallback!(
+      'data:image/png;base64,AA==',
+      'image.png',
+      []
+    );
+    expect(upload).toHaveBeenCalledWith(
+      'data:image/png;base64,AA==',
+      'image.png',
+      [
+        {
+          type: 'community',
+          profileId: 'commenter-profile',
+          communityId: 'private-community',
+        },
+      ]
+    );
   });
 
   it('should initialize profile with default values', () => {
@@ -75,6 +168,27 @@ describe('PostComponent', () => {
   it('should set the content input', () => {
     expect(component.content).toBeDefined();
     expect(component.content.id).toBe('1');
+  });
+
+  it('emits mute and report actions from the post safety menu', () => {
+    const mute = jest.fn();
+    const report = jest.fn();
+    const focus = jest.fn();
+    const closeDropdown = jest.fn();
+    component.muteToggle.subscribe(mute);
+    component.reportPost.subscribe(report);
+    (component as any).postMenu = { closeDropdown };
+    (component as any).postMenuElement = {
+      nativeElement: { querySelector: () => ({ focus }) },
+    };
+
+    component.onMuteToggle();
+    component.openReport();
+
+    expect(mute).toHaveBeenCalledTimes(1);
+    expect(closeDropdown).toHaveBeenCalledTimes(1);
+    expect(focus).toHaveBeenCalledTimes(1);
+    expect(report).toHaveBeenCalledTimes(1);
   });
 
   it('should set the comments input', () => {
@@ -175,6 +289,121 @@ describe('PostComponent', () => {
     fixture.detectChanges();
 
     expect(component.canEdit()).toBe(true);
+  });
+
+  it('only enables the guardian edit affordance through explicit mode without changing the signed-in identity', () => {
+    component.currentUserId = 'guardian-user';
+    expect(component.canEdit()).toBe(false);
+    component.guardianManagementMode = true;
+    expect(component.canEdit()).toBe(true);
+    expect(component.currentUserId).toBe('guardian-user');
+  });
+
+  it('keeps an opt-in controlled draft through pending, failure, and unrelated content refreshes', () => {
+    component.saveState = { status: 'idle', requestId: 0 };
+    component.startEdit();
+    component.editTitle = 'Draft title';
+    component.editContent = '<p>Draft <strong>content</strong></p>';
+    const update = jest.fn();
+    component.postUpdated.subscribe(update);
+
+    component.saveEdit();
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(component.isEditing).toBe(true);
+
+    component.saveState = { status: 'pending', requestId: 1 };
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.edit-content')).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('.edit-actions button')?.disabled
+    ).toBe(true);
+    component.saveEdit();
+    expect(update).toHaveBeenCalledTimes(1);
+
+    component.saveState = {
+      status: 'error',
+      requestId: 1,
+      error: 'Your post could not be saved. Try again.',
+    };
+    fixture.detectChanges();
+    expect(
+      (fixture.nativeElement.querySelector('.edit-title') as HTMLInputElement)
+        .value
+    ).toBe('Draft title');
+    expect(
+      fixture.nativeElement.querySelector('[role="alert"]')?.textContent
+    ).toContain('Your post could not be saved. Try again.');
+
+    const unrelatedRefresh = {
+      ...component.content,
+      voteCount: 4,
+    } as PostDto;
+    component.ngOnChanges({
+      content: {
+        currentValue: unrelatedRefresh,
+        previousValue: component.content,
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+    expect(component.isEditing).toBe(true);
+    expect(component.editTitle).toBe('Draft title');
+    expect(component.editContent).toBe('<p>Draft <strong>content</strong></p>');
+  });
+
+  it('closes a controlled editor only after a new save acknowledgement and authoritative content input', () => {
+    component.saveState = { status: 'idle', requestId: 0 };
+    component.startEdit();
+    component.editTitle = 'Saved title';
+    component.saveState = { status: 'saved', requestId: 1 };
+    const savedContent = {
+      ...component.content,
+      title: 'Saved title',
+    } as PostDto;
+
+    component.ngOnChanges({
+      saveState: {
+        currentValue: component.saveState,
+        previousValue: { status: 'pending', requestId: 1 },
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+      content: {
+        currentValue: savedContent,
+        previousValue: component.content,
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+
+    expect(component.isEditing).toBe(false);
+  });
+
+  it('retains legacy immediate-close behavior when controlled save state is omitted', () => {
+    component.saveState = undefined;
+    component.startEdit();
+
+    component.saveEdit();
+
+    expect(component.isEditing).toBe(false);
+  });
+
+  it('cancels an open draft when the post owner or active profile changes', () => {
+    component.saveState = { status: 'idle', requestId: 0 };
+    component.startEdit();
+    component.editTitle = 'Private draft';
+
+    component.ngOnChanges({
+      currentUserId: {
+        currentValue: 'new-active-profile',
+        previousValue: 'old-active-profile',
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+
+    expect(component.isEditing).toBe(false);
+    expect(component.editTitle).toBe('');
   });
 
   it('shows an edited badge when the post has been updated', () => {

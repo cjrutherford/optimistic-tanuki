@@ -16,7 +16,11 @@ export class RegisterAccountBootstrapService {
     private readonly roleInit: Pick<RoleInitService, 'processNow'>
   ) {}
 
-  async register(data: RegisterRequest, appScope: string) {
+  async register(
+    data: RegisterRequest,
+    appScope: string,
+    ageEligibilityStatus?: 'adult' | 'minor'
+  ) {
     const normalizedRequest: RegisterRequest = {
       ...data,
       email: data.email.trim().toLowerCase(),
@@ -40,7 +44,10 @@ export class RegisterAccountBootstrapService {
     }
 
     const result = await firstValueFrom(
-      this.authClient.send({ cmd: AuthCommands.Register }, normalizedRequest)
+      this.authClient.send(
+        { cmd: AuthCommands.Register },
+        { ...normalizedRequest, ageEligibilityStatus }
+      )
     );
 
     const newProfile: CreateProfileDto & { appScope: string } = {

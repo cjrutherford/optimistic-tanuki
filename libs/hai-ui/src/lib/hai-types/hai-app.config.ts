@@ -4,6 +4,7 @@ export interface HaiAboutConfig {
   appTagline: string;
   appDescription: string;
   appUrl?: string;
+  accountNotice?: string;
   logoSrc?: string;
 }
 

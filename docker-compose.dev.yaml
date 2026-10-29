@@ -99,7 +99,7 @@ services:
       - ./dist/apps:/app/dist/apps # Mount the shared dist root so rebuilt app directories stay visible
       - /usr/src/app/node_modules # Keep node_modules from the image
     ports:
-      - '8080:4000' # Match the new exposed port
+      - '${CLIENT_INTERFACE_PORT:-8080}:4000' # Local review port may differ from 8080
       - '9240:9240'
     environment:
       - NODE_ENV=development
@@ -923,7 +923,7 @@ services:
     volumes:
       - ./dist/apps:/usr/src/app/dist/apps
       - ./apps/gateway/src/assets/config.yaml:/usr/src/app/dist/apps/gateway/assets/config.yaml:ro
-      - ./libs/app-registry/src/lib/default-registry.json:/usr/src/app/config/app-registry.json:ro
+      - ${APP_REGISTRY_HOST_PATH:-./libs/app-registry/src/lib/default-registry.json}:/usr/src/app/config/app-registry.json:ro
       - ./scripts/wait-for-node-entrypoint.sh:/usr/src/app/scripts/wait-for-node-entrypoint.sh:ro
       - /usr/src/app/node_modules
     command:
@@ -942,6 +942,19 @@ services:
       - '3300:3300' # expose chat socket
       - '9000:9000' # Expose the debugging port
     environment:
+      - THROTTLER_PROFILE=${THROTTLER_PROFILE:-production}
+      - THROTTLE_SHORT_LIMIT=${THROTTLE_SHORT_LIMIT:-}
+      - THROTTLE_MEDIUM_LIMIT=${THROTTLE_MEDIUM_LIMIT:-}
+      - THROTTLE_LONG_LIMIT=${THROTTLE_LONG_LIMIT:-}
+      - THROTTLE_SOCIAL_POST_LIMIT=${THROTTLE_SOCIAL_POST_LIMIT:-}
+      - THROTTLE_SOCIAL_COMMENT_LIMIT=${THROTTLE_SOCIAL_COMMENT_LIMIT:-}
+      - THROTTLE_SOCIAL_VOTE_LIMIT=${THROTTLE_SOCIAL_VOTE_LIMIT:-}
+      - THROTTLE_SOCIAL_REACTION_LIMIT=${THROTTLE_SOCIAL_REACTION_LIMIT:-}
+      - THROTTLE_FORUM_WRITE_LIMIT=${THROTTLE_FORUM_WRITE_LIMIT:-}
+      - THROTTLE_CLASSIFIED_CREATE_LIMIT=${THROTTLE_CLASSIFIED_CREATE_LIMIT:-}
+      - THROTTLE_PRIVACY_WRITE_LIMIT=${THROTTLE_PRIVACY_WRITE_LIMIT:-}
+      - THROTTLE_REPORT_LIMIT=${THROTTLE_REPORT_LIMIT:-}
+      - THROTTLE_CHAT_WRITE_LIMIT=${THROTTLE_CHAT_WRITE_LIMIT:-}
       - NODE_ENV=development
       - THROTTLE_LOGIN_LIMIT=100
       - THROTTLE_SESSION_LIMIT=100000
@@ -950,7 +963,7 @@ services:
       - DEV_ALLOW_ALL_BROWSER_ORIGINS=true
       - APP_SCOPE_ORIGINS={"forgeofwill":"http://forgeofwill.localhost:8081"}
       - CORS_ALLOWED_ORIGINS=http://forgeofwill.localhost:8081
-      - CLIENT_INTERFACE_UI_BASE_URL=http://localhost:8080
+      - CLIENT_INTERFACE_UI_BASE_URL=${CLIENT_INTERFACE_UI_BASE_URL:-http://localhost:8080}
       - CLIENT_INTERFACE_DOMAIN=localhost
       - GATEWAY_REQUEST_TIMEOUT_MS=${GATEWAY_REQUEST_TIMEOUT_MS:-30000}
       - ASSETS_INTERNAL_MEDIA_URL=${ASSETS_INTERNAL_MEDIA_URL:-http://assets:3006}
@@ -1084,6 +1097,9 @@ services:
     volumes:
       - ./dist/apps/civic-briefing:/usr/src/app
       - /usr/src/app/node_modules
+      # Local review registry: the three Georgia edition towns and their parents.
+      - ./libs/civic/core/test/fixtures/localities/ga:/usr/src/app/daylight-localities/ga:ro
+      - ./libs/civic/core/test/fixtures/localities/us.yaml:/usr/src/app/daylight-localities/us.yaml:ro
     command:
       [
         'dumb-init',
@@ -1099,6 +1115,10 @@ services:
       ]
     environment:
       - NODE_ENV=development
+      - CIVIC_LOCALITIES_DIR=${CIVIC_LOCALITIES_DIR:-/usr/src/app/daylight-localities}
+      - PIPELINE_DAILY_AT=${PIPELINE_DAILY_AT:-05:30}
+      - PIPELINE_WEEKLY_ON=${PIPELINE_WEEKLY_ON:-monday}
+      - PIPELINE_TICK_MS=${PIPELINE_TICK_MS:-600000}
 
   civic-contributions:
     user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
@@ -1108,6 +1128,8 @@ services:
     volumes:
       - ./dist/apps/civic-contributions:/usr/src/app
       - /usr/src/app/node_modules
+      - ./libs/civic/core/test/fixtures/localities/ga:/usr/src/app/daylight-localities/ga:ro
+      - ./libs/civic/core/test/fixtures/localities/us.yaml:/usr/src/app/daylight-localities/us.yaml:ro
     command:
       [
         'dumb-init',
@@ -1123,6 +1145,7 @@ services:
       ]
     environment:
       - NODE_ENV=development
+      - CIVIC_LOCALITIES_DIR=${CIVIC_LOCALITIES_DIR:-/usr/src/app/daylight-localities}
 
   profile:
     container_name: ot_profile
@@ -1346,9 +1369,13 @@ services:
       - '9217:9217'
     environment:
       - NODE_ENV=development
+      - SOCIAL_HOST=social
+      - SOCIAL_PORT=3003
     depends_on:
       postgres:
         condition: service_healthy
+      social:
+        condition: service_started
 
   payments:
     container_name: ot_payments
@@ -1491,7 +1518,16 @@ services:
 
   assets:
     container_name: ot_assets
-    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
+    # Existing named storage volumes may have been created by a root run.
+    # Repair storage ownership at startup, then run the service as node.
+    user: '0:0'
+    entrypoint:
+      [
+        'sh',
+        '-c',
+        'chown -R ${LOCAL_UID:-1000}:${LOCAL_GID:-1000} /usr/src/app/storage && exec su-exec ${LOCAL_UID:-1000}:${LOCAL_GID:-1000} "$@"',
+        '--',
+      ]
     build:
       context: .
       dockerfile: ./docker/dev/node-runtime.Dockerfile

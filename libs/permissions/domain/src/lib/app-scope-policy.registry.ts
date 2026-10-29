@@ -98,6 +98,20 @@ const clientInterfaceDefaults = (
       appScope: 'client-interface',
     },
   ];
+  const forumModerationPermission: PolicyPermissionSpec = {
+    name: 'forum.moderate',
+    resource: 'forum',
+    action: 'moderate',
+    description: 'Review and moderate global forum content',
+    appScope: 'client-interface',
+  };
+  const reportReviewPermission: PolicyPermissionSpec = {
+    name: 'content.report.review',
+    resource: 'content.report',
+    action: 'review',
+    description: 'Review app-scoped reports for client-interface',
+    appScope: 'client-interface',
+  };
 
   const roles: PolicyRoleSpec[] = [
     {
@@ -108,8 +122,24 @@ const clientInterfaceDefaults = (
   ];
 
   return {
-    permissions,
-    roles,
+    permissions: [
+      ...permissions,
+      forumModerationPermission,
+      reportReviewPermission,
+    ],
+    roles: [
+      ...roles,
+      {
+        name: 'client_interface_forum_moderator',
+        description: 'App-scoped moderator for Client Interface forum content',
+        permissions: ['forum.moderate'],
+      },
+      {
+        name: 'client_interface_operator',
+        description: 'App-scoped client-interface report reviewer',
+        permissions: ['content.report.review'],
+      },
+    ],
     assignments: [
       { roleName: 'client_interface_user', profileId },
       { roleName: 'forum_user', profileId },
@@ -189,6 +219,13 @@ const financeDefaults = (profileId?: string): PolicyRoleInitDefaults => ({
 const localHubDefaults = (profileId?: string): PolicyRoleInitDefaults => {
   const permissions: PolicyPermissionSpec[] = [
     {
+      name: 'asset.create',
+      resource: 'asset',
+      action: 'create',
+      description: 'Create asset for Local Hub profile',
+      appScope: 'local-hub',
+    },
+    {
       name: 'classified.create',
       resource: 'classified',
       action: 'create',
@@ -217,14 +254,41 @@ const localHubDefaults = (profileId?: string): PolicyRoleInitDefaults => {
       appScope: 'local-hub',
     },
   ];
-
+  const forumModerationPermission: PolicyPermissionSpec = {
+    name: 'forum.moderate',
+    resource: 'forum',
+    action: 'moderate',
+    description: 'Review and moderate global forum content',
+    appScope: 'local-hub',
+  };
+  const reportReviewPermission: PolicyPermissionSpec = {
+    name: 'content.report.review',
+    resource: 'content.report',
+    action: 'review',
+    description: 'Review app-scoped reports across Local Hub',
+    appScope: 'local-hub',
+  };
   return {
-    permissions,
+    permissions: [
+      ...permissions,
+      forumModerationPermission,
+      reportReviewPermission,
+    ],
     roles: [
       {
         name: 'local_hub_member',
         description: 'Local Hub community member',
         permissions: permissions.map((permission) => permission.name),
+      },
+      {
+        name: 'local_hub_forum_moderator',
+        description: 'App-scoped moderator for Local Hub forum content',
+        permissions: ['forum.moderate'],
+      },
+      {
+        name: 'local_hub_operator',
+        description: 'App-scoped Local Hub report reviewer',
+        permissions: ['content.report.review'],
       },
     ],
     assignments: [{ roleName: 'local_hub_member', profileId }],

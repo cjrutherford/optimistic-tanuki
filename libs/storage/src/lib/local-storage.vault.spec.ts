@@ -489,9 +489,9 @@ describe('LocalStorageAdapter vault hardening', () => {
         new ZfsStorageService(noCommands, {})
       );
 
-      await expect(reader.read(created)).rejects.toThrow(
-        ServiceUnavailableException
-      );
+      await expect(
+        reader.readBuffer(created, 25 * 1024 * 1024 + 64 * 1024)
+      ).rejects.toThrow(ServiceUnavailableException);
     });
   });
 
@@ -522,9 +522,9 @@ describe('LocalStorageAdapter vault hardening', () => {
       } as never);
       writeFileSync(path.join(basePath, created.storagePath), 'plaintext');
 
-      await expect(adapter.read(created)).rejects.toThrow(
-        'refusing to return unauthenticated content'
-      );
+      await expect(
+        adapter.readBuffer(created, 25 * 1024 * 1024 + 64 * 1024)
+      ).rejects.toThrow('refusing to return unauthenticated content');
       expect(logger.error).toHaveBeenCalled();
     });
 
@@ -541,9 +541,32 @@ describe('LocalStorageAdapter vault hardening', () => {
       stored[stored.length - 1] ^= 0xff;
       writeFileSync(target, stored);
 
-      await expect(adapter.read(created)).rejects.toThrow(
-        'failed AES-256-GCM authentication'
+      await expect(
+        adapter.readBuffer(created, 25 * 1024 * 1024 + 64 * 1024)
+      ).rejects.toThrow('failed AES-256-GCM authentication');
+    });
+
+    it('fails closed on the bounded read path when the configured key is wrong', async () => {
+      const writer = buildAdapter();
+      const created = await writer.create({
+        name: '1040.pdf',
+        profileId: 'p',
+        type: AssetType.DOCUMENT,
+        content: Buffer.from(FORM_1040),
+      } as never);
+      const reader = new LocalStorageAdapter(
+        logger,
+        basePath,
+        new EnvelopeEncryptionService({
+          [VAULT_STORAGE_KEK_ENV]: 'different-vault-hardening-key',
+        }),
+        undefined,
+        new ZfsStorageService(noCommands, {})
       );
+
+      await expect(
+        reader.readBuffer(created, 25 * 1024 * 1024 + 64 * 1024)
+      ).rejects.toThrow(ServiceUnavailableException);
     });
   });
 });

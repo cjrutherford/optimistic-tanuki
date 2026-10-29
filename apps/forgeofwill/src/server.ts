@@ -11,7 +11,10 @@ import express, { NextFunction, Request, Response } from 'express';
 import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'node:url';
-import { createSocketIoProxyOptions } from './server-proxy';
+import {
+  createApiProxyOptions,
+  createSocketIoProxyOptions,
+} from './server-proxy';
 import { createGatewaySessionValidator } from './server-session-validation';
 import { createProtectedRouteGate } from './server-route-guard';
 import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
@@ -66,14 +69,7 @@ app.use(
   })
 );
 
-app.use(
-  '/api',
-  createProxyMiddleware({
-    target: `${gatewayUrl}/api`,
-    ws: true,
-    changeOrigin: true,
-  })
-);
+app.use('/api', createProxyMiddleware(createApiProxyOptions(gatewayUrl)));
 
 // API traffic must remain proxied, while every protected document request is
 // validated before either static or Angular rendering can produce a response.

@@ -11,6 +11,7 @@ import {
 } from '../../services/community.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { PersonalitySelectorComponent } from '@optimistic-tanuki/theme-ui';
+import { AccountRightsComponent } from '@optimistic-tanuki/profile-ui';
 
 import { DaylightAccountComponent } from '../../components/daylight-account/daylight-account.component';
 
@@ -21,11 +22,18 @@ import { DaylightAccountComponent } from '../../components/daylight-account/dayl
     CommonModule,
     PersonalitySelectorComponent,
     DaylightAccountComponent,
+    AccountRightsComponent,
   ],
   templateUrl: './account.component.html',
   styleUrls: ['./account.component.scss'],
 })
 export class AccountComponent implements OnInit {
+  get accountId() {
+    return this.authState.getUserData()?.userId ?? '';
+  }
+  get accountLabel() {
+    return this.authState.getUserData()?.name ?? '';
+  }
   private authState = inject(AuthStateService);
   private communityService = inject(CommunityService);
   private messageService = inject(MessageService);

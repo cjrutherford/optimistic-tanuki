@@ -1,0 +1,174 @@
+{
+  "version": 1,
+  "slice": "N03",
+  "status": "locally-verified-OT-TS-N03",
+  "applications": {
+    "OT": "client-interface",
+    "TS": "local-hub"
+  },
+  "owners": [
+    "authentication",
+    "profile",
+    "permissions",
+    "social",
+    "forum",
+    "assets",
+    "videos",
+    "workspace",
+    "app-configurator",
+    "chat-collector",
+    "classifieds"
+  ],
+  "stores": [
+    {
+      "id": "primary-search-reads",
+      "kind": "primary-owner PostgreSQL reads",
+      "flows": [
+        "OT global search/Explore -> Gateway SearchController -> Social SearchService -> primary Post/Community repositories and Profile RPC",
+        "OT profile-post search and profile discovery -> owning primary repositories",
+        "TS people lookup and city/community/classified browsing -> Profile/Social/Classifieds primary repositories"
+      ],
+      "identity": "Authenticated selected profile for Social history; record account/profile/app domains remain distinct. A UI query string is not evidence that a server filters it.",
+      "attribution": "No independently written result mirror found in these traced paths. Native indexes belong to their source table.",
+      "evidence": [
+        "apps/client-interface/src/app/app.component.html",
+        "libs/search-ui/src/lib/search.service.ts",
+        "apps/local-hub/src/app/pages/new-message/new-message.component.ts",
+        "apps/gateway/src/controllers/social/search/search.controller.ts",
+        "apps/social/src/app/services/search.service.ts",
+        "apps/classifieds/src/app/classifieds.service.ts"
+      ]
+    },
+    {
+      "id": "social.search-history",
+      "kind": "primary durable personal history",
+      "table": "search_history",
+      "source": "SearchService.search saves history after a profile-bound search; the existing HTTP GET producer therefore writes history without a separate frontend POST.",
+      "fields": [
+        "id",
+        "profileId",
+        "query",
+        "searchType",
+        "resultCount",
+        "createdAt"
+      ],
+      "nativeIndex": {
+        "name": "IDX_53debe423b26554a3df7349128",
+        "sourceColumns": ["profileId", "query"],
+        "maintenance": "PostgreSQL maintains this B-tree transactionally with the source rows; no independent refresh/delete worker."
+      },
+      "selection": "Trusted caller supplies a complete authoritative currently owned OT/TS profile set; never compare profileId with accountId or infer app ownership from history rows.",
+      "cleanup": "clearSearchHistoryForProfiles validates and deduplicates UUIDs, drains started writes, suppresses late pre-clear searches and overlapping cleanup windows, then deletes matching UUIDs case-insensitively. SQL failure rejects and can retry. New independent searches after acknowledgement may record again.",
+      "provenance": "Stored attribution remains recorded/unverified; this primitive does not establish historical consent, full deletion eligibility or an authenticated account-deletion API.",
+      "evidence": [
+        "apps/social/src/entities/search-history.entity.ts",
+        "apps/social/src/app/services/search.service.ts",
+        "apps/social/migrations/1772574255443-advanced.ts"
+      ],
+      "fenceBoundary": "Generation/write-drain fences are process-local. Cross-replica and permanent account producer fencing remains D00; this primitive is not an account-deletion API."
+    },
+    {
+      "id": "computed-discovery",
+      "kind": "computed repository/RPC results",
+      "source": "Trending aggregates current Post/Vote/Comment joins; suggestions read Profile or Community records.",
+      "boundary": "Community discovery predicates require isPrivate=false. No separate persisted recommendation payload identified. Frontend shareReplay/signal lifetime is N06.",
+      "evidence": [
+        "apps/social/src/app/services/search.service.ts",
+        "libs/search-ui/src/lib/search.service.ts"
+      ]
+    },
+    {
+      "id": "native-database-indexes",
+      "kind": "PostgreSQL physical indexes",
+      "attribution": "Every catalog index is joined through pg_index.indrelid to a declared owner source table, junction, migration store or the two explicit migration-only Profile primary tables.",
+      "boundary": "B-tree/hash indexes are automatic source-row storage structures. Readback proves current transaction visibility, not physical erasure from dead tuples, WAL or backups.",
+      "evidence": [
+        "apps/authentication-e2e/src/authentication/search-stores.spec.ts",
+        "apps/authentication-e2e/src/authentication/n03-catalog.worker.ts"
+      ]
+    },
+    {
+      "id": "primary-owner-counters-and-playback-state",
+      "kind": "fields on primary owner rows, not independently maintained search mirrors",
+      "fields": [
+        "authentication.user_entity.failedLoginCount",
+        "social.community.memberCount",
+        "social.search_history.resultCount",
+        "social.event.attendeeCount",
+        "social.election_candidate.voteCount",
+        "forum.thread.viewCount",
+        "videos.video.viewCount/likeCount",
+        "videos.channel.memberCount",
+        "videos.channel_feed playback mode/active pointers"
+      ],
+      "boundary": "Existing owner dispositions and later deletion adapters govern these fields. N03 does not claim aggregate recomputation, statistical retention policy, video workflow acceptance or permission to delete shared content. ChannelFeed is registered primary playback state, not a materialized search view.",
+      "evidence": [
+        "apps/social/src/app/services/community.service.ts",
+        "apps/forum/src/app/services/thread.service.ts",
+        "apps/videos/src/entities/channel-feed.entity.ts",
+        "apps/videos/src/app/services/video.service.ts",
+        "docs/release-readiness/SOCIAL-DISPOSITIONS.md"
+      ]
+    },
+    {
+      "id": "migration-only-profile-primary",
+      "kind": "legacy primary tables declared by checked-in migration",
+      "tables": ["goal", "project"],
+      "boundary": "Explicitly reconcile physical presence/columns/indexes against the initial Profile migration. Presence is not new semantic ownership, capture or deletion acceptance.",
+      "evidence": ["apps/profile/migrations/1730836292692-initial.ts"],
+      "columns": {
+        "timeline": ["relatedGoalId", "relatedProjectId"]
+      }
+    },
+    {
+      "id": "secondary-store-absence-candidates",
+      "kind": "bounded source and fresh physical-catalog absence proof",
+      "candidates": [
+        "external Elasticsearch/OpenSearch/Meili/Typesense/Algolia clients in traced owner/UI code",
+        "public views/materialized views",
+        "stored generated/full-text columns",
+        "foreign tables or unregistered application schemas",
+        "custom persistence/mirror triggers"
+      ],
+      "boundary": "Only the eleven registered local databases and reviewed source revision are qualified. This is not absence proof for deployed services, external sinks, arbitrary JSON payload semantics or unknown operational copies.",
+      "evidence": [
+        "apps/authentication-e2e/src/authentication/search-stores.spec.ts",
+        "apps/authentication-e2e/src/authentication/n03-catalog.worker.ts"
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "id": "N01/A01-A07",
+      "boundary": "Leased capture spools, identity temporary tables and eventual export artifacts retain their accepted pipeline/remaining artifact contracts; not search mirrors."
+    },
+    {
+      "id": "N02/N06",
+      "boundary": "Backend auth/permission caches and browser observable/signal/storage lifetimes remain their own slices."
+    },
+    {
+      "id": "N04/N05/N07",
+      "boundary": "Logs, media bytes/versions and application-held external provider grants remain separate."
+    },
+    {
+      "id": "D00-D27",
+      "boundary": "Permanent account write fences, identity discovery and account deletion orchestration remain future scoped adapters; this is store-level cleanup only."
+    }
+  ],
+  "notQualified": [
+    "Real browser or external-provider flows",
+    "Primary search UX/query-filter accuracy, including TS people lookup",
+    "Production deployment topology, backups/WAL or retention qualification",
+    "Other product workflows or new owner delivery slices"
+  ],
+  "catalogTotals": {
+    "databases": 11,
+    "ormTablesIncludingJunctions": 74,
+    "migrationStores": 11,
+    "migrationOnlyPrimaryTables": 2,
+    "physicalTables": 87,
+    "columns": 781,
+    "nativeBtreeIndexes": 161
+  },
+  "privateProbePolicy": "N01/N02/N03 private cases require their own explicit marker; default registration probe skips exactly three without running their callbacks."
+}

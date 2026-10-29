@@ -8,8 +8,68 @@ import {
 import { provideHttpClient } from '@angular/common/http';
 import { AuthStateService } from './auth-state.service';
 import { AuthenticationService } from './authentication.service';
+import * as CommonUi from '@optimistic-tanuki/common-ui';
 
 describe('AuthStateService', () => {
+  it('opens RUM only after the server-verified session restore and closes it on logout', async () => {
+    const eligibility = jest.spyOn(
+      CommonUi,
+      'setPerformanceMonitoringEligibility'
+    );
+    const currentSession = jest.fn().mockResolvedValue({
+      data: { userId: 'user-1', name: 'Member', email: 'member@example.test' },
+    });
+    TestBed.configureTestingModule({
+      providers: [
+        AuthStateService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: AuthenticationService, useValue: { currentSession } },
+        { provide: API_BASE_URL, useValue: '/api' },
+      ],
+    });
+
+    const service = TestBed.inject(AuthStateService);
+    await service.waitForSessionRestore();
+    expect(eligibility).toHaveBeenCalledWith('local-hub', true);
+
+    service.logout();
+    expect(eligibility).toHaveBeenLastCalledWith('local-hub', false);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/authentication/logout')
+      .flush({});
+    eligibility.mockRestore();
+  });
+
+  it('clears the current deleting account locally and leaves preferences and newer-cookie transport alone', async () => {
+    const accountId = '41000000-0000-4000-8000-000000000001';
+    const currentSession = jest.fn().mockResolvedValue({
+      data: { userId: accountId, name: 'Member', email: 'own@example.test' },
+    });
+    TestBed.configureTestingModule({
+      providers: [
+        AuthStateService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: AuthenticationService, useValue: { currentSession } },
+        { provide: API_BASE_URL, useValue: '/api' },
+      ],
+    });
+    const service = TestBed.inject(AuthStateService);
+    await service.waitForSessionRestore();
+    localStorage.setItem('theme', 'keep');
+    CommonUi.notifyAccountDeletion('41000000-0000-4000-8000-000000000002');
+    expect(service.isAuthenticated).toBe(true);
+    CommonUi.notifyAccountDeletion(accountId);
+    expect(service.isAuthenticated).toBe(false);
+    expect(localStorage.getItem('theme')).toBe('keep');
+    TestBed.inject(HttpTestingController).expectNone(
+      '/api/authentication/logout'
+    );
+  });
+
   it('shares the pending browser session restore with all guards', async () => {
     let resolveSession!: (value: unknown) => void;
     const currentSession = jest.fn(
@@ -97,6 +157,83 @@ describe('AuthStateService', () => {
     expect(service.getUserData()?.userId).toBe('user-2');
   });
 
+  it('does not restore a signed-out user from a late session response', async () => {
+    let resolve!: (value: unknown) => void;
+    const currentSession = jest.fn(
+      () =>
+        new Promise((r) => {
+          resolve = r;
+        })
+    );
+    TestBed.configureTestingModule({
+      providers: [
+        AuthStateService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: AuthenticationService, useValue: { currentSession } },
+      ],
+    });
+    const service = TestBed.inject(AuthStateService);
+    const pending = service.waitForSessionRestore();
+    service.logout();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/authentication/logout')
+      .flush({});
+    resolve({ data: { userId: 'old-user', email: 'old@example.test' } });
+    await pending;
+    expect(service.isAuthenticated).toBe(false);
+    expect(service.getUserData()).toBeNull();
+  });
+
+  it('clears local session state even when logout transport fails', async () => {
+    const currentSession = jest.fn().mockResolvedValue({
+      data: { userId: 'user-1', email: 'member@example.test' },
+    });
+    TestBed.configureTestingModule({
+      providers: [
+        AuthStateService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: AuthenticationService, useValue: { currentSession } },
+      ],
+    });
+    const service = TestBed.inject(AuthStateService);
+    await service.waitForSessionRestore();
+    service.logout();
+    expect(service.isAuthenticated).toBe(false);
+    expect(service.getUserData()).toBeNull();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/authentication/logout')
+      .flush(null, { status: 503, statusText: 'Unavailable' });
+    expect(service.isAuthenticated).toBe(false);
+    expect(service.getUserData()).toBeNull();
+  });
+
+  it('rejects login when the session cannot be restored', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        AuthStateService,
+        provideHttpClient(),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        {
+          provide: AuthenticationService,
+          useValue: {
+            login: jest.fn().mockResolvedValue({}),
+            currentSession: jest
+              .fn()
+              .mockRejectedValue(new Error('no session')),
+          },
+        },
+      ],
+    });
+    const service = TestBed.inject(AuthStateService);
+    await service.waitForSessionRestore();
+    await expect(
+      service.login({ email: 'user@example.test', password: 'test-password' })
+    ).rejects.toThrow();
+  });
   describe('server platform', () => {
     function setupServer(currentSession = jest.fn()) {
       TestBed.configureTestingModule({
@@ -208,7 +345,7 @@ describe('AuthStateService', () => {
       const service = TestBed.inject(AuthStateService);
       await service.waitForSessionRestore();
 
-      await service.login('four@example.com', 'secret');
+      await service.login({ email: 'four@example.com', password: 'secret' });
 
       expect(login).toHaveBeenCalledWith({
         email: 'four@example.com',

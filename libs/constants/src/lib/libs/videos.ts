@@ -1,5 +1,11 @@
 // Video Service Commands
 export const VideoCommands = {
+  FENCE_ACCOUNT_DELETION: 'videos.deletion.fence',
+  ERASE_ACCOUNT_DELETION: 'videos.deletion.erase',
+  READBACK_ACCOUNT_DELETION: 'videos.deletion.readback',
+  OPEN_ACCOUNT_EXPORT_CAPTURE: 'video.export.open',
+  READ_ACCOUNT_EXPORT_CAPTURE: 'video.export.read',
+  RELEASE_ACCOUNT_EXPORT_CAPTURE: 'video.export.release',
   // Video commands
   CREATE_VIDEO: 'create-video',
   FIND_ALL_VIDEOS: 'find-all-videos',
@@ -47,3 +53,13 @@ export const VideoCommands = {
   RECORD_VIDEO_VIEW: 'record-video-view',
   FIND_VIDEO_VIEWS: 'find-video-views',
 };
+
+export const VIDEOS_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
+  'channel',
+  'video',
+  'channelSubscription',
+  'videoView',
+  'channelFeed',
+  'programBlock',
+  'liveSession',
+] as const;

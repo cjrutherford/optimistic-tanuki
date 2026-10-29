@@ -42,8 +42,7 @@ export class CommunityInvite {
   token: string | null;
 
   @Column({
-    type: 'enum',
-    enum: CommunityMembershipStatus,
+    type: 'varchar',
     default: CommunityMembershipStatus.PENDING,
   })
   status: CommunityMembershipStatus;

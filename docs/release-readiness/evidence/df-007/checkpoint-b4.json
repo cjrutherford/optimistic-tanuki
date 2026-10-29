@@ -1,0 +1,554 @@
+{
+  "checkpoint": "DF-007-B4",
+  "verifiedDate": "2026-10-18",
+  "acceptance": "PASS \u2014 bounded internal Social preview only; DF-007 and RR-11 remain open",
+  "result": "Locally verified Social preview, always partial and non-downloadable",
+  "baseRevision": "720f00bd596bec7b5c371c0232d52dbcbd462f63",
+  "source": {
+    "project": "ot-df007-b4-social",
+    "patchSha256": "d24ae1d25fcd905781d50c1199dd577a860d29d96e7b5c0110424dd404794bb0",
+    "overlayManifestSha256": "1a718cee9ecad26eeca77f81937a70f8c3723a71482a090eefe6858dd5cc25a4",
+    "overlayManifestDigestSemantics": "SHA-256 of canonical JSON (sorted keys, compact separators, final newline) for base revision, project, and 18 path+content hashes; not a digest of the full staged filesystem.",
+    "overlayCount": 18,
+    "sourceFilesSha256": {
+      "apps/authentication-e2e/project.json": "ae6ea426ddb55f69b27aaf2042511acd403d9828cad94eec911cf85bdd1a413c",
+      "apps/authentication-e2e/src/authentication/account-export.spec.ts": "f29b6c77b6c13823287f3715ebe648c576f0c63b4bbd3e803a798fb310885387",
+      "apps/authentication/src/app/account-export.service.spec.ts": "2c3ff6266426a9356c3925700a81bf30b319cd699ce574ccc0cecbe941ea32d0",
+      "apps/authentication/src/app/account-export.service.ts": "845876069f821fde8a0521990a13fe5c5741a5602b38f9283b21efb58943e1ca",
+      "apps/authentication/src/app/app.module.ts": "531f393760c5c148a8812b92ddee002e593b4b11dd75ad8e85cd2ac48fb8f0e1",
+      "apps/authentication/src/assets/config.yaml.sample": "c2cef855ac3f814bcd910c40d36a6de4bfe906e424e647e1b31a2fc7011dd15f",
+      "apps/authentication/src/config.spec.ts": "9314d007dde7e859166c6273844ac5c3ac453d0d30fb03680430d09893a67ff5",
+      "apps/authentication/src/config.ts": "aa48bbe261c1029fd3577407651de7968af05a21f4f8285e2d87d4b796ed6239",
+      "apps/social/src/app/account-export.controller.ts": "045b22d25bcbddd2646063ed44f9947b4e8e3a0eca874366941da251fae795d3",
+      "apps/social/src/app/account-export.service.spec.ts": "5cb431ee480d353a731ac5b55b1e002fb4113fd8dacb3f078bf35544c8df7343",
+      "apps/social/src/app/account-export.service.ts": "1654b5e998d3c380e78af7987b0b8ef091dd774b70cfb5ce21e36b17d2da5f5f",
+      "apps/social/src/app/app.module.ts": "91e078660358027810c640e449b7a584df31b4e7c266294b24c38a88e3eca234",
+      "e2e/docker-compose.authentication-e2e.yaml": "dab3c82a75ee41c6249b2f8cc5dd09fa56be2ac719f4db1420145926f74f671f",
+      "e2e/docker-compose.e2e-stack.yaml": "f97abfe665a281b5d18ecb27fc90436d74f4a96de1cc8efaaa600279e8904e18",
+      "libs/constants/src/index.ts": "5b4d0d96abbc6fa7044c7dfe39769f1a28eb0b7d27574ec566b52f413b4a436d",
+      "libs/constants/src/lib/libs/social.ts": "8dc35729431755e244a0217d5673e2672640d4416fb682210bcec722a13c46fc",
+      "scripts/e2e-environment-manifest.mjs": "c657fd787dc19423d970f10e80d8f9ddbba2fe04dd96fb05a4fa6789534574cb",
+      "scripts/tests/e2e-environment-manifest.test.mjs": "2bfaad4ca988e6bd8369d658991f341c81ec4907fa4678d7ac3d6f927ea32a99"
+    },
+    "rootIndependentCheck": {
+      "overlaysMatched": 18,
+      "overlayCount": 18,
+      "baseConfigsMatched": 4,
+      "directoryWipAbsent": 39,
+      "protectedFilesUnchanged": 43,
+      "reviewSha256": "a66fc53805388d67fde8ed8164aa21304467d0d4f7e970629545021c29cc84de"
+    }
+  },
+  "imageIdentities": {
+    "authentication": {
+      "tag": "ot-df007-b4-social/authentication:b4-d24ae1d25fcd",
+      "id": "sha256:52bafaebc49f0eb5edf5fb1c607b030dc59565d05716dff396040949db4aa7e6",
+      "labels": {
+        "io.optimistic-tanuki.account-rights.patch-sha256": "d24ae1d25fcd905781d50c1199dd577a860d29d96e7b5c0110424dd404794bb0",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b4-social",
+        "io.optimistic-tanuki.account-rights.source-manifest-sha256": "1a718cee9ecad26eeca77f81937a70f8c3723a71482a090eefe6858dd5cc25a4",
+        "org.opencontainers.image.revision": "720f00bd596bec7b5c371c0232d52dbcbd462f63"
+      }
+    },
+    "profile": {
+      "tag": "ot-df007-b4-social/profile:b4-d24ae1d25fcd",
+      "id": "sha256:991f09d1a0bae7f3ff50f29393fd8716be257f762729d26b68caed978e22c596",
+      "labels": {
+        "io.optimistic-tanuki.account-rights.patch-sha256": "d24ae1d25fcd905781d50c1199dd577a860d29d96e7b5c0110424dd404794bb0",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b4-social",
+        "io.optimistic-tanuki.account-rights.source-manifest-sha256": "1a718cee9ecad26eeca77f81937a70f8c3723a71482a090eefe6858dd5cc25a4",
+        "org.opencontainers.image.revision": "720f00bd596bec7b5c371c0232d52dbcbd462f63"
+      }
+    },
+    "permissions": {
+      "tag": "ot-df007-b4-social/permissions:b4-d24ae1d25fcd",
+      "id": "sha256:037d728b93654af961ecd7ed27cdb31f441ca600256d5154b4056525e1c52b05",
+      "labels": {
+        "io.optimistic-tanuki.account-rights.patch-sha256": "d24ae1d25fcd905781d50c1199dd577a860d29d96e7b5c0110424dd404794bb0",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b4-social",
+        "io.optimistic-tanuki.account-rights.source-manifest-sha256": "1a718cee9ecad26eeca77f81937a70f8c3723a71482a090eefe6858dd5cc25a4",
+        "org.opencontainers.image.revision": "720f00bd596bec7b5c371c0232d52dbcbd462f63"
+      }
+    },
+    "social": {
+      "tag": "ot-df007-b4-social/social:b4-d24ae1d25fcd",
+      "id": "sha256:e0fee64e9c4a7d0eaf94ddc0fae2bd84f9743f964f2c0a42b19b95ea91be15f7",
+      "labels": {
+        "io.optimistic-tanuki.account-rights.patch-sha256": "d24ae1d25fcd905781d50c1199dd577a860d29d96e7b5c0110424dd404794bb0",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b4-social",
+        "io.optimistic-tanuki.account-rights.source-manifest-sha256": "1a718cee9ecad26eeca77f81937a70f8c3723a71482a090eefe6858dd5cc25a4",
+        "org.opencontainers.image.revision": "720f00bd596bec7b5c371c0232d52dbcbd462f63"
+      }
+    }
+  },
+  "verification": {
+    "commands": {
+      "affectedTests": {
+        "argv": [
+          "pnpm",
+          "exec",
+          "nx",
+          "affected",
+          "-t",
+          "test",
+          "-c",
+          "ci",
+          "--files=apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/assets/config.yaml.sample,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/social/src/app/account-export.controller.ts,apps/social/src/app/account-export.service.spec.ts,apps/social/src/app/account-export.service.ts,apps/social/src/app/app.module.ts,e2e/docker-compose.authentication-e2e.yaml,e2e/docker-compose.e2e-stack.yaml,libs/constants/src/index.ts,libs/constants/src/lib/libs/social.ts,scripts/e2e-environment-manifest.mjs,scripts/tests/e2e-environment-manifest.test.mjs",
+          "--parallel=1",
+          "--outputStyle=static",
+          "--exclude=directory-*"
+        ],
+        "exitCode": 0,
+        "result": "32 projects passed"
+      },
+      "affectedLint": {
+        "argv": [
+          "pnpm",
+          "exec",
+          "nx",
+          "affected",
+          "-t",
+          "lint",
+          "--files=apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/assets/config.yaml.sample,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/social/src/app/account-export.controller.ts,apps/social/src/app/account-export.service.spec.ts,apps/social/src/app/account-export.service.ts,apps/social/src/app/app.module.ts,e2e/docker-compose.authentication-e2e.yaml,e2e/docker-compose.e2e-stack.yaml,libs/constants/src/index.ts,libs/constants/src/lib/libs/social.ts,scripts/e2e-environment-manifest.mjs,scripts/tests/e2e-environment-manifest.test.mjs",
+          "--parallel=3",
+          "--outputStyle=static",
+          "--exclude=directory-*,*-e2e"
+        ],
+        "exitCode": 0,
+        "result": "32 projects passed"
+      },
+      "productionBuild": {
+        "argv": [
+          "pnpm",
+          "exec",
+          "nx",
+          "affected",
+          "-t",
+          "build",
+          "--files=apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/assets/config.yaml.sample,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/social/src/app/account-export.controller.ts,apps/social/src/app/account-export.service.spec.ts,apps/social/src/app/account-export.service.ts,apps/social/src/app/app.module.ts,e2e/docker-compose.authentication-e2e.yaml,e2e/docker-compose.e2e-stack.yaml,libs/constants/src/index.ts,libs/constants/src/lib/libs/social.ts,scripts/e2e-environment-manifest.mjs,scripts/tests/e2e-environment-manifest.test.mjs",
+          "--parallel=3",
+          "--outputStyle=static",
+          "--exclude=directory-*"
+        ],
+        "exitCode": 0,
+        "result": "30 projects plus 17 dependency tasks passed"
+      },
+      "developmentBuild": {
+        "argv": ["pnpm", "run", "build:dev"],
+        "exitCode": 0,
+        "result": "48 projects plus 27 dependency tasks passed"
+      },
+      "focusedSocialTests": {
+        "argv": ["pnpm", "exec", "nx", "test", "social"],
+        "exitCode": 0,
+        "result": "28 suites; 493 tests passed"
+      },
+      "focusedAuthenticationTests": {
+        "argv": ["pnpm", "exec", "nx", "test", "authentication"],
+        "exitCode": 0,
+        "result": "23 suites; 287 tests passed"
+      },
+      "workflowContracts": {
+        "command": [
+          "node",
+          "--test",
+          "scripts/tests/e2e-environment-manifest.test.mjs",
+          "scripts/tests/wait-for-e2e-readiness.test.mjs",
+          "scripts/tests/resolve-e2e-images.test.mjs",
+          "scripts/tests/ui-e2e-ci-contract.test.mjs"
+        ],
+        "exitCode": 0
+      },
+      "format": {
+        "command": [
+          "pnpm",
+          "exec",
+          "nx",
+          "format:check",
+          "--files=apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/assets/config.yaml.sample,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/social/src/app/account-export.controller.ts,apps/social/src/app/account-export.service.spec.ts,apps/social/src/app/account-export.service.ts,apps/social/src/app/app.module.ts,e2e/docker-compose.authentication-e2e.yaml,e2e/docker-compose.e2e-stack.yaml,libs/constants/src/index.ts,libs/constants/src/lib/libs/social.ts,scripts/e2e-environment-manifest.mjs,scripts/tests/e2e-environment-manifest.test.mjs"
+        ],
+        "exitCode": 0
+      },
+      "diffCheck": {
+        "command": ["git", "diff", "--check"],
+        "exitCode": 0
+      },
+      "privateE2E": {
+        "argv": ["pnpm", "exec", "nx", "run", "authentication-e2e:e2e:ci"],
+        "exitCode": 0
+      }
+    },
+    "socialTests": {
+      "suites": 28,
+      "passed": 493,
+      "failed": 0
+    },
+    "authenticationTests": {
+      "suites": 23,
+      "passed": 287,
+      "failed": 0
+    },
+    "workflowContracts": {
+      "passed": 40,
+      "failed": 0
+    },
+    "affectedTestProjects": 32,
+    "affectedLintProjects": 32,
+    "productionBuildProjects": 30,
+    "productionBuildDependencyTasks": 17,
+    "developmentBuildProjects": 48,
+    "developmentBuildDependencyTasks": 27,
+    "additionalFinalChecks": {
+      "authenticationE2ELint": {
+        "status": "passed",
+        "exitCode": 0,
+        "evidence": "authentication-e2e-lint-cleanup.log"
+      },
+      "authenticationE2ETypecheck": {
+        "status": "passed",
+        "exitCode": 0,
+        "evidence": "authentication-e2e-typecheck-cleanup.log"
+      },
+      "sampleYamlFormat": {
+        "argv": [
+          "pnpm",
+          "exec",
+          "prettier",
+          "--check",
+          "--parser",
+          "yaml",
+          "apps/authentication/src/assets/config.yaml.sample"
+        ],
+        "exitCode": 0
+      },
+      "openApiExport": {
+        "argv": ["pnpm", "run", "get-openapi"],
+        "exitCode": 0
+      },
+      "orvalGeneration": {
+        "argv": ["pnpm", "exec", "orval", "--config", "orval.config.ts"],
+        "exitCode": 0
+      },
+      "generatedClientDrift": {
+        "argv": [
+          "git",
+          "diff",
+          "--exit-code",
+          "--",
+          "libs/billing-sdk/src/generated/",
+          "libs/chat-ui-data-access/src/generated/",
+          "libs/payments-ui-data-access/src/generated/",
+          "libs/store-data-access/src/generated/",
+          "libs/finance/data-access/src/generated/",
+          "libs/blogging-data-access/src/generated/",
+          "libs/social-data-access/src/generated/",
+          "libs/learning-ui-data-access/src/generated/",
+          "libs/profile-ui-data-access/src/generated/"
+        ],
+        "exitCode": 0
+      },
+      "storybookBuild": {
+        "argv": [
+          "pnpm",
+          "exec",
+          "nx",
+          "build",
+          "ui-playground",
+          "--outputStyle=static"
+        ],
+        "exitCode": 0
+      },
+      "publishablePackageTests": {
+        "argv": ["pnpm", "run", "packages:test"],
+        "exitCode": 0,
+        "result": "15 projects passed"
+      },
+      "publishablePackageCheckAndBuild": {
+        "check": ["pnpm", "run", "packages:check"],
+        "build": ["pnpm", "run", "packages:build"],
+        "exitCode": 0,
+        "result": "15 packages passed"
+      }
+    },
+    "fastValidation": {
+      "count": 14,
+      "status": "all passed; reused from the prior verified B4 freeze because the input files were unchanged, rather than rerun on the final five-path repair freeze",
+      "checks": {
+        "migration-governance": {
+          "argv": ["pnpm", "run", "validate:typeorm-migrations"],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:06.228727+00:00"
+        },
+        "migration-setup": {
+          "argv": [
+            "node",
+            "--test",
+            "scripts/tests/setup-and-migrate.test.mjs"
+          ],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:05.250729+00:00"
+        },
+        "e2e-environment": {
+          "argv": ["node", "scripts/validate-e2e-environment.mjs"],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:20.432704+00:00"
+        },
+        "ui-heuristics": {
+          "argv": ["pnpm", "run", "ui:heuristics:ci"],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:07.685724+00:00"
+        },
+        "no-personality-scss": {
+          "argv": ["pnpm", "run", "check:no-personality-scss"],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:05.529728+00:00"
+        },
+        "personality-audit": {
+          "argv": ["pnpm", "run", "check:personality-audit"],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:07.292725+00:00"
+        },
+        "client-interface-collection": {
+          "argv": [
+            "pnpm",
+            "exec",
+            "playwright",
+            "test",
+            "--config=apps/client-interface-e2e/playwright.config.ts",
+            "--list"
+          ],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:09.666721+00:00"
+        },
+        "forgeofwill-collection": {
+          "argv": [
+            "pnpm",
+            "exec",
+            "playwright",
+            "test",
+            "--config=apps/forgeofwill-e2e/playwright.config.ts",
+            "--list"
+          ],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:09.218722+00:00"
+        },
+        "digital-homestead-collection": {
+          "argv": [
+            "pnpm",
+            "exec",
+            "playwright",
+            "test",
+            "--config=apps/digital-homestead-e2e/playwright.config.ts",
+            "--list"
+          ],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:10.523720+00:00"
+        },
+        "christopherrutherford-net-collection": {
+          "argv": [
+            "pnpm",
+            "exec",
+            "playwright",
+            "test",
+            "--config=apps/christopherrutherford-net-e2e/playwright.config.ts",
+            "--list"
+          ],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:09.654721+00:00"
+        },
+        "owner-console-collection": {
+          "argv": [
+            "pnpm",
+            "exec",
+            "playwright",
+            "test",
+            "--config=apps/owner-console-e2e/playwright.config.ts",
+            "--list"
+          ],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:10.276720+00:00"
+        },
+        "store-client-collection": {
+          "argv": [
+            "pnpm",
+            "exec",
+            "playwright",
+            "test",
+            "--config=apps/store-client-e2e/playwright.config.ts",
+            "--list"
+          ],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:09.212722+00:00"
+        },
+        "learning-collection": {
+          "argv": [
+            "pnpm",
+            "exec",
+            "playwright",
+            "test",
+            "--config=apps/learning-e2e/playwright.config.ts",
+            "--list"
+          ],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:08.066724+00:00"
+        },
+        "configurable-client-collection": {
+          "argv": [
+            "pnpm",
+            "exec",
+            "playwright",
+            "test",
+            "--config=apps/configurable-client-e2e/playwright.config.ts",
+            "--list"
+          ],
+          "exitCode": 0,
+          "sourceFreeze": "previous verified B4 freeze a8a6458a28f2; reused without rerun because these commands do not consume any of the five changed repair paths",
+          "logMtimeUtc": "2026-10-18T12:30:08.184724+00:00"
+        }
+      }
+    },
+    "independentStaticReview": "GO"
+  },
+  "runtime": {
+    "composeProject": "ot-df007-b4-social",
+    "databaseAllowlist": [
+      "ot_authentication",
+      "ot_profile",
+      "ot_permissions",
+      "ot_social"
+    ],
+    "publishedLoopbackPorts": [
+      "127.0.0.1:15432",
+      "127.0.0.1:3001",
+      "127.0.0.1:3002",
+      "127.0.0.1:3012",
+      "127.0.0.1:3003"
+    ],
+    "healthyBeforeE2E": [
+      "postgres",
+      "authentication",
+      "profile",
+      "permissions",
+      "social"
+    ],
+    "dbSetupExitCode": 0,
+    "command": "pnpm exec nx run authentication-e2e:e2e:ci",
+    "skipSetup": true,
+    "instrumentation": false,
+    "nodeOptions": "unset",
+    "coldCoordinatorPrimaryCall": true,
+    "exitCode": 0,
+    "suites": {
+      "passed": 2,
+      "failed": 0,
+      "total": 2
+    },
+    "tests": {
+      "passed": 21,
+      "failed": 0,
+      "total": 21
+    },
+    "fixtureAssertions": "PASSED: both owned profile/post/reaction and poll definitions appeared once; foreign post/poll/profile/reaction/assignment and sensitive sidecars excluded; fixture posts/comments/attachments/polls/reactions/votes/components/links and foreign/shared permission fixtures persisted before cleanup; revoked guardian and terminal policy notice assertions passed.",
+    "postCleanupReadbackExitCode": 0,
+    "postCleanupIndependentCounters": {
+      "ot_social": {
+        "fixture_posts": 0,
+        "fixture_comments": 0,
+        "fixture_attachments": 0,
+        "fixture_polls": 0,
+        "fixture_components": 0,
+        "fixture_links": 0,
+        "fixture_votes": 0
+      },
+      "ot_authentication": {
+        "fixture_users": 0,
+        "fixture_guardian_permissions": 0,
+        "fixture_guardian_notice": 0,
+        "fixture_action_tokens": 0
+      },
+      "ot_profile": {
+        "fixture_profiles": 0,
+        "fixture_profile_activity": 0
+      },
+      "ot_permissions": {
+        "fixture_roles": 0,
+        "fixture_app_scopes": 0
+      }
+    },
+    "counterScopeLimit": "These selected counters do not independently count reactions, every credential table (including OAuth/key data), or standalone Permissions assignment tables. Separate E2E exact-generated-key assertions cover Social fixture rows (including reactions) and Permissions assignments. Authentication cleanup deletes fixture OAuth and key-data rows, but does not assert their post-delete absence. The private database volume was removed after the run. This is not full account-erasure or orphan-absence proof.",
+    "emailAndProvider": {
+      "smtpHost": "explicit-empty",
+      "authAutoVerifyEmails": true,
+      "providerSendPatternMatches": 0
+    },
+    "composeDownExitCode": 0,
+    "remainingProjectResources": {
+      "containers": 0,
+      "networks": 0,
+      "volumes": 0
+    },
+    "sharedServicesStopped": false
+  },
+  "privateLogSha256": {
+    "authentication-e2e-ci.log": "65913aa88e31010d79d88f56058de42273fc5e7e784cb718f70d78eaeec5f34d",
+    "service-runtime.log": "da735a9b7559d34e908849f7c48522c0fe4f7a4978d75fd7e18e2cd543271f3a",
+    "compose-up.log": "0ce5baeaf6048ef6a5df3be20313975f03e8c6909aea01f380cd055dc1fc0531",
+    "compose-down.log": "ac73d496b69bd14afdee89abe0f156daee5e407432ddc2e532d654270ccb2af5",
+    "post-test-fixture-readback.txt": "84cb9cca3efbe9c6aa31e77f98fd4e56e774f72247e1247f63f58c5e69e9ee50"
+  },
+  "limitations": [
+    "Social previews posts, comments, reactions, votes, Attachment metadata, and directly author-owned Poll definitions only; other Social stores remain uncovered.",
+    "Poll has no verified Post association; Poll votes and historical/internal-RPC authorship integrity are uncovered.",
+    "Live profile-ID pages and Social reads are unfenced; partial status is unconditional.",
+    "Selected text/arrays are materialized before string/byte checks, so database-read memory is not proven bounded; response timers do not prove SQL cancellation.",
+    "Portable media, providers/backups, full inventory, durable orchestration, full independent account readback, account deletion, public UI/downloads and production behavior remain unaccepted."
+  ],
+  "priorNonAcceptanceDiagnostics": [
+    "The initial broad concurrent quality run timed out in an existing Assets RSS integration test. The isolated case passed with builds idle; all seven Assets suites (95 tests) and the final affected phase passed when build sessions were idle. No Assets source changed.",
+    "Independent review found missing strict ascending/global duplicate checks for Profile identity pages and fixture coverage on only one owned profile. Regressions were RED before repair; the final source rejects malformed/repeated resolver pages and the E2E fixture covers both owned profiles.",
+    "The first runtime fixture attempt reached 16/21 tests but failed setup on nonexistent Poll postId and the UUID/text cleanup UNION. The Social fixture transaction rolled back (zero Social rows); pre-teardown generated-row counts elsewhere were 2/3/1/1, so exact cleanup was not accepted for that run. The Poll schema scope and fixture cleanup were corrected without a migration.",
+    "A later pre-fix runtime passed fixture setup but failed the Social participant assertion (20/21 tests passed); its zero post-test counters established cleanup only, not snapshot correctness. Private RPC diagnostics showed a 6 ms Authentication handler rejection because Social omitted required userId. The exact-payload unit regression was RED then GREEN after the one-field fix. These earlier runs are not acceptance evidence."
+  ],
+  "notRunOrNotEstablished": [
+    "Real email delivery or external provider calls",
+    "Production deployment or production source/bundle correlation",
+    "Portable image/video bytes, complete Social or cross-service inventory, full account export, account deletion, provider/backup behavior, or UI workflow",
+    "Independent counter readback for reaction rows, every credential table, and standalone Permissions assignment tables"
+  ],
+  "privateGateLogSha256": {
+    "affected-tests": "2256683c192a46d70efe36e7c458ec03ff13019548dca93f621a865ee6aec4ce",
+    "affected-lint": "b91e4d6634bbf05aeaddc7a55d47db9c316c21054830c0fc361098c3667ce732",
+    "production-build": "f3c910ecb62b828b41fd072ee760ac57001f7473e9bde80fb608714cded93e27",
+    "development-build": "d6e825e034bcb946ab00b31c6338dd5f3e6400297daf546f3380ec9d051bb899",
+    "workflow-contracts": "65ca3512e11c9ad52795f9b5546da76107f725416c18d603883dc27c9982e644",
+    "format": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diff-check": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sample-yaml": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20",
+    "openapi": "c0891d9aca7fdb238bb8467969c8e3574035cef97112917ef1abd99ada6322e5",
+    "orval": "cb501bb9be1648ab50f3ba2901b46462850ff289230a46953597e7c71d8382ac",
+    "generated-client-drift": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "storybook": "1e766009681a7c15c6585f513b7d63ee0f44045122f4949cf56f037f14807645",
+    "packages-test": "d65d31dba20dd3d73125641ac63def37d07332590aa7c2a2702fbebc1a7ffcfd",
+    "packages-check": "5412e075ae6be092d654198b9ca8c57afd3d43e5ac3c654df4267d276e623b50",
+    "packages-build": "46fed38714255656cdeab6da799d89670216ea154765efab31aaab13100f43b0",
+    "authentication-e2e-lint": "8693fac451428704a82c88f7cd0291bf9c09cb9fba1845aa1f8b287c9c577eed",
+    "authentication-e2e-typecheck": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "focused-social-tests": "f5ee6390fc131012c139c7369ebb6a1b8ab4ddd50983a96a182522d9bec9ac3d",
+    "focused-authentication-tests": "80034e66d34db7b27eeeec9abed288bbf74c627b9ccb785ef4625a442de58bf3",
+    "final-format-after-subject-fix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "subject-fix-green-test": "02cbc110385e5458a967f455064a41ddf6adf382552d2915f87ceb7272185899"
+  }
+}

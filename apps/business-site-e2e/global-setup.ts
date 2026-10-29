@@ -18,6 +18,7 @@ const BUSINESS_SITE_E2E_BUILD_PROJECTS = [
   'permissions',
   'store',
   'lead-tracker',
+  'workspace',
   'blogging',
   'gateway',
   'business-site',
@@ -27,6 +28,7 @@ const OWNER_EMAIL = 'owner@localbusiness.test';
 const OWNER_PASSWORD = 'BusinessOwnerPass123!';
 const BUSINESS_SITE_BASE_URL =
   process.env['BASE_URL'] || 'http://127.0.0.1:8094';
+const BUSINESS_SITE_PUBLIC_ORIGIN = new URL(BUSINESS_SITE_BASE_URL).origin;
 const WORKSPACE_ROOT = resolve(__dirname, '../../');
 
 export function getOwnerStorageStatePath(): string {
@@ -162,7 +164,9 @@ async function saveOwnerStorageState(): Promise<void> {
       headers: {
         'content-type': 'application/json',
         'x-ot-appscope': 'business-site',
+        'x-ot-app-id': 'business-site',
         'x-ot-session-mode': 'cookie',
+        origin: BUSINESS_SITE_PUBLIC_ORIGIN,
       },
       data: {
         email: OWNER_EMAIL,
@@ -200,6 +204,7 @@ export function getSetupSeedCommands(workspaceRoot: string): SetupCommand[] {
       command: 'node',
       args: [join(workspaceRoot, 'apps/business-site/src/seed-business.mjs')],
       env: {
+        BUSINESS_SITE_PUBLIC_ORIGIN,
         GATEWAY_URL: 'http://localhost:3000/api',
         APP_SCOPE: 'business-site',
         POSTGRES_HOST: '127.0.0.1',
@@ -244,6 +249,7 @@ export function getStackStartupCommands(workspaceRoot: string): SetupCommand[] {
         'permissions',
         'store',
         'lead-tracker',
+        'workspace',
         'blogging',
         'gateway',
       ],

@@ -8,6 +8,10 @@ export class ForumReport {
   @Column()
   reporterId: string;
 
+  // Null on historical rows whose source scope cannot be established safely.
+  @Column({ type: 'varchar', nullable: true })
+  appScope: string | null;
+
   @Column({ type: 'varchar' })
   contentType: 'thread' | 'post';
 

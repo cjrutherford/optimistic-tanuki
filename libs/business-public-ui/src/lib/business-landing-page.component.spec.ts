@@ -804,10 +804,10 @@ describe('BusinessLandingPageComponent', () => {
     ) as HTMLSelectElement | null;
 
     expect(select).not.toBeNull();
-    expect(select?.id).toBe('business-contact-subject');
+    expect(select?.id).toBe('business-contact-subject-control');
 
     const label = fixture.nativeElement.querySelector(
-      'lib-contact-form label[for="business-contact-subject"]'
+      'lib-contact-form label[for="business-contact-subject-control"]'
     ) as HTMLLabelElement | null;
     expect(label?.textContent?.trim()).toBe('Subject');
   });

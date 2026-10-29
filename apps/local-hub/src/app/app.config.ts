@@ -30,6 +30,14 @@ import {
   ThemeService,
 } from '@optimistic-tanuki/theme-lib';
 
+export function resolveLocalHubSocketHost(
+  socketUrl: string | undefined,
+  origin: string | undefined
+): string {
+  if (socketUrl && /^(https?|wss?):\/\//i.test(socketUrl)) return socketUrl;
+  return origin || '';
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideScenePersonality(() => inject(ThemeService).personality$),
@@ -52,8 +60,9 @@ export const appConfig: ApplicationConfig = {
     {
       provide: SOCKET_HOST,
       useFactory: () => {
-        const value = (window as any)['env']?.SOCKET_URL || ':3300';
-        return value;
+        if (typeof window === 'undefined') return '';
+        const socketUrl = (window as any)['env']?.SOCKET_URL;
+        return resolveLocalHubSocketHost(socketUrl, window.location.origin);
       },
     },
     {

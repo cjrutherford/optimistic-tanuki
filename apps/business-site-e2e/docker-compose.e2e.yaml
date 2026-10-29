@@ -2,5 +2,9 @@ services:
   gateway:
     environment:
       - GATEWAY_COMPOSITION_PATH=/usr/src/app/config/gateway-composition.yaml
+      - APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json
+      - APP_SCOPE_ORIGINS={"forgeofwill":"http://forgeofwill.localhost:8081","business-site":"http://127.0.0.1:8094"}
+      - CORS_ALLOWED_ORIGINS=http://forgeofwill.localhost:8081,http://127.0.0.1:8094
     volumes:
       - ./apps/business-site-e2e/gateway-composition.yaml:/usr/src/app/config/gateway-composition.yaml:ro
+      - ./e2e/app-registry.e2e.json:/usr/src/app/config/app-registry.json:ro

@@ -11,6 +11,11 @@ export interface UserPresence {
   isExplicit: boolean;
 }
 
+export interface ConversationPresence {
+  profileId: string;
+  status: PresenceStatus;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PresenceService {
   private baseUrl = '/api/presence';
@@ -19,12 +24,7 @@ export class PresenceService {
   constructor(private http: HttpClient) {}
 
   setPresence(status: PresenceStatus): Observable<UserPresence> {
-    const currentUser = this.getCurrentUserId();
-    if (!currentUser) {
-      return new Observable();
-    }
     return this.http.post<UserPresence>(`${this.baseUrl}`, {
-      userId: currentUser,
       status,
     });
   }
@@ -37,6 +37,16 @@ export class PresenceService {
     return this.http.post<UserPresence[]>(`${this.baseUrl}/batch`, {
       userIds,
     });
+  }
+
+  getConversationPresence(
+    conversationId: string,
+    profileIds: string[]
+  ): Observable<ConversationPresence[]> {
+    return this.http.post<ConversationPresence[]>(
+      `${this.baseUrl}/conversation`,
+      { conversationId, profileIds }
+    );
   }
 
   getOnlineUsers(): Observable<UserPresence[]> {
@@ -59,18 +69,5 @@ export class PresenceService {
     const current = this.presences.value;
     current.set(presence.userId, presence);
     this.presences.next(new Map(current));
-  }
-
-  private getCurrentUserId(): string | null {
-    const userJson = localStorage.getItem('user');
-    if (userJson) {
-      try {
-        const user = JSON.parse(userJson);
-        return user.id || user.profileId || null;
-      } catch {
-        return null;
-      }
-    }
-    return null;
   }
 }

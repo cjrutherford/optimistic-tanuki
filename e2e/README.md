@@ -8,7 +8,7 @@ Each E2E test has its own Docker Compose file that includes only the necessary s
 
 ### Microservice E2E Tests
 
-- `docker-compose.authentication-e2e.yaml` - Authentication service tests
+- `docker-compose.authentication-e2e.yaml` - Authentication, Profile, Permissions, Social, and Forum account-export preview tests
 - `docker-compose.blogging-e2e.yaml` - Blogging service tests
 - `docker-compose.permissions-e2e.yaml` - Permissions service tests
 - `docker-compose.profile-e2e.yaml` - Profile service tests
@@ -36,13 +36,13 @@ Each E2E test has its own Docker Compose file that includes only the necessary s
 
 ```bash
 # Start the authentication E2E environment
-docker-compose -f e2e/docker-compose.authentication-e2e.yaml up -d
+E2E_DB_PORT=5439 docker compose --project-name ot-df007-b6-forum -f e2e/docker-compose.authentication-e2e.yaml up -d --build authentication profile permissions social forum
 
 # Run the E2E tests
-pnpm exec nx e2e authentication-e2e
+ACCOUNT_EXPORT_E2E_DB_MARKER=auth-profile-forum-export-fixture-v1 ACCOUNT_EXPORT_E2E_DB_HOST=127.0.0.1 E2E_DB_PORT=5439 pnpm exec nx e2e authentication-e2e
 
 # Clean up
-docker-compose -f e2e/docker-compose.authentication-e2e.yaml down -v
+docker compose --project-name ot-df007-b6-forum -f e2e/docker-compose.authentication-e2e.yaml down -v
 ```
 
 ### Running full browser-based E2E tests
@@ -64,12 +64,12 @@ docker-compose down -v
 
 All E2E environments use consistent environment variables:
 
-| Variable            | Value               | Description                    |
-| ------------------- | ------------------- | ------------------------------ |
-| `POSTGRES_USER`     | postgres            | Database username              |
-| `POSTGRES_PASSWORD` | postgres            | Database password              |
-| `POSTGRES_DB`       | postgres            | Database name                  |
-| `JWT_SECRET`        | e2e-test-jwt-secret | JWT signing secret for testing |
+| Variable            | Value                                       | Description                    |
+| ------------------- | ------------------------------------------- | ------------------------------ |
+| `POSTGRES_USER`     | postgres                                    | Database username              |
+| `POSTGRES_PASSWORD` | postgres                                    | Database password              |
+| `POSTGRES_DB`       | postgres                                    | Database name                  |
+| `JWT_SECRET`        | e2e-only-jwt-secret-for-isolated-tests-2026 | JWT signing secret for testing |
 
 ## CI/CD Integration
 

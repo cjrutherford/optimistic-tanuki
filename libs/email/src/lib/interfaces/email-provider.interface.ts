@@ -15,6 +15,8 @@ export interface EmailMessage {
   bcc?: string | string[];
   replyTo?: string;
   attachments?: EmailAttachment[];
+  /** Suppress recipient and message content from provider logs. */
+  sensitive?: boolean;
 }
 
 export interface EmailAttachment {

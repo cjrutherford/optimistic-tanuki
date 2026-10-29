@@ -16,6 +16,43 @@ describe('ChatUiComponent', () => {
     component = fixture.componentInstance;
   });
 
+  it('passes group status and conversation title to the window', () => {
+    component.contacts = [{ id: 'room', name: 'Room title' }];
+    component.conversations = [
+      {
+        id: 'room',
+        type: 'community',
+        participants: ['self', 'other'],
+        participantProfiles: [{ id: 'other', name: 'Other' }],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    component.connectionStatus = 'connected';
+    component.openChat('room');
+    fixture.detectChanges();
+    const window = fixture.debugElement.query(By.directive(ChatWindowComponent))
+      .componentInstance as ChatWindowComponent;
+    expect(window.contact?.[0].name).toBe('Room title');
+    expect(window.connectionStatus).toBe('connected');
+  });
+
+  it('forwards the ack completion only to an opted-in consumer', () => {
+    const settle = jest.fn();
+    const submission = { content: 'hello', settle };
+    const delivered = jest.fn();
+    component.messageSubmission.subscribe(delivered);
+
+    component.handleMessageSubmission('conversation-1', submission);
+
+    expect(delivered).toHaveBeenCalledWith({
+      ...submission,
+      conversationId: 'conversation-1',
+    });
+    expect(settle).not.toHaveBeenCalled();
+  });
+
   it('mounts the selected conversation in the right pane', () => {
     component.contacts = [
       { id: 'room-1', name: 'General' },
@@ -77,6 +114,36 @@ describe('ChatUiComponent', () => {
     const windows = fixture.nativeElement.querySelectorAll('lib-chat-window');
     expect(windows).toHaveLength(1);
     expect(component.getConversation('room-2').id).toBe('room-2');
+  });
+
+  it('selects the requested conversation from an input', () => {
+    fixture.componentRef.setInput('contacts', [
+      { id: 'room-1', name: 'General' },
+      { id: 'room-2', name: 'Moderators' },
+    ]);
+    fixture.componentRef.setInput('conversations', [
+      {
+        id: 'room-1',
+        participants: ['profile-1', 'profile-2'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'room-2',
+        participants: ['profile-1', 'profile-3'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    fixture.componentRef.setInput('conversationToOpen', {
+      id: 'room-2',
+      requestId: 1,
+    });
+    fixture.detectChanges();
+
+    expect(component.selectedConversationId()).toBe('room-2');
   });
 
   it('uses embedded window state when embedded layout is selected', () => {

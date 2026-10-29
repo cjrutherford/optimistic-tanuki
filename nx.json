@@ -27,6 +27,13 @@
     "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
   },
   "targetDefaults": {
+    "@nx/webpack:webpack": {
+      "configurations": {
+        "development": {
+          "deleteOutputPath": false
+        }
+      }
+    },
     "build": {
       "dependsOn": ["^build"]
     },

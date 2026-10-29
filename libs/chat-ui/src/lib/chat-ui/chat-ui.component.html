@@ -50,10 +50,12 @@
       *ngIf="selectedConversationId() === contact.id"
       [contact]="getParticipantContacts(contact.id)"
       [messages]="getConversation(contact.id)"
+      [connectionStatus]="connectionStatus"
       [currentUserId]="currentUserId"
       [windowState]="activeWindowState()"
       (windowStateChange)="handleWindowStateChange(contact.id, $event)"
       (messageSubmitted)="handleMessageSubmitted(contact.id, $event)"
+      (messageSubmission)="handleMessageSubmission(contact.id, $event)"
     ></lib-chat-window>
     } }
   </div>

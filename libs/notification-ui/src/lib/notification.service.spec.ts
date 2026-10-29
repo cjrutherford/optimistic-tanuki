@@ -249,4 +249,27 @@ describe('NotificationService', () => {
       expect(service.unreadCount()).toBe(1);
     });
   });
+  it('clears cached notifications and cancels pending loads at a session boundary', () => {
+    service.loadNotifications('user1');
+    const pending = httpMock.expectOne('/api/notifications/user1');
+    window.dispatchEvent(new Event('ot:session-reset'));
+    expect(pending.cancelled).toBe(true);
+    expect(service.notifications()).toEqual([]);
+    expect(service.unreadCount()).toBe(0);
+    service['handleNewNotification'](mockNotification);
+    expect(service.notifications()).toEqual([]);
+  });
+
+  it('ignores a previous account mutation reply after reset', () => {
+    service.notifications.set([mockNotification]);
+    service.unreadCount.set(1);
+    service.markAsRead('1').subscribe();
+    const pending = httpMock.expectOne('/api/notifications/1/read');
+    window.dispatchEvent(new Event('ot:session-reset'));
+    service.notifications.set([{ ...mockNotification, id: 'other' }]);
+    service.unreadCount.set(1);
+    pending.flush({});
+    expect(service.unreadCount()).toBe(1);
+    expect(service.notifications()[0].isRead).toBe(false);
+  });
 });

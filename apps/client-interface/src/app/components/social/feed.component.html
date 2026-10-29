@@ -31,6 +31,9 @@
     <lib-social-compose
       (postSubmitted)="createdPost($event)"
       [imageUploadCallback]="imageUploadCallback"
+      [assetAudienceRestrictions]="assetAudienceRestrictions"
+      [profileId]="getCurrentUserId()"
+      [audienceOptions]="postAudienceOptions"
     >
     </lib-social-compose>
   </div>
@@ -47,16 +50,23 @@
       [canFollow]="canFollow(post)"
       [isFollowing]="isFollowing(post)"
       [isBlocked]="isBlocked(post)"
+      [isMuted]="isMuted(post)"
       [ownedCommunities]="ownedCommunities()"
       (followToggle)="onFollowToggle(post)"
       (blockToggle)="onBlockToggle(post)"
+      (muteToggle)="onMuteToggle(post)"
+      (reportPost)="reportPost(post)"
       (profileClick)="onProfileClick($event)"
       (newCommentAdded)="commented($event, i)"
       [imageUploadCallback]="imageUploadCallback"
       [communityInfo]="
         post.communityId ? communityInfo()[post.communityId] : undefined
       "
+      [saveState]="
+        postSaveStates()[post.id] || { status: 'idle', requestId: 0 }
+      "
       [currentUserId]="getCurrentUserId()"
+      [profileId]="getCurrentUserId()"
       [userVote]="getUserVote(post.id)"
       [voteCount]="getVoteCount(post.id)"
       [userReaction]="getUserReaction(post.id)"
@@ -100,4 +110,11 @@
       >
     </div>
   </otui-modal>
+  @if (reportTargetPostId()) {
+  <lib-report-dialog
+    contentType="post"
+    [contentId]="reportTargetPostId()!"
+    (closeDialog)="closeReportDialog()"
+  ></lib-report-dialog>
+  }
 </div>

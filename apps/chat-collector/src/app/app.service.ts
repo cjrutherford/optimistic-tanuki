@@ -6,8 +6,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { RpcException } from '@nestjs/microservices';
-import { v4 as uuidv4 } from 'uuid';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   Conversation,
@@ -15,8 +14,17 @@ import {
   Message,
   MessageType,
 } from './entities';
-import { Any, ArrayContains, Repository, IsNull } from 'typeorm';
+import { Any, ArrayContains, Repository } from 'typeorm';
+import { isUUID } from 'class-validator';
 import { ChatMessage } from '@optimistic-tanuki/chat-contracts';
+import { DeleteOwnedCommunityConversationDto } from '@optimistic-tanuki/chat-contracts';
+import {
+  ServiceTokens,
+  CommunityCommands,
+  PrivacyCommands,
+  ProjectCommands,
+} from '@optimistic-tanuki/constants';
+import { firstValueFrom, timeout } from 'rxjs';
 
 @Injectable()
 export class AppService {
@@ -25,36 +33,43 @@ export class AppService {
     @Inject(getRepositoryToken(Message))
     private readonly messageRepository: Repository<Message>,
     @Inject(getRepositoryToken(Conversation))
-    private readonly conversationRepository: Repository<Conversation>
+    private readonly conversationRepository: Repository<Conversation>,
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialClient: ClientProxy,
+    @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
+    private readonly projectClient: ClientProxy
   ) {}
 
   async postMessage(data: ChatMessage): Promise<Conversation> {
-    // O26: canonical `recipientIds`; legacy singular `recipientId` still
-    // accepted from older senders.
-    const recipientIds =
-      data.recipientIds ??
-      (data as unknown as { recipientId?: string[] }).recipientId ??
-      [];
-    let conversation: Conversation | null = null;
-    if (data.conversationId && data.conversationId !== '') {
-      try {
-        conversation = await this.conversationRepository.findOne({
-          where: { id: data.conversationId },
-          relations: ['messages'],
-        });
-      } catch (_) {
-        conversation = null;
-      }
-    }
-    if (!conversation) {
-      conversation = this.conversationRepository.create({
-        id: data.conversationId || uuidv4(),
-        title: data.recipientName.join(', '),
-        participants: [data.senderId, ...recipientIds],
-        messages: [],
-        updatedAt: new Date(),
+    const conversation = await this.assertInConversation(
+      data.conversationId,
+      data.senderId
+    );
+    const recipientIds = (
+      await this.participants(conversation, data.senderId)
+    ).filter((id) => id !== data.senderId);
+    await this.assertUnblocked(conversation, data.senderId, recipientIds);
+    if (data.id) {
+      const existing = await this.messageRepository.findOne({
+        where: { id: data.id },
+        relations: ['conversation'],
       });
-      await this.conversationRepository.save(conversation);
+      if (existing) {
+        if (
+          existing.conversation.id !== conversation.id ||
+          existing.senderId !== data.senderId ||
+          existing.content !== data.content
+        )
+          throw new RpcException({
+            statusCode: 409,
+            message: 'Message ID already used',
+          });
+        conversation.messages = await this.getMessages(
+          conversation.id,
+          data.senderId
+        );
+        return conversation;
+      }
     }
 
     const newMessage: Partial<Message> = {
@@ -68,11 +83,48 @@ export class AppService {
     this.l.log('Posting new message:', JSON.stringify(newMessage));
     const message = this.messageRepository.create(newMessage);
     this.l.debug('Created message entity:', JSON.stringify(message));
-    await this.messageRepository.save(message);
+    try {
+      await this.messageRepository.save(message);
+    } catch (error) {
+      if (!data.id || (error as { code?: string })?.code !== '23505') {
+        throw error;
+      }
 
-    conversation.messages = [...(conversation.messages || []), message];
+      // Two retries can both miss the initial lookup. If the unique message ID
+      // wins elsewhere, accept only the identical durable message.
+      const racedMessage = await this.messageRepository.findOne({
+        where: { id: data.id },
+        relations: ['conversation'],
+      });
+      if (!racedMessage) throw error;
+      if (
+        racedMessage.conversation?.id !== conversation.id ||
+        racedMessage.senderId !== data.senderId ||
+        racedMessage.content !== data.content
+      ) {
+        throw new RpcException({
+          statusCode: 409,
+          message: 'Message ID already used',
+        });
+      }
+      conversation.messages = await this.getMessages(
+        conversation.id,
+        data.senderId
+      );
+      return conversation;
+    }
+
     conversation.updatedAt = new Date();
-    await this.conversationRepository.save(conversation);
+    // Messages own the ManyToOne relation. Saving a stale OneToMany snapshot
+    // here can null out messages written concurrently by another socket.
+    // Update only the scalar timestamp, then return a fresh history snapshot.
+    await this.conversationRepository.update(conversation.id, {
+      updatedAt: conversation.updatedAt,
+    });
+    conversation.messages = await this.getMessages(
+      conversation.id,
+      data.senderId
+    );
 
     return conversation;
   }
@@ -91,9 +143,13 @@ export class AppService {
       data.senderId
     );
 
+    const recipientIds = (
+      await this.participants(conversation, data.senderId)
+    ).filter((id) => id !== data.senderId);
+    await this.assertUnblocked(conversation, data.senderId, recipientIds);
     const message = this.messageRepository.create({
       senderId: data.senderId,
-      recipients: data.recipientIds,
+      recipients: recipientIds,
       content: data.content,
       type: MessageType.CHAT,
       conversation,
@@ -101,63 +157,228 @@ export class AppService {
     await this.messageRepository.save(message);
 
     conversation.updatedAt = new Date();
-    await this.conversationRepository.save(conversation);
+    await this.conversationRepository.update(conversation.id, {
+      updatedAt: conversation.updatedAt,
+    });
 
     return message;
   }
 
   async getConversations(profileId: string): Promise<Conversation[]> {
     this.l.log(`Retrieving conversations for profile ID: ${profileId}`);
+    const communityIds = await firstValueFrom(
+      this.socialClient
+        .send({ cmd: CommunityCommands.GET_CHAT_MEMBERSHIPS }, { profileId })
+        .pipe(timeout(5000))
+    );
     const conversations = await this.conversationRepository.find({
-      where: {
-        participants: ArrayContains([profileId]),
-      },
+      where: [
+        { participants: ArrayContains([profileId]), isDeleted: false },
+        {
+          type: ConversationType.COMMUNITY,
+          communityId: Any(communityIds),
+          isDeleted: false,
+        },
+      ],
       relations: ['messages'],
       order: { createdAt: 'DESC' },
     });
-    this.l.log(
-      `Found ${conversations.length} conversations for profile ID: ${profileId}`
-    );
-    const updatedConversations = conversations.map((conversation) => {
-      conversation.messages = conversation.messages.sort(
-        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+    const allowed: Conversation[] = [];
+    for (const conversation of conversations) {
+      try {
+        if (
+          !(await this.participants(conversation, profileId)).includes(
+            profileId
+          )
+        )
+          continue;
+      } catch (error) {
+        const statusCode =
+          error instanceof RpcException
+            ? (error.getError() as { statusCode?: number }).statusCode
+            : error?.statusCode;
+        if ([403, 404].includes(statusCode)) continue;
+        throw error;
+      }
+      conversation.messages = (conversation.messages ?? []).sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
-      return conversation;
-    });
-    this.l.log(
-      `Sorted messages in each conversation for profile ID: ${profileId}`
-    );
-    this.l.log(JSON.stringify(updatedConversations, null, 2));
-    return updatedConversations;
+      allowed.push(conversation);
+    }
+    return allowed;
   }
 
   async getConversationsHttp(profileId: string): Promise<Conversation[]> {
-    const conversations = await this.conversationRepository.find({
-      where: {
-        participants: ArrayContains([profileId]),
-        isDeleted: false,
-      },
-      order: { updatedAt: 'DESC' },
-    });
-    return conversations;
+    return this.getConversations(profileId);
   }
 
-  async getConversation(conversationId: string): Promise<Conversation | null> {
+  async getConversation(
+    conversationId: string,
+    requestingProfileId?: string,
+    deliverySenderId?: string
+  ): Promise<Conversation | null> {
+    if (requestingProfileId)
+      await this.assertInConversation(conversationId, requestingProfileId);
+    if (deliverySenderId && requestingProfileId) {
+      const authorized = await this.assertInConversation(
+        conversationId,
+        deliverySenderId
+      );
+      await this.assertUnblocked(authorized, deliverySenderId, [
+        requestingProfileId,
+      ]);
+    }
     this.l.log(`Retrieving conversation for ID: ${conversationId}`);
-    return await this.conversationRepository.findOne({
-      where: { id: conversationId },
+    return this.conversationRepository.findOne({
+      where: { id: conversationId, isDeleted: false },
       relations: ['messages'],
     });
   }
 
-  async getConversationHttp(conversationId: string): Promise<Conversation> {
+  async getPresenceAudience(request: {
+    conversationId: string;
+    requestingProfileId: string;
+    targetProfileIds: string[];
+  }) {
+    const uuid = (v: unknown): v is string =>
+      typeof v === 'string' && isUUID(v, 'all');
+    if (
+      !request ||
+      !uuid(request.conversationId) ||
+      !uuid(request.requestingProfileId) ||
+      !Array.isArray(request.targetProfileIds) ||
+      request.targetProfileIds.length > 100 ||
+      request.targetProfileIds.some((id) => !uuid(id))
+    )
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Invalid presence audience request',
+      });
+    const conversationId = request.conversationId.toLowerCase();
+    const requestingProfileId = request.requestingProfileId.toLowerCase();
+    const targetProfileIds = [
+      ...new Set(request.targetProfileIds.map((id) => id.toLowerCase())),
+    ];
     const conversation = await this.conversationRepository.findOne({
       where: { id: conversationId, isDeleted: false },
     });
-    if (!conversation) {
-      throw new NotFoundException('Conversation not found');
+    if (!conversation)
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Presence audience is outside the conversation',
+      });
+    let members: string[];
+    try {
+      members = (
+        await this.participants(conversation, requestingProfileId)
+      ).map((id) => id.toLowerCase());
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Conversation membership unavailable',
+      });
     }
+    if (
+      !members.includes(requestingProfileId) ||
+      targetProfileIds.some((id) => !members.includes(id))
+    )
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Presence audience is outside the conversation',
+      });
+    return {
+      conversationId,
+      requestingProfileId,
+      allowedProfileIds: targetProfileIds,
+    };
+  }
+
+  async getConversationHttp(conversationId: string): Promise<Conversation> {
+    const conversation = await this.getConversation(conversationId);
+    if (!conversation) throw new NotFoundException('Conversation not found');
     return conversation;
+  }
+
+  private async participants(
+    conversation: Conversation,
+    requestingProfileId?: string
+  ): Promise<string[]> {
+    if (conversation.type === ConversationType.PROJECT) {
+      if (!requestingProfileId || !conversation.projectId) return [];
+      const project = await firstValueFrom(
+        this.projectClient
+          .send(
+            { cmd: ProjectCommands.FIND_ONE },
+            {
+              id: conversation.projectId,
+              requestingUserId: requestingProfileId,
+            }
+          )
+          .pipe(timeout(5000))
+      ).catch((error) => {
+        throw new RpcException(
+          [403, 404].includes(error?.statusCode)
+            ? error
+            : { statusCode: 503, message: 'Project authorization unavailable' }
+        );
+      });
+      return project
+        ? [
+            ...new Set<string>(
+              [project.owner, ...(project.members ?? [])].filter(Boolean)
+            ),
+          ]
+        : [];
+    }
+    if (conversation.type !== ConversationType.COMMUNITY)
+      return conversation.participants ?? [];
+    if (!conversation.communityId) return [];
+    const members = await firstValueFrom(
+      this.socialClient
+        .send(
+          { cmd: CommunityCommands.GET_MEMBERS },
+          { communityId: conversation.communityId }
+        )
+        .pipe(timeout(5000))
+    );
+    return [
+      ...new Set<string>(
+        (members ?? [])
+          .filter((m) => m.status === 'approved')
+          .map((m) => m.profileId)
+          .filter(Boolean)
+      ),
+    ];
+  }
+
+  private async assertUnblocked(
+    conversation: Conversation,
+    senderId: string,
+    recipients: string[]
+  ): Promise<void> {
+    if (conversation.type !== ConversationType.DIRECT) return;
+    for (const recipient of recipients) {
+      for (const [blockerId, blockedId] of [
+        [senderId, recipient],
+        [recipient, senderId],
+      ]) {
+        const blocked = await firstValueFrom(
+          this.socialClient
+            .send(
+              { cmd: PrivacyCommands.IS_USER_BLOCKED },
+              { blockerId, blockedId }
+            )
+            .pipe(timeout(5000))
+        );
+        if (blocked)
+          throw new RpcException({
+            statusCode: 403,
+            message: 'Messaging is unavailable between these profiles',
+          });
+      }
+    }
   }
 
   /**
@@ -211,24 +432,9 @@ export class AppService {
       });
     }
 
-    // Community conversations are created with an empty participant list and
-    // nothing ever fills it: ADD_TO_COMMUNITY_CHAT is declared as a command
-    // and has no implementation and no caller. Asking who is in one is a
-    // question with no answer, so checking would refuse everybody and break a
-    // feature rather than protect it. Direct and project conversations both
-    // know their participants and are checked.
-    //
-    // This is a gap and is written down as one. Closing it means building the
-    // membership that community chat never got, which is its own work.
-    if (conversation.type === ConversationType.COMMUNITY) {
-      return conversation;
-    }
-
-    if (!(conversation.participants ?? []).includes(profileId)) {
-      // RpcException with an explicit status rather than ForbiddenException.
-      // An HttpException does not survive the TCP hop with its status, so the
-      // gateway turned a refusal into a 500: an error where a plain no was
-      // meant, telling the caller nothing and looking like a fault.
+    if (
+      !(await this.participants(conversation, profileId)).includes(profileId)
+    ) {
       throw new RpcException({
         statusCode: 403,
         message: 'You do not have access to this conversation',
@@ -372,5 +578,143 @@ export class AppService {
 
     conversation.isDeleted = true;
     await this.conversationRepository.save(conversation);
+  }
+
+  async deleteOwnedCommunityConversation(
+    data: DeleteOwnedCommunityConversationDto
+  ): Promise<{ success: true }> {
+    if (
+      !data ||
+      !isUUID(data.conversationId) ||
+      !isUUID(data.communityId) ||
+      typeof data.actorProfileId !== 'string' ||
+      !data.actorProfileId.trim() ||
+      typeof data.appScope !== 'string' ||
+      !data.appScope.trim()
+    ) {
+      throw new RpcException({
+        statusCode: 400,
+        message:
+          'A valid conversation, community, actor, and app scope are required',
+      });
+    }
+
+    const conversation = await this.conversationRepository.findOne({
+      where: { id: data.conversationId },
+    });
+    if (!conversation || conversation.isDeleted) {
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Conversation not found',
+      });
+    }
+    if (
+      conversation.type !== ConversationType.COMMUNITY ||
+      conversation.communityId !== data.communityId ||
+      !conversation.ownerId ||
+      conversation.ownerId !== data.actorProfileId
+    ) {
+      throw new RpcException({
+        statusCode: 403,
+        message:
+          'Only the current owner can clean up this community conversation',
+      });
+    }
+
+    const community = await this.requestCommunityAuthorization<{
+      id?: string;
+      ownerProfileId?: string;
+      appScope?: string;
+    }>(
+      { cmd: CommunityCommands.FIND },
+      { id: data.communityId },
+      'Community authorization unavailable'
+    );
+    if (!community || community.id !== data.communityId) {
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Community not found',
+      });
+    }
+    if (
+      community.ownerProfileId !== data.actorProfileId ||
+      community.appScope !== data.appScope
+    ) {
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Community owner or application scope does not match',
+      });
+    }
+
+    const members = await this.requestCommunityAuthorization<
+      Array<{ profileId?: string; role?: string; status?: string }>
+    >(
+      { cmd: CommunityCommands.GET_MEMBERS },
+      { communityId: data.communityId },
+      'Community membership authorization unavailable'
+    );
+    const currentOwner = Array.isArray(members)
+      ? members.some(
+          (member) =>
+            member?.profileId === data.actorProfileId &&
+            member?.role === 'owner' &&
+            member?.status === 'approved'
+        )
+      : false;
+    if (!currentOwner) {
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Current approved community ownership is required',
+      });
+    }
+
+    const result = await this.conversationRepository.update(
+      {
+        id: data.conversationId,
+        isDeleted: false,
+        type: ConversationType.COMMUNITY,
+        communityId: data.communityId,
+        ownerId: data.actorProfileId,
+      },
+      { isDeleted: true }
+    );
+    if (result.affected !== 1) {
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Conversation is no longer available for cleanup',
+      });
+    }
+
+    return { success: true };
+  }
+
+  private async requestCommunityAuthorization<T>(
+    pattern: { cmd: string },
+    payload: Record<string, string>,
+    unavailableMessage: string
+  ): Promise<T> {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(pattern, payload).pipe(timeout(5000))
+      );
+    } catch (error) {
+      const transportError =
+        error instanceof RpcException ? error.getError() : error;
+      const response =
+        typeof transportError === 'object' && transportError !== null
+          ? (transportError as Record<string, unknown>)
+          : {};
+      const statusCode = Number(response.statusCode ?? response.status);
+      if ([400, 401, 403, 404].includes(statusCode)) {
+        throw new RpcException({
+          statusCode,
+          message:
+            typeof response.message === 'string'
+              ? response.message
+              : unavailableMessage,
+        });
+      }
+      throw new RpcException({ statusCode: 503, message: unavailableMessage });
+    }
   }
 }

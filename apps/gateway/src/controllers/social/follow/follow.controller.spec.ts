@@ -11,15 +11,20 @@ import { of } from 'rxjs';
 import { JwtService } from '@nestjs/jwt';
 
 describe('FollowController', () => {
+  let consoleLogSpy: jest.SpyInstance;
   let controller: FollowController;
   let mockAuthClient;
   let mockSocialClient;
   let mockProfileClient;
 
   beforeEach(async () => {
+    consoleLogSpy = jest
+      .spyOn(console, 'log')
+      .mockImplementation(() => undefined);
     const module: TestingModule = await Test.createTestingModule({
       controllers: [FollowController],
       providers: [
+        { provide: 'GATEWAY_APP_REGISTRY', useValue: { apps: [] } },
         {
           provide: ServiceTokens.AUTHENTICATION_SERVICE,
           useValue: {
@@ -59,6 +64,8 @@ describe('FollowController', () => {
     controller = module.get<FollowController>(FollowController);
   });
 
+  afterEach(() => consoleLogSpy.mockRestore());
+
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
@@ -88,6 +95,7 @@ describe('FollowController', () => {
         followDto
       );
       expect(result).toEqual({ success: true });
+      expect(consoleLogSpy).not.toHaveBeenCalled();
     });
     it('should throw if profile not found', async () => {
       const user: UserDetails = {

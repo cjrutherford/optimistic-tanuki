@@ -91,6 +91,25 @@ MANAGED_SERVICES=(
     "${CLIENT_SERVICES[@]}"
 )
 
+EXTERNAL_SERVICES=$(node -e 'const fs=require("node:fs"); const v=fs.existsSync(".env")?require("dotenv").parse(fs.readFileSync(".env")):{};process.stdout.write(process.env.DOCKER_DEV_EXTERNAL_SERVICES||v.DOCKER_DEV_EXTERNAL_SERVICES||"")')
+external_service() { [[ ",$EXTERNAL_SERVICES," == *",$1,"* ]]; }
+DEV_SERVICES=$(node -e 'const fs=require("node:fs");const v=fs.existsSync(".env")?require("dotenv").parse(fs.readFileSync(".env")):{};process.stdout.write(process.env.DOCKER_DEV_SERVICES||v.DOCKER_DEV_SERVICES||"")')
+selected_service() { [ -z "$DEV_SERVICES" ] || [[ ",$DEV_SERVICES," == *",$1,"* ]]; }
+if [ -n "$DEV_SERVICES" ]; then IFS=',' read -r -a MANAGED_SERVICES <<< "$DEV_SERVICES"; fi
+
+if [ -n "$EXTERNAL_SERVICES" ] && [ "$DRY_RUN" -eq 0 ]; then
+    IFS=',' read -r -a EXTERNAL_ARRAY <<< "$EXTERNAL_SERVICES"
+    for service in "${EXTERNAL_ARRAY[@]}"; do
+        docker compose "${COMPOSE_FLAGS[@]}" config --format json | node -e '
+const fs=require("node:fs"), cp=require("node:child_process"); const config=JSON.parse(fs.readFileSync(0,"utf8")); const name=process.argv[1];const service=config.services[name];if(!service?.container_name)process.exit(1);
+const container=JSON.parse(cp.execFileSync("docker",["inspect",service.container_name],{encoding:"utf8"}))[0];
+const network=config.networks?.default?.name;
+if(!container.State.Running || container.Config.Labels["com.docker.compose.service"]!==name || !network || !container.NetworkSettings.Networks[network])process.exit(1);
+' "$service" || { echo "External service $service is not running on the configured network" >&2; exit 1; }
+        echo "Using existing $service; its container lifecycle is externally managed."
+    done
+fi
+
 echo "=== Phased Docker Startup ==="
 echo "Phase delay: ${PHASE_DELAY}s"
 echo "Compose file: $COMPOSE_FILE"
@@ -117,6 +136,11 @@ collect_missing_managed_services() {
     fi
 
     for service in "${MANAGED_SERVICES[@]}"; do
+        if external_service "$service"; then continue; fi
+        if [ "$service" = db-setup ] && [ "$DRY_RUN" -eq 0 ]; then
+            setup_id=$(docker compose "${COMPOSE_FLAGS[@]}" ps -a -q db-setup)
+            if [ -n "$setup_id" ] && [ "$(docker inspect --format '{{.State.Status}}:{{.State.ExitCode}}' "$setup_id")" = exited:0 ]; then continue; fi
+        fi
         if [ -n "$configured_services" ] && ! printf '%s\n' "$configured_services" | grep -Fxq "$service"; then
             continue
         fi
@@ -196,7 +220,13 @@ for (const service of plan.restartServices || []) {
     else
         echo "=== Starting missing managed services ==="
     fi
-    run_compose up "${COMPOSE_UP_FLAGS[@]}" "${EXTRA_FLAGS[@]}" "${RESTART_ARRAY[@]}"
+    FILTERED_RESTART=()
+    for service in "${RESTART_ARRAY[@]}"; do
+        if selected_service "$service" && ! external_service "$service"; then FILTERED_RESTART+=("$service"); fi
+    done
+    if [ "${#FILTERED_RESTART[@]}" -gt 0 ]; then
+        run_compose up "${COMPOSE_UP_FLAGS[@]}" "${EXTRA_FLAGS[@]}" "${FILTERED_RESTART[@]}" || exit $?
+    fi
     echo ""
     run_compose ps
     rm -f "$PLAN_FILE"
@@ -207,7 +237,10 @@ run_phase() {
     local description="$1"
     local phase_delay="$2"
     shift 2
-    local services=("$@")
+    local services=()
+    for service in "$@"; do
+        if selected_service "$service" && ! external_service "$service"; then services+=("$service"); fi
+    done
 
     if [ "${#services[@]}" -eq 0 ]; then
         return 0
@@ -226,15 +259,24 @@ if restart_from_plan; then
 fi
 
 echo "=== Phase 1: Infrastructure (postgres, redis) ==="
-run_compose up -d "${EXTRA_FLAGS[@]}" postgres redis
+if external_service postgres; then
+    run_compose up -d "${EXTRA_FLAGS[@]}" redis
+else
+    run_compose up -d "${EXTRA_FLAGS[@]}" postgres redis
+fi
 
 echo "Waiting for postgres healthy..."
 if [ "$DRY_RUN" -eq 1 ]; then
     echo "DRY RUN: docker compose ${COMPOSE_FLAGS[*]} exec -T postgres pg_isready -U postgres"
 else
+    if external_service postgres; then
+        POSTGRES_CONTAINER=$(docker compose "${COMPOSE_FLAGS[@]}" config --format json | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>console.log(JSON.parse(s).services.postgres.container_name))')
+        docker exec "$POSTGRES_CONTAINER" pg_isready -U postgres
+    else
     until docker compose "${COMPOSE_FLAGS[@]}" exec -T postgres pg_isready -U postgres 2>/dev/null; do
         sleep 2
     done
+    fi
 fi
 echo "Postgres is ready"
 echo ""

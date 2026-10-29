@@ -49,6 +49,8 @@ export interface UpdateProfileDto {
   description?: string;
   /** User ID associated with the profile */
   userId?: string;
+  /** App scope associated with the profile */
+  appScope?: string;
   /** URL of the profile picture */
   profilePic?: string;
   /** URL of the cover picture */
@@ -134,12 +136,13 @@ export type ProfileControllerGetProfilesByIdsBody = {
 
 export type ProfileAnalyticsControllerRecordViewBody = {
   profileId: string;
-  viewerId: string;
+  /** Ignored; set from authenticated account. */
+  viewerId?: string;
   source: string;
 };
 
 export type ProfileAnalyticsControllerGetRecentViewersParams = {
-  limit?: number;
+  limit?: unknown;
 };
 
 interface HttpClientOptions {
@@ -262,6 +265,38 @@ function filterParams(
 @Injectable({ providedIn: 'root' })
 export class OptomisitcTanukiAPIService {
   private readonly http = inject(HttpClient);
+  profileControllerListGuardianDependents<TData = void>(
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  profileControllerListGuardianDependents<TData = void>(
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  profileControllerListGuardianDependents<TData = void>(
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  profileControllerListGuardianDependents<TData = void>(
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(`/api/profile/dependents`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'events',
+      });
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(`/api/profile/dependents`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'response',
+      });
+    }
+
+    return this.http.get<TData>(`/api/profile/dependents`, {
+      ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+      observe: 'body',
+    });
+  }
+
   /**
    * @summary Create a new profile
    */
@@ -457,6 +492,90 @@ export class OptomisitcTanukiAPIService {
     });
   }
 
+  profileControllerGetDependentProfile<TData = void>(
+    profileId: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  profileControllerGetDependentProfile<TData = void>(
+    profileId: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  profileControllerGetDependentProfile<TData = void>(
+    profileId: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  profileControllerGetDependentProfile<TData = void>(
+    profileId: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(`/api/profile/dependents/${profileId}`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'events',
+      });
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(`/api/profile/dependents/${profileId}`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'response',
+      });
+    }
+
+    return this.http.get<TData>(`/api/profile/dependents/${profileId}`, {
+      ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+      observe: 'body',
+    });
+  }
+
+  profileControllerUpdateDependentProfile<TData = void>(
+    profileId: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  profileControllerUpdateDependentProfile<TData = void>(
+    profileId: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  profileControllerUpdateDependentProfile<TData = void>(
+    profileId: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  profileControllerUpdateDependentProfile<TData = void>(
+    profileId: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.put<TData>(
+        `/api/profile/dependents/${profileId}`,
+        undefined,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.put<TData>(
+        `/api/profile/dependents/${profileId}`,
+        undefined,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.put<TData>(
+      `/api/profile/dependents/${profileId}`,
+      undefined,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
   /**
    * @summary Get a profile by ID (legacy)
    */
@@ -584,21 +703,21 @@ export class OptomisitcTanukiAPIService {
   }
 
   /**
-   * @summary Delete a profile by ID
+   * @summary Delete an owned app-scoped profile by ID
    */
-  profileControllerDeleteProfile<TData = void>(
+  profileControllerDeleteProfile<TData = unknown>(
     id: string,
     options?: HttpClientBodyOptions
   ): Observable<TData>;
-  profileControllerDeleteProfile<TData = void>(
+  profileControllerDeleteProfile<TData = unknown>(
     id: string,
     options?: HttpClientEventOptions
   ): Observable<HttpEvent<TData>>;
-  profileControllerDeleteProfile<TData = void>(
+  profileControllerDeleteProfile<TData = unknown>(
     id: string,
     options?: HttpClientResponseOptions
   ): Observable<AngularHttpResponse<TData>>;
-  profileControllerDeleteProfile<TData = void>(
+  profileControllerDeleteProfile<TData = unknown>(
     id: string,
     options?: HttpClientObserveOptions
   ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {

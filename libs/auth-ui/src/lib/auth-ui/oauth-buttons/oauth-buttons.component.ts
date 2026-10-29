@@ -5,6 +5,8 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 export interface OAuthProviderEvent {
   provider: 'google' | 'github' | 'microsoft' | 'facebook';
+  dateOfBirth?: string;
+  guardianResumeToken?: string;
 }
 
 const VALID_PROVIDERS = ['google', 'github', 'microsoft', 'facebook'] as const;

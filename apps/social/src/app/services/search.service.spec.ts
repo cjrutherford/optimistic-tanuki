@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { of } from 'rxjs';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { SearchService } from './search.service';
 import { SearchHistory } from '../../entities/search-history.entity';
 import { Post } from '../../entities/post.entity';
@@ -13,6 +13,8 @@ import { PrivacyService } from './privacy.service';
 describe('SearchService (visibility scope wiring)', () => {
   let service: SearchService;
   let postRepo: jest.Mocked<Repository<Post>>;
+  let historyRepo: jest.Mocked<Repository<SearchHistory>>;
+  let communityRepo: jest.Mocked<Repository<Community>>;
   let followService: { getFollowing: jest.Mock };
   let privacyService: { getBlockedUsers: jest.Mock; getBlockersOf: jest.Mock };
   let profileClient: { send: jest.Mock };
@@ -21,6 +23,7 @@ describe('SearchService (visibility scope wiring)', () => {
     find: jest.fn().mockResolvedValue([]),
     create: jest.fn(),
     save: jest.fn(),
+    delete: jest.fn().mockResolvedValue({ affected: 0 }),
     createQueryBuilder: jest.fn(),
   });
 
@@ -49,12 +52,19 @@ describe('SearchService (visibility scope wiring)', () => {
 
     service = module.get(SearchService);
     postRepo = module.get(getRepositoryToken(Post));
+    historyRepo = module.get(getRepositoryToken(SearchHistory));
+    communityRepo = module.get(getRepositoryToken(Community));
   });
 
   it('search() posts branch applies the visibility scope with blocked authors excluded', async () => {
     followService.getFollowing.mockResolvedValue([{ followeeId: 'friend' }]);
     privacyService.getBlockedUsers.mockResolvedValue([{ blockedId: 'blk-a' }]);
     privacyService.getBlockersOf.mockResolvedValue([{ blockerId: 'blk-b' }]);
+    profileClient.send.mockImplementation((pattern, payload) =>
+      pattern?.cmd === ProfileCommands.Get
+        ? of({ id: payload.id, userId: 'account-1' })
+        : of([])
+    );
 
     await service.search('hello', { type: 'posts' }, 'viewer');
 
@@ -64,28 +74,39 @@ describe('SearchService (visibility scope wiring)', () => {
 
     const where = postRepo.find.mock.calls[0][0]?.where as any[];
     expect(Array.isArray(where)).toBe(true);
-    // Two base fragments (title, content) each expanded into
-    // public + followers + own branches for an authenticated viewer.
-    expect(where).toHaveLength(6);
-    const publicBranch = where.find((b) => b.visibility === 'public');
+    // Each title/content fragment is expanded across the separate
+    // non-community-public, explicit-community-public, member, legacy-member,
+    // follower and own visibility branches.
+    expect(where).toHaveLength(12);
+    const publicBranch = where.find(
+      (b) => b.visibility === 'public' && !b.publicAudienceExplicit
+    );
     expect(publicBranch.moderationStatus).toBe('visible');
     expect(publicBranch.isScheduled).toBe(false);
-    expect(publicBranch.profileId?.type).toBe('not');
-    expect(publicBranch.profileId?.value).toEqual(['blk-a', 'blk-b']);
+    expect(publicBranch.profileId).toBeDefined();
+    expect(publicBranch.communityId.type).toBe('and');
+    expect(publicBranch.communityId.value[1].type).toBe('raw');
+    expect(publicBranch.communityId.value[1].objectLiteralParameters).toEqual({
+      pv_account_id: 'account-1',
+    });
   });
 
   it('search() with no viewer restricts to public/visible/unscheduled only', async () => {
     await service.search('hello', { type: 'posts' });
 
     const where = postRepo.find.mock.calls[0][0]?.where as any[];
-    // No viewer -> one public branch per base fragment (title, content).
-    expect(where).toHaveLength(2);
+    // Each title/content fragment has non-community and explicitly-public
+    // community branches; anonymous reads cannot see the member-default branch.
+    expect(where).toHaveLength(4);
     for (const branch of where) {
       expect(branch.visibility).toBe('public');
       expect(branch.moderationStatus).toBe('visible');
       expect(branch.isScheduled).toBe(false);
       expect(branch.profileId).toBeUndefined();
     }
+    expect(
+      where.filter((branch) => branch.publicAudienceExplicit === true)
+    ).toHaveLength(2);
   });
 
   it('getTrending() applies the visibility scope to the aggregate query', async () => {
@@ -115,6 +136,132 @@ describe('SearchService (visibility scope wiring)', () => {
       { cmd: ProfileCommands.Search },
       { query: 'hello', limit: 15, offset: 5 }
     );
+  });
+
+  it('clears history only for the selected owner profiles', async () => {
+    await service.clearSearchHistoryForProfiles([
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      'AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA',
+    ]);
+    const selection = historyRepo.delete.mock.calls[0][0] as unknown as {
+      profileId: { objectLiteralParameters: { profileIds: string[] } };
+    };
+    expect(selection.profileId.objectLiteralParameters.profileIds).toEqual([
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    ]);
+  });
+
+  it('rejects malformed identities before mutating history', async () => {
+    await expect(
+      service.clearSearchHistoryForProfiles([
+        'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        'foreign/not-a-uuid',
+      ])
+    ).rejects.toThrow();
+    expect(historyRepo.delete).not.toHaveBeenCalled();
+  });
+
+  it('does not save a history row when an old query completes after clear', async () => {
+    let finish!: (value: any[]) => void;
+    const { Observable } = require('rxjs');
+    profileClient.send.mockImplementation(
+      () =>
+        new Observable((subscriber) => {
+          finish = (value) => {
+            subscriber.next(value);
+            subscriber.complete();
+          };
+        })
+    );
+    const query = service.search(
+      'old',
+      { type: 'users' },
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+    );
+    await Promise.resolve();
+    await service.clearSearchHistoryForProfiles([
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    ]);
+    finish([]);
+    await query;
+    expect(historyRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('waits for an active history save before deleting and records a later search', async () => {
+    let finishSave!: () => void;
+    historyRepo.save.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSave = resolve;
+        }) as any
+    );
+    const profileId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const search = service.search('first', { type: 'users' }, profileId);
+    await Promise.resolve();
+    await Promise.resolve();
+    const clearing = service.clearSearchHistoryForProfiles([profileId]);
+    await Promise.resolve();
+    expect(historyRepo.delete).not.toHaveBeenCalled();
+    finishSave();
+    await Promise.all([search, clearing]);
+    expect(historyRepo.delete).toHaveBeenCalledTimes(1);
+
+    historyRepo.save.mockResolvedValue({} as SearchHistory);
+    await service.search('later', { type: 'users' }, profileId);
+    expect(historyRepo.save).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps history suppressed until overlapping cleanups both finish', async () => {
+    const profileId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const releases: Array<() => void> = [];
+    historyRepo.delete.mockImplementation(
+      () => new Promise<void>((resolve) => releases.push(resolve)) as any
+    );
+    const first = service.clearSearchHistoryForProfiles([profileId]);
+    const second = service.clearSearchHistoryForProfiles([profileId]);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(releases).toHaveLength(2);
+    releases[0]();
+    await first;
+    await service.search('during-second-clear', { type: 'users' }, profileId);
+    expect(historyRepo.save).not.toHaveBeenCalled();
+    releases[1]();
+    await second;
+    await service.search('after-both', { type: 'users' }, profileId);
+    expect(historyRepo.save).toHaveBeenCalledTimes(1);
+  });
+
+  it('still cleans history after a started save rejects', async () => {
+    let rejectWrite!: (reason: Error) => void;
+    historyRepo.save.mockImplementation(
+      () => new Promise((_resolve, reject) => (rejectWrite = reject)) as any
+    );
+    const profileId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const search = service
+      .search('failed-write', { type: 'users' }, profileId)
+      .catch(() => undefined);
+    await Promise.resolve();
+    await Promise.resolve();
+    const clear = service.clearSearchHistoryForProfiles([profileId]);
+    rejectWrite(new Error('write failed'));
+    await search;
+    await expect(clear).resolves.toBeUndefined();
+    expect(historyRepo.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it('restricts community search and suggestions to public communities', async () => {
+    await service.search('hello', { type: 'communities' });
+    await service.getSuggestedCommunities();
+    expect(communityRepo.find.mock.calls[0][0]?.where).toEqual([
+      { name: expect.anything(), isPrivate: false },
+      { description: expect.anything(), isPrivate: false },
+    ]);
+    expect(communityRepo.find.mock.calls[1][0]?.where).toEqual({
+      isPrivate: false,
+    });
   });
 
   it('getSuggestedUsers() sends excludeIds containing self and followed profiles', async () => {

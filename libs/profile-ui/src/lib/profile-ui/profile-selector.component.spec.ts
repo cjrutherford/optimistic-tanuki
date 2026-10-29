@@ -167,6 +167,45 @@ describe('ProfileSelectorComponent', () => {
     expect(component.showProfileModal).toBe(false);
   });
 
+  it('keeps the parent-verified selection through a failed switch and updates only after success', () => {
+    const current = { id: 'current', profileName: 'Current' } as ProfileDto;
+    const target = { id: 'target', profileName: 'Target' } as ProfileDto;
+    component.currentSelectedProfile = current;
+    component.internalSelectedProfile.set(current);
+    component.controlledSelection = true;
+    const emitSpy = jest.spyOn(component.selectedProfile, 'emit');
+
+    // This is the normal click state before the parent starts its async check.
+    component.selectProfile(target);
+
+    expect(emitSpy).toHaveBeenCalledWith(target);
+    expect(component.internalSelectedProfile()).toBe(current);
+
+    // A failed validation leaves the parent input on the original selection.
+    component.selectionPending = false;
+    component.ngOnChanges({
+      currentSelectedProfile: {
+        currentValue: current,
+        previousValue: current,
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+    expect(component.internalSelectedProfile()).toBe(current);
+
+    // The parent advances the input only after session verification.
+    component.currentSelectedProfile = target;
+    component.ngOnChanges({
+      currentSelectedProfile: {
+        currentValue: target,
+        previousValue: current,
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+    expect(component.internalSelectedProfile()).toBe(target);
+  });
+
   it('should open profile dialog for new profile', () => {
     component.openProfileDialog();
     expect(component.editingProfile).toBeNull();

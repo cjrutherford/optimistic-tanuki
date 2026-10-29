@@ -1,3 +1,4 @@
+import { notifyAccountDeletion } from '@optimistic-tanuki/common-ui';
 import { Socket, io } from 'socket.io-client';
 
 import { ChatConversation, ChatMessage } from './types/message';
@@ -47,6 +48,13 @@ export const SOCKET_IO_INSTANCE = 'SOCKET_IO_INSTANCE';
 export const SOCKET_AUTH_TOKEN_PROVIDER = 'SOCKET_AUTH_TOKEN_PROVIDER';
 export const SOCKET_AUTH_ERROR_HANDLER = 'SOCKET_AUTH_ERROR_HANDLER';
 
+export interface ChatMessageAcknowledgement {
+  success: boolean;
+  messageId?: string;
+  statusCode?: number;
+  message?: string;
+}
+
 /**
  * Service for handling chat functionality via WebSockets.
  */
@@ -55,6 +63,13 @@ export const SOCKET_AUTH_ERROR_HANDLER = 'SOCKET_AUTH_ERROR_HANDLER';
 })
 export class SocketChatService {
   private socket: Socket;
+  private readonly draftMessageIds = new Map<
+    string,
+    { content: string; id: string }
+  >();
+  private readonly activeDraftConversations = new Set<string>();
+  private draftGeneration = 0;
+  private readonly resetSession = () => this.destroy();
   private typingSubject = new Subject<{
     conversationId: string;
     userId: string;
@@ -109,11 +124,15 @@ export class SocketChatService {
     }
 
     const socketUrl = this.buildSocketUrl();
+    window.addEventListener('ot:session-reset', this.resetSession);
     this.socket = this.ioInstance(socketUrl, {
       autoConnect: true,
       path: this.socketPath,
       withCredentials: true,
     });
+    this.socket.on('account_deleted', (value: { accountId?: unknown }) =>
+      notifyAccountDeletion(value?.accountId)
+    );
     this.socket.on('connect', () => {
       console.log(`Socket connected to ${socketUrl}`);
     });
@@ -175,6 +194,7 @@ export class SocketChatService {
       disconnect: () => socket,
       emit: () => false,
       on: () => socket,
+      off: () => socket,
     };
 
     return socket as unknown as Socket;
@@ -210,6 +230,102 @@ export class SocketChatService {
     this.socket.emit('message', message);
   }
 
+  sendMessageWithAck(
+    message: Partial<ChatMessage>,
+    timeoutMs = 15000
+  ): Promise<ChatMessageAcknowledgement> {
+    this.reconnectIfNeeded();
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timeoutId = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new Error('Chat server did not acknowledge the message'));
+      }, timeoutMs);
+
+      this.socket.emit(
+        'message',
+        message,
+        (response: ChatMessageAcknowledgement) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutId);
+          if (response?.success) {
+            resolve(response);
+          } else {
+            const error = new Error(
+              response?.message || 'Message could not be sent'
+            ) as Error & { statusCode?: number };
+            error.statusCode = response?.statusCode;
+            reject(error);
+          }
+        }
+      );
+    });
+  }
+
+  sendDraftMessage(
+    message: Partial<ChatMessage> & {
+      conversationId: string;
+      content: string;
+    }
+  ): Promise<ChatMessageAcknowledgement> {
+    const generation = this.draftGeneration;
+    const conversationId = message.conversationId;
+    if (this.activeDraftConversations.has(conversationId)) {
+      return Promise.reject(
+        Object.assign(new Error('A message is already being sent'), {
+          statusCode: 409,
+        })
+      );
+    }
+
+    const previous = this.draftMessageIds.get(conversationId);
+    const draft =
+      previous?.content === message.content
+        ? previous
+        : { content: message.content, id: this.createMessageId() };
+    this.draftMessageIds.set(conversationId, draft);
+    this.activeDraftConversations.add(conversationId);
+
+    return this.sendMessageWithAck({ ...message, id: draft.id })
+      .then((acknowledgement) => {
+        if (generation !== this.draftGeneration)
+          throw Error('Chat session changed');
+        if (acknowledgement.messageId !== draft.id) {
+          throw new Error('Chat server acknowledged a different message');
+        }
+        if (this.draftMessageIds.get(conversationId) === draft) {
+          this.draftMessageIds.delete(conversationId);
+        }
+        return acknowledgement;
+      })
+      .finally(() => {
+        if (generation === this.draftGeneration)
+          this.activeDraftConversations.delete(conversationId);
+      });
+  }
+
+  private createMessageId(): string {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+      const random = Math.floor(Math.random() * 16);
+      return (char === 'x' ? random : (random & 0x3) | 0x8).toString(16);
+    });
+  }
+
+  onConnectionState(callback: (connected: boolean) => void): () => void {
+    const connected = () => callback(true);
+    const disconnected = () => callback(false);
+    this.socket.on('connect', connected);
+    this.socket.on('disconnect', disconnected);
+    callback(Boolean(this.socket.connected));
+    return () => {
+      this.socket.off('connect', connected);
+      this.socket.off('disconnect', disconnected);
+    };
+  }
+
   private reconnectIfNeeded(): void {
     if (this.socket?.disconnected) {
       this.socket.connect();
@@ -220,16 +336,20 @@ export class SocketChatService {
    * Registers a callback to be invoked when a message is received.
    * @param callback The callback function.
    */
-  onMessage(callback: (message: ChatMessage) => void): void {
-    this.socket.on('message', callback);
+  onMessage(callback: (message: ChatMessage) => void): () => void {
+    const listener = (message: ChatMessage) =>
+      callback({ ...message, timestamp: new Date(message.timestamp) });
+    this.socket.on('message', listener);
+    return () => this.socket.off('message', listener);
   }
 
   /**
    * Registers a callback to be invoked when a conversation is received.
    * @param callback The callback function.
    */
-  onConversations(callback: (data: ChatConversation[]) => void): void {
+  onConversations(callback: (data: ChatConversation[]) => void): () => void {
     this.socket.on('conversations', callback);
+    return () => this.socket.off('conversations', callback);
   }
 
   /**
@@ -402,7 +522,16 @@ export class SocketChatService {
   /**
    * Disconnects the socket.
    */
+  ngOnDestroy(): void {
+    if (isPlatformBrowser(this.platformId))
+      window.removeEventListener('ot:session-reset', this.resetSession);
+    this.destroy();
+  }
+
   destroy(): void {
+    this.draftGeneration++;
+    this.draftMessageIds.clear();
+    this.activeDraftConversations.clear();
     if (this.socket) {
       this.socket.disconnect();
       console.log('Socket disconnected');

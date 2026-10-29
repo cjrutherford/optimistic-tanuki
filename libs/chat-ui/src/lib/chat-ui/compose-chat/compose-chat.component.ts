@@ -22,7 +22,13 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 })
 export class ComposeChatComponent extends Themeable {
   @Output() messageSubmitted: EventEmitter<string> = new EventEmitter<string>();
+  @Output() submissionRequested = new EventEmitter<{
+    content: string;
+    settle: (accepted: boolean) => void;
+  }>();
   content = '';
+  pendingSubmission = false;
+  submissionError: string | null = null;
 
   override applyTheme(colors: ThemeColors): void {
     this.background = colors.background;
@@ -34,7 +40,8 @@ export class ComposeChatComponent extends Themeable {
   }
 
   submitMessage() {
-    if (!this.content.trim()) return;
+    if (!this.content.trim() || this.pendingSubmission) return;
+    const contentAtSubmit = this.content;
 
     const turndownService = new TurndownService();
     const htmlContent = this.content
@@ -49,13 +56,32 @@ export class ComposeChatComponent extends Themeable {
       /(https?:\/\/[^\s]+)/g,
       (url) => `[${url}](${url})`
     );
+    this.pendingSubmission = true;
+    this.submissionError = null;
+    let settled = false;
+    this.submissionRequested.emit({
+      content: markdown,
+      settle: (accepted) => {
+        if (settled) return;
+        settled = true;
+        this.pendingSubmission = false;
+        if (accepted) {
+          if (this.content === contentAtSubmit) this.content = '';
+        } else {
+          this.submissionError =
+            'Message could not be sent. Your draft is still here; try again.';
+        }
+      },
+    });
+    // Keep the existing string event for callers that have not opted in to
+    // acknowledged delivery. The chat window selects exactly one event path.
     this.messageSubmitted.emit(markdown);
-    this.content = '';
   }
 
   onContentChanged(event: Event) {
     const target = event.target as HTMLTextAreaElement;
     this.content = target.value;
+    this.submissionError = null;
   }
 
   onEditorKeydown(event: KeyboardEvent): void {

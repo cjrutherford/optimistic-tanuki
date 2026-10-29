@@ -13,11 +13,15 @@ import {
 } from '@optimistic-tanuki/models';
 import { Logger } from '@nestjs/common';
 import { EmailAuthService } from './email-auth.service';
+import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { GuardianPolicyNoticeService } from '../guardian-permissions/guardian-policy-notice.service';
 
 describe('AppController', () => {
   let appController: AppController;
   let appService: AppService;
   let oauthService: OAuthService;
+  let guardianPermissions: any;
+  let guardianPolicyNotices: any;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
@@ -53,12 +57,179 @@ describe('AppController', () => {
             resetPassword: jest.fn(),
           },
         },
+        {
+          provide: GuardianPermissionService,
+          useValue: {
+            requestPermission: jest.fn(),
+            attestAsGuardian: jest.fn(),
+            resendApplicantContinuation: jest.fn(),
+            assertDelegatedProfileAccess: jest.fn(),
+            listGuardianDependents: jest.fn(),
+            withdrawForGuardian: jest.fn(),
+          },
+        },
+        {
+          provide: GuardianPolicyNoticeService,
+          useValue: {
+            schedulePolicyNotice: jest.fn(),
+            retryFailedNotices: jest.fn(),
+            getNoticeStatus: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     appController = app.get<AppController>(AppController);
     appService = app.get<AppService>(AppService);
     oauthService = app.get<OAuthService>(OAuthService);
+    guardianPermissions = app.get(GuardianPermissionService);
+    guardianPolicyNotices = app.get(GuardianPolicyNoticeService);
+  });
+
+  it('does not forward a caller-supplied user id to public guardian requests', async () => {
+    guardianPermissions.requestPermission.mockResolvedValue({
+      pending: true,
+      sent: true,
+    });
+    const data = {
+      dateOfBirth: '2010-01-01',
+      applicantEmail: 'teen@example.invalid',
+      guardianEmail: 'guardian@example.invalid',
+      context: {
+        appId: 'client-interface',
+        appName: 'Optimistic Tanuki',
+        uiBaseUrl: 'https://optimistic-tanuki.example',
+        from: 'support@hopefulaspirationsindustries.com',
+      },
+      userId: 'victim-user',
+      ageEligibilityStatus: 'adult',
+    } as any;
+
+    await appController.requestGuardianPermission(data);
+
+    expect(guardianPermissions.requestPermission).toHaveBeenCalledWith({
+      dateOfBirth: data.dateOfBirth,
+      applicantEmail: data.applicantEmail,
+      guardianEmail: data.guardianEmail,
+      context: data.context,
+    });
+  });
+
+  it('routes only the policy version through the internal guardian notice command', async () => {
+    guardianPolicyNotices.schedulePolicyNotice.mockResolvedValue({
+      policyVersion: 'TEST-GUARDIAN-NOTICE-v1',
+      scheduled: 1,
+      alreadyScheduled: 0,
+    });
+
+    await expect(
+      appController.scheduleGuardianPolicyNotice({
+        policyVersion: 'TEST-GUARDIAN-NOTICE-v1',
+        operatorToken: 'test-operator-token',
+      })
+    ).resolves.toEqual({
+      policyVersion: 'TEST-GUARDIAN-NOTICE-v1',
+      scheduled: 1,
+      alreadyScheduled: 0,
+    });
+    expect(guardianPolicyNotices.schedulePolicyNotice).toHaveBeenCalledWith(
+      'TEST-GUARDIAN-NOTICE-v1',
+      'test-operator-token'
+    );
+    expect(() =>
+      appController.scheduleGuardianPolicyNotice({
+        policyVersion: undefined,
+        operatorToken: 'test-operator-token',
+      })
+    ).toThrow(RpcException);
+  });
+
+  it('routes guardian-authorized continuation retries to the bound applicant service', async () => {
+    guardianPermissions.resendApplicantContinuation.mockResolvedValue({
+      sent: true,
+    });
+
+    await expect(
+      appController.resendGuardianApplicantContinuation({
+        token: 'guardian-control-token',
+      })
+    ).resolves.toEqual({ sent: true });
+
+    expect(
+      guardianPermissions.resendApplicantContinuation
+    ).toHaveBeenCalledWith('guardian-control-token');
+  });
+
+  it('routes delegated profile authorization through its dedicated RPC', async () => {
+    guardianPermissions.assertDelegatedProfileAccess.mockResolvedValue(
+      undefined
+    );
+    const request = {
+      actorUserId: 'session-guardian',
+      dependentUserId: 'stored-profile-owner',
+      appId: 'client-interface',
+      operation: 'profile.view',
+    };
+
+    await expect(
+      appController.authorizeGuardianProfileOperation(request)
+    ).resolves.toEqual({ allowed: true });
+    expect(
+      guardianPermissions.assertDelegatedProfileAccess
+    ).toHaveBeenCalledWith(request);
+  });
+
+  it('routes the authenticated guardian list command to the permission service', async () => {
+    const command = { guardianUserId: 'verified-guardian' };
+    guardianPermissions.listGuardianDependents.mockResolvedValue([
+      { dependentUserId: 'linked-dependent', status: 'approved' },
+    ]);
+    await expect(
+      appController.listGuardianDependents(command)
+    ).resolves.toEqual([
+      { dependentUserId: 'linked-dependent', status: 'approved' },
+    ]);
+    expect(guardianPermissions.listGuardianDependents).toHaveBeenCalledWith(
+      'verified-guardian'
+    );
+  });
+
+  it('routes linked withdrawal with the verified guardian and selected dependent IDs', async () => {
+    const command = {
+      guardianUserId: 'verified-guardian',
+      dependentUserId: 'linked-dependent',
+    };
+    guardianPermissions.withdrawForGuardian.mockResolvedValue({
+      revoked: true,
+    });
+    await expect(
+      appController.withdrawGuardianPermissionForGuardian(command)
+    ).resolves.toEqual({ revoked: true });
+    expect(guardianPermissions.withdrawForGuardian).toHaveBeenCalledWith(
+      'verified-guardian',
+      'linked-dependent'
+    );
+  });
+
+  it('passes the authenticated guardian id from the gateway command to the attestation service', async () => {
+    guardianPermissions.attestAsGuardian.mockResolvedValue({ attested: true });
+    const command = {
+      token: 'private-link-token',
+      guardianUserId: 'verified-guardian-id',
+      attested: true as const,
+      attestationVersion: 'guardian-attestation-v1',
+      dateOfBirth: '2000-01-01',
+    };
+    await expect(
+      appController.attestGuardianPermission(command)
+    ).resolves.toEqual({
+      attested: true,
+    });
+    expect(guardianPermissions.attestAsGuardian).toHaveBeenCalledWith(
+      command.token,
+      command.guardianUserId,
+      command
+    );
   });
 
   describe('login', () => {
@@ -98,7 +269,10 @@ describe('AppController', () => {
         'test@example.com',
         'password',
         '123456',
-        'profile123'
+        'profile123',
+        undefined,
+        undefined,
+        undefined
       );
       expect(loginResponse).toEqual({
         userId: 'userId',
@@ -163,7 +337,8 @@ describe('AppController', () => {
         'Last',
         'password',
         'password',
-        '  '
+        '  ',
+        undefined
       );
       expect(registerResponse).toEqual({
         code: 0,
@@ -301,8 +476,26 @@ describe('AppController', () => {
       const validateTokenResponse = await appController.validate(
         validateTokenRequest
       );
-      expect(appService.validateToken).toHaveBeenCalledWith('token');
+      expect(appService.validateToken).toHaveBeenCalledWith(
+        'token',
+        undefined,
+        false
+      );
       expect(validateTokenResponse).toEqual({ userId: 'userId', valid: true });
+    });
+
+    it('advances activity only for an explicit inbound activity flag', async () => {
+      await appController.validate({
+        token: 'token',
+        userId: 'userId',
+        appId: 'local-hub',
+        activity: true,
+      });
+      expect(appService.validateToken).toHaveBeenCalledWith(
+        'token',
+        'local-hub',
+        true
+      );
     });
 
     it('should throw RpcException on error', async () => {
@@ -449,7 +642,10 @@ describe('AppController', () => {
         'test@example.com',
         'Test User',
         undefined,
-        false
+        false,
+        undefined,
+        undefined,
+        undefined
       );
       expect(response).toEqual({
         message: 'OAuth login successful',

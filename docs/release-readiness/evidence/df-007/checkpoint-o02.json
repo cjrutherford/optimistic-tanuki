@@ -1,0 +1,264 @@
+{
+  "slice": "DF-007-O02",
+  "date": "2026-10-23",
+  "accepted": true,
+  "status": "locally-verified-owner-delivery",
+  "baseRevision": "b9a4628de3bc8cc7b0f82721f167f42184e76a0d",
+  "sourceManifestSha256": "b9dab8de8946769f5990eabf10a860ce46d561ccaa0f173b7628e17ee61c2085",
+  "sourceHashes": {
+    "apps/app-configurator/src/app/account-export-owner.service.spec.ts": "d1618dcafff7239995b7e637204c2de86f3a5de1a47a70f9888945c1df076e3f",
+    "apps/app-configurator/src/app/account-export-owner.service.ts": "6f2c03816051b4918432a216516e3180df2c920edac6133333287f06bf0284c1",
+    "apps/app-configurator/src/app/account-export-snapshot.controller.spec.ts": "c9322b65b7ac7e6f90a75704b096367d6a1c6544389b615b50cfcef1beb4698a",
+    "apps/app-configurator/src/app/account-export-snapshot.controller.ts": "04a6c40d53aac7add7e971d25029c4a6326a03f48371096f55b3723db78cac4d",
+    "apps/app-configurator/src/app/account-export-snapshot.service.spec.ts": "027143836779c8ad667c87ca019123a3a5ef7477bcf6b61f226986f0e4b9df25",
+    "apps/app-configurator/src/app/account-export-snapshot.service.ts": "a32cb69818ca0dbd601b99b85594012c666651452154b12aa8057e730ea316cf",
+    "apps/app-configurator/src/app/account-export-sources.spec.ts": "f87798ea732855a9fa2dae26ee14d9da5b013152b2c706e877bbae6f3857274b",
+    "apps/app-configurator/src/app/account-export-sources.ts": "bc4671ad8c7aed634a2610e03b8e4e94b24795edb69d02f945baf6fc7e470634",
+    "apps/app-configurator/src/app/app-configurator-account-export-dispositions.json": "93333bd6a7f9a69a401ab7601e2b3543baaf3ae6a95b2d3d085b545c3bcec305",
+    "apps/app-configurator/src/app/app-configurator-account-export-dispositions.spec.ts": "1b5211002005cb46fa5bd3d8c3bbb363cef4ec4d1fadb4ae9b36da4d09fee0de",
+    "apps/app-configurator/src/app/app-configurator-account-export-dispositions.ts": "6a5c3469379beeac1abc660e41bde5aed64e88029ab4ba85e548dd828893996c",
+    "apps/app-configurator/src/app/app-configurator-dispositions.postgres.spec.ts": "27b5dea42db7724944e97302d5a8d73f960cced3d95f10ac613f62c7ea7ec744",
+    "apps/app-configurator/src/app/app.module.ts": "ff4f68657c6ac9eae04951507b37172874edf1d32b3d9f88a4a068b044235ad4",
+    "apps/app-configurator/src/config.ts": "f03de88dbb452eff17390c2de437882a6953b20791bf5db52a277407b654582d",
+    "apps/authentication-e2e/project.json": "c9a9197cb473dbb34cc48d6ea4ed5bac10e9014f2938959fb9b7251c4534fe4d",
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "8b833e5e128e7fb610d4823fd869ab2427d30f17eb71af57cf3a6e7eedbce943",
+    "apps/authentication-e2e/src/authentication/app-configurator-account-export.spec.ts": "5af37def960d3687d95c5569e6b66e8f24c66df060d995c5547c5bd38d65ed76",
+    "apps/authentication-e2e/src/authentication/assets-account-export.spec.ts": "c110f62b2505e235849722cb8ae6274e4684e61d25cc18deac9a8bd7a2b5ee5b",
+    "apps/authentication-e2e/src/authentication/forum-account-export.spec.ts": "2a69a9ef247959041bd8cec3051a444d251b02a23b48f6332ab2e9c0cde9eea6",
+    "apps/authentication-e2e/src/authentication/permissions-account-export.spec.ts": "ac802291845208a1de52123e0644b1c9dfa32f69f768b1fbb38a6f779bc7c23e",
+    "apps/authentication-e2e/src/authentication/social-account-export.spec.ts": "819912a0d46a4dfad5279b9b563f29c4243ab2347bb7d7f74347b0956817b495",
+    "apps/authentication-e2e/src/authentication/videos-account-export.spec.ts": "d3bf151a04b3a3d3cac27057991718dda70e1162016afc85c994fc0f2f77d06a",
+    "apps/authentication-e2e/src/authentication/workspace-account-export.spec.ts": "e7de4338abdb18ee3dd290ac7d7e2d807a5f6ddf181fb6fc8a1c876cbf694a1f",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "9c128854796a194e8e833bf397222a748217f255e01ca7373aea6e0d4fd8815a",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "1a2b2dd0ba8de872e227fcf8f085e404ff3812a734764a16d1835ab80d1c47a4",
+    "apps/authentication/src/account-export-jobs/app-configurator-account-export-snapshot.client.spec.ts": "d2a2feeac258bab40da0c88f919d67c992b5b3cfd99bef0d9d4e9d39ffa6531f",
+    "apps/authentication/src/account-export-jobs/app-configurator-account-export-snapshot.client.ts": "0c13dc824f0e52cc43427478eb6702fe8f88c033249ad151a28a6a953c82e7f4",
+    "apps/authentication/src/app/app.module.ts": "f4c6730d8a235064653cf9ee72bee8ac74f5d5173b9cc2cb91fa54c1e628e2ee",
+    "apps/authentication/src/config.spec.ts": "51a54efdc8e23700ad823b204e0f06d9a59eeaa95a88cd86627b0e4f1387a68d",
+    "apps/authentication/src/config.ts": "d9c935a098aa81e37ace79eaa6fb0ef770f48a5dfb18af789a38854905a9fb05",
+    "libs/constants/src/index.ts": "8c86858cf2ef349c1a167e9f7f7126a79dd7ef5bbcb04964800f8214418d1615",
+    "libs/constants/src/lib/libs/app-config.ts": "71252988bce194d0508cfe84bbd058f50c967db0bc6cd0c0b89dfbd3f16d2a11",
+    "libs/models/src/lib/libs/account-export/account-export-snapshot.contract.ts": "b68e2003c16ffb2472cfe85448240a9dbbd901f872b190d91787c684209c54f1",
+    "libs/storage/src/lib/account-export-postgres-owner.service.spec.ts": "61d250241ef029dccd84d5719223553e2ef2316f8f241dbebb435d67ccca954a",
+    "libs/storage/src/lib/account-export-postgres-owner.service.ts": "7cc3b635275d274c2d8e4e1048463997b055ef2680029587935f49290c2682fc",
+    "libs/storage/src/lib/account-export-profile-bound-snapshot.client.ts": "ff73c3aace4b150bcdc1505a6e027bda2c5597202e9273c86d81d6a809242615"
+  },
+  "imageIds": {
+    "authentication": "sha256:c83e3d9b9fa85976d158581872ffa7f6a2cc780d75787dea3e27515f090efc95",
+    "profile": "sha256:f11296c3f281e183be45966e64c2e1de83ca2c9e19a70304f974ee12d409351a",
+    "assets": "sha256:7d312f3017147ce6699ab5581ce0e0fa70a30ed4cfea7be2f73385a7f6c3bf95",
+    "videos": "sha256:f2c7f697cec6524c97130ec61eb00e66481e2cc6a259ae0d0e39fd86ec3c20af",
+    "permissions": "sha256:1520244ef487b59262bbdfe2ffd58156f1f9a6ceb7d275b83b71c43528a8e953",
+    "social": "sha256:b4eaaa7d5aee9361027f45401d3a89344f91109d6d42be428d9e4155409e6b00",
+    "forum": "sha256:9bafc88b94c0abb179ce3e9b97f54332e217ed45fad6240044cbaee078d3b8b6",
+    "workspace": "sha256:1d48bc07e6e2ca2463177bb2fc965c473fec4bae181b9072a99fc2119182013c",
+    "app-configurator": "sha256:fe98d961dfac13051e23f1f817a51b08b5a63ba6acbbba639c3cd7372db3fe76",
+    "db-setup": "sha256:3f33cecc1a90bc154fd4cb6878bd498829414c85749c98230e53f93484cadcac"
+  },
+  "releaseScope": {
+    "primaryApps": ["client-interface", "local-hub"],
+    "authority": "docs/release-readiness/MASTER-AUDIT.md (Scope)",
+    "remainingOwnerReleaseDependencies": "not-yet-reconciled",
+    "globalSharedAccountContract": "must-not-silently-omit-cross-product-data"
+  },
+  "deliveryProgress": {
+    "completed": 2,
+    "total": 75,
+    "remaining": 73,
+    "next": "O03 Blogging (pending OT/TS scope reconciliation)"
+  },
+  "sources": {
+    "AppConfigurationEntity": 252,
+    "AppInstanceEntity": 252,
+    "AppMembershipEntity": 253
+  },
+  "runtime": {
+    "attempt": "attempt-3",
+    "result": "PASS",
+    "catalogCases": 1,
+    "tcpCases": 1,
+    "skippedCases": 0,
+    "physicalTables": [
+      {
+        "table": "app_configuration_entity",
+        "columns": [
+          "id",
+          "name",
+          "description",
+          "domain",
+          "landingPage",
+          "routes",
+          "features",
+          "theme",
+          "active",
+          "createdAt",
+          "updatedAt",
+          "release",
+          "manifest",
+          "ownerUserId",
+          "ownerProfileId",
+          "appScope",
+          "revision",
+          "workspaceId",
+          "appInstanceId",
+          "accessPolicy"
+        ]
+      },
+      {
+        "table": "app_instances",
+        "columns": [
+          "id",
+          "workspaceId",
+          "appScope",
+          "ownerUserId",
+          "ownerProfileId",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      {
+        "table": "app_memberships",
+        "columns": [
+          "id",
+          "workspaceId",
+          "appInstanceId",
+          "appScope",
+          "userId",
+          "profileId",
+          "role",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      {
+        "table": "migrations",
+        "columns": ["id", "timestamp", "name"]
+      }
+    ],
+    "stage": {
+      "initialJobState": "incomplete",
+      "initialCapturedOwners": [
+        "authentication",
+        "profile",
+        "assets",
+        "videos",
+        "permissions",
+        "social",
+        "forum",
+        "workspace",
+        "app-configurator"
+      ],
+      "initialBlockers": [
+        "coverage-inventory-unaccepted",
+        "required-participants-incomplete",
+        "portable-media-unverified"
+      ],
+      "jobCaptureOwners": [
+        "authentication",
+        "profile",
+        "assets",
+        "videos",
+        "permissions",
+        "social",
+        "forum",
+        "workspace",
+        "app-configurator"
+      ],
+      "globalJobRemainsIncomplete": true,
+      "failurePrefix": [
+        "authentication",
+        "profile",
+        "assets",
+        "videos",
+        "permissions",
+        "social",
+        "forum",
+        "workspace"
+      ],
+      "parentOwnerMismatchFailsCapture": true,
+      "retryRestoresAllOwners": true,
+      "verifiedSourceRowCounts": {
+        "AppConfigurationEntity": 252,
+        "AppInstanceEntity": 252,
+        "AppMembershipEntity": 253
+      },
+      "verifiedTerminalCount": 757,
+      "sharedAppOwnMembershipReceipt": true,
+      "configurationSecretsExcluded": true,
+      "verifiedTerminalChecksum": true,
+      "parentProfileBinding": true,
+      "privacyAssertions": true,
+      "multipleByteReads": 6,
+      "invalidRangeDenied": true,
+      "expiredLeaseDenied": true,
+      "restartInvalidatedHandle": true,
+      "recapturedWithNewId": true,
+      "logoutDeniedRead": true,
+      "foreignFingerprintPreserved": true
+    },
+    "databasesRestored": 9,
+    "spoolDescriptorsAfter": 0,
+    "privateResources": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "protectedFiles": 43
+  },
+  "focusedUnitTests": 66,
+  "checks": {
+    "pre-e2e-build.log": "22d00aed94feb7c90973a92db45d9d496d85c3f6f8e8aef4280d408662a41106",
+    "pre-e2e-lint.log": "eab0a43e755d9aa618e9d5268b4732552fcd36cf9acc19ad0ebcd602f873d705",
+    "e2e-lint.log": "fbd22fdb008153a488e0120bbce24000ca1b52799209d0507cf08a312fe67168",
+    "migration-validation.log": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9",
+    "app-final-unit.log": "51225f66065baf2b4ac1a5c7829806a84111df3c1a6e30215157a1338f5270af",
+    "auth-cleanup-final.log": "dbf94306d78ab6d8fa13e1dee46cc7803221e6e167ad6a50277b6f7df4962000",
+    "narrow-test.log": "d094deaaf59bbaf0278a409f63573d2a8a998ae15e1ac050d62d44830afed512",
+    "pre-e2e-format-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pager-boundary-proof-final.log": "164c2262bbb46299977969e41c78a804734d5e237b4ec3460667c31a46079b89",
+    "temp-name-unit.log": "e9fc266747dfdf329b96763d68dcfd81aa4963da88e6839b1e214f7ae095f5b5",
+    "temp-name-build.log": "db51bbbf2090397b4d52705d9633bfac1b5469575646df13bf5c656d8108314c",
+    "temp-name-lint.log": "0d3eee9053a0550e883dc1d672b89c86ef3532161dab7637821c6d1f87d784a9",
+    "temp-name-repro.log": "c2e0becedca1290194bcf0ad32c4e9132413a1889e807693b260951be8628272",
+    "shared-participant-unit-final.log": "3855fd3e77bce917e931b533364fadd671c17a6e7eae6a1c2a5432607f2413a3",
+    "participant-source-final.log": "1bc668ba9fbb5746dc249e89bf1d2d4f7dee5a735cf4d7b2d0f0e5f72dfc9ab3",
+    "participant-final-build.log": "a4852b381359089afc903d254ddbe9f95e414b8e7a0562dc799b6d23d1a5434a",
+    "participant-final-lint.log": "4e118f5cdfc00f7ce3d6c2994443db808487c9edc248c67457e3c799d1e9873c"
+  },
+  "evidenceHashes": {
+    "result.json": "909789cacad2f29daa2285cb7bced0c5f3263552fb36f71c7a642337a7f68b0c",
+    "fixture-report.json": "7dce3274baaf10acc526e810f7233221d4d60d01ec2264f633a2a7080ce15787",
+    "catalog-report.json": "c3f7e092be771031ddd93ac7a4cc3bcfe8f51c84f29de17d5c4b28a3064b18e3",
+    "database-counts-before.json": "ee11ae8ed5f04a6ab2c9817148204009824d6f2ccb3ab968b153b2dc980e870b",
+    "database-counts-after.json": "ee11ae8ed5f04a6ab2c9817148204009824d6f2ccb3ab968b153b2dc980e870b",
+    "identities-before.json": "ebc0c3a63fa7b95ff8e72fa0de16f9638012abeffd7a4132cb47b31cdd2b0ee0",
+    "identities-after.json": "36839644af99da332ff0d52575a5a5c4afda256eca530f654664cb05ca43985a",
+    "cleanup.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d",
+    "catalog.log": "e05f051ed444bd3942a6ad0b866be1e0ca44487455a8cdf913699fd3086ca60a",
+    "e2e.log": "8379284bae9ee3c30d1b1ca1e72b2461515f25f68505bc0e68a7502d81ffa698"
+  },
+  "reviewDisposition": {
+    "reviewTaskId": "node:delegated-task:command%3Amcp%3A0bd42945-cae6-4d1c-93ef-00b9339e44fb%3Adelegate-task%3Arr-o02-final-source-review-20261023-r1",
+    "finding": "P1 shared Postgres pager silently stops at100000",
+    "disposition": "not-reproduced-source-and-boundary-proof-rejects-overflow",
+    "rationale": "streamSource has no budget-based break: rows.length>PAGE continues the query, then increment past MAX_CAPTURE_ROWS throws. Emitter advances iterator until exhaustion. No production change warranted.",
+    "proof": {
+      "result": "PASS",
+      "case": "100000 rows plus one lookahead",
+      "emitted": 200,
+      "queryCalls": 2,
+      "rowsObserved": 100001,
+      "error": "OWNER_READ_FAILED"
+    },
+    "proofLogSha256": "164c2262bbb46299977969e41c78a804734d5e237b4ec3460667c31a46079b89",
+    "mockLimit": "Direct pager logic exercised with a synthetic QueryRunner; not a real DB or whole-capture acceptance claim."
+  },
+  "limitations": [
+    "Shared untyped configuration payloads and description excluded; attribution recorded-unverified, consent not inferred.",
+    "Account-wide export remains incomplete; artifact unavailable and URL null; no download or deletion claim.",
+    "Seven legacy owner E2E fixtures were not rerun; four opt-in DB cases were gated in unit commands (the new catalog case ran separately with no skip).",
+    "Browser, remote CI, external flows and production qualification not run."
+  ]
+}

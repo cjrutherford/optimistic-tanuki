@@ -1,0 +1,36 @@
+import {
+  APP_CONFIGURATOR_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+  ASSETS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+  CHAT_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+  CLASSIFIEDS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+  FORUM_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+  PERMISSIONS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+  PAYMENTS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+  PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+  SOCIAL_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+  VIDEOS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+  WORKSPACE_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from '@optimistic-tanuki/constants';
+import { AUTHENTICATION_ACCOUNT_EXPORT_SOURCES } from '../account-export-owner/account-export-owner.service';
+
+/** Server-owned inventory of the sources represented by the release captures. */
+export const ACCOUNT_EXPORT_RELEASE_SOURCE_REGISTRY: Readonly<
+  Record<string, readonly string[]>
+> = Object.freeze({
+  authentication: Object.freeze([...AUTHENTICATION_ACCOUNT_EXPORT_SOURCES]),
+  profile: Object.freeze([...PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES]),
+  assets: Object.freeze([...ASSETS_ACCOUNT_EXPORT_CAPTURE_SOURCES]),
+  videos: Object.freeze([...VIDEOS_ACCOUNT_EXPORT_CAPTURE_SOURCES]),
+  permissions: Object.freeze([...PERMISSIONS_ACCOUNT_EXPORT_CAPTURE_SOURCES]),
+  social: Object.freeze([...SOCIAL_ACCOUNT_EXPORT_CAPTURE_SOURCES]),
+  forum: Object.freeze([...FORUM_ACCOUNT_EXPORT_CAPTURE_SOURCES]),
+  workspace: Object.freeze([...WORKSPACE_ACCOUNT_EXPORT_CAPTURE_SOURCES]),
+  'app-configurator': Object.freeze([
+    ...APP_CONFIGURATOR_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+  ]),
+  'chat-collector': Object.freeze([...CHAT_ACCOUNT_EXPORT_CAPTURE_SOURCES]),
+  classifieds: Object.freeze([...CLASSIFIEDS_ACCOUNT_EXPORT_CAPTURE_SOURCES]),
+  payments: Object.freeze([...PAYMENTS_ACCOUNT_EXPORT_CAPTURE_SOURCES]),
+});
+
+export { ACCOUNT_EXPORT_RELEASE_COVERAGE_VERSION } from '@optimistic-tanuki/models';

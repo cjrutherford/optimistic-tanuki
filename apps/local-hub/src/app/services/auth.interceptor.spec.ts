@@ -4,7 +4,11 @@ import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import {
+  HttpClient,
+  provideHttpClient,
+  withInterceptors,
+} from '@angular/common/http';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { Router } from '@angular/router';
 import { AuthStateService } from './auth-state.service';
@@ -12,6 +16,32 @@ import { AuthenticationService } from './authentication.service';
 import { authInterceptor } from './auth.interceptor';
 
 describe('authInterceptor and AuthStateService', () => {
+  it('does not log out a newer account when an older receipt or export request is denied', () => {
+    const auth = { isAuthenticated: true, logout: jest.fn() },
+      router = { navigate: jest.fn() };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: AuthStateService, useValue: auth },
+        { provide: Router, useValue: router },
+        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClientTesting(),
+      ],
+    });
+    const http = TestBed.inject(HttpClient),
+      mock = TestBed.inject(HttpTestingController);
+    for (const path of [
+      '/api/authentication/account-deletion/status',
+      '/api/authentication/account-export',
+    ]) {
+      http.get(path).subscribe({ error: () => undefined });
+      mock
+        .expectOne(path)
+        .flush({}, { status: 401, statusText: 'Unauthorized' });
+    }
+    expect(auth.logout).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+    mock.verify();
+  });
   it('allows the initial cookie session request to restore browser auth', async () => {
     TestBed.configureTestingModule({
       providers: [

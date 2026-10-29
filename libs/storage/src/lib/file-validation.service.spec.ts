@@ -7,16 +7,32 @@ describe('FileValidationService', () => {
     service = new FileValidationService();
   });
 
-  it('accepts video uploads larger than the previous max size limit', () => {
+  it('accepts video uploads within the fail-closed scan limit', () => {
     const result = service.validateFile(
       'feature-film.mp4',
       'video/mp4',
-      20 * 1024 * 1024 * 1024,
+      25 * 1024 * 1024,
       'video'
     );
 
     expect(result.isValid).toBe(true);
     expect(result.errors).toEqual([]);
+  });
+
+  it('rejects video uploads above the supported scanner limit', () => {
+    const result = service.validateFile(
+      'feature-film.mp4',
+      'video/mp4',
+      25 * 1024 * 1024 + 1,
+      'video'
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('exceeds maximum allowed size of 25.00MB'),
+      ])
+    );
   });
 
   it('accepts image uploads up to 20MB', () => {

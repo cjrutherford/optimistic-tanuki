@@ -1,3 +1,4 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ClassifiedFormComponent } from './classified-form.component';
 import { ClassifiedAdDto } from '../models/index';
 
@@ -100,6 +101,25 @@ describe('ClassifiedFormComponent', () => {
   });
 
   describe('onSubmit', () => {
+    it('omits communityId from edit updates because the target community is immutable', () => {
+      component.existingAd = existingAd;
+      component.ngOnInit();
+      const spy = jest.fn();
+      component.submitForm.subscribe(spy);
+
+      component.onSubmit();
+
+      expect(spy).toHaveBeenCalledWith({
+        title: 'Bike',
+        description: 'A nice bike',
+        price: 100,
+        currency: 'USD',
+        category: 'Sports',
+        condition: 'Good',
+        imageUrls: ['https://example.com/a.png'],
+      });
+    });
+
     it('rejects a blank title', () => {
       component.formData.title = '   ';
       component.formData.description = 'desc';
@@ -188,6 +208,24 @@ describe('ClassifiedFormComponent', () => {
       expect(component.imagePreviews()).toEqual([]);
     });
 
+    it('rejects oversized selections before creating previews', async () => {
+      const oversized = makeFile('too-large.png');
+      Object.defineProperty(oversized, 'size', {
+        value: 20 * 1024 * 1024 + 1,
+      });
+      const event = fileInputEvent([oversized]);
+      const input = event.target as HTMLInputElement;
+      const readAsDataURL = jest.spyOn(FileReader.prototype, 'readAsDataURL');
+
+      await component.onFilesSelected(event);
+
+      expect(readAsDataURL).not.toHaveBeenCalled();
+      expect(component.imagePreviews()).toEqual([]);
+      expect(component.error()).toContain('20 MiB upload limit');
+      expect(input.value).toBe('');
+      readAsDataURL.mockRestore();
+    });
+
     it('stores data-url previews directly when no uploadImage callback is provided', async () => {
       const event = fileInputEvent([makeFile()]);
 
@@ -235,6 +273,41 @@ describe('ClassifiedFormComponent', () => {
       await component.onFilesSelected(event);
 
       expect(component.formData.imageUrls).toHaveLength(5);
+    });
+  });
+
+  describe('rendered image input labels', () => {
+    let fixtures: ComponentFixture<ClassifiedFormComponent>[];
+
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [ClassifiedFormComponent],
+      }).compileComponents();
+      fixtures = Array.from({ length: 2 }, () => {
+        const fixture = TestBed.createComponent(ClassifiedFormComponent);
+        fixture.componentRef.setInput('communityId', 'community-1');
+        fixture.detectChanges();
+        return fixture;
+      });
+    });
+
+    afterEach(() => TestBed.resetTestingModule());
+
+    it('associates each image input with a unique visible label', () => {
+      const inputIds = fixtures.map((fixture) => {
+        const host = fixture.nativeElement as HTMLElement;
+        const input = host.querySelector<HTMLInputElement>('.file-input');
+        expect(input).not.toBeNull();
+        expect(input?.id).toBeTruthy();
+        expect(input?.multiple).toBe(true);
+        const label = host.querySelector<HTMLLabelElement>(
+          `label[for="${input?.id}"]`
+        );
+        expect(label?.textContent).toContain('Images (optional, up to 5)');
+        return input?.id;
+      });
+
+      expect(new Set(inputIds).size).toBe(2);
     });
   });
 });

@@ -87,7 +87,14 @@ for PROJECT in $PROJECTS; do
     echo "Running tests for $PROJECT..."
     if [ "$IS_JEST" = true ]; then
         # Unset CI for Jest to avoid nx/jest config issues
-        if CI= pnpm exec nx e2e "$PROJECT"; then
+        if [ "$PROJECT" = "authentication-e2e" ]; then
+          if ACCOUNT_EXPORT_E2E_DB_MARKER=auth-profile-forum-export-fixture-v1 ACCOUNT_EXPORT_E2E_DB_HOST=127.0.0.1 E2E_DB_PORT="${E2E_DB_PORT:-5439}" CI= pnpm exec nx e2e "$PROJECT"; then
+              echo "✅ Tests passed for $PROJECT"
+          else
+              echo "❌ Tests failed for $PROJECT"
+              FAILED_PROJECTS+=("$PROJECT")
+          fi
+        elif CI= pnpm exec nx e2e "$PROJECT"; then
             echo "✅ Tests passed for $PROJECT"
         else
             echo "❌ Tests failed for $PROJECT"

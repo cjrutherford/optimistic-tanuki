@@ -26,6 +26,25 @@ export class ProfileService {
 
   /** The app scope identifier for this application */
   private readonly appScope = 'client-interface';
+  private identityGeneration = 0;
+  private profileActivationInFlight = false;
+
+  constructor() {
+    let previousUserId: string | undefined;
+    this.authState.decodedToken$.subscribe((user) => {
+      if (user?.userId !== previousUserId || !user) {
+        ++this.identityGeneration;
+        this.currentUserProfiles.set([]);
+        this.allProfiles.set([]);
+        this.discoverableProfiles.set([]);
+        this.currentUserProfile.set(null);
+      }
+      previousUserId = user?.userId;
+      if (user?.profileId) {
+        this.selectVerifiedSessionProfileIfKnown(user.userId, user.profileId);
+      }
+    });
+  }
 
   /**
    * Checks if a URL is an external asset URL (not yet stored on the server)
@@ -105,11 +124,55 @@ export class ProfileService {
   }
 
   selectProfile(_p: ProfileDto) {
-    const profile = this.currentUserProfiles().find((p) => p.id === _p.id);
-    const selectedProfile = profile ?? _p;
+    const session = this.authState.getDecodedTokenValue();
+    const selectedProfile = this.getCurrentUserProfiles().find(
+      (profile) =>
+        profile.id === _p.id &&
+        profile.userId === session?.userId &&
+        profile.id === session?.profileId &&
+        (this.isGlobalProfile(profile) || this.isLocalProfile(profile))
+    );
     if (selectedProfile) {
       this.currentUserProfile.set(selectedProfile);
       this.authState.persistSelectedProfile(selectedProfile);
+    }
+  }
+
+  /**
+   * Switch to an owned profile only after the gateway issues and the browser
+   * verifies a matching HttpOnly-cookie session for this app scope.
+   */
+  async activateProfile(profile: ProfileDto): Promise<void> {
+    if (this.profileActivationInFlight) {
+      throw new Error('A profile switch is already in progress.');
+    }
+    const userId = this.authState.getDecodedTokenValue()?.userId;
+    const ownedProfile = this.getCurrentUserProfiles().find(
+      (candidate) =>
+        candidate.id === profile.id &&
+        candidate.userId === userId &&
+        (this.isGlobalProfile(candidate) || this.isLocalProfile(candidate))
+    );
+    if (!ownedProfile) {
+      throw new Error('Only your profiles for this app can be selected.');
+    }
+
+    this.profileActivationInFlight = true;
+    try {
+      const activated = await this.authState.activateProfileSession(
+        ownedProfile.id
+      );
+      const verifiedUser = this.authState.getDecodedTokenValue();
+      if (
+        !activated ||
+        verifiedUser?.userId !== userId ||
+        verifiedUser?.profileId !== ownedProfile.id
+      ) {
+        throw new Error('The selected profile session could not be verified.');
+      }
+      this.selectProfile(ownedProfile);
+    } finally {
+      this.profileActivationInFlight = false;
     }
   }
 
@@ -134,6 +197,22 @@ export class ProfileService {
   }
 
   getCurrentUserProfile() {
+    const session = this.authState.getDecodedTokenValue();
+    if (session?.userId && session.profileId) {
+      const sessionProfile = this.getCurrentUserProfiles().find(
+        (profile) =>
+          profile.id === session.profileId &&
+          profile.userId === session.userId &&
+          (this.isGlobalProfile(profile) || this.isLocalProfile(profile))
+      );
+      if (sessionProfile) {
+        if (this.currentUserProfile()?.id !== sessionProfile.id) {
+          this.currentUserProfile.set(sessionProfile);
+          this.authState.persistSelectedProfile(sessionProfile);
+        }
+        return sessionProfile;
+      }
+    }
     let currentProfile = this.currentUserProfile();
     if (!currentProfile) {
       currentProfile = this.restorePersistedSelectedProfile();
@@ -145,36 +224,71 @@ export class ProfileService {
   }
 
   async getAllProfiles() {
+    const generation = this.identityGeneration;
+    const userId = this.authState.getDecodedTokenValue()?.userId;
     const profiles = await firstValueFrom(
       this.http.get<ProfileDto[]>(`${this.apiBaseUrl}/profile`)
     );
+    if (generation !== this.identityGeneration) return;
     this.allProfiles.set(profiles);
     // Filter profiles for current user that are either global or for this app scope
     const userProfiles = profiles.filter(
       (p) =>
-        p.userId === this.authState.getDecodedTokenValue()?.userId &&
+        p.userId === userId &&
         (this.isGlobalProfile(p) || this.isLocalProfile(p))
     );
     this.currentUserProfiles.set(userProfiles);
     this.authState.persistProfiles(this.currentUserProfiles());
+    const session = this.authState.getDecodedTokenValue();
+    if (session?.profileId) {
+      this.selectVerifiedSessionProfileIfKnown(
+        session.userId,
+        session.profileId
+      );
+    }
   }
 
-  async getDiscoverableProfiles() {
-    const profiles = await firstValueFrom(
-      this.http.get<ProfileDto[]>(`${this.apiBaseUrl}/profile/discover`)
+  private selectVerifiedSessionProfileIfKnown(
+    userId: string,
+    profileId: string
+  ): void {
+    const profile = this.currentUserProfiles().find(
+      (candidate) =>
+        candidate.id === profileId &&
+        candidate.userId === userId &&
+        (this.isGlobalProfile(candidate) || this.isLocalProfile(candidate))
     );
-    this.discoverableProfiles.set(profiles);
-  }
-
-  async getProfileById(id: string) {
-    const profile = await firstValueFrom(
-      this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
-    );
+    if (!profile) return;
     this.currentUserProfile.set(profile);
     this.authState.persistSelectedProfile(profile);
   }
 
+  async getDiscoverableProfiles() {
+    const generation = this.identityGeneration;
+    const profiles = await firstValueFrom(
+      this.http.get<ProfileDto[]>(`${this.apiBaseUrl}/profile/discover`)
+    );
+    if (generation === this.identityGeneration)
+      this.discoverableProfiles.set(profiles);
+  }
+
+  async getProfileById(id: string) {
+    const generation = this.identityGeneration;
+    const profile = await firstValueFrom(
+      this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
+    );
+    if (
+      generation === this.identityGeneration &&
+      profile.userId === this.authState.getDecodedTokenValue()?.userId
+    ) {
+      this.currentUserProfile.set(profile);
+      this.authState.persistSelectedProfile(profile);
+    }
+    return profile;
+  }
+
   async createProfile(profile: CreateProfileDto) {
+    const generation = this.identityGeneration;
     const originalProfilePic = profile.profilePic;
     const originalCoverPic = profile.coverPic;
     profile.profilePic = '';
@@ -183,17 +297,19 @@ export class ProfileService {
     if (tokenValue) {
       profile.userId = tokenValue.userId;
     }
+    // Profile creation defaults an omitted scope to global. This application
+    // creates selectable profiles in its own scope instead.
+    profile.appScope = this.appScope;
     const resp: any = await firstValueFrom(
       this.http.post(`${this.apiBaseUrl}/profile`, profile)
     );
+    if (generation !== this.identityGeneration) return;
     let newProfile: ProfileDto;
-    // If the gateway issued a refreshed token including profileId, it will return { profile, newToken }
-    if (resp && resp.newToken) {
-      try {
-        this.authState.setToken(resp.newToken);
-      } catch (e) {
-        console.warn('Failed to set new token after profile creation', e);
-      }
+    // The profile endpoint may return a bearer token for legacy clients. This
+    // app uses HttpOnly cookie sessions, so never install that token locally.
+    // Resolve the profile and switch through the same ownership-checked cookie
+    // activation flow used by the profile selector below.
+    if (resp && resp.profile) {
       newProfile = resp.profile as ProfileDto;
     } else {
       newProfile = resp as ProfileDto;
@@ -247,10 +363,10 @@ export class ProfileService {
       );
     }
 
+    if (generation !== this.identityGeneration) return;
     this.currentUserProfiles.update((profiles) => [...profiles, newProfile]);
-    this.currentUserProfile.set(newProfile);
     this.authState.persistProfiles(this.currentUserProfiles());
-    this.authState.persistSelectedProfile(newProfile);
+    await this.activateProfile(newProfile);
   }
 
   /**
@@ -258,6 +374,7 @@ export class ProfileService {
    * If the user only has a global profile, creates a local profile for this app scope.
    */
   async updateProfile(id: string, profile: UpdateProfileDto) {
+    const generation = this.identityGeneration;
     // Check if this is a global profile and we need to create a local one
     const existingProfile = this.getCurrentUserProfiles().find(
       (p) => p.id === id
@@ -350,6 +467,7 @@ export class ProfileService {
     const updatedProfile = await firstValueFrom(
       this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`, profile)
     );
+    if (generation !== this.identityGeneration) return;
     this.currentUserProfiles.update((profiles) =>
       profiles.map((p) => (p.id === id ? updatedProfile : p))
     );

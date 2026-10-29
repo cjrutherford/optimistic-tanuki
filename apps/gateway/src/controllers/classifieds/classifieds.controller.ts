@@ -1,5 +1,7 @@
 import {
   Body,
+  HttpException,
+  HttpStatus,
   Controller,
   Delete,
   Get,
@@ -29,6 +31,16 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { IdentityThrottlerGuard } from '../learning/identity-throttler.guard';
+import { gatewayWriteLimit } from '../../app/throttler-config';
+import { Throttle } from '@nestjs/throttler';
+
+const CLASSIFIED_CREATE_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_CLASSIFIED_CREATE_LIMIT', 10, 200, 1000),
+    ttl: 60000,
+  },
+};
 
 export interface CreateClassifiedAdDto {
   communityId?: string | null;
@@ -77,6 +89,71 @@ export class ClassifiedsController {
     private readonly socialClient: ClientProxy
   ) {}
 
+  private requireAppScope(appScope: string | null): string {
+    if (!appScope?.trim()) {
+      throw new HttpException(
+        'Application scope is required',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+    return appScope;
+  }
+
+  private async forward<T>(
+    pattern: { cmd: string },
+    payload: unknown,
+    fallbackMessage: string
+  ): Promise<T> {
+    try {
+      return await firstValueFrom(
+        this.classifiedsClient.send<T>(pattern, payload)
+      );
+    } catch (error) {
+      throw this.toHttpException(error, fallbackMessage);
+    }
+  }
+
+  private toHttpException(
+    error: unknown,
+    fallbackMessage: string
+  ): HttpException {
+    const source = error as {
+      message?: string;
+      status?: number | string;
+      statusCode?: number;
+      error?: { message?: string; status?: number; statusCode?: number };
+      response?: { message?: string; status?: number; statusCode?: number };
+      getError?: () => unknown;
+    };
+    const rpcError =
+      typeof source?.getError === 'function' ? source.getError() : source;
+    const rpcSource = rpcError as typeof source;
+    const remote = rpcSource?.response ?? rpcSource?.error ?? rpcSource;
+    const rawMessage = remote?.message ?? rpcSource?.message ?? source?.message;
+    const message = Array.isArray(rawMessage)
+      ? rawMessage.join(', ')
+      : typeof rawMessage === 'string'
+      ? rawMessage
+      : fallbackMessage;
+    const status = Number(
+      remote?.statusCode ??
+        remote?.status ??
+        rpcSource?.statusCode ??
+        rpcSource?.status
+    );
+    const inferredStatus =
+      typeof message === 'string' && message.startsWith('Forbidden:')
+        ? HttpStatus.FORBIDDEN
+        : typeof message === 'string' && message.includes('not found')
+        ? HttpStatus.NOT_FOUND
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const code =
+      Number.isInteger(status) && status >= 400 && status < 600
+        ? status
+        : inferredStatus;
+    return new HttpException(message || fallbackMessage, code);
+  }
+
   private async resolveCommunitySlugToId(slug: string): Promise<string | null> {
     try {
       const community = await firstValueFrom(
@@ -100,13 +177,17 @@ export class ClassifiedsController {
   @ApiResponse({ status: 200, description: 'List of classified ads.' })
   async findByCommunity(
     @Param('communityId') communityId: string,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user: UserDetails | null
   ) {
-    return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: ClassifiedCommands.FIND_BY_COMMUNITY },
-        { communityId, appScope }
-      )
+    return this.forward(
+      { cmd: ClassifiedCommands.FIND_BY_COMMUNITY },
+      {
+        communityId,
+        appScope: this.requireAppScope(appScope),
+        requestingUserId: user?.userId,
+      },
+      'Failed to find classifieds'
     );
   }
 
@@ -118,17 +199,21 @@ export class ClassifiedsController {
   @ApiResponse({ status: 200, description: 'List of classified ads.' })
   async findByCommunitySlug(
     @Param('slug') slug: string,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user: UserDetails | null
   ) {
     const communityId = await this.resolveCommunitySlugToId(slug);
     if (!communityId) {
       return [];
     }
-    return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: ClassifiedCommands.FIND_BY_COMMUNITY },
-        { communityId, appScope }
-      )
+    return this.forward(
+      { cmd: ClassifiedCommands.FIND_BY_COMMUNITY },
+      {
+        communityId,
+        appScope: this.requireAppScope(appScope),
+        requestingUserId: user?.userId,
+      },
+      'Failed to find classifieds'
     );
   }
 
@@ -137,12 +222,19 @@ export class ClassifiedsController {
   @ApiOperation({ summary: 'Get a classified ad by ID (public)' })
   @ApiResponse({ status: 200, description: 'Classified ad found.' })
   @ApiResponse({ status: 404, description: 'Not found.' })
-  async findById(@Param('id') id: string, @AppScope() appScope: string) {
-    return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: ClassifiedCommands.FIND_BY_ID },
-        { id, appScope }
-      )
+  async findById(
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @User() user: UserDetails | null
+  ) {
+    return this.forward(
+      { cmd: ClassifiedCommands.FIND_BY_ID },
+      {
+        id,
+        appScope: this.requireAppScope(appScope),
+        requestingUserId: user?.userId,
+      },
+      'Failed to find classified'
     );
   }
 
@@ -151,24 +243,31 @@ export class ClassifiedsController {
   @ApiOperation({ summary: 'Search classifieds (public)' })
   async search(
     @Body() dto: SearchClassifiedsDto,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user: UserDetails | null
   ) {
     let communityId = dto.communityId;
     if (!communityId && dto.communitySlug) {
       communityId = await this.resolveCommunitySlugToId(dto.communitySlug);
     }
 
-    return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: ClassifiedCommands.SEARCH },
-        { ...dto, communityId, appScope }
-      )
+    return this.forward(
+      { cmd: ClassifiedCommands.SEARCH },
+      {
+        ...dto,
+        communityId,
+        appScope: this.requireAppScope(appScope),
+        requestingUserId: user?.userId,
+      },
+      'Failed to search classifieds'
     );
   }
 
   // ─── Auth-gated write endpoints ───────────────────────────────────────────
 
   @Post()
+  @UseGuards(IdentityThrottlerGuard)
+  @Throttle(CLASSIFIED_CREATE_THROTTLE)
   @RequirePermissions('classified.create')
   @ApiOperation({ summary: 'Create a classified ad (auth required)' })
   @ApiResponse({ status: 201, description: 'Classified ad created.' })
@@ -186,17 +285,20 @@ export class ClassifiedsController {
         `Resolved communitySlug "${dto.communitySlug}" to communityId "${communityId}"`
       );
     }
+    if (dto.communitySlug && !communityId) {
+      throw new HttpException('Community not found', HttpStatus.NOT_FOUND);
+    }
+    const { communitySlug: _communitySlug, ...createDto } = dto;
 
-    return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: ClassifiedCommands.CREATE },
-        {
-          dto: { ...dto, communityId },
-          profileId: user.profileId,
-          userId: user.userId,
-          appScope,
-        }
-      )
+    return this.forward(
+      { cmd: ClassifiedCommands.CREATE },
+      {
+        dto: { ...createDto, communityId },
+        profileId: user.profileId,
+        userId: user.userId,
+        appScope: this.requireAppScope(appScope),
+      },
+      'Failed to create classified'
     );
   }
 
@@ -209,11 +311,15 @@ export class ClassifiedsController {
     @Body() dto: UpdateClassifiedAdDto,
     @AppScope() appScope: string
   ) {
-    return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: ClassifiedCommands.UPDATE },
-        { id, dto, profileId: user.profileId, appScope }
-      )
+    return this.forward(
+      { cmd: ClassifiedCommands.UPDATE },
+      {
+        id,
+        dto,
+        profileId: user.profileId,
+        appScope: this.requireAppScope(appScope),
+      },
+      'Failed to update classified'
     );
   }
 
@@ -225,11 +331,14 @@ export class ClassifiedsController {
     @Param('id') id: string,
     @AppScope() appScope: string
   ) {
-    return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: ClassifiedCommands.DELETE },
-        { id, profileId: user.profileId, appScope }
-      )
+    return this.forward(
+      { cmd: ClassifiedCommands.DELETE },
+      {
+        id,
+        profileId: user.profileId,
+        appScope: this.requireAppScope(appScope),
+      },
+      'Failed to remove classified'
     );
   }
 
@@ -241,11 +350,14 @@ export class ClassifiedsController {
     @Param('id') id: string,
     @AppScope() appScope: string
   ) {
-    return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: ClassifiedCommands.MARK_SOLD },
-        { id, profileId: user.profileId, appScope }
-      )
+    return this.forward(
+      { cmd: ClassifiedCommands.MARK_SOLD },
+      {
+        id,
+        profileId: user.profileId,
+        appScope: this.requireAppScope(appScope),
+      },
+      'Failed to mark classified sold'
     );
   }
 
@@ -260,27 +372,29 @@ export class ClassifiedsController {
     @Body() body: { durationDays: number },
     @AppScope() appScope: string
   ) {
-    return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: ClassifiedCommands.FEATURE },
-        {
-          id,
-          durationDays: body.durationDays,
-          profileId: user.profileId,
-          appScope,
-        }
-      )
+    return this.forward(
+      { cmd: ClassifiedCommands.FEATURE },
+      {
+        id,
+        durationDays: body.durationDays,
+        profileId: user.profileId,
+        appScope: this.requireAppScope(appScope),
+      },
+      'Failed to feature classified'
     );
   }
 
   @Get('profile/my-ads')
   @ApiOperation({ summary: "Get current user's classified ads" })
   async myAds(@User() user: UserDetails, @AppScope() appScope: string) {
-    return firstValueFrom(
-      this.classifiedsClient.send(
-        { cmd: ClassifiedCommands.FIND_BY_PROFILE },
-        { profileId: user.profileId, appScope }
-      )
+    return this.forward(
+      { cmd: ClassifiedCommands.FIND_BY_PROFILE },
+      {
+        profileId: user.profileId,
+        appScope: this.requireAppScope(appScope),
+        requestingUserId: user.userId,
+      },
+      'Failed to find profile classifieds'
     );
   }
 }

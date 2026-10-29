@@ -10,7 +10,11 @@ import { OperatorQueueService } from '../services/operator-queue.service';
 describe('SocialGovernanceComponent', () => {
   const socialGovernanceService = {
     getReports: jest.fn(),
+    getLocalHubOperatorReports: jest.fn(),
+    getClientInterfaceOperatorReports: jest.fn(),
     updateReport: jest.fn(),
+    updateLocalHubOperatorReport: jest.fn(),
+    updateClientInterfaceOperatorReport: jest.fn(),
     moderateContent: jest.fn(),
   };
   const operatorQueueService = {
@@ -44,6 +48,54 @@ describe('SocialGovernanceComponent', () => {
         description: 'Spam content',
         status: 'reviewed',
         adminNotes: 'Checked by owner-console',
+        createdAt: new Date(),
+      })
+    );
+    socialGovernanceService.getLocalHubOperatorReports.mockReturnValue(
+      of([
+        {
+          id: 'listing-report',
+          reporterId: 'profile-1',
+          contentType: 'classified',
+          contentId: 'ad-1',
+          reason: 'other',
+          status: 'pending',
+          createdAt: new Date(),
+        },
+      ])
+    );
+    socialGovernanceService.getClientInterfaceOperatorReports.mockReturnValue(
+      of([
+        {
+          id: 'post-report',
+          reporterId: 'profile-1',
+          contentType: 'post',
+          contentId: 'post-1',
+          reason: 'spam',
+          status: 'pending',
+          createdAt: new Date(),
+        },
+      ])
+    );
+    socialGovernanceService.updateLocalHubOperatorReport.mockReturnValue(
+      of({
+        id: 'listing-report',
+        reporterId: 'profile-1',
+        contentType: 'classified',
+        contentId: 'ad-1',
+        reason: 'other',
+        status: 'reviewed',
+        createdAt: new Date(),
+      })
+    );
+    socialGovernanceService.updateClientInterfaceOperatorReport.mockReturnValue(
+      of({
+        id: 'post-report',
+        reporterId: 'profile-1',
+        contentType: 'post',
+        contentId: 'post-1',
+        reason: 'spam',
+        status: 'reviewed',
         createdAt: new Date(),
       })
     );
@@ -132,6 +184,54 @@ describe('SocialGovernanceComponent', () => {
         adminNotes: 'Checked by owner-console',
       }
     );
+  });
+
+  it('loads and resolves the Local Hub app operator report queue', () => {
+    const fixture = TestBed.createComponent(SocialGovernanceComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as any;
+
+    component.loadLocalHubOperatorReports();
+    expect(
+      socialGovernanceService.getLocalHubOperatorReports
+    ).toHaveBeenCalled();
+    expect(component.reports[0].contentType).toBe('classified');
+
+    component.reportDrafts['listing-report'] = {
+      status: 'reviewed',
+      adminNotes: 'Listing checked',
+    };
+    component.saveReport(component.reports[0]);
+    expect(
+      socialGovernanceService.updateLocalHubOperatorReport
+    ).toHaveBeenCalledWith('listing-report', {
+      status: 'reviewed',
+      adminNotes: 'Listing checked',
+    });
+  });
+
+  it('loads and resolves the client-interface app operator report queue', () => {
+    const fixture = TestBed.createComponent(SocialGovernanceComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as any;
+
+    component.loadClientInterfaceOperatorReports();
+    expect(
+      socialGovernanceService.getClientInterfaceOperatorReports
+    ).toHaveBeenCalled();
+    expect(component.reports[0].contentType).toBe('post');
+
+    component.reportDrafts['post-report'] = {
+      status: 'reviewed',
+      adminNotes: 'Post report reviewed',
+    };
+    component.saveReport(component.reports[0]);
+    expect(
+      socialGovernanceService.updateClientInterfaceOperatorReport
+    ).toHaveBeenCalledWith('post-report', {
+      status: 'reviewed',
+      adminNotes: 'Post report reviewed',
+    });
   });
 
   it('applies a soft takedown for the reported content', () => {

@@ -1,0 +1,8 @@
+{
+  "sourceArtifactSha256": "0d027fba658a101b636a75abd7aaded11736c8a94496bcbd22ff656522a1d389",
+  "scope": ["client-interface", "local-hub"],
+  "beforeWithdrawal": "protected-post-and-comment-events-delivered",
+  "afterWithdrawal": "mutation-denied-and-active-socket-disconnected",
+  "revokedSessionReconnect": "denied",
+  "privateIdentifiersIncluded": false
+}

@@ -22,6 +22,7 @@ export declare type AssetsConfigType = {
     secretKey: string;
     region?: string;
   };
+  services: Record<string, { host: string; port: number }>;
 };
 
 export const loadConfig = () => {
@@ -62,7 +63,12 @@ export const loadConfig = () => {
   return {
     listenPort: configData.listenPort,
     internalMediaPort: Number(process.env.ASSETS_INTERNAL_MEDIA_PORT || 3006),
+    mediaMaxReadBytes: readPositiveInt(
+      process.env['ASSETS_MEDIA_MAX_READ_BYTES'],
+      1024 * 1024 * 1024
+    ),
     internalMediaToken: process.env.ASSETS_INTERNAL_MEDIA_TOKEN,
+    services: configData.services,
     database: {
       ...configData.database,
       password: process.env.POSTGRES_PASSWORD || configData.database.password,
@@ -78,3 +84,14 @@ export const loadConfig = () => {
     },
   };
 };
+
+function readPositiveInt(value: string | undefined, fallback: number): number {
+  if (!value?.trim()) return fallback;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(
+      'ASSETS_MEDIA_MAX_READ_BYTES must be a positive safe integer'
+    );
+  }
+  return parsed;
+}

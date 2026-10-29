@@ -80,6 +80,7 @@ export class FileValidationService {
         '.ts',
         '.m3u8',
       ],
+      maxSizeBytes: 25 * 1024 * 1024, // Keep video uploads within the bounded scanner limit.
     },
     audio: {
       allowedMimeTypes: [
@@ -157,6 +158,10 @@ export class FileValidationService {
       errors: [],
       sanitizedFilename: filenameValidation.sanitizedFilename,
     };
+  }
+
+  getMaxSizeBytes(fileType: 'image' | 'document' | 'video' | 'audio'): number {
+    return this.fileTypeConfigs[fileType]?.maxSizeBytes ?? 0;
   }
 
   /**

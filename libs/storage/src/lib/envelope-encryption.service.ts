@@ -1,6 +1,8 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import * as crypto from 'crypto';
 
+const MAX_ENVELOPE_HEADER_BYTES = 64 * 1024;
+
 export const ENVELOPE_MAGIC = 'OTENV1:';
 export const ENVELOPE_ALGORITHM = 'AES-256-GCM';
 export const ENVELOPE_VERSION = 1;
@@ -132,16 +134,40 @@ export class EnvelopeEncryptionService {
     ciphertext: Buffer;
   } {
     const newlineIndex = container.indexOf(0x0a);
-    if (newlineIndex < 0) {
+    if (newlineIndex < 0 || newlineIndex + 1 > MAX_ENVELOPE_HEADER_BYTES) {
       throw new ServiceUnavailableException(
-        'Vault storage envelope header is truncated.'
+        'Vault storage envelope header is truncated or too large.'
       );
     }
 
-    const headerBytes = container.subarray(ENVELOPE_MAGIC.length, newlineIndex);
+    const header = this.parseEnvelopeHeader(
+      container.subarray(0, newlineIndex + 1)
+    );
+
+    return { header, ciphertext: container.subarray(newlineIndex + 1) };
+  }
+
+  /** Parse and validate the complete bounded OTENV1 header, including newline. */
+  parseEnvelopeHeader(headerBytes: Buffer): EnvelopeHeader {
+    if (
+      headerBytes.length > MAX_ENVELOPE_HEADER_BYTES ||
+      headerBytes.length <= ENVELOPE_MAGIC.length ||
+      headerBytes.subarray(0, ENVELOPE_MAGIC.length).toString('utf8') !==
+        ENVELOPE_MAGIC ||
+      headerBytes[headerBytes.length - 1] !== 0x0a
+    ) {
+      throw new ServiceUnavailableException(
+        'Vault storage envelope header is truncated or invalid.'
+      );
+    }
+
+    const jsonBytes = headerBytes.subarray(
+      ENVELOPE_MAGIC.length,
+      headerBytes.length - 1
+    );
     let header: EnvelopeHeader;
     try {
-      header = JSON.parse(headerBytes.toString('utf8')) as EnvelopeHeader;
+      header = JSON.parse(jsonBytes.toString('utf8')) as EnvelopeHeader;
     } catch {
       throw new ServiceUnavailableException(
         'Vault storage envelope header is not valid JSON.'
@@ -169,7 +195,55 @@ export class EnvelopeEncryptionService {
       this.assertBase64Length(header.aad, 1, 'aad', true);
     }
 
-    return { header, ciphertext: container.subarray(newlineIndex + 1) };
+    return header;
+  }
+
+  /**
+   * Create the decryptor for an already parsed envelope header. Call `final`
+   * after all ciphertext bytes have been consumed; only a successful final
+   * authenticates the entire object.
+   */
+  createStreamingDecryptor(header: EnvelopeHeader): {
+    update: (chunk: Buffer) => Buffer;
+    final: () => Buffer;
+    destroy: () => void;
+  } {
+    const dek = this.unwrapDek(header, this.getKek());
+    const decipher = crypto.createDecipheriv(
+      'aes-256-gcm',
+      dek,
+      Buffer.from(header.iv, 'base64')
+    );
+    decipher.setAuthTag(Buffer.from(header.tag, 'base64'));
+    decipher.setAAD(Buffer.from(canonicalAssociatedData(header), 'utf8'));
+    let finalized = false;
+    let keyDestroyed = false;
+    const destroyKey = (): void => {
+      if (keyDestroyed) return;
+      keyDestroyed = true;
+      dek.fill(0);
+    };
+    return {
+      update: (chunk: Buffer) => decipher.update(chunk),
+      final: () => {
+        if (finalized) {
+          throw new ServiceUnavailableException(
+            'Vault storage decryptor was already finalized.'
+          );
+        }
+        finalized = true;
+        try {
+          return decipher.final();
+        } catch {
+          throw new ServiceUnavailableException(
+            'Vault storage envelope failed AES-256-GCM authentication.'
+          );
+        } finally {
+          destroyKey();
+        }
+      },
+      destroy: destroyKey,
+    };
   }
 
   readAssociatedData(container: Buffer): string | null {

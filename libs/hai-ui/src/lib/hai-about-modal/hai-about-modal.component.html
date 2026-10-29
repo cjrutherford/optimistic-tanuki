@@ -26,6 +26,7 @@
 
     <otui-tabs
       [tabs]="tabs"
+      [wrap]="true"
       [activeTab]="activeTab"
       (tabChange)="setActiveTab($event)"
     ></otui-tabs>
@@ -35,6 +36,14 @@
       <div class="copy-stack">
         <p class="panel-label">About This App</p>
         <p>{{ config.appDescription }}</p>
+        <p data-testid="hai-account-context">
+          {{
+            config.accountNotice ||
+              'HAI apps are related products. Opening another app may ask you to sign in.'
+          }}
+          Your selected profile, preferences, and unsaved work do not
+          automatically carry over between apps.
+        </p>
         @if (config.appUrl) {
         <a class="primary-link" [href]="config.appUrl"
           >Open {{ config.appName }}</a
@@ -80,7 +89,7 @@
               [class.is-live]="app.isPublic"
               [attr.data-state]="app.isPublic ? 'running' : 'repository'"
             >
-              {{ app.isPublic ? 'Live' : 'Repository' }}
+              {{ app.isPublic ? 'App link' : 'Repository' }}
             </span>
           </header>
 

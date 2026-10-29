@@ -22,11 +22,16 @@ describe('SocketSessionAuthService', () => {
   it('authenticates the HttpOnly session cookie before legacy handshake credentials', async () => {
     const service = new SocketSessionAuthService(
       jwt,
-      authenticationService as never
+      authenticationService as never,
+      {
+        apps: [{ appId: 'client-interface', uiBaseUrl: 'https://ot.example' }],
+      } as any
     );
     const socket = {
       handshake: {
         headers: {
+          origin: 'https://ot.example',
+          'x-ot-appscope': 'local-hub',
           cookie: 'ot_session=cookie-token',
           authorization: 'Bearer header-token',
         },
@@ -42,7 +47,12 @@ describe('SocketSessionAuthService', () => {
     expect(jwt.verifyAsync).toHaveBeenCalledWith('cookie-token');
     expect(authenticationService.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Validate },
-      { token: 'cookie-token', userId: 'user-1' }
+      {
+        token: 'cookie-token',
+        userId: 'user-1',
+        appId: 'client-interface',
+        activity: false,
+      }
     );
     expect(socket.data.user).toEqual({
       userId: 'user-1',
@@ -53,7 +63,8 @@ describe('SocketSessionAuthService', () => {
   it('rejects a socket with no session or legacy bearer credential', async () => {
     const service = new SocketSessionAuthService(
       jwt,
-      authenticationService as never
+      authenticationService as never,
+      { apps: [] } as any
     );
 
     await expect(
@@ -62,5 +73,35 @@ describe('SocketSessionAuthService', () => {
         data: {},
       } as any)
     ).rejects.toThrow('Unauthorized socket connection');
+  });
+
+  it('rejects an Origin that conflicts with the signed session app scope', async () => {
+    (jwt.verifyAsync as jest.Mock).mockResolvedValue({
+      userId: 'user-1',
+      profileId: 'profile-1',
+      appId: 'local-hub',
+    });
+    const service = new SocketSessionAuthService(
+      jwt,
+      authenticationService as never,
+      {
+        apps: [
+          { appId: 'client-interface', uiBaseUrl: 'https://ot.example' },
+          { appId: 'local-hub', uiBaseUrl: 'https://ts.example' },
+        ],
+      } as any
+    );
+    const socket = {
+      handshake: {
+        headers: { origin: 'https://ot.example', cookie: 'ot_session=token' },
+        auth: {},
+      },
+      data: {},
+    } as any;
+
+    await expect(service.authenticate(socket)).rejects.toThrow(
+      'Unauthorized socket connection'
+    );
+    expect(authenticationService.send).not.toHaveBeenCalled();
   });
 });

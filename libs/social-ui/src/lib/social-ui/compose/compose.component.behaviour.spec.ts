@@ -524,6 +524,33 @@ describe('ComposeComponent behaviour', () => {
       expect(component.contentError).toBe('');
     });
 
+    it('emits the selected audience and scopes image uploads before submission', async () => {
+      const emitted = jest.fn();
+      const upload = jest.fn().mockResolvedValue('https://asset.test/image');
+      component.postSubmitted.subscribe(emitted);
+      component.title = 'A good title';
+      component.content = validContent;
+      component.profileId = 'profile-1';
+      component.communityId = 'community-1';
+      component.audienceOptions = [
+        { label: 'Members', value: 'community' },
+        { label: 'Public', value: 'public' },
+      ];
+      component.visibility = 'community';
+      component.imageUploadCallback = upload;
+
+      await component.onPostSubmit();
+
+      expect(emitted.mock.calls[0][0].visibility).toBe('community');
+      expect(component.getUploadAudienceRestrictions()).toEqual([
+        {
+          type: 'community',
+          profileId: 'profile-1',
+          communityId: 'community-1',
+        },
+      ]);
+    });
+
     it('carries the post-specific theme through', async () => {
       const emitted = jest.fn();
       component.postSubmitted.subscribe(emitted);

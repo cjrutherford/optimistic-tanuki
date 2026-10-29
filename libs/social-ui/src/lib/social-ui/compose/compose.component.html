@@ -52,6 +52,21 @@
   </div>
 
   <form>
+    @if (audienceOptions.length > 0) {
+    <label for="postAudience">Who can see this post?</label>
+    <select
+      id="postAudience"
+      name="postAudience"
+      [(ngModel)]="visibility"
+      [ngModelOptions]="{ standalone: true }"
+      aria-label="Who can see this post?"
+    >
+      @for (option of audienceOptions; track option.value) {
+      <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+    }
+
     <label for="title">Title</label>
     <lib-text-input
       id="title"

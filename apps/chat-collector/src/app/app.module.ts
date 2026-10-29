@@ -1,3 +1,10 @@
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import { ChatAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { ChatAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { AccountDeletionAuthorityClient } from '@optimistic-tanuki/storage';
 import { Module } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
@@ -8,11 +15,43 @@ import loadConfig from './loadConfig';
 import loadDatabase from './loadDatabase';
 import { Conversation, Message } from './entities';
 import { DataSource } from 'typeorm';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  ClientsModule,
+  Transport,
+} from '@nestjs/microservices';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { LoggerModule } from '@optimistic-tanuki/logger';
+import {
+  AccountExportOwnerSpoolService,
+  AccountExportProfileSnapshotClient,
+} from '@optimistic-tanuki/storage';
+import { ChatAccountExportOwnerService } from './account-export-owner.service';
+import { ChatAccountExportSnapshotService } from './account-export-snapshot.service';
+import { ChatAccountExportSnapshotController } from './account-export-snapshot.controller';
 
 @Module({
   imports: [
     LoggerModule,
+    ClientsModule.register([
+      {
+        name: ServiceTokens.SOCIAL_SERVICE,
+        transport: Transport.TCP,
+        options: {
+          host: process.env.SOCIAL_HOST || 'social',
+          port: Number(process.env.SOCIAL_PORT || 3003),
+        },
+      },
+      {
+        name: ServiceTokens.PROJECT_PLANNING_SERVICE,
+        transport: Transport.TCP,
+        options: {
+          host: process.env.PROJECT_PLANNING_HOST || 'project-planning',
+          port: Number(process.env.PROJECT_PLANNING_PORT || 3006),
+        },
+      },
+    ]),
     ConfigModule.forRoot({
       load: [loadConfig],
       isGlobal: true,
@@ -22,9 +61,91 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
       factory: loadDatabase,
     }),
   ],
-  controllers: [AppController],
+  controllers: [
+    AccountDeletionSnapshotController,
+    ChatAccountDeletionOwnerController,
+    AppController,
+    ChatAccountExportSnapshotController,
+  ],
   providers: [
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: ChatAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        database: { query(sql: string): Promise<unknown> }
+      ) => ({ owner: 'chat-collector', snapshot, authority, spool, database }),
+      inject: [
+        ChatAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        'CHAT_COLLECTOR_CONNECTION',
+      ],
+    },
+    ChatAccountDeletionOwnerService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: ClientProxy) =>
+        new AccountDeletionAuthorityClient(auth),
+      inject: ['CHAT_COLLECTOR_AUTH_PROXY'],
+    },
     AppService,
+    AccountExportOwnerSpoolService,
+    {
+      provide: AccountExportProfileSnapshotClient,
+      useFactory: (profile: ClientProxy) =>
+        new AccountExportProfileSnapshotClient(profile),
+      inject: [ServiceTokens.PROFILE_SERVICE],
+    },
+    {
+      provide: ServiceTokens.PROFILE_SERVICE,
+      useFactory: () =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env.SERVICE_PROFILE_HOST || 'profile',
+            port: Number(process.env.SERVICE_PROFILE_PORT || 3002),
+          },
+        }),
+    },
+    {
+      provide: 'CHAT_COLLECTOR_AUTH_PROXY',
+      useFactory: () =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env.SERVICE_AUTHENTICATION_HOST || 'authentication',
+            port: Number(process.env.SERVICE_AUTHENTICATION_PORT || 3001),
+          },
+        }),
+    },
+    {
+      provide: ChatAccountExportOwnerService,
+      useFactory: (
+        dataSource: DataSource,
+        identities: AccountExportProfileSnapshotClient,
+        auth: ClientProxy
+      ) => new ChatAccountExportOwnerService(dataSource, identities, auth),
+      inject: [
+        'CHAT_COLLECTOR_CONNECTION',
+        AccountExportProfileSnapshotClient,
+        'CHAT_COLLECTOR_AUTH_PROXY',
+      ],
+    },
+    {
+      provide: ChatAccountExportSnapshotService,
+      useFactory: (
+        owner: ChatAccountExportOwnerService,
+        spool: AccountExportOwnerSpoolService,
+        auth: ClientProxy
+      ) => new ChatAccountExportSnapshotService(owner, spool, auth),
+      inject: [
+        ChatAccountExportOwnerService,
+        AccountExportOwnerSpoolService,
+        'CHAT_COLLECTOR_AUTH_PROXY',
+      ],
+    },
     {
       provide: getRepositoryToken(Message),
       useFactory: (ds: DataSource) => ds.getRepository(Message),

@@ -32,6 +32,7 @@ export type PaymentsConfigType = {
   };
   services?: {
     profile: TcpServiceConfig;
+    authentication: { host: string; port: number };
     classifieds: {
       host: string;
       port: number;
@@ -60,6 +61,10 @@ const loadConfig = () => {
     host: 'localhost',
     port: 3017,
   };
+  const authenticationConfig = yamlConfig.services?.authentication || {
+    host: 'authentication',
+    port: 3001,
+  };
 
   const finalConfig: PaymentsConfigType = {
     ...yamlConfig,
@@ -71,6 +76,19 @@ const loadConfig = () => {
           envOverride(
             'SERVICE_CLASSIFIEDS_PORT',
             String(classifiedsConfig.port)
+          ),
+          10
+        ),
+      },
+      authentication: {
+        host: envOverride(
+          'SERVICE_AUTHENTICATION_HOST',
+          authenticationConfig.host
+        ),
+        port: parseInt(
+          envOverride(
+            'SERVICE_AUTHENTICATION_PORT',
+            String(authenticationConfig.port)
           ),
           10
         ),

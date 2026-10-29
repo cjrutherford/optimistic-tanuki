@@ -1,14 +1,18 @@
 import {
   Component,
   computed,
+  afterNextRender,
+  ElementRef,
   HostListener,
   inject,
+  Injector,
   signal,
   OnInit,
   OnDestroy,
   PLATFORM_ID,
   Inject,
   effect,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, RouterModule } from '@angular/router';
@@ -49,7 +53,10 @@ import {
   GlobalSearchComponent,
   SearchResult,
 } from '@optimistic-tanuki/search-ui';
-import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
+import {
+  DevInfoComponent,
+  PublicInfoFooterComponent,
+} from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
@@ -57,6 +64,11 @@ import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 const AUTH_NAV_LINKS = [
+  {
+    label: 'Guardian controls',
+    route: '/guardian',
+    description: 'View linked teen accounts and manage delegated access',
+  },
   {
     label: 'Workspace',
     description: 'Core social workflow',
@@ -132,6 +144,7 @@ const AUTH_NAV_LINKS = [
     NotificationBellComponent,
     GlobalSearchComponent,
     DevInfoComponent,
+    PublicInfoFooterComponent,
     HaiAboutTagComponent,
     MessageComponent,
     PersonalitySceneComponent,
@@ -153,6 +166,11 @@ export class AppComponent implements OnInit, OnDestroy {
   private socketChatService = inject(SocketChatService);
   private profiles = inject(OptomisitcTanukiAPIService);
   private notificationService = inject(NotificationService);
+  private injector = inject(Injector);
+
+  @ViewChild('chatLauncher')
+  private chatLauncher?: ElementRef<HTMLButtonElement>;
+  @ViewChild('chatPanel') private chatPanel?: ElementRef<HTMLElement>;
 
   constructor(
     private router: Router,
@@ -168,11 +186,15 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly haiAboutConfig = {
     appId: 'optimistic-tanuki',
     appName: 'Optimistic Tanuki',
-    appTagline: 'The broader HAI social and utility ecosystem.',
+    appTagline: 'Your people, conversations, and shared interests.',
     appDescription:
-      'Optimistic Tanuki is the social, messaging, and utility layer in the HAI ecosystem, connecting identity, community, and daily workflows.',
-    appUrl: '/optimistic-tanuki',
+      'Optimistic Tanuki is an early-access place to share posts, connect with people, and join communities around your interests.',
+    appUrl: '/',
+    accountNotice:
+      'Optimistic Tanuki and Towne Square use the same account credentials. Sign in separately in each app.',
   };
+  readonly publicFooterTagline =
+    'Built around people and the interests they share.';
   isNavExpanded = signal(false);
   isAuthenticated = signal(false);
   selectedProfile = signal<ProfileDto | null>(null);
@@ -182,6 +204,10 @@ export class AppComponent implements OnInit, OnDestroy {
   chatContacts: ChatContact[] = [];
   chatConversations: ChatConversation[] = [];
   showChat = signal(false);
+  chatEverOpened = signal(false);
+  conversationToOpen = signal<{ id: string; requestId: number } | null>(null);
+  private conversationOpenRequestId = 0;
+  private sessionViewGeneration = 0;
   chatInitialized = signal(false);
   isMobileViewport = signal(false);
 
@@ -256,7 +282,7 @@ export class AppComponent implements OnInit, OnDestroy {
         if (isAuthenticated) {
           this.selectedProfile.set(this.profileService.getCurrentUserProfile());
           this.loadNotifications();
-        }
+        } else this.clearSessionViews();
         this.updateNavItems();
       },
     });
@@ -276,6 +302,21 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.urlSub) {
       this.urlSub.unsubscribe();
     }
+  }
+
+  @HostListener('window:ot:session-reset')
+  clearSessionViews() {
+    this.sessionViewGeneration++;
+    this.selectedProfile.set(null);
+    this.chatContacts = [];
+    this.chatConversations = [];
+    this.showChat.set(false);
+    this.chatEverOpened.set(false);
+    this.chatInitialized.set(false);
+    this.conversationToOpen.set(null);
+    this.notifications.set([]);
+    this.unreadCount.set(0);
+    this.socketChatService.destroy();
   }
 
   @HostListener('window:resize')
@@ -314,9 +355,35 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   toggleChat() {
-    this.showChat.update((v) => !v);
-    if (this.showChat() && !this.chatInitialized()) {
-      this.loadChatData();
+    if (this.showChat()) {
+      this.closeChat();
+      return;
+    }
+
+    this.openFloatingChat();
+  }
+
+  closeChat() {
+    if (!this.showChat()) return;
+
+    this.showChat.set(false);
+    afterNextRender(() => this.chatLauncher?.nativeElement.focus(), {
+      injector: this.injector,
+    });
+  }
+
+  private openFloatingChat() {
+    this.chatEverOpened.set(true);
+    this.showChat.set(true);
+    afterNextRender(
+      () => {
+        if (this.showChat()) this.chatPanel?.nativeElement.focus();
+      },
+      { injector: this.injector }
+    );
+
+    if (!this.chatInitialized()) {
+      void this.loadChatData();
     }
   }
 
@@ -333,6 +400,13 @@ export class AppComponent implements OnInit, OnDestroy {
       );
 
       this.showChat.set(true);
+      this.chatEverOpened.set(true);
+      afterNextRender(
+        () => {
+          if (this.showChat()) this.chatPanel?.nativeElement.focus();
+        },
+        { injector: this.injector }
+      );
 
       if (!this.chatInitialized()) {
         await this.loadChatData();
@@ -373,7 +447,10 @@ export class AppComponent implements OnInit, OnDestroy {
   async openChat(conversationId: string) {
     const contact = this.chatContacts.find((c) => c.id === conversationId);
     if (contact) {
-      this.openChat(contact.id);
+      this.conversationToOpen.set({
+        id: contact.id,
+        requestId: ++this.conversationOpenRequestId,
+      });
     }
   }
 
@@ -411,12 +488,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async loadChatData() {
+    const generation = this.sessionViewGeneration;
     const profile = this.profileService.getCurrentUserProfile();
     if (!profile) return;
 
     try {
       const conversations: AppChatConversation[] =
         await this.chatService.getConversations(profile.id);
+      if (generation !== this.sessionViewGeneration) return;
 
       const allParticipantIds = new Set<string>();
       conversations.forEach((c) => {
@@ -432,6 +511,7 @@ export class AppComponent implements OnInit, OnDestroy {
       }
 
       const profiles = await this.fetchProfiles(participantIds);
+      if (generation !== this.sessionViewGeneration) return;
       const profileMap = new Map(profiles.map((p) => [p.id, p]));
 
       this.chatContacts = conversations.map((conv) => {

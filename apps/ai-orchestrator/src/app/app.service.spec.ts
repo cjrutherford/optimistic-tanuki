@@ -219,7 +219,9 @@ describe('AppService', () => {
     beforeEach(() => {
       jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersona]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
-      jest.spyOn(chatCollectorService, 'send').mockReturnValue(of({}));
+      jest
+        .spyOn(chatCollectorService, 'send')
+        .mockReturnValue(of({ id: 'welcome-room' }));
       (
         promptGeneration.generatePersonaSystemMessage as jest.Mock
       ).mockReturnValue('System prompt base');
@@ -240,7 +242,17 @@ describe('AppService', () => {
         { cmd: ProfileCommands.Get },
         { id: mockProfileId }
       );
-      expect(chatCollectorService.send).toHaveBeenCalled();
+      expect(chatCollectorService.send).toHaveBeenCalledWith(
+        { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
+        { participantIds: ['persona-id', mockProfileId] }
+      );
+      expect(chatCollectorService.send).toHaveBeenCalledWith(
+        { cmd: ChatCommands.POST_MESSAGE },
+        expect.objectContaining({
+          conversationId: 'welcome-room',
+          senderId: 'persona-id',
+        })
+      );
       expect(logger.log).toHaveBeenCalledWith(
         `Creating welcome chat for profile: '${mockProfileId}'`
       );

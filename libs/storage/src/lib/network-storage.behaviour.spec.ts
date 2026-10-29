@@ -11,9 +11,6 @@ import {
 } from './envelope-encryption.service';
 import { S3Service } from './s3.service';
 
-// uuid ships as ESM, which this project's jest transform does not parse.
-jest.mock('uuid', () => ({ v4: jest.fn(() => 'uuid-1') }));
-
 process.env[VAULT_STORAGE_KEK_ENV] = 'network-storage-spec-kek';
 
 /**
@@ -25,7 +22,7 @@ process.env[VAULT_STORAGE_KEK_ENV] = 'network-storage-spec-kek';
 describe('NetworkStorageAdapter behaviour', () => {
   interface S3Mock {
     uploadObject: jest.Mock;
-    deleteObject: jest.Mock;
+    purgeObjectVersions: jest.Mock;
     getObject: jest.Mock;
     getKeyFromPath: jest.Mock;
     bucketName: string;
@@ -50,7 +47,7 @@ describe('NetworkStorageAdapter behaviour', () => {
   beforeEach(() => {
     s3 = {
       uploadObject: jest.fn().mockResolvedValue(undefined),
-      deleteObject: jest.fn().mockResolvedValue(undefined),
+      purgeObjectVersions: jest.fn().mockResolvedValue(undefined),
       getObject: jest.fn().mockResolvedValue(Buffer.from('content')),
       getKeyFromPath: jest.fn((p: string) => p.replace(/^s3:\/\/[^/]+\//, '')),
       bucketName: 'test-bucket',
@@ -70,6 +67,20 @@ describe('NetworkStorageAdapter behaviour', () => {
   });
 
   describe('create', () => {
+    it('uses a caller-reserved id in the S3 object key', async () => {
+      const created = await adapter.create({
+        id: '11111111-1111-4111-8111-111111111111',
+        name: 'photo.png',
+        profileId: 'profile-9',
+        type: AssetType.IMAGE,
+        content: Buffer.from('bytes'),
+      } as never);
+      expect(created.id).toBe('11111111-1111-4111-8111-111111111111');
+      expect(s3.uploadObject.mock.calls[0][0]).toBe(
+        'assets/profile-9/11111111-1111-4111-8111-111111111111/photo.png'
+      );
+    });
+
     it('uploads under a profile-scoped key and returns an s3:// path', async () => {
       const content = Buffer.from('bytes');
 
@@ -81,7 +92,9 @@ describe('NetworkStorageAdapter behaviour', () => {
       } as never);
 
       const [key, body, type] = s3.uploadObject.mock.calls[0];
-      expect(key).toMatch(/^assets\/profile-9\/uuid-1-\d+\/photo\.png$/);
+      expect(key).toMatch(
+        /^assets\/profile-9\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}-\d+\/photo\.png$/
+      );
       expect(encryption.isEnvelope(body)).toBe(true);
       expect(encryption.decrypt(body).equals(content)).toBe(true);
       expect(type).toBe(AssetType.IMAGE);
@@ -219,13 +232,13 @@ describe('NetworkStorageAdapter behaviour', () => {
       await adapter.remove(asset());
 
       expect(s3.getKeyFromPath).toHaveBeenCalledWith(asset().storagePath);
-      expect(s3.deleteObject).toHaveBeenCalledWith(
+      expect(s3.purgeObjectVersions).toHaveBeenCalledWith(
         'assets/profile-1/uuid-1-123/file.png'
       );
     });
 
     it('propagates a delete failure', async () => {
-      s3.deleteObject.mockRejectedValue(new Error('access denied'));
+      s3.purgeObjectVersions.mockRejectedValue(new Error('access denied'));
 
       await expect(adapter.remove(asset())).rejects.toThrow('access denied');
       expect(logger.error).toHaveBeenCalled();

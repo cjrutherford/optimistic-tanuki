@@ -1,0 +1,143 @@
+{
+  "checkpoint": "Authentication E2E cache baseline",
+  "verifiedDate": "2026-10-18",
+  "result": "PASS — default Authentication E2E target executed rather than replaying cached output; no DF-007/RR-11 acceptance.",
+  "hostNxConfig": {
+    "path": "apps/authentication-e2e/project.json",
+    "sha256": "9073dc254c841bd6ed5d9e13a26a51c0fe0f3a13b7ef6769b13f20d14950966a",
+    "baseCommit": "98296cf209bc8ed9b0eafdf91420db1f431a41d8",
+    "patchSha256": "4754487ec46d015e459960f9bbd454981b38abda9d82936c5803ff842dc23716",
+    "resolvedTarget": {
+      "e2eCache": false,
+      "ciCodeCoverage": true
+    },
+    "notPartOfApplicationImageProvenance": true
+  },
+  "applicationImageProvenance": {
+    "baseRevision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f",
+    "patchSha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+    "overlayManifestSha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+    "overlayCount": 5,
+    "images": {
+      "authentication": {
+        "tag": "ot-df007-b5-social-state/authentication:b5-7cdb1d7f1581",
+        "id": "sha256:a68a68e48b869df0b232c1c184c1e8cdb96f7ff8ed656e9b5148621ea81cc6a4"
+      },
+      "profile": {
+        "tag": "ot-df007-b5-social-state/profile:b5-7cdb1d7f1581",
+        "id": "sha256:25c3a811f5e0c936ed6fbbc8f815de959d9122c03c748f390f9e3de408e3fafb"
+      },
+      "permissions": {
+        "tag": "ot-df007-b5-social-state/permissions:b5-7cdb1d7f1581",
+        "id": "sha256:6dbeb2420b300683b1d10e2e3a3b651341d4682e32317cf896d9f7926e696f79"
+      },
+      "social": {
+        "tag": "ot-df007-b5-social-state/social:b5-7cdb1d7f1581",
+        "id": "sha256:72907f2b647366595c72e912abf6569193c33b05b76c778a64645e7ee6778baf"
+      }
+    },
+    "rebuiltOrRelabeled": false
+  },
+  "prechecks": {
+    "passed": 17,
+    "fastValidators": 14,
+    "workflowContractAssertions": 40,
+    "resolvedConfigFormatDiff": "passed"
+  },
+  "runtime": {
+    "command": "pnpm exec nx run authentication-e2e:e2e:ci",
+    "cliOrEnvironmentCacheBypass": false,
+    "e2eTargetActuallyExecuted": true,
+    "suitesPassed": 2,
+    "testsPassed": 21,
+    "durationSeconds": 1.576,
+    "ciJestCoverageEnabled": true,
+    "diagnosticInstrumentationOrPreloadAdded": false,
+    "nodeOptionsUnset": true,
+    "nodeV8CoverageUnset": true,
+    "nxCacheOverrideVariablesUnset": true
+  },
+  "databaseReadback": {
+    "database": "ot_social",
+    "before": {
+      "follow_entity": 0,
+      "saved_item": 0,
+      "search_history": 0,
+      "user_block": 0,
+      "user_mute": 0
+    },
+    "after": {
+      "follow_entity": 0,
+      "saved_item": 0,
+      "search_history": 0,
+      "user_block": 0,
+      "user_mute": 0
+    },
+    "selectedLegacyAfter": {
+      "fixture_users": 0,
+      "fixture_guardian_permissions": 0,
+      "fixture_guardian_notice": 0,
+      "fixture_action_tokens": 0,
+      "fixture_profiles": 0,
+      "fixture_profile_activity": 0,
+      "fixture_posts": 0,
+      "fixture_comments": 0,
+      "fixture_attachments": 0,
+      "fixture_polls": 0,
+      "fixture_components": 0,
+      "fixture_links": 0,
+      "fixture_votes": 0,
+      "fixture_roles": 0,
+      "fixture_app_scopes": 0
+    },
+    "legacyCounterCount": 15
+  },
+  "email": {
+    "smtpHostUserPasswordEmpty": true,
+    "capturedServiceLogPatternCounts": {
+      "smtp_or_nodemailer": 0,
+      "email_send_confirmation": 0,
+      "sendmail_command": 0
+    },
+    "deliveryTested": false
+  },
+  "teardown": {
+    "composeDownExit": 0,
+    "containers": 0,
+    "networks": 0,
+    "volumes": 0
+  },
+  "earlierNonAcceptanceAttempt": {
+    "reason": "Wrapper artifact-path failure occurred before the Nx E2E test target launched.",
+    "scopedCleanup": "passed; zero project containers, networks, and volumes",
+    "classification": "harness failure, not an application/test failure"
+  },
+  "limitations": [
+    "Fifteen legacy counters are selected fixture checks, not a full database inventory.",
+    "See DF-007 B5 findings for Account B readback, OAuth/key-data post-delete, and exact-ID cleanup limits.",
+    "No full account deletion, orphan cleanup, complete portable export, DF-007 acceptance, or RR-11 acceptance.",
+    "Empty SMTP settings and zero send-pattern matches do not test email delivery."
+  ],
+  "logSha256": {
+    "runtime-preflight.json": "2a1eef2b83308a83cafa31b2906ea90c48442317181a02fcfb3ae98e7e408266",
+    "compose-resolved.yaml": "73c0c630cd02dab000e608ee691876858548dfdcbf5d8a84a3179fdfcae7e006",
+    "compose-up.log": "7e4be0b6d1d7410b9ce18f03284d88eb75dccd41e46c05d2bbfeb2e49573fd26",
+    "db-setup.log": "6e386fd77968f788334f940edb94d2b3bcc003002e97ffae5330fb5c3d8d3456",
+    "compose-ps-health.jsonl": "9b486215c464286eb6e53ef20bce154bab5d87adf6589d31b243e66989965d4e",
+    "social-state-counts-before.tsv": "65e8973923d6595624f9ba29f88323aa161efebad6670c4962487888db32ea9c",
+    "social-state-counts-after.tsv": "65e8973923d6595624f9ba29f88323aa161efebad6670c4962487888db32ea9c",
+    "legacy-social-counts-after.tsv": "0c16f1805f4f00962704caaa5e7815ace39c483040da9a55029569c26f5a2064",
+    "legacy-auth-counts-after.tsv": "b184a988a1d99ffe05f670cf069d9ce89b961b699635271dcfbf5ec8765fe0f7",
+    "legacy-profile-counts-after.tsv": "2048971e2f234644564a6984795f0dc8353f37208717a8b42441e3669b443f52",
+    "legacy-permissions-counts-after.tsv": "a9b9da9bdca56e6249f290cd01a7d937b6c83fcaa29eaec0fbf6fdb533b64ca7",
+    "e2e-command.txt": "b19e9448c01c8acd346d53fd351a9061ed106ada746c7229abefdbaeda387d4a",
+    "e2e-environment.txt": "0187154e2fd51e4f98b1521af5b43d753b2dc9129dcc6eea7e50ce94e15037f7",
+    "authentication-e2e-ci.log": "4744587a04a0ad2f3830e5e0abfa562f54447555c7a947b4f5fd16b15169495b",
+    "service-runtime.log": "dc0a244672aad1bbcd7c85200af7cb9a4d72836bd91f82fb5dae42affcc77c1f",
+    "compose-down.log": "d7b642cb0315317bce33b6789c6ea89a44ae47013f4efd7d15b6025d762c42d3",
+    "project-containers-after-down.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "project-networks-after-down.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "project-volumes-after-down.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "teardown-summary.txt": "e925d6155ae207c8573574cb881b36c8331a07e0b8f02a7e46444162605f9efd"
+  }
+}

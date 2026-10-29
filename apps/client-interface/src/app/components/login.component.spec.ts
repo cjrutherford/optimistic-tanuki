@@ -180,7 +180,10 @@ describe('LoginComponent behaviour', () => {
         component as unknown as {
           oauthService: { configureProviders: unknown };
         }
-      ).oauthService = { configureProviders } as never;
+      ).oauthService = {
+        configureProviders,
+        getEnabledProviders: jest.fn().mockReturnValue(['google']),
+      } as never;
 
       const pending = (
         component as unknown as { loadOAuthConfig: () => Promise<void> }
@@ -191,7 +194,7 @@ describe('LoginComponent behaviour', () => {
       expect(configureProviders).toHaveBeenCalledWith({ google: true });
     });
 
-    it('falls back to defaults when the request fails', async () => {
+    it('keeps OAuth providers hidden when configuration cannot be loaded', async () => {
       const pending = (
         component as unknown as { loadOAuthConfig: () => Promise<void> }
       ).loadOAuthConfig();
@@ -200,9 +203,7 @@ describe('LoginComponent behaviour', () => {
         .flush(null, { status: 500, statusText: 'Server Error' });
       await pending;
 
-      expect(logSpy).toHaveBeenCalledWith(
-        'OAuth config not loaded from server, using defaults'
-      );
+      expect(component.enabledOAuthProviders).toEqual([]);
     });
   });
 
@@ -212,7 +213,7 @@ describe('LoginComponent behaviour', () => {
       password: 'pw',
     } as never;
 
-    it('selects the first profile and lands on the feed', async () => {
+    it('selects the verified session profile and lands on the feed', async () => {
       await component.onSubmit(credentials);
 
       expect(authStateService.login).toHaveBeenCalledWith({
@@ -227,6 +228,38 @@ describe('LoginComponent behaviour', () => {
         content: 'Login successful! Welcome back.',
         type: 'success',
       });
+    });
+
+    it('does not replace the verified profile with the first profile in account order', async () => {
+      const first = { id: 'profile-1', profileName: 'First' };
+      const sessionProfile = { id: 'profile-2', profileName: 'Active' };
+      authStateService.getDecodedTokenValue.mockReturnValue({
+        profileId: 'profile-2',
+      });
+      profileService.getCurrentUserProfiles.mockReturnValue([
+        first,
+        sessionProfile,
+      ]);
+
+      await component.onSubmit(credentials);
+
+      expect(profileService.selectProfile).toHaveBeenCalledWith(sessionProfile);
+      expect(profileService.selectProfile).not.toHaveBeenCalledWith(first);
+      expect(router.navigate).toHaveBeenCalledWith(['/feed']);
+    });
+
+    it('does not navigate or select a fallback when the verified profile is missing', async () => {
+      authStateService.getDecodedTokenValue.mockReturnValue({
+        profileId: 'missing-profile',
+      });
+
+      await component.onSubmit(credentials);
+
+      expect(profileService.selectProfile).not.toHaveBeenCalled();
+      expect(router.navigate).not.toHaveBeenCalled();
+      expect(component.errorMessage).toContain(
+        'Your active profile could not be loaded'
+      );
     });
 
     it('sends a user with an empty profileId to settings without the modal', async () => {
@@ -274,7 +307,21 @@ describe('LoginComponent behaviour', () => {
 
       await expect(component.onSubmit(credentials)).resolves.toBeUndefined();
 
-      expect(errorSpy).toHaveBeenCalledWith(expect.any(Error));
+      expect(component.errorMessage).toContain(
+        'Sign-in could not be completed'
+      );
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('does not claim the guardian email was sent when delivery failed', async () => {
+      authStateService.login.mockResolvedValue({
+        data: { guardianConsentPending: true, guardianEmailSent: false },
+      } as never);
+
+      await component.onSubmit(credentials);
+
+      expect(component.errorMessage).toContain('could not be sent');
+      expect(component.errorMessage).not.toContain('request was sent');
       expect(router.navigate).not.toHaveBeenCalled();
     });
   });
@@ -293,7 +340,8 @@ describe('LoginComponent behaviour', () => {
       expect(oauthService.initiateOAuthLogin).toHaveBeenCalledWith(
         'google',
         'client-interface',
-        true
+        true,
+        undefined
       );
       expect(authStateService.setToken).toHaveBeenCalledWith('jwt');
       expect(router.navigate).toHaveBeenCalledWith(['/feed']);

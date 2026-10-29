@@ -1,0 +1,263 @@
+{
+  "date": "2026-10-17",
+  "baseCommit": "c31729d990912aa7769f76a6014f3eabc612e669",
+  "repairSourceManifest": "repair-source-manifest.json",
+  "repairSourceManifestSha256": "0ab622d50e72545b5dc1aedc75412dd5a8a5c4f7853fa797499f6740736b0673",
+  "status": "local-pre-pr-checks-complete",
+  "excludedScope": [
+    "directory service and worker stubs",
+    "directory libraries",
+    "root Compose directory additions",
+    "tsconfig directory aliases"
+  ],
+  "checks": {
+    "affectedTestCi": {
+      "status": "passed",
+      "projects": 148,
+      "failed": 0,
+      "logSha256": "0d3ddc68ed3be3fa64a36a4f0572d05cfab763e1862ed46d905c62f25b0aef2a",
+      "stage": "before-final-localized-Forge-and-Business-Site-corrections; targeted checks and later development aggregate document deltas"
+    },
+    "affectedLint": {
+      "status": "passed",
+      "projects": 148,
+      "failed": 0,
+      "logSha256": "0d9231671c50d68f7ca60492d3d7528e54d108dc79615c78ee93d2b682c4588d",
+      "stage": "before-final-localized-Forge-and-Business-Site-corrections; targeted checks and later development aggregate document deltas"
+    },
+    "buildDev": {
+      "status": "passed-after-final-Forge-and-Business-source",
+      "projects": 48,
+      "dependencyTasks": 27,
+      "totalTasks": 75,
+      "cachedTasks": 47,
+      "failed": 0,
+      "logSha256": "4a2f1bd3d335f52e0f67c4dbb7b4ac5ac0e88eb9e9b61a598be916be87195509"
+    },
+    "e2eContracts": {
+      "status": "passed",
+      "tests": 39,
+      "failed": 0,
+      "logSha256": "9d778d91d59100053fb027436a0732301ad4d1778fc334b55f97995569b2f964",
+      "stage": "after-Business-Site-service-closure-correction",
+      "businessServiceClosureRedBeforeFix": true
+    },
+    "typeormMigrationValidator": "passed",
+    "independentSourceReview": {
+      "status": "GO-no-proven-material-source-regression",
+      "executionVerified": false,
+      "logSha256": "a5d09faefe0319333793f3ebc904763e31e1454d497b135cd1a48a954fb2fa2d"
+    },
+    "finalE2eConfirmation": {
+      "status": "passed-six-required-targets",
+      "harnessCorrections": [
+        "Restore generated output ownership",
+        "Use private mapped database hostname",
+        "Start all required UI backend services",
+        "Reset deterministic OAuth fixture data between isolated CI-equivalent jobs",
+        "Wait for all finite entrances before measuring settled text contrast; retain opacity and Axe assertions"
+      ],
+      "confirmed": {
+        "authentication": {
+          "passed": 16,
+          "logSha256": "3b4c86ab0e084bba81a4a807bbb3717aeb5f9f2c1cf451ddcf3bcff14b1aac5b"
+        },
+        "gateway": {
+          "passed": 57,
+          "skipped": 2,
+          "logSha256": "bea6fcd7be319792e77953cc5af686a32aa5f708cb97aa2a0e8822c117be1a1d"
+        },
+        "chatCollector": {
+          "passed": 1,
+          "logSha256": "ae075a965968ca5455774c182880befed585974ffed99450d208cd0136ea352a"
+        },
+        "finCommander": {
+          "passed": 6,
+          "logSha256": "ce1d0b273a7d59b174a32dd7dd98097f1667ae7ca45ad9b06ff1776e4603b0b4"
+        },
+        "clientInterface": {
+          "passed": 178,
+          "skipped": 384,
+          "failed": 0,
+          "freshPrivateDatabase": true,
+          "logSha256": "acc3d541edf7fdd3f03f16f598aa250d7770c2df2a4a04166493da786b579d3b"
+        },
+        "forgeofwill": {
+          "passed": 34,
+          "failed": 0,
+          "freshPrivateDatabase": true,
+          "imageId": "sha256:8d88cf7cd5e573580a77b33cd017481c20fd7192c1d51742ce09acb3661c4926",
+          "sourceSnapshotId": "fb55d4f5f4e99b07c194ecfa954116131262e035",
+          "settledLightAxeViolations": 0,
+          "settledDarkAxeViolations": 0,
+          "logSha256": "b144a101fe2b29193470e048da0efa798f51f6525e3a1acf68886c64f70b101f"
+        }
+      }
+    },
+    "affectedBuild": {
+      "status": "passed",
+      "projects": 87,
+      "dependencyTasks": 1,
+      "totalTasks": 88,
+      "failed": 0,
+      "logSha256": "c1ea4720875c36622cded136d0fc682638873e1deac2761c4431367ea25290df",
+      "stage": "before-final-localized-Forge-and-Business-Site-corrections; targeted checks and later development aggregate document deltas"
+    },
+    "finalForgeUnitAndLint": {
+      "status": "passed",
+      "unitTests": 319,
+      "suites": 31,
+      "redBeforeFix": true,
+      "logSha256": "68990820eac3cb7b13d45b2289fc7962395b8863134af6d3ae741c1032993d49"
+    },
+    "uiHeuristics": {
+      "status": "passed",
+      "allowlistRaised": false,
+      "logSha256": "7d3254309f832127e6770ee157385de768e25a407ae1d5a8f066765523726897"
+    },
+    "finalForgeImage": {
+      "status": "passed",
+      "sourceSnapshotId": "fb55d4f5f4e99b07c194ecfa954116131262e035",
+      "isGitCommit": false,
+      "logSha256": "e03fb4ecdb46e7af5bb96c1f821446c2651d88ea2be7055e30e1f8faa2341f57",
+      "imageId": "sha256:8d88cf7cd5e573580a77b33cd017481c20fd7192c1d51742ce09acb3661c4926",
+      "laterVerificationOnlyChanges": [
+        "apps/forgeofwill-e2e/src/accessibility-truth.spec.ts",
+        "apps/business-site-e2e/gateway-composition.yaml"
+      ]
+    },
+    "migrationSetupScript": {
+      "status": "passed",
+      "tests": 1
+    },
+    "personalityAudit": "passed",
+    "prohibitedPersonalityScss": "passed",
+    "finalForgeAccessibilityFocused": {
+      "status": "passed",
+      "tests": 1,
+      "productCodeChanged": false,
+      "reason": "Wait for finite entrances and assert settled opacity before Axe; infinite decorative animation excluded"
+    },
+    "finalForgeE2eLint": "passed",
+    "finalBusinessUnit": {
+      "status": "passed",
+      "suites": 18,
+      "tests": 168,
+      "logSha256": "4eb6524ab1c6e41d237f329bc7c4f12122b73f29c30229410feaac4a85644cd2"
+    },
+    "finalBusinessSetupUnit": {
+      "status": "passed",
+      "suites": 3,
+      "tests": 36,
+      "logSha256": "d84082383ba4ee04999af872fb11ef6086be50ffdb88c4603347a71057d38cb5"
+    },
+    "finalBusinessImage": {
+      "status": "passed-local-build",
+      "sourceSnapshotId": "a6b6e8ae8cb3289abc3784b1d840eab22446ffd0bc07a11ac18bfe37b7e71547",
+      "isGitCommit": false,
+      "imageId": "sha256:401116e5924aed9436638400130e300bc8905bf3352dab2267167422a7601b14",
+      "productionSourceHashesMatchManifest": true,
+      "logSha256": "b13e9f6881f2e5261e50bedf74b839faae45c65a1eb540d3d15907a19543a44a",
+      "sourceManifestSha256": "ad5159604c76c927501be4619e9a0e1904547e7a6c4ead19db6292cc5bebb078"
+    },
+    "finalBusinessProxyRegression": {
+      "status": "passed",
+      "tests": 7,
+      "redBeforeFix": true,
+      "registeredOriginSmokeStatus": 200,
+      "unregisteredOriginRejected": true
+    },
+    "finalBusinessLint": {
+      "status": "passed",
+      "logSha256": "469b00347aee0258d4bfa9b8aeb7af8d155f887e726af9ea48a2189e82063e77"
+    },
+    "finalBusinessProductionBuild": {
+      "status": "passed",
+      "logSha256": "5e3dd74d7a586764e5c1995d9ace9c7f369040acae91e17a58c698ef27a9d0e4"
+    },
+    "finalBusinessE2eLint": {
+      "status": "passed",
+      "logSha256": "da3ff47f82ca5f2036c9fbaee7774e2d53006a8995eed1579695be4e9a1bf8b9"
+    },
+    "finalBusinessStudio": {
+      "status": "passed",
+      "tests": 1,
+      "logSha256": "41b9215788d31bffa13ed7ca7efae46b63bc552db819b22d3d61b25e03e92211",
+      "assertionsRetained": true
+    }
+  },
+  "historicalEvidence": {
+    "committedImageMatrix": {
+      "sourceCommit": "c31729d990912aa7769f76a6014f3eabc612e669",
+      "imagesPassed": 50,
+      "newSourceImageMatrixClaimed": false
+    },
+    "repairE2e": {
+      "authentication": {
+        "passed": 16
+      },
+      "gateway": {
+        "passed": 57,
+        "skipped": 2
+      },
+      "chatCollector": {
+        "passed": 1
+      },
+      "forgeofwill": {
+        "passed": 34
+      },
+      "finCommander": {
+        "passed": 6
+      },
+      "clientInterface": {
+        "passed": 178,
+        "skipped": 384,
+        "failed": 0
+      }
+    },
+    "privateTmpLogs": "lost-after-environment-restart; retained task summaries and sanitized receipts preserve historical results",
+    "guardianBrowserSourceCommit": "c739a46c457ceafdf052db8752371787480c25aa",
+    "guardianBrowserReplayedAgainstRepairs": false
+  },
+  "newPrivateLogDirectories": [
+    ".runtime-artifacts/pre-pr-final/",
+    ".runtime-artifacts/pre-pr-e2e-final/",
+    ".runtime-artifacts/pre-pr-business-final/"
+  ],
+  "unrunExternalGates": [
+    "registry image uploads",
+    "production deployment and provider verification",
+    "manual accessibility review",
+    "24-hour soak",
+    "GitHub required checks (no PR created)"
+  ],
+  "releaseReadiness": {
+    "rr11": "not-accepted",
+    "rr12": "conditional",
+    "launchApproval": false
+  },
+  "verificationContext": "Shared checkout; pre-existing directory aliases and root Compose edits remain on disk, are excluded from intended changes, and directory-* targets are excluded from affected commands. Final Forge and Business Site images use immutable archives plus intended patches; per-image snapshots and per-file repair hashes are recorded separately.",
+  "optionalBusinessSiteE2e": {
+    "status": "passed",
+    "passed": 21,
+    "failed": 0,
+    "skipped": 0,
+    "retries": 0,
+    "durationSeconds": 58.2,
+    "freshPrivateDatabase": true,
+    "singleSeed": true,
+    "logSha256": "04c568138709ccf8d8cc18cbaed76474f417b6ad009c0ed80154b49264e508c7",
+    "focusedStudioPassed": true,
+    "imageId": "sha256:401116e5924aed9436638400130e300bc8905bf3352dab2267167422a7601b14",
+    "sourceSnapshotId": "a6b6e8ae8cb3289abc3784b1d840eab22446ffd0bc07a11ac18bfe37b7e71547"
+  },
+  "privateStackCleanup": {
+    "status": "verified-complete",
+    "projects": ["ot-pr-business-final", "ot-prepr-final-verify"],
+    "remainingContainers": 0,
+    "remainingNetworks": 0,
+    "remainingVolumes": 0,
+    "sharedDatabaseAndRedisRunning": true,
+    "logSha256": "0e6a6c07cf4e7cab226f79faa7a780ecb708d50c1f567eb5e2320658b1f313ab"
+  }
+}

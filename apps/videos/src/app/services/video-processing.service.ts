@@ -21,6 +21,7 @@ import {
   VideoTranscodeClientService,
   VideoTranscodeResult,
 } from './video-transcode-client.service';
+import { VideoDeletionProcessingFenceService } from './video-deletion-processing-fence.service';
 
 type AssetRecord = {
   id: string;
@@ -37,6 +38,8 @@ export const VIDEO_PROCESSING_CONFIG = 'VIDEO_PROCESSING_CONFIG';
 
 @Injectable()
 export class VideoProcessingService implements OnApplicationBootstrap {
+  @Inject(VideoDeletionProcessingFenceService)
+  private readonly deletionFence!: VideoDeletionProcessingFenceService;
   private readonly queuedVideoIds = new Set<string>();
   private readonly queue: string[] = [];
   private activeJobs = 0;
@@ -107,15 +110,26 @@ export class VideoProcessingService implements OnApplicationBootstrap {
       }
 
       this.activeJobs += 1;
-      void this.processVideo(videoId).finally(() => {
-        this.activeJobs -= 1;
-        this.queuedVideoIds.delete(videoId);
-        this.drainQueue();
-      });
+      void this.processVideo(videoId)
+        .catch(() => undefined)
+        .finally(() => {
+          this.activeJobs -= 1;
+          this.queuedVideoIds.delete(videoId);
+          this.drainQueue();
+        });
     }
   }
 
   async processVideo(videoId: string): Promise<void> {
+    await this.deletionFence.run(videoId, (profileId) =>
+      this.processAdmittedVideo(videoId, profileId)
+    );
+  }
+
+  private async processAdmittedVideo(
+    videoId: string,
+    profileId: string
+  ): Promise<void> {
     const video = await this.videoRepository.findOne({
       where: { id: videoId },
     });
@@ -134,6 +148,8 @@ export class VideoProcessingService implements OnApplicationBootstrap {
       });
 
       const sourceAsset = await this.retrieveAsset(sourceAssetId);
+      if (sourceAsset.profileId !== profileId)
+        throw new Error('VIDEO_SOURCE_PROFILE_BINDING_INVALID');
       const result = await this.transcodeClient.transcode({
         videoId,
         sourcePath: path.join(
@@ -143,6 +159,7 @@ export class VideoProcessingService implements OnApplicationBootstrap {
       });
 
       const playbackAsset = await this.createFileAsset(
+        videoId,
         sourceAsset.profileId,
         result.playbackPath,
         AssetType.VIDEO
@@ -150,6 +167,7 @@ export class VideoProcessingService implements OnApplicationBootstrap {
       const segmentAssets = await Promise.all(
         result.hlsSegmentPaths.map((segmentPath) =>
           this.createFileAsset(
+            videoId,
             sourceAsset.profileId,
             segmentPath,
             AssetType.VIDEO
@@ -190,6 +208,7 @@ export class VideoProcessingService implements OnApplicationBootstrap {
   }
 
   private async createFileAsset(
+    videoId: string,
     profileId: string,
     filePath: string,
     type: AssetType
@@ -197,6 +216,7 @@ export class VideoProcessingService implements OnApplicationBootstrap {
     const fileName = path.basename(filePath);
     const extension = path.extname(fileName).slice(1);
     const stagedSourcePath = await this.stageFileForAssetImport(
+      videoId,
       filePath,
       fileName
     );
@@ -222,16 +242,97 @@ export class VideoProcessingService implements OnApplicationBootstrap {
   }
 
   private async stageFileForAssetImport(
+    videoId: string,
     filePath: string,
     fileName: string
   ): Promise<string> {
-    await fs.mkdir(this.config.assetStorageRoot, { recursive: true });
-    const stagingDir = await fs.mkdtemp(
-      path.join(this.config.assetStorageRoot, 'video-processing-import-')
-    );
+    const parent = this.importDirectory(videoId);
+    await fs.mkdir(parent, { recursive: true, mode: 0o700 });
+    await this.assertImportDirectory(parent);
+    const stagingDir = await fs.mkdtemp(path.join(parent, 'attempt-'));
     const stagedPath = path.join(stagingDir, fileName);
     await fs.copyFile(filePath, stagedPath);
     return stagedPath;
+  }
+
+  private importDirectory(videoId: string): string {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+        videoId
+      )
+    )
+      throw new Error('VIDEO_IMPORT_ID_INVALID');
+    return path.join(
+      path.resolve(this.config.assetStorageRoot),
+      '.video-processing-imports',
+      videoId
+    );
+  }
+
+  private async assertImportDirectory(directory: string): Promise<void> {
+    for (const current of [
+      path.resolve(this.config.assetStorageRoot),
+      path.dirname(directory),
+      directory,
+    ]) {
+      const info = await fs.lstat(current);
+      if (!info.isDirectory() || info.isSymbolicLink())
+        throw new Error('VIDEO_IMPORT_CUSTODY_INVALID');
+    }
+  }
+
+  /** Called only after the owner has drained processing and validated its fixed scope. */
+  async purgeDeletionStaging(videoIds: readonly string[]): Promise<void> {
+    if (videoIds.length > 10000) throw new Error('VIDEO_IMPORT_BOUND_EXCEEDED');
+    let root;
+    try {
+      root = await fs.opendir(this.config.assetStorageRoot);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+      throw error;
+    }
+    let entries = 0;
+    for await (const entry of root) {
+      if (++entries > 10000) throw new Error('VIDEO_IMPORT_BOUND_EXCEEDED');
+      if (entry.name.startsWith('video-processing-import-'))
+        throw new Error('VIDEO_LEGACY_IMPORT_ATTRIBUTION_UNRESOLVED');
+    }
+    for (const id of videoIds) {
+      const directory = this.importDirectory(id);
+      try {
+        await this.assertImportDirectory(directory);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
+        throw error;
+      }
+      let count = 0;
+      const validate = async (
+        current: string,
+        depth: number
+      ): Promise<void> => {
+        if (depth > 3) throw new Error('VIDEO_IMPORT_BOUND_EXCEEDED');
+        const dir = await fs.opendir(current);
+        for await (const entry of dir) {
+          if (++count > 1000) throw new Error('VIDEO_IMPORT_BOUND_EXCEEDED');
+          const file = path.join(current, entry.name),
+            info = await fs.lstat(file);
+          if (info.isSymbolicLink())
+            throw new Error('VIDEO_IMPORT_CUSTODY_INVALID');
+          if (info.isDirectory()) await validate(file, depth + 1);
+          else if (!info.isFile() || info.nlink !== 1)
+            throw new Error('VIDEO_IMPORT_CUSTODY_INVALID');
+        }
+      };
+      await validate(directory, 0);
+      await fs.rm(directory, { recursive: true });
+      try {
+        await fs.lstat(directory);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
+        throw error;
+      }
+      throw new Error('VIDEO_IMPORT_ABSENCE_UNVERIFIED');
+    }
   }
 
   private async createManifestAsset(

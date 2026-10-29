@@ -87,9 +87,9 @@ export class ProfileContext {
     }
   }
 
-  selectProfile(profile: ProfileDto): void {
-    this.profileService.selectProfile(profile);
-    this.currentProfile.set(profile);
+  async selectProfile(profile: ProfileDto): Promise<void> {
+    await this.profileService.activateProfile(profile);
+    this.currentProfile.set(this.profileService.getCurrentUserProfile());
   }
 
   refreshProfile(): void {

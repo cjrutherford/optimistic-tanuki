@@ -2,16 +2,24 @@ import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { MessageService } from '@optimistic-tanuki/message-ui';
+import { isAccountRightsRequest } from '@optimistic-tanuki/common-ui';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const messageService = inject(MessageService);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
+      if (isAccountRightsRequest(req.url)) return throwError(() => error);
       // Cookie-session probes are expected to return 401 before sign-in and
       // while an OAuth callback is still redeeming. Authentication state
       // handles those responses; presenting a global expiry toast is wrong.
       if (error.status === 401 && req.url.includes('/authentication/session')) {
+        return throwError(() => error);
+      }
+
+      // These forms render their own accessible errors. A failed login is
+      // not proof of an expired session, and duplicate toasts obscure the form.
+      if (/\/authentication\/(login|register)$/.test(req.url.split('?')[0])) {
         return throwError(() => error);
       }
 
@@ -83,12 +91,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         type: errorType,
       });
 
-      console.error('HTTP Error:', {
-        status: error.status,
-        message: errorMessage,
-        url: req.url,
-        error: error.error,
-      });
+      console.error('HTTP Error:', error.status);
 
       return throwError(() => error);
     })

@@ -5,7 +5,12 @@ import {
 } from '@playwright/test';
 import { Pool } from 'pg';
 import { createDbPool } from '../support/db';
-import { waitForFinCommander, waitForGateway, getGatewayUrl } from './helpers';
+import {
+  waitForFinCommander,
+  waitForGateway,
+  getBaseUrl,
+  getGatewayUrl,
+} from './helpers';
 
 export interface FinCommanderTestUser {
   id: string;
@@ -86,11 +91,14 @@ export const test = base.extend<FinCommanderFixtureContext>({
   apiContext: async ({ baseURL }, use) => {
     void baseURL;
     await waitForGateway();
+    const applicationUrl = new URL(getBaseUrl());
     const apiContext = await playwrightRequest.newContext({
       baseURL: getGatewayUrl(),
       extraHTTPHeaders: {
         'content-type': 'application/json',
         'x-ot-appscope': 'finance',
+        origin: applicationUrl.origin,
+        host: applicationUrl.host,
       },
     });
 

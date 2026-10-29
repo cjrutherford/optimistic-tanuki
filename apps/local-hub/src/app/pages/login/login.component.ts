@@ -40,11 +40,13 @@ import { AuthStateService } from '../../services/auth-state.service';
       <div class="auth-panel">
         <lib-login-block
           appId="local-hub"
+          [ageGateEnabled]="true"
           title="Welcome to Towne Square"
           description="Sign in to join communities and connect with your neighbors."
           heroSrc="assets/ts.png"
           heroAlt="Towne Square neighborhood illustration"
           (submitEvent)="onLogin($event)"
+          [enabledOAuthProviders]="enabledOAuthProviders"
           (oauthProviderSelected)="onOAuthProvider($event)"
         ></lib-login-block>
         @if (error) {
@@ -124,9 +126,13 @@ import { AuthStateService } from '../../services/auth-state.service';
         margin: 0;
         font-size: 0.9rem;
         a {
-          color: var(--primary);
+          color: var(--foreground);
+          display: inline-flex;
+          min-height: 44px;
+          align-items: center;
+          padding-inline: 8px;
           font-weight: 600;
-          text-decoration: none;
+          text-decoration: underline;
           &:hover {
             text-decoration: underline;
           }
@@ -143,6 +149,7 @@ export class LoginComponent {
   private oauthService = new OAuthService(this.http, '/api');
 
   error: string | null = null;
+  enabledOAuthProviders: string[] = [];
 
   constructor() {
     void this.loadOAuthConfig();
@@ -153,21 +160,39 @@ export class LoginComponent {
       const config: any = await this.http.get('/api/oauth/config').toPromise();
       if (config) {
         this.oauthService.configureProviders(config);
+        this.enabledOAuthProviders = this.oauthService.getEnabledProviders();
       }
     } catch {
-      // Keep default provider config when the endpoint is unavailable.
+      // Keep unverified OAuth providers hidden when configuration is unavailable.
     }
   }
 
   async onLogin(credentials: LoginType): Promise<void> {
     this.error = null;
     try {
-      await this.authState.login(credentials.email, credentials.password);
+      const result = await this.authState.login(credentials);
+      if (result === 'pending' || result === 'pending-undelivered') {
+        this.error =
+          result === 'pending'
+            ? 'A parent or guardian permission request was sent. Sign in again after they approve it.'
+            : 'The guardian permission email could not be sent. Check the guardian address and try again.';
+        return;
+      }
       const returnUrl =
         this.route.snapshot.queryParamMap.get('returnUrl') || '/';
       this.router.navigateByUrl(returnUrl);
-    } catch {
-      this.error = 'Invalid email or password. Please try again.';
+    } catch (error: any) {
+      const detail = error?.error?.message || error?.message || '';
+      this.error =
+        error?.status === 401
+          ? 'Invalid email or password. Please try again.'
+          : String(detail).includes('AGE_CHECK_REQUIRED')
+          ? 'For this newly registered account, enter your date of birth to continue.'
+          : String(detail).includes('GUARDIAN_EMAIL_REQUIRED')
+          ? 'A parent or guardian email is required to request permission.'
+          : String(detail).includes('AGE_UNDER_13')
+          ? 'Sign in is unavailable under age 13.'
+          : 'Sign-in could not be completed. Please try again.';
     }
   }
 
@@ -178,11 +203,17 @@ export class LoginComponent {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
         'local-hub',
-        true
+        true,
+        event.dateOfBirth
       );
 
       if (result.success) {
         await this.authState.restoreSession();
+        if (!this.authState.isAuthenticated) {
+          this.error =
+            'Sign-in could not restore your session. Please try again.';
+          return;
+        }
         const returnUrl =
           this.route.snapshot.queryParamMap.get('returnUrl') || '/';
         await this.router.navigateByUrl(returnUrl);
@@ -202,6 +233,11 @@ export class LoginComponent {
 
         if (regResult.success) {
           await this.authState.restoreSession();
+          if (!this.authState.isAuthenticated) {
+            this.error =
+              'Sign-in could not restore your session. Please try again.';
+            return;
+          }
           const returnUrl =
             this.route.snapshot.queryParamMap.get('returnUrl') || '/';
           await this.router.navigateByUrl(returnUrl);
@@ -209,6 +245,8 @@ export class LoginComponent {
         }
 
         this.error = regResult.error || 'OAuth login failed. Please try again.';
+      } else {
+        this.error = result.error || 'OAuth login failed. Please try again.';
       }
     } catch {
       this.error = 'OAuth login failed. Please try again.';

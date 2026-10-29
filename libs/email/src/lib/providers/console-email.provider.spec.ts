@@ -40,6 +40,26 @@ describe('ConsoleEmailProvider', () => {
     expect(result.success).toBe(true);
   });
 
+  it('does not print sensitive recipients or content', async () => {
+    const logs: string[] = [];
+    const logger = (provider as any).logger;
+    const log = jest
+      .spyOn(logger, 'log')
+      .mockImplementation((...args: unknown[]) => {
+        logs.push(args.map(String).join(' '));
+      });
+    await provider.sendEmail({
+      to: 'private-guardian@example.test',
+      subject: 'Private guardian notice',
+      text: 'private notice body',
+      sensitive: true,
+    });
+
+    expect(log).toHaveBeenCalled();
+    expect(logs.join('\n')).not.toContain('private-guardian@example.test');
+    expect(logs.join('\n')).not.toContain('private notice body');
+  });
+
   it('should always verify connection successfully', async () => {
     expect(await provider.verifyConnection()).toBe(true);
   });

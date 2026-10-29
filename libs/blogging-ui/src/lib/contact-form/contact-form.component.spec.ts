@@ -73,8 +73,8 @@ describe('ContactFormComponent', () => {
     ) as HTMLSelectElement;
 
     expect(label.textContent.trim()).toBe('Subject');
-    expect(label.htmlFor).toBe('business-contact-subject');
-    expect(select.id).toBe('business-contact-subject');
+    expect(label.htmlFor).toBe('business-contact-subject-control');
+    expect(select.id).toBe('business-contact-subject-control');
   });
 
   it('shows no banner image unless one is supplied', () => {

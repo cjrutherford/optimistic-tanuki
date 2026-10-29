@@ -8,6 +8,26 @@ describe('authentication config oauth env loading', () => {
     delete process.env.GOOGLE_CLIENT_ID;
     delete process.env.GOOGLE_CLIENT_SECRET;
     delete process.env.GOOGLE_REDIRECT_URI;
+    delete process.env.SERVICE_ASSETS_HOST;
+    delete process.env.SERVICE_ASSETS_PORT;
+    delete process.env.SERVICE_VIDEOS_HOST;
+    delete process.env.SERVICE_VIDEOS_PORT;
+    delete process.env.SERVICE_PROFILE_HOST;
+    delete process.env.SERVICE_PROFILE_PORT;
+    delete process.env.SERVICE_PERMISSIONS_HOST;
+    delete process.env.SERVICE_PERMISSIONS_PORT;
+    delete process.env.SERVICE_SOCIAL_HOST;
+    delete process.env.SERVICE_SOCIAL_PORT;
+    delete process.env.SERVICE_FORUM_HOST;
+    delete process.env.SERVICE_FORUM_PORT;
+    delete process.env.SERVICE_WORKSPACE_HOST;
+    delete process.env.SERVICE_WORKSPACE_PORT;
+    delete process.env.SERVICE_APP_CONFIGURATOR_HOST;
+    delete process.env.SERVICE_APP_CONFIGURATOR_PORT;
+    delete process.env.SERVICE_CHAT_COLLECTOR_HOST;
+    delete process.env.SERVICE_CHAT_COLLECTOR_PORT;
+    delete process.env.SERVICE_CLASSIFIEDS_HOST;
+    delete process.env.SERVICE_CLASSIFIEDS_PORT;
   });
 
   afterAll(() => {
@@ -45,6 +65,132 @@ describe('authentication config oauth env loading', () => {
         clientSecret: '',
       })
     );
+  });
+
+  it('loads the Assets participant target with environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.assets).toEqual({
+      host: 'assets',
+      port: 3005,
+    });
+    process.env.SERVICE_ASSETS_HOST = 'assets-internal';
+    process.env.SERVICE_ASSETS_PORT = '43005';
+    expect(loadConfig().services?.assets).toEqual({
+      host: 'assets-internal',
+      port: 43005,
+    });
+  });
+
+  it('loads the profile participant target from config with environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.profile).toEqual({
+      host: 'profile',
+      port: 3002,
+    });
+
+    process.env.SERVICE_PROFILE_HOST = 'profile-internal';
+    process.env.SERVICE_PROFILE_PORT = '43002';
+    expect(loadConfig().services?.profile).toEqual({
+      host: 'profile-internal',
+      port: 43002,
+    });
+  });
+
+  it('loads the Permissions participant target with environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.permissions).toEqual({
+      host: 'permissions',
+      port: 3012,
+    });
+    process.env.SERVICE_PERMISSIONS_HOST = 'permissions-internal';
+    process.env.SERVICE_PERMISSIONS_PORT = '43012';
+    expect(loadConfig().services?.permissions).toEqual({
+      host: 'permissions-internal',
+      port: 43012,
+    });
+  });
+
+  it('loads the Social participant target with environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.social).toEqual({
+      host: 'social',
+      port: 3003,
+    });
+    process.env.SERVICE_SOCIAL_HOST = 'social-internal';
+    process.env.SERVICE_SOCIAL_PORT = '43003';
+    expect(loadConfig().services?.social).toEqual({
+      host: 'social-internal',
+      port: 43003,
+    });
+  });
+
+  it('loads the Forum participant target from defaults and environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.forum).toEqual({ host: 'forum', port: 3015 });
+
+    process.env.SERVICE_FORUM_HOST = 'forum-internal';
+    process.env.SERVICE_FORUM_PORT = '43015';
+    expect(loadConfig().services?.forum).toEqual({
+      host: 'forum-internal',
+      port: 43015,
+    });
+  });
+
+  it('loads the Workspace participant target from defaults and environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.workspace).toEqual({
+      host: 'workspace',
+      port: 3024,
+    });
+
+    process.env.SERVICE_WORKSPACE_HOST = 'workspace-internal';
+    process.env.SERVICE_WORKSPACE_PORT = '43024';
+    expect(loadConfig().services?.workspace).toEqual({
+      host: 'workspace-internal',
+      port: 43024,
+    });
+  });
+
+  it('loads the App Configurator participant target with environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.app_configurator).toEqual({
+      host: 'app-configurator',
+      port: 3014,
+    });
+    process.env.SERVICE_APP_CONFIGURATOR_HOST = 'app-configurator-internal';
+    process.env.SERVICE_APP_CONFIGURATOR_PORT = '43014';
+    expect(loadConfig().services?.app_configurator).toEqual({
+      host: 'app-configurator-internal',
+      port: 43014,
+    });
+  });
+
+  it('loads the Chat Collector participant from defaults and environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.chat_collector).toEqual({
+      host: 'chat-collector',
+      port: 3007,
+    });
+    process.env.SERVICE_CHAT_COLLECTOR_HOST = 'chat-private';
+    process.env.SERVICE_CHAT_COLLECTOR_PORT = '43007';
+    expect(loadConfig().services?.chat_collector).toEqual({
+      host: 'chat-private',
+      port: 43007,
+    });
+  });
+
+  it('loads the Classifieds participant from defaults and environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.classifieds).toEqual({
+      host: 'classifieds',
+      port: 3017,
+    });
+    process.env.SERVICE_CLASSIFIEDS_HOST = 'classifieds-private';
+    process.env.SERVICE_CLASSIFIEDS_PORT = '43017';
+    expect(loadConfig().services?.classifieds).toEqual({
+      host: 'classifieds-private',
+      port: 43017,
+    });
   });
 
   it('loads yaml values and lets non-empty environment values override individual fields', async () => {
@@ -138,5 +284,16 @@ describe('authentication config oauth env loading', () => {
       }
       fs.rmSync(configDir, { recursive: true, force: true });
     }
+  });
+  it('defaults and overrides the Videos snapshot RPC endpoint', async () => {
+    const { default: loadConfig } = await import('./config');
+    const initial = loadConfig();
+    expect(initial.services?.videos).toEqual({ host: 'videos', port: 3022 });
+    process.env.SERVICE_VIDEOS_HOST = 'private-videos';
+    process.env.SERVICE_VIDEOS_PORT = '43022';
+    expect(loadConfig().services?.videos).toEqual({
+      host: 'private-videos',
+      port: 43022,
+    });
   });
 });

@@ -15,6 +15,10 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { TokenIssuerService } from '@optimistic-tanuki/auth-domain';
 import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
 import { EmailAuthService } from './email-auth.service';
+import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
+import { GuardianPermissionEntity } from '../guardian-permissions/entities/guardian-permission.entity';
+import { GuardianPolicyNoticeService } from '../guardian-permissions/guardian-policy-notice.service';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
 
 jest.mock('../config', () => {
   const mockConfig = {
@@ -32,6 +36,7 @@ jest.mock('../config', () => {
       secret: 'testsecret',
       expiresIn: '1h',
     },
+    auth: { jwt_secret: 'test-deletion-receipt-secret-at-least-32-characters' },
     bcrypt: {
       saltRounds: 10,
     },
@@ -72,6 +77,8 @@ describe('AppModule', () => {
       .useValue({}) // Mock OAuthService
       .overrideProvider(EmailAuthService)
       .useValue({})
+      .overrideProvider(GuardianPolicyNoticeService)
+      .useValue({})
       .overrideProvider(getRepositoryToken(UserEntity))
       .useValue({ target: UserEntity })
       .overrideProvider(getRepositoryToken(TokenEntity))
@@ -82,6 +89,10 @@ describe('AppModule', () => {
       .useValue({ target: OAuthProviderEntity })
       .overrideProvider(getRepositoryToken(AuthActionTokenEntity))
       .useValue({ target: AuthActionTokenEntity })
+      .overrideProvider(getRepositoryToken(GuardianPermissionEntity))
+      .useValue({ target: GuardianPermissionEntity })
+      .overrideProvider(getRepositoryToken(GuardianPolicyNoticeEntity))
+      .useValue({ target: GuardianPolicyNoticeEntity })
       .overrideProvider('AUTHENTICATION_CONNECTION')
       .useValue({
         // Mock DatabaseModule
@@ -92,6 +103,13 @@ describe('AppModule', () => {
           },
         }),
         close: jest.fn().mockResolvedValue({}),
+        getMetadata: jest.fn(() => ({
+          tableName: 'guardian_policy_notice',
+          findColumnWithPropertyName: () => ({
+            databaseName: 'createdAt',
+            type: 'timestamptz',
+          }),
+        })),
         getRepository: jest.fn((entity) => ({ target: entity })),
       })
       .compile();
@@ -115,6 +133,9 @@ describe('AppModule', () => {
   it('should provide the auth token issuer', () => {
     const tokenIssuer = appModule.get<TokenIssuerService>(TokenIssuerService);
     expect(tokenIssuer).toBeInstanceOf(TokenIssuerService);
+    expect(appModule.get(ProfileOwnershipVerifier)).toBeInstanceOf(
+      ProfileOwnershipVerifier
+    );
   });
 
   it('should load DatabaseModule with correct configuration', () => {

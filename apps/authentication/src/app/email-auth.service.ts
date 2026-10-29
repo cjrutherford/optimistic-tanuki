@@ -15,6 +15,9 @@ import {
   AuthActionPurpose,
   AuthActionTokenEntity,
 } from '../email-auth/entities/auth-action-token.entity';
+import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
+import { AccountDeletionFenceService } from '../account-deletion/account-deletion-fence.service';
 
 export interface AuthEmailContext {
   appId: string;
@@ -45,7 +48,10 @@ export class EmailAuthService {
     private readonly email: EmailService,
     @Inject('EMAIL_PASSWORD_TOOLS')
     private readonly passwordTools: PasswordTools,
-    private readonly tokenIssuer: TokenIssuerService
+    private readonly tokenIssuer: TokenIssuerService,
+    private readonly guardianPermissions: GuardianPermissionService,
+    private readonly profileOwnershipVerifier: ProfileOwnershipVerifier,
+    private readonly accountDeletionFence: AccountDeletionFenceService
   ) {}
 
   async requestAction(
@@ -143,9 +149,26 @@ export class EmailAuthService {
   async consumeLoginAction(
     rawToken: string,
     purpose: AuthActionPurpose.Verification | AuthActionPurpose.MagicLink,
-    profileId?: string
+    profileId?: string,
+    appId?: string
   ) {
     const action = await this.inspect(rawToken, purpose);
+    await this.accountDeletionFence.assertActiveAccount(action.user.id);
+    if (appId && appId !== action.appId) {
+      throw new RpcException({ code: 'ACTION_APP_MISMATCH' });
+    }
+    // Check before consuming the one-time action or allowing profile creation.
+    // A denied age-gated login can then use password assessment or an approved
+    // guardian link without losing this email action.
+    await this.guardianPermissions.assertAccountAccess(
+      action.user.id,
+      action.appId
+    );
+    const selectedProfileId =
+      await this.profileOwnershipVerifier.resolveSelection(
+        action.user.id,
+        profileId
+      );
     const consumed = await this.actions.update(
       { id: action.id, consumedAt: IsNull() },
       { consumedAt: new Date() }
@@ -155,7 +178,7 @@ export class EmailAuthService {
     }
     action.user.emailVerifiedAt ||= new Date();
     await this.users.save(action.user);
-    if (!profileId) {
+    if (selectedProfileId === undefined) {
       return {
         message: 'Email action consumed',
         code: 0,
@@ -171,14 +194,15 @@ export class EmailAuthService {
         lastName: action.user.lastName,
         email: action.user.email,
       },
-      profileId
+      selectedProfileId,
+      action.appId
     );
     await this.sessions.save({
       tokenData: session,
       userId: action.user.id,
       user: action.user,
       revoked: false,
-      profileId: profileId || null,
+      profileId: selectedProfileId || null,
     } as any);
     return {
       message: 'Authentication successful',
@@ -191,6 +215,7 @@ export class EmailAuthService {
 
   async confirmVerification(rawToken: string) {
     const action = await this.inspect(rawToken, AuthActionPurpose.Verification);
+    await this.accountDeletionFence.assertActiveAccount(action.user.id);
     const consumed = await this.actions.update(
       { id: action.id, consumedAt: IsNull() },
       { consumedAt: new Date() }
@@ -218,6 +243,7 @@ export class EmailAuthService {
       rawToken,
       AuthActionPurpose.PasswordReset
     );
+    await this.accountDeletionFence.assertActiveAccount(action.user.id);
     const consumed = await this.actions.update(
       { id: action.id, consumedAt: IsNull() },
       { consumedAt: new Date() }

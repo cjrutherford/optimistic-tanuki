@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const suites = [
   ['client-interface-e2e', 8080],
@@ -102,4 +102,25 @@ test('isolated UI E2E raises credential throttles without changing production de
     /gateway:[\s\S]*?THROTTLE_LOGIN_LIMIT:\s*100/,
     'the isolated gateway must support repeated independent E2E logins'
   );
+});
+
+test('E2E authentication and gateway use matching sufficiently long test secrets', () => {
+  const composeFiles = [
+    ...readdirSync('e2e')
+      .filter((name) => /^docker-compose.*\.yaml$/.test(name))
+      .map((name) => `e2e/${name}`),
+    'apps/authentication-e2e/src/support/docker-compose.authentication-e2e.yaml',
+    'apps/gateway-e2e/src/support/docker-compose.gateway-e2e.yaml',
+  ];
+  let expected;
+  for (const path of composeFiles) {
+    const content = readFileSync(path, 'utf8');
+    for (const match of content.matchAll(/^\s*JWT_SECRET:\s*(\S+)\s*$/gm)) {
+      const secret = match[1];
+      assert.ok(secret.length >= 32, `${path} test JWT secret is too short`);
+      expected ??= secret;
+      assert.equal(secret, expected, `${path} test JWT secret does not match`);
+    }
+  }
+  assert.ok(expected, 'expected at least one E2E JWT configuration');
 });

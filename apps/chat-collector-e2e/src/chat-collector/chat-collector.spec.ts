@@ -29,9 +29,16 @@ describe('Chat Collector Microservice E2E Tests', () => {
   });
 
   it('persists a posted message in its conversation', async () => {
+    const participants = ['test-sender-id', 'test-recipient-id'];
+    const conversation = await firstValueFrom(
+      client.send(
+        { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
+        { participantIds: participants }
+      )
+    );
     const messageData = {
       id: '123e4567-e89b-12d3-a456-426614174000',
-      conversationId: '123e4567-e89b-12d3-a456-426614174001',
+      conversationId: conversation.id,
       senderName: 'Test Sender',
       senderId: 'test-sender-id',
       recipientId: ['test-recipient-id'],
@@ -52,7 +59,10 @@ describe('Chat Collector Microservice E2E Tests', () => {
       const messages = await firstValueFrom(
         client.send(
           { cmd: ChatCommands.GET_MESSAGES },
-          { conversationId: messageData.conversationId }
+          {
+            conversationId: messageData.conversationId,
+            requestingProfileId: messageData.senderId,
+          }
         )
       );
       expect(messages).toEqual([

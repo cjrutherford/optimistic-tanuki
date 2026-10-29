@@ -5,6 +5,7 @@ import {
   ConversationDto,
   ConversationType,
   CreateCommunityChatDto,
+  DeleteOwnedCommunityConversationDto,
   GetConversationDto,
   GetConversationsDto,
   GetMessagesDto,
@@ -85,6 +86,23 @@ const COVERED: Array<{
     invalidProps: ['ownerId'],
   },
   {
+    pattern: ChatCommands.DELETE_OWNED_COMMUNITY_CONVERSATION,
+    dto: DeleteOwnedCommunityConversationDto,
+    valid: {
+      conversationId: '78c973a8-0d2b-4a59-b8b0-83b7a0a0c1d1',
+      communityId: '67c973a8-0d2b-4a59-b8b0-83b7a0a0c1d2',
+      actorProfileId: 'owner-profile',
+      appScope: 'towne-square',
+    },
+    invalid: {
+      conversationId: 'not-a-uuid',
+      communityId: '67c973a8-0d2b-4a59-b8b0-83b7a0a0c1d2',
+      actorProfileId: '',
+      appScope: ' ',
+    },
+    invalidProps: ['actorProfileId', 'appScope', 'conversationId'],
+  },
+  {
     pattern: ChatCommands.GET_OR_CREATE_PROJECT_CHAT,
     dto: GetOrCreateProjectChatDto,
     valid: {
@@ -107,6 +125,17 @@ const KNOWN_UNIMPLEMENTED = [
   'ADD_TO_COMMUNITY_CHAT',
   'REMOVE_FROM_COMMUNITY_CHAT',
   'CREATE_ADDITIONAL_CHAT_ROOM',
+];
+/** Internal security RPC: contract shape is an exported interface and its
+ * boundary validator is implemented in chat-collector rather than a DTO. */
+const INTERNAL = [
+  'FENCE_ACCOUNT_DELETION',
+  'ERASE_ACCOUNT_DELETION',
+  'READBACK_ACCOUNT_DELETION',
+  'GET_PRESENCE_AUDIENCE',
+  'OPEN_ACCOUNT_EXPORT_CAPTURE',
+  'READ_ACCOUNT_EXPORT_CAPTURE',
+  'RELEASE_ACCOUNT_EXPORT_CAPTURE',
 ];
 
 const propsOf = (errors: ValidationError[]) =>
@@ -133,6 +162,7 @@ describe('chat-contract-parity', () => {
       ...KNOWN_UNIMPLEMENTED.map(
         (k) => (ChatCommands as Record<string, string>)[k]
       ),
+      ...INTERNAL.map((k) => (ChatCommands as Record<string, string>)[k]),
     ]);
     expect(commandValues).toEqual(expected);
     for (const key of KNOWN_UNIMPLEMENTED) {

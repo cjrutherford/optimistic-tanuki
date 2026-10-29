@@ -38,6 +38,12 @@ export class UpdateProfileDto {
   @IsUUID()
   userId?: string;
 
+  @ApiPropertyOptional({ description: 'App scope associated with the profile' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  appScope?: string;
+
   @ApiPropertyOptional({ description: 'URL of the profile picture' })
   @IsOptional()
   @IsString()

@@ -1,4 +1,6 @@
 import {
+  BadGatewayException,
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -6,6 +8,8 @@ import {
   Get,
   Inject,
   Logger,
+  NotFoundException,
+  NotImplementedException,
   Param,
   Post,
   Put,
@@ -42,6 +46,10 @@ import {
 import { PersonaTelosDto } from '@optimistic-tanuki/telos-contracts';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
+import {
+  GuardianProfileFields,
+  GuardianProfileRequestDto,
+} from '@optimistic-tanuki/profile-contracts';
 import { firstValueFrom, map } from 'rxjs';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
@@ -94,6 +102,89 @@ export class ProfileController {
     return authenticatedProfileId;
   }
 
+  private verifiedGuardianApp(
+    user: UserDetails
+  ): 'client-interface' | 'local-hub' {
+    if (
+      !user?.userId ||
+      !user.appId ||
+      !['client-interface', 'local-hub'].includes(user.appId)
+    ) {
+      throw new ForbiddenException('Guardian profile access is unavailable');
+    }
+    return user.appId as 'client-interface' | 'local-hub';
+  }
+
+  private async sendGuardianProfileRequest(
+    command: string,
+    request: GuardianProfileRequestDto
+  ) {
+    try {
+      return await firstValueFrom(this.client.send({ cmd: command }, request));
+    } catch (error) {
+      const details =
+        typeof (error as any)?.getError === 'function'
+          ? (error as any).getError()
+          : error;
+      if (
+        details?.statusCode === 403 ||
+        details?.code === 'GUARDIAN_PROFILE_ACCESS_DENIED'
+      ) {
+        throw new ForbiddenException('Guardian profile access is unavailable');
+      }
+      if (
+        details?.statusCode === 400 ||
+        details?.code === 'INVALID_GUARDIAN_PROFILE_UPDATE'
+      ) {
+        throw new BadRequestException(
+          'The profile update contains unsupported fields'
+        );
+      }
+      throw error;
+    }
+  }
+
+  @Get('dependents')
+  async listGuardianDependents(@User() user: UserDetails) {
+    const appId = this.verifiedGuardianApp(user);
+    const dependents = await firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.ListGuardianDependents },
+        { guardianUserId: user.userId }
+      )
+    );
+    const listed = await Promise.all(
+      (Array.isArray(dependents) ? dependents : []).map(
+        async (dependent: { dependentUserId: string; status: string }) => {
+          const profile = await firstValueFrom(
+            this.client.send(
+              { cmd: ProfileCommands.GetGuardianConsoleProfile },
+              { userId: dependent.dependentUserId, appScope: appId }
+            )
+          );
+          if (
+            !profile?.id ||
+            profile.userId !== dependent.dependentUserId ||
+            profile.appScope !== appId
+          )
+            return null;
+          return {
+            dependentUserId: dependent.dependentUserId,
+            profileId: profile.id,
+            profileName: profile.profileName || 'Dependent account',
+            profilePic: profile.profilePic || '',
+            coverPic: profile.coverPic || '',
+            status: 'approved' as const,
+          };
+        }
+      )
+    );
+    return listed.filter(
+      (dependent): dependent is NonNullable<typeof dependent> =>
+        dependent !== null
+    );
+  }
+
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Create a new profile' })
   @ApiResponse({
@@ -116,10 +207,20 @@ export class ProfileController {
   })
   async createProfile(
     @Body() createProfileDto: CreateProfileDto & { appId?: string },
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user: UserDetails
   ) {
+    if (!createProfileDto.userId || createProfileDto.userId !== user?.userId) {
+      throw new ForbiddenException(
+        'A profile can only be created for the authenticated user'
+      );
+    }
+    const authenticatedProfileDto = {
+      ...createProfileDto,
+      userId: user.userId,
+    };
     const createdProfile: ProfileDto = await firstValueFrom(
-      this.client.send({ cmd: ProfileCommands.Create }, createProfileDto)
+      this.client.send({ cmd: ProfileCommands.Create }, authenticatedProfileDto)
     );
     this.l.log(`Profile created with ID: ${createdProfile.id}`);
     if (['forgeofwill'].includes(createProfileDto.appId))
@@ -139,7 +240,7 @@ export class ProfileController {
     // Initialize permissions for the profile
     await this.initializeProfilePermissions(
       createdProfile,
-      createProfileDto.userId,
+      user.userId,
       appScope
     );
 
@@ -148,7 +249,7 @@ export class ProfileController {
       const issueResp: any = await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.Issue },
-          { userId: createProfileDto.userId, profileId: createdProfile.id }
+          { userId: user.userId, profileId: createdProfile.id }
         )
       );
       const newToken = issueResp?.data?.newToken || issueResp?.newToken || null;
@@ -385,6 +486,95 @@ export class ProfileController {
     }
   }
 
+  @Get('dependents/:profileId')
+  async getDependentProfile(
+    @Param('profileId') profileId: string,
+    @User() user: UserDetails
+  ) {
+    const appId = this.verifiedGuardianApp(user);
+    const profile = await this.sendGuardianProfileRequest(
+      ProfileCommands.GetGuardian,
+      {
+        profileId,
+        actorUserId: user.userId,
+        appId,
+        operation: 'profile.view',
+      }
+    );
+    return this.guardianProfileView(profile);
+  }
+
+  private guardianProfileView(profile: any) {
+    return {
+      id: profile.id,
+      profileName: profile.profileName || '',
+      profilePic: profile.profilePic || '',
+      coverPic: profile.coverPic || '',
+      bio: profile.bio || '',
+      description: profile.description || '',
+      location: profile.location || '',
+      occupation: profile.occupation || '',
+      interests: profile.interests || '',
+      skills: profile.skills || '',
+    };
+  }
+
+  @Put('dependents/:profileId')
+  async updateDependentProfile(
+    @Param('profileId') profileId: string,
+    @Body() body: UpdateProfileDto & Record<string, unknown>,
+    @User() user: UserDetails
+  ) {
+    const appId = this.verifiedGuardianApp(user);
+    const raw = body as Record<string, unknown>;
+    const protectedFields = [
+      'id',
+      'userId',
+      'appScope',
+      'actorUserId',
+      'dependentUserId',
+      'dateOfBirth',
+      'ageEligibilityEndsAt',
+    ];
+    if (
+      protectedFields.some((field) =>
+        Object.prototype.hasOwnProperty.call(raw, field)
+      )
+    ) {
+      throw new BadRequestException(
+        'The profile update contains unsupported fields'
+      );
+    }
+    const allowed = new Set<string>(GuardianProfileFields);
+    if (Object.keys(raw).some((field) => !allowed.has(field))) {
+      throw new BadRequestException(
+        'The profile update contains unsupported fields'
+      );
+    }
+    const updates = Object.fromEntries(
+      Object.entries(raw).filter(
+        ([key, value]) =>
+          allowed.has(key) && (value === null || typeof value === 'string')
+      )
+    );
+    if (Object.keys(updates).length !== Object.keys(raw).length) {
+      throw new BadRequestException(
+        'The profile update contains unsupported fields'
+      );
+    }
+    const profile = await this.sendGuardianProfileRequest(
+      ProfileCommands.UpdateGuardian,
+      {
+        profileId,
+        actorUserId: user.userId,
+        appId,
+        operation: 'profile.manage',
+        updates,
+      }
+    );
+    return this.guardianProfileView(profile);
+  }
+
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get a profile by ID (legacy)' })
   @ApiResponse({
@@ -431,27 +621,114 @@ export class ProfileController {
   @ApiResponse({ status: 404, description: 'Profile not found.' })
   @Put(':id')
   @RequirePermissions('profile.update')
-  updateProfile(
+  async updateProfile(
     @Param('id') id: string,
-    @Body() updateProfileDto: UpdateProfileDto
+    @Body() updateProfileDto: UpdateProfileDto,
+    @User() user: UserDetails
   ) {
-    return this.client.send(
-      { cmd: ProfileCommands.Update },
-      { id, ...updateProfileDto }
+    if (!user?.userId || !user?.appId) {
+      throw new ForbiddenException(
+        'Authenticated owner and app scope are required'
+      );
+    }
+    const profile: ProfileDto = await firstValueFrom(
+      this.client.send({ cmd: ProfileCommands.Get }, { id })
+    );
+    if (!profile) throw new NotFoundException('Profile not found');
+    const raw = updateProfileDto as UpdateProfileDto & Record<string, unknown>;
+    if (raw.id && raw.id !== id) {
+      throw new BadRequestException(
+        'Profile ID must match the requested resource'
+      );
+    }
+    if (
+      profile.userId !== user.userId ||
+      profile.appScope !== this.profileScopeForApp(user.appId) ||
+      (updateProfileDto.userId && updateProfileDto.userId !== profile.userId) ||
+      (Object.prototype.hasOwnProperty.call(raw, 'appScope') &&
+        raw.appScope !== profile.appScope)
+    ) {
+      throw new ForbiddenException(
+        'Cannot update a profile outside the authenticated owner and app scope'
+      );
+    }
+    const fields = { ...updateProfileDto } as Record<string, unknown>;
+    delete fields.id;
+    delete fields.userId;
+    delete fields.appScope;
+    delete fields.actorUserId;
+    delete fields.dependentUserId;
+    return firstValueFrom(
+      this.client.send({ cmd: ProfileCommands.Update }, { id, ...fields })
     );
   }
 
+  private profileScopeForApp(appId: string): string {
+    // Fin Commander authenticates with its app id, while profile permissions
+    // and profile rows use the finance scope.
+    return appId === 'fin-commander' ? 'finance' : appId;
+  }
+
   @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Delete a profile by ID' })
+  @ApiOperation({ summary: 'Delete an owned app-scoped profile by ID' })
   @ApiResponse({
-    status: 200,
-    description: 'The profile has been successfully deleted.',
+    status: 501,
+    description:
+      'Profile deletion is unavailable until lifecycle support is implemented.',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'The profile is outside the authenticated owner and app scope.',
   })
   @ApiResponse({ status: 404, description: 'Profile not found.' })
+  @ApiResponse({
+    status: 502,
+    description: 'Profile ownership could not be verified.',
+  })
   @Delete(':id')
   @RequirePermissions('profile.delete')
-  deleteProfile(@Param('id') id: string) {
-    return this.client.send({ cmd: ProfileCommands.Delete }, id);
+  async deleteProfile(
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @User() user: UserDetails
+  ): Promise<never> {
+    if (!user?.userId || !appScope) {
+      throw new ForbiddenException(
+        'Authenticated owner and app scope are required'
+      );
+    }
+
+    let profile: ProfileDto;
+    try {
+      profile = await firstValueFrom(
+        this.client.send({ cmd: ProfileCommands.Get }, { id })
+      );
+    } catch {
+      throw new BadGatewayException('Profile ownership could not be verified');
+    }
+
+    if (!profile) {
+      throw new NotFoundException('Profile not found');
+    }
+    if (!profile.userId || profile.userId !== user.userId) {
+      throw new ForbiddenException(
+        'Profile is not owned by the authenticated user'
+      );
+    }
+    if (
+      !profile.appScope ||
+      profile.appScope === 'global' ||
+      profile.appScope !== appScope
+    ) {
+      throw new ForbiddenException('Profile is outside the current app scope');
+    }
+
+    // The profile service has no supported delete handler, and dependent-data
+    // retention has not been approved. Never issue the existing unhandled RPC.
+    throw new NotImplementedException(
+      'Profile deletion is unavailable until lifecycle support is implemented'
+    );
   }
 
   @UseGuards(AuthGuard)

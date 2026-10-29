@@ -7,6 +7,9 @@ import { Comment } from '../../entities/comment.entity';
 import { Repository } from 'typeorm';
 import { CreatePostDto, UpdatePostDto } from '@optimistic-tanuki/models';
 import { CommunityService } from './community.service';
+import { of } from 'rxjs';
+import { AssetCommands } from '@optimistic-tanuki/constants';
+import { RpcException } from '@nestjs/microservices';
 
 describe('PostService', () => {
   let service: PostService;
@@ -44,6 +47,7 @@ describe('PostService', () => {
           provide: CommunityService,
           useValue: {
             findOne: jest.fn(),
+            isMember: jest.fn(),
           },
         },
       ],
@@ -59,6 +63,18 @@ describe('PostService', () => {
     commentRepo = module.get(getRepositoryToken(Comment)) as jest.Mocked<
       Repository<Comment>
     >;
+    const transactionManager = {
+      getRepository: jest.fn((entity) =>
+        entity === Post
+          ? postRepo
+          : entity === Comment
+          ? commentRepo
+          : attachmentRepo
+      ),
+    };
+    (postRepo as any).manager = {
+      transaction: jest.fn((work) => work(transactionManager)),
+    };
   });
 
   it('should be defined', () => {
@@ -86,6 +102,821 @@ describe('PostService', () => {
     );
     expect(postRepo.save).toHaveBeenCalledWith(post);
     expect(result).toBe(post);
+  });
+
+  it('defaults community posts to members and records explicit public choice only when selected', async () => {
+    const communityService = (service as any).communityService;
+    communityService.isMember.mockResolvedValue(true);
+    postRepo.create.mockImplementation((value) => value as Post);
+    postRepo.save.mockImplementation(async (value) => value as Post);
+
+    await service.create({
+      title: 'Members',
+      content: 'hello',
+      userId: 'user1',
+      profileId: 'profile1',
+      communityId: 'community1',
+    } as CreatePostDto);
+
+    expect(postRepo.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        visibility: 'community',
+        publicAudienceExplicit: false,
+      })
+    );
+
+    await service.create({
+      title: 'Public',
+      content: 'hello',
+      userId: 'user1',
+      profileId: 'profile1',
+      communityId: 'community1',
+      visibility: 'public',
+    } as CreatePostDto);
+
+    expect(postRepo.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        visibility: 'public',
+        publicAudienceExplicit: true,
+      })
+    );
+  });
+
+  it('finds exact asset references in all posts and derives their current audience', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    postRepo.find.mockResolvedValue([
+      {
+        content: `<img src="https://local/api/asset/${assetId}">`,
+        profileId: 'author-profile',
+        visibility: 'followers',
+        communityId: null,
+      } as Post,
+      {
+        content: `<img src="https://local/api/asset/${assetId}-other">`,
+        profileId: 'wrong-match',
+        visibility: 'followers',
+        communityId: null,
+      } as Post,
+      {
+        content: `<img src="https://local/api/asset/${assetId}">`,
+        profileId: 'author-profile',
+        visibility: 'public',
+        communityId: 'private-community',
+      } as Post,
+      {
+        content: `<img src="https://local/api/asset/${assetId}">`,
+        profileId: 'foreign-author',
+        visibility: 'followers',
+        communityId: 'foreign-private-community',
+      } as Post,
+    ]);
+    (service as any).communityService.findOne.mockResolvedValue({
+      id: 'private-community',
+      isPrivate: true,
+    });
+
+    await expect(
+      service.findAssetAudienceReferences(assetId, 'author-profile')
+    ).resolves.toEqual({
+      restrictions: [{ type: 'followers', profileId: 'author-profile' }],
+      communityIds: ['private-community'],
+    });
+    expect((service as any).communityService.findOne).toHaveBeenCalledTimes(1);
+  });
+
+  it('derives the current audience from existing attachment filePath URLs', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    postRepo.find.mockResolvedValue([]);
+    commentRepo.find.mockResolvedValue([]);
+    attachmentRepo.find.mockResolvedValue([
+      {
+        filePath: `https://media.local/api/asset/${assetId}`,
+        post: {
+          profileId: 'author-profile',
+          visibility: 'followers',
+          communityId: null,
+        },
+      } as Attachment,
+    ]);
+
+    await expect(
+      service.findAssetAudienceReferences(assetId, 'author-profile')
+    ).resolves.toEqual({
+      restrictions: [{ type: 'followers', profileId: 'author-profile' }],
+      communityIds: [],
+    });
+  });
+
+  it('latches attachment URL references before creating a restricted post', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const dto = {
+      title: 'Post with attachment',
+      content: 'text',
+      userId: 'author-user',
+      profileId: 'author-profile',
+      visibility: 'followers',
+      attachmentIds: ['attachment-1'],
+    } as CreatePostDto;
+    const post = { id: 'post-1', ...dto } as Post;
+    postRepo.create.mockReturnValue(post);
+    postRepo.save.mockResolvedValue(post);
+    attachmentRepo.findBy.mockResolvedValue([
+      { filePath: `/api/asset/${assetId}` } as Attachment,
+    ]);
+    (service as any).assetService = {
+      send: jest.fn().mockReturnValue(
+        of({
+          profileId: 'author-profile',
+          audienceRestrictions: [],
+          audienceCommunityIds: [],
+        })
+      ),
+    };
+
+    await service.create(dto);
+
+    expect(post.attachments).toEqual([{ filePath: `/api/asset/${assetId}` }]);
+    expect((service as any).assetService.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      {
+        id: assetId,
+        restrictions: [{ type: 'followers', profileId: 'author-profile' }],
+      }
+    );
+    expect(
+      (service as any).assetService.send.mock.invocationCallOrder.at(-1)
+    ).toBeLessThan(postRepo.save.mock.invocationCallOrder[0]);
+  });
+
+  it('latches scheduled post content and attachment URLs before persisting', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const scheduled = {
+      id: 'scheduled-post',
+      title: 'Scheduled',
+      content: `<img src="/api/asset/${assetId}">`,
+      profileId: 'author-profile',
+      userId: 'author-user',
+      visibility: 'followers',
+      isScheduled: true,
+      attachments: [{ filePath: `/asset/${assetId}` }],
+    } as Post;
+    postRepo.create.mockReturnValue(scheduled);
+    postRepo.save.mockResolvedValue(scheduled);
+    attachmentRepo.findBy.mockResolvedValue(scheduled.attachments);
+    attachmentRepo.find.mockResolvedValue([]);
+    const assetClient = {
+      send: jest.fn().mockReturnValue(
+        of({
+          profileId: 'author-profile',
+          audienceRestrictions: [],
+          audienceCommunityIds: [],
+        })
+      ),
+    };
+    (service as any).assetService = assetClient;
+
+    await service.createScheduledPost({
+      title: scheduled.title,
+      content: scheduled.content,
+      profileId: scheduled.profileId,
+      userId: scheduled.userId,
+      scheduledAt: new Date(),
+      visibility: 'followers',
+      attachmentIds: ['attachment-id'],
+    });
+
+    expect(assetClient.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      {
+        id: assetId,
+        restrictions: [{ type: 'followers', profileId: 'author-profile' }],
+      }
+    );
+    expect(assetClient.send.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      postRepo.save.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('latches existing scheduled references under the parent lock before publishing', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const scheduled = {
+      id: 'scheduled-post',
+      content: `<img src="/asset/${assetId}">`,
+      profileId: 'author-profile',
+      userId: 'author-user',
+      visibility: 'followers',
+      isScheduled: true,
+      communityId: null,
+    } as Post;
+    postRepo.findOne.mockResolvedValue(scheduled);
+    postRepo.update.mockResolvedValue({ affected: 1, raw: [] });
+    attachmentRepo.find.mockResolvedValue([]);
+    commentRepo.find.mockResolvedValue([]);
+    const assetClient = {
+      send: jest.fn().mockReturnValue(
+        of({
+          profileId: 'author-profile',
+          audienceRestrictions: [],
+          audienceCommunityIds: [],
+        })
+      ),
+    };
+    (service as any).assetService = assetClient;
+
+    await service.publishScheduledPost(scheduled.id);
+
+    expect(postRepo.findOne).toHaveBeenCalledWith({
+      where: { id: scheduled.id },
+      lock: { mode: 'pessimistic_write' },
+    });
+    expect(assetClient.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      {
+        id: assetId,
+        restrictions: [{ type: 'followers', profileId: 'author-profile' }],
+      }
+    );
+    expect(assetClient.send.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      postRepo.update.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('locks and latches both audiences when updating a scheduled post', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const scheduled = {
+      id: 'scheduled-post',
+      content: `<img src="/asset/${assetId}">`,
+      profileId: 'author-profile',
+      userId: 'author-user',
+      visibility: 'public',
+      isScheduled: true,
+      communityId: null,
+    } as Post;
+    postRepo.findOne.mockResolvedValue(scheduled);
+    postRepo.update.mockResolvedValue({ affected: 1, raw: [] });
+    attachmentRepo.find.mockResolvedValue([]);
+    commentRepo.find.mockResolvedValue([]);
+    const assetClient = {
+      send: jest.fn().mockReturnValue(
+        of({
+          profileId: 'author-profile',
+          audienceRestrictions: [],
+          audienceCommunityIds: [],
+        })
+      ),
+    };
+    (service as any).assetService = assetClient;
+
+    await service.updateScheduledPost(scheduled.id, {
+      visibility: 'followers',
+    });
+
+    expect(postRepo.findOne).toHaveBeenCalledWith({
+      where: { id: scheduled.id },
+      lock: { mode: 'pessimistic_write' },
+    });
+    expect(assetClient.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      {
+        id: assetId,
+        restrictions: [{ type: 'followers', profileId: 'author-profile' }],
+      }
+    );
+    expect(assetClient.send.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      postRepo.update.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('rejects a foreign-owned asset in a restricted scheduled post without adding an owner restriction', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const scheduled = {
+      id: 'scheduled-post',
+      content: `<img src="/asset/${assetId}">`,
+      profileId: 'author-profile',
+      userId: 'author-user',
+      visibility: 'followers',
+      isScheduled: true,
+    } as Post;
+    postRepo.create.mockReturnValue(scheduled);
+    attachmentRepo.findBy.mockResolvedValue([]);
+    const assetClient = {
+      send: jest.fn().mockReturnValue(
+        of({
+          profileId: 'foreign-profile',
+          audienceRestrictions: [],
+          audienceCommunityIds: [],
+        })
+      ),
+    };
+    (service as any).assetService = assetClient;
+
+    await expect(
+      service.createScheduledPost({
+        title: 'Scheduled',
+        content: scheduled.content,
+        profileId: scheduled.profileId,
+        userId: scheduled.userId,
+        scheduledAt: new Date(),
+        visibility: 'followers',
+      })
+    ).rejects.toThrow(
+      'Restricted posts cannot contain another profile’s image'
+    );
+    expect(assetClient.send).not.toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      expect.anything()
+    );
+    expect(postRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed asset ids before building a reference query', async () => {
+    await expect(
+      service.findAssetAudienceReferences('asset-id', 'author-profile')
+    ).rejects.toThrow('Invalid asset id');
+    expect(postRepo.find).not.toHaveBeenCalled();
+  });
+
+  it('persists the followers restriction before deleting a private post reference', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const assetClient = {
+      send: jest.fn().mockReturnValue(of({ profileId: 'author-profile' })),
+    };
+    (service as any).assetService = assetClient;
+    postRepo.findOne.mockResolvedValue({
+      id: 'private-post',
+      userId: 'author-user',
+      profileId: 'author-profile',
+      visibility: 'followers',
+      content: `<img src="/asset/${assetId}">`,
+      communityId: null,
+    } as Post);
+    postRepo.delete.mockResolvedValue({ affected: 1, raw: [] });
+    commentRepo.delete.mockResolvedValue({ affected: 0, raw: [] });
+    attachmentRepo.delete.mockResolvedValue({ affected: 0, raw: [] });
+
+    await service.remove('private-post', 'author-user', 'author-profile');
+
+    expect(assetClient.send).toHaveBeenCalledWith(
+      { cmd: 'asset.addAudienceRestrictions' },
+      {
+        id: assetId,
+        restrictions: [{ type: 'followers', profileId: 'author-profile' }],
+      }
+    );
+    expect(assetClient.send.mock.invocationCallOrder[0]).toBeLessThan(
+      postRepo.delete.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('latches child-comment and attachment media before deleting their parent', async () => {
+    const commentAssetId = '123e4567-e89b-42d3-a456-426614174000';
+    const attachmentAssetId = '123e4567-e89b-42d3-a456-426614174001';
+    const post = {
+      id: 'private-post',
+      userId: 'author-user',
+      profileId: 'author-profile',
+      visibility: 'followers',
+      content: 'parent body',
+      communityId: null,
+    } as Post;
+    postRepo.findOne.mockResolvedValue(post);
+    commentRepo.find.mockResolvedValue([
+      {
+        profileId: 'commenter-profile',
+        content: `<img src="/api/asset/${commentAssetId}">`,
+      } as Comment,
+    ]);
+    attachmentRepo.find.mockResolvedValue([
+      { filePath: `/api/asset/${attachmentAssetId}` } as Attachment,
+    ]);
+    commentRepo.delete.mockResolvedValue({ affected: 1, raw: [] });
+    attachmentRepo.delete.mockResolvedValue({ affected: 1, raw: [] });
+    postRepo.delete.mockResolvedValue({ affected: 1, raw: [] });
+    const assetClient = {
+      send: jest.fn((_pattern: unknown, payload: { id: string }) =>
+        of({
+          profileId:
+            payload.id === commentAssetId
+              ? 'commenter-profile'
+              : 'author-profile',
+          audienceRestrictions: [],
+        })
+      ),
+    };
+    (service as any).assetService = assetClient;
+
+    await service.remove(post.id, 'author-user', 'author-profile');
+
+    expect(assetClient.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      {
+        id: attachmentAssetId,
+        restrictions: [{ type: 'followers', profileId: 'author-profile' }],
+      }
+    );
+    expect(assetClient.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      {
+        id: commentAssetId,
+        restrictions: [{ type: 'followers', profileId: 'author-profile' }],
+      }
+    );
+    expect(assetClient.send.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      postRepo.delete.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('does not apply community media restrictions to comment images on personal public posts', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const post = {
+      id: 'personal-public-post',
+      userId: 'author-user',
+      profileId: 'author-profile',
+      content: 'public parent body',
+      visibility: 'public',
+      publicAudienceExplicit: false,
+      communityId: null,
+    } as Post;
+    postRepo.findOne.mockResolvedValue(post);
+    postRepo.update.mockResolvedValue({ affected: 1, raw: [] });
+    commentRepo.find.mockResolvedValue([
+      {
+        profileId: 'commenter-profile',
+        content: `<img src="/api/asset/${assetId}">`,
+      } as Comment,
+    ]);
+    const assetClient = {
+      send: jest
+        .fn()
+        .mockReturnValue(
+          of({ profileId: 'commenter-profile', audienceRestrictions: [] })
+        ),
+    };
+    (service as any).assetService = assetClient;
+
+    await service.update(
+      post.id,
+      { title: 'Updated personal public post' } as UpdatePostDto,
+      'author-user',
+      'author-profile'
+    );
+
+    expect(assetClient.send).not.toHaveBeenCalledWith(
+      { cmd: AssetCommands.RETRIEVE },
+      { id: assetId }
+    );
+    expect(assetClient.send).not.toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      expect.anything()
+    );
+  });
+
+  it('latches commenter-owned image references when narrowing a parent post', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const post = {
+      id: 'parent-post',
+      userId: 'author-user',
+      profileId: 'author-profile',
+      visibility: 'public',
+      content: 'parent body',
+      communityId: null,
+    } as Post;
+    postRepo.findOne.mockResolvedValue(post);
+    postRepo.update.mockResolvedValue({ affected: 1, raw: [] });
+    commentRepo.find.mockResolvedValue([
+      {
+        profileId: 'commenter-profile',
+        content: `<p>comment</p><img src="/api/asset/${assetId}">`,
+      } as Comment,
+    ]);
+    (service as any).assetService = {
+      send: jest
+        .fn()
+        .mockReturnValue(
+          of({ profileId: 'commenter-profile', audienceRestrictions: [] })
+        ),
+    };
+
+    await service.update(
+      post.id,
+      { visibility: 'followers' } as UpdatePostDto,
+      'author-user',
+      'author-profile'
+    );
+
+    expect((service as any).assetService.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      {
+        id: assetId,
+        restrictions: [{ type: 'followers', profileId: 'author-profile' }],
+      }
+    );
+  });
+
+  it('preserves the old followers audience for child comment media before making a post public', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const post = {
+      id: 'parent-post',
+      userId: 'author-user',
+      profileId: 'author-profile',
+      visibility: 'followers',
+      content: 'parent body',
+      communityId: null,
+    } as Post;
+    postRepo.findOne.mockResolvedValue(post);
+    postRepo.update.mockResolvedValue({ affected: 1, raw: [] });
+    commentRepo.find.mockResolvedValue([
+      {
+        profileId: 'commenter-profile',
+        content: `<p>comment</p><img src="/api/asset/${assetId}">`,
+      } as Comment,
+    ]);
+    const assetClient = {
+      send: jest
+        .fn()
+        .mockReturnValue(
+          of({ profileId: 'commenter-profile', audienceRestrictions: [] })
+        ),
+    };
+    (service as any).assetService = assetClient;
+
+    await service.update(
+      post.id,
+      { visibility: 'public' } as UpdatePostDto,
+      'author-user',
+      'author-profile'
+    );
+
+    expect(assetClient.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      {
+        id: assetId,
+        restrictions: [{ type: 'followers', profileId: 'author-profile' }],
+      }
+    );
+    expect(assetClient.send.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      postRepo.update.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('does not mutate any media or narrow a post when a comment borrows foreign media', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const post = {
+      id: 'parent-post',
+      userId: 'author-user',
+      profileId: 'author-profile',
+      visibility: 'public',
+      content: 'parent text',
+      communityId: null,
+    } as Post;
+    postRepo.findOne.mockResolvedValue(post);
+    commentRepo.find.mockResolvedValue([
+      {
+        profileId: 'commenter-profile',
+        content: `<img src="/api/asset/${assetId}">`,
+      } as Comment,
+    ]);
+    const assetClient = {
+      send: jest
+        .fn()
+        .mockReturnValue(
+          of({ profileId: 'third-party-profile', audienceRestrictions: [] })
+        ),
+    };
+    (service as any).assetService = assetClient;
+
+    await expect(
+      service.update(
+        post.id,
+        { visibility: 'followers' } as UpdatePostDto,
+        'author-user',
+        'author-profile'
+      )
+    ).rejects.toMatchObject({
+      error: {
+        statusCode: 400,
+        message:
+          'Restricted posts cannot contain another profile’s comment image',
+      },
+    });
+    expect(assetClient.send).toHaveBeenCalledTimes(1);
+    expect(assetClient.send).not.toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      expect.anything()
+    );
+    expect(postRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects foreign-author media on a followers-only post', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const assetClient = {
+      send: jest.fn().mockReturnValue(
+        of({
+          profileId: 'asset-owner',
+          audienceRestrictions: [],
+          audienceCommunityIds: [],
+        })
+      ),
+    };
+    (service as any).assetService = assetClient;
+    postRepo.create.mockImplementation((post) => post as Post);
+    postRepo.save.mockImplementation(async (post) => post as Post);
+    (service as any).communityService.findOne.mockResolvedValue(undefined);
+
+    await expect(
+      service.create({
+        title: 'Private to followers',
+        content: `<img src="/api/asset/${assetId}">`,
+        profileId: 'post-author',
+        userId: 'post-user',
+        visibility: 'followers',
+      } as CreatePostDto)
+    ).rejects.toThrow(
+      'Restricted posts cannot contain another profile’s image'
+    );
+
+    expect(assetClient.send).toHaveBeenCalledTimes(1);
+    expect(assetClient.send).not.toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      expect.anything()
+    );
+    expect(postRepo.save).not.toHaveBeenCalled();
+  });
+
+  it("keeps a foreign author's generic public media public when borrowed", async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const assetClient = {
+      send: jest.fn().mockReturnValue(
+        of({
+          profileId: 'asset-owner',
+          audienceRestrictions: [],
+          audienceCommunityIds: [],
+        })
+      ),
+    };
+    (service as any).assetService = assetClient;
+    postRepo.create.mockImplementation((post) => post as Post);
+    postRepo.save.mockImplementation(async (post) => post as Post);
+    (service as any).communityService.findOne.mockResolvedValue(undefined);
+
+    await service.create({
+      title: 'Public',
+      content: `<img src="/api/asset/${assetId}">`,
+      profileId: 'post-author',
+      userId: 'post-user',
+      visibility: 'public',
+    } as CreatePostDto);
+
+    expect(postRepo.save).toHaveBeenCalled();
+    expect(assetClient.send).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects an owner-only asset attached to a public post', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    (service as any).assetService = {
+      send: jest.fn().mockReturnValue(
+        of({
+          profileId: 'post-author',
+          audienceRestrictions: [{ type: 'owner', profileId: 'post-author' }],
+          audienceCommunityIds: [],
+        })
+      ),
+    };
+
+    await expect(
+      service.create({
+        title: 'Public',
+        content: `<img src="/api/asset/${assetId}">`,
+        profileId: 'post-author',
+        userId: 'post-user',
+        visibility: 'public',
+      } as CreatePostDto)
+    ).rejects.toThrow('Asset audience is narrower than this post audience');
+    expect(postRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('latches the actual private community audience for matching owned images', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const assetClient = {
+      send: jest.fn().mockReturnValue(
+        of({
+          profileId: 'post-author',
+          audienceRestrictions: [],
+          audienceCommunityIds: [],
+        })
+      ),
+    };
+    (service as any).assetService = assetClient;
+    (service as any).communityService.isMember = jest
+      .fn()
+      .mockResolvedValue(true);
+    (service as any).communityService.hasPermission = jest
+      .fn()
+      .mockResolvedValue(true);
+    (service as any).communityService.findOne.mockResolvedValue({
+      id: 'private-community',
+      isPrivate: true,
+    });
+    postRepo.create.mockImplementation((post) => post as Post);
+    postRepo.save.mockImplementation(async (post) => post as Post);
+
+    await service.create({
+      title: 'Private community image',
+      content: `<img src="/api/asset/${assetId}">`,
+      profileId: 'post-author',
+      userId: 'post-user',
+      communityId: 'private-community',
+    } as CreatePostDto);
+
+    expect(assetClient.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      {
+        id: assetId,
+        restrictions: [
+          {
+            type: 'community',
+            profileId: 'post-author',
+            communityId: 'private-community',
+          },
+        ],
+      }
+    );
+    expect(assetClient.send).toHaveBeenCalledWith(
+      { cmd: 'asset.addCommunityAudience' },
+      { id: assetId, communityId: 'private-community' }
+    );
+  });
+
+  it('preserves combined follower and private-community policy across update and removal', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const state = {
+      profileId: 'post-author',
+      audienceRestrictions: [] as Array<{ type: string; profileId: string }>,
+      audienceCommunityIds: [] as string[],
+    };
+    const assetClient = {
+      send: jest
+        .fn()
+        .mockImplementation((pattern: { cmd: string }, payload: any) => {
+          if (pattern.cmd === AssetCommands.RETRIEVE) return of({ ...state });
+          if (pattern.cmd === AssetCommands.ADD_AUDIENCE_RESTRICTIONS) {
+            state.audienceRestrictions = [
+              ...state.audienceRestrictions,
+              ...payload.restrictions,
+            ];
+          }
+          if (pattern.cmd === AssetCommands.ADD_COMMUNITY_AUDIENCE) {
+            state.audienceCommunityIds = [
+              ...state.audienceCommunityIds,
+              payload.communityId,
+            ];
+          }
+          return of({});
+        }),
+    };
+    (service as any).assetService = assetClient;
+    (service as any).communityService.isMember = jest
+      .fn()
+      .mockResolvedValue(true);
+    (service as any).communityService.hasPermission = jest
+      .fn()
+      .mockResolvedValue(true);
+    (service as any).communityService.findOne.mockResolvedValue({
+      id: 'private-community',
+      isPrivate: true,
+    });
+    const post = {
+      id: 'private-community-post',
+      title: 'Private image',
+      content: `<img src="/api/asset/${assetId}">`,
+      profileId: 'post-author',
+      userId: 'post-user',
+      communityId: 'private-community',
+      visibility: 'followers',
+    } as Post;
+    postRepo.create.mockReturnValue(post);
+    postRepo.save.mockResolvedValue(post);
+    postRepo.findOne.mockResolvedValue(post);
+
+    await service.create(post as any);
+    expect(state.audienceRestrictions).toContainEqual({
+      type: 'followers',
+      profileId: 'post-author',
+    });
+    expect(state.audienceCommunityIds).toContain('private-community');
+    await expect(
+      service.update(
+        post.id,
+        { content: post.content },
+        'post-user',
+        'post-author'
+      )
+    ).resolves.toBe(post);
+    await expect(
+      service.remove(post.id, 'post-user', 'post-author')
+    ).resolves.toEqual({
+      success: true,
+    });
   });
 
   it('should find all posts', async () => {
@@ -219,7 +1050,7 @@ describe('PostService', () => {
     );
   });
 
-  it('rejects post updates from non-owners', async () => {
+  it('returns forbidden for a non-owner update without mutating the post', async () => {
     postRepo.findOne.mockResolvedValue({
       id: '1',
       userId: 'owner-user',
@@ -227,9 +1058,55 @@ describe('PostService', () => {
       communityId: null,
     } as Post);
 
-    await expect(
-      service.update('1', { title: 'Updated' }, 'owner-user', 'other-profile')
-    ).rejects.toThrow();
+    let thrown: unknown;
+    try {
+      await service.update(
+        '1',
+        { title: 'Updated' },
+        'owner-user',
+        'other-profile'
+      );
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(RpcException);
+    expect((thrown as RpcException).getError()).toEqual({
+      statusCode: 403,
+      message: 'You do not have permission to update this post',
+    });
+    expect(postRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('returns forbidden when a community post editor lacks moderator access', async () => {
+    postRepo.findOne.mockResolvedValue({
+      id: 'community-post',
+      userId: 'owner-user',
+      profileId: 'owner-profile',
+      communityId: 'community-1',
+    } as Post);
+    const communityService = (service as any).communityService;
+    communityService.hasPermission = jest.fn().mockResolvedValue(false);
+    communityService.isMember.mockResolvedValue(false);
+
+    let thrown: unknown;
+    try {
+      await service.update(
+        'community-post',
+        { title: 'Updated' },
+        'other-user',
+        'other-profile'
+      );
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(RpcException);
+    expect((thrown as RpcException).getError()).toEqual({
+      statusCode: 403,
+      message: 'You do not have permission to update this post',
+    });
+    expect(postRepo.update).not.toHaveBeenCalled();
   });
 
   it('allows a non-community post update only for the owning profile', async () => {
@@ -264,10 +1141,30 @@ describe('PostService', () => {
   });
 
   it('should throw error when remove fails', async () => {
-    postRepo.findOne.mockResolvedValue({ id: '1' } as Post);
+    postRepo.findOne.mockResolvedValue({
+      id: '1',
+      userId: 'u1',
+      profileId: 'p1',
+      communityId: null,
+    } as Post);
     commentRepo.delete.mockRejectedValue(new Error('Delete failed'));
 
-    await expect(service.remove('1')).rejects.toThrow('Delete failed');
+    await expect(service.remove('1', 'u1', 'p1')).rejects.toThrow(
+      'Delete failed'
+    );
+  });
+
+  it('denies a personal post delete when its stored owner IDs do not match the actor', async () => {
+    postRepo.findOne.mockResolvedValue({
+      id: 'owned-by-other',
+      userId: 'other-user',
+      profileId: 'other-profile',
+      communityId: null,
+    } as Post);
+    await expect(
+      service.remove('owned-by-other', 'actor-user', 'actor-profile')
+    ).rejects.toThrow('You do not have permission to delete this post');
+    expect(postRepo.delete).not.toHaveBeenCalled();
   });
 
   it('should get posts with various filters', async () => {

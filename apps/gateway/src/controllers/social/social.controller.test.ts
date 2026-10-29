@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { SocialController } from './social.controller';
 import { ClientProxy } from '@nestjs/microservices';
 import { of } from 'rxjs';
@@ -7,6 +8,7 @@ import {
   CommentCommands,
   PostCommands,
   VoteCommands,
+  GuardianContentCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreatePostDto,
@@ -27,6 +29,11 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
+import { IdentityThrottlerGuard } from '../learning/identity-throttler.guard';
+import {
+  CreateGuardianCommentDto,
+  CreateGuardianPostDto,
+} from './dto/guardian-content.dto';
 
 describe('SocialController', () => {
   let socialController: SocialController;
@@ -38,6 +45,7 @@ describe('SocialController', () => {
     username: 'test',
     email: 'someone@somewhere.net',
     profileId: '1',
+    appId: 'client-interface',
     // Add fields expected by UserDetails (exp/iat/name)
     exp: Math.floor(Date.now() / 1000) + 3600,
     iat: Math.floor(Date.now() / 1000),
@@ -95,6 +103,8 @@ describe('SocialController', () => {
       .useValue({ canActivate: () => of(true) })
       .overrideGuard(PermissionsGuard)
       .useValue({ canActivate: () => of(true) }) // Mock PermissionsGuard
+      .overrideGuard(IdentityThrottlerGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     socialController = module.get<SocialController>(SocialController);
@@ -135,8 +145,22 @@ describe('SocialController', () => {
       expect.objectContaining({
         userId: mockUser.userId,
         profileId: mockUser.profileId,
+        appScope: mockUser.appId,
         communityId: 'community-1',
       })
+    );
+  });
+
+  it('does not create posts without verified app context', async () => {
+    await expect(
+      socialController.post(
+        { userId: 'user-1', profileId: 'profile-1' } as any,
+        { title: 'title', content: 'body', profileId: 'profile-1' } as any
+      )
+    ).rejects.toThrow('verified Social application session');
+    expect(clientProxy.send).not.toHaveBeenCalledWith(
+      { cmd: PostCommands.CREATE },
+      expect.anything()
     );
   });
 
@@ -147,10 +171,28 @@ describe('SocialController', () => {
       userId: mockUser.id,
       profileId: mockUser.profileId,
     };
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: '1' }));
     await socialController.vote(mockUser, voteDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: VoteCommands.UPVOTE },
       voteDto
+    );
+  });
+
+  it('does not create a vote when the parent post is unavailable', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of(null));
+    await expect(
+      socialController.vote(
+        mockUser as any,
+        {
+          value: 1,
+          postId: 'private-post',
+        } as any
+      )
+    ).rejects.toThrow('Post not found');
+    expect(clientProxy.send).not.toHaveBeenCalledWith(
+      { cmd: VoteCommands.UPVOTE },
+      expect.anything()
     );
   });
 
@@ -161,10 +203,37 @@ describe('SocialController', () => {
       postId: '1',
       profileId: mockUser.profileId,
     };
-    await socialController.comment(mockUser, commentDto);
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: '1' }));
+    await expect(
+      socialController.comment(mockUser, commentDto)
+    ).resolves.toBeDefined();
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.CREATE },
-      commentDto
+      expect.objectContaining({
+        ...commentDto,
+        profileId: mockUser.profileId,
+      })
+    );
+    expect(consoleLogSpy).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ content: expect.any(String) })
+    );
+  });
+
+  it('does not create a comment when its parent post is unavailable', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of(null));
+    await expect(
+      socialController.comment(
+        mockUser as any,
+        {
+          content: 'private text',
+          postId: 'private-post',
+        } as any
+      )
+    ).rejects.toThrow('Post not found');
+    expect(clientProxy.send).not.toHaveBeenCalledWith(
+      { cmd: CommentCommands.CREATE },
+      expect.anything()
     );
   });
 
@@ -174,12 +243,49 @@ describe('SocialController', () => {
       url: 'http://test.com',
       type: AttachmentType.IMAGE,
       size: 1024,
+      postId: 'post-1',
     };
-    await socialController.attachment(mockUser, attachmentDto);
+    await socialController.attachment(mockUser as any, attachmentDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AttachmentCommands.CREATE },
-      attachmentDto
+      {
+        attachment: {
+          name: attachmentDto.name,
+          url: attachmentDto.url,
+          type: attachmentDto.type,
+          size: attachmentDto.size,
+        },
+        postId: 'post-1',
+        actor: {
+          userId: mockUser.userId,
+          profileId: mockUser.profileId,
+          appId: mockUser.appId,
+        },
+      }
     );
+  });
+
+  it('rejects attachment bodies that try to provide their own actor or app scope', async () => {
+    const pipe = new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    });
+    await expect(
+      pipe.transform(
+        {
+          name: 'file.png',
+          url: 'https://cdn.example.test/file.png',
+          type: 'IMAGE',
+          size: 100,
+          postId: '123e4567-e89b-42d3-a456-426614174001',
+          profileId: 'forged-profile',
+          userId: 'forged-user',
+          appScope: 'local-hub',
+        },
+        { type: 'body', metatype: CreateAttachmentDto }
+      )
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('should get a post by id', async () => {
@@ -202,7 +308,11 @@ describe('SocialController', () => {
 
   it('should get a vote by id', async () => {
     const id = '1';
-    await socialController.getVote(id);
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ id, post: { id: 'post-1' } })
+    );
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: 'post-1' }));
+    await socialController.getVote(id, mockUser as any);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: VoteCommands.GET },
       { id }
@@ -210,6 +320,7 @@ describe('SocialController', () => {
   });
 
   it('should find the current user vote for a post', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: 'post-1' }));
     (clientProxy.send as jest.Mock).mockReturnValueOnce(
       of([
         {
@@ -245,6 +356,7 @@ describe('SocialController', () => {
 
   it('should return all votes when no user filter is provided', async () => {
     const votes = [{ id: 'vote-1', postId: 'post-1', userId: '1', value: 1 }];
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: 'post-1' }));
     (clientProxy.send as jest.Mock).mockReturnValueOnce(of(votes));
 
     const result = await socialController.findVotes(mockUser as any, {
@@ -256,10 +368,27 @@ describe('SocialController', () => {
 
   it('should get an attachment by id', async () => {
     const id = '1';
-    await socialController.getAttachment(id);
+    const attachment = { id, post: { id: 'post-1' } };
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of(attachment));
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: 'post-1' }));
+    await expect(
+      socialController.getAttachment(id, mockUser as any)
+    ).resolves.toMatchObject(attachment);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AttachmentCommands.FIND },
-      { id }
+      { id, appId: mockUser.appId }
+    );
+  });
+
+  it('rejects an attachment with no parent post without querying a post', async () => {
+    const id = 'orphan-attachment';
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id }));
+    await expect(
+      socialController.getAttachment(id, mockUser as any)
+    ).rejects.toThrow('Post not found');
+    expect(clientProxy.send).not.toHaveBeenCalledWith(
+      { cmd: PostCommands.FIND },
+      expect.anything()
     );
   });
 
@@ -388,10 +517,11 @@ describe('SocialController', () => {
       type: AttachmentType.IMAGE,
       description: '1',
     };
-    await socialController.searchAttachments(searchCriteria);
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of([]));
+    await socialController.searchAttachments(searchCriteria, mockUser as any);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AttachmentCommands.FIND_MANY },
-      searchCriteria
+      { criteria: searchCriteria, appId: mockUser.appId }
     );
   });
 
@@ -408,6 +538,7 @@ describe('SocialController', () => {
       name: 'Test',
       profileId: 'profile-1',
     };
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id }));
     await socialController.updatePost(id, mockUser, updatePostDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.UPDATE },
@@ -427,10 +558,19 @@ describe('SocialController', () => {
       userId: '1',
       postId: '1',
     };
-    await socialController.updateComment(id, updateCommentDto);
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ id: 'comment-1', post: { id: '1' } })
+    );
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: '1' }));
+    await socialController.updateComment(id, mockUser as any, updateCommentDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.UPDATE },
-      { id, data: updateCommentDto }
+      {
+        id,
+        update: updateCommentDto,
+        userId: mockUser.userId,
+        profileId: mockUser.profileId,
+      }
     );
   });
 
@@ -440,10 +580,22 @@ describe('SocialController', () => {
       url: 'http://test.com',
       type: AttachmentType.IMAGE,
     };
-    await socialController.updateAttachment(id, updateAttachmentDto);
+    await socialController.updateAttachment(
+      id,
+      mockUser as any,
+      updateAttachmentDto
+    );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AttachmentCommands.UPDATE },
-      { id, data: updateAttachmentDto }
+      {
+        id,
+        update: updateAttachmentDto,
+        actor: {
+          userId: mockUser.userId,
+          profileId: mockUser.profileId,
+          appId: mockUser.appId,
+        },
+      }
     );
   });
 
@@ -460,25 +612,161 @@ describe('SocialController', () => {
     await socialController.deletePost(id, mockUser);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.DELETE },
-      { id, userId: 'user-1' }
+      { id, userId: 'user-1', profileId: 'profile-1' }
     );
   });
 
   it('should delete a comment', async () => {
     const id = '1';
-    await socialController.deleteComment(id);
+    await socialController.deleteComment(id, mockUser as any);
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: CommentCommands.FIND },
+      { id, viewerProfileId: mockUser.profileId }
+    );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.DELETE },
-      { id }
+      { id, userId: mockUser.userId, profileId: mockUser.profileId }
     );
   });
 
   it('should delete an attachment', async () => {
     const id = '1';
-    await socialController.deleteAttachment(id);
+    jest
+      .spyOn(clientProxy, 'send')
+      .mockReturnValueOnce(of({ id, deleted: true }) as any);
+    await expect(
+      socialController.deleteAttachment(id, mockUser as any)
+    ).resolves.toEqual({ id, deleted: true });
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AttachmentCommands.DELETE },
-      { id }
+      {
+        id,
+        actor: {
+          userId: mockUser.userId,
+          profileId: mockUser.profileId,
+          appId: mockUser.appId,
+        },
+      }
     );
   });
+
+  it('uses the owning comment update contract and invalidates after a void result', async () => {
+    const sender = {
+      send: jest.fn((pattern) => {
+        if (pattern.cmd === CommentCommands.FIND)
+          return of({ id: 'comment-1', post: { id: 'post-1' } });
+        if (pattern.cmd === PostCommands.FIND) return of({ id: 'post-1' });
+        return of(undefined);
+      }),
+    };
+    const gateway = {
+      broadcastSocialContentInvalidated: jest.fn(),
+      broadcastCommentUpdated: jest.fn(),
+    };
+    const controller = new SocialController(sender as any, gateway as any);
+    await controller.updateComment('comment-1', mockUser as any, {
+      content: 'edited',
+    });
+    expect(sender.send).toHaveBeenCalledWith(
+      { cmd: CommentCommands.UPDATE },
+      {
+        id: 'comment-1',
+        update: { content: 'edited' },
+        userId: mockUser.userId,
+        profileId: mockUser.profileId,
+      }
+    );
+    expect(gateway.broadcastSocialContentInvalidated).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['client-interface', 'local-hub'])(
+    'uses the verified %s context and path profile for guardian content',
+    async (appId) => {
+      const user = {
+        ...mockUser,
+        appId,
+        appScope: 'forged-app',
+        headers: { 'x-ot-appscope': 'business-site' },
+      } as any;
+
+      await socialController.listGuardianPosts(
+        'dependent-profile-from-path',
+        user
+      );
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: GuardianContentCommands.ListPosts },
+        {
+          actorUserId: mockUser.userId,
+          targetProfileId: 'dependent-profile-from-path',
+          appId,
+        }
+      );
+    }
+  );
+
+  it('fails closed when the authenticated user has no verified guardian app context', async () => {
+    await expect(
+      socialController.listGuardianPosts('dependent-profile', {
+        ...mockUser,
+        appId: undefined,
+      } as any)
+    ).rejects.toMatchObject({ status: 403 });
+    expect(clientProxy.send).not.toHaveBeenCalled();
+  });
+
+  it('keeps guardian identity and app context out of caller-controlled comment fields', async () => {
+    const user = { ...mockUser, appId: 'client-interface' } as any;
+
+    await socialController.createGuardianComment(
+      'dependent-profile-from-path',
+      'dependent-post-from-path',
+      user,
+      {
+        content: 'comment',
+        actorUserId: 'forged-actor',
+        appId: 'business-site',
+        postId: 'forged-post',
+      } as any
+    );
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: GuardianContentCommands.CreateComment },
+      {
+        actorUserId: mockUser.userId,
+        targetProfileId: 'dependent-profile-from-path',
+        appId: 'client-interface',
+        data: {
+          content: 'comment',
+          actorUserId: 'forged-actor',
+          appId: 'business-site',
+          postId: 'dependent-post-from-path',
+        },
+      }
+    );
+  });
+
+  it.each([
+    [
+      CreateGuardianPostDto,
+      { title: 'title', content: 'body', appId: 'business-site' },
+    ],
+    [
+      CreateGuardianCommentDto,
+      { content: 'body', userId: 'forged-user', postId: 'forged-post' },
+    ],
+  ])(
+    'rejects guardian body fields outside the explicit DTO allowlist',
+    async (metatype, body) => {
+      const pipe = new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      });
+
+      await expect(
+        pipe.transform(body, { type: 'body', metatype: metatype as any })
+      ).rejects.toBeInstanceOf(BadRequestException);
+    }
+  );
 });

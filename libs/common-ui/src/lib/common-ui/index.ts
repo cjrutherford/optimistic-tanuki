@@ -51,7 +51,10 @@ export { SectionHeadingComponent } from './section-heading/section-heading.compo
 export {
   createPerformanceReporter,
   normalizePerformanceRoute,
+  setPerformanceMonitoringEligibility,
+  startGatedPerformanceMonitoring,
   startPerformanceMonitoring,
+  type GatedPerformanceMonitor,
   type PerformanceMetric,
   type PerformanceMetricName,
   type PerformanceMonitorOptions,

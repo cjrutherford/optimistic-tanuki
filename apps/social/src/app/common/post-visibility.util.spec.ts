@@ -10,8 +10,16 @@ function isOperator(value: unknown, type: string): value is FindOperator<any> {
   return value instanceof FindOperator && value.type === type;
 }
 
+function nestedOperators(value: unknown): FindOperator<any>[] {
+  if (!(value instanceof FindOperator)) return [];
+  return [
+    value,
+    ...(Array.isArray(value.value) ? value.value.flatMap(nestedOperators) : []),
+  ];
+}
+
 describe('visiblePostWhere (where-fragment form)', () => {
-  it('no viewer -> public + visible + unscheduled only', () => {
+  it('no viewer -> non-community public and explicitly public community branches only', () => {
     const scope: PostVisibilityScope = {
       viewerProfileId: undefined,
       followedProfileIds: [],
@@ -20,12 +28,21 @@ describe('visiblePostWhere (where-fragment form)', () => {
 
     const branches = visiblePostWhere(scope);
 
-    expect(branches).toHaveLength(1);
+    expect(branches).toHaveLength(2);
     expect(branches[0]).toEqual({
       visibility: 'public',
       moderationStatus: 'visible',
       isScheduled: false,
+      communityId: expect.any(FindOperator),
     });
+    expect(
+      nestedOperators(branches[0].communityId).some(
+        (operator) => operator.type === 'isNull'
+      )
+    ).toBe(true);
+    expect(branches[1]).toEqual(
+      expect.objectContaining({ publicAudienceExplicit: true })
+    );
   });
 
   it('carries the base fragment into every branch', () => {
@@ -42,6 +59,29 @@ describe('visiblePostWhere (where-fragment form)', () => {
     }
   });
 
+  it('normalizes explicit null filters and intersects them instead of letting TypeORM skip them', () => {
+    const branches = visiblePostWhere(
+      {
+        viewerProfileId: undefined,
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      },
+      { communityId: null, profileId: null } as any
+    );
+    for (const branch of branches) {
+      expect(branch.communityId).not.toBeNull();
+      expect(branch.profileId).not.toBeNull();
+    }
+    expect(
+      nestedOperators(branches[0].communityId).some(
+        (op) => op.type === 'isNull'
+      )
+    ).toBe(true);
+    expect(
+      nestedOperators(branches[1].communityId).some((op) => op.type === 'raw')
+    ).toBe(true);
+  });
+
   it('viewer sees their own posts via an unconstrained author-own branch (hidden + scheduled)', () => {
     const scope: PostVisibilityScope = {
       viewerProfileId: 'viewer',
@@ -50,13 +90,15 @@ describe('visiblePostWhere (where-fragment form)', () => {
     };
 
     const branches = visiblePostWhere(scope);
-    const ownBranch = branches.find(
-      (b) => (b as FindOptionsWhere<Post>).profileId === 'viewer'
+    const ownBranch = branches.find((b) =>
+      isOperator((b as FindOptionsWhere<Post>).profileId, 'equal')
     );
 
     // The author-own branch does not constrain moderationStatus, isScheduled,
     // or visibility, so the author sees their own hidden and scheduled posts.
-    expect(ownBranch).toEqual({ profileId: 'viewer' });
+    expect((ownBranch as FindOptionsWhere<Post>).profileId).toEqual(
+      expect.objectContaining({ type: 'equal', value: 'viewer' })
+    );
   });
 
   it('followers-only posts are visible to a follower', () => {
@@ -140,6 +182,33 @@ describe('visiblePostWhere (where-fragment form)', () => {
     ]);
   });
 
+  it('excludes authors blocked in either direction from community and legacy community branches', () => {
+    const branches = visiblePostWhere({
+      viewerProfileId: 'viewer',
+      followedProfileIds: ['friend', 'blocked-friend'],
+      blockedProfileIds: ['blocked-friend', 'i-blocked-viewer'],
+      viewerAccountId: 'viewer-account',
+    });
+
+    const communityBranches = branches.filter(
+      (branch) =>
+        ['community', 'public'].includes(
+          (branch as FindOptionsWhere<Post>).visibility as string
+        ) &&
+        ((branch as FindOptionsWhere<Post>).visibility === 'community' ||
+          (branch as FindOptionsWhere<Post>).publicAudienceExplicit === false)
+    ) as FindOptionsWhere<Post>[];
+
+    expect(communityBranches).toHaveLength(2);
+    for (const branch of communityBranches) {
+      expect(isOperator(branch.profileId, 'not')).toBe(true);
+      expect((branch.profileId as FindOperator<any>).value).toEqual([
+        'blocked-friend',
+        'i-blocked-viewer',
+      ]);
+    }
+  });
+
   it('empty block list emits no exclusion clause on the public branch', () => {
     const scope: PostVisibilityScope = {
       viewerProfileId: undefined,
@@ -149,6 +218,92 @@ describe('visiblePostWhere (where-fragment form)', () => {
 
     const [publicBranch] = visiblePostWhere(scope);
     expect((publicBranch as FindOptionsWhere<Post>).profileId).toBeUndefined();
+  });
+
+  it('requires explicit public selection before a community post enters the public branch', () => {
+    const branches = visiblePostWhere({
+      viewerProfileId: undefined,
+      followedProfileIds: [],
+      blockedProfileIds: [],
+    });
+
+    expect(branches[1]).toEqual(
+      expect.objectContaining({ publicAudienceExplicit: true })
+    );
+  });
+
+  it('constrains every visibility branch to a public or accessible community', () => {
+    const branches = visiblePostWhere({
+      viewerProfileId: 'viewer',
+      followedProfileIds: ['friend'],
+      blockedProfileIds: [],
+      viewerAccountId: 'viewer-account',
+    });
+
+    expect(branches.length).toBeGreaterThan(1);
+    for (const branch of branches) {
+      const communityFilter = (branch as FindOptionsWhere<Post>)
+        .communityId as FindOperator<any>;
+      expect(communityFilter).toBeInstanceOf(FindOperator);
+      const operators = nestedOperators(communityFilter);
+      const rawScopes = operators.filter((operator) => operator.type === 'raw');
+      expect(rawScopes.length).toBeGreaterThan(0);
+      expect(
+        rawScopes.some((operator) =>
+          JSON.stringify(
+            (operator as any)._objectLiteralParameters ?? {}
+          ).includes('viewer-account')
+        )
+      ).toBe(true);
+      expect(
+        rawScopes.some((operator) =>
+          (operator as any)
+            ._getSql('post.communityId')
+            .includes("cm.status = 'approved'")
+        )
+      ).toBe(true);
+    }
+  });
+
+  it('intersects caller profile filters with policy branches', () => {
+    const branches = visiblePostWhere(
+      {
+        viewerProfileId: 'viewer',
+        followedProfileIds: ['followed'],
+        blockedProfileIds: ['blocked'],
+      },
+      { profileId: 'requested-author' as any }
+    );
+    expect(branches.length).toBeGreaterThanOrEqual(3);
+    for (const branch of branches) {
+      const profileFilter = branch.profileId as FindOperator<any>;
+      expect(profileFilter.type).toBe('and');
+      expect(
+        (profileFilter.value as FindOperator<any>[]).some(
+          (filter) => filter.value === 'requested-author'
+        )
+      ).toBe(true);
+    }
+  });
+
+  it('intersects selected community filters with every policy branch', () => {
+    const branches = visiblePostWhere(
+      {
+        viewerProfileId: 'viewer',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+        viewerAccountId: 'account',
+      },
+      { communityId: 'selected-community' as any }
+    );
+
+    expect(branches).toHaveLength(6);
+    for (const branch of branches) {
+      const communityFilter = branch.communityId as FindOperator<any>;
+      expect(communityFilter).toBeInstanceOf(FindOperator);
+      expect(communityFilter.type).toBe('and');
+      expect(JSON.stringify(communityFilter)).toContain('selected-community');
+    }
   });
 
   it('deduplicates ids across follow and block inputs', () => {
@@ -235,6 +390,10 @@ describe('applyVisiblePostScope (query-builder form)', () => {
     expect(recorder.sql).not.toContain('post.profileId = :pv_viewer');
     expect(recorder.params.pv_visible).toBe('visible');
     expect(recorder.params.pv_scheduled).toBe(false);
+    expect(recorder.sql).toContain(
+      'post.publicAudienceExplicit = :pv_public_explicit'
+    );
+    expect(recorder.params.pv_public_explicit).toBe(true);
   });
 
   it('viewer with follows and blocks emits the full predicate with params', () => {
@@ -263,5 +422,19 @@ describe('applyVisiblePostScope (query-builder form)', () => {
     // viewer still has an IN list (contains itself) and an own-branch clause
     expect(recorder.params.pv_followed).toEqual(['viewer']);
     expect(recorder.sql).toContain('post.profileId = :pv_viewer');
+  });
+
+  it('applies community access outside the query-builder visibility OR', () => {
+    const recorder = run({
+      viewerProfileId: 'viewer',
+      followedProfileIds: ['friend'],
+      blockedProfileIds: [],
+      viewerAccountId: 'viewer-account',
+    });
+
+    expect(recorder.sql).toContain('post.communityId IS NULL OR EXISTS');
+    expect(recorder.sql).toContain('community_member cm');
+    expect(recorder.sql).toContain('cm."userId" = :pv_account_id');
+    expect(recorder.params.pv_account_id).toBe('viewer-account');
   });
 });

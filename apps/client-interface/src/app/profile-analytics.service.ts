@@ -8,11 +8,10 @@ export interface ProfileViewStats {
   viewsThisWeek: number;
   viewsThisMonth: number;
   topSources: { source: string; count: number }[];
-  recentViews: { viewerId: string; viewedAt: Date }[];
+  recentViews: { viewedAt: Date }[];
 }
 
 export interface ProfileViewer {
-  viewerId: string;
   viewedAt: Date;
 }
 
@@ -24,6 +23,7 @@ export class ProfileAnalyticsService {
 
   recordView(
     profileId: string,
+    // Legacy compatibility only; the Gateway derives the actor from the session.
     viewerId: string,
     source: string
   ): Observable<void> {

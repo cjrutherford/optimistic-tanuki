@@ -409,10 +409,18 @@ export class ModalComponent
     ) as HTMLElement[];
   }
 
-  @HostListener('keydown.tab', ['$event'])
+  @HostListener('keydown', ['$event'])
   onTabKey(event: Event): void {
-    if (!this.focusTrap || !this.visible || this.focusableElements.length === 0)
+    if (
+      (event as KeyboardEvent).key !== 'Tab' ||
+      !this.focusTrap ||
+      !this.visible
+    )
       return;
+
+    // Tabs and async directory data can replace the projected controls.
+    this.collectFocusableElements();
+    if (this.focusableElements.length === 0) return;
 
     const firstElement = this.focusableElements[0];
     const lastElement =

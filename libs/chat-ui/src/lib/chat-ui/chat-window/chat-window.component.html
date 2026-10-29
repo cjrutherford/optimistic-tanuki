@@ -20,14 +20,21 @@
               <div class="contact-name">{{ c.name }}</div>
               <div
                 class="contact-status"
-                [class]="'status-' + (c.presence || 'offline')"
+                [class]="
+                  'status-' +
+                  (isGroupConversation
+                    ? connectionStatus === 'connected'
+                      ? 'online'
+                      : 'unknown'
+                    : c.presence || 'unknown')
+                "
               >
                 <span class="status-dot"></span>
-                @if (c.presence === 'online') { Online } @else if (c.presence
-                === 'away') { Away } @else if (c.presence === 'busy') { Busy }
-                @else if (c.lastSeen) { Last seen
+                {{ statusLabel(c) }}
+                @if (!isGroupConversation && c.presence === 'offline' &&
+                c.lastSeen) {
                 {{ c.lastSeen | date : 'short' }}
-                } @else { Offline }
+                }
               </div>
             </div>
           </div>
@@ -119,7 +126,7 @@
     }
 
     <lib-compose-chat
-      (messageSubmitted)="onMessageSubmitted($event)"
+      (submissionRequested)="onMessageSubmission($event)"
     ></lib-compose-chat>
   </div>
 </div>

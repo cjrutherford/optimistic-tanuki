@@ -3,12 +3,14 @@ import {
   Controller,
   Get,
   Inject,
+  Logger,
   Param,
   Post,
   UseGuards,
   Optional,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { emitSafeDiagnostic } from '@optimistic-tanuki/logger';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
   ServiceTokens,
@@ -24,6 +26,8 @@ import { Throttle } from '@nestjs/throttler';
 
 @Controller('social/follow')
 export class FollowController {
+  private readonly logger = new Logger(FollowController.name);
+
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
@@ -52,7 +56,12 @@ export class FollowController {
       throw new Error('Profile not found');
     }
     if (followingProfile.userId != user.userId) {
-      console.log(followingProfile.userId, user.userId);
+      emitSafeDiagnostic(
+        this.logger,
+        'social.follow.rejected',
+        { outcome: 'denied' },
+        'warn'
+      );
       throw new Error(
         "You can't add a follow for someone else as the follower!"
       );
@@ -63,10 +72,19 @@ export class FollowController {
 
     // Broadcast follow event via WebSocket
     if (this.socialGateway && result) {
-      this.socialGateway.broadcastFollowEvent(
-        followDto.followerId,
-        followDto.followeeId,
-        'follow'
+      await Promise.resolve(
+        this.socialGateway.broadcastFollowEvent(
+          followDto.followerId,
+          followDto.followeeId,
+          'follow'
+        )
+      ).catch(() =>
+        emitSafeDiagnostic(
+          this.logger,
+          'social.follow.rejected',
+          { outcome: 'unavailable' },
+          'warn'
+        )
       );
     }
 
@@ -106,10 +124,19 @@ export class FollowController {
 
     // Broadcast unfollow event via WebSocket
     if (this.socialGateway && result) {
-      this.socialGateway.broadcastFollowEvent(
-        followDto.followerId,
-        followDto.followeeId,
-        'unfollow'
+      await Promise.resolve(
+        this.socialGateway.broadcastFollowEvent(
+          followDto.followerId,
+          followDto.followeeId,
+          'unfollow'
+        )
+      ).catch(() =>
+        emitSafeDiagnostic(
+          this.logger,
+          'social.follow.rejected',
+          { outcome: 'unavailable' },
+          'warn'
+        )
       );
     }
 

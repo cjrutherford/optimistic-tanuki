@@ -133,8 +133,15 @@ const MICROSERVICE_ENTRIES = [
     suiteKind: 'microservice',
     baseUrl: 'http://127.0.0.1:3001',
     port: 3001,
-    backendDependencies: ['db', 'db-setup'],
-    imageBudget: 3,
+    backendDependencies: [
+      'db',
+      'db-setup',
+      'profile',
+      'permissions',
+      'social',
+      'forum',
+    ],
+    imageBudget: 7,
     readinessUrl: null,
   }),
   sharedEntry({
@@ -243,8 +250,8 @@ const MICROSERVICE_ENTRIES = [
     suiteKind: 'microservice',
     baseUrl: 'http://127.0.0.1:3007',
     port: 3007,
-    backendDependencies: ['db', 'db-setup'],
-    imageBudget: 3,
+    backendDependencies: ['db', 'db-setup', 'social'],
+    imageBudget: 4,
     readinessUrl: null,
   }),
   sharedEntry({
@@ -484,6 +491,8 @@ const UI_ENVIRONMENTS = [
     profile: 'local-hub',
     environmentGroup: 'local-hub-daylight',
     backendDependencies: [
+      // The cross-app auth and HAI regressions also open Optimistic Tanuki.
+      'client-interface',
       'db',
       'redis',
       'db-setup',
@@ -572,6 +581,8 @@ const BUSINESS_SITE_ENTRY = {
     'permissions',
     'store',
     'lead-tracker',
+    'blogging',
+    'workspace',
     'gateway',
   ],
   readiness: {
@@ -591,12 +602,14 @@ const BUSINESS_SITE_ENTRY = {
       'permissions',
       'store',
       'lead-tracker',
+      'blogging',
+      'workspace',
       'gateway',
     ],
     completedServices: ['db-setup'],
     port: 8094,
   }),
-  imageBudget: { maxPullServices: 10 },
+  imageBudget: { maxPullServices: 12 },
 };
 
 export const E2E_ENVIRONMENT_MANIFEST = Object.freeze([

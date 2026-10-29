@@ -6,16 +6,22 @@ import {
 } from '@optimistic-tanuki/storage';
 
 import { AppService } from './app.service';
+import { AssetMediaReadFenceService } from './asset-media-read-fence.service';
+import { GuardianAssetAuthorizationService } from './guardian-asset-authorization.service';
+import { GuardianAssetActivity } from '../entities/guardian-asset-activity.entity';
 import AssetEntity from '../entities/asset.entity';
-import { Logger } from '@nestjs/common';
+import { Logger, ServiceUnavailableException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as nodeFs from 'node:fs/promises';
+import { constants as fsConstants } from 'node:fs';
+import { Readable } from 'node:stream';
 
 jest.mock('node:fs/promises', () => ({
   readFile: jest.fn(),
+  open: jest.fn(),
 }));
 
 describe('AppService', () => {
@@ -34,9 +40,12 @@ describe('AppService', () => {
     assetRepo = {
       create: jest.fn(),
       save: jest.fn(),
+      findOne: jest.fn(),
+      delete: jest.fn(),
       find: jest.fn(),
       findOneBy: jest.fn(),
       remove: jest.fn(),
+      query: jest.fn(),
       // Add other methods as needed for your tests
     } as unknown as Repository<AssetEntity>;
     storageAdapter = {
@@ -44,9 +53,11 @@ describe('AppService', () => {
       remove: jest.fn(),
       read: jest.fn(),
       retrieve: jest.fn(),
+      reservationPath: jest.fn((data: any) => `assets/${data.id}/${data.name}`),
     } as StorageAdapter;
     fileValidationService = {
       validateFile: jest.fn().mockReturnValue({ isValid: true }),
+      getMaxSizeBytes: jest.fn().mockReturnValue(25 * 1024 * 1024),
     } as unknown as FileValidationService;
     virusScanService = {
       scanFile: jest
@@ -57,15 +68,78 @@ describe('AppService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         AppService,
+        {
+          provide: AssetMediaReadFenceService,
+          useValue: { open: jest.fn((_asset, _options, open) => open()) },
+        },
         { provide: Logger, useValue: logger },
         { provide: getRepositoryToken(AssetEntity), useValue: assetRepo },
         { provide: STORAGE_ADAPTERS, useValue: storageAdapter },
         { provide: FileValidationService, useValue: fileValidationService },
         { provide: VirusScanService, useValue: virusScanService },
+        {
+          provide: GuardianAssetAuthorizationService,
+          useValue: {
+            assertAccess: jest
+              .fn()
+              .mockResolvedValue({ userId: 'dependent-user' }),
+          },
+        },
       ],
     }).compile();
 
     appService = moduleRef.get<AppService>(AppService);
+
+    const manager: any = {
+      getRepository: () => assetRepo,
+      transaction: async (work: (value: unknown) => unknown) => work(manager),
+    };
+    (assetRepo as any).manager = manager;
+    let reservation: any;
+    const createReservation = jest.fn((data: any) => {
+      reservation = { ...data };
+      return reservation;
+    });
+    (assetRepo.create as jest.Mock).mockImplementation(createReservation);
+    (assetRepo.save as jest.Mock).mockImplementation(async (row: any) => {
+      if (row.lifecycleState === 'pending-upload') reservation = row;
+      return row;
+    });
+    (assetRepo as any).findOne = jest.fn(async () => {
+      const created = (assetRepo.create as jest.Mock).mock.results.at(
+        -1
+      )?.value;
+      if (created?.lifecycleState === 'pending-upload') return created;
+      if (reservation?.lifecycleState === 'pending-upload') return reservation;
+      return {
+        ...created,
+        lifecycleState: 'pending-upload',
+        lifecycleLeaseUntil: new Date(Date.now() + 60_000),
+      };
+    });
+    (assetRepo as any).delete = jest.fn().mockResolvedValue({ affected: 1 });
+  });
+
+  it('always delegates authenticated media opening through the read fence', async () => {
+    const asset = { id: 'asset-1' } as AssetEntity;
+    const handle = { cleanup: jest.fn() };
+    storageAdapter.openAuthenticatedMedia = jest
+      .fn()
+      .mockResolvedValue(handle as any);
+    const fence = (appService as any).mediaReadFence;
+    const options = { maxPlaintextBytes: 10 };
+    await expect(
+      appService.openAuthenticatedMedia(asset, options)
+    ).resolves.toBe(handle);
+    expect(fence.open).toHaveBeenCalledWith(
+      asset,
+      options,
+      expect.any(Function)
+    );
+    expect(storageAdapter.openAuthenticatedMedia).toHaveBeenCalledWith(
+      asset,
+      options
+    );
   });
 
   it('should be defined', () => {
@@ -84,10 +158,297 @@ describe('AppService', () => {
     expect((appService as any).storageAdapter).toBe(storageAdapter);
   });
 
+  it('preserves scanner unavailability as a retryable upload failure without reserving rows', async () => {
+    jest
+      .spyOn(virusScanService, 'scanFile')
+      .mockRejectedValueOnce(
+        new ServiceUnavailableException('Scanner unavailable')
+      );
+    await expect(
+      appService.createAsset({
+        name: 'retry.png',
+        profileId: 'profile-1',
+        type: 'image',
+        fileExtension: 'png',
+        content: Buffer.from('image'),
+      } as any)
+    ).rejects.toMatchObject({ message: expect.any(String) });
+    try {
+      jest
+        .spyOn(virusScanService, 'scanFile')
+        .mockRejectedValueOnce(
+          new ServiceUnavailableException('Scanner unavailable')
+        );
+      await appService.createAsset({
+        name: 'retry.png',
+        profileId: 'profile-1',
+        type: 'image',
+        fileExtension: 'png',
+        content: Buffer.from('image'),
+      } as any);
+    } catch (error) {
+      expect((error as RpcException).getError()).toEqual({
+        statusCode: 503,
+        message: 'Asset processing unavailable; please retry',
+      });
+    }
+    expect(assetRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('rejects a guardian upload without bytes before reserving an asset row', async () => {
+    await expect(
+      appService.createGuardianAsset({
+        actorUserId: 'guardian-user',
+        targetProfileId: 'dependent-profile',
+        appId: 'client-interface',
+        asset: {
+          name: 'photo.png',
+          type: 'image',
+          profileId: 'dependent-profile',
+          content: '',
+        } as any,
+      })
+    ).rejects.toBeInstanceOf(RpcException);
+    expect(assetRepo.create).not.toHaveBeenCalled();
+    expect(storageAdapter.create).not.toHaveBeenCalled();
+  });
+
+  it('creates new guardian uploads with only the reserved staged restriction and immutable scope', async () => {
+    const reservedId = '11111111-1111-4111-8111-111111111111';
+    (assetRepo as any).create = jest.fn((row) => ({ ...row }));
+    (assetRepo as any).save = jest.fn(async (row) => row);
+    (assetRepo as any).findOne = jest.fn(async () => ({
+      id: reservedId,
+      lifecycleState: 'pending-upload',
+      lifecycleLeaseUntil: new Date(Date.now() + 60_000),
+    }));
+    (storageAdapter as any).reservationPath = jest.fn(
+      () => `assets/${reservedId}/photo.png`
+    );
+    (storageAdapter.create as jest.Mock).mockResolvedValue({
+      id: reservedId,
+      name: 'photo.png',
+      storagePath: `assets/${reservedId}/photo.png`,
+      profileId: 'dependent-profile',
+      type: 'image',
+      storageStrategy: 'local_block_storage',
+    });
+    const auditRepository = { save: jest.fn(async (row) => row) };
+    const manager: any = {
+      getRepository: (entity: unknown) =>
+        entity === GuardianAssetActivity ? auditRepository : assetRepo,
+      transaction: async (work: (value: unknown) => unknown) => work(manager),
+    };
+    (assetRepo as any).manager = manager;
+
+    await appService.createGuardianAsset({
+      actorUserId: 'guardian-user',
+      targetProfileId: 'dependent-profile',
+      appId: 'client-interface',
+      asset: {
+        name: 'photo.png',
+        type: 'image',
+        profileId: 'dependent-profile',
+        content: Buffer.from('photo'),
+      } as any,
+    });
+
+    expect(assetRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: 'dependent-profile',
+        originKind: 'guardian-staged',
+        originProfileId: 'dependent-profile',
+        originAppId: 'client-interface',
+        audienceRestrictions: [
+          {
+            type: 'guardian-staged',
+            profileId: 'dependent-profile',
+            appId: 'client-interface',
+          },
+        ],
+      })
+    );
+    expect(assetRepo.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        audienceRestrictions: [
+          { type: 'owner', profileId: 'dependent-profile' },
+        ],
+      })
+    );
+  });
+
+  it('uses a server reservation ID and compensates storage when the audit insert fails', async () => {
+    const reserved: any = {
+      id: '11111111-1111-4111-8111-111111111111',
+      lifecycleState: 'pending-upload',
+      lifecycleLeaseUntil: new Date(Date.now() + 60_000),
+    };
+    (assetRepo as any).create = jest.fn((data) => ({ ...data }));
+    (assetRepo as any).save = jest.fn().mockResolvedValue(reserved);
+    (assetRepo as any).findOne = jest.fn().mockResolvedValue({ ...reserved });
+    (assetRepo as any).delete = jest.fn().mockResolvedValue({ affected: 1 });
+    (storageAdapter as any).reservationPath = jest.fn(
+      () => 'assets/11111111-1111-4111-8111-111111111111/photo.png'
+    );
+    (storageAdapter.create as jest.Mock).mockResolvedValue({
+      ...reserved,
+      name: 'photo.png',
+      storagePath: 'assets/11111111-1111-4111-8111-111111111111/photo.png',
+      profileId: 'dependent-profile',
+      type: 'image',
+      storageStrategy: 'local_block_storage',
+    });
+    const activityRepository = {
+      save: jest.fn().mockRejectedValue(new Error('audit unavailable')),
+    };
+    const manager: any = {
+      getRepository: (entity: unknown) =>
+        entity === GuardianAssetActivity ? activityRepository : assetRepo,
+      transaction: async (work: (value: unknown) => unknown) => work(manager),
+    };
+    (assetRepo as any).manager = manager;
+
+    await expect(
+      appService.createGuardianAsset({
+        actorUserId: 'guardian-user',
+        targetProfileId: 'dependent-profile',
+        appId: 'client-interface',
+        asset: {
+          id: 'attacker-chosen-id',
+          name: 'photo.png',
+          type: 'image',
+          profileId: 'dependent-profile',
+          content: Buffer.from('photo'),
+        } as any,
+      })
+    ).rejects.toThrow('audit unavailable');
+
+    expect(storageAdapter.create).toHaveBeenCalledWith(
+      expect.objectContaining({ id: reserved.id })
+    );
+    expect(storageAdapter.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'attacker-chosen-id' })
+    );
+    expect(storageAdapter.remove).toHaveBeenCalledWith(
+      expect.objectContaining({ id: reserved.id })
+    );
+    expect(activityRepository.save).toHaveBeenCalledTimes(1);
+  });
+
   describe('createAsset', () => {
+    it('reserves before writing and activates the same ID with ordinary metadata', async () => {
+      const dto = {
+        id: 'caller-id',
+        name: 'My photo',
+        type: 'image',
+        profileId: 'owner-1',
+        communityId: 'community-1',
+        audienceRestrictions: [{ type: 'owner', profileId: 'owner-1' }],
+        content: Buffer.from('photo'),
+        fileExtension: 'png',
+      } as any;
+      (storageAdapter.create as jest.Mock).mockImplementation(
+        async (input: any) => ({
+          id: 'adapter-spoof',
+          name: 'adapter-name',
+          storagePath: `bytes/${input.id}`,
+          profileId: 'adapter-profile',
+          originKind: 'guardian-staged',
+          lifecycleState: 'pending-delete',
+          audienceRestrictions: [],
+        })
+      );
+      const result = await appService.createAsset(dto);
+      expect(storageAdapter.reservationPath).toHaveBeenCalled();
+      expect(assetRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: expect.any(String),
+          lifecycleState: 'pending-upload',
+          originKind: 'ordinary',
+          profileId: 'owner-1',
+        })
+      );
+      expect(storageAdapter.create).toHaveBeenCalledWith(
+        expect.objectContaining({ id: result.id })
+      );
+      expect(result.id).not.toBe('caller-id');
+      expect(result.lifecycleState).toBe('active');
+      expect(result.name).toBe('My_photo.png');
+      expect(result.profileId).toBe('owner-1');
+      expect(result.originKind).toBe('ordinary');
+      expect(result.originProfileId).toBeNull();
+      expect(result.originAppId).toBeNull();
+      expect(result.audienceCommunityIds).toEqual(['community-1']);
+      expect(result.audienceRestrictions).toEqual(dto.audienceRestrictions);
+    });
+
+    it('does not write storage when the reservation insert fails', async () => {
+      (assetRepo.save as jest.Mock).mockRejectedValueOnce(
+        new Error('reservation unavailable')
+      );
+      await expect(
+        appService.createAsset({
+          name: 'photo.png',
+          type: 'image',
+          profileId: 'owner-1',
+          content: Buffer.from('photo'),
+        } as any)
+      ).rejects.toThrow(RpcException);
+      expect(storageAdapter.create).not.toHaveBeenCalled();
+    });
+
+    it('compensates bytes when activation fails', async () => {
+      (storageAdapter.create as jest.Mock).mockResolvedValue({
+        storagePath: 'actual/storage/path',
+      });
+      (assetRepo.save as jest.Mock)
+        .mockImplementationOnce(async (row: any) => {
+          return row;
+        })
+        .mockRejectedValueOnce(new Error('activation unavailable'));
+      await expect(
+        appService.createAsset({
+          name: 'photo.png',
+          type: 'image',
+          profileId: 'owner-1',
+          content: Buffer.from('photo'),
+        } as any)
+      ).rejects.toThrow(RpcException);
+      expect(storageAdapter.remove).toHaveBeenCalledWith(
+        expect.objectContaining({ storagePath: 'actual/storage/path' })
+      );
+      expect(assetRepo.delete).toHaveBeenCalledWith({
+        id: expect.any(String),
+        lifecycleState: 'pending-upload',
+      });
+    });
+
+    it('retains pending cleanup state when compensation fails', async () => {
+      (storageAdapter.create as jest.Mock).mockResolvedValue({
+        storagePath: 'actual/storage/path',
+      });
+      (storageAdapter.remove as jest.Mock).mockRejectedValue(
+        new Error('cleanup unavailable')
+      );
+      (assetRepo.save as jest.Mock)
+        .mockImplementationOnce(async (row: any) => {
+          return row;
+        })
+        .mockRejectedValueOnce(new Error('activation unavailable'));
+      await expect(
+        appService.createAsset({
+          name: 'photo.png',
+          type: 'image',
+          profileId: 'owner-1',
+          content: Buffer.from('photo'),
+        } as any)
+      ).rejects.toThrow(RpcException);
+      expect(assetRepo.delete).not.toHaveBeenCalled();
+    });
+
     it('should create an asset and return it', async () => {
       const dto = { name: 'test', type: 'image', content: '' } as any;
-      const asset = { id: '1', ...dto };
+      const asset = { id: expect.any(String), ...dto } as any;
       jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
       jest.spyOn(storageAdapter, 'create').mockResolvedValue({
         id: asset.id,
@@ -104,19 +465,237 @@ describe('AppService', () => {
 
       expect(result).toEqual(asset);
       expect(assetRepo.create).toHaveBeenCalledWith({
+        id: expect.stringMatching(/^[0-9a-f-]{36}$/i),
         name: 'test',
         storageStrategy: 'local_block_storage',
         type: 'image',
         profileId: undefined,
+        audienceCommunityIds: [],
+        audienceRestrictions: [],
+        originKind: 'ordinary',
+        originProfileId: null,
+        originAppId: null,
+        storagePath: expect.stringContaining('assets/'),
+        lifecycleState: 'pending-upload',
+        lifecycleLeaseUntil: expect.any(Date),
       });
-      expect(storageAdapter.create).toHaveBeenCalledWith(asset);
-      expect(assetRepo.save).toHaveBeenCalledWith({
-        ...asset,
-        storagePath: 'some/path',
-        content: Buffer.from('some_content'),
-        profileId: asset.profileId,
+      expect(storageAdapter.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: expect.any(String),
+        })
+      );
+      expect(assetRepo.save).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          lifecycleState: 'active',
+          storagePath: 'some/path',
+          profileId: asset.profileId,
+        })
+      );
+    });
+
+    it('persists a community audience before the upload can be attached to content', async () => {
+      const dto = {
+        name: 'private.png',
+        type: 'image',
+        profileId: 'profile-1',
+        communityId: 'community-1',
+      } as any;
+      const asset = {
+        id: 'asset-1',
+        name: dto.name,
+        profileId: dto.profileId,
+        type: dto.type,
+        audienceCommunityIds: ['community-1'],
+      } as any;
+      jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue({
+        id: asset.id,
+        name: asset.name,
+        type: asset.type,
         storageStrategy: asset.storageStrategy,
+        storagePath: 'private.png',
+        profileId: asset.profileId,
+      } as any);
+      jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
+
+      await appService.createAsset(dto);
+
+      expect(assetRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ audienceCommunityIds: ['community-1'] })
+      );
+      expect(assetRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ audienceCommunityIds: ['community-1'] })
+      );
+    });
+
+    it('persists typed audience restrictions before returning an uploaded asset', async () => {
+      const restriction = {
+        type: 'followers',
+        profileId: 'profile-1',
+      } as const;
+      const dto = {
+        name: 'followers.png',
+        type: 'image',
+        profileId: 'profile-1',
+        audienceRestrictions: [restriction],
+      } as any;
+      const asset = {
+        id: 'asset-1',
+        name: dto.name,
+        profileId: dto.profileId,
+        type: dto.type,
+        audienceRestrictions: [restriction],
+      } as any;
+      jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue({
+        id: asset.id,
+        name: asset.name,
+        type: asset.type,
+        storageStrategy: asset.storageStrategy,
+        storagePath: 'followers.png',
+        profileId: asset.profileId,
+      } as any);
+      jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
+
+      await appService.createAsset(dto);
+
+      expect(assetRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ audienceRestrictions: [restriction] })
+      );
+      expect(assetRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ audienceRestrictions: [restriction] })
+      );
+    });
+
+    it('rejects the reserved guardian stage marker on the generic asset path', async () => {
+      const dto = {
+        name: 'forged.png',
+        type: 'image',
+        profileId: 'profile-1',
+        audienceRestrictions: [
+          {
+            type: 'guardian-staged',
+            profileId: 'profile-1',
+            appId: 'client-interface',
+          },
+        ],
+      } as any;
+
+      await expect(appService.createAsset(dto)).rejects.toBeInstanceOf(
+        RpcException
+      );
+      expect(assetRepo.create).not.toHaveBeenCalled();
+      expect(storageAdapter.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects reserved provenance fields smuggled inside a generic restriction', async () => {
+      const input = {
+        name: 'forged',
+        type: 'image',
+        content: Buffer.from('bytes'),
+        profileId: 'owner-profile',
+        audienceRestrictions: [
+          {
+            type: 'owner',
+            profileId: 'owner-profile',
+            originAppId: 'local-hub',
+          },
+        ],
+      } as any;
+      await expect(appService.createAsset(input)).rejects.toBeInstanceOf(
+        RpcException
+      );
+      expect(assetRepo.create).not.toHaveBeenCalled();
+      expect(storageAdapter.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects reserved nested provenance fields on ADD_AUDIENCE_RESTRICTIONS', async () => {
+      await expect(
+        appService.addAudienceRestrictions({
+          id: 'asset-1',
+          restrictions: [
+            {
+              type: 'owner',
+              profileId: 'owner-profile',
+              guardianStaged: true,
+            } as any,
+          ],
+        })
+      ).rejects.toBeInstanceOf(RpcException);
+    });
+
+    it('merges restrictions atomically and monotonically', async () => {
+      const owner = { type: 'owner', profileId: 'profile-1' } as const;
+      const followerAudience = {
+        type: 'followers',
+        profileId: 'profile-1',
+      } as const;
+      (assetRepo.query as jest.Mock).mockResolvedValue([
+        { id: 'asset-1', audienceRestrictions: [owner, followerAudience] },
+      ]);
+
+      await appService.addAudienceRestrictions({
+        id: 'asset-1',
+        restrictions: [owner],
       });
+      await appService.addAudienceRestrictions({
+        id: 'asset-1',
+        restrictions: [followerAudience],
+      });
+
+      expect(assetRepo.query).toHaveBeenCalledTimes(2);
+      expect(assetRepo.query).toHaveBeenCalledWith(
+        expect.stringContaining('jsonb_agg(DISTINCT restriction)'),
+        [JSON.stringify([owner]), 'asset-1']
+      );
+    });
+
+    it('adds community audiences monotonically without removing an existing restriction', async () => {
+      (assetRepo.query as jest.Mock).mockResolvedValue([
+        { id: 'asset-1', audienceCommunityIds: ['community-1', 'community-2'] },
+      ]);
+
+      await appService.addCommunityAudience({
+        id: 'asset-1',
+        communityId: 'community-2',
+      });
+      await appService.addCommunityAudience({
+        id: 'asset-1',
+        communityId: 'community-1',
+      });
+
+      expect(assetRepo.query).toHaveBeenCalledTimes(2);
+      expect(assetRepo.query).toHaveBeenCalledWith(
+        expect.stringContaining('"audienceCommunityIds" || $1::jsonb'),
+        [JSON.stringify(['community-1']), 'asset-1']
+      );
+    });
+
+    it('serializes concurrent audience additions as atomic JSONB merges', async () => {
+      (assetRepo.query as jest.Mock).mockResolvedValue([
+        { id: 'asset-1', audienceCommunityIds: [] },
+      ]);
+
+      await Promise.all([
+        appService.addCommunityAudience({
+          id: 'asset-1',
+          communityId: 'community-1',
+        }),
+        appService.addCommunityAudience({
+          id: 'asset-1',
+          communityId: 'community-2',
+        }),
+      ]);
+
+      expect(assetRepo.query).toHaveBeenCalledTimes(2);
+      expect(
+        (assetRepo.query as jest.Mock).mock.calls.every(
+          ([sql]) =>
+            sql.includes('UPDATE "asset_entity"') &&
+            sql.includes('"audienceCommunityIds" || $1::jsonb')
+        )
+      ).toBe(true);
     });
 
     it('should log an error if asset creation fails', async () => {
@@ -154,11 +733,9 @@ describe('AppService', () => {
       await appService.createAsset(dto);
 
       expect(logSpy).toHaveBeenCalledWith(
-        'Creating asset with data:',
+        'Creating asset:',
         dto.name,
-        dto.profileId,
-        dto.type,
-        dto.content.length
+        dto.type
       );
     });
 
@@ -289,7 +866,16 @@ describe('AppService', () => {
       jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
       jest.spyOn(storageAdapter, 'create').mockResolvedValue(asset);
       jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
-      (nodeFs.readFile as jest.Mock).mockResolvedValue(Buffer.from('video'));
+      const fileHandle = {
+        stat: jest.fn().mockResolvedValue({
+          isFile: () => true,
+          size: 5,
+          mtimeMs: 1,
+        }),
+        createReadStream: jest.fn(() => Readable.from([Buffer.from('video')])),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+      (nodeFs.open as jest.Mock).mockResolvedValue(fileHandle);
 
       await appService.createAsset(dto);
 
@@ -305,9 +891,90 @@ describe('AppService', () => {
       );
       expect(storageAdapter.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          sourcePath: '/tmp/imports/episode.mp4',
+          content: Buffer.from('video'),
+          sourcePath: undefined,
         })
       );
+      expect(nodeFs.open).toHaveBeenCalledWith(
+        '/tmp/imports/episode.mp4',
+        expect.any(Number)
+      );
+      const openFlags = (nodeFs.open as jest.Mock).mock.calls[0][1] as number;
+      expect(openFlags & fsConstants.O_NOFOLLOW).not.toBe(0);
+      expect(fileHandle.createReadStream).toHaveBeenCalled();
+      expect(fileHandle.close).toHaveBeenCalled();
+    });
+
+    it('rejects an oversized sourcePath from the opened descriptor before reading or saving', async () => {
+      fileValidationService.getMaxSizeBytes = jest.fn().mockReturnValue(4);
+      const fileHandle = {
+        stat: jest.fn().mockResolvedValue({
+          isFile: () => true,
+          size: 5,
+          mtimeMs: 1,
+        }),
+        createReadStream: jest.fn(),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+      (nodeFs.open as jest.Mock).mockResolvedValue(fileHandle);
+      const dto = {
+        name: 'large.mp4',
+        type: 'video',
+        sourcePath: '/tmp/imports/large.mp4',
+        fileExtension: 'mp4',
+      } as any;
+
+      await expect(appService.createAsset(dto)).rejects.toThrow(RpcException);
+
+      expect(fileHandle.stat).toHaveBeenCalledTimes(1);
+      expect(fileHandle.createReadStream).not.toHaveBeenCalled();
+      expect(fileHandle.close).toHaveBeenCalled();
+      expect(virusScanService.scanFile).not.toHaveBeenCalled();
+      expect(storageAdapter.create).not.toHaveBeenCalled();
+      expect(assetRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('stops a sourcePath stream that grows beyond the configured limit and closes its descriptor', async () => {
+      fileValidationService.getMaxSizeBytes = jest.fn().mockReturnValue(4);
+      const sourceStream = Readable.from([Buffer.from('12345')]);
+      const fileHandle = {
+        stat: jest.fn().mockResolvedValue({
+          isFile: () => true,
+          size: 4,
+          mtimeMs: 1,
+        }),
+        createReadStream: jest.fn(() => sourceStream),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+      (nodeFs.open as jest.Mock).mockResolvedValue(fileHandle);
+      const dto = {
+        name: 'growing.mp4',
+        type: 'video',
+        sourcePath: '/tmp/imports/growing.mp4',
+        fileExtension: 'mp4',
+      } as any;
+
+      await expect(appService.createAsset(dto)).rejects.toThrow(RpcException);
+
+      expect(fileHandle.createReadStream).toHaveBeenCalled();
+      expect(fileHandle.close).toHaveBeenCalled();
+      expect(virusScanService.scanFile).not.toHaveBeenCalled();
+      expect(storageAdapter.create).not.toHaveBeenCalled();
+      expect(assetRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects oversized base64 before decoding or scanning', async () => {
+      const dto = {
+        name: 'episode.mp4',
+        type: 'video',
+        content: 'A'.repeat(35 * 1024 * 1024),
+        fileExtension: 'mp4',
+      } as any;
+
+      await expect(appService.createAsset(dto)).rejects.toThrow(RpcException);
+      expect(fileValidationService.validateFile).not.toHaveBeenCalled();
+      expect(virusScanService.scanFile).not.toHaveBeenCalled();
+      expect(storageAdapter.create).not.toHaveBeenCalled();
     });
 
     it('should throw RpcException if file validation fails', async () => {
@@ -381,6 +1048,21 @@ describe('AppService', () => {
     });
   });
 
+  describe('readAsset', () => {
+    it('does not return bytes for a community asset through the untrusted RPC read path', async () => {
+      jest.spyOn(assetRepo, 'findOneBy').mockResolvedValue({
+        id: 'asset-1',
+        profileId: 'owner-profile',
+        audienceCommunityIds: ['community-1'],
+      } as AssetEntity);
+
+      await expect(
+        appService.readAsset({ id: 'asset-1', profileId: 'owner-profile' })
+      ).rejects.toThrow('authorized media delivery path');
+      expect(storageAdapter.read).not.toHaveBeenCalled();
+    });
+  });
+
   describe('removeAsset', () => {
     it('should remove an asset', async () => {
       const handle = { id: '1' } as any;
@@ -391,7 +1073,10 @@ describe('AppService', () => {
 
       await appService.removeAsset(handle);
 
-      expect(assetRepo.findOneBy).toHaveBeenCalledWith({ id: handle.id });
+      expect(assetRepo.findOneBy).toHaveBeenCalledWith({
+        id: handle.id,
+        lifecycleState: 'active',
+      });
       expect(storageAdapter.remove).toHaveBeenCalledWith(asset);
       expect(assetRepo.remove).toHaveBeenCalledWith(asset);
     });
@@ -427,16 +1112,27 @@ describe('AppService', () => {
       const result = await appService.retrieveAsset(handle);
 
       expect(result).toEqual(asset);
-      expect(assetRepo.findOneBy).toHaveBeenCalledWith({ id: handle.id });
+      expect(assetRepo.findOneBy).toHaveBeenCalledWith({
+        id: handle.id,
+        lifecycleState: 'active',
+      });
     });
 
     it('should throw an error if asset not found', async () => {
       const handle = { id: '1' } as any;
       jest.spyOn(assetRepo, 'findOneBy').mockResolvedValue(null);
+      let error: RpcException | undefined;
+      try {
+        await appService.retrieveAsset(handle);
+      } catch (caught) {
+        error = caught as RpcException;
+      }
 
-      await expect(appService.retrieveAsset(handle)).rejects.toThrow(
-        new RpcException(`Asset with id ${handle.id} not found`)
-      );
+      expect(error).toBeInstanceOf(RpcException);
+      expect(error?.getError()).toEqual({
+        statusCode: 404,
+        message: 'Asset not found',
+      });
     });
 
     it('should log the retrieval of an asset', async () => {
@@ -447,7 +1143,7 @@ describe('AppService', () => {
 
       await appService.retrieveAsset(handle);
 
-      expect(logSpy).toHaveBeenCalledWith(
+      expect(logSpy).not.toHaveBeenCalledWith(
         'Retrieving asset with data:',
         handle
       );
@@ -490,12 +1186,7 @@ describe('AppService', () => {
 
       await appService.readAsset(handle);
 
-      expect(logSpy).toHaveBeenCalledWith('Reading asset with data:', handle);
-      expect(logSpy).toHaveBeenCalledWith('Retrieved asset:', asset);
-      expect(logSpy).toHaveBeenCalledWith(
-        'Read asset content length:',
-        content.length
-      );
+      expect(logSpy).not.toHaveBeenCalledWith('Retrieved asset:', asset);
     });
   });
 
@@ -513,7 +1204,11 @@ describe('AppService', () => {
 
       expect(result).toEqual(assets);
       expect(assetRepo.find).toHaveBeenCalledWith({
-        where: { profileId: 'profile-1', type: 'image' },
+        where: {
+          profileId: 'profile-1',
+          type: 'image',
+          lifecycleState: 'active',
+        },
         order: { id: 'DESC' },
         take: 48,
       });

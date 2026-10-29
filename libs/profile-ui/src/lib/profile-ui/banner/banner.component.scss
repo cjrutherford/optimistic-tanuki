@@ -30,6 +30,11 @@
 }
 
 .profile-name {
+  color: var(--foreground);
+  background: var(--surface, var(--background));
+  display: inline-block;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--border-radius-sm, 4px);
   font-size: 18px;
   font-weight: bold;
 }

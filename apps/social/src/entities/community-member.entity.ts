@@ -52,8 +52,7 @@ export class CommunityMember {
   role: CommunityMemberRole;
 
   @Column({
-    type: 'enum',
-    enum: CommunityMembershipStatus,
+    type: 'varchar',
     default: CommunityMembershipStatus.APPROVED,
   })
   status: CommunityMembershipStatus;

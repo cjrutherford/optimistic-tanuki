@@ -3,6 +3,9 @@ export interface UserContext {
   email: string;
   name: string;
   profileId: string;
+  /** Resolved from the signed session and registered request origin by AuthGuard. */
+  appId?: string;
+  sessionExpiresAt?: string;
   emailVerified?: boolean;
   scopes?: string[];
   roles?: string[];

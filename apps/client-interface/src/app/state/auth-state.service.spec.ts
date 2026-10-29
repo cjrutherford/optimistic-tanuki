@@ -5,6 +5,7 @@ import {
   HttpTestingController,
 } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
+import * as CommonUi from '@optimistic-tanuki/common-ui';
 import { API_BASE_URL, ProfileDto } from '@optimistic-tanuki/ui-models';
 import { AuthenticationService } from '../authentication.service';
 import { AuthStateService, UserData } from './auth-state.service';
@@ -12,6 +13,7 @@ import { AuthStateService, UserData } from './auth-state.service';
 const API = 'http://api.test';
 const SESSION_URL = `${API}/authentication/session`;
 const LOGOUT_URL = `${API}/authentication/logout`;
+const ISSUE_URL = `${API}/authentication/issue`;
 
 const USER: UserData = {
   userId: 'u1',
@@ -20,7 +22,7 @@ const USER: UserData = {
   profileId: 'p1',
 };
 
-const PROFILE = { id: 'p1', profileName: 'Ada' } as ProfileDto;
+const PROFILE = { id: 'p1', userId: 'u1', profileName: 'Ada' } as ProfileDto;
 
 describe('AuthStateService', () => {
   let httpMock: HttpTestingController;
@@ -57,6 +59,39 @@ describe('AuthStateService', () => {
   });
 
   describe('in the browser', () => {
+    it('opens RUM only after the server-verified session restore and closes it on logout', async () => {
+      const eligibility = jest.spyOn(
+        CommonUi,
+        'setPerformanceMonitoringEligibility'
+      );
+      const service = configure('browser');
+
+      httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await service.restoreSession();
+      expect(eligibility).toHaveBeenCalledWith('client-interface', true);
+
+      service.logout();
+      expect(eligibility).toHaveBeenLastCalledWith('client-interface', false);
+      httpMock.expectOne(LOGOUT_URL).flush({});
+      eligibility.mockRestore();
+    });
+
+    it('clears deleted-account state locally without making a logout request with a newer cookie', async () => {
+      const service = configure('browser');
+      const accountId = '41000000-0000-4000-8000-000000000001';
+      httpMock
+        .expectOne(SESSION_URL)
+        .flush({ data: { ...USER, userId: accountId } });
+      await service.restoreSession();
+      localStorage.setItem('theme', 'keep');
+      CommonUi.notifyAccountDeletion('41000000-0000-4000-8000-000000000002');
+      expect(service.isAuthenticated).toBe(true);
+      CommonUi.notifyAccountDeletion(accountId);
+      expect(service.isAuthenticated).toBe(false);
+      expect(localStorage.getItem('theme')).toBe('keep');
+      httpMock.expectNone(LOGOUT_URL);
+    });
+
     it('restores the session on construction and marks the user authenticated', async () => {
       const service = configure('browser');
 
@@ -88,19 +123,84 @@ describe('AuthStateService', () => {
       httpMock.verify();
     });
 
-    it('seeds currentProfile$ from the persisted selected profile', async () => {
+    it('restores an owned selected profile after session verification', async () => {
       localStorage.setItem(
         'ot-client-selectedProfile',
         JSON.stringify(PROFILE)
       );
       const service = configure('browser');
       httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await service.restoreSession();
 
       await expect(firstValueFrom(service.currentProfile$)).resolves.toEqual(
         PROFILE
       );
     });
 
+    it('does not expose a saved profile before the session is verified', async () => {
+      localStorage.setItem(
+        'ot-client-selectedProfile',
+        JSON.stringify(PROFILE)
+      );
+      const service = configure('browser');
+      expect(await firstValueFrom(service.currentProfile$)).toBeNull();
+      httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await Promise.resolve();
+      expect(await firstValueFrom(service.currentProfile$)).toEqual(PROFILE);
+    });
+
+    it('clears saved profiles after a rejected session probe', async () => {
+      const service = configure('browser');
+      httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await service.restoreSession();
+      service.persistProfiles([PROFILE]);
+      service.persistSelectedProfile(PROFILE);
+      localStorage.setItem('theme', 'dark');
+      localStorage.setItem('user-preferences', '{"density":"compact"}');
+      const pending = service.restoreSession();
+      httpMock
+        .expectOne(SESSION_URL)
+        .flush({}, { status: 401, statusText: 'Unauthorized' });
+      await pending;
+      expect(localStorage.getItem('ot-client-selectedProfile')).toBeNull();
+      expect(localStorage.getItem('theme')).toBe('dark');
+      expect(localStorage.getItem('user-preferences')).toBe(
+        '{"density":"compact"}'
+      );
+      expect(localStorage.getItem('ot-client-profiles')).toBeNull();
+      expect(await firstValueFrom(service.currentProfile$)).toBeNull();
+    });
+
+    it('discards profile state belonging to a previous account', async () => {
+      localStorage.setItem(
+        'ot-client-selectedProfile',
+        JSON.stringify({ ...PROFILE, userId: 'other' })
+      );
+      localStorage.setItem(
+        'ot-client-profiles',
+        JSON.stringify([{ ...PROFILE, userId: 'other' }])
+      );
+      const service = configure('browser');
+      httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await Promise.resolve();
+      expect(service.getPersistedSelectedProfile()).toBeNull();
+      expect(service.getPersistedProfiles()).toBeNull();
+    });
+
+    it('does not let an older account restore overwrite account B', async () => {
+      const service = configure('browser');
+      const initial = httpMock.expectOne(SESSION_URL);
+      const oldRestore = service.restoreSession();
+      const accountB = { ...USER, userId: 'account-b', profileId: 'profile-b' };
+      service.setSession(accountB);
+      const newerRestore = service.restoreSession();
+      httpMock.expectOne(SESSION_URL).flush({ data: accountB });
+      await newerRestore;
+      initial.flush({ data: { ...USER, userId: 'account-a' } });
+      await oldRestore;
+      expect(service.getDecodedTokenValue()?.userId).toBe('account-b');
+      expect(service.isAuthenticated).toBe(true);
+    });
     it('logs in through the authentication service and then restores the session', async () => {
       const service = configure('browser');
       httpMock.expectOne(SESSION_URL).flush({ data: USER });
@@ -135,6 +235,87 @@ describe('AuthStateService', () => {
       await expect(first).resolves.toBe(true);
       await expect(second).resolves.toBe(true);
       expect(service.isAuthenticated).toBe(true);
+      httpMock.verify();
+    });
+
+    it('switches profiles through a cookie session and verifies the returned profile identity', async () => {
+      const service = configure('browser');
+      httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await Promise.resolve();
+
+      const pending = service.activateProfileSession('p2');
+      const issue = httpMock.expectOne(ISSUE_URL);
+      expect(issue.request.method).toBe('POST');
+      expect(issue.request.body).toEqual({ profileId: 'p2' });
+      expect(issue.request.headers.get('X-ot-appscope')).toBe(
+        'client-interface'
+      );
+      expect(issue.request.headers.get('X-ot-session-mode')).toBe('cookie');
+      expect(issue.request.withCredentials).toBe(true);
+      issue.flush({ data: {} });
+      await Promise.resolve();
+
+      httpMock
+        .expectOne(SESSION_URL)
+        .flush({ data: { ...USER, profileId: 'p2' } });
+
+      await expect(pending).resolves.toBe(true);
+      expect(service.getDecodedTokenValue()).toMatchObject({
+        userId: USER.userId,
+        profileId: 'p2',
+      });
+      httpMock.verify();
+    });
+
+    it('restores the original verified session when target profile issuance is denied', async () => {
+      const service = configure('browser');
+      httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await Promise.resolve();
+
+      const pending = service.activateProfileSession('foreign-profile');
+      httpMock
+        .expectOne(ISSUE_URL)
+        .flush(null, { status: 403, statusText: 'Forbidden' });
+      await Promise.resolve();
+
+      const rollback = httpMock.expectOne(ISSUE_URL);
+      expect(rollback.request.body).toEqual({ profileId: USER.profileId });
+      rollback.flush({ data: {} });
+      await Promise.resolve();
+      httpMock.expectOne(SESSION_URL).flush({ data: USER });
+
+      await expect(pending).rejects.toThrow(
+        'Profile switching failed. Your previous profile remains active; please try again.'
+      );
+      expect(service.getDecodedTokenValue()).toEqual(USER);
+      expect(service.isAuthenticated).toBe(true);
+      httpMock.verify();
+    });
+
+    it('does not publish a mismatched profile identity before failed rollback ends the session', async () => {
+      const service = configure('browser');
+      httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await Promise.resolve();
+
+      const pending = service.activateProfileSession('p2');
+      httpMock.expectOne(ISSUE_URL).flush({ data: {} });
+      await Promise.resolve();
+      httpMock
+        .expectOne(SESSION_URL)
+        .flush({ data: { ...USER, profileId: 'unexpected-profile' } });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(service.getDecodedTokenValue()).toEqual(USER);
+      httpMock
+        .expectOne(ISSUE_URL)
+        .flush(null, { status: 403, statusText: 'Forbidden' });
+      await Promise.resolve();
+      httpMock.expectOne(LOGOUT_URL).flush({});
+
+      await expect(pending).rejects.toThrow(
+        'Profile switching could not be verified, so your session was ended. Please sign in again.'
+      );
+      expect(service.isAuthenticated).toBe(false);
+      expect(service.getDecodedTokenValue()).toBeNull();
       httpMock.verify();
     });
 
@@ -214,10 +395,7 @@ describe('AuthStateService', () => {
         .expectOne(LOGOUT_URL)
         .flush(null, { status: 500, statusText: 'Server Error' });
 
-      expect(errorSpy).toHaveBeenCalledWith(
-        'Failed to invalidate session on gateway:',
-        expect.anything()
-      );
+      expect(errorSpy).toHaveBeenCalledWith('Session invalidation failed');
       expect(service.isAuthenticated).toBe(false);
       httpMock.verify();
     });

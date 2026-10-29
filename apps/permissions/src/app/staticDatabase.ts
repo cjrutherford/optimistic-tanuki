@@ -1,6 +1,7 @@
 import * as yaml from 'js-yaml';
 
 import { DataSource } from 'typeorm';
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { Permission } from '../permissions/entities/permission.entity';
 import { Role } from '../roles/entities/role.entity';
 import { RoleAssignment } from '../role-assignments/entities/role-assignment.entity';
@@ -28,7 +29,13 @@ const username = process.env.POSTGRES_USER || configUsername;
 const password = process.env.POSTGRES_PASSWORD || configPassword;
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [Permission, Role, RoleAssignment, AppScope];
+const entities = [
+  Permission,
+  Role,
+  RoleAssignment,
+  AppScope,
+  AccountDeletionWriteFenceEntity,
+];
 
 const staticSource = new DataSource({
   type: 'postgres',

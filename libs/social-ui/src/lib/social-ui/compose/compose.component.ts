@@ -22,7 +22,10 @@ import {
   ControlValueAccessor,
   NG_VALUE_ACCESSOR,
 } from '@angular/forms';
-import { CreateAttachmentDto } from '@optimistic-tanuki/ui-models';
+import {
+  AssetAudienceRestriction,
+  CreateAttachmentDto,
+} from '@optimistic-tanuki/ui-models';
 import {
   InjectedComponentData,
   ComponentInjection,
@@ -81,10 +84,20 @@ export interface PostData {
   injectedComponents?: InjectedComponentInstance[]; // Old format (backward compat)
   injectedComponentsNew?: InjectedComponentData[]; // New format for DB persistence
   themeConfig?: PostThemeConfig;
+  visibility?: 'public' | 'followers' | 'community';
+}
+
+export interface PostAudienceOption {
+  label: string;
+  value: 'public' | 'followers' | 'community';
 }
 
 export interface ImageUploadCallback {
-  (dataUrl: string, fileName: string): Promise<string>;
+  (
+    dataUrl: string,
+    fileName: string,
+    audienceRestrictions?: AssetAudienceRestriction[]
+  ): Promise<string>;
 }
 
 @Component({
@@ -124,9 +137,24 @@ export class ComposeComponent
 {
   @Input() title = '';
   @Input() profileId?: string; // Profile ID for asset uploads
+  @Input() communityId?: string;
+  private _audienceOptions: PostAudienceOption[] = [
+    { label: 'Public', value: 'public' },
+    { label: 'Followers', value: 'followers' },
+  ];
+  @Input()
+  set audienceOptions(options: PostAudienceOption[]) {
+    this._audienceOptions = options?.length ? options : [];
+    this.visibility = this._audienceOptions[0]?.value ?? 'public';
+  }
+  get audienceOptions(): PostAudienceOption[] {
+    return this._audienceOptions;
+  }
+  visibility: 'public' | 'followers' | 'community' = 'public';
   @Input() attachments: CreateAttachmentDto[] = [];
   @Input() links: { url: string }[] = [];
   @Input() imageUploadCallback?: ImageUploadCallback;
+  @Input() assetAudienceRestrictions: AssetAudienceRestriction[] = [];
   @Input() submitLabel = 'Post';
   @Input() sectionKey = '';
   @Output() postSubmitted = new EventEmitter<PostData>();
@@ -145,6 +173,21 @@ export class ComposeComponent
   selectedComponentType: string | null = null;
   selectedComponentProps: Record<string, unknown> = {};
   componentConfig = COMPONENT_PROPERTY_DEFINITIONS;
+
+  getUploadAudienceRestrictions(): AssetAudienceRestriction[] {
+    const restrictions = [...this.assetAudienceRestrictions];
+    if (this.visibility === 'followers' && this.profileId) {
+      restrictions.push({ type: 'followers', profileId: this.profileId });
+    }
+    if (this.visibility === 'community' && this.profileId && this.communityId) {
+      restrictions.push({
+        type: 'community',
+        profileId: this.profileId,
+        communityId: this.communityId,
+      });
+    }
+    return restrictions;
+  }
 
   // Theme properties
   override background = '#ffffff';
@@ -535,6 +578,7 @@ export class ComposeComponent
     try {
       // If custom callback is provided, use it
       if (this.imageUploadCallback) {
+        this.imageUploadService.assertFileWithinLimit(file);
         const reader = new FileReader();
         reader.onload = async () => {
           try {
@@ -542,7 +586,8 @@ export class ComposeComponent
             if (base64Src && this.imageUploadCallback) {
               const uploadedUrl = await this.imageUploadCallback(
                 base64Src,
-                file.name
+                file.name,
+                this.getUploadAudienceRestrictions()
               );
               this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
             }
@@ -564,7 +609,8 @@ export class ComposeComponent
         const assetUrl = await this.imageUploadService.uploadFile(
           file,
           this.profileId,
-          `social-image-${Date.now()}`
+          `social-image-${Date.now()}`,
+          this.getUploadAudienceRestrictions()
         );
 
         this.editor?.chain().focus().setImage({ src: assetUrl }).run();
@@ -705,6 +751,7 @@ export class ComposeComponent
       try {
         // If custom callback is provided, use it
         if (this.imageUploadCallback) {
+          this.imageUploadService.assertFileWithinLimit(file);
           const reader = new FileReader();
           reader.onload = async (event: ProgressEvent<FileReader>) => {
             try {
@@ -712,7 +759,8 @@ export class ComposeComponent
               if (base64Src) {
                 const uploadedUrl = await this.imageUploadCallback!(
                   base64Src,
-                  file.name
+                  file.name,
+                  this.getUploadAudienceRestrictions()
                 );
                 this.editor
                   ?.chain()
@@ -737,7 +785,8 @@ export class ComposeComponent
           const assetUrl = await this.imageUploadService.uploadFile(
             file,
             this.profileId,
-            `social-drag-drop-${Date.now()}`
+            `social-drag-drop-${Date.now()}`,
+            this.getUploadAudienceRestrictions()
           );
 
           this.editor?.chain().focus().setImage({ src: assetUrl }).run();
@@ -815,7 +864,8 @@ export class ComposeComponent
               .substring(2, 9)}`;
             const assetUrl = await this.imageUploadCallback(
               image.dataUrl,
-              fileName
+              fileName,
+              this.getUploadAudienceRestrictions()
             );
             replacements.push({ dataUrl: image.dataUrl, assetUrl });
           } catch (error) {
@@ -842,6 +892,7 @@ export class ComposeComponent
     this.postSubmitted.emit({
       title: this.title,
       content: finalContent,
+      visibility: this.visibility,
       links: this.links,
       attachments: this.attachments,
       injectedComponents: this.getActiveComponents(), // Old format (backward compat)

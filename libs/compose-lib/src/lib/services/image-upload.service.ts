@@ -1,7 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { API_BASE_URL, CreateAssetDto } from '@optimistic-tanuki/ui-models';
+import {
+  API_BASE_URL,
+  CreateAssetDto,
+  AssetAudienceRestriction,
+  assertAssetUploadSize,
+  estimateBase64Bytes,
+} from '@optimistic-tanuki/ui-models';
 
 export interface AssetDto {
   id: string;
@@ -82,8 +88,10 @@ export class ImageUploadService {
   async uploadFile(
     file: File,
     profileId: string,
-    fileName?: string
+    fileName?: string,
+    audienceRestrictions?: AssetAudienceRestriction[]
   ): Promise<string> {
+    this.assertFileWithinLimit(file);
     // Read file as base64
     const base64Content = await this.fileToBase64(file);
 
@@ -100,6 +108,7 @@ export class ImageUploadService {
       type: assetType,
       content: base64Content,
       fileExtension: fileExtension,
+      ...(audienceRestrictions?.length ? { audienceRestrictions } : {}),
     };
 
     // Upload to asset service
@@ -121,7 +130,8 @@ export class ImageUploadService {
   async uploadBase64(
     dataUrl: string,
     profileId: string,
-    fileName?: string
+    fileName?: string,
+    audienceRestrictions?: AssetAudienceRestriction[]
   ): Promise<string> {
     // Extract file extension from data URL
     const fileExtension = this.getFileExtensionFromDataUrl(dataUrl);
@@ -129,6 +139,7 @@ export class ImageUploadService {
     // Determine asset type from MIME type in data URL
     const mimeType = this.getMimeTypeFromDataUrl(dataUrl);
     const assetType = this.getAssetType(mimeType);
+    assertAssetUploadSize(estimateBase64Bytes(dataUrl), assetType);
 
     // Create asset DTO
     const assetDto: CreateAssetDto = {
@@ -137,6 +148,7 @@ export class ImageUploadService {
       type: assetType,
       content: dataUrl,
       fileExtension: fileExtension,
+      ...(audienceRestrictions?.length ? { audienceRestrictions } : {}),
     };
 
     // Upload to asset service
@@ -158,6 +170,10 @@ export class ImageUploadService {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  }
+
+  assertFileWithinLimit(file: File): void {
+    assertAssetUploadSize(file.size, this.getAssetType(file.type));
   }
 
   /**

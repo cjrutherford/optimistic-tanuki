@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA, PLATFORM_ID } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { AppComponent } from './app.component';
 import { Router, RouterModule } from '@angular/router';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
@@ -14,7 +15,7 @@ import { ProfileService } from './profile.service';
 import { ProfileContext } from './profile.context';
 import { TitleService } from './title.service';
 import { ChatService } from './chat.service';
-import { SocketChatService } from '@optimistic-tanuki/chat-ui';
+import { ChatUiComponent, SocketChatService } from '@optimistic-tanuki/chat-ui';
 import { NotificationService } from '@optimistic-tanuki/notification-ui';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 
@@ -113,6 +114,7 @@ describe('AppComponent', () => {
           provide: SocketChatService,
           useValue: {
             sendMessage: jest.fn(),
+            destroy: jest.fn(),
             onMessage: jest.fn(),
           },
         },
@@ -193,6 +195,14 @@ describe('AppComponent', () => {
     });
   });
 
+  it('shows the HAI control to signed-out visitors', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.componentInstance.isAuthenticated.set(false);
+    fixture.componentInstance.currentPath.set('/');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('hai-about-tag')).not.toBeNull();
+  });
+
   it('suppresses fixed chat overlays on the desktop messages workspace', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
@@ -252,7 +262,11 @@ describe('AppComponent behaviour', () => {
   };
   let profileService: { getCurrentUserProfile: jest.Mock };
   let chatService: { getConversations: jest.Mock; startDirectChat: jest.Mock };
-  let socketChatService: { sendMessage: jest.Mock; onMessage: jest.Mock };
+  let socketChatService: {
+    destroy: jest.Mock;
+    sendMessage: jest.Mock;
+    onMessage: jest.Mock;
+  };
   let notificationService: {
     notifications: jest.Mock;
     unreadCount: jest.Mock;
@@ -289,6 +303,7 @@ describe('AppComponent behaviour', () => {
       startDirectChat: jest.fn(),
     };
     socketChatService = {
+      destroy: jest.fn(),
       sendMessage: jest.fn(),
       onMessage: jest.fn((cb: (message: unknown) => void) => {
         onMessage = cb;
@@ -482,6 +497,130 @@ describe('AppComponent behaviour', () => {
   });
 
   describe('chat', () => {
+    it('exposes the launcher as a named disclosure and focuses a named chat region', async () => {
+      app.isAuthenticated.set(true);
+      fixture.detectChanges();
+
+      const launcher = fixture.nativeElement.querySelector(
+        '.chat-floating-button'
+      ) as HTMLButtonElement;
+
+      expect(launcher.tagName).toBe('BUTTON');
+      expect(launcher.getAttribute('aria-label')).toBe('Messages');
+      expect(launcher.getAttribute('aria-expanded')).toBe('false');
+      expect(launcher.getAttribute('aria-controls')).toBe(
+        'floating-chat-panel'
+      );
+
+      launcher.focus();
+      launcher.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const panel = fixture.nativeElement.querySelector(
+        '#floating-chat-panel'
+      ) as HTMLElement;
+      expect(launcher.getAttribute('aria-expanded')).toBe('true');
+      expect(panel.getAttribute('role')).toBe('region');
+      expect(panel.getAttribute('aria-labelledby')).toBe('floating-chat-title');
+      expect(panel.querySelector('#floating-chat-title')?.textContent).toBe(
+        'Messages'
+      );
+      expect(document.activeElement).toBe(panel);
+      expect(
+        panel.querySelector('button[aria-label="Close messages"]')
+      ).toBeTruthy();
+    });
+
+    it('closes the modeless chat region with Escape and restores launcher focus', async () => {
+      app.isAuthenticated.set(true);
+      fixture.detectChanges();
+
+      const launcher = fixture.nativeElement.querySelector(
+        '.chat-floating-button'
+      ) as HTMLButtonElement;
+      launcher.focus();
+      launcher.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const panel = fixture.nativeElement.querySelector(
+        '#floating-chat-panel'
+      ) as HTMLElement;
+      const closeButton = panel.querySelector(
+        'button[aria-label="Close messages"]'
+      ) as HTMLButtonElement;
+      expect(closeButton).toBeTruthy();
+      panel.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+      );
+      fixture.detectChanges();
+
+      expect(launcher.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(launcher);
+      expect(panel.hidden).toBe(true);
+
+      launcher.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('#floating-chat-panel')).toBe(
+        panel
+      );
+      expect(panel.hidden).toBe(false);
+    });
+
+    it('retains an unsent composer draft when the panel closes and reopens', async () => {
+      app.isAuthenticated.set(true);
+      app.chatInitialized.set(true);
+      app.chatContacts = [{ id: 'draft-conversation', name: 'Contact' }];
+      app.chatConversations = [
+        {
+          id: 'draft-conversation',
+          participants: ['profile-1', 'profile-2'],
+          messages: [],
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+        },
+      ];
+      app.showChat.set(true);
+      app.chatEverOpened.set(true);
+      app.conversationToOpen.set({
+        id: 'draft-conversation',
+        requestId: 1,
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const panel = fixture.nativeElement.querySelector(
+        '#floating-chat-panel'
+      ) as HTMLElement;
+      const textarea = panel.querySelector(
+        'lib-compose-chat textarea'
+      ) as HTMLTextAreaElement;
+      expect(textarea).toBeTruthy();
+      textarea.value = 'A message I have not sent';
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      fixture.detectChanges();
+
+      app.closeChat();
+      fixture.detectChanges();
+      expect(panel.hidden).toBe(true);
+
+      app.toggleChat();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(panel.querySelector('lib-compose-chat textarea')).toBe(textarea);
+      expect(textarea.value).toBe('A message I have not sent');
+      expect(socketChatService.sendMessage).not.toHaveBeenCalled();
+    });
+
     it('loads chat data the first time the panel opens', async () => {
       app.toggleChat();
       expect(app.showChat()).toBe(true);
@@ -494,6 +633,25 @@ describe('AppComponent behaviour', () => {
       app.toggleChat();
       expect(app.showChat()).toBe(false);
       expect(chatService.getConversations).not.toHaveBeenCalled();
+    });
+
+    it('clears session views and rejects a chat load that completes after account invalidation', async () => {
+      let resolve!: (value: any[]) => void;
+      chatService.getConversations.mockReturnValue(
+        new Promise<any[]>((r) => {
+          resolve = r;
+        })
+      );
+      app.chatContacts = [{ id: 'private', name: 'private' }];
+      app.showChat.set(true);
+      const work = app.loadChatData();
+      app.clearSessionViews();
+      resolve([conversation('old', [])]);
+      await work;
+      expect(app.chatContacts).toEqual([]);
+      expect(app.chatConversations).toEqual([]);
+      expect(app.selectedProfile()).toBeNull();
+      expect(app.showChat()).toBe(false);
     });
 
     it('does nothing without a current profile', async () => {
@@ -633,12 +791,92 @@ describe('AppComponent behaviour', () => {
       );
     });
 
-    // NOTE: openChat() currently calls itself with the same id whenever the
-    // contact is found, so it only terminates for an unknown conversation.
-    // Only the terminating branch is exercised here on purpose.
     it('openChat is a no-op for an unknown conversation', async () => {
       app.chatContacts = [];
       await expect(app.openChat('missing')).resolves.toBeUndefined();
+    });
+
+    it('selects a known conversation in the floating chat panel', () => {
+      app.isAuthenticated.set(true);
+      app.chatContacts = [
+        { id: 'c1', name: 'First' },
+        { id: 'c2', name: 'Second' },
+      ];
+      app.chatConversations = [
+        {
+          id: 'c1',
+          participants: [],
+          messages: [],
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+        },
+        {
+          id: 'c2',
+          participants: [],
+          messages: [],
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+        },
+      ];
+      app.showChat.set(true);
+      app.chatEverOpened.set(true);
+      fixture.detectChanges();
+
+      app.openChat('c2');
+      fixture.detectChanges();
+
+      const chatUi = fixture.debugElement.query(By.directive(ChatUiComponent))
+        .componentInstance as ChatUiComponent;
+      expect(chatUi.selectedConversationId()).toBe('c2');
+    });
+
+    it('opens an existing direct conversation from startChatWithUser', async () => {
+      app.isAuthenticated.set(true);
+      app.chatInitialized.set(true);
+      app.chatContacts = [{ id: 'existing-conversation', name: 'Existing' }];
+      app.chatConversations = [
+        {
+          id: 'existing-conversation',
+          participants: ['profile-1', 'profile-2'],
+          messages: [],
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+        },
+      ];
+      chatService.startDirectChat.mockResolvedValue(
+        conversation('existing-conversation', ['profile-1', 'profile-2'])
+      );
+
+      await app.startChatWithUser('profile-2');
+      fixture.detectChanges();
+
+      expect(app.chatEverOpened()).toBe(true);
+      const chatUi = fixture.debugElement.query(By.directive(ChatUiComponent))
+        .componentInstance as ChatUiComponent;
+      expect(chatUi.selectedConversationId()).toBe('existing-conversation');
+    });
+
+    it('opens a newly created direct conversation after the floating panel mounts', async () => {
+      app.isAuthenticated.set(true);
+      const created = conversation('new-conversation', [
+        'profile-1',
+        'profile-2',
+      ]);
+      chatService.startDirectChat.mockResolvedValue(created);
+
+      const pending = app.startChatWithUser('profile-2');
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      const profileRequest = httpMock.expectOne('/api/profile/by-id/profile-2');
+      profileRequest.flush({ id: 'profile-2', profileName: 'New Contact' });
+      await pending;
+      fixture.detectChanges();
+
+      expect(app.chatEverOpened()).toBe(true);
+      const chatUi = fixture.debugElement.query(By.directive(ChatUiComponent))
+        .componentInstance as ChatUiComponent;
+      expect(chatUi.selectedConversationId()).toBe('new-conversation');
     });
   });
 

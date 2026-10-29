@@ -1,3 +1,4 @@
+jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 import staticSource from './staticDatabase';
 import {
   ChannelFeed,
@@ -39,6 +40,7 @@ describe('videos static datasource', () => {
       'Initial1770152975983',
       'CommunityBroadcast1786715103205',
       'VideoProcessingPipeline1786715106275',
+      'AccountDeletionWriteFence1792932755812',
     ]);
   });
 

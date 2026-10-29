@@ -23,6 +23,7 @@ import {
 } from '../decorators/permissions.decorator';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { ProfileDto } from '@optimistic-tanuki/models';
+import { emitSafeDiagnostic } from '@optimistic-tanuki/logger';
 import {
   WORKSPACE_CONTEXT_KEY,
   WorkspaceContextRequirement,
@@ -57,10 +58,15 @@ export class PermissionsGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    this.logger.log(`Checking permissions for user: ${JSON.stringify(user)}`);
+    emitSafeDiagnostic(this.logger, 'authorization.check.started');
 
     if (!user) {
-      this.logger.warn('User not authenticated');
+      emitSafeDiagnostic(
+        this.logger,
+        'authorization.operation',
+        undefined,
+        'warn'
+      );
       throw new ForbiddenException('User not authenticated');
     }
 
@@ -95,7 +101,12 @@ export class PermissionsGuard implements CanActivate {
     const appScopeName = request.headers['x-ot-appscope'];
 
     if (!appScopeName) {
-      this.logger.warn('App scope header (x-ot-appscope) is missing');
+      emitSafeDiagnostic(
+        this.logger,
+        'authorization.operation',
+        undefined,
+        'warn'
+      );
       throw new ForbiddenException(
         'App scope header (x-ot-appscope) is required'
       );
@@ -110,7 +121,12 @@ export class PermissionsGuard implements CanActivate {
     );
 
     if (!appScope) {
-      this.logger.warn(`App scope not found: ${appScopeName}`);
+      emitSafeDiagnostic(
+        this.logger,
+        'authorization.operation',
+        undefined,
+        'warn'
+      );
       throw new ForbiddenException(`App scope not found: ${appScopeName}`);
     }
 
@@ -139,22 +155,31 @@ export class PermissionsGuard implements CanActivate {
       const fallbackProfile = appScopeProfile || globalProfile || profiles[0];
 
       if (!fallbackProfile) {
-        this.logger.warn(
-          `No profile available for userId=${user.userId} to satisfy permission check in app scope ${appScopeName}`
+        emitSafeDiagnostic(
+          this.logger,
+          'authorization.operation',
+          undefined,
+          'warn'
         );
         throw new ForbiddenException('User profile required for this action');
       }
 
       user.profileId = fallbackProfile.id;
       request.user = user;
-      this.logger.debug(
-        `Resolved missing profileId from profiles list: profileId=${user.profileId}, appScope=${fallbackProfile.appScope}`
+      emitSafeDiagnostic(
+        this.logger,
+        'authorization.operation',
+        undefined,
+        'debug'
       );
     } else if (appScopeProfile && currentProfile?.appScope !== appScopeName) {
       user.profileId = appScopeProfile.id;
       request.user = user;
-      this.logger.debug(
-        `Switched request profileId to app-scoped profile: profileId=${user.profileId}, appScope=${appScopeName}`
+      emitSafeDiagnostic(
+        this.logger,
+        'authorization.operation',
+        undefined,
+        'debug'
       );
     }
 
@@ -179,7 +204,12 @@ export class PermissionsGuard implements CanActivate {
 
     const targetId = this.resolveTargetId(request, targetRequirement);
     if (targetId) {
-      this.logger.debug(`Resolved permission targetId: ${targetId}`);
+      emitSafeDiagnostic(
+        this.logger,
+        'authorization.operation',
+        undefined,
+        'debug'
+      );
     }
 
     // First, try to authorize with global scope permissions (if user has global profile)
@@ -187,38 +217,32 @@ export class PermissionsGuard implements CanActivate {
       let allGlobalPermissionsGranted = true;
 
       for (const permission of permissions) {
-        let hasPermission = await this.cacheService.get(
+        const hasPermission = await this.cacheService.getOrLoad(
           globalPermissionProfileId,
           permission,
           globalScope.id,
-          targetId
+          targetId,
+          async () => {
+            emitSafeDiagnostic(
+              this.logger,
+              'authorization.operation',
+              undefined,
+              'debug'
+            );
+            return await firstValueFrom(
+              this.permissionsClient.send(
+                { cmd: RoleCommands.CheckPermission },
+                {
+                  profileId: globalPermissionProfileId,
+                  permission,
+                  profileAppScope: 'global',
+                  appScopeId: globalScope.id,
+                  targetId,
+                }
+              )
+            );
+          }
         );
-
-        if (hasPermission === null) {
-          this.logger.debug(
-            `Cache miss for global permission: ${permission}, checking with permissions service`
-          );
-          hasPermission = await firstValueFrom(
-            this.permissionsClient.send(
-              { cmd: RoleCommands.CheckPermission },
-              {
-                profileId: globalPermissionProfileId,
-                permission,
-                profileAppScope: 'global',
-                appScopeId: globalScope.id,
-                targetId,
-              }
-            )
-          );
-
-          await this.cacheService.set(
-            globalPermissionProfileId,
-            permission,
-            globalScope.id,
-            hasPermission,
-            targetId
-          );
-        }
 
         if (!hasPermission) {
           allGlobalPermissionsGranted = false;
@@ -227,8 +251,11 @@ export class PermissionsGuard implements CanActivate {
       }
 
       if (allGlobalPermissionsGranted) {
-        this.logger.debug(
-          `Access granted via global scope permissions for profile ${globalPermissionProfileId}`
+        emitSafeDiagnostic(
+          this.logger,
+          'authorization.operation',
+          undefined,
+          'debug'
         );
         return true;
       }
@@ -261,33 +288,25 @@ export class PermissionsGuard implements CanActivate {
 
       let allWorkspacePermissionsGranted = true;
       for (const permission of permissions) {
-        let hasPermission = await this.cacheService.get(
+        const hasPermission = await this.cacheService.getOrLoad(
           appScopePermissionProfileId,
           permission,
           workspaceScope.id,
-          targetId
-        );
-        if (hasPermission === null) {
-          hasPermission = await firstValueFrom(
-            this.permissionsClient.send(
-              { cmd: RoleCommands.CheckPermission },
-              {
-                profileId: appScopePermissionProfileId,
-                permission,
-                profileAppScope: workspaceContext.workspaceScope,
-                appScopeId: workspaceScope.id,
-                targetId,
-              }
+          targetId,
+          async () =>
+            await firstValueFrom(
+              this.permissionsClient.send(
+                { cmd: RoleCommands.CheckPermission },
+                {
+                  profileId: appScopePermissionProfileId,
+                  permission,
+                  profileAppScope: workspaceContext.workspaceScope,
+                  appScopeId: workspaceScope.id,
+                  targetId,
+                }
+              )
             )
-          );
-          await this.cacheService.set(
-            appScopePermissionProfileId,
-            permission,
-            workspaceScope.id,
-            hasPermission,
-            targetId
-          );
-        }
+        );
         if (!hasPermission) {
           allWorkspacePermissionsGranted = false;
           break;
@@ -304,8 +323,11 @@ export class PermissionsGuard implements CanActivate {
     // If global scope didn't grant access, check app-specific scope
     // User must have a profile matching the app scope
     if (!appScopeProfile) {
-      this.logger.warn(
-        `No valid profile found for profileId: ${user.profileId} in app scope: ${appScopeName}. Will attempt fallback to global permissions.`
+      emitSafeDiagnostic(
+        this.logger,
+        'authorization.operation',
+        undefined,
+        'warn'
       );
       // Don't throw here - try global fallback in the permission check instead
     }
@@ -313,49 +335,40 @@ export class PermissionsGuard implements CanActivate {
     // Check each required permission for the specific app scope
     for (const permission of permissions) {
       // Try to get from cache first
-      let hasPermission = await this.cacheService.get(
+      const hasPermission = await this.cacheService.getOrLoad(
         appScopePermissionProfileId,
         permission,
         appScope.id,
-        targetId
+        targetId,
+        async () => {
+          emitSafeDiagnostic(
+            this.logger,
+            'authorization.operation',
+            undefined,
+            'debug'
+          );
+          return await firstValueFrom(
+            this.permissionsClient.send(
+              { cmd: RoleCommands.CheckPermission },
+              {
+                profileId: appScopePermissionProfileId,
+                permission,
+                profileAppScope: appScopeName,
+                appScopeId: appScope.id,
+                checkGlobalFallback: true,
+                targetId,
+              }
+            )
+          );
+        }
       );
 
-      // If not in cache, check with permissions service
-      if (hasPermission === null) {
-        this.logger.debug(
-          `Cache miss for permission: ${permission}, checking with permissions service`
-        );
-        hasPermission = await firstValueFrom(
-          this.permissionsClient.send(
-            { cmd: RoleCommands.CheckPermission },
-            {
-              profileId: appScopePermissionProfileId,
-              permission,
-              profileAppScope: appScopeName,
-              appScopeId: appScope.id,
-              checkGlobalFallback: true,
-              targetId,
-            }
-          )
-        );
-
-        // Cache the result
-        await this.cacheService.set(
-          appScopePermissionProfileId,
-          permission,
-          appScope.id,
-          hasPermission,
-          targetId
-        );
-      } else {
-        this.logger.debug(
-          `Cache hit for permission: ${permission}, granted=${hasPermission}`
-        );
-      }
-
       if (!hasPermission) {
-        this.logger.warn(
-          `Permission denied: ${permission} in app scope ${appScopeName} for profile ${appScopePermissionProfileId}`
+        emitSafeDiagnostic(
+          this.logger,
+          'authorization.operation',
+          undefined,
+          'warn'
         );
         throw new ForbiddenException(
           `Permission denied: ${permission} in app scope ${appScopeName}`

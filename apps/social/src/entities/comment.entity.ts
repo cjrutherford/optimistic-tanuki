@@ -73,7 +73,7 @@ export class Comment {
 }
 
 export function transformSearchCommentDtoToFindOptions(
-  dto: SearchCommentDto
+  dto: SearchCommentDto = {}
 ): FindManyOptions<Comment> {
   const findOptions: FindManyOptions<Comment> = {
     where: {} as FindOptionsWhere<Comment>,

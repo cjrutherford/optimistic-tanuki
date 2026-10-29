@@ -16,6 +16,13 @@ describe('AuthGuard', () => {
   let jwtService: JwtService;
   let clientProxy: any;
   let permissionsClient: any;
+  const appRegistry: any = {
+    apps: [
+      { appId: 'client-interface', uiBaseUrl: 'http://localhost:8080' },
+      { appId: 'local-hub', uiBaseUrl: 'http://localhost:8081' },
+      { appId: 'opportunity-compass', uiBaseUrl: 'http://localhost:8090' },
+    ],
+  };
 
   const mockUserDetails = {
     userId: '123450',
@@ -44,7 +51,8 @@ describe('AuthGuard', () => {
       clientProxy,
       reflector,
       jwtService,
-      permissionsClient
+      permissionsClient,
+      appRegistry
     );
   });
 
@@ -83,7 +91,12 @@ describe('AuthGuard', () => {
       await expect(authGuard.canActivate(context)).resolves.toBe(true);
       expect(clientProxy.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.Validate },
-        { token: 'optional-token', userId: mockUserDetails.userId }
+        {
+          token: 'optional-token',
+          userId: mockUserDetails.userId,
+          appId: undefined,
+          activity: true,
+        }
       );
       expect(request.user).toEqual(
         expect.objectContaining({
@@ -113,7 +126,12 @@ describe('AuthGuard', () => {
       await expect(authGuard.canActivate(context)).resolves.toBe(true);
       expect(clientProxy.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.Validate },
-        { token: 'revoked-token', userId: mockUserDetails.userId }
+        {
+          token: 'revoked-token',
+          userId: mockUserDetails.userId,
+          appId: undefined,
+          activity: true,
+        }
       );
       expect(request.user).toBeUndefined();
     });
@@ -133,6 +151,101 @@ describe('AuthGuard', () => {
 
       await expect(authGuard.canActivate(context)).resolves.toBe(true);
       expect(jwtService.verifyAsync).toHaveBeenCalledWith('cookie-token');
+    });
+
+    it('binds auth introspection to registered Origin and ignores a forged app-scope header', async () => {
+      clientProxy.send = jest
+        .fn()
+        .mockReturnValue(of({ isValid: true, emailVerified: true }));
+      const request: any = {
+        headers: {
+          authorization: 'Bearer valid-token',
+          origin: 'http://localhost:8080',
+          host: 'localhost:8080',
+          'x-ot-appscope': 'local-hub',
+        },
+      };
+      const context = {
+        switchToHttp: () => ({ getRequest: () => request }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+      await expect(authGuard.canActivate(context)).resolves.toBe(true);
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.Validate },
+        {
+          token: 'valid-token',
+          userId: mockUserDetails.userId,
+          appId: 'client-interface',
+          activity: true,
+        }
+      );
+      expect(request.user.appId).toBe('client-interface');
+    });
+
+    it('rejects an Origin that conflicts with the signed token app scope', async () => {
+      (jwtService.verifyAsync as jest.Mock).mockResolvedValue({
+        ...mockUserDetails,
+        appId: 'local-hub',
+      });
+      const request: any = {
+        headers: {
+          authorization: 'Bearer local-hub-token',
+          origin: 'http://localhost:8080',
+          host: 'localhost:8080',
+        },
+      };
+      const context = {
+        switchToHttp: () => ({ getRequest: () => request }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).rejects.toThrow(
+        'Session application scope does not match request origin.'
+      );
+      expect(clientProxy.send).not.toHaveBeenCalled();
+    });
+
+    it('rejects a forged Origin that conflicts with the registered request Host', async () => {
+      const request: any = {
+        headers: {
+          authorization: 'Bearer forged-origin-token',
+          origin: 'http://localhost:8080',
+          host: 'localhost:8081',
+        },
+      };
+      const context = {
+        switchToHttp: () => ({ getRequest: () => request }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).rejects.toThrow(
+        'Session application scope does not match request origin.'
+      );
+      expect(clientProxy.send).not.toHaveBeenCalled();
+    });
+
+    it('does not trust forwarded host when resolving an application', async () => {
+      const request: any = {
+        headers: {
+          authorization: 'Bearer forged-forwarded-host-token',
+          origin: 'http://localhost:8080',
+          host: 'gateway.internal',
+          'x-forwarded-host': 'localhost:8080',
+        },
+      };
+      const context = {
+        switchToHttp: () => ({ getRequest: () => request }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).rejects.toThrow(
+        'Session application scope does not match request origin.'
+      );
+      expect(clientProxy.send).not.toHaveBeenCalled();
     });
 
     it('should return true if the user is authenticated', async () => {
@@ -156,7 +269,12 @@ describe('AuthGuard', () => {
       expect(jwtService.verifyAsync).toHaveBeenCalledWith('valid-token');
       expect(clientProxy.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.Validate },
-        { token: 'valid-token', userId: mockUserDetails.userId }
+        {
+          token: 'valid-token',
+          userId: mockUserDetails.userId,
+          appId: undefined,
+          activity: true,
+        }
       );
       expect(canActivate).toBe(true); // Assuming your guard validates 'valid-token'
     });
@@ -218,7 +336,12 @@ describe('AuthGuard', () => {
       expect(jwtService.verifyAsync).toHaveBeenCalledWith('invalid-token');
       expect(clientProxy.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.Validate },
-        { token: 'invalid-token', userId: mockUserDetails.userId }
+        {
+          token: 'invalid-token',
+          userId: mockUserDetails.userId,
+          appId: undefined,
+          activity: true,
+        }
       );
     });
 

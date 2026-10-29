@@ -25,6 +25,10 @@ import { ForumPostData } from '../compose-forum-post/compose-forum-post.componen
 import { CreateTopicComponent } from '../create-topic/create-topic.component';
 import { CreateThreadComponent } from '../create-thread/create-thread.component';
 
+type ParentDeletion =
+  | { kind: 'topic'; id: string; title: string }
+  | { kind: 'thread'; id: string; title: string; topicId: string };
+
 @Component({
   selector: 'lib-forum-shell',
   standalone: true,
@@ -50,13 +54,18 @@ export class ForumShellComponent implements OnInit {
 
   // Route resolved data
   userValidPermissions: string[] = [];
+  permissionsUnavailable = signal(false);
+  permissionsDenied = signal(false);
   userLoggedIn = false;
   currentUserId = '';
 
   // Signals for reactive state
   topics = signal<TopicDto[]>([]);
+  showEmptyTopics = signal(false);
   threads = signal<ThreadDto[]>([]);
+  showEmptyThreads = signal(false);
   posts = signal<ForumPostDto[]>([]);
+  showEmptyPosts = signal(false);
 
   currentTopic = signal<TopicDto | null>(null);
   currentThread = signal<ThreadDto | null>(null);
@@ -69,15 +78,142 @@ export class ForumShellComponent implements OnInit {
   showThreadModal = signal(false);
   loading = signal(false);
   error = signal<string | null>(null);
+  topicsLoadError = signal<string | null>(null);
+  topicLoadError = signal<string | null>(null);
+  threadLoadError = signal<string | null>(null);
+  threadsLoadError = signal<string | null>(null);
+  postsLoadError = signal<string | null>(null);
+  detailLoading = signal(false);
+  failedTopicId = signal<string | null>(null);
+  failedThreadId = signal<string | null>(null);
+  pendingDeletion = signal<ParentDeletion | null>(null);
+  deletionError = signal<string | null>(null);
+  deletionRetryable = signal(false);
+  deleting = signal(false);
 
   userHasPermission(permission: string): boolean {
     return this.userValidPermissions.includes(permission);
   }
 
+  canDeleteTopic(topic: TopicDto): boolean {
+    return (
+      this.isLoggedIn() &&
+      !!this.currentUserId &&
+      topic.profileId === this.currentUserId &&
+      this.userHasPermission('forum.topic.delete')
+    );
+  }
+
+  canDeleteThread(thread: ThreadDto): boolean {
+    return (
+      this.isLoggedIn() &&
+      !!this.currentUserId &&
+      thread.profileId === this.currentUserId &&
+      this.userHasPermission('forum.thread.delete')
+    );
+  }
+
+  requestTopicDeletion(topic: TopicDto): void {
+    if (!this.canDeleteTopic(topic)) return;
+    this.pendingDeletion.set({
+      kind: 'topic',
+      id: topic.id,
+      title: topic.title,
+    });
+    this.deletionError.set(null);
+    this.deletionRetryable.set(false);
+  }
+
+  requestThreadDeletion(thread: ThreadDto): void {
+    if (!this.canDeleteThread(thread)) return;
+    this.pendingDeletion.set({
+      kind: 'thread',
+      id: thread.id,
+      title: thread.title,
+      topicId: thread.topicId,
+    });
+    this.deletionError.set(null);
+    this.deletionRetryable.set(false);
+  }
+
+  cancelDeletion(): void {
+    if (!this.deleting()) this.pendingDeletion.set(null);
+    this.deletionError.set(null);
+    this.deletionRetryable.set(false);
+  }
+
+  async confirmDeletion(): Promise<void> {
+    const target = this.pendingDeletion();
+    if (!target || this.deleting()) return;
+    this.deleting.set(true);
+    this.deletionError.set(null);
+    this.deletionRetryable.set(false);
+
+    try {
+      if (target.kind === 'topic') {
+        await this.forumService.deleteTopic(target.id);
+        this.pendingDeletion.set(null);
+        this.currentTopic.set(null);
+        await this.loadTopics();
+        await this.router.navigate(['/forum']);
+      } else {
+        await this.forumService.deleteThread(target.id);
+        this.pendingDeletion.set(null);
+        this.currentThread.set(null);
+        await this.router.navigate(['/forum/topic', target.topicId]);
+      }
+    } catch (error) {
+      const status = (error as { status?: number } | null)?.status;
+      this.deletionError.set(
+        status === 401
+          ? 'Your session has expired. Please log in again before deleting.'
+          : status === 403
+          ? 'You are no longer allowed to delete this forum item.'
+          : status === 404
+          ? 'This forum item is no longer available. Refresh the page to check its status.'
+          : status === 409
+          ? 'This item still has threads or posts. Remove them first; deletion never removes descendants.'
+          : status === 0 ||
+            status === 408 ||
+            (status !== undefined && status >= 500)
+          ? 'The forum item could not be deleted because the service is temporarily unavailable. You can retry.'
+          : 'The forum item could not be deleted. Your content is still here.'
+      );
+      this.deletionRetryable.set(
+        status === 0 ||
+          status === 408 ||
+          (status !== undefined && status >= 500)
+      );
+    } finally {
+      this.deleting.set(false);
+    }
+  }
+
+  retryPermissions(): void {
+    if (this.isBrowser()) {
+      window.location.reload();
+    }
+  }
+
+  getUploadProfileId(): string {
+    return this.userProfile()?.id || this.currentUserId || '';
+  }
+
   ngOnInit() {
     // Read resolved data from route
     this.route.data.subscribe((data) => {
-      this.userValidPermissions = data['userValidPermissions'] || [];
+      const resolvedPermissions = data['userValidPermissions'];
+      if (Array.isArray(resolvedPermissions)) {
+        this.userValidPermissions = resolvedPermissions;
+        this.permissionsUnavailable.set(false);
+        this.permissionsDenied.set(false);
+      } else {
+        this.userValidPermissions = resolvedPermissions?.permissions ?? [];
+        this.permissionsUnavailable.set(
+          resolvedPermissions?.unavailable === true
+        );
+        this.permissionsDenied.set(resolvedPermissions?.denied === true);
+      }
       this.userLoggedIn = data['userLoggedIn'] || false;
       this.currentUserId = data['currentUserId'] || '';
 
@@ -126,41 +262,163 @@ export class ForumShellComponent implements OnInit {
   }
 
   private async loadTopics() {
+    this.error.set(null);
+    this.topicsLoadError.set(null);
+    this.showEmptyTopics.set(false);
     this.loading.set(true);
     try {
       const topics = await this.forumService.getTopics();
       this.topics.set(topics);
+      this.showEmptyTopics.set(topics.length === 0);
     } catch (error) {
-      this.error.set('Failed to load topics');
+      this.showEmptyTopics.set(false);
+      const status = (error as { status?: number } | null)?.status;
+      const reason =
+        status === 401
+          ? 'Your session has expired. Please log in again.'
+          : status === 403
+          ? 'You do not have permission to load forum topics.'
+          : status === 404
+          ? 'Forum topics were not found.'
+          : status === 0 ||
+            status === 408 ||
+            (typeof status === 'number' && status >= 500)
+          ? 'Forum topics are temporarily unavailable.'
+          : 'Forum topics could not be loaded.';
+      this.topicsLoadError.set(reason);
       console.error('Error loading topics:', error);
     } finally {
       this.loading.set(false);
     }
   }
 
-  private async loadTopic(topicId: string) {
-    try {
-      const topic = await this.forumService.getTopic(topicId);
-      this.currentTopic.set(topic);
-
-      const threads = await this.forumService.getThreadsByTopic(topicId);
-      this.threads.set(threads);
-    } catch (error) {
-      this.error.set('Failed to load topic');
-      console.error('Error loading topic:', error);
+  retryTopics(): void {
+    if (this.isBrowser()) {
+      void this.loadTopics();
     }
   }
 
+  private async loadTopic(topicId: string) {
+    this.currentTopic.set(null);
+    this.currentThread.set(null);
+    this.failedTopicId.set(null);
+    this.failedThreadId.set(null);
+    this.topicLoadError.set(null);
+    this.threadLoadError.set(null);
+    this.threadsLoadError.set(null);
+    this.showEmptyThreads.set(false);
+    this.threads.set([]);
+    this.posts.set([]);
+    this.detailLoading.set(true);
+    try {
+      const topic = await this.forumService.getTopic(topicId);
+      this.currentTopic.set(topic);
+    } catch (error) {
+      this.currentTopic.set(null);
+      this.currentThread.set(null);
+      this.threads.set([]);
+      this.failedTopicId.set(topicId);
+      const status = (error as { status?: number } | null)?.status;
+      const resource = status === 404 ? 'not found' : 'unavailable';
+      this.topicLoadError.set(
+        `This forum topic could not be loaded (${resource}).`
+      );
+      console.error('Error loading topic:', error);
+      this.detailLoading.set(false);
+      return false;
+    }
+    try {
+      const threads = await this.forumService.getThreadsByTopic(topicId);
+      this.threads.set(threads);
+      this.showEmptyThreads.set(threads.length === 0);
+      this.threadsLoadError.set(null);
+    } catch (error) {
+      this.showEmptyThreads.set(false);
+      const status = (error as { status?: number } | null)?.status;
+      const resource = status === 404 ? 'not found' : 'unavailable';
+      this.threadsLoadError.set(
+        `Threads for this topic could not be loaded (${resource}).`
+      );
+      console.error('Error loading topic threads:', error);
+    } finally {
+      this.detailLoading.set(false);
+    }
+    return true;
+  }
+
+  retryTopic(topicId: string): void {
+    if (this.isBrowser()) void this.loadTopic(topicId);
+  }
+
+  retryFailedTopic(): void {
+    const topicId = this.failedTopicId();
+    if (topicId) this.retryTopic(topicId);
+  }
+
+  retryThreads(topicId: string): void {
+    if (this.isBrowser()) void this.loadTopic(topicId);
+  }
+
+  retryFailedThread(): void {
+    const threadId = this.failedThreadId();
+    if (threadId) void this.loadThread(threadId);
+  }
+
   private async loadThread(threadId: string) {
+    this.currentTopic.set(null);
+    this.currentThread.set(null);
+    this.failedTopicId.set(null);
+    this.failedThreadId.set(null);
+    this.postsLoadError.set(null);
+    this.threadsLoadError.set(null);
+    this.topicLoadError.set(null);
+    this.threadLoadError.set(null);
+    this.threads.set([]);
+    this.showEmptyPosts.set(false);
+    this.posts.set([]);
+    this.detailLoading.set(true);
     try {
       const thread = await this.forumService.getThread(threadId);
+      const topicLoaded = await this.loadTopic(thread.topicId);
+      if (!topicLoaded) return;
       this.currentThread.set(thread);
+      await this.loadThreadPosts(threadId);
+    } catch (error) {
+      this.currentThread.set(null);
+      this.currentTopic.set(null);
+      this.threads.set([]);
+      const status = (error as { status?: number } | null)?.status;
+      const resource = status === 404 ? 'not found' : 'unavailable';
+      this.failedThreadId.set(threadId);
+      this.threadLoadError.set(
+        `This forum thread could not be loaded (${resource}).`
+      );
+      console.error('Error loading thread:', error);
+    } finally {
+      this.detailLoading.set(false);
+    }
+  }
 
+  retryPosts(threadId: string): void {
+    if (this.isBrowser()) void this.loadThreadPosts(threadId);
+  }
+
+  private async loadThreadPosts(threadId: string): Promise<void> {
+    this.postsLoadError.set(null);
+    this.showEmptyPosts.set(false);
+    this.posts.set([]);
+    this.detailLoading.set(true);
+    try {
       const posts = await this.forumService.getPostsByThread(threadId);
       this.posts.set(posts);
+      this.showEmptyPosts.set(posts.length === 0);
     } catch (error) {
-      this.error.set('Failed to load thread');
-      console.error('Error loading thread:', error);
+      const status = (error as { status?: number } | null)?.status;
+      const resource = status === 404 ? 'not found' : 'temporarily unavailable';
+      this.postsLoadError.set(`Posts for this thread were ${resource}.`);
+      console.error('Error loading posts:', error);
+    } finally {
+      this.detailLoading.set(false);
     }
   }
 

@@ -123,7 +123,9 @@ export class OAuthService {
   initiateOAuthLogin(
     provider: string,
     appScope?: string,
-    cookieSession = false
+    cookieSession = false,
+    dateOfBirth?: string,
+    guardianResumeToken?: string
   ): Promise<OAuthLoginResult> {
     return new Promise((resolve, reject) => {
       let checkClosed: ReturnType<typeof setInterval> | null = null;
@@ -298,9 +300,16 @@ export class OAuthService {
           },
         });
 
-      const startUrl = this.buildStartUrl(provider, appScope, cookieSession);
       const popupName = `oauth-popup-${Date.now()}`;
-      this.popup = window.open(startUrl, popupName, this.popupFeatures);
+      const requiresAgeProof =
+        appScope === 'client-interface' || appScope === 'local-hub';
+      this.popup = window.open(
+        requiresAgeProof
+          ? 'about:blank'
+          : this.buildStartUrl(provider, appScope, cookieSession),
+        popupName,
+        this.popupFeatures
+      );
       if (!this.popup) {
         this.messageSubscription.unsubscribe();
         this.messageSubscription = null;
@@ -310,6 +319,32 @@ export class OAuthService {
           )
         );
         return;
+      }
+      if (requiresAgeProof) {
+        const returnTo = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+        firstValueFrom(
+          this.http.post<{ authorizationUrl: string }>(
+            `${this.apiBaseUrl}/oauth/start/${encodeURIComponent(provider)}`,
+            {
+              returnTo,
+              appScope,
+              sessionMode: cookieSession ? 'cookie' : undefined,
+              dateOfBirth,
+              guardianResumeToken,
+            },
+            { withCredentials: true }
+          )
+        )
+          .then(({ authorizationUrl }) => {
+            if (this.popup && !this.popup.closed)
+              this.popup.location.href = authorizationUrl;
+          })
+          .catch(() =>
+            finish({
+              success: false,
+              error: 'Age eligibility could not be verified for OAuth.',
+            })
+          );
       }
       checkClosed = setInterval(() => {
         if (this.popup && this.popup.closed) {
@@ -374,7 +409,7 @@ export class OAuthService {
     );
     startUrl.searchParams.set(
       'returnTo',
-      `${window.location.origin}${window.location.pathname}${window.location.search}${window.location.hash}`
+      `${window.location.origin}${window.location.pathname}${window.location.search}`
     );
     if (appScope?.trim()) {
       startUrl.searchParams.set('appScope', appScope.trim());

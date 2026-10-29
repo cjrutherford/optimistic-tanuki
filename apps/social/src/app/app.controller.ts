@@ -1,7 +1,10 @@
 import { Controller, Get, Logger } from '@nestjs/common';
 
 import { PostService } from './services/post.service';
-import { AttachmentService } from './services/attachment.service';
+import {
+  AttachmentActor,
+  AttachmentService,
+} from './services/attachment.service';
 import { CommentService } from './services/comment.service';
 import { VoteService } from './services/vote.service';
 import { ReactionService } from './services/reaction.service';
@@ -32,6 +35,7 @@ import {
   ScheduledPostCommands,
   ServiceTokens,
   ProfileCommands,
+  GuardianContentCommands,
 } from '@optimistic-tanuki/constants';
 import { BusinessContentCommands } from '@optimistic-tanuki/social-contracts';
 import {
@@ -73,6 +77,7 @@ import {
 import { Post, postSearchDtoToFindManyOptions } from '../entities/post.entity';
 import {
   PostVisibilityScope,
+  applyVisiblePostScope,
   visiblePostWhere,
 } from './common/post-visibility.util';
 import { transformSearchCommentDtoToFindOptions } from '../entities/comment.entity';
@@ -97,9 +102,11 @@ import { PostShareService } from './services/post-share.service';
 import { EventService } from './services/event.service';
 import { BusinessContentService } from './services/business-content.service';
 import { LinkService } from './services/link.service';
+import { GuardianContentService } from './services/guardian-content.service';
+import { Optional } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 
 interface UserBlock {
   id: string;
@@ -133,24 +140,106 @@ export class AppController {
     private readonly linkService: LinkService,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
-    private readonly businessContentService: BusinessContentService
+    private readonly businessContentService: BusinessContentService,
+    @Optional() private readonly guardianContentService?: GuardianContentService
   ) {}
+
+  private guardianContent() {
+    if (!this.guardianContentService)
+      throw new RpcException('Guardian content service unavailable');
+    return this.guardianContentService;
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.ListPosts })
+  listGuardianPosts(@Payload() data: any) {
+    return this.guardianContent().listPosts(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.GetPost })
+  getGuardianPost(@Payload() data: any) {
+    return this.guardianContent().getPost(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.CreatePost })
+  createGuardianPost(@Payload() data: any) {
+    return this.guardianContent().createPost(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.UpdatePost })
+  updateGuardianPost(@Payload() data: any) {
+    return this.guardianContent().updatePost(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.DeletePost })
+  deleteGuardianPost(@Payload() data: any) {
+    return this.guardianContent().deletePost(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.ListComments })
+  listGuardianComments(@Payload() data: any) {
+    return this.guardianContent().listComments(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.GetComment })
+  getGuardianComment(@Payload() data: any) {
+    return this.guardianContent().getComment(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.CreateComment })
+  createGuardianComment(@Payload() data: any) {
+    return this.guardianContent().createComment(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.UpdateComment })
+  updateGuardianComment(@Payload() data: any) {
+    return this.guardianContent().updateComment(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.DeleteComment })
+  deleteGuardianComment(@Payload() data: any) {
+    return this.guardianContent().deleteComment(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.ResolvePublishedAssetGrant })
+  resolvePublishedAssetGrant(@Payload() data: any) {
+    return this.guardianContent().resolvePublishedAssetGrant(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.CheckPublishedAssetGrant })
+  checkPublishedAssetGrant(@Payload() data: any) {
+    return this.guardianContent().checkPublishedAssetGrant(data);
+  }
 
   private async buildPostVisibilityScope(
     viewerProfileId: string
   ): Promise<PostVisibilityScope> {
-    const [following, blocked, blockers] = await Promise.all([
+    const [following, blocked, blockers, profile] = await Promise.all([
       this.followService.getFollowing(viewerProfileId),
       this.privacyService.getBlockedUsers(viewerProfileId),
       this.privacyService.getBlockersOf(viewerProfileId),
+      firstValueFrom(
+        this.profileClient
+          .send({ cmd: ProfileCommands.Get }, { id: viewerProfileId })
+          .pipe(timeout(3000))
+      ).catch(() => null),
     ]);
+    const accountId =
+      profile?.id === viewerProfileId ? profile.userId : undefined;
     return {
       viewerProfileId,
+      viewerAccountId: accountId,
       followedProfileIds: (following || []).map((f) => f.followeeId),
       blockedProfileIds: [
         ...(blocked || []).map((b) => b.blockedId),
         ...(blockers || []).map((b) => b.blockerId),
       ],
+    };
+  }
+
+  private async buildAnonymousPostVisibilityScope(): Promise<PostVisibilityScope> {
+    return {
+      followedProfileIds: [],
+      blockedProfileIds: [],
     };
   }
 
@@ -248,6 +337,10 @@ export class AppController {
     const limit = opts?.limit ? Math.min(opts.limit, MAX_LIMIT) : DEFAULT_LIMIT;
 
     searchOptions.take = limit;
+    searchOptions.relations = {
+      ...((searchOptions.relations as object) ?? {}),
+      links: true,
+    };
 
     if (opts) {
       if (opts.offset) {
@@ -258,17 +351,13 @@ export class AppController {
       }
     }
 
-    // When the gateway forwards an authenticated viewer, push the shared
-    // visibility scope into the query: followers-only posts are hidden from
-    // non-followers, other authors' scheduled posts are excluded, and blocked
-    // authors (both directions) are dropped. This subsumes the previous
-    // post-query blocked-author JS filter. Absent viewer (internal/system
-    // call) stays un-scoped, mirroring the project-access convention.
-    if (viewerProfileId) {
-      const scope = await this.buildPostVisibilityScope(viewerProfileId);
-      const baseWhere = (searchOptions.where as FindOptionsWhere<Post>) ?? {};
-      searchOptions.where = visiblePostWhere(scope, baseWhere);
-    }
+    // Missing identity is an anonymous read, including public gateway routes.
+    // Internal callers must not gain unrestricted access by omitting a viewer.
+    const scope = viewerProfileId
+      ? await this.buildPostVisibilityScope(viewerProfileId)
+      : await this.buildAnonymousPostVisibilityScope();
+    const baseWhere = (searchOptions.where as FindOptionsWhere<Post>) ?? {};
+    searchOptions.where = visiblePostWhere(scope, baseWhere);
 
     const posts = await this.postService.findAll(searchOptions);
 
@@ -285,12 +374,9 @@ export class AppController {
         where: { post: { id: post.id } },
       });
 
-      const links = []; // Assuming links are not implemented yet
-
       post.votes = votes || [];
       post.comments = comments || [];
       post.attachments = attachments || [];
-      post.links = links || [];
     }
 
     return posts;
@@ -302,19 +388,32 @@ export class AppController {
     @Payload('options') options?: SearchPostDto,
     @Payload('viewerProfileId') viewerProfileId?: string
   ) {
+    if (typeof id !== 'string' || id.trim().length === 0) {
+      return undefined;
+    }
+
     const search: FindOneOptions<Post> = options
       ? (postSearchDtoToFindManyOptions(options) as FindOneOptions<Post>)
       : {};
 
-    // When an authenticated viewer is forwarded, enforce the shared visibility
-    // scope on the fetch: a post the viewer may not see resolves to null.
-    if (viewerProfileId) {
-      const scope = await this.buildPostVisibilityScope(viewerProfileId);
-      const baseWhere = (search.where as FindOptionsWhere<Post>) ?? {};
-      search.where = visiblePostWhere(scope, baseWhere);
-    }
+    const scope = viewerProfileId
+      ? await this.buildPostVisibilityScope(viewerProfileId)
+      : await this.buildAnonymousPostVisibilityScope();
+    const baseWhere = (search.where as FindOptionsWhere<Post>) ?? {};
+    search.where = visiblePostWhere(scope, baseWhere);
 
     return await this.postService.findOne(id, search);
+  }
+
+  @MessagePattern({ cmd: PostCommands.FIND_ASSET_AUDIENCES })
+  async findAssetAudienceReferences(
+    @Payload('assetId') assetId: string,
+    @Payload('assetProfileId') assetProfileId: string
+  ) {
+    return this.postService.findAssetAudienceReferences(
+      assetId,
+      assetProfileId
+    );
   }
 
   @MessagePattern({ cmd: PostCommands.UPDATE })
@@ -330,11 +429,12 @@ export class AppController {
   @MessagePattern({ cmd: PostCommands.DELETE })
   async removePost(
     @Payload('id') id: string,
-    @Payload('userId') userId: string
+    @Payload('userId') userId: string,
+    @Payload('profileId') profileId?: string
   ) {
     console.log(`Removing post with ID: ${id}`);
     try {
-      return await this.postService.remove(id, userId);
+      return await this.postService.remove(id, userId, profileId);
     } catch (error) {
       console.error(`Error in removePost: ${error.message}`);
       throw error;
@@ -423,8 +523,20 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: VoteCommands.GET })
-  async getVote(@Payload('postid') id: string) {
-    return await this.voteService.findAll({ where: { post: { id } } });
+  async getVote(
+    @Payload('postid') postId?: string,
+    @Payload('id') voteId?: string
+  ) {
+    if (voteId) {
+      return await this.voteService.findOne(voteId, {
+        relations: ['post', 'comment', 'comment.post'],
+      });
+    }
+    if (!postId) return [];
+    return await this.voteService.findAll({
+      where: { post: { id: postId } },
+      relations: ['post'],
+    });
   }
 
   @MessagePattern({ cmd: ReactionCommands.ADD })
@@ -553,7 +665,7 @@ export class AppController {
     // unscheduled only).
     const scope: PostVisibilityScope = viewerProfileId
       ? await this.buildPostVisibilityScope(viewerProfileId)
-      : { followedProfileIds: [], blockedProfileIds: [] };
+      : await this.buildAnonymousPostVisibilityScope();
 
     return await this.commentService.findAllVisible(options, scope);
   }
@@ -565,10 +677,9 @@ export class AppController {
     @Payload('viewerProfileId') viewerProfileId?: string
   ) {
     const search = transformSearchCommentDtoToFindOptions(options);
-
     const scope: PostVisibilityScope = viewerProfileId
       ? await this.buildPostVisibilityScope(viewerProfileId)
-      : { followedProfileIds: [], blockedProfileIds: [] };
+      : await this.buildAnonymousPostVisibilityScope();
 
     return await this.commentService.findOneVisible(id, search, scope);
   }
@@ -576,62 +687,108 @@ export class AppController {
   @MessagePattern({ cmd: CommentCommands.UPDATE })
   async updateComment(
     @Payload('id') id: string,
-    @Payload('update') update: UpdateCommentDto
+    @Payload('update') update: UpdateCommentDto,
+    @Payload('userId') userId: string,
+    @Payload('profileId') profileId: string
   ) {
     console.log('updateComment', id, update);
-    return await this.commentService.update(id, update);
+    await this.commentService.update(id, update, userId, profileId);
+    return { success: true };
   }
 
   @MessagePattern({ cmd: CommentCommands.DELETE })
-  async removeComment(@Payload('id') id: string) {
-    return await this.commentService.remove(id);
+  async removeComment(
+    @Payload('id') id: string,
+    @Payload('userId') userId: string,
+    @Payload('profileId') profileId: string
+  ) {
+    return await this.commentService.remove(id, userId, profileId);
   }
 
   @MessagePattern({ cmd: AttachmentCommands.CREATE })
   async createAttachment(
-    @Payload('attachment') data: CreateAttachmentDto,
-    @Payload('postId') postId: string
+    @Payload('attachment') data: Omit<CreateAttachmentDto, 'postId'>,
+    @Payload('postId') postId: string,
+    @Payload('actor') actor: AttachmentActor
   ) {
-    const post = await this.postService.findOne(postId);
-    return await this.attachmentService.create(data, post);
+    return this.attachmentService.create(data, postId, actor);
   }
 
   @MessagePattern({ cmd: AttachmentCommands.FIND_MANY })
-  async findAllAttachments(@Payload() options: SearchAttachmentDto) {
-    const search = toFindOptions(options);
-    return await this.attachmentService.findAll(
-      search as FindManyOptions<Attachment>
+  async findAllAttachments(
+    @Payload() request: { criteria?: SearchAttachmentDto; appId?: string } = {}
+  ) {
+    if (typeof request?.appId !== 'string' || !request.appId.trim()) {
+      throw new RpcException({
+        statusCode: 403,
+        code: 'ATTACHMENT_SCOPE_REQUIRED',
+        message: 'A verified app scope is required to read attachments',
+      });
+    }
+    const options = request?.criteria ?? {};
+    const search = toFindOptions(options ?? {});
+    return this.attachmentService.findAllForApp(
+      { ...search, relations: ['post'] } as FindManyOptions<Attachment>,
+      request.appId
     );
   }
 
   @MessagePattern({ cmd: AttachmentCommands.FIND })
   async findAttachment(
     @Payload('id') id: string,
-    @Payload('options') opts: SearchAttachmentDto
+    @Payload('options') opts: SearchAttachmentDto = {},
+    @Payload('appId') appId?: string
   ) {
-    const search = toFindOptions(opts);
-    return await this.attachmentService.findOne(
-      id,
-      search as FindOneOptions<Attachment>
-    );
+    if (typeof appId !== 'string' || !appId.trim()) {
+      throw new RpcException({
+        statusCode: 403,
+        code: 'ATTACHMENT_SCOPE_REQUIRED',
+        message: 'A verified app scope is required to read attachments',
+      });
+    }
+    if (typeof id !== 'string' || id.trim().length === 0) {
+      return undefined;
+    }
+    const search = toFindOptions(opts ?? {});
+    const options = {
+      ...search,
+      relations: ['post'],
+    } as FindOneOptions<Attachment>;
+    return this.attachmentService.findOneForApp(id, appId, options);
   }
 
   @MessagePattern({ cmd: AttachmentCommands.UPDATE })
   async updateAttachment(
     @Payload('id') id: string,
-    @Payload('update') update: UpdateAttachmentDto
+    @Payload('update') update: UpdateAttachmentDto,
+    @Payload('actor') actor: AttachmentActor
   ) {
-    return await this.attachmentService.update(id, update);
+    return this.attachmentService.update(id, update, actor);
   }
 
   @MessagePattern({ cmd: AttachmentCommands.DELETE })
-  async deleteAttachment(@Payload('id') id: string) {
-    return await this.attachmentService.remove(id);
+  async deleteAttachment(
+    @Payload('id') id: string,
+    @Payload('actor') actor: AttachmentActor
+  ) {
+    await this.attachmentService.remove(id, actor);
+    return { id, deleted: true };
   }
 
   @MessagePattern({ cmd: LinkCommands.CREATE })
-  async createLink(@Payload() dto: CreateLinkDto) {
-    return this.linkService.create(dto);
+  async createLink(
+    @Payload()
+    data: {
+      dto?: CreateLinkDto;
+      actor?: { accountId: string; profileId: string };
+    }
+  ) {
+    if (!data?.dto || !data.actor)
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Link actor required',
+      });
+    return this.linkService.create(data.dto, data.actor);
   }
 
   @MessagePattern({ cmd: LinkCommands.UPDATE })
@@ -865,13 +1022,21 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: CommunityCommands.FIND })
-  async findCommunity(@Payload('id') id: string) {
-    return await this.communityService.findOne(id);
+  async findCommunity(
+    @Payload('id') id: string,
+    @Payload('requestingProfileId') requestingProfileId?: string
+  ) {
+    return await this.communityService.findOne(id, requestingProfileId);
   }
 
   @MessagePattern({ cmd: CommunityCommands.FIND_BY_SLUG })
-  async findCommunityBySlug(@Payload() data: { slug: string }) {
-    return await this.communityService.findBySlug(data.slug);
+  async findCommunityBySlug(
+    @Payload() data: { slug: string; requestingProfileId?: string }
+  ) {
+    return await this.communityService.findBySlug(
+      data.slug,
+      data.requestingProfileId
+    );
   }
 
   @MessagePattern({ cmd: CommunityCommands.LIST_LOCALITY })
@@ -891,16 +1056,34 @@ export class AppController {
 
   @MessagePattern({ cmd: CommunityCommands.FIND_MANY })
   async findAllCommunities(
-    @Payload() data: { criteria: SearchCommunityDto; appScope: string }
+    @Payload()
+    data: {
+      criteria: SearchCommunityDto;
+      appScope: string;
+      requestingProfileId?: string;
+    }
   ) {
-    return await this.communityService.findAll(data.criteria, data.appScope);
+    return await this.communityService.findAll(
+      data.criteria,
+      data.appScope,
+      data.requestingProfileId
+    );
   }
 
   @MessagePattern({ cmd: CommunityCommands.GET_TOP_ACTIVE })
   async getTopActiveCommunities(
-    @Payload() data: { limit: number; appScope: string }
+    @Payload()
+    data: {
+      limit: number;
+      appScope: string;
+      requestingProfileId?: string;
+    }
   ) {
-    return await this.communityService.getTopActive(data.limit, data.appScope);
+    return await this.communityService.getTopActive(
+      data.limit,
+      data.appScope,
+      data.requestingProfileId
+    );
   }
 
   @MessagePattern({ cmd: CommunityCommands.UPDATE })
@@ -938,6 +1121,21 @@ export class AppController {
   ) {
     await this.communityService.leave(data.communityId, data.userId);
     return { success: true };
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.GET_CHAT_MEMBERSHIPS })
+  async getChatMemberships(@Payload() data: { profileId: string }) {
+    return this.communityService.getChatMemberships(data.profileId);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.GET_VISIBLE_MEMBERS })
+  async getVisibleCommunityMembers(
+    @Payload() data: { communityId: string; requestingProfileId?: string }
+  ) {
+    return this.communityService.getVisibleMembers(
+      data.communityId,
+      data.requestingProfileId
+    );
   }
 
   @MessagePattern({ cmd: CommunityCommands.GET_MEMBERS })
@@ -1131,7 +1329,14 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: 'GET_COMMUNITY_CHAT_ROOM' })
-  async getCommunityChatRoom(@Payload() data: { communityId: string }) {
+  async getCommunityChatRoom(
+    @Payload() data: { communityId: string; requestingProfileId?: string }
+  ) {
+    if (data.requestingProfileId)
+      await this.communityService.assertChatMembership(
+        data.communityId,
+        data.requestingProfileId
+      );
     return await this.communityService.getCommunityChatRoom(data.communityId);
   }
 
@@ -1156,6 +1361,7 @@ export class AppController {
       includePublic?: boolean;
       includeFollowing?: boolean;
       includeCommunities?: boolean;
+      communityIds?: string[];
       limit?: number;
       offset?: number;
     }
@@ -1165,14 +1371,21 @@ export class AppController {
     const limit = data.limit ? Math.min(data.limit, MAX_LIMIT) : DEFAULT_LIMIT;
     const offset = data.offset || 0;
 
-    const following = await this.followService.getFollowing(data.userId);
+    const following = await this.followService.getFollowing(data.profileId);
     const followingIds = following.map((f) => f.followeeId);
 
     const userCommunities = await this.communityService.getUserCommunities(
       data.userId,
       data.appScope
     );
-    const communityIds = userCommunities.map((c) => c.id);
+    const selectedCommunityIds = new Set(data.communityIds || []);
+    const communityIds = userCommunities
+      .map((c) => c.id)
+      .filter(
+        (communityId) =>
+          selectedCommunityIds.size === 0 ||
+          selectedCommunityIds.has(communityId)
+      );
 
     const postRepo = this.postService['postRepo'];
     const qb = postRepo.createQueryBuilder('post');
@@ -1181,15 +1394,13 @@ export class AppController {
     const params: any = { userId: data.userId, followingIds, communityIds };
 
     if (data.includePublic !== false) {
-      conditions.push(
-        '(post.visibility = :public AND post.communityId IS NULL)'
-      );
+      conditions.push('post.visibility = :public');
       params.public = 'public';
     }
 
     if (data.includeFollowing && followingIds.length > 0) {
       conditions.push(
-        '(post.userId IN (:...followingIds) AND post.visibility = :followers)'
+        '(post.profileId IN (:...followingIds) AND post.visibility = :followers)'
       );
       params.followers = 'followers';
     }
@@ -1202,23 +1413,32 @@ export class AppController {
       return [];
     }
 
-    qb.where(conditions.join(' OR '), params);
+    // Keep caller feed selection grouped before the mandatory visibility policy
+    // is appended with AND; otherwise SQL precedence lets an OR arm bypass it.
+    qb.where(`(${conditions.join(' OR ')})`, params);
+    if (data.profileId) {
+      const [blocked, muted] = await Promise.all([
+        this.privacyService.getBlockedUsers(data.profileId),
+        this.privacyService.getActiveMutedUsers(data.profileId),
+      ]);
+      const suppressedProfileIds = [
+        ...new Set([
+          ...(blocked || []).map((entry) => entry.blockedId),
+          ...(muted || []).map((entry) => entry.mutedId),
+        ]),
+      ];
+      if (suppressedProfileIds.length > 0) {
+        qb.andWhere('post.profileId NOT IN (:...suppressedProfileIds)', {
+          suppressedProfileIds,
+        });
+      }
+    }
+    const postScope = await this.buildPostVisibilityScope(data.profileId);
+    applyVisiblePostScope(qb, postScope, 'post');
     qb.orderBy('post.createdAt', 'DESC');
     qb.skip(offset).take(limit);
 
     const posts = await qb.getMany();
-
-    if (data.profileId) {
-      const blocked = await this.privacyService.getBlockedUsers(data.profileId);
-      const blockedIds = new Set(
-        (blocked || []).map((entry) => entry.blockedId)
-      );
-      posts.splice(
-        0,
-        posts.length,
-        ...posts.filter((post) => !blockedIds.has(post.profileId))
-      );
-    }
 
     for (const post of posts) {
       const votes = await this.voteService.findAll({
@@ -1350,8 +1570,13 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: NotificationCommands.MARK_READ })
-  async markNotificationRead(@Payload('id') id: string) {
-    await this.notificationService.markAsRead(id);
+  async markNotificationRead(
+    @Payload() payload?: { id?: string; recipientId?: string }
+  ) {
+    await this.notificationService.markAsRead(
+      payload?.id as string,
+      payload?.recipientId as string
+    );
     return { success: true };
   }
 
@@ -1362,8 +1587,13 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: NotificationCommands.DELETE })
-  async deleteNotification(@Payload('id') id: string) {
-    await this.notificationService.delete(id);
+  async deleteNotification(
+    @Payload() payload?: { id?: string; recipientId?: string }
+  ) {
+    await this.notificationService.delete(
+      payload?.id as string,
+      payload?.recipientId as string
+    );
     return { success: true };
   }
 
@@ -1469,7 +1699,7 @@ export class AppController {
 
   @MessagePattern({ cmd: PrivacyCommands.GET_MUTED_USERS })
   async getMutedUsers(@Payload() data: { muterId: string }) {
-    return await this.privacyService.getMutedUsers(data.muterId);
+    return await this.privacyService.getActiveMutedUsers(data.muterId);
   }
 
   @MessagePattern({ cmd: PrivacyCommands.REPORT_CONTENT })
@@ -1477,7 +1707,14 @@ export class AppController {
     @Payload()
     data: {
       reporterId: string;
-      contentType: 'post' | 'comment' | 'profile' | 'community' | 'message';
+      contentType:
+        | 'post'
+        | 'comment'
+        | 'profile'
+        | 'community'
+        | 'message'
+        | 'classified'
+        | 'seller';
       contentId: string;
       reason: string;
       description?: string;
@@ -1497,13 +1734,23 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: PrivacyCommands.GET_MY_REPORTS })
-  async getMyReports(@Payload() data: { reporterId: string }) {
-    return await this.privacyService.getMyReports(data.reporterId);
+  async getMyReports(
+    @Payload() data: { reporterId: string; appScope: string }
+  ) {
+    return await this.privacyService.getMyReports(
+      data.reporterId,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: PrivacyCommands.GET_ALL_REPORTS })
-  async getAllReports(@Payload() data: { workspaceId?: string }) {
-    return await this.privacyService.getAllReports(data.workspaceId);
+  async getAllReports(
+    @Payload() data: { workspaceId?: string | null; appScope: string }
+  ) {
+    return await this.privacyService.getAllReports(
+      data.workspaceId,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: PrivacyCommands.UPDATE_REPORT_STATUS })
@@ -1513,14 +1760,18 @@ export class AppController {
       id: string;
       status: 'pending' | 'reviewed' | 'actioned' | 'dismissed';
       adminNotes?: string;
-      workspaceId?: string;
+      workspaceId?: string | null;
+      appScope: string;
+      moderatedBy: string;
     }
   ) {
     return await this.privacyService.updateReportStatus(
       data.id,
       data.status,
       data.adminNotes,
-      data.workspaceId
+      data.workspaceId,
+      data.appScope,
+      data.moderatedBy
     );
   }
 
@@ -1530,9 +1781,12 @@ export class AppController {
     data: {
       contentType: 'post' | 'comment';
       contentId: string;
+      reportId: string;
       moderationStatus: 'visible' | 'hidden';
       moderatedBy: string;
       adminNotes?: string;
+      workspaceId: string;
+      appScope: string;
     }
   ) {
     return await this.privacyService.moderateContent(
@@ -1540,7 +1794,10 @@ export class AppController {
       data.contentId,
       data.moderationStatus,
       data.moderatedBy,
-      data.adminNotes
+      data.adminNotes,
+      data.reportId,
+      data.appScope,
+      data.workspaceId
     );
   }
 
@@ -1641,8 +1898,19 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: PresenceCommands.GET_ONLINE_USERS })
-  async getOnlineUsers() {
-    return await this.presenceService.getOnlineUsers();
+  async getOnlineUsers(@Payload() data: { userIds?: string[] }) {
+    return await this.presenceService.getOnlineUsers(data?.userIds ?? []);
+  }
+
+  @MessagePattern({ cmd: PresenceCommands.GET_CONVERSATION_PRESENCE })
+  async getConversationPresence(
+    @Payload()
+    data: {
+      actorProfileId: string;
+      bindings: Array<{ profileId: string; accountId: string }>;
+    }
+  ) {
+    return await this.presenceService.getConversationPresence(data);
   }
 
   @MessagePattern({ cmd: PresenceCommands.UPDATE_LAST_SEEN })
@@ -1729,26 +1997,146 @@ export class AppController {
 
   // PostShare handlers
   @MessagePattern({ cmd: PostShareCommands.CREATE })
-  async createPostShare(data: CreatePostShareDto) {
+  async createPostShare(data: CreatePostShareDto & { userId: string }) {
+    if (!data.sharedById || !data.userId) {
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Authenticated share identity is required',
+      });
+    }
+    const scope = await this.buildPostVisibilityScope(data.sharedById);
+    const source = await this.postService.findOne(data.originalPostId, {
+      where: visiblePostWhere(scope),
+    });
+    if (!source)
+      throw new RpcException({
+        statusCode: 404,
+        message: 'The original post is not available to share',
+      });
+    const sourceCommunity = source.communityId
+      ? await this.communityService.findOne(source.communityId)
+      : undefined;
+    const sourceMemberOnly =
+      !!source.communityId &&
+      (!!sourceCommunity?.isPrivate ||
+        source.visibility === 'community' ||
+        (source.visibility === 'public' &&
+          source.publicAudienceExplicit === false));
+    const safeDefault = sourceMemberOnly
+      ? 'community'
+      : source.visibility === 'followers'
+      ? 'followers'
+      : 'public';
+    const requestedVisibility = data.visibility ?? safeDefault;
+    if (!['public', 'followers', 'community'].includes(requestedVisibility)) {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Invalid share visibility',
+      });
+    }
+    if (
+      requestedVisibility === 'public' &&
+      (sourceMemberOnly || source.visibility === 'followers')
+    ) {
+      throw new RpcException({
+        statusCode: 403,
+        message: 'A restricted post cannot be shared publicly',
+      });
+    }
+    if (requestedVisibility === 'community') {
+      const targetCommunityId = data.communityId ?? source.communityId;
+      if (!targetCommunityId) {
+        throw new RpcException({
+          statusCode: 400,
+          message: 'Community shares require a target community',
+        });
+      }
+      if (sourceMemberOnly && targetCommunityId !== source.communityId) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'A member-only post can only be shared in its community',
+        });
+      }
+      if (
+        !(await this.communityService.isMember(targetCommunityId, data.userId))
+      ) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'Community membership is required to share here',
+        });
+      }
+      data.communityId = targetCommunityId;
+    } else {
+      data.communityId = undefined;
+    }
+    data.visibility = requestedVisibility;
     return await this.postShareService.create(data);
   }
 
   @MessagePattern({ cmd: PostShareCommands.DELETE })
-  async deletePostShare(@Payload('id') id: string) {
-    await this.postShareService.remove(id);
+  async deletePostShare(
+    @Payload('id') id: string,
+    @Payload('sharedById') sharedById: string
+  ) {
+    await this.postShareService.remove(id, sharedById);
     return { success: true };
   }
 
   @MessagePattern({ cmd: PostShareCommands.FIND_BY_POST })
-  async findPostSharesByPost(
-    @Payload('originalPostId') originalPostId: string
-  ) {
-    return await this.postShareService.findByPost(originalPostId);
+  async findPostSharesByPost(data: {
+    originalPostId: string;
+    profileId?: string;
+    userId?: string;
+  }) {
+    return this.filterVisibleShares(
+      await this.postShareService.findByPost(data.originalPostId),
+      data.profileId,
+      data.userId
+    );
   }
 
   @MessagePattern({ cmd: PostShareCommands.FIND_BY_PROFILE })
-  async findPostSharesByProfile(@Payload('sharedById') sharedById: string) {
-    return await this.postShareService.findByProfile(sharedById);
+  async findPostSharesByProfile(data: {
+    sharedById: string;
+    profileId?: string;
+    userId?: string;
+  }) {
+    return this.filterVisibleShares(
+      await this.postShareService.findByProfile(data.sharedById),
+      data.profileId,
+      data.userId
+    );
+  }
+
+  private async filterVisibleShares(
+    shares: any[],
+    profileId?: string,
+    userId?: string
+  ) {
+    if (!profileId || !userId) return [];
+    const scope = await this.buildPostVisibilityScope(profileId);
+    const visible: any[] = [];
+    for (const share of shares) {
+      if (scope.blockedProfileIds.includes(share.sharedById)) continue;
+      const source = await this.postService.findOne(share.originalPostId, {
+        where: visiblePostWhere(scope),
+      });
+      if (!source) continue;
+      if (
+        share.visibility === 'followers' &&
+        share.sharedById !== profileId &&
+        !scope.followedProfileIds.includes(share.sharedById)
+      )
+        continue;
+      if (
+        share.visibility === 'community' &&
+        (!share.communityId ||
+          !(await this.communityService.isMember(share.communityId, userId)))
+      )
+        continue;
+      visible.push(share);
+    }
+    return visible;
   }
 
   // Event handlers

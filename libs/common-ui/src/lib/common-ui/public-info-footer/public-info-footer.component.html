@@ -1,0 +1,13 @@
+<footer class="public-info-footer">
+  <div class="public-info-footer__brand">
+    <strong>{{ productName }}</strong>
+    @if (tagline) {
+    <span>{{ tagline }}</span>
+    }
+  </div>
+  <nav aria-label="Public information">
+    <a href="/contact">Contact and support</a>
+    @if(accountRightsAvailable) {
+    <a href="/account-deletion">Deletion request status</a> }
+  </nav>
+</footer>

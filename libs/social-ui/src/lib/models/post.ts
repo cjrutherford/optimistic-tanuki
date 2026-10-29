@@ -7,6 +7,7 @@ export interface CreatePostDto {
   attachments?: string[];
   profileId: string;
   communityId?: string;
+  visibility?: 'public' | 'followers' | 'community';
 }
 
 export interface PostDto {
@@ -16,7 +17,10 @@ export interface PostDto {
   attachments?: AttachmentDto[];
   userId: string;
   profileId: string;
-  communityId?: string;
+  communityId?: string | null;
+  /** Optional while older websocket payloads are still in flight. */
+  visibility?: 'public' | 'followers' | 'community';
+  publicAudienceExplicit?: boolean;
   createdAt: Date;
   updatedAt?: Date;
   links?: { url: string }[];
@@ -27,6 +31,7 @@ export interface UpdatePostDto {
   title?: string;
   content?: string;
   attachments?: string[];
+  visibility?: 'public' | 'followers' | 'community';
 }
 
 export interface SearchPostDto {
@@ -36,7 +41,7 @@ export interface SearchPostDto {
   profileId?: string;
   communityId?: string;
   communityIds?: string[];
-  visibility?: 'public' | 'followers';
+  visibility?: 'public' | 'followers' | 'community';
 }
 
 export interface SearchPostOptions {

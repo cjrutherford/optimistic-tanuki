@@ -1,8 +1,10 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { DataSource } from 'typeorm';
 import fs from 'fs';
 import path from 'path';
 import * as yaml from 'js-yaml';
 import AssetEntity from '../entities/asset.entity';
+import { GuardianAssetActivity } from '../entities/guardian-asset-activity.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve('./src/assets/config.yaml'), 'utf8')
@@ -10,9 +12,9 @@ const config = yaml.load(
 const {
   database: {
     host: configHost, // Renamed to avoid conflict
-    port,
-    username,
-    password,
+    port: configPort,
+    username: configUsername,
+    password: configPassword,
     name: configName, // Renamed to avoid conflict
     database: configDatabase, // Renamed to avoid conflict
   },
@@ -20,10 +22,17 @@ const {
 
 // Use environment variable for host if available, otherwise use configHost
 const host = process.env.POSTGRES_HOST || configHost;
+const port = Number(process.env.POSTGRES_PORT || configPort);
+const username = process.env.POSTGRES_USER || configUsername;
+const password = process.env.POSTGRES_PASSWORD || configPassword;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [AssetEntity];
+const entities = [
+  AssetEntity,
+  GuardianAssetActivity,
+  AccountDeletionWriteFenceEntity,
+];
 
 console.log(
   `Using database configuration: host=${host}, port=${port}, username=${username}, database=${database}`

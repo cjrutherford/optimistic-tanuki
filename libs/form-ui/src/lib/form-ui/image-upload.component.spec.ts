@@ -1,5 +1,16 @@
+import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ImageUploadComponent } from './image-upload.component';
+
+@Component({
+  standalone: true,
+  imports: [ImageUploadComponent],
+  template: `
+    <lib-image-upload label="Profile Picture"></lib-image-upload>
+    <lib-image-upload label="Cover Picture"></lib-image-upload>
+  `,
+})
+class ImageUploadPairHostComponent {}
 
 describe('ImageUploadComponent', () => {
   let component: ImageUploadComponent;
@@ -17,6 +28,22 @@ describe('ImageUploadComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('gives each labeled native file input a unique, associated ID', () => {
+    const hostFixture = TestBed.createComponent(ImageUploadPairHostComponent);
+    hostFixture.detectChanges();
+    const host = hostFixture.nativeElement as HTMLElement;
+    const inputs = Array.from(
+      host.querySelectorAll<HTMLInputElement>('input[type="file"]')
+    );
+
+    expect(inputs).toHaveLength(2);
+    expect(inputs.every((input) => input.id.length > 0)).toBe(true);
+    expect(new Set(inputs.map((input) => input.id)).size).toBe(2);
+    expect(
+      inputs.map((input) => input.labels?.[0]?.textContent?.trim())
+    ).toEqual(['Profile Picture', 'Cover Picture']);
   });
 
   it('should set currentImage on ngOnInit if provided', () => {

@@ -14,7 +14,10 @@ import {
 
 @Entity('workspaces')
 @Index(['kind', 'slug', 'appScope'], { unique: true })
-@Index(['sourceService', 'sourceId', 'appScope'], { unique: true })
+@Index(['sourceService', 'sourceId', 'appScope'], {
+  unique: true,
+  where: '"sourceId" <> \'00000000-0000-0000-0000-000000000000\'',
+})
 export class Workspace {
   @PrimaryGeneratedColumn('uuid')
   id: string;

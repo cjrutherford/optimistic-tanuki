@@ -55,7 +55,7 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: ot_authentication
-      JWT_SECRET: e2e-test-jwt-secret
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
       # Without this no account in this stack can ever sign in. Registration
       # succeeds, login refuses an unverified address, and there is no mail
       # service here to verify one. docker-compose.e2e-stack.yaml already sets
@@ -356,7 +356,7 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
-      JWT_SECRET: e2e-test-jwt-secret
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
       NODE_ENV: test
       OAUTH_STATE_SECRET: e2e-oauth-state-secret
       APP_SCOPE_ORIGINS: '{"forgeofwill":"http://forgeofwill.localhost:8081"}'

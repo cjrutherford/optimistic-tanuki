@@ -1,0 +1,128 @@
+{
+  "scope": ["client-interface", "local-hub"],
+  "slices": ["R2-01", "R2-02", "R2-03"],
+  "historyDays": 90,
+  "sessionIdleDays": 7,
+  "sessionAbsoluteAgeCap": null,
+  "databaseSources": [
+    {
+      "owner": "profile",
+      "table": "guardian_profile_activity",
+      "time": "createdAt",
+      "type": "timestamptz",
+      "batch": 200,
+      "disposition": "delete at or before DB-clock ninety-day cutoff, including redacted history"
+    },
+    {
+      "owner": "assets",
+      "table": "guardian_asset_activity",
+      "time": "createdAt",
+      "type": "timestamptz",
+      "batch": 200,
+      "disposition": "delete at or before DB-clock ninety-day cutoff, including redacted history"
+    },
+    {
+      "owner": "social",
+      "table": "activity",
+      "time": "createdAt",
+      "type": "timestamp UTC",
+      "batch": 200,
+      "disposition": "delete at or before DB-clock ninety-day cutoff, including redacted history"
+    },
+    {
+      "owner": "social",
+      "table": "profile_view",
+      "time": "viewedAt",
+      "type": "timestamp UTC",
+      "batch": 200,
+      "disposition": "delete at or before DB-clock ninety-day cutoff, including redacted history"
+    },
+    {
+      "owner": "social",
+      "table": "search_history",
+      "time": "createdAt",
+      "type": "timestamp UTC",
+      "batch": 200,
+      "disposition": "delete at or before DB-clock ninety-day cutoff, including redacted history"
+    },
+    {
+      "owner": "social",
+      "table": "community_membership_audit",
+      "time": "createdAt",
+      "type": "timestamp UTC",
+      "batch": 200,
+      "disposition": "delete at or before DB-clock ninety-day cutoff, including redacted history"
+    },
+    {
+      "owner": "social",
+      "table": "content_moderation_action",
+      "time": "createdAt",
+      "type": "timestamp UTC",
+      "batch": 200,
+      "disposition": "delete at or before DB-clock ninety-day cutoff, including redacted history"
+    },
+    {
+      "owner": "social",
+      "table": "guardian_content_audit",
+      "time": "createdAt",
+      "type": "timestamp UTC",
+      "batch": 200,
+      "disposition": "delete at or before DB-clock ninety-day cutoff, including redacted history"
+    },
+    {
+      "owner": "forum",
+      "table": "forum_moderation_action",
+      "time": "createdAt",
+      "type": "timestamp UTC",
+      "batch": 200,
+      "disposition": "delete at or before DB-clock ninety-day cutoff, including redacted history"
+    },
+    {
+      "owner": "authentication",
+      "table": "guardian_policy_notice",
+      "time": "createdAt",
+      "type": "timestamptz",
+      "batch": 200,
+      "disposition": "delete at or before DB-clock ninety-day cutoff, including redacted history"
+    },
+    {
+      "owner": "authentication",
+      "table": "account_export_jobs",
+      "time": "COALESCE(completedAt,updatedAt,createdAt)",
+      "type": "timestamptz",
+      "batch": 25,
+      "disposition": "terminal receipt only after artifact custody is clear"
+    }
+  ],
+  "nonOrmDispositions": [
+    {
+      "sink": "application.console",
+      "disposition": "payload-free boundary; no account history accepted"
+    },
+    {
+      "sink": "browser.console",
+      "disposition": "payload-free boundary; browser reset qualified separately under N06/D25/U"
+    },
+    {
+      "sink": "ssr.telemetry",
+      "disposition": "no configured forwarded account history; future exporters require qualification"
+    },
+    {
+      "sink": "docker.stdout",
+      "disposition": "operator confirmed no retained legacy/manual OT/TS logs; current diagnostics payload-free"
+    },
+    {
+      "sink": "downstream.collectors",
+      "disposition": "operator confirmed no forward destinations; OTEL/Grafana setup docs only"
+    }
+  ],
+  "operationalExclusions": [
+    "active queued/running export operations are not terminal history; existing recovery and deletion own cleanup",
+    "D00 permanent deidentified fence/operation exclusion markers retain their accepted operational role, not an account-activity log exemption"
+  ],
+  "boundaries": [
+    "no external sink, backup, live-S3 or offline-device qualification",
+    "no inferred ownership from resource references",
+    "account deletion remains immediate; age sweep never bypasses write fences"
+  ]
+}

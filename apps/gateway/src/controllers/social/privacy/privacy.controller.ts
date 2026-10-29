@@ -13,6 +13,7 @@ import {
   UseGuards,
   Logger,
   Inject,
+  Optional,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { AuthGuard } from '../../../auth/auth.guard';
@@ -25,6 +26,8 @@ import {
   CommunityCommands,
   PostCommands,
   PrivacyCommands,
+  ClassifiedCommands,
+  ProfileCommands,
   ServiceTokens,
   WorkspaceCommands,
 } from '@optimistic-tanuki/constants';
@@ -35,6 +38,10 @@ import {
 } from '../../../decorators/permissions.decorator';
 import { WorkspaceContext } from '../../../decorators/workspace-context.decorator';
 import { WorkspaceContextGuard } from '../../../guards/workspace-context.guard';
+import { SocialGateway } from '../../../app/social-gateway/social.gateway';
+import { IdentityThrottlerGuard } from '../../learning/identity-throttler.guard';
+import { gatewayWriteLimit } from '../../../app/throttler-config';
+import { Throttle } from '@nestjs/throttler';
 
 export interface BlockUserDto {
   blockedId: string;
@@ -47,7 +54,14 @@ export interface MuteUserDto {
 }
 
 export interface ReportContentDto {
-  contentType: 'post' | 'comment' | 'profile' | 'community' | 'message';
+  contentType:
+    | 'post'
+    | 'comment'
+    | 'profile'
+    | 'community'
+    | 'message'
+    | 'classified'
+    | 'seller';
   contentId: string;
   reason: string;
   description?: string;
@@ -59,11 +73,51 @@ export interface UpdateReportStatusDto {
 }
 
 export interface ModerateContentDto {
+  reportId: string;
   contentType: 'post' | 'comment';
   contentId: string;
   moderationStatus: 'visible' | 'hidden';
   adminNotes?: string;
 }
+
+const REPORT_STATUSES = new Set([
+  'pending',
+  'reviewed',
+  'actioned',
+  'dismissed',
+]);
+const MODERATION_STATUSES = new Set(['visible', 'hidden']);
+const MODERATABLE_CONTENT_TYPES = new Set(['post', 'comment']);
+const REPORT_CONTENT_TYPES = new Set([
+  'post',
+  'comment',
+  'profile',
+  'community',
+  'message',
+  'classified',
+  'seller',
+]);
+const REPORT_REASONS = new Set([
+  'spam',
+  'harassment',
+  'hate_speech',
+  'violence',
+  'misinformation',
+  'inappropriate',
+  'other',
+]);
+const PRIVACY_WRITE_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_PRIVACY_WRITE_LIMIT', 20, 500, 2000),
+    ttl: 60000,
+  },
+};
+const REPORT_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_REPORT_LIMIT', 10, 200, 1000),
+    ttl: 60000,
+  },
+};
 
 @UseGuards(AuthGuard)
 @ApiTags('privacy')
@@ -75,12 +129,27 @@ export class PrivacyController {
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
     @Inject(ServiceTokens.WORKSPACE_SERVICE)
-    private readonly workspaceClient: ClientProxy
+    private readonly workspaceClient: ClientProxy,
+    @Optional() private readonly socialGateway?: SocialGateway,
+    @Optional()
+    @Inject(ServiceTokens.CLASSIFIEDS_SERVICE)
+    private readonly classifiedsClient?: ClientProxy,
+    @Optional()
+    @Inject(ServiceTokens.PROFILE_SERVICE)
+    private readonly profileClient?: ClientProxy
   ) {}
+
+  private invalidateSocialContent(): void {
+    void Promise.resolve(
+      this.socialGateway?.broadcastSocialContentInvalidated()
+    ).catch(() => this.logger.warn('Live social invalidation unavailable'));
+  }
 
   private async resolveReportWorkspaceId(
     dto: ReportContentDto,
-    appScope: string
+    appScope: string,
+    viewerProfileId: string,
+    requestingUserId: string
   ): Promise<string | null> {
     let communityId: string | null = null;
 
@@ -101,7 +170,7 @@ export class PrivacyController {
       const post = await firstValueFrom(
         this.socialClient.send(
           { cmd: PostCommands.FIND },
-          { id: dto.contentId }
+          { id: dto.contentId, viewerProfileId }
         )
       );
       if (!post) {
@@ -114,7 +183,7 @@ export class PrivacyController {
       const comment = await firstValueFrom(
         this.socialClient.send(
           { cmd: CommentCommands.FIND },
-          { id: dto.contentId }
+          { id: dto.contentId, viewerProfileId }
         )
       );
       if (!comment) {
@@ -124,7 +193,7 @@ export class PrivacyController {
         const post = await firstValueFrom(
           this.socialClient.send(
             { cmd: PostCommands.FIND },
-            { id: comment.postId }
+            { id: comment.postId, viewerProfileId }
           )
         );
         if (!post) {
@@ -132,6 +201,42 @@ export class PrivacyController {
         }
         communityId = post.communityId || null;
       }
+    }
+
+    if (dto.contentType === 'classified') {
+      if (!this.classifiedsClient) {
+        throw new BadRequestException(
+          'Classified listing could not be verified.'
+        );
+      }
+      const listing = await firstValueFrom(
+        this.classifiedsClient.send(
+          { cmd: ClassifiedCommands.FIND_BY_ID },
+          { id: dto.contentId, appScope, requestingUserId }
+        )
+      );
+      if (!listing || listing.appScope !== appScope) {
+        throw new BadRequestException('Reported listing was not found.');
+      }
+      return null;
+    }
+
+    if (dto.contentType === 'profile' || dto.contentType === 'seller') {
+      if (!this.profileClient) {
+        throw new BadRequestException(
+          'Reported profile could not be verified.'
+        );
+      }
+      const profile = await firstValueFrom(
+        this.profileClient.send(
+          { cmd: ProfileCommands.Get },
+          { id: dto.contentId }
+        )
+      );
+      if (!profile || profile.id !== dto.contentId) {
+        throw new BadRequestException('Reported profile was not found.');
+      }
+      return null;
     }
 
     if (!communityId) {
@@ -150,12 +255,17 @@ export class PrivacyController {
 
   // Block endpoints
   @Post('block')
+  @UseGuards(IdentityThrottlerGuard)
+  @Throttle(PRIVACY_WRITE_THROTTLE)
   @ApiOperation({ summary: 'Block a user' })
   @ApiResponse({ status: 201, description: 'User blocked successfully.' })
   async blockUser(
     @Body() dto: BlockUserDto,
     @User() user: UserDetails
   ): Promise<void> {
+    if (!dto.blockedId?.trim() || dto.blockedId === user.profileId) {
+      throw new BadRequestException('A different target profile is required.');
+    }
     await firstValueFrom(
       this.socialClient.send(
         { cmd: PrivacyCommands.BLOCK_USER },
@@ -166,6 +276,7 @@ export class PrivacyController {
         }
       )
     );
+    this.invalidateSocialContent();
   }
 
   @Delete('block/:blockedId')
@@ -181,6 +292,7 @@ export class PrivacyController {
         { blockerId: user.profileId, blockedId }
       )
     );
+    this.invalidateSocialContent();
   }
 
   @Get('blocked')
@@ -190,12 +302,13 @@ export class PrivacyController {
     description: 'Blocked users retrieved successfully.',
   })
   async getBlockedUsers(@User() user: UserDetails): Promise<any[]> {
-    return await firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PrivacyCommands.GET_BLOCKED_USERS },
         { blockerId: user.profileId }
       )
     );
+    return result;
   }
 
   @Get('blocked/:userId')
@@ -219,12 +332,24 @@ export class PrivacyController {
 
   // Mute endpoints
   @Post('mute')
+  @UseGuards(IdentityThrottlerGuard)
+  @Throttle(PRIVACY_WRITE_THROTTLE)
   @ApiOperation({ summary: 'Mute a user' })
   @ApiResponse({ status: 201, description: 'User muted successfully.' })
   async muteUser(
     @Body() dto: MuteUserDto,
     @User() user: UserDetails
   ): Promise<void> {
+    if (
+      !dto.mutedId?.trim() ||
+      dto.mutedId === user.profileId ||
+      (dto.duration !== undefined &&
+        (!Number.isSafeInteger(dto.duration) ||
+          dto.duration <= 0 ||
+          dto.duration > 31536000))
+    ) {
+      throw new BadRequestException('Invalid mute target or duration.');
+    }
     await firstValueFrom(
       this.socialClient.send(
         { cmd: PrivacyCommands.MUTE_USER },
@@ -235,6 +360,7 @@ export class PrivacyController {
         }
       )
     );
+    this.invalidateSocialContent();
   }
 
   @Delete('mute/:mutedId')
@@ -250,6 +376,7 @@ export class PrivacyController {
         { muterId: user.profileId, mutedId }
       )
     );
+    this.invalidateSocialContent();
   }
 
   @Get('muted')
@@ -269,6 +396,8 @@ export class PrivacyController {
 
   // Report endpoints
   @Post('report')
+  @UseGuards(IdentityThrottlerGuard)
+  @Throttle(REPORT_THROTTLE)
   @ApiOperation({ summary: 'Report content' })
   @ApiResponse({ status: 201, description: 'Content reported successfully.' })
   async reportContent(
@@ -276,7 +405,26 @@ export class PrivacyController {
     @User() user: UserDetails,
     @AppScope() appScope: string
   ): Promise<any> {
-    const workspaceId = await this.resolveReportWorkspaceId(dto, appScope);
+    if (
+      !REPORT_CONTENT_TYPES.has(dto.contentType) ||
+      typeof dto.contentId !== 'string' ||
+      dto.contentId.trim().length === 0 ||
+      !REPORT_REASONS.has(dto.reason) ||
+      (dto.description !== undefined && dto.description.length > 2000)
+    ) {
+      throw new BadRequestException('Invalid content report request.');
+    }
+    if (dto.contentType === 'message') {
+      throw new BadRequestException(
+        'Message reports are unavailable until conversation access can be verified.'
+      );
+    }
+    const workspaceId = await this.resolveReportWorkspaceId(
+      dto,
+      appScope,
+      user.profileId,
+      user.userId
+    );
 
     return await firstValueFrom(
       this.socialClient.send(
@@ -297,11 +445,14 @@ export class PrivacyController {
   @Get('reports')
   @ApiOperation({ summary: 'Get my reports' })
   @ApiResponse({ status: 200, description: 'Reports retrieved successfully.' })
-  async getMyReports(@User() user: UserDetails): Promise<any[]> {
+  async getMyReports(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ): Promise<any[]> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: PrivacyCommands.GET_MY_REPORTS },
-        { reporterId: user.profileId }
+        { reporterId: user.profileId, appScope }
       )
     );
   }
@@ -317,15 +468,63 @@ export class PrivacyController {
   @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Get all content reports for moderation review' })
-  async getAllReports(@Req() request: any): Promise<any[]> {
+  async getAllReports(
+    @Req() request: any,
+    @AppScope() appScope: string
+  ): Promise<any[]> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: PrivacyCommands.GET_ALL_REPORTS },
         {
           workspaceId: request.workspaceContext.workspace.workspaceId,
+          appScope,
         }
       )
     );
+  }
+
+  @Get('operator/reports')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('content.report.review')
+  @ApiOperation({ summary: 'List all reports within the authorized app scope' })
+  async getOperatorReports(@AppScope() appScope: string): Promise<any[]> {
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: PrivacyCommands.GET_ALL_REPORTS },
+        { appScope }
+      )
+    );
+  }
+
+  @Put('operator/reports/:id')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('content.report.review')
+  @ApiOperation({ summary: 'Resolve a report within the authorized app scope' })
+  async updateOperatorReportStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateReportStatusDto,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ): Promise<any> {
+    if (!REPORT_STATUSES.has(dto.status)) {
+      throw new BadRequestException('Unsupported report status.');
+    }
+    const updated = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: PrivacyCommands.UPDATE_REPORT_STATUS },
+        {
+          id,
+          status: dto.status,
+          adminNotes: dto.adminNotes,
+          appScope,
+          moderatedBy: user.profileId,
+        }
+      )
+    );
+    if (!updated) {
+      throw new NotFoundException('App-wide report was not found.');
+    }
+    return updated;
   }
 
   @Put('admin/reports/:id')
@@ -343,8 +542,13 @@ export class PrivacyController {
   async updateReportStatus(
     @Param('id') id: string,
     @Body() dto: UpdateReportStatusDto,
-    @Req() request: any
+    @Req() request: any,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ): Promise<any> {
+    if (!REPORT_STATUSES.has(dto.status)) {
+      throw new BadRequestException('Unsupported report status.');
+    }
     const updated = await firstValueFrom(
       this.socialClient.send(
         { cmd: PrivacyCommands.UPDATE_REPORT_STATUS },
@@ -353,6 +557,8 @@ export class PrivacyController {
           status: dto.status,
           adminNotes: dto.adminNotes,
           workspaceId: request.workspaceContext.workspace.workspaceId,
+          appScope,
+          moderatedBy: user.profileId,
         }
       )
     );
@@ -365,24 +571,45 @@ export class PrivacyController {
   }
 
   @Put('admin/moderation')
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'query',
+    path: 'communityId',
+    sourceService: 'social',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.manage')
+  @PermissionTarget('query', 'communityId')
   @ApiOperation({ summary: 'Apply or revert moderation to reported content' })
   async moderateContent(
     @Body() dto: ModerateContentDto,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @Req() request: any,
+    @AppScope() appScope: string
   ): Promise<{ success: boolean }> {
-    return await firstValueFrom(
+    if (
+      !MODERATION_STATUSES.has(dto.moderationStatus) ||
+      !MODERATABLE_CONTENT_TYPES.has(dto.contentType)
+    ) {
+      throw new BadRequestException('Unsupported content moderation request.');
+    }
+    const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PrivacyCommands.MODERATE_CONTENT },
         {
           contentType: dto.contentType,
           contentId: dto.contentId,
+          reportId: dto.reportId,
           moderationStatus: dto.moderationStatus,
           adminNotes: dto.adminNotes,
           moderatedBy: user.profileId,
+          workspaceId: request.workspaceContext.workspace.workspaceId,
+          appScope,
         }
       )
     );
+    this.invalidateSocialContent();
+    return result;
   }
 }

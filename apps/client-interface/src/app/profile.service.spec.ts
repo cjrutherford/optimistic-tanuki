@@ -1,3 +1,4 @@
+import { BehaviorSubject } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -28,23 +29,29 @@ const makeProfile = (overrides: Partial<ProfileDto> = {}): ProfileDto =>
 describe('ProfileService', () => {
   let service: ProfileService;
   let httpMock: HttpTestingController;
+  let identity: BehaviorSubject<any>;
   let authState: {
+    decodedToken$: any;
     getDecodedTokenValue: jest.Mock;
     getPersistedSelectedProfile: jest.Mock;
     getPersistedProfiles: jest.Mock;
     persistProfiles: jest.Mock;
     persistSelectedProfile: jest.Mock;
     setToken: jest.Mock;
+    activateProfileSession: jest.Mock;
   };
 
   beforeEach(() => {
+    identity = new BehaviorSubject({ userId: '123' });
     authState = {
-      getDecodedTokenValue: jest.fn(),
+      decodedToken$: identity.asObservable(),
+      getDecodedTokenValue: jest.fn().mockReturnValue({ userId: '123' }),
       getPersistedSelectedProfile: jest.fn().mockReturnValue(null),
       getPersistedProfiles: jest.fn().mockReturnValue(null),
       persistProfiles: jest.fn(),
       persistSelectedProfile: jest.fn(),
       setToken: jest.fn(),
+      activateProfileSession: jest.fn().mockResolvedValue(true),
     };
 
     TestBed.configureTestingModule({
@@ -61,6 +68,24 @@ describe('ProfileService', () => {
     httpMock = TestBed.inject(HttpTestingController);
   });
 
+  it('clears in-memory profile state when the account signs out', () => {
+    service.currentUserProfile.set(makeProfile());
+    service.currentUserProfiles.set([makeProfile()]);
+    identity.next(null);
+    expect(service.currentUserProfile()).toBeNull();
+    expect(service.currentUserProfiles()).toEqual([]);
+  });
+
+  it('does not repopulate profiles from a request started under another account', async () => {
+    authState.getDecodedTokenValue.mockReturnValue({ userId: '123' });
+    const pending = service.getAllProfiles();
+    identity.next({ userId: '999' });
+    httpMock.expectOne(`${API}/profile`).flush([makeProfile()]);
+    await pending;
+    expect(service.currentUserProfiles()).toEqual([]);
+    expect(service.allProfiles()).toEqual([]);
+    expect(authState.persistProfiles).not.toHaveBeenCalled();
+  });
   describe('getCurrentUserProfile', () => {
     it('should return the current user profile', () => {
       const mockProfile = makeProfile();
@@ -141,6 +166,10 @@ describe('ProfileService', () => {
     it('selects the known profile instance and persists it', () => {
       const known = makeProfile({ id: 'a', profileName: 'Known' });
       service.currentUserProfiles.set([known]);
+      authState.getDecodedTokenValue.mockReturnValue({
+        userId: '123',
+        profileId: 'a',
+      });
 
       service.selectProfile(makeProfile({ id: 'a', profileName: 'Stale' }));
 
@@ -148,11 +177,150 @@ describe('ProfileService', () => {
       expect(authState.persistSelectedProfile).toHaveBeenCalledWith(known);
     });
 
-    it('falls back to the passed profile when it is unknown', () => {
+    it('does not select an unknown profile outside the loaded account list', () => {
       const unknown = makeProfile({ id: 'zzz' });
       service.selectProfile(unknown);
-      expect(service.currentUserProfile()).toEqual(unknown);
+      expect(service.currentUserProfile()).toBeNull();
+      expect(authState.persistSelectedProfile).not.toHaveBeenCalled();
     });
+
+    it('does not change local selection unless the profile matches the verified session', () => {
+      const current = makeProfile({ id: 'current' });
+      const other = makeProfile({ id: 'other' });
+      service.currentUserProfiles.set([current, other]);
+      service.currentUserProfile.set(current);
+      authState.getDecodedTokenValue.mockReturnValue({
+        userId: '123',
+        profileId: 'current',
+      });
+
+      service.selectProfile(other);
+
+      expect(service.currentUserProfile()).toBe(current);
+      expect(authState.persistSelectedProfile).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('activateProfile', () => {
+    it('verifies the owned app profile session before persisting selection', async () => {
+      const current = makeProfile({
+        id: 'current',
+        appScope: 'client-interface',
+      });
+      const target = makeProfile({
+        id: 'target',
+        appScope: 'client-interface',
+      });
+      service.currentUserProfiles.set([current, target]);
+      service.currentUserProfile.set(current);
+      authState.activateProfileSession.mockImplementation(
+        async (id: string) => {
+          authState.getDecodedTokenValue.mockReturnValue({
+            userId: '123',
+            profileId: id,
+          });
+          return true;
+        }
+      );
+
+      await service.activateProfile(target);
+
+      expect(authState.activateProfileSession).toHaveBeenCalledWith('target');
+      expect(service.currentUserProfile()).toBe(target);
+      expect(authState.persistSelectedProfile).toHaveBeenLastCalledWith(target);
+    });
+
+    it('rejects a profile outside the verified owner and app-scope list without issuing a session', async () => {
+      const current = makeProfile({
+        id: 'current',
+        appScope: 'client-interface',
+      });
+      service.currentUserProfiles.set([current]);
+      service.currentUserProfile.set(current);
+
+      await expect(
+        service.activateProfile(
+          makeProfile({
+            id: 'foreign',
+            userId: 'other',
+            appScope: 'client-interface',
+          })
+        )
+      ).rejects.toThrow('Only your profiles for this app can be selected.');
+
+      expect(authState.activateProfileSession).not.toHaveBeenCalled();
+      expect(service.currentUserProfile()).toBe(current);
+      expect(authState.persistSelectedProfile).not.toHaveBeenCalled();
+    });
+
+    it('keeps the current profile selected when session verification fails', async () => {
+      const current = makeProfile({
+        id: 'current',
+        appScope: 'client-interface',
+      });
+      const target = makeProfile({
+        id: 'target',
+        appScope: 'client-interface',
+      });
+      service.currentUserProfiles.set([current, target]);
+      service.currentUserProfile.set(current);
+      authState.activateProfileSession.mockRejectedValue(
+        new Error('issue denied')
+      );
+
+      await expect(service.activateProfile(target)).rejects.toThrow(
+        'issue denied'
+      );
+      expect(service.currentUserProfile()).toBe(current);
+      expect(authState.persistSelectedProfile).not.toHaveBeenCalled();
+    });
+
+    it('serializes activation calls so overlapping switches cannot race cookie state', async () => {
+      const current = makeProfile({
+        id: 'current',
+        appScope: 'client-interface',
+      });
+      const target = makeProfile({
+        id: 'target',
+        appScope: 'client-interface',
+      });
+      service.currentUserProfiles.set([current, target]);
+      service.currentUserProfile.set(current);
+      let resolveActivation!: (value: boolean) => void;
+      authState.activateProfileSession.mockReturnValue(
+        new Promise<boolean>((resolve) => (resolveActivation = resolve))
+      );
+
+      const first = service.activateProfile(target);
+      await expect(service.activateProfile(current)).rejects.toThrow(
+        'A profile switch is already in progress.'
+      );
+      expect(authState.activateProfileSession).toHaveBeenCalledTimes(1);
+      authState.getDecodedTokenValue.mockReturnValue({
+        userId: '123',
+        profileId: 'target',
+      });
+      resolveActivation(true);
+      await first;
+      expect(service.currentUserProfile()).toBe(target);
+    });
+  });
+
+  it('reconciles stale local profile state to the verified session profile', () => {
+    const stale = makeProfile({ id: 'stale', appScope: 'client-interface' });
+    const verified = makeProfile({
+      id: 'verified',
+      appScope: 'client-interface',
+    });
+    authState.getDecodedTokenValue.mockReturnValue({
+      userId: '123',
+      profileId: 'verified',
+    });
+    service.currentUserProfiles.set([stale, verified]);
+    service.currentUserProfile.set(stale);
+
+    expect(service.getCurrentUserProfile()).toBe(verified);
+    expect(authState.persistSelectedProfile).toHaveBeenCalledWith(verified);
   });
 
   describe('getCurrentUserProfiles', () => {
@@ -238,9 +406,38 @@ describe('ProfileService', () => {
   });
 
   describe('createProfile', () => {
+    const activateCreatedProfile = (profileId: string) => {
+      const userId = authState.getDecodedTokenValue()?.userId;
+      authState.activateProfileSession.mockImplementation(async () => {
+        authState.getDecodedTokenValue.mockReturnValue({
+          userId,
+          profileId,
+        });
+        return true;
+      });
+    };
+
+    it('ignores a profile creation response after logout, including its refreshed token', async () => {
+      const pending = service.createProfile({ name: 'New' } as never);
+      identity.next(null);
+      httpMock
+        .expectOne(`${API}/profile`)
+        .flush({ newToken: 'old-user-token', profile: makeProfile() });
+      await pending;
+      expect(service.currentUserProfile()).toBeNull();
+      expect(service.currentUserProfiles()).toEqual([]);
+      expect(authState.setToken).not.toHaveBeenCalled();
+      expect(authState.persistSelectedProfile).not.toHaveBeenCalled();
+    });
+
     it('creates a profile without images', async () => {
       authState.getDecodedTokenValue.mockReturnValue({ userId: 'u-token' });
-      const created = makeProfile({ id: 'new' });
+      const created = makeProfile({
+        id: 'new',
+        userId: 'u-token',
+        appScope: 'client-interface',
+      });
+      activateCreatedProfile('new');
 
       const pending = service.createProfile({
         name: 'New',
@@ -251,51 +448,53 @@ describe('ProfileService', () => {
       expect(req.request.method).toBe('POST');
       expect(req.request.body.userId).toBe('u-token');
       expect(req.request.body.profilePic).toBe('');
+      expect(req.request.body.appScope).toBe('client-interface');
       req.flush(created);
       await pending;
 
       expect(service.currentUserProfiles()).toEqual([created]);
       expect(service.currentUserProfile()).toEqual(created);
       expect(authState.persistSelectedProfile).toHaveBeenCalledWith(created);
+      expect(authState.setToken).not.toHaveBeenCalled();
+      expect(authState.activateProfileSession).toHaveBeenCalledWith('new');
     });
 
-    it('adopts a refreshed token when the gateway returns one', async () => {
+    it('ignores a legacy bearer token and activates the new HttpOnly session', async () => {
       const created = makeProfile({ id: 'new' });
+      activateCreatedProfile('new');
       const pending = service.createProfile({ name: 'New' } as never);
       httpMock
         .expectOne(`${API}/profile`)
         .flush({ newToken: 'jwt', profile: created });
       await pending;
 
-      expect(authState.setToken).toHaveBeenCalledWith('jwt');
+      expect(authState.setToken).not.toHaveBeenCalled();
+      expect(authState.activateProfileSession).toHaveBeenCalledWith('new');
       expect(service.currentUserProfile()).toEqual(created);
     });
 
-    it('warns but continues when adopting the refreshed token fails', async () => {
-      const warn = jest
-        .spyOn(console, 'warn')
-        .mockImplementation(() => undefined);
-      authState.setToken.mockImplementation(() => {
-        throw new Error('bad token');
+    it('does not locally select a newly created profile when session activation fails', async () => {
+      const created = makeProfile({ id: 'new' });
+      authState.getDecodedTokenValue.mockReturnValue({
+        userId: '123',
+        profileId: 'old',
       });
-      const created = makeProfile({ id: 'new' });
+      authState.activateProfileSession.mockResolvedValue(false);
 
       const pending = service.createProfile({ name: 'New' } as never);
       httpMock
         .expectOne(`${API}/profile`)
         .flush({ newToken: 'jwt', profile: created });
-      await pending;
-
-      expect(warn).toHaveBeenCalledWith(
-        'Failed to set new token after profile creation',
-        expect.any(Error)
+      await expect(pending).rejects.toThrow(
+        'The selected profile session could not be verified.'
       );
-      expect(service.currentUserProfile()).toEqual(created);
-      warn.mockRestore();
+      expect(authState.setToken).not.toHaveBeenCalled();
+      expect(service.currentUserProfile()).not.toEqual(created);
     });
 
     it('uploads the profile and cover pictures then patches the profile', async () => {
       const created = makeProfile({ id: 'new', profileName: 'Ada' });
+      activateCreatedProfile('new');
 
       const pending = service.createProfile({
         name: 'Ada',
@@ -340,6 +539,7 @@ describe('ProfileService', () => {
 
     it('defaults the asset extension to png for non data urls', async () => {
       const created = makeProfile({ id: 'new', profileName: 'Ada' });
+      activateCreatedProfile('new');
 
       const pending = service.createProfile({
         name: 'Ada',
@@ -406,6 +606,13 @@ describe('ProfileService', () => {
         bio: 'old bio',
       });
       service.currentUserProfiles.set([globalProfile]);
+      authState.activateProfileSession.mockImplementation(async () => {
+        authState.getDecodedTokenValue.mockReturnValue({
+          userId: '123',
+          profileId: 'local-new',
+        });
+        return true;
+      });
 
       const pending = service.updateProfile('g', { bio: 'new bio' } as never);
 

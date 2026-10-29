@@ -42,6 +42,8 @@ import {
 import { PAYMENT_PROVIDER_ADAPTER } from './payment-provider.tokens';
 import { BillingReconciliationService } from './billing-reconciliation.service';
 
+const CLASSIFIEDS_APP_SCOPE = 'local-hub';
+
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
@@ -238,7 +240,8 @@ export class PaymentService {
     paymentMethod: string,
     amount?: number,
     sellerId?: string,
-    offerId?: string
+    offerId?: string,
+    appScope = CLASSIFIEDS_APP_SCOPE
   ) {
     let resolvedAmount: number;
     let resolvedSellerId: string | undefined;
@@ -261,7 +264,7 @@ export class PaymentService {
       const ad = await firstValueFrom(
         this.classifiedsClient.send(
           { cmd: ClassifiedCommands.FIND_BY_ID },
-          { id: classifiedId }
+          { id: classifiedId, appScope, requestingUserId: buyerId }
         )
       );
 
@@ -290,6 +293,15 @@ export class PaymentService {
     }
 
     const feeBreakdown = calculateNetAmount(resolvedAmount);
+    if (
+      !Number.isFinite(resolvedAmount) ||
+      resolvedAmount > 99999999.99 ||
+      feeBreakdown.net < 0
+    ) {
+      throw new BadRequestException(
+        'Classified price cannot produce a valid seller payment'
+      );
+    }
     const payment = this.classifiedPaymentRepository.create({
       buyerId,
       sellerId: resolvedSellerId,
@@ -318,23 +330,31 @@ export class PaymentService {
    * a single-party rule per action is a product decision left for follow-up.
    */
   private async findClassifiedOwnerId(
-    classifiedId: string
+    classifiedId: string,
+    requestingUserId?: string
   ): Promise<string | undefined> {
     const classified = await firstValueFrom(
       this.classifiedsClient.send<{ userId?: string }>(
         { cmd: ClassifiedCommands.FIND_BY_ID },
-        { id: classifiedId }
+        {
+          id: classifiedId,
+          appScope: CLASSIFIEDS_APP_SCOPE,
+          ...(requestingUserId ? { requestingUserId } : {}),
+        }
       )
     );
 
     return classified?.userId;
   }
 
-  private async findClassifiedIdsForUser(userId: string): Promise<string[]> {
+  private async findClassifiedIdsForUser(
+    userId: string,
+    appScope = CLASSIFIEDS_APP_SCOPE
+  ): Promise<string[]> {
     return firstValueFrom(
       this.classifiedsClient.send<string[]>(
         { cmd: ClassifiedCommands.FIND_BY_USER },
-        { userId }
+        { userId, appScope }
       )
     );
   }
@@ -348,7 +368,10 @@ export class PaymentService {
       return;
     }
 
-    if ((await this.findClassifiedOwnerId(payment.classifiedId)) !== callerId) {
+    if (
+      (await this.findClassifiedOwnerId(payment.classifiedId, callerId)) !==
+      callerId
+    ) {
       throw new BadRequestException(
         `You can only ${action} for payments you are a party to`
       );
@@ -394,6 +417,14 @@ export class PaymentService {
       );
     }
 
+    if (
+      !['cash', 'cash-app', 'venmo', 'zelle'].includes(payment.paymentMethod)
+    ) {
+      throw new BadRequestException(
+        'This payment method requires provider confirmation'
+      );
+    }
+
     payment.status = 'confirmed';
     payment.proofImageUrl = proofImageUrl;
     payment.confirmedAt = new Date();
@@ -415,7 +446,8 @@ export class PaymentService {
     await this.assertPaymentParticipant(payment, callerId, 'release funds');
 
     const canonicalSellerId = await this.findClassifiedOwnerId(
-      payment.classifiedId
+      payment.classifiedId,
+      callerId
     );
     if (!canonicalSellerId) {
       throw new BadRequestException('Classified seller not found');
@@ -550,15 +582,18 @@ export class PaymentService {
       return payment;
     }
 
-    if ((await this.findClassifiedOwnerId(payment.classifiedId)) !== userId) {
+    if (
+      (await this.findClassifiedOwnerId(payment.classifiedId, userId)) !==
+      userId
+    ) {
       throw new NotFoundException('Payment not found');
     }
 
     return payment;
   }
 
-  async getUserPayments(userId: string) {
-    const classifiedIds = await this.findClassifiedIdsForUser(userId);
+  async getUserPayments(userId: string, appScope = CLASSIFIEDS_APP_SCOPE) {
+    const classifiedIds = await this.findClassifiedIdsForUser(userId, appScope);
     const sellerPayments =
       classifiedIds.length === 0
         ? Promise.resolve([] as ClassifiedPayment[])

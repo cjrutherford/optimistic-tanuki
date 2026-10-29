@@ -37,6 +37,7 @@ describe('ClassifiedListComponent', () => {
     expect(component.loading).toBe(false);
     expect(component.showPostButton).toBe(false);
     expect(component.showContact).toBe(false);
+    expect(component.showSafetyActions).toBe(false);
   });
 
   it('emits postNew', () => {
@@ -57,6 +58,17 @@ describe('ClassifiedListComponent', () => {
     const spy = jest.fn();
     component.contactSeller.subscribe(spy);
     component.contactSeller.emit(mockAd);
+    expect(spy).toHaveBeenCalledWith(mockAd);
+  });
+
+  it.each([
+    ['reportListing', 'reportListing'],
+    ['reportSeller', 'reportSeller'],
+    ['blockSeller', 'blockSeller'],
+  ])('emits %s with the ad', (outputName, _eventName) => {
+    const spy = jest.fn();
+    (component as any)[outputName].subscribe(spy);
+    (component as any)[outputName].emit(mockAd);
     expect(spy).toHaveBeenCalledWith(mockAd);
   });
 

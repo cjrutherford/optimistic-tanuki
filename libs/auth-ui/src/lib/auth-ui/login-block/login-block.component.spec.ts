@@ -4,6 +4,8 @@ import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { of } from 'rxjs';
 import { ReactiveFormsModule } from '@angular/forms';
 import { EmailAuthClientService } from '../../services/email-auth.service';
+import { By } from '@angular/platform-browser';
+import { OAuthButtonsComponent } from '../oauth-buttons/oauth-buttons.component';
 
 describe('LoginBlockComponent', () => {
   let component: LoginBlockComponent;
@@ -205,6 +207,8 @@ describe('LoginBlockComponent', () => {
     component.loginForm.setValue({
       email: 'test@example.com',
       password: 'password',
+      dateOfBirth: '',
+      guardianEmail: '',
     });
     component.onSubmit();
     expect(component.submitEvent.emit).toHaveBeenCalledWith({
@@ -239,5 +243,32 @@ describe('LoginBlockComponent', () => {
     expect(component.oauthProviderSelected.emit).toHaveBeenCalledWith({
       provider: 'google',
     });
+  });
+
+  it('forwards the login age-check DOB when a provider button is clicked', () => {
+    component.ageGateEnabled = true;
+    component.errorMessage = 'AGE_CHECK_REQUIRED';
+    component.loginForm.patchValue({ dateOfBirth: '1990-01-01' });
+    fixture.detectChanges();
+    const emitted = jest.spyOn(component.oauthProviderSelected, 'emit');
+    const oauthButtons = fixture.debugElement.query(
+      By.directive(OAuthButtonsComponent)
+    ).componentInstance as OAuthButtonsComponent;
+
+    oauthButtons.onProviderClick('google');
+
+    expect(emitted).toHaveBeenCalledWith({
+      provider: 'google',
+      dateOfBirth: '1990-01-01',
+    });
+  });
+
+  it('does not add age data to OAuth initiation for apps that do not enable the age gate', () => {
+    component.loginForm.patchValue({ dateOfBirth: '2010-01-01' });
+    const emitted = jest.spyOn(component.oauthProviderSelected, 'emit');
+
+    component.onOAuthProvider({ provider: 'google' });
+
+    expect(emitted).toHaveBeenCalledWith({ provider: 'google' });
   });
 });

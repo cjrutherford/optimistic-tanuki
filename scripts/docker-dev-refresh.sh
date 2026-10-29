@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+node scripts/dev-env-defaults.mjs
+
 COMPOSE_FILE="docker-compose.dev.yaml"
 STATE_DIR=${DOCKER_BUILD_STATE_DIR:-tmp/docker-compose-state}
 PLAN_FILE=${DOCKER_BUILD_PLAN_FILE:-$STATE_DIR/$(basename "$COMPOSE_FILE").plan.json}
@@ -44,3 +46,10 @@ fi
 
 pnpm run docker:build:dev
 pnpm run docker:dev:up
+
+# Reconcile runtime-only defaults even when source fingerprints did not change.
+CONFIG_SERVICES=$(node -e 'const fs=require("node:fs");const local=require("dotenv").parse(fs.readFileSync(".env"));const selected=(process.env.DOCKER_DEV_SERVICES||local.DOCKER_DEV_SERVICES||"").split(",").filter(Boolean);for(const s of ["authentication","gateway","assets","ot-client-interface","local-hub-client-interface"])if(!selected.length||selected.includes(s))console.log(s)')
+if [ -n "$CONFIG_SERVICES" ]; then
+  mapfile -t CONFIG_ARRAY <<< "$CONFIG_SERVICES"
+  docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d --no-deps "${CONFIG_ARRAY[@]}"
+fi

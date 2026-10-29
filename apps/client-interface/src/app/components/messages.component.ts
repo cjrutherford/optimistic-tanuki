@@ -5,6 +5,7 @@ import {
   inject,
   OnDestroy,
   computed,
+  HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -13,6 +14,7 @@ import {
   ChatContact,
   ChatConversation,
   ChatMessage,
+  ChatMessageSubmission,
   SocketChatService,
 } from '@optimistic-tanuki/chat-ui';
 import { ProfileService } from '../profile.service';
@@ -20,7 +22,7 @@ import {
   ChatService,
   ChatConversation as AppChatConversation,
 } from '../chat.service';
-import { PresenceService, UserPresence } from '../presence.service';
+import { PresenceService, ConversationPresence } from '../presence.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { HttpClient } from '@angular/common/http';
@@ -36,6 +38,13 @@ import { firstValueFrom } from 'rxjs';
         <div>
           <h1>Messages</h1>
           <p class="subtitle">Your conversations</p>
+          @if (connectionStatus() === 'reconnecting') {
+          <p class="connection-status" role="status">
+            Reconnecting… saved messages will reload when you are back online.
+          </p>
+          } @else if (connectionStatus() === 'connecting') {
+          <p class="connection-status" role="status">Connecting to chat…</p>
+          }
         </div>
         <label class="start-conversation">
           <span>Start a conversation</span>
@@ -62,9 +71,10 @@ import { firstValueFrom } from 'rxjs';
         <lib-chat-ui
           [contacts]="chatContacts()"
           [conversations]="chatConversations()"
+          [connectionStatus]="connectionStatus()"
           [currentUserId]="currentProfileId || ''"
           [layout]="'embedded'"
-          (messageSubmitted)="handleMessageSubmitted($event)"
+          (messageSubmission)="handleMessageSubmitted($event)"
         ></lib-chat-ui>
       </div>
       }
@@ -139,6 +149,11 @@ import { firstValueFrom } from 'rxjs';
       .error {
         color: var(--error);
       }
+
+      .connection-status {
+        color: var(--muted);
+        font-size: 0.875rem;
+      }
     `,
   ],
 })
@@ -155,26 +170,60 @@ export class MessagesComponent implements OnInit, OnDestroy {
   chatConversations = signal<ChatConversation[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
+  connectionStatus = signal<'connecting' | 'connected' | 'reconnecting'>(
+    'connecting'
+  );
   availableProfiles = computed(() =>
     this.profileService.discoverableProfiles()
   );
 
   currentProfileId: string | null = null;
+  private hasConnectedOnce = false;
+  private socketListenerDisposers: Array<() => void> = [];
+  private historyLoadVersion = 0;
 
   async ngOnInit() {
-    this.socketChatService.onConversations((conversations) => {
-      this.handleConversationsLoaded(
-        conversations as unknown as AppChatConversation[]
-      );
-    });
-    this.socketChatService.onMessage((message) => {
-      this.handleIncomingMessage(message);
-    });
+    this.socketListenerDisposers.push(
+      this.socketChatService.onConversations((conversations) => {
+        this.handleConversationsLoaded(
+          conversations as unknown as AppChatConversation[]
+        );
+      }),
+      this.socketChatService.onMessage((message) => {
+        this.handleIncomingMessage(message);
+      }),
+      this.socketChatService.onConnectionState((connected) => {
+        if (connected) {
+          const reconnecting = this.hasConnectedOnce;
+          this.hasConnectedOnce = true;
+          this.connectionStatus.set('connected');
+          if (reconnecting && this.currentProfileId) {
+            this.socketChatService.getConversations(this.currentProfileId);
+          }
+        } else {
+          this.connectionStatus.set(
+            this.hasConnectedOnce ? 'reconnecting' : 'connecting'
+          );
+        }
+      })
+    );
     await this.loadConversations();
     await this.loadDiscoverableProfiles();
   }
 
   ngOnDestroy() {
+    this.socketListenerDisposers.forEach((dispose) => dispose());
+    this.socketListenerDisposers = [];
+    this.clearSessionViews();
+  }
+
+  @HostListener('window:ot:session-reset')
+  clearSessionViews() {
+    this.historyLoadVersion++;
+    this.currentProfileId = null;
+    this.loading.set(false);
+    this.error.set(null);
+    this.clearAll();
     this.socketChatService.destroy();
   }
 
@@ -183,18 +232,22 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.chatConversations.set([]);
   }
 
-  async handleMessageSubmitted(event: {
-    conversationId: string;
-    content: string;
-  }) {
+  async handleMessageSubmitted(
+    event: ChatMessageSubmission & {
+      conversationId: string;
+    }
+  ) {
+    const conversationId = event.conversationId;
     if (!this.currentProfileId) {
+      event.settle(false);
       return;
     }
 
     const conversation = this.chatConversations().find(
-      (item) => item.id === event.conversationId
+      (item) => item.id === conversationId
     );
     if (!conversation) {
+      event.settle(false);
       return;
     }
 
@@ -202,13 +255,18 @@ export class MessagesComponent implements OnInit, OnDestroy {
       (participantId) => participantId !== this.currentProfileId
     );
 
-    this.socketChatService.sendMessage({
-      conversationId: event.conversationId,
-      content: event.content,
-      senderId: this.currentProfileId,
-      recipientId: recipientIds,
-      type: 'chat',
-    });
+    try {
+      await this.socketChatService.sendDraftMessage({
+        conversationId,
+        content: event.content,
+        senderId: this.currentProfileId,
+        recipientId: recipientIds,
+        type: 'chat',
+      });
+      event.settle(true);
+    } catch {
+      event.settle(false);
+    }
   }
 
   async startDirectConversation(profileId: string): Promise<void> {
@@ -231,6 +289,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   handleIncomingMessage(message: ChatMessage) {
     this.appendMessageToConversation(message);
+    void this.hydrateLiveAuthor(message);
   }
 
   private async loadConversations() {
@@ -252,38 +311,121 @@ export class MessagesComponent implements OnInit, OnDestroy {
     }
   }
 
+  private readonly authorLookups = new Set<string>();
+
+  private async hydrateLiveAuthor(message: ChatMessage) {
+    const conversation = this.chatConversations().find(
+      (c) => c.id === message.conversationId
+    );
+    if (
+      !conversation ||
+      !message.senderId ||
+      conversation.participantProfiles?.some((p) => p.id === message.senderId)
+    )
+      return;
+    const version = this.historyLoadVersion;
+    const actor = this.currentProfileId;
+    const key = `${version}:${actor}:${message.conversationId}:${message.senderId}`;
+    if (this.authorLookups.has(key)) return;
+    this.authorLookups.add(key);
+    try {
+      const profiles = await this.lookupProfiles([message.senderId]);
+      if (
+        version !== this.historyLoadVersion ||
+        actor !== this.currentProfileId ||
+        !profiles.length
+      )
+        return;
+      const profile = profiles[0];
+      this.chatConversations.update((conversations) =>
+        conversations.map((c) => {
+          if (
+            c.id !== message.conversationId ||
+            c.participantProfiles?.some((p) => p.id === message.senderId)
+          )
+            return c;
+          return {
+            ...c,
+            participantProfiles: [
+              ...(c.participantProfiles || []),
+              {
+                id: profile.id,
+                name: profile.profileName,
+                profilePic: profile.profilePic,
+              },
+            ],
+          };
+        })
+      );
+    } finally {
+      this.authorLookups.delete(key);
+    }
+  }
+
+  private async lookupProfiles(ids: string[]): Promise<ProfileDto[]> {
+    const profiles: ProfileDto[] = [];
+    for (let i = 0; i < ids.length; i += 100) {
+      try {
+        profiles.push(
+          ...(await firstValueFrom(
+            this.profiles.profileControllerGetProfilesByIds<ProfileDto[]>({
+              ids: ids.slice(i, i + 100),
+            })
+          ))
+        );
+      } catch {
+        /* Missing profile metadata must not hide messages. */
+      }
+    }
+    return profiles;
+  }
+
   private async handleConversationsLoaded(
     conversations: AppChatConversation[]
   ) {
     try {
       const profile = this.profileService.getCurrentUserProfile();
       if (!profile) return;
+      const profileId = profile.id;
+      const historyLoadVersion = ++this.historyLoadVersion;
 
-      const allParticipantIds = new Set<string>();
-      conversations.forEach((c) => {
-        c.participants.forEach((p) => allParticipantIds.add(p));
-      });
-
-      const participantIds = Array.from(allParticipantIds);
-
-      let profiles: ProfileDto[] = [];
-      let presences: UserPresence[] = [];
-
-      if (participantIds.length > 0) {
-        const [profilesResponse, presencesResponse] = await Promise.all([
-          firstValueFrom(
-            this.profiles.profileControllerGetProfilesByIds<ProfileDto[]>({
-              ids: participantIds,
-            })
-          ),
-          firstValueFrom(this.presenceService.getPresenceBatch(participantIds)),
-        ]);
-        profiles = profilesResponse;
-        presences = presencesResponse;
-      }
-
-      const profileMap = new Map(profiles.map((p) => [p.id, p]));
-      const presenceMap = new Map(presences.map((p) => [p.userId, p]));
+      const presenceByConversationProfileId = new Map<
+        string,
+        ConversationPresence
+      >();
+      // Presence is optional metadata. Query each authorized conversation's
+      // participant audience and keep chat/profile rendering independent of it.
+      await Promise.all(
+        conversations.map(async (conversation) => {
+          const targetProfileIds = [
+            ...new Set(
+              conversation.participants.filter((id) => id !== profileId)
+            ),
+          ];
+          for (let start = 0; start < targetProfileIds.length; start += 100) {
+            try {
+              const presence = await firstValueFrom(
+                this.presenceService.getConversationPresence(
+                  conversation.id,
+                  targetProfileIds.slice(start, start + 100)
+                )
+              );
+              presence.forEach((entry) =>
+                presenceByConversationProfileId.set(
+                  `${conversation.id}:${entry.profileId}`,
+                  entry
+                )
+              );
+            } catch (err) {
+              console.warn(
+                'Could not load conversation presence:',
+                conversation.id,
+                err
+              );
+            }
+          }
+        })
+      );
 
       const conversationMessagesPromises = conversations.map(async (conv) => {
         try {
@@ -311,6 +453,61 @@ export class MessagesComponent implements OnInit, OnDestroy {
       const conversationMessages = await Promise.all(
         conversationMessagesPromises
       );
+      if (
+        historyLoadVersion !== this.historyLoadVersion ||
+        profileId !== this.currentProfileId ||
+        profileId !== this.profileService.getCurrentUserProfile()?.id
+      ) {
+        return;
+      }
+      const latestVisibleMessages = new Map(
+        this.chatConversations().map((conversation) => [
+          conversation.id,
+          conversation.messages,
+        ])
+      );
+      for (const conversation of conversationMessages) {
+        const merged = new Map(
+          conversation.messages.map((message) => [message.id, message])
+        );
+        for (const message of latestVisibleMessages.get(conversation.id) ||
+          []) {
+          merged.set(message.id, message);
+        }
+        conversation.messages = [...merged.values()].sort(
+          (left, right) => left.timestamp.getTime() - right.timestamp.getTime()
+        );
+      }
+      const ids = [
+        ...new Set(
+          [
+            profileId,
+            ...conversations.flatMap((c) => c.participants),
+            ...conversationMessages.flatMap((c) =>
+              c.messages.map((m) => m.senderId)
+            ),
+          ].filter(Boolean)
+        ),
+      ];
+      const profiles = await this.lookupProfiles(ids);
+      if (
+        historyLoadVersion !== this.historyLoadVersion ||
+        profileId !== this.currentProfileId ||
+        profileId !== this.profileService.getCurrentUserProfile()?.id
+      )
+        return;
+      const profileMap = new Map(profiles.map((p) => [p.id, p]));
+      for (const conversation of conversationMessages) {
+        const existing = this.chatConversations().find(
+          (c) => c.id === conversation.id
+        );
+        const merged = new Map(conversation.messages.map((m) => [m.id, m]));
+        for (const message of existing?.messages || [])
+          merged.set(message.id, message);
+        conversation.messages = [...merged.values()].sort(
+          (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+        );
+      }
       const messagesMap = new Map(
         conversationMessages.map((cm) => [cm.id, cm.messages])
       );
@@ -324,15 +521,19 @@ export class MessagesComponent implements OnInit, OnDestroy {
             ? profileMap.get(otherParticipantId)
             : null;
           const presence = otherParticipantId
-            ? presenceMap.get(otherParticipantId)
+            ? presenceByConversationProfileId.get(
+                `${conv.id}:${otherParticipantId}`
+              )
             : null;
 
           return {
             id: conv.id,
-            name: otherProfile?.profileName || conv.title || 'Unknown',
+            name:
+              conv.type && conv.type !== 'direct'
+                ? conv.title || 'Group chat'
+                : otherProfile?.profileName || conv.title || 'Unknown',
             profilePic: otherProfile?.profilePic,
-            presence: presence?.status || 'offline',
-            lastSeen: presence?.lastSeen,
+            presence: presence?.status,
           };
         })
       );
@@ -340,11 +541,18 @@ export class MessagesComponent implements OnInit, OnDestroy {
       this.chatConversations.set(
         conversations.map((c) => ({
           id: c.id,
+          type: c.type,
           participants: c.participants,
           messages: messagesMap.get(c.id) || [],
           createdAt: c.createdAt,
           updatedAt: c.updatedAt,
-          participantProfiles: c.participants
+          participantProfiles: [
+            ...new Set([
+              ...c.participants,
+              profileId,
+              ...(messagesMap.get(c.id) || []).map((m) => m.senderId),
+            ]),
+          ]
             .map((participantId) => profileMap.get(participantId))
             .filter((participant): participant is ProfileDto => !!participant)
             .map((participant) => ({
@@ -355,6 +563,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
         }))
       );
 
+      for (const conversation of this.chatConversations()) {
+        for (const message of conversation.messages)
+          void this.hydrateLiveAuthor(message);
+      }
       this.loading.set(false);
     } catch (err) {
       console.error('Failed to load conversations:', err);

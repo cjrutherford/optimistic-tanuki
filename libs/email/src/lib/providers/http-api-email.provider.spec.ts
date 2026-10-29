@@ -55,6 +55,19 @@ describe('HttpApiEmailProvider', () => {
     );
   });
 
+  it('attaches a real abort signal to bound provider requests', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'bounded-send' }),
+    });
+    await provider.sendEmail({
+      to: 'fixture@example.test',
+      subject: 'N01',
+      text: 'fixture',
+    });
+    expect(mockFetch.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+  });
+
   it('should handle API errors', async () => {
     mockFetch.mockResolvedValue({
       ok: false,

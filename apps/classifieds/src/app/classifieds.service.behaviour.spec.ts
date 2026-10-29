@@ -1,6 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { RpcException } from '@nestjs/microservices';
+import {
+  AssetCommands,
+  CommunityCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
+import { of, throwError } from 'rxjs';
 import { ClassifiedsService } from './classifieds.service';
 import { ClassifiedAdEntity } from './entities/classified-ad.entity';
 
@@ -17,6 +23,7 @@ interface MockQueryBuilder {
   orderBy: jest.Mock;
   addOrderBy: jest.Mock;
   getMany: jest.Mock;
+  select: jest.Mock;
 }
 
 interface MockRepository {
@@ -38,6 +45,7 @@ function createMockQueryBuilder(): MockQueryBuilder {
   qb.orderBy = jest.fn(() => qb as MockQueryBuilder);
   qb.addOrderBy = jest.fn(() => qb as MockQueryBuilder);
   qb.getMany = jest.fn().mockResolvedValue([]);
+  qb.select = jest.fn(() => qb as MockQueryBuilder);
   return qb as MockQueryBuilder;
 }
 
@@ -71,6 +79,8 @@ describe('ClassifiedsService', () => {
   let service: ClassifiedsService;
   let repo: MockRepository;
   let qb: MockQueryBuilder;
+  let socialClient: { send: jest.Mock };
+  let assetsClient: { send: jest.Mock };
 
   beforeEach(async () => {
     qb = createMockQueryBuilder();
@@ -81,11 +91,29 @@ describe('ClassifiedsService', () => {
       findOne: jest.fn().mockResolvedValue(null),
       createQueryBuilder: jest.fn(() => qb),
     };
+    socialClient = {
+      send: jest.fn((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? {
+                id: 'community-1',
+                appScope: 'local-hub',
+                isPrivate: false,
+              }
+            : true
+        )
+      ),
+    };
+    assetsClient = {
+      send: jest.fn().mockReturnValue(of({ audienceCommunityIds: [] })),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClassifiedsService,
         { provide: getRepositoryToken(ClassifiedAdEntity), useValue: repo },
+        { provide: ServiceTokens.SOCIAL_SERVICE, useValue: socialClient },
+        { provide: ServiceTokens.ASSETS_SERVICE, useValue: assetsClient },
       ],
     }).compile();
 
@@ -96,6 +124,13 @@ describe('ClassifiedsService', () => {
     it('stamps ownership, scope and active status onto the new ad', async () => {
       const saved = createAd();
       repo.save.mockResolvedValue(saved);
+      socialClient.send.mockReturnValue(
+        of({ id: 'community-1', appScope: 'regional-hub', isPrivate: false })
+      );
+      socialClient.send.mockReturnValueOnce(
+        of({ id: 'community-1', appScope: 'regional-hub', isPrivate: false })
+      );
+      socialClient.send.mockReturnValueOnce(of(true));
 
       const result = await service.create(
         {
@@ -124,7 +159,7 @@ describe('ClassifiedsService', () => {
       expect(result).toBe(saved);
     });
 
-    it('defaults appScope to local-hub and keeps an explicit currency', async () => {
+    it('requires an explicit appScope and keeps an explicit currency', async () => {
       await service.create(
         {
           title: 'Guitar',
@@ -133,33 +168,314 @@ describe('ClassifiedsService', () => {
           currency: 'CAD',
         },
         'profile-2',
-        'user-2'
+        'user-2',
+        'local-hub'
       );
 
       expect(repo.create).toHaveBeenCalledWith(
         expect.objectContaining({ appScope: 'local-hub', currency: 'CAD' })
       );
     });
+
+    it('rejects a missing appScope before writing', async () => {
+      await expect(
+        service.create(
+          { title: 'Guitar', description: 'Acoustic guitar', price: 300 },
+          'profile-2',
+          'user-2'
+        )
+      ).rejects.toMatchObject({ error: { statusCode: 400 } });
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects caller-supplied identifiers, ownership, scope, and lifecycle fields', async () => {
+      await expect(
+        service.create(
+          {
+            title: 'Forged listing',
+            description: 'Must not persist',
+            price: 1,
+            id: 'existing-ad',
+            profileId: 'victim-profile',
+            userId: 'victim-user',
+            appScope: 'client-interface',
+            status: 'sold',
+          } as never,
+          'profile-1',
+          'user-1',
+          'local-hub'
+        )
+      ).rejects.toMatchObject({ error: { statusCode: 400 } });
+      expect(repo.create).not.toHaveBeenCalled();
+      expect(repo.save).not.toHaveBeenCalled();
+      expect(repo.findOne).not.toHaveBeenCalled();
+    });
+
+    it('requires current approved membership and matching community scope', async () => {
+      socialClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? { id: 'community-1', appScope: 'local-hub', isPrivate: false }
+            : false
+        )
+      );
+
+      await expect(
+        service.create(
+          {
+            title: 'Table',
+            description: 'Wood',
+            price: 50,
+            communityId: 'community-1',
+          },
+          'profile-1',
+          'user-pending',
+          'local-hub'
+        )
+      ).rejects.toMatchObject({ error: { statusCode: 403 } });
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('fails closed when the community lookup is unavailable', async () => {
+      socialClient.send.mockReturnValue(
+        throwError(() => new Error('social down'))
+      );
+
+      await expect(
+        service.create(
+          {
+            title: 'Table',
+            description: 'Wood',
+            price: 50,
+            communityId: 'community-1',
+          },
+          'profile-1',
+          'user-1',
+          'local-hub'
+        )
+      ).rejects.toMatchObject({ error: { statusCode: 503 } });
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('refuses posting to a community in another app scope', async () => {
+      socialClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? { id: 'community-1', appScope: 'client-interface' }
+            : true
+        )
+      );
+
+      await expect(
+        service.create(
+          {
+            title: 'Table',
+            description: 'Wood',
+            price: 50,
+            communityId: 'community-1',
+          },
+          'profile-1',
+          'user-1',
+          'local-hub'
+        )
+      ).rejects.toMatchObject({ error: { statusCode: 404 } });
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('latches a private image audience before saving its classified reference', async () => {
+      const assetId = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
+      socialClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? { id: 'community-1', appScope: 'local-hub', isPrivate: true }
+            : true
+        )
+      );
+      assetsClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === AssetCommands.RETRIEVE
+            ? { audienceCommunityIds: [], profileId: 'profile-1' }
+            : {}
+        )
+      );
+
+      await service.create(
+        {
+          title: 'Private bike',
+          description: 'Only for members',
+          price: 10,
+          communityId: 'community-1',
+          imageUrls: [`/api/asset/${assetId}`],
+        },
+        'profile-1',
+        'user-1',
+        'local-hub'
+      );
+
+      expect(assetsClient.send).toHaveBeenCalledWith(
+        { cmd: AssetCommands.ADD_COMMUNITY_AUDIENCE },
+        { id: assetId, communityId: 'community-1' }
+      );
+      expect(assetsClient.send.mock.invocationCallOrder[1]).toBeLessThan(
+        repo.save.mock.invocationCallOrder[0]
+      );
+    });
+
+    it('rejects reusing a private asset in another or public audience before writing', async () => {
+      const assetId = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
+      assetsClient.send.mockReturnValue(
+        of({ audienceCommunityIds: ['another-private-community'] })
+      );
+
+      await expect(
+        service.create(
+          {
+            title: 'Reused photo',
+            description: 'Cross audience',
+            price: 10,
+            communityId: 'community-1',
+            imageUrls: [`/asset/${assetId}?size=small`],
+          },
+          'profile-1',
+          'user-1',
+          'local-hub'
+        )
+      ).rejects.toMatchObject({ error: { statusCode: 403 } });
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects attaching a private asset to a community-free public listing', async () => {
+      const assetId = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
+      assetsClient.send.mockReturnValue(
+        of({ audienceCommunityIds: ['community-1'] })
+      );
+      await expect(
+        service.create(
+          {
+            title: 'Public re-use',
+            description: 'Must remain private',
+            price: 10,
+            imageUrls: [`https://api.example.test/api/asset/${assetId}?v=2`],
+          },
+          'profile-1',
+          'user-1',
+          'local-hub'
+        )
+      ).rejects.toMatchObject({ error: { statusCode: 403 } });
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('does not let a listing owner privatize another profile’s public asset', async () => {
+      const assetId = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
+      socialClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? { id: 'community-1', appScope: 'local-hub', isPrivate: true }
+            : true
+        )
+      );
+      assetsClient.send.mockReturnValue(
+        of({ audienceCommunityIds: [], profileId: 'another-profile' })
+      );
+
+      await expect(
+        service.create(
+          {
+            title: 'Borrowed photo',
+            description: 'Should not mutate audience',
+            price: 10,
+            communityId: 'community-1',
+            imageUrls: [`/api/asset/${assetId}`],
+          },
+          'profile-1',
+          'user-1',
+          'local-hub'
+        )
+      ).rejects.toMatchObject({ error: { statusCode: 403 } });
+      expect(assetsClient.send).not.toHaveBeenCalledWith(
+        { cmd: AssetCommands.ADD_COMMUNITY_AUDIENCE },
+        expect.anything()
+      );
+      expect(repo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('findById', () => {
-    it('returns the ad matching the id', async () => {
+    it('returns only the ad matching the requested app scope', async () => {
       const ad = createAd();
       repo.findOne.mockResolvedValue(ad);
 
-      await expect(service.findById('ad-1')).resolves.toBe(ad);
-      expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 'ad-1' } });
+      await expect(service.findById('ad-1', 'local-hub')).resolves.toBe(ad);
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: { id: 'ad-1', appScope: 'local-hub' },
+      });
     });
 
     it('throws an RpcException naming the missing id', async () => {
       repo.findOne.mockResolvedValue(null);
 
-      await expect(service.findById('missing-ad')).rejects.toThrow(
+      await expect(service.findById('missing-ad', 'local-hub')).rejects.toThrow(
         RpcException
       );
-      await expect(service.findById('missing-ad')).rejects.toThrow(
+      await expect(service.findById('missing-ad', 'local-hub')).rejects.toThrow(
         'Classified ad missing-ad not found'
       );
+    });
+  });
+
+  describe('legacy asset audience lookup', () => {
+    it('normalizes exact relative and absolute asset paths across scopes and lifecycle states', async () => {
+      const assetId = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
+      qb.getMany.mockResolvedValue([
+        createAd({
+          id: 'removed-ad',
+          status: 'removed',
+          imageUrls: [`/api/asset/${assetId}?width=320`],
+          communityId: 'local-private-community',
+          appScope: 'local-hub',
+        }),
+        createAd({
+          id: 'sold-ad',
+          status: 'sold',
+          imageUrls: [`https://media.example.test/asset/${assetId}`],
+          communityId: 'client-private-community',
+          appScope: 'client-interface',
+        }),
+        createAd({
+          id: 'substring-only',
+          imageUrls: [`https://evil.example.test/other/${assetId}`],
+          communityId: 'wrong-community',
+          appScope: 'unrelated',
+        }),
+      ]);
+
+      await expect(service.findAssetAudiences(assetId)).resolves.toEqual([
+        {
+          communityId: 'local-private-community',
+          appScope: 'local-hub',
+          ownerProfileId: 'profile-1',
+        },
+        {
+          communityId: 'client-private-community',
+          appScope: 'client-interface',
+          ownerProfileId: 'profile-1',
+        },
+      ]);
+      expect(repo.createQueryBuilder).toHaveBeenCalledWith('ad');
+      expect(qb.where).toHaveBeenCalledWith(
+        'ad.imageUrls LIKE :assetReference',
+        {
+          assetReference: `%${assetId}%`,
+        }
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith('ad.communityId IS NOT NULL');
+    });
+
+    it('ignores malformed asset identifiers without querying classified rows', async () => {
+      await expect(
+        service.findAssetAudiences('not-an-asset-id')
+      ).resolves.toEqual([]);
+      expect(repo.createQueryBuilder).not.toHaveBeenCalled();
     });
   });
 
@@ -167,6 +483,9 @@ describe('ClassifiedsService', () => {
     it('filters on the community and app scope, featured ads first', async () => {
       const ads = [createAd()];
       repo.find.mockResolvedValue(ads);
+      socialClient.send.mockReturnValue(
+        of({ id: 'community-1', appScope: 'regional-hub', isPrivate: false })
+      );
 
       await expect(
         service.findByCommunity('community-1', 'regional-hub')
@@ -182,25 +501,126 @@ describe('ClassifiedsService', () => {
     });
 
     it('omits the app scope filter entirely when none is supplied', async () => {
-      await service.findByCommunity('community-1');
+      await expect(
+        service.findByCommunity('community-1', undefined as never)
+      ).rejects.toThrow(RpcException);
+      expect(repo.find).not.toHaveBeenCalled();
+    });
 
-      expect(repo.find).toHaveBeenCalledWith({
-        where: { communityId: 'community-1', status: 'active' },
-        order: { isFeatured: 'DESC', createdAt: 'DESC' },
-      });
+    it('hides private-community ads from anonymous and unapproved readers', async () => {
+      socialClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? { id: 'community-1', appScope: 'local-hub', isPrivate: true }
+            : false
+        )
+      );
+
+      await expect(
+        service.findByCommunity('community-1', 'local-hub')
+      ).resolves.toEqual([]);
+      await expect(
+        service.findByCommunity('community-1', 'local-hub', 'pending-user')
+      ).resolves.toEqual([]);
+      expect(repo.find).not.toHaveBeenCalled();
+    });
+
+    it('allows an approved community member to read private-community ads', async () => {
+      const ads = [createAd()];
+      repo.find.mockResolvedValue(ads);
+      socialClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? { id: 'community-1', appScope: 'local-hub', isPrivate: true }
+            : true
+        )
+      );
+
+      await expect(
+        service.findByCommunity('community-1', 'local-hub', 'approved-user')
+      ).resolves.toEqual(ads);
+      expect(socialClient.send).toHaveBeenCalledWith(
+        { cmd: 'IS_COMMUNITY_MEMBER' },
+        { communityId: 'community-1', userId: 'approved-user' }
+      );
     });
   });
 
   describe('findByProfile', () => {
-    it('returns every ad for the profile, newest first', async () => {
+    it('returns only ads for the profile and app scope, newest first', async () => {
       const ads = [createAd(), createAd({ id: 'ad-2' })];
       repo.find.mockResolvedValue(ads);
 
-      await expect(service.findByProfile('profile-1')).resolves.toBe(ads);
+      await expect(
+        service.findByProfile('profile-1', 'local-hub')
+      ).resolves.toEqual(ads);
       expect(repo.find).toHaveBeenCalledWith({
-        where: { profileId: 'profile-1' },
+        where: { profileId: 'profile-1', appScope: 'local-hub' },
         order: { createdAt: 'DESC' },
       });
+    });
+
+    it('keeps an owner’s private-community ad in their own listing view after membership ends', async () => {
+      const ownedAd = createAd({ userId: 'former-member' });
+      repo.find.mockResolvedValue([ownedAd]);
+      socialClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? { id: 'community-1', appScope: 'local-hub', isPrivate: true }
+            : false
+        )
+      );
+
+      await expect(
+        service.findByProfile('profile-1', 'local-hub', 'former-member')
+      ).resolves.toEqual([ownedAd]);
+    });
+  });
+
+  describe('public by-id privacy boundary', () => {
+    it('conceals a private-community listing from anonymous readers', async () => {
+      repo.findOne.mockResolvedValue(createAd());
+      socialClient.send.mockReturnValue(
+        of({ id: 'community-1', appScope: 'local-hub', isPrivate: true })
+      );
+
+      await expect(service.findById('ad-1', 'local-hub')).rejects.toMatchObject(
+        {
+          error: { statusCode: 404 },
+        }
+      );
+    });
+
+    it('allows the approved member to read a private-community listing', async () => {
+      const ad = createAd();
+      repo.findOne.mockResolvedValue(ad);
+      socialClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? { id: 'community-1', appScope: 'local-hub', isPrivate: true }
+            : true
+        )
+      );
+
+      await expect(
+        service.findById('ad-1', 'local-hub', 'member-user')
+      ).resolves.toBe(ad);
+    });
+
+    it('keeps the listing owner able to read their own private listing after leaving', async () => {
+      const ad = createAd({ userId: 'former-member' });
+      repo.findOne.mockResolvedValue(ad);
+      socialClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? { id: 'community-1', appScope: 'local-hub', isPrivate: true }
+            : false
+        )
+      );
+
+      await expect(
+        service.findById('ad-1', 'local-hub', 'former-member')
+      ).resolves.toBe(ad);
     });
   });
 
@@ -209,14 +629,18 @@ describe('ClassifiedsService', () => {
       const ads = [createAd()];
       qb.getMany.mockResolvedValue(ads);
 
-      await expect(service.search({})).resolves.toBe(ads);
+      await expect(service.search({ appScope: 'local-hub' })).resolves.toEqual(
+        ads
+      );
 
       expect(repo.createQueryBuilder).toHaveBeenCalledWith('ad');
       expect(qb.where).toHaveBeenCalledWith('ad.status = :status', {
         status: 'active',
       });
       // No optional filters supplied, so no andWhere clauses should be added.
-      expect(qb.andWhere).not.toHaveBeenCalled();
+      expect(qb.andWhere).toHaveBeenCalledWith('ad.appScope = :appScope', {
+        appScope: 'local-hub',
+      });
       expect(qb.skip).toHaveBeenCalledWith(0);
       expect(qb.take).toHaveBeenCalledWith(20);
       expect(qb.orderBy).toHaveBeenCalledWith('ad.isFeatured', 'DESC');
@@ -259,7 +683,7 @@ describe('ClassifiedsService', () => {
     });
 
     it('treats a zero price bound as a real filter rather than a missing one', async () => {
-      await service.search({ minPrice: 0, maxPrice: 0 });
+      await service.search({ minPrice: 0, maxPrice: 0, appScope: 'local-hub' });
 
       expect(qb.andWhere).toHaveBeenCalledWith('ad.price >= :minPrice', {
         minPrice: 0,
@@ -276,7 +700,7 @@ describe('ClassifiedsService', () => {
     ])(
       'pages with page=$page limit=$limit as skip=$skip take=$take',
       async ({ page, limit, skip, take }) => {
-        await service.search({ page, limit });
+        await service.search({ page, limit, appScope: 'local-hub' });
 
         expect(qb.skip).toHaveBeenCalledWith(skip);
         expect(qb.take).toHaveBeenCalledWith(take);
@@ -292,7 +716,8 @@ describe('ClassifiedsService', () => {
       const result = await service.update(
         'ad-1',
         { title: 'Blue bicycle', price: 90 },
-        'profile-1'
+        'profile-1',
+        'local-hub'
       );
 
       expect(result).toMatchObject({ title: 'Blue bicycle', price: 90 });
@@ -303,9 +728,61 @@ describe('ClassifiedsService', () => {
       repo.findOne.mockResolvedValue(createAd({ profileId: 'profile-1' }));
 
       await expect(
-        service.update('ad-1', { title: 'Hijacked' }, 'profile-other')
+        service.update(
+          'ad-1',
+          { title: 'Hijacked' },
+          'profile-other',
+          'local-hub'
+        )
       ).rejects.toThrow('Forbidden: not the owner of this classified ad');
       expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['community retargeting', { communityId: 'private-community' }],
+      ['id replacement', { id: 'another-listing' }],
+      ['profile ownership', { profileId: 'victim-profile' }],
+      ['user ownership', { userId: 'victim-user' }],
+      ['app scope', { appScope: 'client-interface' }],
+      ['status', { status: 'active' }],
+    ])(
+      'rejects %s before any repository read or write',
+      async (_name, fields) => {
+        await expect(
+          service.update('ad-1', fields as never, 'profile-1', 'local-hub')
+        ).rejects.toMatchObject({ error: { statusCode: 400 } });
+        expect(repo.findOne).not.toHaveBeenCalled();
+        expect(repo.save).not.toHaveBeenCalled();
+      }
+    );
+
+    it('latches removed legacy image URLs before the update drops the last reference', async () => {
+      const assetId = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
+      const ad = createAd({
+        imageUrls: [`https://api.example.test/api/asset/${assetId}?w=320`],
+      });
+      repo.findOne.mockResolvedValue(ad);
+      socialClient.send.mockReturnValue(
+        of({ id: 'community-1', appScope: 'local-hub', isPrivate: true })
+      );
+      assetsClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === AssetCommands.RETRIEVE
+            ? { audienceCommunityIds: [], profileId: 'profile-1' }
+            : {}
+        )
+      );
+
+      await service.update('ad-1', { imageUrls: [] }, 'profile-1', 'local-hub');
+
+      expect(assetsClient.send).toHaveBeenCalledWith(
+        { cmd: AssetCommands.ADD_COMMUNITY_AUDIENCE },
+        { id: assetId, communityId: 'community-1' }
+      );
+      expect(assetsClient.send.mock.invocationCallOrder[0]).toBeLessThan(
+        repo.save.mock.invocationCallOrder[0]
+      );
+      expect(ad.imageUrls).toEqual([]);
     });
   });
 
@@ -315,8 +792,8 @@ describe('ClassifiedsService', () => {
       repo.findOne.mockResolvedValue(ad);
 
       await expect(
-        service.remove('ad-1', 'profile-1')
-      ).resolves.toBeUndefined();
+        service.remove('ad-1', 'profile-1', 'local-hub')
+      ).resolves.toMatchObject({ status: 'removed' });
       expect(ad.status).toBe('removed');
       expect(repo.save).toHaveBeenCalledWith(ad);
     });
@@ -325,9 +802,9 @@ describe('ClassifiedsService', () => {
       const ad = createAd({ profileId: 'profile-1' });
       repo.findOne.mockResolvedValue(ad);
 
-      await expect(service.remove('ad-1', 'profile-other')).rejects.toThrow(
-        'Forbidden: not the owner of this classified ad'
-      );
+      await expect(
+        service.remove('ad-1', 'profile-other', 'local-hub')
+      ).rejects.toThrow('Forbidden: not the owner of this classified ad');
       expect(ad.status).toBe('active');
       expect(repo.save).not.toHaveBeenCalled();
     });
@@ -338,7 +815,7 @@ describe('ClassifiedsService', () => {
       const ad = createAd();
       repo.findOne.mockResolvedValue(ad);
 
-      const result = await service.markSold('ad-1', 'profile-1');
+      const result = await service.markSold('ad-1', 'profile-1', 'local-hub');
 
       expect(result.status).toBe('sold');
       expect(repo.save).toHaveBeenCalledWith(ad);
@@ -348,9 +825,9 @@ describe('ClassifiedsService', () => {
       const ad = createAd({ profileId: 'profile-1' });
       repo.findOne.mockResolvedValue(ad);
 
-      await expect(service.markSold('ad-1', 'profile-other')).rejects.toThrow(
-        'Forbidden: not the owner of this classified ad'
-      );
+      await expect(
+        service.markSold('ad-1', 'profile-other', 'local-hub')
+      ).rejects.toThrow('Forbidden: not the owner of this classified ad');
       expect(ad.status).toBe('active');
       expect(repo.save).not.toHaveBeenCalled();
     });
@@ -364,7 +841,12 @@ describe('ClassifiedsService', () => {
         const ad = createAd();
         repo.findOne.mockResolvedValue(ad);
 
-        const result = await service.feature('ad-1', 'profile-1', 7);
+        const result = await service.feature(
+          'ad-1',
+          'profile-1',
+          7,
+          'local-hub'
+        );
 
         expect(result.isFeatured).toBe(true);
         expect(result.featuredUntil).toEqual(
@@ -379,9 +861,9 @@ describe('ClassifiedsService', () => {
     it('propagates the not-found error for an unknown ad', async () => {
       repo.findOne.mockResolvedValue(null);
 
-      await expect(service.feature('nope', 'profile-1', 7)).rejects.toThrow(
-        'Classified ad nope not found'
-      );
+      await expect(
+        service.feature('nope', 'profile-1', 7, 'local-hub')
+      ).rejects.toThrow('Classified ad nope not found');
       expect(repo.save).not.toHaveBeenCalled();
     });
 
@@ -391,9 +873,9 @@ describe('ClassifiedsService', () => {
       const ad = createAd({ profileId: 'profile-1' });
       repo.findOne.mockResolvedValue(ad);
 
-      await expect(service.feature('ad-1', 'profile-other', 7)).rejects.toThrow(
-        'Forbidden: not the owner of this classified ad'
-      );
+      await expect(
+        service.feature('ad-1', 'profile-other', 7, 'local-hub')
+      ).rejects.toThrow('Forbidden: not the owner of this classified ad');
       expect(ad.isFeatured).toBe(false);
       expect(repo.save).not.toHaveBeenCalled();
     });
@@ -407,7 +889,7 @@ describe('ClassifiedsService', () => {
       });
       repo.findOne.mockResolvedValue(ad);
 
-      const result = await service.unfeature('ad-1', 'profile-1');
+      const result = await service.unfeature('ad-1', 'profile-1', 'local-hub');
 
       expect(result.isFeatured).toBe(false);
       expect(result.featuredUntil).toBeNull();
@@ -422,9 +904,9 @@ describe('ClassifiedsService', () => {
       });
       repo.findOne.mockResolvedValue(ad);
 
-      await expect(service.unfeature('ad-1', 'profile-other')).rejects.toThrow(
-        'Forbidden: not the owner of this classified ad'
-      );
+      await expect(
+        service.unfeature('ad-1', 'profile-other', 'local-hub')
+      ).rejects.toThrow('Forbidden: not the owner of this classified ad');
       expect(ad.isFeatured).toBe(true);
       expect(repo.save).not.toHaveBeenCalled();
     });

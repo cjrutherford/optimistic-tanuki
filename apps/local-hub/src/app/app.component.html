@@ -40,7 +40,12 @@
 
     <lib-message />
 
-    <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
+    <hai-about-tag [config]="haiAboutConfig" placement="inline"></hai-about-tag>
     <lib-bug-report-ui />
+    <otui-public-info-footer
+      [accountRightsAvailable]="true"
+      [productName]="haiAboutConfig.appName"
+      [tagline]="publicFooterTagline"
+    />
   </div>
 </div>

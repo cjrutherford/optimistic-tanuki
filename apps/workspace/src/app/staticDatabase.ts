@@ -1,3 +1,4 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import fs from 'fs';
 import path from 'path';
 import * as yaml from 'js-yaml';
@@ -12,14 +13,24 @@ const config = yaml.load(
 const staticSource = new DataSource({
   type: 'postgres',
   host: process.env.POSTGRES_HOST || config.database.host,
-  port: Number(process.env.DATABASE_PORT || config.database.port),
-  username: process.env.DATABASE_USER || config.database.username,
-  password: process.env.DATABASE_PASSWORD || config.database.password,
+  port: Number(
+    process.env.POSTGRES_PORT ||
+      process.env.DATABASE_PORT ||
+      config.database.port
+  ),
+  username:
+    process.env.POSTGRES_USER ||
+    process.env.DATABASE_USER ||
+    config.database.username,
+  password:
+    process.env.POSTGRES_PASSWORD ||
+    process.env.DATABASE_PASSWORD ||
+    config.database.password,
   database:
     process.env.POSTGRES_DB ||
     process.env.DATABASE_NAME ||
     config.database.database,
-  entities: [Workspace],
+  entities: [Workspace, AccountDeletionWriteFenceEntity],
   migrations: ['./migrations/*.ts'],
 });
 

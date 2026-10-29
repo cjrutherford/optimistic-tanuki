@@ -1,4 +1,5 @@
 import {
+  ChatMessageSubmission,
   ChatWindowComponent,
   ChatWindowState,
 } from './chat-window/chat-window.component';
@@ -167,11 +168,18 @@ export class ChatUiComponent implements OnInit, OnChanges {
     },
   ];
   @Input() currentUserId = '';
+  @Input() connectionStatus: 'connecting' | 'connected' | 'reconnecting' =
+    'connecting';
   @Output() messageSubmitted = new EventEmitter<{
     conversationId: string;
     content: string;
   }>();
+  @Output() messageSubmission = new EventEmitter<
+    ChatMessageSubmission & { conversationId: string }
+  >();
   @Input() autoOpenFirstConversation = false;
+  /** A conversation to select when its contact is present. */
+  @Input() conversationToOpen: { id: string; requestId: number } | null = null;
   /**
    * A signal that holds the state of each chat window.
    */
@@ -254,6 +262,14 @@ export class ChatUiComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['contacts'] || changes['conversations']) {
       this.syncWindowStates();
+    }
+    const conversationId = this.conversationToOpen?.id;
+    if (
+      changes['conversationToOpen'] &&
+      conversationId &&
+      this.contacts.some((contact) => contact.id === conversationId)
+    ) {
+      this.openChat(conversationId);
     }
   }
 
@@ -345,6 +361,19 @@ export class ChatUiComponent implements OnInit, OnChanges {
     this.messageSubmitted.emit({ conversationId, content });
   }
 
+  handleMessageSubmission(
+    conversationId: string,
+    submission: ChatMessageSubmission
+  ) {
+    if (this.messageSubmission.observed) {
+      this.messageSubmission.emit({ ...submission, conversationId });
+      return;
+    }
+
+    this.messageSubmitted.emit({ conversationId, content: submission.content });
+    submission.settle(true);
+  }
+
   getConversation(contactId: string): ChatConversation {
     const state = this.windowStates()[contactId];
     if (state && state.conversation && state.conversation.length > 0) {
@@ -361,6 +390,10 @@ export class ChatUiComponent implements OnInit, OnChanges {
 
   getParticipantContacts(contactId: string): ChatContact[] {
     const conversation = this.getConversation(contactId);
+    if (conversation.type) {
+      const contact = this.contacts.find((c) => c.id === contactId);
+      return contact ? [contact] : [];
+    }
     if (
       conversation.participantProfiles &&
       conversation.participantProfiles.length > 0

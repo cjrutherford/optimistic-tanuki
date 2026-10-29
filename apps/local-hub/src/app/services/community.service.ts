@@ -118,6 +118,8 @@ export interface CityPost {
   communityName: string;
   title: string;
   content: string;
+  authorProfileId?: string;
+  authorUserId?: string;
   authorName: string;
   authorAvatar?: string;
   createdAt: string;
@@ -540,6 +542,8 @@ export class CommunityService {
           communityName: comm?.name || communities[0]?.name || '',
           title: p.title,
           content: p.content,
+          authorProfileId: p.profileId,
+          authorUserId: p.userId,
           authorName: 'Community Member',
           createdAt:
             typeof p.createdAt === 'string'
@@ -586,6 +590,8 @@ export class CommunityService {
         communityName: rootLocality.name,
         title: p.title,
         content: p.content,
+        authorProfileId: p.profileId,
+        authorUserId: p.userId,
         authorName: 'Community Member',
         createdAt:
           typeof p.createdAt === 'string'
@@ -630,6 +636,8 @@ export class CommunityService {
         communityName: community.name,
         title: p.title,
         content: p.content,
+        authorProfileId: p.profileId,
+        authorUserId: p.userId,
         authorName: 'Community Member',
         createdAt:
           typeof p.createdAt === 'string'
@@ -679,6 +687,8 @@ export class CommunityService {
       communityName,
       title: created.title,
       content: created.content,
+      authorProfileId: created.profileId || payload.profileId,
+      authorUserId: created.userId,
       authorName: 'You',
       createdAt:
         typeof created.createdAt === 'string'

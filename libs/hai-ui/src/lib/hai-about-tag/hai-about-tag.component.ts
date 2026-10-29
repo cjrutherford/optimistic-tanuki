@@ -8,10 +8,13 @@ import { HaiAboutModalComponent } from '../hai-about-modal/hai-about-modal.compo
   standalone: true,
   imports: [CommonModule, HaiAboutModalComponent],
   templateUrl: './hai-about-tag.component.html',
+  host: { '[class.inline]': "placement === 'inline'" },
   styleUrl: './hai-about-tag.component.scss',
 })
 export class HaiAboutTagComponent {
   @Input({ required: true }) config!: HaiAboutConfig;
+
+  @Input() placement: 'fixed' | 'inline' = 'fixed';
 
   readonly isOpen = signal(false);
 

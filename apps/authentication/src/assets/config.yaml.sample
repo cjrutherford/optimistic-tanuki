@@ -8,6 +8,16 @@ database:
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=
+services:
+  profile:
+    host: profile
+    port: 3002
+  permissions:
+    host: permissions
+    port: 3012
+  social:
+    host: social
+    port: 3003
 oauth:
   google:
     enabled: true

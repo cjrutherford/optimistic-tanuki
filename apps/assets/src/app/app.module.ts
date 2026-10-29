@@ -1,3 +1,19 @@
+import {
+  ActivityRetentionService,
+  activityRetentionRule,
+} from '@optimistic-tanuki/logger';
+import type { DataSource as RetentionDataSource } from 'typeorm';
+import { ActivityRetentionController } from './activity-retention.controller';
+import { GuardianAssetActivity as RetentionEntity0 } from '../entities/guardian-asset-activity.entity';
+import { STORAGE_ADAPTERS, StorageAdapter } from '@optimistic-tanuki/storage';
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import { AssetMediaReadFenceService } from './asset-media-read-fence.service';
+import { AssetsAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { AssetsAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { AccountDeletionAuthorityClient } from '@optimistic-tanuki/storage';
 import { Logger, Module } from '@nestjs/common';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -16,6 +32,20 @@ import { loadConfig } from './config';
 import AssetEntity from '../entities/asset.entity';
 import { DataSource } from 'typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { GuardianAssetAuthorizationService } from './guardian-asset-authorization.service';
+import { AccountExportController } from './account-export.controller';
+import { AssetsAccountExportSnapshotService } from './account-export-snapshot.service';
+import { AssetsAccountExportOwnerService } from './account-export-owner.service';
+import { AssetsAccountExportProfileSnapshotClient } from './account-export-profile-snapshot.client';
+import { AssetsAccountExportMediaReader } from './account-export-media-reader';
+import { AccountExportOwnerSpoolService } from '@optimistic-tanuki/storage';
+import { AssetsAuditErasureService } from './audit-erasure.service';
 
 @Module({
   imports: [
@@ -68,9 +98,148 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AppController, InternalMediaController],
+  controllers: [
+    ActivityRetentionController,
+    AccountDeletionSnapshotController,
+    AppController,
+    InternalMediaController,
+    AccountExportController,
+    AssetsAccountDeletionOwnerController,
+  ],
   providers: [
+    {
+      provide: ActivityRetentionService,
+      useFactory: (db: RetentionDataSource) =>
+        new ActivityRetentionService('assets', db, [
+          activityRetentionRule(db.getMetadata(RetentionEntity0), 'createdAt'),
+        ]),
+      inject: ['ASSETS_CONNECTION'],
+    },
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: AssetsAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        audit: AssetsAuditErasureService,
+        adapter: StorageAdapter,
+        database: { query(sql: string): Promise<unknown> }
+      ) => ({
+        owner: 'assets',
+        snapshot,
+        authority,
+        spool,
+        database,
+        audit,
+        custodyProbe: (nonce: string, mode: 'write' | 'read' | 'remove') => {
+          if (!adapter.custodyProbe) throw Error('ASSETS_CUSTODY_UNSUPPORTED');
+          return adapter.custodyProbe(nonce, mode);
+        },
+      }),
+      inject: [
+        AssetsAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        AssetsAuditErasureService,
+        STORAGE_ADAPTERS,
+        'ASSETS_CONNECTION',
+      ],
+    },
     AppService,
+    AssetsAuditErasureService,
+    AssetsAccountDeletionOwnerService,
+    AssetMediaReadFenceService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: ClientProxy) =>
+        new AccountDeletionAuthorityClient(auth),
+      inject: [ServiceTokens.AUTHENTICATION_SERVICE],
+    },
+    AccountExportOwnerSpoolService,
+    AssetsAccountExportProfileSnapshotClient,
+    {
+      provide: AssetsAccountExportMediaReader,
+      useFactory: (appService: AppService) =>
+        new AssetsAccountExportMediaReader(appService),
+      inject: [AppService],
+    },
+    {
+      provide: AssetsAccountExportOwnerService,
+      useFactory: (
+        dataSource: DataSource,
+        identities: AssetsAccountExportProfileSnapshotClient,
+        media: AssetsAccountExportMediaReader,
+        auth: ClientProxy,
+        profile: ClientProxy
+      ) =>
+        new AssetsAccountExportOwnerService(
+          dataSource,
+          identities,
+          media,
+          auth,
+          profile
+        ),
+      inject: [
+        'ASSETS_CONNECTION',
+        AssetsAccountExportProfileSnapshotClient,
+        AssetsAccountExportMediaReader,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+        ServiceTokens.PROFILE_SERVICE,
+      ],
+    },
+    {
+      provide: AssetsAccountExportSnapshotService,
+      useFactory: (
+        owner: AssetsAccountExportOwnerService,
+        spool: AccountExportOwnerSpoolService,
+        auth: ClientProxy
+      ) => new AssetsAccountExportSnapshotService(owner, spool, auth),
+      inject: [
+        AssetsAccountExportOwnerService,
+        AccountExportOwnerSpoolService,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
+    GuardianAssetAuthorizationService,
+    {
+      provide: ServiceTokens.AUTHENTICATION_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const target = configService.get<{ host: string; port: number }>(
+          'services.authentication'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: target,
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.PROFILE_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const target = configService.get<{ host: string; port: number }>(
+          'services.profile'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: target,
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.SOCIAL_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const target = configService.get<{ host: string; port: number }>(
+          'services.social'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: target,
+        });
+      },
+      inject: [ConfigService],
+    },
     InternalMediaService,
     FileValidationService,
     VirusScanService,
@@ -80,5 +249,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       inject: ['ASSETS_CONNECTION'],
     },
   ],
+  exports: [AssetsAuditErasureService],
 })
 export class AppModule {}

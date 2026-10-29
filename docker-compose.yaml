@@ -77,6 +77,7 @@ services:
       - .:/workspace
     environment:
       POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      ADDITIONAL_DBS: ${ADDITIONAL_DBS:-}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -116,6 +117,8 @@ services:
     environment:
       <<: *service_db_env
       JWT_SECRET: ${JWT_SECRET:-}
+      ACCOUNT_DELETION_PROOF_KEY: ${ACCOUNT_DELETION_PROOF_KEY:-}
+      VAULT_STORAGE_KEK: ${VAULT_STORAGE_KEK:-}
       # Email addresses stay unverified unless the recipient consumes a
       # verification action token. Development may override this explicitly.
       AUTH_AUTO_VERIFY_EMAILS: ${AUTH_AUTO_VERIFY_EMAILS:-false}
@@ -389,8 +392,29 @@ services:
       dockerfile: ./apps/gateway/Dockerfile
     image: cjrutherford/optimistic_tanuki_gateway:${PRODUCTION_IMAGE_TAG:-latest}
     environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      THROTTLER_PROFILE: ${THROTTLER_PROFILE:-production}
+      THROTTLE_SHORT_LIMIT: ${THROTTLE_SHORT_LIMIT:-}
+      THROTTLE_MEDIUM_LIMIT: ${THROTTLE_MEDIUM_LIMIT:-}
+      THROTTLE_LONG_LIMIT: ${THROTTLE_LONG_LIMIT:-}
+      THROTTLE_SOCIAL_POST_LIMIT: ${THROTTLE_SOCIAL_POST_LIMIT:-}
+      THROTTLE_SOCIAL_COMMENT_LIMIT: ${THROTTLE_SOCIAL_COMMENT_LIMIT:-}
+      THROTTLE_SOCIAL_VOTE_LIMIT: ${THROTTLE_SOCIAL_VOTE_LIMIT:-}
+      THROTTLE_SOCIAL_REACTION_LIMIT: ${THROTTLE_SOCIAL_REACTION_LIMIT:-}
+      THROTTLE_FORUM_WRITE_LIMIT: ${THROTTLE_FORUM_WRITE_LIMIT:-}
+      THROTTLE_CLASSIFIED_CREATE_LIMIT: ${THROTTLE_CLASSIFIED_CREATE_LIMIT:-}
+      THROTTLE_PRIVACY_WRITE_LIMIT: ${THROTTLE_PRIVACY_WRITE_LIMIT:-}
+      THROTTLE_REPORT_LIMIT: ${THROTTLE_REPORT_LIMIT:-}
+      THROTTLE_CHAT_WRITE_LIMIT: ${THROTTLE_CHAT_WRITE_LIMIT:-}
       <<: *service_db_env
       PORT: 3000
+      # Invitations use the same environment-controlled transport as auth mail.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@christopherrutherford.net}
       LISTEN_PORT: ${GATEWAY_PORT:-3000}
       SOCKET_PORT: ${GATEWAY_CHAT_SOCKET_PORT:-3300}
       SOCIAL_SOCKET_PORT: ${GATEWAY_SOCIAL_SOCKET_PORT:-3301}
@@ -765,6 +789,10 @@ services:
       - '${CHAT_COLLECTOR_PORT:-3007}:3007'
     environment:
       <<: *service_db_env
+      SOCIAL_HOST: social
+      SOCIAL_PORT: 3003
+      PROJECT_PLANNING_HOST: project-planning
+      PROJECT_PLANNING_PORT: 3006
     depends_on:
       postgres:
         condition: service_healthy
@@ -1062,11 +1090,14 @@ services:
       - '${CLASSIFIEDS_PORT:-3017}:3017'
     environment:
       <<: *service_db_env
+      POSTGRES_DB: ${CLASSIFIEDS_POSTGRES_DB:-}
     depends_on:
       postgres:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+      social:
+        condition: service_started
 
   payments:
     container_name: ot_payments

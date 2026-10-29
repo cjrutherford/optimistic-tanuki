@@ -18,6 +18,8 @@
         <button
           class="profile-badge left-badge"
           title="Selected Profile"
+          aria-label="Selected profile"
+          aria-pressed="true"
           style="background: none; border: none; cursor: default"
           disabled
         >
@@ -28,6 +30,9 @@
           class="profile-badge left-badge"
           (click)="selectProfile(p)"
           title="Select Profile"
+          [attr.aria-label]="'Select profile ' + p.profileName"
+          aria-pressed="false"
+          [disabled]="selectionPending"
           style="background: none; border: none; cursor: pointer"
         >
           <span style="font-size: 1.2em">&#x2610;</span>
@@ -37,6 +42,7 @@
           class="profile-badge right-badge edit-profile-button"
           (click)="openProfileDialog(p)"
           title="Edit Profile"
+          [disabled]="selectionPending"
         >
           ✏️
         </button>
@@ -54,6 +60,7 @@
           class="profile-badge left-badge add-profile-bubble-button"
           (click)="openProfileDialog()"
           title="Add New Profile"
+          [disabled]="selectionPending"
         >
           +
         </button>
@@ -98,8 +105,9 @@
     <div class="dialog-actions">
       <otui-button
         variant="success"
-        type="submit"
+        type="button"
         [disabled]="profileForm.invalid"
+        (action)="saveProfile()"
         >Submit</otui-button
       >
       <otui-button variant="warning" type="button" (click)="cancelEdit()"

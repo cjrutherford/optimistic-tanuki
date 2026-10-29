@@ -5,6 +5,8 @@ import {
   Get,
   HttpException,
   Inject,
+  Logger,
+  Optional,
   Param,
   Post,
   UseGuards,
@@ -20,7 +22,12 @@ import { firstValueFrom } from 'rxjs';
 import { AuthGuard } from '../../auth/auth.guard';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
-import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  ChatCommands,
+  CommunityCommands,
+  PrivacyCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { ProfileCommands } from '@optimistic-tanuki/constants';
 import { ProfileDto } from '@optimistic-tanuki/models';
 import {
@@ -30,17 +37,25 @@ import {
   GetOrCreateDirectChatBodyDto,
   SendMessageDto,
 } from '@optimistic-tanuki/chat-contracts';
+import {
+  ChatGateway,
+  PersistedChatMessageNotification,
+} from '../../app/chat-gateway/chat.gateway';
 
 @ApiBearerAuth()
 @ApiTags('chat')
 @UseGuards(AuthGuard)
 @Controller('chat')
 export class ChatController {
+  private readonly logger = new Logger(ChatController.name);
   constructor(
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
     private readonly chatService: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
-    private readonly profileService: ClientProxy
+    private readonly profileService: ClientProxy,
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialService: ClientProxy,
+    @Optional() private readonly chatGateway?: ChatGateway
   ) {}
 
   @Get('conversations/find')
@@ -81,6 +96,7 @@ export class ChatController {
       user,
       appScope
     );
+    await this.ensureDirectParticipantsCanInteract(participantIds);
     return this.forward(
       { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
       { participantIds },
@@ -121,10 +137,49 @@ export class ChatController {
     return [user.profileId, recipientProfileId];
   }
 
+  private async ensureDirectParticipantsCanInteract(
+    participantIds: string[]
+  ): Promise<void> {
+    const [first, second] = [...new Set(participantIds)].sort();
+    if (!first || !second) return;
+    const [firstBlockedSecond, secondBlockedFirst] = await Promise.all([
+      firstValueFrom(
+        this.socialService.send(
+          { cmd: PrivacyCommands.IS_USER_BLOCKED },
+          { blockerId: first, blockedId: second }
+        )
+      ),
+      firstValueFrom(
+        this.socialService.send(
+          { cmd: PrivacyCommands.IS_USER_BLOCKED },
+          { blockerId: second, blockedId: first }
+        )
+      ),
+    ]);
+    if (firstBlockedSecond || secondBlockedFirst) {
+      throw new ForbiddenException('Direct messaging is unavailable');
+    }
+  }
+
   @Post('conversations/community')
   @ApiOperation({ summary: 'Create a community conversation' })
   @ApiResponse({ status: 201, type: ConversationDto })
-  async createCommunityChat(@Body() body: CreateCommunityChatDto) {
+  async createCommunityChat(
+    @Body() body: CreateCommunityChatDto,
+    @User() user: UserDetails
+  ) {
+    const members = await firstValueFrom(
+      this.socialService.send(
+        { cmd: CommunityCommands.GET_MEMBERS },
+        { communityId: body.communityId }
+      )
+    );
+    const actor = members?.find(
+      (m) => m.profileId === user.profileId && m.status === 'approved'
+    );
+    if (!actor || !['owner', 'admin', 'moderator'].includes(actor.role))
+      throw new ForbiddenException('Community management access is required');
+    body.ownerId = user.profileId;
     return this.forward(
       { cmd: ChatCommands.CREATE_COMMUNITY_CHAT },
       body,
@@ -156,11 +211,37 @@ export class ChatController {
     body: SendMessageDto,
     @User() user: UserDetails
   ) {
-    return this.forward(
+    const conversation = await this.forward<
+      any,
+      { type?: string; participants?: string[] }
+    >(
+      { cmd: ChatCommands.GET_CONVERSATION },
+      {
+        conversationId: body.conversationId,
+        requestingProfileId: user.profileId,
+      },
+      'Failed to get conversation'
+    );
+    if (conversation?.type === 'direct') {
+      await this.ensureDirectParticipantsCanInteract(
+        conversation.participants ?? []
+      );
+    }
+    const stored = await this.forward<any, PersistedChatMessageNotification>(
       { cmd: ChatCommands.SEND_MESSAGE },
       { ...body, senderId: user.profileId },
       'Failed to send message'
     );
+    // Persistence has succeeded. Live delivery must not turn it into a failed
+    // HTTP send (and an accidental duplicate retry); authorized history recovers it.
+    if (this.chatGateway) {
+      void this.chatGateway
+        .notifyPersistedMessage(body.conversationId, stored)
+        .catch(() =>
+          this.logger.warn('Live chat delivery unavailable; message persisted')
+        );
+    }
+    return stored;
   }
 
   private async forward<TPayload, TResult>(

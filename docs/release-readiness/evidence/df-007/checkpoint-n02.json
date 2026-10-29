@@ -1,0 +1,174 @@
+{
+  "slice": "DF-007-N02",
+  "date": "2026-10-23",
+  "accepted": true,
+  "status": "locally-verified-OT-TS-session-cache",
+  "releaseApplications": {
+    "OT": "client-interface",
+    "TS": "local-hub"
+  },
+  "baseRevision": "f3469332c41c5a0941dccabc37b2dbb7fc8dcc58",
+  "sourceManifestSha256": "12ee504c7dfac8f5ea6aa7480c7d845405e54f3d7cc7704ff648e1576dd58a81",
+  "sourceHashes": {
+    "apps/authentication-e2e/src/authentication/n02-gateway.worker.ts": "d6e06fdfc814f9e077ead3dad40b08d1ac63229b04ed5d57367d3ac63f1f9ace",
+    "apps/authentication-e2e/src/authentication/session-cache.spec.ts": "1b5b16793465a697e3950e306b3f075fb5a8f94ddd7acc2e0899648a9e041d5c",
+    "apps/authentication/src/app/app.controller.ts": "e5ddf9029662e0abe87959943121631f55cd0c13cf835855f57c4a0c7943573a",
+    "apps/authentication/src/app/app.service.ts": "8dbf2fc4a95441b5e37de5dd3f4ec3a25bb1b4ba625b25b8b0b7bd6a1600a2b4",
+    "apps/authentication/src/app/oauth-callback-session.spec.ts": "3bb2f73da64c3b338972094402d8afd99f4c3c927a12974bb803b045c42300d6",
+    "apps/gateway/src/auth/permissions-cache.service.spec.ts": "f75dff68ddff9f6207b226f2b5ca9bb2ada64c504676bb8e38889db6d376553c",
+    "apps/gateway/src/auth/permissions-cache.service.ts": "c9853ce30a6dddcca6afbc0f1a704ecba58a9ea779c3ac4ea6ec76e297aaa092",
+    "apps/gateway/src/auth/permissions-mutation-client.spec.ts": "40ded2cd6e9b9615a3cfe8f7e57450a399b1bc431ca94c13b6a51e55e73cb4db",
+    "apps/gateway/src/auth/permissions-mutation-client.ts": "7b7a575cb30377628baab134e42226ad73d133d27eb4e94166105587ac8a2d70",
+    "apps/gateway/src/controllers/oauth/oauth-state.store.spec.ts": "9a4a17767913dc643e4339c6e7ec45a1daa968f16fdd3aa50110e7c7747d1471",
+    "apps/gateway/src/controllers/oauth/oauth-state.store.ts": "0d6d33157b3fb34ebacf6e2379a9a84abd7c81ed85a290ae35331512bbb40d94",
+    "apps/gateway/src/controllers/oauth/oauth.controller.spec.ts": "42249553f8bddcdc4085508e2635cf9af8062b6e27106ac444832edfca685b32",
+    "apps/gateway/src/controllers/oauth/oauth.controller.ts": "4ab6a37af5599fcc12afe2051ca525b9dee372ce928dc50930b0abb74298d9a0",
+    "libs/constants/src/lib/libs/authentication.ts": "b6d118299011a7f5260620219af3b33d66c1935e5f5c6f368816f9c99bd77488"
+  },
+  "inventory": "docs/release-readiness/evidence/df-007/n02-cache-inventory.json",
+  "runtime": {
+    "result": "PASS",
+    "command": "N02_ATTEMPT=attempt-4 timeout 900s python3 .runtime-artifacts/account-rights/finish-sequence/session-cache/runtime/run.py",
+    "seconds": 65.44,
+    "casesPassed": 1,
+    "casesSkipped": 0,
+    "stages": {
+      "authoritativeReplicaChecksAndRoleDefinitionMutation": true,
+      "accountProfileInvalidationPreservesCounterpart": true,
+      "crossReplicaOAuthCookieBearerReplayAndLogout": true,
+      "currentProfileOwnershipRecheckedAtRedemption": true,
+      "revokedExpiredAndLegacyGrantDenial": true,
+      "accountOAuthInvalidationAndOneTimeState": true,
+      "processRestartAndDurableSessionRevocation": true
+    },
+    "databases": ["authentication", "profile", "permissions"],
+    "independentCountMapsEqual": true,
+    "temporaryTablesRemaining": 0,
+    "redisKeysRemaining": 0,
+    "privateResources": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "imageIds": {
+      "authentication": "sha256:4e11fc701216fdbeab81fb8e460c6ece11cbe76980fdbb0437dc8c843f967047",
+      "profile": "sha256:c80baaec300cfa1b5af4ad28f0ca38e05e17c0c81fec9b5887204b07f8c2d9e8",
+      "permissions": "sha256:3f8c3ef944b6fe8fe4d17f2c7f25a00b6908fe19c396a9af5bf6c56d55f125c1",
+      "db_setup": "sha256:3f33cecc1a90bc154fd4cb6878bd498829414c85749c98230e53f93484cadcac",
+      "redis": "sha256:4df5c34dc41256fc4ed293482cb34281e17d133077e9aa3c6a87fda60a356c65"
+    },
+    "provenance": "Fresh Authentication callback-reference RPC image; pinned schema-unchanged Profile/Permissions and migration toolchain. Two independent HTTP harness processes execute changed Gateway guards, cache and OAuth redemption source against real TCP services, PostgreSQL and Redis. External OAuth handshake is bypassed via trusted session reference; no browser/external provider qualification.",
+    "controlledBoundary": [
+      "provider OAuth handshake bypassed using trusted Auth session reference"
+    ]
+  },
+  "checks": {
+    "distinctFocusedCasesQualified": 131,
+    "unitEvidence": [
+      {
+        "log": "auth-reference-unit.log",
+        "passed": 7
+      },
+      {
+        "log": "gateway-final-unit.log",
+        "passed": 122,
+        "failed": 2,
+        "total": 124,
+        "qualification": "Two mutation-wrapper failures were repaired and verified in the final failing subset; not counted as a passing aggregate run."
+      },
+      {
+        "log": "gateway-repair-unit.log",
+        "passed": 71,
+        "qualification": "Corrected controller/mutation subset, including both previous failures."
+      },
+      {
+        "log": "oauth-store-final-unit.log",
+        "passed": 4,
+        "qualification": "Final case-insensitive account invalidation regression; overlaps the prior total."
+      }
+    ],
+    "ciContractChecksPassed": 35,
+    "productionBuilds": ["authentication", "gateway"],
+    "lintProjects": [
+      "authentication",
+      "gateway",
+      "authentication-e2e",
+      "constants"
+    ],
+    "scopedDevelopmentBuilds": [
+      "client-interface",
+      "local-hub",
+      "authentication",
+      "gateway"
+    ],
+    "migrationGovernance": "PASS; no schema changes"
+  },
+  "sourceReview": {
+    "reviewerResult": "NO-GO with ownership objection; no independent harness acceptance",
+    "parentResolution": "Objection not upheld: row lookup binds session ID, user and profile; signed claims match; ProfileOwnershipVerifier.resolveSelection requires an exact current CheckAccountProfileOwnership reply. Focused failure tests and the real ownership-transfer-after-grant runtime case prove denial. Parent reviewed and executed the completed harness.",
+    "remainingConcreteFindings": []
+  },
+  "earlierAttempts": [
+    {
+      "attempt": 1,
+      "result": "FAIL",
+      "reason": "Harness preflight read a nonexistent Auth YAML file; corrected to the private Compose JWT environment. No services or fixture started."
+    },
+    {
+      "attempt": 2,
+      "result": "FAIL",
+      "seconds": 58.65,
+      "reason": "Fixture TypeScript string/Buffer normalization errors; zero runtime cases ran. Private resources removed."
+    },
+    {
+      "attempt": 3,
+      "result": "FAIL",
+      "seconds": 53.6,
+      "reason": "Replica revocation/role-edit stage passed, then fixture incorrectly expected a diagnostic entry to survive a shared-role clear. Corrected with fresh diagnostic seeding before account invalidation. All three database counts restored and private resources zero."
+    }
+  ],
+  "limits": [
+    "External OAuth provider handshake is bypassed through the trusted session-reference command. No real provider/browser/production deployment qualification.",
+    "Two HTTP harness processes execute production Gateway guards/cache/redemption methods; this is not a full production Gateway deployment.",
+    "Permission authorization now performs an authoritative RPC per check; no latency or capacity SLO is qualified.",
+    "Diagnostic memory cache and shared Redis OAuth store exercised; file diagnostic provider not instantiated here.",
+    "Transient PKCE and guardian registration protocol context remains purpose-bound and TTL-limited; the removed credential is the session bearer from new callback grants.",
+    "Pre-login unbound OAuth state has no account identity and expires rather than being attributed.",
+    "Legacy raw-token callback grants are rejected; an in-flight sign-in across upgrade may need to restart.",
+    "Internal invalidation requires authoritative identity input; D00 permanent fencing/profile discovery/account deletion and N06 browser cleanup remain open.",
+    "Overall export remains incomplete with no downloadable artifact."
+  ],
+  "protectedFilesUnchanged": 43,
+  "evidenceHashes": {
+    ".runtime-artifacts/account-rights/finish-sequence/session-cache/runtime/attempt-4/result.json": "eadd296a84e4b7086d3e6b36cb5bcd8b301a821c98da0842c5f54b0f8583819d",
+    ".runtime-artifacts/account-rights/finish-sequence/session-cache/runtime/attempt-4/fixture-report.json": "f280f8cfc56fc1f175ae2b8090d8eae2de2d3532f9e1e9b8d32af4229bb6b2ac",
+    ".runtime-artifacts/account-rights/finish-sequence/session-cache/runtime/attempt-4/identities.json": "7efe0999b87a0ee5a6d48f7b191b3d6eec597f9ff6dec1bd3d10fb43cdf3942b",
+    ".runtime-artifacts/account-rights/finish-sequence/session-cache/runtime/attempt-4/database-counts-before.json": "63391d665406451dd2d9781630b5c616999613c432e492a22685bd66320f752c",
+    ".runtime-artifacts/account-rights/finish-sequence/session-cache/runtime/attempt-4/database-counts-after.json": "63391d665406451dd2d9781630b5c616999613c432e492a22685bd66320f752c",
+    ".runtime-artifacts/account-rights/finish-sequence/session-cache/runtime/attempt-4/redis-readback.json": "0091a92391d30609a044c4a19824776a9f178f0285c9cfe40f33d5f05c873ac7",
+    ".runtime-artifacts/account-rights/finish-sequence/session-cache/runtime/attempt-4/cleanup.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d"
+  },
+  "postVerificationFormatting": {
+    "path": "apps/authentication/src/app/oauth-callback-session.spec.ts",
+    "beforeSha256": "3bb2f73da64c3b338972094402d8afd99f4c3c927a12974bb803b045c42300d6",
+    "afterSha256": "499f05f4fd76a48666e23a0d9cfefce9a0fe8de9a8bab2b2574d659eaae6b9f8",
+    "tokenStreamUnchanged": true,
+    "excludedFromProductionBuild": true
+  },
+  "currentSourceHashes": {
+    "apps/authentication-e2e/src/authentication/n02-gateway.worker.ts": "d6e06fdfc814f9e077ead3dad40b08d1ac63229b04ed5d57367d3ac63f1f9ace",
+    "apps/authentication-e2e/src/authentication/session-cache.spec.ts": "1b5b16793465a697e3950e306b3f075fb5a8f94ddd7acc2e0899648a9e041d5c",
+    "apps/authentication/src/app/app.controller.ts": "e5ddf9029662e0abe87959943121631f55cd0c13cf835855f57c4a0c7943573a",
+    "apps/authentication/src/app/app.service.ts": "8dbf2fc4a95441b5e37de5dd3f4ec3a25bb1b4ba625b25b8b0b7bd6a1600a2b4",
+    "apps/authentication/src/app/oauth-callback-session.spec.ts": "499f05f4fd76a48666e23a0d9cfefce9a0fe8de9a8bab2b2574d659eaae6b9f8",
+    "apps/gateway/src/auth/permissions-cache.service.spec.ts": "f75dff68ddff9f6207b226f2b5ca9bb2ada64c504676bb8e38889db6d376553c",
+    "apps/gateway/src/auth/permissions-cache.service.ts": "c9853ce30a6dddcca6afbc0f1a704ecba58a9ea779c3ac4ea6ec76e297aaa092",
+    "apps/gateway/src/auth/permissions-mutation-client.spec.ts": "40ded2cd6e9b9615a3cfe8f7e57450a399b1bc431ca94c13b6a51e55e73cb4db",
+    "apps/gateway/src/auth/permissions-mutation-client.ts": "7b7a575cb30377628baab134e42226ad73d133d27eb4e94166105587ac8a2d70",
+    "apps/gateway/src/controllers/oauth/oauth-state.store.spec.ts": "9a4a17767913dc643e4339c6e7ec45a1daa968f16fdd3aa50110e7c7747d1471",
+    "apps/gateway/src/controllers/oauth/oauth-state.store.ts": "0d6d33157b3fb34ebacf6e2379a9a84abd7c81ed85a290ae35331512bbb40d94",
+    "apps/gateway/src/controllers/oauth/oauth.controller.spec.ts": "42249553f8bddcdc4085508e2635cf9af8062b6e27106ac444832edfca685b32",
+    "apps/gateway/src/controllers/oauth/oauth.controller.ts": "4ab6a37af5599fcc12afe2051ca525b9dee372ce928dc50930b0abb74298d9a0",
+    "libs/constants/src/lib/libs/authentication.ts": "b6d118299011a7f5260620219af3b33d66c1935e5f5c6f368816f9c99bd77488"
+  }
+}

@@ -4,6 +4,8 @@
  */
 
 import pg from 'pg';
+import http from 'node:http';
+import https from 'node:https';
 import {
   DEV_BUSINESS_TENANT_PRESETS,
   PRIMARY_WORKFLOW_TENANT_SLUG,
@@ -19,21 +21,58 @@ const defaultLogger = {
 
 const DEFAULT_GATEWAY_URL = 'http://gateway:3000/api';
 const DEFAULT_APP_SCOPE = 'business-site';
-const { Client: PgClient } = pg;
-async function fetchJson(url, options = {}, appScope = DEFAULT_APP_SCOPE) {
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'x-ot-appscope': appScope,
-      ...(options.headers || {}),
-    },
+const DEFAULT_PUBLIC_ORIGIN = 'http://127.0.0.1:8094';
+export async function fetchJson(
+  url,
+  options = {},
+  appScope = DEFAULT_APP_SCOPE,
+  publicOrigin = process.env.BUSINESS_SITE_PUBLIC_ORIGIN ||
+    DEFAULT_PUBLIC_ORIGIN
+) {
+  if (appScope !== DEFAULT_APP_SCOPE) {
+    throw new Error(
+      `Business seed only supports app scope ${DEFAULT_APP_SCOPE}`
+    );
+  }
+  const destination = new URL(url);
+  const registeredOrigin = new URL(publicOrigin);
+  const transport = destination.protocol === 'https:' ? https : http;
+  const body = options.body;
+  const headers = {
+    ...(options.headers || {}),
+    'Content-Type': 'application/json',
+    'x-ot-appscope': DEFAULT_APP_SCOPE,
+    'x-ot-app-id': DEFAULT_APP_SCOPE,
+    origin: registeredOrigin.origin,
+    host: registeredOrigin.host,
+  };
+  const response = await new Promise((resolve, reject) => {
+    const req = transport.request(
+      destination,
+      {
+        method: options.method || (body ? 'POST' : 'GET'),
+        headers,
+      },
+      (res) => {
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () =>
+          resolve({
+            status: res.statusCode || 0,
+            text: Buffer.concat(chunks).toString(),
+          })
+        );
+      }
+    );
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
   });
-  const text = await res.text();
+  const text = response.text;
   try {
-    return { status: res.status, data: JSON.parse(text) };
+    return { status: response.status, data: JSON.parse(text) };
   } catch {
-    return { status: res.status, data: text };
+    return { status: response.status, data: text };
   }
 }
 
@@ -69,6 +108,16 @@ export async function bootstrap(options = {}) {
     options.env?.APP_SCOPE ||
     process.env.APP_SCOPE ||
     DEFAULT_APP_SCOPE;
+  const publicOrigin =
+    options.publicOrigin ||
+    options.env?.BUSINESS_SITE_PUBLIC_ORIGIN ||
+    process.env.BUSINESS_SITE_PUBLIC_ORIGIN ||
+    DEFAULT_PUBLIC_ORIGIN;
+  if (appScope !== DEFAULT_APP_SCOPE) {
+    throw new Error(
+      `Business seed only supports app scope ${DEFAULT_APP_SCOPE}`
+    );
+  }
   const tenants = options.tenants || DEV_BUSINESS_TENANT_PRESETS;
   const users = options.users || [
     ...tenants.map((tenant) => tenant.owner),
@@ -80,7 +129,8 @@ export async function bootstrap(options = {}) {
     ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   const requestJson =
     dependencies.fetchJson ||
-    ((url, requestOptions = {}) => fetchJson(url, requestOptions, appScope));
+    ((url, requestOptions = {}) =>
+      fetchJson(url, requestOptions, appScope, publicOrigin));
   const PgClient = dependencies.PgClient || pg.Client;
 
   logger.log(`=== Starting Business User Seed ===`);

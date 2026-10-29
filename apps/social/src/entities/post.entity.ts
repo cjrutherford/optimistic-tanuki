@@ -8,6 +8,7 @@ import {
   In,
   Like,
   ManyToMany,
+  JoinTable,
   MoreThanOrEqual,
   OneToMany,
   OneToOne,
@@ -51,7 +52,12 @@ export class Post {
   @OneToMany(() => Comment, (comment) => comment.post)
   comments: Comment[];
 
-  @ManyToMany(() => Link, (link) => link.posts)
+  @ManyToMany(() => Link, (link) => link.posts, { cascade: false })
+  @JoinTable({
+    name: 'post_link',
+    joinColumn: { name: 'postId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'linkId', referencedColumnName: 'id' },
+  })
   links: Link[];
 
   @OneToMany(() => Attachment, (attachment) => attachment.post)
@@ -74,7 +80,16 @@ export class Post {
   updatedAt: Date;
 
   @Column({ type: 'varchar', default: 'public' })
-  visibility: 'public' | 'followers';
+  visibility: 'public' | 'followers' | 'community';
+
+  /**
+   * Public-community content is global only when its author explicitly chose
+   * that audience. Defaults true so existing non-community public posts keep
+   * their established behavior via the shared read predicate; the default
+   * false keeps new community posts private unless explicitly selected.
+   */
+  @Column({ default: false })
+  publicAudienceExplicit: boolean;
 
   @Column({ type: 'uuid', nullable: true })
   communityId: string | null;
@@ -103,6 +118,10 @@ export function postSearchDtoToFindManyOptions(
 ): FindManyOptions<Post> {
   const searchOptions: FindManyOptions<Post> = {};
   const where: FindOptionsWhere<Post> = {};
+
+  if (searchDto?.id) {
+    where.id = searchDto.id;
+  }
 
   if (searchDto?.title) {
     where.title = Like(`%${searchDto.title}%`);

@@ -2,6 +2,10 @@ export * from './lib/libs/models.module';
 export * from './lib/libs/authentication';
 export * from './lib/libs/profile';
 export * from './lib/libs/social';
+export * from './lib/libs/account-export/account-export.contract';
+export * from './lib/libs/account-export/account-export-owner.contract';
+export * from './lib/libs/account-export/account-export-snapshot.contract';
+export * from './lib/libs/account-export/account-export-release-coverage';
 export * from './lib/libs/assets';
 export * from './lib/libs/project-planning';
 export * from './lib/libs/nexus';
@@ -23,3 +27,7 @@ export * from './lib/libs/leads';
 export * from './lib/libs/workspaces';
 export * from './lib/libs/flow';
 export * from './lib/libs/vault';
+
+export * from './lib/libs/account-deletion/account-deletion.contract';
+
+export * from './lib/libs/account-deletion/browser-session-boundary.contract';

@@ -22,6 +22,7 @@ describe('ProfileContext', () => {
     getCurrentUserProfile: jest.Mock;
     getCurrentUserProfiles: jest.Mock;
     selectProfile: jest.Mock;
+    activateProfile: jest.Mock;
   };
 
   const configure = (platformId: string) => {
@@ -45,6 +46,7 @@ describe('ProfileContext', () => {
       getCurrentUserProfile: jest.fn().mockReturnValue(null),
       getCurrentUserProfiles: jest.fn().mockReturnValue([]),
       selectProfile: jest.fn(),
+      activateProfile: jest.fn().mockResolvedValue(undefined),
     };
   });
 
@@ -132,12 +134,14 @@ describe('ProfileContext', () => {
     errorSpy.mockRestore();
   });
 
-  it('delegates selectProfile to the profile service', () => {
+  it('delegates profile selection through verified session activation', async () => {
     const ctx = configure('browser');
 
-    ctx.selectProfile(profile('d'));
+    profileService.getCurrentUserProfile.mockReturnValue(profile('d'));
+    await ctx.selectProfile(profile('d'));
 
-    expect(profileService.selectProfile).toHaveBeenCalledWith(profile('d'));
+    expect(profileService.activateProfile).toHaveBeenCalledWith(profile('d'));
+    expect(profileService.selectProfile).not.toHaveBeenCalled();
     expect(ctx.currentProfile()).toEqual(profile('d'));
   });
 

@@ -15,14 +15,21 @@ import {
   VoteCommands,
   FollowCommands,
 } from '@optimistic-tanuki/constants';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { Server, Socket } from 'socket.io';
-import { SocketSessionAuthService } from '../../auth/socket-session-auth.service';
+import {
+  SocketSessionAuthService,
+  SocketSessionUser,
+} from '../../auth/socket-session-auth.service';
+import { GatewayNotificationRecipientService } from '../../controllers/social/notification/gateway-notification-recipient.service';
+import { projectNotification } from '@optimistic-tanuki/social-contracts';
 
 interface ConnectedClient {
   id: string;
+  userId: string;
   client: Socket;
   subscriptions: Set<string>;
+  contentRevision: number;
 }
 
 @WebSocketGateway(Number(process.env.SOCIAL_SOCKET_PORT) || 3301, {
@@ -37,21 +44,40 @@ export class SocialGateway {
   server: Server;
 
   private readonly l = new Logger(SocialGateway.name);
-  private connectedClients: Map<string, ConnectedClient> = new Map();
+  private connectedClients: Map<string, Set<ConnectedClient>> = new Map();
   private clientToProfileMap: Map<Socket, string> = new Map();
+  private readonly authenticationReady = new WeakMap<
+    Socket,
+    Promise<SocketSessionUser>
+  >();
 
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
-    private readonly socketSessionAuth: SocketSessionAuthService
+    private readonly socketSessionAuth: SocketSessionAuthService,
+    private readonly notificationRecipients: GatewayNotificationRecipientService
   ) {}
 
   async handleConnection(client: Socket): Promise<void> {
+    const authentication = this.socketSessionAuth.authenticate(client, true);
+    this.authenticationReady.set(client, authentication);
     try {
-      const user = await this.socketSessionAuth.authenticate(client);
-      this.registerClient(user.profileId, client);
+      const user = await authentication;
+      if (this.authenticationReady.get(client) !== authentication) {
+        return;
+      }
+      const connectedClient = this.registerClient(
+        user.profileId,
+        client,
+        user.userId
+      );
+      connectedClient.contentRevision++;
+      client.emit('social_content_invalidated', {});
     } catch {
-      client.disconnect(true);
+      if (this.authenticationReady.get(client) === authentication) {
+        this.authenticationReady.delete(client);
+        client.disconnect(true);
+      }
     }
   }
 
@@ -61,39 +87,50 @@ export class SocialGateway {
     payload: { profileId: string; limit?: number; offset?: number },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = this.socketSessionAuth.assertProfile(
-      client,
-      payload.profileId
+    const profileId = (
+      await this.assertProfileAfterAuthentication(client, payload.profileId)
     ).profileId;
     this.l.log(`Getting feed for profile: ${profileId}`);
 
     // Register client if not already registered
-    this.registerClient(profileId, client);
+    const authenticatedUser = this.socketSessionAuth.getUser(client);
+    this.registerClient(profileId, client, authenticatedUser.userId);
+    const connectedClient = this.clientToConnectedClient(client)!;
+    const contentRevision = connectedClient.contentRevision;
 
     try {
       // Fetch the feed from social service
       const posts = await firstValueFrom(
-        this.socialClient.send(
-          { cmd: PostCommands.FIND_MANY },
-          {
-            criteria: {},
-            opts: {
-              limit: payload.limit || 50,
-              offset: payload.offset || 0,
-              orderBy: 'createdAt',
-              orderDirection: 'DESC',
-            },
-            viewerProfileId: profileId,
-          }
-        )
+        this.socialClient
+          .send(
+            { cmd: PostCommands.FIND_MANY },
+            {
+              criteria: {},
+              opts: {
+                limit: payload.limit || 50,
+                offset: payload.offset || 0,
+                orderBy: 'createdAt',
+                orderDirection: 'DESC',
+              },
+              viewerProfileId: profileId,
+            }
+          )
+          .pipe(timeout(5000))
       );
 
-      client.emit('feed', posts || []);
+      if (
+        connectedClient.contentRevision === contentRevision &&
+        (await this.isCurrentSocketSession(connectedClient))
+      ) {
+        client.emit('feed', posts || []);
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.l.error(`Error fetching feed: ${errorMessage}`);
-      client.emit('error', { message: 'Failed to fetch feed' });
+      if (await this.isCurrentSocketSessionForClient(client)) {
+        client.emit('error', { message: 'Failed to fetch feed' });
+      }
     }
   }
 
@@ -102,26 +139,56 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string; postIds?: string[] },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = this.socketSessionAuth.assertProfile(
-      client,
-      payload.profileId
+    const profileId = (
+      await this.assertProfileAfterAuthentication(client, payload.profileId)
     ).profileId;
     this.l.log(`User ${profileId} subscribing to posts`);
 
-    const connectedClient = this.registerClient(profileId, client);
+    const authenticatedUser = this.socketSessionAuth.getUser(client);
+    const connectedClient = this.registerClient(
+      profileId,
+      client,
+      authenticatedUser.userId
+    );
 
     if (payload.postIds && payload.postIds.length > 0) {
-      payload.postIds.forEach((postId) => {
-        connectedClient.subscriptions.add(`post:${postId}`);
+      const permittedPostIds: string[] = [];
+      await Promise.all(
+        payload.postIds.map(async (postId) => {
+          try {
+            const post = await firstValueFrom(
+              this.socialClient
+                .send(
+                  { cmd: PostCommands.FIND },
+                  { id: postId, viewerProfileId: profileId }
+                )
+                .pipe(timeout(3000))
+            );
+            if (post && !Array.isArray(post)) {
+              connectedClient.subscriptions.add(`post:${postId}`);
+              permittedPostIds.push(postId);
+            }
+          } catch {
+            // Denied, missing, and unavailable lookups all fail closed.
+          }
+        })
+      );
+      if (!(await this.isCurrentSocketSession(connectedClient))) return;
+      if (permittedPostIds.length !== payload.postIds.length) {
+        client.emit('social_content_invalidated', {});
+      }
+      client.emit('subscribed', {
+        type: 'posts',
+        postIds: permittedPostIds,
       });
     } else {
       connectedClient.subscriptions.add('posts:all');
+      if (!(await this.isCurrentSocketSession(connectedClient))) return;
+      client.emit('subscribed', {
+        type: 'posts',
+        postIds: ['all'],
+      });
     }
-
-    client.emit('subscribed', {
-      type: 'posts',
-      postIds: payload.postIds || ['all'],
-    });
   }
 
   @SubscribeMessage(SocialRealtimeCommands.UNSUBSCRIBE_POSTS)
@@ -129,13 +196,12 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string; postIds?: string[] },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = this.socketSessionAuth.assertProfile(
-      client,
-      payload.profileId
+    const profileId = (
+      await this.assertProfileAfterAuthentication(client, payload.profileId)
     ).profileId;
     this.l.log(`User ${profileId} unsubscribing from posts`);
 
-    const connectedClient = this.connectedClients.get(profileId);
+    const connectedClient = this.clientToConnectedClient(client);
     if (!connectedClient) {
       return;
     }
@@ -159,13 +225,17 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string; targetUserIds?: string[] },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = this.socketSessionAuth.assertProfile(
-      client,
-      payload.profileId
+    const profileId = (
+      await this.assertProfileAfterAuthentication(client, payload.profileId)
     ).profileId;
     this.l.log(`User ${profileId} subscribing to user activity`);
 
-    const connectedClient = this.registerClient(profileId, client);
+    const authenticatedUser = this.socketSessionAuth.getUser(client);
+    const connectedClient = this.registerClient(
+      profileId,
+      client,
+      authenticatedUser.userId
+    );
 
     if (payload.targetUserIds && payload.targetUserIds.length > 0) {
       payload.targetUserIds.forEach((userId) => {
@@ -175,6 +245,7 @@ export class SocialGateway {
       connectedClient.subscriptions.add(`user:${profileId}`);
     }
 
+    if (!(await this.isCurrentSocketSession(connectedClient))) return;
     client.emit('subscribed', {
       type: 'user_activity',
       userIds: payload.targetUserIds || [profileId],
@@ -186,13 +257,12 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string; targetUserIds?: string[] },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = this.socketSessionAuth.assertProfile(
-      client,
-      payload.profileId
+    const profileId = (
+      await this.assertProfileAfterAuthentication(client, payload.profileId)
     ).profileId;
     this.l.log(`User ${profileId} unsubscribing from user activity`);
 
-    const connectedClient = this.connectedClients.get(profileId);
+    const connectedClient = this.clientToConnectedClient(client);
     if (!connectedClient) {
       return;
     }
@@ -216,9 +286,8 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = this.socketSessionAuth.assertProfile(
-      client,
-      payload.profileId
+    const profileId = (
+      await this.assertProfileAfterAuthentication(client, payload.profileId)
     ).profileId;
     this.l.log(`Getting following for profile: ${profileId}`);
 
@@ -230,12 +299,16 @@ export class SocialGateway {
         )
       );
 
-      client.emit('following', following || []);
+      if (await this.isCurrentSocketSessionForClient(client)) {
+        client.emit('following', following || []);
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.l.error(`Error fetching following: ${errorMessage}`);
-      client.emit('error', { message: 'Failed to fetch following' });
+      if (await this.isCurrentSocketSessionForClient(client)) {
+        client.emit('error', { message: 'Failed to fetch following' });
+      }
     }
   }
 
@@ -244,9 +317,8 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = this.socketSessionAuth.assertProfile(
-      client,
-      payload.profileId
+    const profileId = (
+      await this.assertProfileAfterAuthentication(client, payload.profileId)
     ).profileId;
     this.l.log(`Getting followers for profile: ${profileId}`);
 
@@ -258,12 +330,16 @@ export class SocialGateway {
         )
       );
 
-      client.emit('followers', followers || []);
+      if (await this.isCurrentSocketSessionForClient(client)) {
+        client.emit('followers', followers || []);
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.l.error(`Error fetching followers: ${errorMessage}`);
-      client.emit('error', { message: 'Failed to fetch followers' });
+      if (await this.isCurrentSocketSessionForClient(client)) {
+        client.emit('error', { message: 'Failed to fetch followers' });
+      }
     }
   }
 
@@ -272,15 +348,25 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = this.socketSessionAuth.assertProfile(
+    const user = await this.assertProfileAfterAuthentication(
       client,
       payload.profileId
-    ).profileId;
+    );
+    const profileId = await this.notificationRecipients.assertSelected(
+      user,
+      payload.profileId
+    );
     this.l.log(`User ${profileId} subscribing to notifications`);
 
-    const connectedClient = this.registerClient(profileId, client);
+    const authenticatedUser = this.socketSessionAuth.getUser(client);
+    const connectedClient = this.registerClient(
+      profileId,
+      client,
+      authenticatedUser.userId
+    );
     connectedClient.subscriptions.add(`notifications:${profileId}`);
 
+    if (!(await this.isCurrentSocketSession(connectedClient))) return;
     client.emit('subscribed', {
       type: 'notifications',
       profileId,
@@ -292,13 +378,17 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = this.socketSessionAuth.assertProfile(
+    const user = await this.assertProfileAfterAuthentication(
       client,
       payload.profileId
-    ).profileId;
+    );
+    const profileId = await this.notificationRecipients.assertSelected(
+      user,
+      payload.profileId
+    );
     this.l.log(`User ${profileId} unsubscribing from notifications`);
 
-    const connectedClient = this.connectedClients.get(profileId);
+    const connectedClient = this.clientToConnectedClient(client);
     if (!connectedClient) {
       return;
     }
@@ -313,137 +403,363 @@ export class SocialGateway {
 
   @SubscribeMessage('disconnect')
   handleDisconnect(@ConnectedSocket() client: Socket): void {
+    this.authenticationReady.delete(client);
+    this.removeClient(client);
+  }
+
+  private removeClient(client: Socket): void {
     // Use reverse mapping for efficient lookup
     const profileId = this.clientToProfileMap.get(client);
 
     if (profileId) {
-      this.l.log(`Client disconnected: ${profileId}`);
-      this.connectedClients.delete(profileId);
+      const clients = this.connectedClients.get(profileId);
+      const connected = this.clientToConnectedClient(client);
+      if (connected) {
+        clients?.delete(connected);
+      }
+      if (clients?.size === 0) this.connectedClients.delete(profileId);
       this.clientToProfileMap.delete(client);
     }
   }
 
   // Helper methods for broadcasting updates
-  broadcastPostCreated(post: any): void {
+  async broadcastPostCreated(post: any): Promise<void> {
     this.l.log(`Broadcasting post created: ${post.id}`);
-    this.broadcastToSubscribers('posts:all', 'post_created', post);
+    this.advanceRealtimeFeedRevision();
+    await this.broadcastAuthorizedPost(
+      'posts:all',
+      'post_created',
+      post.id,
+      post
+    );
   }
 
-  broadcastPostUpdated(post: any): void {
+  async broadcastPostUpdated(post: any): Promise<void> {
     this.l.log(`Broadcasting post updated: ${post.id}`);
-    this.broadcastToSubscribers(`post:${post.id}`, 'post_updated', post);
-    this.broadcastToSubscribers('posts:all', 'post_updated', post);
+    // Any post update can change feed eligibility (audience, moderation,
+    // scheduling, or community scope). Advance in-flight feed reads and make
+    // active clients fetch the current authorized snapshot before applying
+    // per-post updates.
+    await this.broadcastSocialContentInvalidated();
+    await this.broadcastAuthorizedPost(
+      `post:${post.id}`,
+      'post_updated',
+      post.id,
+      post
+    );
+    await this.broadcastAuthorizedPost(
+      'posts:all',
+      'post_updated',
+      post.id,
+      post
+    );
   }
 
-  broadcastPostDeleted(postId: string): void {
+  async broadcastPostDeleted(postId: string): Promise<void> {
     this.l.log(`Broadcasting post deleted: ${postId}`);
-    this.broadcastToSubscribers(`post:${postId}`, 'post_deleted', { postId });
-    this.broadcastToSubscribers('posts:all', 'post_deleted', { postId });
+    await this.broadcastSocialContentInvalidated();
   }
 
-  broadcastCommentCreated(comment: any): void {
-    this.l.log(`Broadcasting comment created on post: ${comment.postId}`);
-    this.broadcastToSubscribers(
-      `post:${comment.postId}`,
+  async broadcastCommentCreated(comment: any): Promise<void> {
+    const postId = this.relatedPostId(comment);
+    if (!postId) {
+      await this.broadcastSocialContentInvalidated();
+      return;
+    }
+    this.l.log(`Broadcasting comment created on post: ${postId}`);
+    await this.broadcastAuthorizedPost(
+      `post:${postId}`,
       'comment_created',
-      comment
-    );
-  }
-
-  broadcastCommentUpdated(comment: any): void {
-    this.l.log(`Broadcasting comment updated: ${comment.id}`);
-    this.broadcastToSubscribers(
-      `post:${comment.postId}`,
-      'comment_updated',
-      comment
-    );
-  }
-
-  broadcastCommentDeleted(commentId: string, postId: string): void {
-    this.l.log(`Broadcasting comment deleted: ${commentId}`);
-    this.broadcastToSubscribers(`post:${postId}`, 'comment_deleted', {
-      commentId,
       postId,
-    });
+      comment
+    );
   }
 
-  broadcastVoteUpdated(vote: any): void {
-    this.l.log(`Broadcasting vote updated on post: ${vote.postId}`);
-    this.broadcastToSubscribers(`post:${vote.postId}`, 'vote_updated', vote);
+  async broadcastCommentUpdated(comment: any): Promise<void> {
+    const postId = this.relatedPostId(comment);
+    if (!postId) {
+      await this.broadcastSocialContentInvalidated();
+      return;
+    }
+    this.l.log(`Broadcasting comment updated: ${comment.id}`);
+    await this.broadcastAuthorizedPost(
+      `post:${postId}`,
+      'comment_updated',
+      postId,
+      comment
+    );
   }
 
-  broadcastFollowEvent(
+  async broadcastCommentDeleted(
+    commentId: string,
+    postId: string
+  ): Promise<void> {
+    if (!this.isValidPostId(postId)) {
+      await this.broadcastSocialContentInvalidated();
+      return;
+    }
+    this.l.log(`Broadcasting comment deleted: ${commentId}`);
+    await this.broadcastAuthorizedPost(
+      `post:${postId}`,
+      'comment_deleted',
+      postId,
+      {
+        commentId,
+        postId,
+      }
+    );
+  }
+
+  async broadcastVoteUpdated(vote: any): Promise<void> {
+    const postId = this.relatedPostId(vote);
+    if (!postId) {
+      await this.broadcastSocialContentInvalidated();
+      return;
+    }
+    this.l.log(`Broadcasting vote updated on post: ${postId}`);
+    await this.broadcastAuthorizedPost(
+      `post:${postId}`,
+      'vote_updated',
+      postId,
+      vote
+    );
+  }
+
+  /** Invalidate client content without disclosing which restricted resource changed. */
+  async broadcastSocialContentInvalidated(): Promise<void> {
+    const recipients = Array.from(this.connectedClients.values()).flatMap(
+      (clients) => Array.from(clients)
+    );
+    await Promise.all(
+      recipients.map(async (connected) => {
+        if (!(await this.isCurrentSocketSession(connected))) return;
+        connected.contentRevision++;
+        connected.client.emit('social_content_invalidated', {});
+      })
+    );
+  }
+
+  private async broadcastAuthorizedPost(
+    subscription: string,
+    event: string,
+    postId: string,
+    payload: any
+  ): Promise<void> {
+    if (!this.isValidPostId(postId)) {
+      await this.broadcastSocialContentInvalidated();
+      return;
+    }
+    const recipients = Array.from(this.connectedClients.values())
+      .flatMap((clients) => Array.from(clients))
+      .filter((entry) => entry.subscriptions.has(subscription));
+    await Promise.all(
+      recipients.map(async (connected) => {
+        const { id, client, contentRevision } = connected;
+        try {
+          if (!(await this.isCurrentSocketSession(connected))) return;
+          const post = await firstValueFrom(
+            this.socialClient
+              .send(
+                { cmd: PostCommands.FIND },
+                { id: postId, viewerProfileId: id }
+              )
+              .pipe(timeout(3000))
+          );
+          const authorized = !!post && !Array.isArray(post);
+          const revisionCurrent = connected.contentRevision === contentRevision;
+          if (!(await this.isCurrentSocketSession(connected))) return;
+          if (authorized && revisionCurrent) {
+            client.emit(
+              event,
+              event.startsWith('comment_') || event === 'vote_updated'
+                ? payload
+                : post
+            );
+          } else {
+            client.emit('social_content_invalidated', {});
+          }
+        } catch {
+          if (await this.isCurrentSocketSession(connected)) {
+            client.emit('social_content_invalidated', {});
+          }
+        }
+      })
+    );
+  }
+
+  private relatedPostId(resource: any): string | undefined {
+    const postId =
+      resource?.postId ?? resource?.post?.id ?? resource?.comment?.post?.id;
+    return this.isValidPostId(postId) ? postId : undefined;
+  }
+
+  private isValidPostId(postId: unknown): postId is string {
+    return typeof postId === 'string' && postId.trim().length > 0;
+  }
+
+  async broadcastFollowEvent(
     followerId: string,
     followeeId: string,
     action: 'follow' | 'unfollow'
-  ): void {
+  ): Promise<void> {
     this.l.log(`Broadcasting ${action} event: ${followerId} -> ${followeeId}`);
-    this.broadcastToSubscribers(`user:${followeeId}`, `user_${action}`, {
+    await this.broadcastToSubscribers(`user:${followeeId}`, `user_${action}`, {
       followerId,
       followeeId,
     });
-    this.broadcastToSubscribers(`user:${followerId}`, `user_${action}`, {
+    await this.broadcastToSubscribers(`user:${followerId}`, `user_${action}`, {
       followerId,
       followeeId,
     });
+    await this.broadcastSocialContentInvalidated();
   }
 
-  broadcastNotification(notification: any): void {
-    const { recipientId } = notification;
-    this.l.log(`Broadcasting notification to user: ${recipientId}`);
-    this.broadcastToSubscribers(
-      `notifications:${recipientId}`,
-      'notification',
-      notification
+  async broadcastNotification(notification: any): Promise<void> {
+    const safeNotification = projectNotification(notification);
+    if (!safeNotification) return;
+    const subscribers = [
+      ...(this.connectedClients.get(safeNotification.recipientId) ?? []),
+    ].filter((subscriber) =>
+      subscriber.subscriptions.has(
+        `notifications:${safeNotification.recipientId}`
+      )
     );
-  }
-
-  handleBroadcastNotification(payload: { notification: any }): void {
-    this.broadcastNotification(payload.notification);
-  }
-
-  private registerClient(profileId: string, client: Socket): ConnectedClient {
-    // Check if this profile is already connected with a different client
-    const existingClient = this.connectedClients.get(profileId);
-    if (existingClient && existingClient.client !== client) {
-      // Remove old client mapping
-      this.clientToProfileMap.delete(existingClient.client);
-      this.l.log(`Replacing existing connection for profile: ${profileId}`);
+    for (const subscriber of subscribers) {
+      try {
+        const user = this.socketSessionAuth.getUser(subscriber.client);
+        const selected = await this.notificationRecipients.assertSelected(
+          user,
+          safeNotification.recipientId
+        );
+        if (
+          selected !== safeNotification.recipientId ||
+          !(await this.isCurrentSocketSession(subscriber))
+        )
+          continue;
+        subscriber.client.emit('notification', safeNotification);
+      } catch {
+        subscriber.subscriptions.delete(
+          `notifications:${safeNotification.recipientId}`
+        );
+      }
     }
+  }
 
-    // Register or update the client
-    const connectedClient: ConnectedClient = {
+  handleBroadcastNotification(payload: { notification: any }): Promise<void> {
+    return this.broadcastNotification(payload.notification);
+  }
+
+  private registerClient(
+    profileId: string,
+    client: Socket,
+    userId: string
+  ): ConnectedClient {
+    if (client.data?.deletionPurged)
+      throw new Error('Socket session unavailable');
+    const connectedClient = this.clientToConnectedClient(client) ?? {
       id: profileId,
+      userId,
       client,
-      subscriptions: existingClient?.subscriptions || new Set<string>(),
+      subscriptions: new Set<string>(),
+      contentRevision: 0,
     };
-
-    this.connectedClients.set(profileId, connectedClient);
+    if (!this.connectedClients.has(profileId))
+      this.connectedClients.set(profileId, new Set());
+    this.connectedClients.get(profileId)!.add(connectedClient);
     this.clientToProfileMap.set(client, profileId);
-
-    if (!existingClient) {
-      this.l.log(`Client registered: ${profileId}`);
-    }
-
     return connectedClient;
   }
 
-  private broadcastToSubscribers(
+  private clientToConnectedClient(client: Socket): ConnectedClient | undefined {
+    const profileId = this.clientToProfileMap.get(client);
+    return profileId
+      ? Array.from(this.connectedClients.get(profileId) ?? []).find(
+          (entry) => entry.client === client
+        )
+      : undefined;
+  }
+
+  private advanceRealtimeFeedRevision(): void {
+    for (const clients of this.connectedClients.values()) {
+      for (const connected of clients) {
+        connected.contentRevision++;
+      }
+    }
+  }
+
+  private async assertProfileAfterAuthentication(
+    client: Socket,
+    requestedProfileId?: string
+  ): Promise<SocketSessionUser> {
+    const initialAuthentication = this.authenticationReady.get(client);
+    if (initialAuthentication) {
+      await initialAuthentication;
+      if (this.authenticationReady.get(client) !== initialAuthentication) {
+        throw new Error('Socket disconnected before authentication completed');
+      }
+    }
+    try {
+      await this.socketSessionAuth.authenticate(client, true);
+    } catch (error) {
+      this.disconnectClient(client);
+      throw error;
+    }
+    return this.socketSessionAuth.assertProfile(client, requestedProfileId);
+  }
+
+  private disconnectClient(client: Socket): void {
+    this.authenticationReady.delete(client);
+    this.removeClient(client);
+    client.disconnect?.(true);
+  }
+
+  private async isCurrentSocketSession(
+    connected: ConnectedClient
+  ): Promise<boolean> {
+    try {
+      const user = await this.socketSessionAuth.authenticate(connected.client);
+      if (user.userId === connected.userId && user.profileId === connected.id) {
+        return true;
+      }
+    } catch {
+      // Revoked, expired, or app-incompatible sessions lose their socket.
+    }
+    this.disconnectClient(connected.client);
+    return false;
+  }
+
+  private async isCurrentSocketSessionForClient(
+    client: Socket
+  ): Promise<boolean> {
+    const connected = this.clientToConnectedClient(client);
+    if (connected) return this.isCurrentSocketSession(connected);
+    try {
+      await this.socketSessionAuth.authenticate(client);
+      return true;
+    } catch {
+      this.disconnectClient(client);
+      return false;
+    }
+  }
+
+  private async broadcastToSubscribers(
     subscription: string,
     event: string,
     data: any
-  ): void {
+  ): Promise<void> {
     let subscriberCount = 0;
-
-    for (const [
-      profileId,
-      connectedClient,
-    ] of this.connectedClients.entries()) {
-      if (connectedClient.subscriptions.has(subscription)) {
+    const recipients = Array.from(this.connectedClients.values())
+      .flatMap((clients) => Array.from(clients))
+      .filter((connectedClient) =>
+        connectedClient.subscriptions.has(subscription)
+      );
+    await Promise.all(
+      recipients.map(async (connectedClient) => {
+        if (!(await this.isCurrentSocketSession(connectedClient))) return;
         connectedClient.client.emit(event, data);
         subscriberCount++;
-      }
-    }
+      })
+    );
 
     this.l.debug(
       `Broadcasted ${event} to ${subscriberCount} subscribers of ${subscription}`

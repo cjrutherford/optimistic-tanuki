@@ -10,6 +10,7 @@ import {
   Logger,
   Inject,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -21,6 +22,10 @@ import { User, UserDetails } from '../../../decorators/user.decorator';
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SocialGateway } from '../../../app/social-gateway/social.gateway';
+import { GatewayNotificationRecipientService } from './gateway-notification-recipient.service';
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface CreateNotificationDto {
   recipientId: string;
@@ -56,28 +61,9 @@ export class NotificationController {
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
-    private readonly socialGateway: SocialGateway
+    private readonly socialGateway: SocialGateway,
+    private readonly recipients: GatewayNotificationRecipientService
   ) {}
-
-  private getAuthenticatedProfileId(user: UserDetails): string {
-    if (!user?.profileId) {
-      throw new ForbiddenException('Authenticated profile is required');
-    }
-    return user.profileId;
-  }
-
-  private assertOwnNotificationStream(
-    profileId: string,
-    user: UserDetails
-  ): string {
-    const authenticatedProfileId = this.getAuthenticatedProfileId(user);
-    if (profileId !== authenticatedProfileId) {
-      throw new ForbiddenException(
-        'Cannot access another profile notification stream'
-      );
-    }
-    return authenticatedProfileId;
-  }
 
   @Get(':profileId')
   @ApiOperation({ summary: 'Get all notifications for a profile' })
@@ -89,7 +75,7 @@ export class NotificationController {
     @Param('profileId') profileId: string,
     @User() user: UserDetails
   ): Promise<NotificationDto[]> {
-    const recipientId = this.assertOwnNotificationStream(profileId, user);
+    const recipientId = await this.recipients.assertSelected(user, profileId);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: NotificationCommands.FIND_BY_RECIPIENT },
@@ -108,7 +94,7 @@ export class NotificationController {
     @Param('profileId') profileId: string,
     @User() user: UserDetails
   ): Promise<{ count: number }> {
-    const recipientId = this.assertOwnNotificationStream(profileId, user);
+    const recipientId = await this.recipients.assertSelected(user, profileId);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: NotificationCommands.GET_UNREAD_COUNT },
@@ -118,26 +104,19 @@ export class NotificationController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create a new notification' })
+  @ApiOperation({
+    summary: 'Notification creation is not available to public clients',
+  })
   @ApiResponse({
-    status: 201,
-    description: 'The notification has been successfully created.',
+    status: 403,
+    description: 'Notification creation is forbidden.',
   })
   async create(
-    @Body() createNotificationDto: CreateNotificationDto
-  ): Promise<NotificationDto> {
-    const notification = await firstValueFrom(
-      this.socialClient.send(
-        { cmd: NotificationCommands.CREATE },
-        createNotificationDto
-      )
+    @Body() _createNotificationDto: CreateNotificationDto
+  ): Promise<never> {
+    throw new ForbiddenException(
+      'Notification creation is not available to public clients.'
     );
-
-    if (notification) {
-      this.socialGateway.broadcastNotification(notification);
-    }
-
-    return notification;
   }
 
   @Put(':notificationId/read')
@@ -147,12 +126,15 @@ export class NotificationController {
     description: 'The notification has been successfully marked as read.',
   })
   async markAsRead(
-    @Param('notificationId') notificationId: string
+    @Param('notificationId') notificationId: string,
+    @User() user: UserDetails
   ): Promise<void> {
+    const recipientId = await this.recipients.assertSelected(user);
+    this.assertNotificationId(notificationId);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: NotificationCommands.MARK_READ },
-        { id: notificationId }
+        { id: notificationId, recipientId }
       )
     );
   }
@@ -167,7 +149,10 @@ export class NotificationController {
     @Param('profileId') profileId: string,
     @User() user: UserDetails
   ): Promise<void> {
-    const recipientId = this.assertOwnNotificationStream(profileId, user);
+    if (!UUID_PATTERN.test(profileId)) {
+      throw new BadRequestException('Profile id must be a UUID.');
+    }
+    const recipientId = await this.recipients.assertSelected(user, profileId);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: NotificationCommands.MARK_ALL_READ },
@@ -182,12 +167,23 @@ export class NotificationController {
     status: 200,
     description: 'The notification has been successfully deleted.',
   })
-  async delete(@Param('notificationId') notificationId: string): Promise<void> {
+  async delete(
+    @Param('notificationId') notificationId: string,
+    @User() user: UserDetails
+  ): Promise<void> {
+    const recipientId = await this.recipients.assertSelected(user);
+    this.assertNotificationId(notificationId);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: NotificationCommands.DELETE },
-        { id: notificationId }
+        { id: notificationId, recipientId }
       )
     );
+  }
+
+  private assertNotificationId(notificationId: string): void {
+    if (!UUID_PATTERN.test(notificationId)) {
+      throw new BadRequestException('Notification id must be a UUID.');
+    }
   }
 }

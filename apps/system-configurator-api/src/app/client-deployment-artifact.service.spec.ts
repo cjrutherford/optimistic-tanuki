@@ -37,6 +37,12 @@ const quote = (overrides: Partial<CommercialQuote> = {}): CommercialQuote => ({
 });
 
 describe('ClientDeploymentArtifactService', () => {
+  beforeEach(() =>
+    jest
+      .spyOn(Date, 'now')
+      .mockReturnValue(Date.parse('2026-09-28T12:00:00.000Z'))
+  );
+  afterEach(() => jest.restoreAllMocks());
   const input = {
     quoteId: '1d5a359d-10d4-45f5-861a-4fb1f1a8d6b1',
     organization: 'HAI Client',

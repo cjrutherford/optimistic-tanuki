@@ -12,6 +12,7 @@ import {
   S3ServiceOptions,
 } from './s3.service';
 import { ConfigService } from '@nestjs/config';
+import { VerifiedMediaSpoolService } from './verified-media-spool.service';
 
 export interface StorageModuleOptions {
   enabledAdapters: ('local' | 'network')[];
@@ -25,6 +26,12 @@ const VAULT_SERVICES: Provider[] = [
   {
     provide: EnvelopeEncryptionService,
     useFactory: () => new EnvelopeEncryptionService(),
+  },
+  {
+    provide: VerifiedMediaSpoolService,
+    useFactory: (encryption: EnvelopeEncryptionService) =>
+      new VerifiedMediaSpoolService(encryption),
+    inject: [EnvelopeEncryptionService],
   },
   TaxDocumentClassifierService,
   {
@@ -68,13 +75,23 @@ export class StorageModule {
             logger: Logger,
             encryption: EnvelopeEncryptionService,
             classifier: TaxDocumentClassifierService,
-            zfs: ZfsStorageService
-          ) => new LocalStorageAdapter(logger, sp, encryption, classifier, zfs),
+            zfs: ZfsStorageService,
+            mediaSpool: VerifiedMediaSpoolService
+          ) =>
+            new LocalStorageAdapter(
+              logger,
+              sp,
+              encryption,
+              classifier,
+              zfs,
+              mediaSpool
+            ),
           inject: [
             Logger,
             EnvelopeEncryptionService,
             TaxDocumentClassifierService,
             ZfsStorageService,
+            VerifiedMediaSpoolService,
           ],
         };
         break;
@@ -94,19 +111,22 @@ export class StorageModule {
             logger: Logger,
             s3Service: S3Service,
             encryption: EnvelopeEncryptionService,
-            classifier: TaxDocumentClassifierService
+            classifier: TaxDocumentClassifierService,
+            mediaSpool: VerifiedMediaSpoolService
           ) =>
             new NetworkStorageAdapter(
               logger,
               s3Service,
               encryption,
-              classifier
+              classifier,
+              mediaSpool
             ),
           inject: [
             Logger,
             S3Service,
             EnvelopeEncryptionService,
             TaxDocumentClassifierService,
+            VerifiedMediaSpoolService,
           ],
         };
         break;
@@ -126,6 +146,7 @@ export class StorageModule {
       providers: [adapterProvider, ...VAULT_SERVICES, ...extraProviders],
       exports: [
         STORAGE_ADAPTERS,
+        VerifiedMediaSpoolService,
         EnvelopeEncryptionService,
         TaxDocumentClassifierService,
         ZfsStorageService,
@@ -155,7 +176,8 @@ export class StorageModule {
             configService: ConfigService,
             encryption: EnvelopeEncryptionService,
             classifier: TaxDocumentClassifierService,
-            zfs: ZfsStorageService
+            zfs: ZfsStorageService,
+            mediaSpool: VerifiedMediaSpoolService
           ) => {
             const moduleOptions = configService.get<StorageModuleOptions>(
               'storage-module-options'
@@ -184,7 +206,8 @@ export class StorageModule {
                   localStoragePath,
                   encryption,
                   classifier,
-                  zfs
+                  zfs,
+                  mediaSpool
                 );
               }
               case 'network': {
@@ -199,7 +222,8 @@ export class StorageModule {
                   logger,
                   s3Service,
                   encryption,
-                  classifier
+                  classifier,
+                  mediaSpool
                 );
               }
               default:
@@ -217,11 +241,13 @@ export class StorageModule {
             EnvelopeEncryptionService,
             TaxDocumentClassifierService,
             ZfsStorageService,
+            VerifiedMediaSpoolService,
           ],
         },
       ],
       exports: [
         STORAGE_ADAPTERS,
+        VerifiedMediaSpoolService,
         EnvelopeEncryptionService,
         TaxDocumentClassifierService,
         ZfsStorageService,

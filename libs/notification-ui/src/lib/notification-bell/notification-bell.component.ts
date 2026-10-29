@@ -17,6 +17,7 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
     <div class="notification-bell-wrapper">
       <otui-button
         class="icon-button"
+        ariaLabel="Notifications"
         [variant]="'text'"
         (click)="toggleDropdown()"
       >

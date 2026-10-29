@@ -9,3 +9,6 @@ services:
   permissions:
     host: permissions
     port: 3012
+  authentication:
+    host: authentication
+    port: 3001

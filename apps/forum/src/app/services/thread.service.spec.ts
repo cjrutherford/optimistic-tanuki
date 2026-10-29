@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UpdateThreadDto } from '@optimistic-tanuki/models';
 import { Thread } from '../../entities/thread.entity';
+import { ForumPost } from '../../entities/forum-post.entity';
 import { ThreadService } from './thread.service';
 
 // The workspace maps isomorphic-dompurify to an identity stub, which would make
@@ -29,6 +30,7 @@ interface ThreadRepoMock {
 describe('ThreadService', () => {
   let service: ThreadService;
   let repo: ThreadRepoMock;
+  let postRepo: { count: jest.Mock };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -43,11 +45,13 @@ describe('ThreadService', () => {
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
       increment: jest.fn().mockResolvedValue({ affected: 1 }),
     };
+    postRepo = { count: jest.fn().mockResolvedValue(0) };
 
     const module = await Test.createTestingModule({
       providers: [
         ThreadService,
         { provide: getRepositoryToken(Thread), useValue: repo },
+        { provide: getRepositoryToken(ForumPost), useValue: postRepo },
       ],
     }).compile();
 
@@ -90,23 +94,28 @@ describe('ThreadService', () => {
 
       expect(sanitize).toHaveBeenCalledWith(
         '<img src=x onerror=alert(1)>',
-        expect.objectContaining({ ALLOWED_ATTR: ['href', 'target', 'class'] })
+        expect.objectContaining({
+          ALLOWED_ATTR: ['href', 'target', 'class', 'src', 'alt', 'title'],
+          ALLOWED_TAGS: expect.arrayContaining(['img']),
+        })
       );
     });
 
-    it('allows rich text markup but only href, target and class attributes', async () => {
+    it('allows rich text and inline images with safe image attributes', async () => {
       await service.create(createDto);
 
       expect(sanitize).toHaveBeenCalledWith(
         createDto.title,
         expect.objectContaining({
           ALLOWED_TAGS: expect.arrayContaining(['p', 'a', 'code', 'pre']),
-          ALLOWED_ATTR: ['href', 'target', 'class'],
+          ALLOWED_ATTR: ['href', 'target', 'class', 'src', 'alt', 'title'],
         })
       );
       expect(sanitize).toHaveBeenCalledWith(
         createDto.content,
-        expect.objectContaining({ ALLOWED_ATTR: ['href', 'target', 'class'] })
+        expect.objectContaining({
+          ALLOWED_ATTR: ['href', 'target', 'class', 'src', 'alt', 'title'],
+        })
       );
     });
   });
@@ -261,10 +270,93 @@ describe('ThreadService', () => {
   });
 
   describe('remove', () => {
+    it('returns conflict without deleting a thread that still has posts', async () => {
+      repo.findOne.mockResolvedValue({
+        id: 'thread-1',
+        title: 'Parent',
+        description: 'Parent thread',
+        content: 'Parent content',
+      });
+      postRepo.count.mockResolvedValue(1);
+
+      await expect(service.remove('thread-1')).rejects.toMatchObject({
+        error: {
+          statusCode: 409,
+          message: expect.stringMatching(/post/i),
+        },
+      });
+
+      expect(postRepo.count).toHaveBeenCalledWith({
+        where: { threadId: 'thread-1' },
+      });
+      expect(repo.delete).not.toHaveBeenCalled();
+    });
+
+    it('maps a foreign-key race to conflict', async () => {
+      repo.findOne.mockResolvedValue({
+        id: 'thread-1',
+        title: 'Parent',
+        description: 'Parent thread',
+        content: 'Parent content',
+      });
+      postRepo.count.mockResolvedValue(0);
+      repo.delete.mockRejectedValue({ driverError: { code: '23503' } });
+
+      await expect(service.remove('thread-1')).rejects.toMatchObject({
+        error: {
+          statusCode: 409,
+          message: expect.stringMatching(/post/i),
+        },
+      });
+    });
+
     it('deletes the thread by id', async () => {
-      await expect(service.remove('thread-1')).resolves.toBeUndefined();
+      await expect(service.remove('thread-1')).resolves.toEqual({
+        id: 'thread-1',
+        deleted: true,
+      });
 
       expect(repo.delete).toHaveBeenCalledWith('thread-1');
+    });
+
+    it('returns an explicit negative acknowledgement when no thread was deleted', async () => {
+      repo.delete.mockResolvedValue({ affected: 0 });
+
+      await expect(service.remove('thread-1')).resolves.toEqual({
+        id: 'thread-1',
+        deleted: false,
+      });
+    });
+
+    it('latches private thread images before dropping their references', async () => {
+      const assetId = '123e4567-e89b-42d3-a456-426614174000';
+      const access = {
+        resolveThreadAudienceOwner: jest.fn().mockResolvedValue('topic-owner'),
+        latchAssetReferences: jest.fn().mockResolvedValue(undefined),
+      };
+      (service as any).forumAccess = access;
+      repo.findOne.mockResolvedValue({
+        id: 'thread-1',
+        topicId: 'topic-1',
+        profileId: 'thread-owner',
+        visibility: 'public',
+        content: `<img src="/api/asset/${assetId}">`,
+      });
+
+      await service.remove('thread-1');
+
+      expect(access.resolveThreadAudienceOwner).toHaveBeenCalledWith(
+        'topic-1',
+        'public',
+        'thread-owner'
+      );
+      expect(access.latchAssetReferences).toHaveBeenCalledWith(
+        expect.stringContaining(`/api/asset/${assetId}`),
+        'topic-owner'
+      );
+      expect(
+        access.latchAssetReferences.mock.invocationCallOrder[0]
+      ).toBeLessThan(repo.delete.mock.invocationCallOrder[0]);
     });
   });
 });

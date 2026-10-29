@@ -1,3 +1,4 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { ConfigService } from '@nestjs/config';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { Attachment } from '../entities/attachment.entity';
@@ -22,6 +23,7 @@ import { UserMute } from '../entities/user-mute.entity';
 import { UserPresence } from '../entities/user-presence.entity';
 import { ProfileView } from '../entities/profile-view.entity';
 import { ContentReport } from '../entities/content-report.entity';
+import { ContentModerationAction } from '../entities/content-moderation-action.entity';
 import { SearchHistory } from '../entities/search-history.entity';
 import { Event } from '../entities/event.entity';
 import { BusinessPageContent } from '../entities/business-page-content.entity';
@@ -30,10 +32,16 @@ import { CommunitySponsorshipContent } from '../entities/community-sponsorship-c
 import { Poll } from '../entities/poll.entity';
 import { PostShare } from '../entities/post-share.entity';
 import { CommunityMembershipAudit } from '../entities/community-membership-audit.entity';
+import { GuardianContentAudit } from '../entities/guardian-content-audit.entity';
+import { GuardianPublishedAssetGrant } from '../entities/guardian-published-asset-grant.entity';
+import { CommunityElection } from '../entities/community-election.entity';
+import { ElectionCandidate } from '../entities/election-candidate.entity';
+import { ElectionVote } from '../entities/election-vote.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
   const entities = [
+    AccountDeletionWriteFenceEntity,
     Attachment,
     Comment,
     Post,
@@ -44,6 +52,8 @@ const loadDatabase = (config: ConfigService) => {
     Community,
     CommunityMember,
     CommunityMembershipAudit,
+    GuardianContentAudit,
+    GuardianPublishedAssetGrant,
     CommunityInvite,
     Notification,
     Reaction,
@@ -54,6 +64,7 @@ const loadDatabase = (config: ConfigService) => {
     UserPresence,
     ProfileView,
     ContentReport,
+    ContentModerationAction,
     SearchHistory,
     Event,
     BusinessPageContent,
@@ -61,6 +72,9 @@ const loadDatabase = (config: ConfigService) => {
     CommunitySponsorshipContent,
     Poll,
     PostShare,
+    CommunityElection,
+    ElectionCandidate,
+    ElectionVote,
   ];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',
@@ -69,6 +83,7 @@ const loadDatabase = (config: ConfigService) => {
     username: database.username,
     password: database.password,
     database: database.database,
+    synchronize: false,
     entities,
   };
   return ormConfig;

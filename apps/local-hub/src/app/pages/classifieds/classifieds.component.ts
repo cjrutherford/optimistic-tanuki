@@ -20,7 +20,11 @@ import {
   CreateClassifiedAdDto,
   UpdateClassifiedAdDto,
 } from '@optimistic-tanuki/classified-ui';
-import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import { API_BASE_URL, ProfileDto } from '@optimistic-tanuki/ui-models';
+import {
+  SafetyReportDialogComponent,
+  SafetyReportSubmission,
+} from '../../components/safety-report-dialog.component';
 import {
   LocalityRouteContext,
   localityRouteContext,
@@ -29,7 +33,12 @@ import {
 @Component({
   selector: 'app-classifieds',
   standalone: true,
-  imports: [CommonModule, ClassifiedListComponent, ClassifiedFormComponent],
+  imports: [
+    CommonModule,
+    ClassifiedListComponent,
+    ClassifiedFormComponent,
+    SafetyReportDialogComponent,
+  ],
   templateUrl: './classifieds.component.html',
   styleUrls: ['./classifieds.component.scss'],
 })
@@ -42,6 +51,7 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   private assetService = inject(AssetService);
   private messageService = inject(MessageService);
   private http = inject(HttpClient);
+  private apiBaseUrl = inject(API_BASE_URL);
   private profiles = inject(ProfileAPIService);
   private destroy$ = new Subject<void>();
 
@@ -52,6 +62,10 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   isAuthenticated = signal(false);
   isMember = signal(false);
   showPostForm = signal(false);
+  safetyReport = signal<{
+    contentType: 'classified' | 'seller';
+    contentId: string;
+  } | null>(null);
   retryCount = 0;
   readonly maxRetries = 3;
   private routeContext: LocalityRouteContext = {
@@ -70,6 +84,7 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
       type: 'image',
       content: dataUrl,
       fileExtension: this.assetService.getFileExtension(dataUrl),
+      communityId: this.community()?.id,
     });
     return this.assetService.getAssetUrl(asset.id);
   };
@@ -223,6 +238,59 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   onContactSeller(classified: ClassifiedAdDto): void {
     // Navigate to the detail page — chat happens there
     this.onViewAd(classified);
+  }
+
+  async reportClassified(ad: ClassifiedAdDto): Promise<void> {
+    this.safetyReport.set({ contentType: 'classified', contentId: ad.id });
+  }
+
+  async reportClassifiedSeller(ad: ClassifiedAdDto): Promise<void> {
+    if (ad.profileId)
+      this.safetyReport.set({ contentType: 'seller', contentId: ad.profileId });
+  }
+
+  async blockClassifiedSeller(ad: ClassifiedAdDto): Promise<void> {
+    if (!ad.profileId || ad.profileId === this.authState.getActingProfileId())
+      return;
+    try {
+      await firstValueFrom(
+        this.http.post(`${this.apiBaseUrl}/privacy/block`, {
+          blockedId: ad.profileId,
+          reason: 'Blocked from Local Hub classifieds',
+        })
+      );
+      this.messageService.addMessage({
+        content: 'Seller blocked.',
+        type: 'success',
+      });
+    } catch {
+      this.messageService.addMessage({
+        content: 'Could not block this seller.',
+        type: 'error',
+      });
+    }
+  }
+
+  async submitClassifiedSafetyReport(
+    report: SafetyReportSubmission
+  ): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.post(`${this.apiBaseUrl}/privacy/report`, {
+          ...report,
+        })
+      );
+      this.safetyReport.set(null);
+      this.messageService.addMessage({
+        content: 'Report sent to Towne Square for human review.',
+        type: 'success',
+      });
+    } catch {
+      this.messageService.addMessage({
+        content: 'Could not submit the report to Towne Square.',
+        type: 'error',
+      });
+    }
   }
 
   onViewAd(classified: ClassifiedAdDto): void {

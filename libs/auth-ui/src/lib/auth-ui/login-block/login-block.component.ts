@@ -51,6 +51,7 @@ export class LoginBlockComponent extends Themeable {
   @Input() pending = false;
   @Input() showOAuth = true;
   @Input() appId = '';
+  @Input() ageGateEnabled = false;
   @Input() returnPath = '/';
   @Input() enabledOAuthProviders: string[] = [
     'google',
@@ -71,6 +72,8 @@ export class LoginBlockComponent extends Themeable {
     this.loginForm = this.fb.group({
       email: this.fb.control(''),
       password: this.fb.control(''),
+      dateOfBirth: this.fb.control(''),
+      guardianEmail: this.fb.control(''),
     });
   }
 
@@ -96,11 +99,38 @@ export class LoginBlockComponent extends Themeable {
   onFormChange(_e: string) {}
 
   onSubmit() {
-    this.submitEvent.emit(this.loginForm.value);
+    const { email, password, dateOfBirth, guardianEmail } =
+      this.loginForm.value;
+    this.submitEvent.emit({
+      email,
+      password,
+      ...(dateOfBirth ? { dateOfBirth } : {}),
+      ...(guardianEmail ? { guardianEmail } : {}),
+    });
+  }
+
+  get showAgeEligibilityFields(): boolean {
+    return (
+      this.ageGateEnabled &&
+      /AGE_CHECK_REQUIRED|AGE_UNDER_13|GUARDIAN_EMAIL_REQUIRED/.test(
+        this.errorMessage
+      )
+    );
+  }
+
+  get showGuardianEmailField(): boolean {
+    return (
+      this.ageGateEnabled && /GUARDIAN_EMAIL_REQUIRED/.test(this.errorMessage)
+    );
   }
 
   onOAuthProvider(event: OAuthProviderEvent) {
-    this.oauthProviderSelected.emit(event);
+    this.oauthProviderSelected.emit({
+      ...event,
+      ...(this.ageGateEnabled
+        ? { dateOfBirth: this.loginForm.value.dateOfBirth || undefined }
+        : {}),
+    });
   }
 
   requestMagicLink() {

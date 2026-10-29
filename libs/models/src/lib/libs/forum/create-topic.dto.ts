@@ -16,6 +16,7 @@ export class CreateTopicDto {
   @ApiProperty({ description: 'The description of the topic' })
   description!: string;
 
+  @IsOptional()
   @IsUUID()
   @ApiProperty({ description: 'The ID of the user creating the topic' })
   userId?: string;

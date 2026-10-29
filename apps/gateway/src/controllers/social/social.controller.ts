@@ -12,8 +12,11 @@ import {
   Logger,
   Get,
   Param,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { emitSafeDiagnostic } from '@optimistic-tanuki/logger';
 import {
   AttachmentCommands,
   CommentCommands,
@@ -22,8 +25,15 @@ import {
   VoteCommands,
   ReactionCommands,
   CommunityCommands,
+  GuardianContentCommands,
 } from '@optimistic-tanuki/constants';
 import { SocialGateway } from '../../app/social-gateway/social.gateway';
+import {
+  CreateGuardianCommentDto,
+  CreateGuardianPostDto,
+  UpdateGuardianCommentDto,
+  UpdateGuardianPostDto,
+} from './dto/guardian-content.dto';
 import {
   AttachmentDto,
   CommentDto,
@@ -62,13 +72,36 @@ import {
   RequirePermissions,
 } from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { IdentityThrottlerGuard } from '../learning/identity-throttler.guard';
+import { gatewayWriteLimit } from '../../app/throttler-config';
 
 // IMPORTANT: overrides must be keyed to a throttler NAME configured in the
 // gateway's ThrottlerModule (`short`/`medium`/`long` in app.module.ts). The
 // guard only consults metadata for configured names, so `{ default: ... }`
 // is silently ignored here. We override `long` (the 60s window throttler).
 const VOTE_THROTTLE = {
-  long: { limit: 20, ttl: 60000 }, // 20 votes per minute
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_SOCIAL_VOTE_LIMIT', 20, 500, 2000),
+    ttl: 60000,
+  },
+};
+const POST_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_SOCIAL_POST_LIMIT', 30, 500, 2000),
+    ttl: 60000,
+  },
+};
+const REACTION_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_SOCIAL_REACTION_LIMIT', 60, 1000, 2000),
+    ttl: 60000,
+  },
+};
+const COMMENT_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_SOCIAL_COMMENT_LIMIT', 20, 500, 2000),
+    ttl: 60000,
+  },
 };
 
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -83,6 +116,30 @@ export class SocialController {
     @Optional() private readonly socialGateway?: SocialGateway
   ) {}
 
+  private invalidateSocialContent(): void {
+    void Promise.resolve(
+      this.socialGateway?.broadcastSocialContentInvalidated()
+    ).catch(() =>
+      emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+    );
+  }
+
+  private async requireVisiblePost(postId: string, viewerProfileId?: string) {
+    if (typeof postId !== 'string' || postId.trim().length === 0) {
+      throw new NotFoundException('Post not found');
+    }
+    const post = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: PostCommands.FIND },
+        { id: postId, viewerProfileId }
+      )
+    );
+    if (!post || post.id !== postId) {
+      throw new NotFoundException('Post not found');
+    }
+    return post;
+  }
+
   @UseGuards(AuthGuard)
   @ApiTags('post')
   @ApiOperation({ summary: 'Create a new post' })
@@ -94,19 +151,30 @@ export class SocialController {
   @Post('post')
   @RequirePermissions('social.post.create')
   @PermissionTarget('body', 'communityId')
-  @Throttle({ default: { limit: 100, ttl: 60000 } }) // Increased for E2E
+  @UseGuards(IdentityThrottlerGuard)
+  @Throttle(POST_THROTTLE)
   async post(@User() user, @Body() postDto: CreatePostDto) {
-    this.l.log(`Creating post for user: ${user.userId}`);
+    if (!user?.userId || !user?.profileId || !user?.appId) {
+      throw new ForbiddenException(
+        'A verified Social application session is required'
+      );
+    }
+    emitSafeDiagnostic(this.l, 'social.operation', undefined, 'log');
     postDto.userId = user.userId;
     postDto.profileId = user.profileId;
-    this.l.log(`Post Data: ${JSON.stringify(postDto)}`);
+    postDto.appScope = user.appId;
+    emitSafeDiagnostic(this.l, 'social.operation', undefined, 'log');
     const result = await firstValueFrom(
       this.socialClient.send({ cmd: PostCommands.CREATE }, postDto)
     );
 
     // Broadcast post created event via WebSocket
     if (this.socialGateway && result) {
-      this.socialGateway.broadcastPostCreated(result);
+      await Promise.resolve(
+        this.socialGateway.broadcastPostCreated(result)
+      ).catch(() =>
+        emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+      );
     }
 
     return result;
@@ -125,10 +193,12 @@ export class SocialController {
     type: VoteDto,
   })
   @Post('vote')
+  @UseGuards(IdentityThrottlerGuard)
   @RequirePermissions('social.vote.create')
   @Throttle(VOTE_THROTTLE)
   async vote(@User() user: UserDetails, @Body() voteDto: CreateVoteDto) {
-    this.l.debug('Vote Received. Vote DTO: ' + JSON.stringify(voteDto));
+    emitSafeDiagnostic(this.l, 'social.operation', undefined, 'debug');
+    await this.requireVisiblePost(voteDto.postId, user.profileId);
     voteDto.userId = user.userId;
     voteDto.profileId = user.profileId;
     const commandMap = {
@@ -145,7 +215,11 @@ export class SocialController {
 
     // Broadcast vote updated event via WebSocket
     if (this.socialGateway && result) {
-      this.socialGateway.broadcastVoteUpdated(result);
+      await Promise.resolve(
+        this.socialGateway.broadcastVoteUpdated(result)
+      ).catch(() =>
+        emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+      );
     }
 
     return result;
@@ -160,7 +234,8 @@ export class SocialController {
     type: ReactionDto,
   })
   @Post('reaction')
-  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 reactions per minute
+  @UseGuards(IdentityThrottlerGuard)
+  @Throttle(REACTION_THROTTLE)
   async reaction(
     @User() user: UserDetails,
     @Body() reactionDto: CreateReactionDto
@@ -182,8 +257,10 @@ export class SocialController {
   @Public()
   @Get('reactions/post/:postId')
   async getReactionsByPost(
-    @Param('postId') postId: string
+    @Param('postId') postId: string,
+    @Req() req?: { user?: { profileId?: string } }
   ): Promise<ReactionDto[]> {
+    await this.requireVisiblePost(postId, req?.user?.profileId);
     return await firstValueFrom(
       this.socialClient.send({ cmd: ReactionCommands.GET_BY_POST }, { postId })
     );
@@ -198,8 +275,10 @@ export class SocialController {
   @Public()
   @Get('reactions/post/:postId/counts')
   async getReactionCounts(
-    @Param('postId') postId: string
+    @Param('postId') postId: string,
+    @Req() req?: { user?: { profileId?: string } }
   ): Promise<{ [value: number]: number }> {
+    await this.requireVisiblePost(postId, req?.user?.profileId);
     return await firstValueFrom(
       this.socialClient.send({ cmd: ReactionCommands.GET }, { postId })
     );
@@ -218,6 +297,7 @@ export class SocialController {
     @Param('postId') postId: string,
     @User() user: UserDetails
   ): Promise<ReactionDto | null> {
+    await this.requireVisiblePost(postId, user.profileId);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: ReactionCommands.GET_USER_REACTION },
@@ -236,23 +316,30 @@ export class SocialController {
   })
   @Post('comment')
   @RequirePermissions('social.comment.create')
-  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 comments per minute
+  @UseGuards(IdentityThrottlerGuard)
+  @Throttle(COMMENT_THROTTLE)
   async comment(
     @User() user: UserDetails,
     @Body() commentDto: CreateCommentDto
   ) {
+    await this.requireVisiblePost(commentDto.postId, user.profileId);
     const finalComment: CreateCommentDto = {
       ...commentDto,
       userId: user.userId,
+      profileId: user.profileId,
     };
-    console.log('🚀 ~ SocialController ~ comment ~ commentDto:', finalComment);
+    emitSafeDiagnostic(this.l, 'social.comment.requested', { outcome: 'ok' });
     const result = await firstValueFrom(
       this.socialClient.send({ cmd: CommentCommands.CREATE }, finalComment)
     );
 
     // Broadcast comment created event via WebSocket
     if (this.socialGateway && result) {
-      this.socialGateway.broadcastCommentCreated(result);
+      await Promise.resolve(
+        this.socialGateway.broadcastCommentCreated(result)
+      ).catch(() =>
+        emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+      );
     }
 
     return result;
@@ -267,9 +354,20 @@ export class SocialController {
     type: AttachmentDto,
   })
   @Post('attachment')
-  async attachment(@User() user, @Body() attachmentDto: CreateAttachmentDto) {
+  async attachment(
+    @User() user: UserDetails,
+    @Body() attachmentDto: CreateAttachmentDto
+  ) {
+    const { postId, ...attachment } = attachmentDto;
     return await firstValueFrom(
-      this.socialClient.send({ cmd: AttachmentCommands.CREATE }, attachmentDto)
+      this.socialClient.send(
+        { cmd: AttachmentCommands.CREATE },
+        {
+          attachment,
+          postId,
+          actor: this.attachmentActor(user),
+        }
+      )
     );
   }
 
@@ -351,10 +449,17 @@ export class SocialController {
     type: VoteDto,
   })
   @Get('vote/:id')
-  async getVote(@Param('id') id: string): Promise<VoteDto> {
-    return await firstValueFrom(
+  async getVote(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ): Promise<VoteDto> {
+    const vote = await firstValueFrom(
       this.socialClient.send({ cmd: VoteCommands.GET }, { id })
     );
+    if (!vote) throw new NotFoundException('Vote not found');
+    const parentPostId = vote.post?.id ?? vote.postId ?? vote.comment?.post?.id;
+    await this.requireVisiblePost(parentPostId, user.profileId);
+    return vote;
   }
 
   @UseGuards(AuthGuard)
@@ -385,6 +490,8 @@ export class SocialController {
       return [];
     }
 
+    await this.requireVisiblePost(body.postId, user.profileId);
+
     const votes = await firstValueFrom(
       this.socialClient.send({ cmd: VoteCommands.GET }, { postid: body.postId })
     );
@@ -413,10 +520,20 @@ export class SocialController {
     type: AttachmentDto,
   })
   @Get('attachment/:id')
-  async getAttachment(@Param('id') id: string): Promise<AttachmentDto> {
-    return await firstValueFrom(
-      this.socialClient.send({ cmd: AttachmentCommands.FIND }, { id })
+  async getAttachment(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ): Promise<AttachmentDto> {
+    const attachment = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: AttachmentCommands.FIND },
+        { id, appId: user.appId }
+      )
     );
+    if (!attachment) throw new NotFoundException('Attachment not found');
+    const parentPostId = attachment.post?.id ?? attachment.postId;
+    await this.requireVisiblePost(parentPostId, user.profileId);
+    return attachment;
   }
 
   @ApiTags('post')
@@ -475,6 +592,7 @@ export class SocialController {
     @Query('includePublic') includePublic?: string,
     @Query('includeFollowing') includeFollowing?: string,
     @Query('includeCommunities') includeCommunities?: string,
+    @Query('communityIds') communityIds?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string
   ): Promise<PostDto[]> {
@@ -488,6 +606,9 @@ export class SocialController {
           includePublic: includePublic !== 'false',
           includeFollowing: includeFollowing === 'true',
           includeCommunities: includeCommunities !== 'false',
+          communityIds: communityIds
+            ? communityIds.split(',').filter(Boolean)
+            : undefined,
           limit: limit ? parseInt(limit, 10) : undefined,
           offset: offset ? parseInt(offset, 10) : undefined,
         }
@@ -529,13 +650,28 @@ export class SocialController {
   })
   @Post('attachments/find')
   async searchAttachments(
-    @Body() searchCriteria: SearchAttachmentDto
+    @Body() searchCriteria: SearchAttachmentDto,
+    @User() user: UserDetails
   ): Promise<AttachmentDto[]> {
-    return await firstValueFrom(
+    const attachments = await firstValueFrom(
       this.socialClient.send(
         { cmd: AttachmentCommands.FIND_MANY },
-        searchCriteria
+        { criteria: searchCriteria, appId: user.appId }
       )
+    );
+    const visible = await Promise.all(
+      (attachments ?? []).map(async (attachment) => {
+        try {
+          const parentPostId = attachment.post?.id ?? attachment.postId;
+          await this.requireVisiblePost(parentPostId, user.profileId);
+          return attachment;
+        } catch {
+          return null;
+        }
+      })
+    );
+    return visible.filter(
+      (attachment): attachment is AttachmentDto => !!attachment
     );
   }
 
@@ -554,6 +690,7 @@ export class SocialController {
     @User() user: UserDetails,
     @Body() updatePostDto: UpdatePostDto
   ): Promise<PostDto> {
+    await this.requireVisiblePost(id, user.profileId);
     const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PostCommands.UPDATE },
@@ -568,7 +705,11 @@ export class SocialController {
 
     // Broadcast post updated event via WebSocket
     if (this.socialGateway && result) {
-      this.socialGateway.broadcastPostUpdated(result);
+      await Promise.resolve(
+        this.socialGateway.broadcastPostUpdated(result)
+      ).catch(() =>
+        emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+      );
     }
 
     return result;
@@ -585,21 +726,39 @@ export class SocialController {
   @Put('comment/update/:id')
   async updateComment(
     @Param('id') id: string,
+    @User() user: UserDetails,
     @Body() updateCommentDto: UpdateCommentDto
   ): Promise<CommentDto> {
-    const result = await firstValueFrom(
+    const comment = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommentCommands.FIND },
+        { id, viewerProfileId: user.profileId }
+      )
+    );
+    if (!comment) throw new NotFoundException('Comment not found');
+    await this.requireVisiblePost(
+      comment.post?.id ?? comment.postId,
+      user.profileId
+    );
+    await firstValueFrom(
       this.socialClient.send(
         { cmd: CommentCommands.UPDATE },
-        { id, data: updateCommentDto }
+        {
+          id,
+          update: updateCommentDto,
+          userId: user.userId,
+          profileId: user.profileId,
+        }
       )
     );
 
-    // Broadcast comment updated event via WebSocket
-    if (this.socialGateway && result) {
-      this.socialGateway.broadcastCommentUpdated(result);
-    }
-
-    return result;
+    this.invalidateSocialContent();
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommentCommands.FIND },
+        { id, viewerProfileId: user.profileId }
+      )
+    );
   }
 
   @UseGuards(AuthGuard)
@@ -613,12 +772,17 @@ export class SocialController {
   @Put('attachment/update/:id')
   async updateAttachment(
     @Param('id') id: string,
+    @User() user: UserDetails,
     @Body() updateAttachmentDto: UpdateAttachmentDto
   ): Promise<AttachmentDto> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: AttachmentCommands.UPDATE },
-        { id, data: updateAttachmentDto }
+        {
+          id,
+          update: updateAttachmentDto,
+          actor: this.attachmentActor(user),
+        }
       )
     );
   }
@@ -638,13 +802,15 @@ export class SocialController {
     const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PostCommands.DELETE },
-        { id, userId: user.userId }
+        { id, userId: user.userId, profileId: user.profileId }
       )
     );
 
     // Broadcast post deleted event via WebSocket
     if (this.socialGateway) {
-      this.socialGateway.broadcastPostDeleted(id);
+      await Promise.resolve(this.socialGateway.broadcastPostDeleted(id)).catch(
+        () => emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+      );
     }
 
     return result;
@@ -664,33 +830,40 @@ export class SocialController {
   @Delete('comment/:id')
   async deleteComment(
     @Param('id') id: string,
-    @Query('postId') postId?: string
+    @User() user: UserDetails,
+    @Query('postId') _postId?: string
   ): Promise<void> {
-    // If postId not provided, fetch comment first to get postId for broadcast
-    let commentPostId = postId;
-    if (!commentPostId) {
-      try {
-        const comment = await firstValueFrom(
-          this.socialClient.send({ cmd: CommentCommands.FIND }, { id })
-        );
-        commentPostId = comment?.postId;
-      } catch (error) {
-        // Comment not found or error, continue with deletion
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
-        this.l.error(
-          `Error fetching comment for WebSocket broadcast: ${errorMessage}`
-        );
-      }
+    let commentPostId: string | undefined;
+    try {
+      const comment = await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommentCommands.FIND },
+          { id, viewerProfileId: user.profileId }
+        )
+      );
+      commentPostId = comment?.post?.id ?? comment?.postId;
+    } catch (error) {
+      emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn');
     }
 
     const result = await firstValueFrom(
-      this.socialClient.send({ cmd: CommentCommands.DELETE }, { id })
+      this.socialClient.send(
+        { cmd: CommentCommands.DELETE },
+        { id, userId: user.userId, profileId: user.profileId }
+      )
     );
 
     // Broadcast comment deleted event via WebSocket
-    if (this.socialGateway && commentPostId) {
-      this.socialGateway.broadcastCommentDeleted(id, commentPostId);
+    if (this.socialGateway) {
+      if (commentPostId) {
+        await Promise.resolve(
+          this.socialGateway.broadcastCommentDeleted(id, commentPostId)
+        ).catch(() =>
+          emitSafeDiagnostic(this.l, 'social.operation', undefined, 'warn')
+        );
+      } else {
+        this.invalidateSocialContent();
+      }
     }
 
     return result;
@@ -704,9 +877,204 @@ export class SocialController {
     description: 'The attachment has been successfully deleted.',
   })
   @Delete('attachment/:id')
-  async deleteAttachment(@Param('id') id: string): Promise<void> {
+  async deleteAttachment(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ): Promise<{ id: string; deleted: true }> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: AttachmentCommands.DELETE }, { id })
+      this.socialClient.send(
+        { cmd: AttachmentCommands.DELETE },
+        { id, actor: this.attachmentActor(user) }
+      )
     );
+  }
+
+  private attachmentActor(user: UserDetails) {
+    if (!user?.userId || !user?.profileId || !user?.appId) {
+      throw new ForbiddenException(
+        'A verified Social application session is required'
+      );
+    }
+    return {
+      userId: user.userId,
+      profileId: user.profileId,
+      appId: user.appId,
+    };
+  }
+
+  private guardianActor(user: UserDetails, targetProfileId: string) {
+    if (
+      !user?.userId ||
+      !['client-interface', 'local-hub'].includes(user.appId ?? '')
+    ) {
+      throw new ForbiddenException(
+        'A verified guardian application context is required'
+      );
+    }
+    return { actorUserId: user.userId, targetProfileId, appId: user.appId };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('guardian/content/profiles/:profileId/posts')
+  async listGuardianPosts(
+    @Param('profileId') profileId: string,
+    @User() user: UserDetails
+  ) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: GuardianContentCommands.ListPosts },
+        this.guardianActor(user, profileId)
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('guardian/content/profiles/:profileId/posts/:postId')
+  async getGuardianPost(
+    @Param('profileId') profileId: string,
+    @Param('postId') postId: string,
+    @User() user: UserDetails
+  ) {
+    const post = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: GuardianContentCommands.GetPost },
+        { ...this.guardianActor(user, profileId), id: postId }
+      )
+    );
+    if (!post) throw new NotFoundException('Post not found');
+    return post;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('guardian/content/profiles/:profileId/posts')
+  async createGuardianPost(
+    @Param('profileId') profileId: string,
+    @User() user: UserDetails,
+    @Body() data: CreateGuardianPostDto
+  ) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: GuardianContentCommands.CreatePost },
+        { ...this.guardianActor(user, profileId), data }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Put('guardian/content/profiles/:profileId/posts/:postId')
+  async updateGuardianPost(
+    @Param('profileId') profileId: string,
+    @Param('postId') postId: string,
+    @User() user: UserDetails,
+    @Body() data: UpdateGuardianPostDto
+  ) {
+    const post = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: GuardianContentCommands.UpdatePost },
+        { ...this.guardianActor(user, profileId), id: postId, data }
+      )
+    );
+    if (!post) throw new NotFoundException('Post not found');
+    return post;
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('guardian/content/profiles/:profileId/posts/:postId')
+  async deleteGuardianPost(
+    @Param('profileId') profileId: string,
+    @Param('postId') postId: string,
+    @User() user: UserDetails
+  ) {
+    const result = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: GuardianContentCommands.DeletePost },
+        { ...this.guardianActor(user, profileId), id: postId }
+      )
+    );
+    if (!result) throw new NotFoundException('Post not found');
+    return result;
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('guardian/content/profiles/:profileId/posts/:postId/comments')
+  async listGuardianComments(
+    @Param('profileId') profileId: string,
+    @Param('postId') postId: string,
+    @User() user: UserDetails
+  ) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: GuardianContentCommands.ListComments },
+        { ...this.guardianActor(user, profileId), postId }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('guardian/content/profiles/:profileId/comments/:commentId')
+  async getGuardianComment(
+    @Param('profileId') profileId: string,
+    @Param('commentId') commentId: string,
+    @User() user: UserDetails
+  ) {
+    const comment = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: GuardianContentCommands.GetComment },
+        { ...this.guardianActor(user, profileId), id: commentId }
+      )
+    );
+    if (!comment) throw new NotFoundException('Comment not found');
+    return comment;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('guardian/content/profiles/:profileId/posts/:postId/comments')
+  async createGuardianComment(
+    @Param('profileId') profileId: string,
+    @Param('postId') postId: string,
+    @User() user: UserDetails,
+    @Body() data: CreateGuardianCommentDto
+  ) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: GuardianContentCommands.CreateComment },
+        { ...this.guardianActor(user, profileId), data: { ...data, postId } }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Put('guardian/content/profiles/:profileId/comments/:commentId')
+  async updateGuardianComment(
+    @Param('profileId') profileId: string,
+    @Param('commentId') commentId: string,
+    @User() user: UserDetails,
+    @Body() data: UpdateGuardianCommentDto
+  ) {
+    const comment = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: GuardianContentCommands.UpdateComment },
+        { ...this.guardianActor(user, profileId), id: commentId, data }
+      )
+    );
+    if (!comment) throw new NotFoundException('Comment not found');
+    return comment;
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('guardian/content/profiles/:profileId/comments/:commentId')
+  async deleteGuardianComment(
+    @Param('profileId') profileId: string,
+    @Param('commentId') commentId: string,
+    @User() user: UserDetails
+  ) {
+    const result = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: GuardianContentCommands.DeleteComment },
+        { ...this.guardianActor(user, profileId), id: commentId }
+      )
+    );
+    if (!result) throw new NotFoundException('Comment not found');
+    return result;
   }
 }

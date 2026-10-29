@@ -1,0 +1,15 @@
+# N04 — approved shared-audit erasure policy
+
+**Accepted by the user on 2026-10-24: preserve history; erase identifying fields.** This decision applies to the existing N04 OT/TS scope. It supersedes the earlier proposal and requires no further policy choice.
+
+Preserve the minimal event history: original row ID, timestamp, action/type and reviewed lifecycle context. Clear the deleting account's matched account/profile identifiers and unreviewed free text, JSON details and resource links. Keep unmatched counterpart identifiers where the approved receipt requires them. Do not add a stable replacement identity. Existing timestamps and retention clocks remain unchanged. Remaining event IDs and timing can support external correlation; this is not a claim of universal anonymity.
+
+Profile and Assets guardian activity use separate account actor/dependent fields and profile references. Clear a dependent profile reference when its dependent account matches, including historical references outside the current profile set. Assets activity also drops its asset reference; underlying assets remain intact.
+
+Social membership, guardian and moderation audits retain narrow history with matched identities and private context cleared. Profile-view records clear only the matching viewer/account or viewed/profile participation and remove source text. The person's private Social activity facts are deleted without traversing their resource references. Forum moderation history clears the selected actor and unreviewed subject/details. Underlying posts, profiles, assets, reports and counterpart contributions are preserved. Active guardian asset grants are authorization records, not passive history: owner revocation and D00 fencing must precede their disposition.
+
+The internal owner adapters require a trusted caller to supply an authoritative account/profile selection. Export capture grants do not authorize erasure. Each owner locks its declared tables, bounds the operation, transforms records transactionally and independently checks both remaining identifiers and retained-row payloads. Account/profile domains remain distinct. Safe export readers still require a matching participant; a retained row with no eligible participant is not exportable.
+
+Four migrations generated through the owning Nx targets make exactly 20 fields nullable. Reviewed unrelated generated schema drift was excluded. Apply the schema before enabling erasure. Fresh empty-database up/down/up is verified. After identifiers have been erased, a down migration refuses to restore non-null constraints and rolls back unchanged. Do not fabricate identities, delete preserved history or restore private data to force rollback.
+
+The [N04 finding](../findings/DF-007-N04.md) records the local evidence. D00 still owns the authenticated durable deletion operation and permanent distributed producer fence. Historical operator logs, forwarded copies and backups remain external release qualification; the local inventory does not establish their absence or erasure.

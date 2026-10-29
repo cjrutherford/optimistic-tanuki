@@ -1,5 +1,5 @@
 export * from './lib/storage.module';
-export { StorageAdapter } from './lib/storage-adapter.interface';
+export * from './lib/storage-adapter.interface';
 export * from './lib/s3.service';
 export * from './lib/network-storage';
 export * from './lib/local-storage';
@@ -10,4 +10,22 @@ export * from './lib/photo-evidence.service';
 export * from './lib/storage-rekey.service';
 export * from './lib/tax-document-classifier.service';
 export * from './lib/zfs-storage.service';
+export * from './lib/verified-media-spool.service';
+export * from './lib/account-export-owner-spool.service';
+export * from './lib/account-export-owner-emitter';
 export * from './lib/file-mime';
+export * from './lib/account-export-snapshot-pull.service';
+export * from './lib/account-export-profile-snapshot.client';
+export * from './lib/account-export-profile-bound-snapshot.service';
+export * from './lib/account-export-profile-bound-snapshot.client';
+export * from './lib/account-export-postgres-owner.service';
+export * from './lib/account-export-hls';
+
+export * from './lib/account-export-artifact-builder.service';
+export * from './lib/account-export-artifact-store.service';
+
+export * from './lib/account-deletion-write-fence';
+
+export * from './lib/account-deletion-authority.client';
+
+export * from './lib/account-deletion-snapshot.controller';

@@ -1,0 +1,51 @@
+{
+  "slice": "D16",
+  "date": "2026-10-25",
+  "scope": ["client-interface", "local-hub"],
+  "status": "verified-local-owner-component",
+  "focusedInventoryTests": 4,
+  "realAuthOwnerTcpPostgresTests": 1,
+  "productionBuild": "passed",
+  "scopedLint": "passed",
+  "migrationCycle": "fresh up/down/up passed",
+  "migrationGovernance": "passed",
+  "preE2eToolingTests": 41,
+  "independentApplicationTablesZero": 26,
+  "protectedFilesUnchanged": 43,
+  "sourceReview": "GO source-only for the bounded D11/D16/D17 pass; no P1/P2 reported. Reviewer ran no tests. Root subsequently found and reproduced unscoped nil-row cleanup in D17, restricted it to selected row IDs, and verified the correction with real PostgreSQL/TCP red/green evidence. Root also hardened malformed operational metadata handling and verified production Chat history reads. No global deletion or browser claim.",
+  "limitations": [
+    "Frozen Profile discovery and other-owner fence acknowledgements are fixture premises.",
+    "No full account coordination, final identity/key deletion or public UI acceptance.",
+    "No external-provider qualification."
+  ],
+  "sourceSha256": {
+    "apps/authentication-e2e/src/authentication/classifieds-account-deletion.spec.ts": "0659a2bb521f8d183cd0acb6a5b430e4d203fde59bad0a3edb3a4c279a7ed032",
+    "apps/authentication-e2e/src/authentication/deletion-owner.fixture.ts": "601d14f724059dc0861d27062a6f12d728adb8c6851a8ba0419aee05b6cdf6c3",
+    "apps/classifieds/migrations/1792969805332-AccountDeletionWriteFence.ts": "a89f40aec4da01b17a9b47e37d78931e90b82692f7d1c80e29b58ef3cb9cf824",
+    "apps/classifieds/project.json": "55823913514506515999167a64db30c4893c3ed05b1886c808b59bf180148354",
+    "apps/classifieds/src/app/account-deletion-owner.controller.ts": "25f5a459a2ea142ad31928a8ad3f5eb16c9a14639ff2f73d84adc7de765e409e",
+    "apps/classifieds/src/app/account-deletion-owner.service.ts": "fb2885dabe9fdd7ddf97dcbcceaab9ba61787687695e83ddb2c82632ca9bdd25",
+    "apps/classifieds/src/app/account-deletion-policy.ts": "6114e9e9c927264d5b4173957f03db21ec25a49462307190db3ee404dbe2f96b",
+    "apps/classifieds/src/app/app.module.ts": "ab50fd34e272fb511c2e5e65745e775bb4ebfde8fbe73e98131adcfdd9ac271f",
+    "apps/classifieds/src/app/classifieds-account-export-dispositions.json": "16d09642e1c34e0aaff5b111dd6efc3628328f9c240b8998764c9133043c001d",
+    "apps/classifieds/src/app/classifieds-account-export-dispositions.spec.ts": "cf5f437289fffeda393ccf201585b56432f865c107e19f102dd17b630749078f",
+    "apps/classifieds/src/app/classifieds-account-export-dispositions.ts": "e478bda722e0382a0409015d04a4d47d843f16898a9726db331c16477bd51f7b",
+    "apps/classifieds/src/app/loadDatabase.ts": "ce9b26e7f7d33ff9f3a7381b2675bca0461354db5439a53efac2914ac128673f",
+    "apps/classifieds/src/app/staticDatabase.ts": "4c35a9aa88448abddf95d8a2804ea873120641546b56cb8ed170f306a85bb1ec",
+    "libs/constants/src/lib/libs/classifieds.ts": "ebf98499706cae92f8d71e8c1f6ce4b0c50e17a23765d7d004927bdedce7e3ab"
+  },
+  "evidenceSha256": {
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d16-private.log": "0c5d55fd7bd5aa697bc49d5d21b027b6f692749ce0e267c2c609b4f43c12d637",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d16-final-unit.log": "8503faea3c6db6a7384e4fcd8244d400a9e49d52e3a20f6ee22f7e519e7291ae",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d16-final-build.log": "068f723f7152a0de12c0722ba4b02dd15f27b665fa9f64d489e93094c0d8a6e6",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d16-lint.log": "93938aa23773afe0449361652f4e01eb3a4aa4f96bbaa5e777079ea73d2ad623",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/final-lint.log": "3e89955a1b7d656007a6da36bf64cd816049a42756a9a6b66c1eff90d7df03e0",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d16-down.log": "f9081e7b53976d7c3e66c7f8d8925ac59099fb6c8fbbf386809becdc2965b853",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d16-up-again.log": "01962e7eaa7fbf176e176a1f22edd25f62671e338235521934da4542ee63efde",
+    ".runtime-artifacts/account-rights/deletion/d17/migration-governance.log": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9",
+    ".runtime-artifacts/account-rights/deletion/d17/pre-e2e.log": "74a4981c58a3d9b930e6b206d3b10efa9578ae83f10d6605b90faff0f0b152fa",
+    ".runtime-artifacts/account-rights/deletion/d17/source-review.md": "c2a0d6a64f990ad0dd645936eb8db1a6d41b43764fd8c0d0f3c0eb2d48625e28",
+    ".runtime-artifacts/account-rights/deletion/d17/independent-counts.json": "3eb421632c146990d168e9a113a23f41ba7c336327673cb802978b94a9429afb",
+    ".runtime-artifacts/account-rights/deletion/d17/teardown.json": "20622b5d11be4f20ba7ba04be0ba7d61dc47495aa5f0814c215f7110b450e143"
+  }
+}

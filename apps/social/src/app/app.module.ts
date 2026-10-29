@@ -1,5 +1,31 @@
+import {
+  ActivityRetentionService,
+  activityRetentionRule,
+} from '@optimistic-tanuki/logger';
+import type { DataSource as RetentionDataSource } from 'typeorm';
+import { ActivityRetentionController } from './activity-retention.controller';
+import { Activity as RetentionEntity0 } from '../entities/activity.entity';
+import { ProfileView as RetentionEntity1 } from '../entities/profile-view.entity';
+import { SearchHistory as RetentionEntity2 } from '../entities/search-history.entity';
+import { CommunityMembershipAudit as RetentionEntity3 } from '../entities/community-membership-audit.entity';
+import { ContentModerationAction as RetentionEntity4 } from '../entities/content-moderation-action.entity';
+import { GuardianContentAudit as RetentionEntity5 } from '../entities/guardian-content-audit.entity';
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import { SocialAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { SocialAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { SocialAccountDeletionContentService } from './account-deletion-content.service';
+import { SocialAccountDeletionStateService } from './account-deletion-state.service';
+import { SocialAccountDeletionRelatedService } from './account-deletion-related.service';
+import { AccountDeletionAuthorityClient } from '@optimistic-tanuki/storage';
 import { Module } from '@nestjs/common';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 
 import { AppController } from './app.controller';
@@ -59,6 +85,20 @@ import { BusinessPageContent } from '../entities/business-page-content.entity';
 import { BusinessThemeContent } from '../entities/business-theme-content.entity';
 import { CommunitySponsorshipContent } from '../entities/community-sponsorship-content.entity';
 import { BusinessContentService } from './services/business-content.service';
+import { GuardianContentAudit } from '../entities/guardian-content-audit.entity';
+import { GuardianPublishedAssetGrant } from '../entities/guardian-published-asset-grant.entity';
+import { ContentModerationAction } from '../entities/content-moderation-action.entity';
+import { GuardianContentService } from './services/guardian-content.service';
+import { SocialAccountExportService } from './account-export.service';
+import { SocialAccountExportController } from './account-export.controller';
+import { SocialAccountExportOwnerService } from './account-export-owner.service';
+import { SocialAccountExportSnapshotController } from './account-export-snapshot.controller';
+import { SocialAccountExportSnapshotService } from './account-export-snapshot.service';
+import { SocialAuditErasureService } from './audit-erasure.service';
+import {
+  AccountExportOwnerSpoolService,
+  AccountExportProfileSnapshotClient,
+} from '@optimistic-tanuki/storage';
 
 @Module({
   imports: [
@@ -71,8 +111,55 @@ import { BusinessContentService } from './services/business-content.service';
       factory: loadDatabase,
     }),
   ],
-  controllers: [AppController],
+  controllers: [
+    ActivityRetentionController,
+    AccountDeletionSnapshotController,
+    SocialAccountDeletionOwnerController,
+    AppController,
+    SocialAccountExportController,
+    SocialAccountExportSnapshotController,
+  ],
   providers: [
+    {
+      provide: ActivityRetentionService,
+      useFactory: (db: RetentionDataSource) =>
+        new ActivityRetentionService('social', db, [
+          activityRetentionRule(db.getMetadata(RetentionEntity0), 'createdAt'),
+          activityRetentionRule(db.getMetadata(RetentionEntity1), 'viewedAt'),
+          activityRetentionRule(db.getMetadata(RetentionEntity2), 'createdAt'),
+          activityRetentionRule(db.getMetadata(RetentionEntity3), 'createdAt'),
+          activityRetentionRule(db.getMetadata(RetentionEntity4), 'createdAt'),
+          activityRetentionRule(db.getMetadata(RetentionEntity5), 'createdAt'),
+        ]),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: SocialAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        audit: SocialAuditErasureService,
+        database: { query(sql: string): Promise<unknown> }
+      ) => ({ owner: 'social', snapshot, authority, spool, database, audit }),
+      inject: [
+        SocialAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        SocialAuditErasureService,
+        'SOCIAL_CONNECTION',
+      ],
+    },
+    SocialAccountDeletionOwnerService,
+    SocialAccountDeletionContentService,
+    SocialAccountDeletionStateService,
+    SocialAccountDeletionRelatedService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: ClientProxy) =>
+        new AccountDeletionAuthorityClient(auth),
+      inject: [ServiceTokens.AUTHENTICATION_SERVICE],
+    },
     VoteService,
     ReactionService,
     PostService,
@@ -92,11 +179,71 @@ import { BusinessContentService } from './services/business-content.service';
     PostShareService,
     EventService,
     BusinessContentService,
+    GuardianContentService,
+    SocialAccountExportService,
+    SocialAuditErasureService,
+    AccountExportOwnerSpoolService,
+    AccountExportProfileSnapshotClient,
+    {
+      provide: SocialAccountExportOwnerService,
+      useFactory: (
+        dataSource: DataSource,
+        identities: AccountExportProfileSnapshotClient,
+        authClient: ClientProxy
+      ) =>
+        new SocialAccountExportOwnerService(dataSource, identities, authClient),
+      inject: [
+        'SOCIAL_CONNECTION',
+        AccountExportProfileSnapshotClient,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
+    {
+      provide: SocialAccountExportSnapshotService,
+      useFactory: (
+        owner: SocialAccountExportOwnerService,
+        spool: AccountExportOwnerSpoolService,
+        authClient: ClientProxy
+      ) => new SocialAccountExportSnapshotService(owner, spool, authClient),
+      inject: [
+        SocialAccountExportOwnerService,
+        AccountExportOwnerSpoolService,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
+    {
+      provide: ServiceTokens.AUTHENTICATION_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.authentication'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: { host: serviceConfig.host, port: serviceConfig.port },
+        });
+      },
+      inject: [ConfigService],
+    },
     {
       provide: ServiceTokens.PROFILE_SERVICE,
       useFactory: (configService: ConfigService) => {
         const serviceConfig =
           configService.get<TcpServiceConfig>('services.profile');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.ASSETS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.assets');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {
@@ -164,6 +311,17 @@ import { BusinessContentService } from './services/business-content.service';
       inject: ['SOCIAL_CONNECTION'],
     },
     {
+      provide: getRepositoryToken(GuardianContentAudit),
+      useFactory: (ds: DataSource) => ds.getRepository(GuardianContentAudit),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(GuardianPublishedAssetGrant),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(GuardianPublishedAssetGrant),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
       provide: getRepositoryToken(CommunityInvite),
       useFactory: (ds: DataSource) => ds.getRepository(CommunityInvite),
       inject: ['SOCIAL_CONNECTION'],
@@ -206,6 +364,11 @@ import { BusinessContentService } from './services/business-content.service';
     {
       provide: getRepositoryToken(ContentReport),
       useFactory: (ds: DataSource) => ds.getRepository(ContentReport),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(ContentModerationAction),
+      useFactory: (ds: DataSource) => ds.getRepository(ContentModerationAction),
       inject: ['SOCIAL_CONNECTION'],
     },
     {
@@ -260,5 +423,6 @@ import { BusinessContentService } from './services/business-content.service';
       inject: ['SOCIAL_CONNECTION'],
     },
   ],
+  exports: [SocialAuditErasureService],
 })
 export class AppModule {}

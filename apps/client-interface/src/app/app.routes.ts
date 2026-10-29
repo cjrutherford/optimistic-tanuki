@@ -1,3 +1,7 @@
+import {
+  AccountDeletionStatusComponent,
+  ReleaseInformationComponent,
+} from '@optimistic-tanuki/profile-ui';
 import { ResolveFn, Route } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard'; // Import the AuthGuard
 import { ProfileGuard } from './guards/profile.guard';
@@ -6,33 +10,56 @@ import { UserPermissionsService } from './state/user-permissions.service';
 import { AuthStateService } from './state/auth-state.service';
 import {
   emailAuthRoutes,
+  guardianConsentRoutes,
   OAuthCallbackComponent,
 } from '@optimistic-tanuki/auth-ui';
 import { ExplorePageComponent } from '@optimistic-tanuki/search-ui';
+import { PublicContactPageComponent } from '@optimistic-tanuki/common-ui';
 
-const forumPermissionResolver: ResolveFn<string[]> = async () => {
+interface ForumPermissionResolution {
+  permissions: string[];
+  unavailable?: true;
+  denied?: true;
+}
+
+const forumPermissionResolver: ResolveFn<
+  string[] | ForumPermissionResolution
+> = async () => {
   const authState = inject(AuthStateService);
   if (!authState.isAuthenticated) {
     return [];
   }
   const permissionsService = inject(UserPermissionsService);
-  const permissions = await permissionsService.searchPermissions('forum.');
-  console.log('Forum permissionsResolver:', permissions);
-  return permissions;
+  try {
+    const permissions = await permissionsService.searchPermissions('forum.');
+    return permissions;
+  } catch (error) {
+    const status = (error as { status?: number } | null)?.status;
+    if (status === 401) {
+      // AuthInterceptor owns session expiry and redirects to the login route.
+      return [];
+    }
+    if (status === 403) {
+      return { permissions: [], denied: true };
+    }
+    // Keep the public forum route usable during transient service failures,
+    // while hiding authoring controls and offering an explicit retry.
+    return { permissions: [], unavailable: true };
+  }
 };
 
 const forumIsLoggedInResolver: ResolveFn<boolean> = () => {
   const authState = inject(AuthStateService);
   const isLoggedIn = authState.isAuthenticated;
-  console.log('Forum isLoggedInResolver:', isLoggedIn);
   return isLoggedIn;
 };
 
 const forumUserIdResolver: ResolveFn<string> = () => {
   const authState = inject(AuthStateService);
   const profile = authState.getPersistedSelectedProfile();
-  console.log('Forum userIdResolver, profile:', profile);
-  return profile?.id || '';
+  // Cookie-authenticated first-time sessions may not have a persisted profile
+  // selection yet. The session response carries the account's profile id.
+  return profile?.id || authState.getDecodedTokenValue()?.profileId || '';
 };
 
 const communityPermissionResolver: ResolveFn<string[]> = async () => {
@@ -48,12 +75,33 @@ const communityIsLoggedInResolver: ResolveFn<boolean> = () => {
 
 const communityUserIdResolver: ResolveFn<string> = () => {
   const authState = inject(AuthStateService);
-  const profile = authState.getPersistedSelectedProfile();
-  return profile?.id || '';
+  // Match the authenticated HTTP/socket actor; an old stored selection may
+  // still refer to the account's legacy global profile.
+  return authState.getDecodedTokenValue()?.profileId || '';
 };
 
 export const appRoutes: Route[] = [
+  {
+    path: 'help',
+    component: ReleaseInformationComponent,
+    data: { appId: 'client-interface', view: 'guide' },
+  },
+  {
+    path: 'privacy',
+    component: ReleaseInformationComponent,
+    data: { appId: 'client-interface', view: 'policy' },
+  },
+  {
+    path: 'account-deletion',
+    component: AccountDeletionStatusComponent,
+    data: { appId: 'client-interface' },
+  },
   ...emailAuthRoutes('ot-client-authToken', true),
+  ...guardianConsentRoutes(),
+  {
+    path: 'contact',
+    component: PublicContactPageComponent,
+  },
   {
     path: '',
     loadComponent: () =>
@@ -134,6 +182,14 @@ export const appRoutes: Route[] = [
         (m) => m.SettingsComponent
       ),
     canActivate: [AuthGuard], // Protect the settings route
+  },
+  {
+    path: 'guardian',
+    loadComponent: () =>
+      import('@optimistic-tanuki/guardian-ui').then(
+        (m) => m.GuardianConsoleComponent
+      ),
+    canActivate: [AuthGuard],
   },
   {
     path: 'settings/privacy',

@@ -1,8 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike } from 'typeorm';
-import { RpcException } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
+import {
+  AssetCommands,
+  CommunityCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { ClassifiedAdEntity } from './entities/classified-ad.entity';
+import { firstValueFrom, timeout } from 'rxjs';
 
 export interface CreateClassifiedAdDto {
   communityId?: string | null;
@@ -39,18 +45,63 @@ export interface SearchClassifiedsDto {
 @Injectable()
 export class ClassifiedsService {
   private readonly logger = new Logger(ClassifiedsService.name);
+  private readonly createFields = new Set([
+    'communityId',
+    'title',
+    'description',
+    'price',
+    'currency',
+    'category',
+    'condition',
+    'imageUrls',
+  ]);
+  private readonly updateFields = new Set([
+    'title',
+    'description',
+    'price',
+    'currency',
+    'category',
+    'condition',
+    'imageUrls',
+  ]);
 
   constructor(
     @InjectRepository(ClassifiedAdEntity)
-    private readonly repo: Repository<ClassifiedAdEntity>
+    private readonly repo: Repository<ClassifiedAdEntity>,
+    @Optional()
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialClient?: ClientProxy,
+    @Optional()
+    @Inject(ServiceTokens.ASSETS_SERVICE)
+    private readonly assetsClient?: ClientProxy
   ) {}
 
   async create(
     dto: CreateClassifiedAdDto,
     profileId: string,
     userId: string,
-    appScope = 'local-hub'
+    appScope?: string
   ): Promise<ClassifiedAdEntity> {
+    this.assertAllowedFields(dto, this.createFields);
+    appScope = this.requireAppScope(appScope);
+    let privateTarget = false;
+    if (dto.communityId) {
+      const community = await this.assertCommunityPostingAllowed(
+        dto.communityId,
+        userId,
+        appScope
+      );
+      privateTarget = community.isPrivate === true;
+    }
+    await this.assertAssetsCompatible(
+      dto.imageUrls || [],
+      dto.communityId || undefined,
+      profileId,
+      privateTarget
+    );
+    if (privateTarget && dto.communityId && dto.imageUrls?.length) {
+      await this.latchAssetAudiences(dto.imageUrls, dto.communityId);
+    }
     const ad = this.repo.create({
       ...dto,
       profileId,
@@ -62,44 +113,84 @@ export class ClassifiedsService {
     return this.repo.save(ad);
   }
 
-  async findById(id: string): Promise<ClassifiedAdEntity> {
-    const ad = await this.repo.findOne({ where: { id } });
+  async findById(
+    id: string,
+    appScope: string,
+    requestingUserId?: string
+  ): Promise<ClassifiedAdEntity> {
+    this.requireAppScope(appScope);
+    const ad = await this.repo.findOne({ where: { id, appScope } });
     if (!ad) {
-      throw new RpcException(`Classified ad ${id} not found`);
+      throw new RpcException({
+        statusCode: 404,
+        message: `Classified ad ${id} not found`,
+      });
+    }
+    if (
+      ad.communityId &&
+      !(await this.canReadCommunity(
+        ad.communityId,
+        requestingUserId,
+        appScope,
+        ad.userId
+      ))
+    ) {
+      throw new RpcException({
+        statusCode: 404,
+        message: `Classified ad ${id} not found`,
+      });
     }
     return ad;
   }
 
-  async findIdsByUser(userId: string): Promise<string[]> {
+  async findIdsByUser(userId: string, appScope: string): Promise<string[]> {
+    this.requireAppScope(appScope);
     const ads = await this.repo.find({
       select: { id: true },
-      where: { userId },
+      where: { userId, appScope },
     });
     return ads.map((ad) => ad.id);
   }
 
   async findByCommunity(
     communityId: string,
-    appScope?: string
+    appScope: string,
+    requestingUserId?: string
   ): Promise<ClassifiedAdEntity[]> {
+    this.requireAppScope(appScope);
+    if (
+      !(await this.canReadCommunity(communityId, requestingUserId, appScope))
+    ) {
+      return [];
+    }
     return this.repo.find({
       where: {
         communityId,
-        ...(appScope ? { appScope } : {}),
+        appScope,
         status: 'active',
       },
       order: { isFeatured: 'DESC', createdAt: 'DESC' },
     });
   }
 
-  async findByProfile(profileId: string): Promise<ClassifiedAdEntity[]> {
-    return this.repo.find({
-      where: { profileId },
+  async findByProfile(
+    profileId: string,
+    appScope: string,
+    requestingUserId?: string
+  ): Promise<ClassifiedAdEntity[]> {
+    this.requireAppScope(appScope);
+    const ads = await this.repo.find({
+      where: { profileId, appScope },
       order: { createdAt: 'DESC' },
     });
+    return this.filterReadableAds(ads, requestingUserId, appScope);
   }
 
-  async search(dto: SearchClassifiedsDto): Promise<ClassifiedAdEntity[]> {
+  async search(
+    dto: SearchClassifiedsDto,
+    requestingUserId?: string
+  ): Promise<ClassifiedAdEntity[]> {
+    const appScope = this.requireAppScope(dto.appScope);
     const qb = this.repo.createQueryBuilder('ad');
     qb.where('ad.status = :status', { status: 'active' });
 
@@ -108,9 +199,7 @@ export class ClassifiedsService {
         communityId: dto.communityId,
       });
     }
-    if (dto.appScope) {
-      qb.andWhere('ad.appScope = :appScope', { appScope: dto.appScope });
-    }
+    qb.andWhere('ad.appScope = :appScope', { appScope });
     if (dto.query) {
       qb.andWhere('(ad.title ILIKE :query OR ad.description ILIKE :query)', {
         query: `%${dto.query}%`,
@@ -131,35 +220,79 @@ export class ClassifiedsService {
     qb.skip((page - 1) * limit).take(limit);
     qb.orderBy('ad.isFeatured', 'DESC').addOrderBy('ad.createdAt', 'DESC');
 
-    return qb.getMany();
+    return this.filterReadableAds(
+      await qb.getMany(),
+      requestingUserId,
+      appScope
+    );
   }
 
   async update(
     id: string,
     dto: UpdateClassifiedAdDto,
-    profileId: string
+    profileId: string,
+    appScope: string
   ): Promise<ClassifiedAdEntity> {
-    const ad = await this.findById(id);
+    this.assertAllowedFields(dto, this.updateFields);
+    const ad = await this.findScopedAd(id, appScope);
     if (ad.profileId !== profileId) {
-      throw new RpcException('Forbidden: not the owner of this classified ad');
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Forbidden: not the owner of this classified ad',
+      });
+    }
+    const oldImageUrls = ad.imageUrls || [];
+    const privateTarget =
+      ad.communityId && dto.imageUrls !== undefined
+        ? await this.isPrivateCommunity(ad.communityId, appScope)
+        : false;
+    if (dto.imageUrls !== undefined) {
+      await this.assertAssetsCompatible(
+        [...oldImageUrls, ...dto.imageUrls],
+        ad.communityId || undefined,
+        profileId,
+        privateTarget
+      );
+    }
+    if (ad.communityId && privateTarget && dto.imageUrls !== undefined) {
+      // Latch both old and new references before saving. Removing or replacing
+      // an image never makes the underlying asset public again.
+      await this.latchAssetAudiences(
+        [...oldImageUrls, ...dto.imageUrls],
+        ad.communityId
+      );
     }
     Object.assign(ad, dto);
     return this.repo.save(ad);
   }
 
-  async remove(id: string, profileId: string): Promise<void> {
-    const ad = await this.findById(id);
+  async remove(
+    id: string,
+    profileId: string,
+    appScope: string
+  ): Promise<ClassifiedAdEntity> {
+    const ad = await this.findScopedAd(id, appScope);
     if (ad.profileId !== profileId) {
-      throw new RpcException('Forbidden: not the owner of this classified ad');
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Forbidden: not the owner of this classified ad',
+      });
     }
     ad.status = 'removed';
-    await this.repo.save(ad);
+    return this.repo.save(ad);
   }
 
-  async markSold(id: string, profileId: string): Promise<ClassifiedAdEntity> {
-    const ad = await this.findById(id);
+  async markSold(
+    id: string,
+    profileId: string,
+    appScope: string
+  ): Promise<ClassifiedAdEntity> {
+    const ad = await this.findScopedAd(id, appScope);
     if (ad.profileId !== profileId) {
-      throw new RpcException('Forbidden: not the owner of this classified ad');
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Forbidden: not the owner of this classified ad',
+      });
     }
     ad.status = 'sold';
     return this.repo.save(ad);
@@ -168,11 +301,15 @@ export class ClassifiedsService {
   async feature(
     id: string,
     profileId: string,
-    durationDays: number
+    durationDays: number,
+    appScope: string
   ): Promise<ClassifiedAdEntity> {
-    const ad = await this.findById(id);
+    const ad = await this.findScopedAd(id, appScope);
     if (ad.profileId !== profileId) {
-      throw new RpcException('Forbidden: not the owner of this classified ad');
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Forbidden: not the owner of this classified ad',
+      });
     }
     ad.isFeatured = true;
     const until = new Date();
@@ -181,13 +318,380 @@ export class ClassifiedsService {
     return this.repo.save(ad);
   }
 
-  async unfeature(id: string, profileId: string): Promise<ClassifiedAdEntity> {
-    const ad = await this.findById(id);
+  async unfeature(
+    id: string,
+    profileId: string,
+    appScope: string
+  ): Promise<ClassifiedAdEntity> {
+    const ad = await this.findScopedAd(id, appScope);
     if (ad.profileId !== profileId) {
-      throw new RpcException('Forbidden: not the owner of this classified ad');
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Forbidden: not the owner of this classified ad',
+      });
     }
     ad.isFeatured = false;
     ad.featuredUntil = null;
     return this.repo.save(ad);
+  }
+
+  private requireAppScope(appScope?: string): string {
+    if (!appScope?.trim()) {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Application scope is required',
+      });
+    }
+    return appScope;
+  }
+
+  private assertAllowedFields(dto: object, allowedFields: Set<string>): void {
+    const unsupported = Object.keys(dto).filter(
+      (field) => !allowedFields.has(field)
+    );
+    if (unsupported.length) {
+      throw new RpcException({
+        statusCode: 400,
+        message: `Unsupported classified field(s): ${unsupported.join(', ')}`,
+      });
+    }
+  }
+
+  private async findScopedAd(
+    id: string,
+    appScope: string
+  ): Promise<ClassifiedAdEntity> {
+    this.requireAppScope(appScope);
+    const ad = await this.repo.findOne({ where: { id, appScope } });
+    if (!ad) {
+      throw new RpcException({
+        statusCode: 404,
+        message: `Classified ad ${id} not found`,
+      });
+    }
+    return ad;
+  }
+
+  private async assertCommunityPostingAllowed(
+    communityId: string,
+    userId: string,
+    appScope?: string
+  ): Promise<{ id: string; appScope?: string; isPrivate?: boolean }> {
+    if (!this.socialClient || !appScope || !userId) {
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Community membership could not be verified',
+      });
+    }
+    try {
+      const [community, isMember] = await Promise.all([
+        firstValueFrom(
+          this.socialClient
+            .send<{ id: string; appScope?: string; isPrivate?: boolean }>(
+              { cmd: CommunityCommands.FIND },
+              { id: communityId }
+            )
+            .pipe(timeout({ first: 5000 }))
+        ),
+        firstValueFrom(
+          this.socialClient
+            .send<boolean>(
+              { cmd: 'IS_COMMUNITY_MEMBER' },
+              { communityId, userId }
+            )
+            .pipe(timeout({ first: 5000 }))
+        ),
+      ]);
+      if (!community || community.appScope !== appScope) {
+        throw new RpcException({
+          statusCode: 404,
+          message: 'Community not found in this app',
+        });
+      }
+      if (isMember !== true) {
+        throw new RpcException({
+          statusCode: 403,
+          message:
+            'Approved community membership is required to post a classified',
+        });
+      }
+      return community;
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      this.logger.error('Classified community membership lookup failed', error);
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Community membership could not be verified',
+      });
+    }
+  }
+
+  private async isPrivateCommunity(
+    communityId: string,
+    appScope: string
+  ): Promise<boolean> {
+    if (!this.socialClient) {
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Community visibility could not be verified',
+      });
+    }
+    const community = await firstValueFrom(
+      this.socialClient
+        .send<{ id: string; appScope?: string; isPrivate?: boolean }>(
+          { cmd: CommunityCommands.FIND },
+          { id: communityId }
+        )
+        .pipe(timeout({ first: 5000 }))
+    );
+    if (!community || community.appScope !== appScope) {
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Community not found in this app',
+      });
+    }
+    return community.isPrivate === true;
+  }
+
+  private async latchAssetAudiences(
+    imageUrls: string[],
+    communityId: string
+  ): Promise<void> {
+    if (!this.assetsClient) {
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Asset audience could not be secured',
+      });
+    }
+    const assetIds = [
+      ...new Set(imageUrls.map(assetIdFromUrl).filter(Boolean)),
+    ];
+    await Promise.all(
+      assetIds.map((id) =>
+        firstValueFrom(
+          this.assetsClient!.send(
+            { cmd: AssetCommands.ADD_COMMUNITY_AUDIENCE },
+            { id, communityId }
+          ).pipe(timeout({ first: 5000 }))
+        )
+      )
+    );
+  }
+
+  private async assertAssetsCompatible(
+    imageUrls: string[],
+    targetCommunityId?: string,
+    ownerProfileId?: string,
+    privateTarget = false
+  ): Promise<void> {
+    const assetIds = [
+      ...new Set(imageUrls.map(assetIdFromUrl).filter(Boolean)),
+    ];
+    if (!assetIds.length) return;
+    if (!this.assetsClient) {
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Asset audience could not be verified',
+      });
+    }
+    const assets = await Promise.all(
+      assetIds.map((id) =>
+        firstValueFrom(
+          this.assetsClient!.send<{
+            audienceCommunityIds?: string[];
+            profileId?: string;
+          }>({ cmd: AssetCommands.RETRIEVE }, { id }).pipe(
+            timeout({ first: 5000 })
+          )
+        )
+      )
+    );
+    for (const asset of assets) {
+      const existing = asset.audienceCommunityIds || [];
+      if (
+        existing.length > 0 &&
+        (!targetCommunityId || existing.some((id) => id !== targetCommunityId))
+      ) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'Asset belongs to a different community audience',
+        });
+      }
+      if (
+        privateTarget &&
+        existing.length === 0 &&
+        asset.profileId !== ownerProfileId
+      ) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'Only the asset owner may add it to a private community',
+        });
+      }
+    }
+  }
+
+  async findAssetAudiences(assetId: string): Promise<
+    Array<{
+      communityId: string;
+      appScope: string;
+      ownerProfileId: string;
+    }>
+  > {
+    if (!isUuid(assetId)) return [];
+    const ads = await this.repo
+      .createQueryBuilder('ad')
+      .select(['ad.imageUrls', 'ad.communityId', 'ad.appScope', 'ad.profileId'])
+      .where('ad.imageUrls LIKE :assetReference', {
+        assetReference: `%${assetId}%`,
+      })
+      .andWhere('ad.communityId IS NOT NULL')
+      .getMany();
+
+    const uniqueAudiences = new Map<
+      string,
+      {
+        communityId: string;
+        appScope: string;
+        ownerProfileId: string;
+      }
+    >();
+    for (const ad of ads) {
+      if (
+        !ad.imageUrls?.some((imageUrl) => isAssetUrlForId(imageUrl, assetId)) ||
+        !ad.communityId
+      ) {
+        continue;
+      }
+      const audience = {
+        communityId: ad.communityId,
+        appScope: ad.appScope,
+        ownerProfileId: ad.profileId,
+      };
+      uniqueAudiences.set(
+        `${audience.appScope}:${audience.communityId}:${audience.ownerProfileId}`,
+        audience
+      );
+    }
+    return [...uniqueAudiences.values()];
+  }
+
+  private async canReadCommunity(
+    communityId: string,
+    requestingUserId: string | undefined,
+    appScope: string,
+    listingOwnerUserId?: string
+  ): Promise<boolean> {
+    if (!this.socialClient) {
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Community visibility could not be verified',
+      });
+    }
+    try {
+      const community = await firstValueFrom(
+        this.socialClient
+          .send<{ id: string; appScope?: string; isPrivate?: boolean }>(
+            { cmd: CommunityCommands.FIND },
+            { id: communityId }
+          )
+          .pipe(timeout({ first: 5000 }))
+      );
+      if (!community || community.appScope !== appScope) return false;
+      if (!community.isPrivate) return true;
+      if (!requestingUserId) return false;
+      if (listingOwnerUserId === requestingUserId) return true;
+      return (
+        (await firstValueFrom(
+          this.socialClient
+            .send<boolean>(
+              { cmd: 'IS_COMMUNITY_MEMBER' },
+              { communityId, userId: requestingUserId }
+            )
+            .pipe(timeout({ first: 5000 }))
+        )) === true
+      );
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      this.logger.error('Classified community visibility lookup failed', error);
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Community visibility could not be verified',
+      });
+    }
+  }
+
+  private async filterReadableAds(
+    ads: ClassifiedAdEntity[],
+    requestingUserId: string | undefined,
+    appScope: string
+  ): Promise<ClassifiedAdEntity[]> {
+    const communityIds = [
+      ...new Set(ads.flatMap((ad) => (ad.communityId ? [ad.communityId] : []))),
+    ];
+    const readable = new Set<string>();
+    const ownerReadable = new Set<string>();
+    await Promise.all(
+      communityIds.map(async (communityId) => {
+        if (
+          await this.canReadCommunity(communityId, requestingUserId, appScope)
+        ) {
+          readable.add(communityId);
+          return;
+        }
+        const hasOwnedAd = ads.some(
+          (ad) =>
+            ad.communityId === communityId && ad.userId === requestingUserId
+        );
+        if (
+          hasOwnedAd &&
+          requestingUserId &&
+          (await this.canReadCommunity(
+            communityId,
+            requestingUserId,
+            appScope,
+            requestingUserId
+          ))
+        ) {
+          ownerReadable.add(communityId);
+        }
+      })
+    );
+    return ads.filter(
+      (ad) =>
+        !ad.communityId ||
+        readable.has(ad.communityId) ||
+        (ad.userId === requestingUserId && ownerReadable.has(ad.communityId))
+    );
+  }
+}
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}
+
+function isAssetUrlForId(value: string, assetId: string): boolean {
+  try {
+    const parsed = new URL(value, 'http://local-asset.invalid');
+    const pathname = decodeURIComponent(parsed.pathname).replace(/\/$/, '');
+    return (
+      pathname.toLowerCase() === `/api/asset/${assetId.toLowerCase()}` ||
+      pathname.toLowerCase() === `/asset/${assetId.toLowerCase()}`
+    );
+  } catch {
+    return false;
+  }
+}
+
+function assetIdFromUrl(value: string): string | undefined {
+  try {
+    const parsed = new URL(value, 'http://local-asset.invalid');
+    const pathname = decodeURIComponent(parsed.pathname).replace(/\/$/, '');
+    const match = /^\/(?:api\/)?asset\/([0-9a-f-]+)$/i.exec(pathname);
+    return match && isUuid(match[1]) ? match[1] : undefined;
+  } catch {
+    return undefined;
   }
 }

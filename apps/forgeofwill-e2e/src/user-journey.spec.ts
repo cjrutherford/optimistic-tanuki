@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
+  continueAsAdult,
   openProfileEditorFromSettings,
   submitProfileEditor,
 } from '../../e2e/support/workspace-ui';
@@ -30,6 +31,7 @@ test.describe('User Journey', () => {
     console.log('Navigating to /register');
     await page.goto('/register');
     await expect(page).toHaveURL(/\/register/);
+    await continueAsAdult(page);
 
     console.log('Filling registration form');
     await page

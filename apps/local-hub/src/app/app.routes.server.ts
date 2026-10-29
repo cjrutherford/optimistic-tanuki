@@ -13,6 +13,7 @@ const serverRoutes: ServerRoute[] = [
   { path: 'communities', renderMode: RenderMode.Client },
   { path: 'login', renderMode: RenderMode.Client },
   { path: 'register', renderMode: RenderMode.Client },
+  { path: 'auth/guardian-consent', renderMode: RenderMode.Client },
   { path: 'account', renderMode: RenderMode.Client },
   { path: 'operations', renderMode: RenderMode.Client },
   { path: 'contribute', renderMode: RenderMode.Client },

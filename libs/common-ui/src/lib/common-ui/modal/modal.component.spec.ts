@@ -346,4 +346,68 @@ describe('ModalComponent', () => {
     expect(dialog.getAttribute('data-emphasis')).toBe('soft');
     expect(dialog.getAttribute('data-surface')).toBe('glass');
   });
+  it('traps focus after projected content changes while open', fakeAsync(() => {
+    fixture.componentRef.setInput('visible', true);
+    fixture.detectChanges();
+    tick(100);
+    const dialog = fixture.nativeElement.querySelector('.modal-dialog');
+    const added = document.createElement('a');
+    added.href = '/sibling';
+    dialog.appendChild(added);
+    const focus = jest.spyOn(dialog.querySelector('button'), 'focus');
+    Object.defineProperty(document, 'activeElement', {
+      configurable: true,
+      get: () => added,
+    });
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      cancelable: true,
+    });
+    component.onTabKey(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(focus).toHaveBeenCalled();
+    delete (document as any).activeElement;
+  }));
+
+  it('does not intercept activation keys at the end of a dialog', fakeAsync(() => {
+    fixture.componentRef.setInput('visible', true);
+    fixture.detectChanges();
+    tick(100);
+    const button = fixture.nativeElement.querySelector('.modal-close-btn');
+    Object.defineProperty(document, 'activeElement', {
+      configurable: true,
+      get: () => button,
+    });
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      cancelable: true,
+    });
+    component.onTabKey(event);
+    expect(event.defaultPrevented).toBe(false);
+    delete (document as any).activeElement;
+  }));
+
+  it('handles Shift+Tab through the host after content changes', fakeAsync(() => {
+    fixture.componentRef.setInput('visible', true);
+    fixture.detectChanges();
+    tick(100);
+    const host = fixture.nativeElement;
+    document.body.appendChild(host);
+    const dialog = host.querySelector('.modal-dialog');
+    const added = document.createElement('a');
+    added.href = '/sibling';
+    dialog.appendChild(added);
+    const close = dialog.querySelector('button');
+    close.focus();
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    close.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(added);
+    host.remove();
+  }));
 });

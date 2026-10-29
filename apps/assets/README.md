@@ -59,8 +59,10 @@ pnpm exec nx serve assets
 
 ## Migrations
 
+Set `npm_config_name` to the intended migration name. Generation compares entity metadata against the configured database; review the generated SQL before applying it.
+
 ```bash
-pnpm exec nx run assets:typeorm:migration:generate --name=<migration-name>
+npm_config_name=AddAssetAudience pnpm exec nx run assets:typeorm:migration:generate
 pnpm exec nx run assets:typeorm:migration:run
 pnpm exec nx run assets:typeorm:migration:revert
 ```

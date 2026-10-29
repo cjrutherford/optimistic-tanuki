@@ -41,7 +41,14 @@ import { SchemaCollectionPanelComponent } from './schema-collection-panel.compon
       <div class="inspector-fields">
         @for (field of definition.fields || []; track field.key) {
         <div class="form-group">
-          <label [for]="'field-' + field.key">{{ field.label }}</label>
+          <label
+            [for]="
+              (field.editor || field.type) === 'select'
+                ? 'field-' + field.key + '-control'
+                : 'field-' + field.key
+            "
+            >{{ field.label }}</label
+          >
           @switch (field.editor || field.type) { @case ('textarea') {
           <lib-text-area
             [id]="'field-' + field.key"

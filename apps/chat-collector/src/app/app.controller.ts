@@ -12,7 +12,10 @@ import {
 import { AppService } from './app.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ChatCommands, CommonCommands } from '@optimistic-tanuki/constants';
-import { ChatMessage } from '@optimistic-tanuki/chat-contracts';
+import {
+  ChatMessage,
+  DeleteOwnedCommunityConversationDto,
+} from '@optimistic-tanuki/chat-contracts';
 
 @Controller()
 export class AppController {
@@ -31,6 +34,18 @@ export class AppController {
     return await this.appService.postMessage(data);
   }
 
+  @MessagePattern({ cmd: ChatCommands.GET_PRESENCE_AUDIENCE })
+  getPresenceAudience(
+    @Payload()
+    request: {
+      conversationId: string;
+      requestingProfileId: string;
+      targetProfileIds: string[];
+    }
+  ) {
+    return this.appService.getPresenceAudience(request);
+  }
+
   @MessagePattern({ cmd: ChatCommands.GET_CONVERSATIONS })
   async getConversations(@Payload() data: { profileId: string }) {
     this.l.log(`Retrieving conversations for profile ID: ${data.profileId}`);
@@ -38,9 +53,20 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: ChatCommands.GET_CONVERSATION })
-  async getConversation(@Payload() data: { conversationId: string }) {
+  async getConversation(
+    @Payload()
+    data: {
+      conversationId: string;
+      requestingProfileId?: string;
+      deliverySenderId?: string;
+    }
+  ) {
     this.l.log(`Retrieving conversation for ID: ${data.conversationId}`);
-    return await this.appService.getConversation(data.conversationId);
+    return await this.appService.getConversation(
+      data.conversationId,
+      data.requestingProfileId,
+      data.deliverySenderId
+    );
   }
 
   @MessagePattern({ cmd: ChatCommands.CREATE_COMMUNITY_CHAT })
@@ -53,6 +79,13 @@ export class AppController {
       data.ownerId,
       data.name
     );
+  }
+
+  @MessagePattern({ cmd: ChatCommands.DELETE_OWNED_COMMUNITY_CONVERSATION })
+  async deleteOwnedCommunityConversation(
+    @Payload() data: DeleteOwnedCommunityConversationDto
+  ) {
+    return this.appService.deleteOwnedCommunityConversation(data);
   }
 
   @MessagePattern({ cmd: ChatCommands.GET_OR_CREATE_PROJECT_CHAT })

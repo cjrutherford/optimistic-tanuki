@@ -22,6 +22,8 @@ import {
   PostData,
   ImageUploadCallback,
   UpdatePostDto,
+  PostSaveState,
+  ReportDialogComponent,
 } from '@optimistic-tanuki/social-ui';
 import {
   CreateAttachmentDto,
@@ -32,7 +34,14 @@ import { InjectedComponentData } from '@optimistic-tanuki/compose-lib';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PostService } from '../../post.service';
 import { AttachmentService } from '../../attachment.service';
-import { filter, firstValueFrom, Observable, Subject, takeUntil } from 'rxjs';
+import {
+  filter,
+  firstValueFrom,
+  forkJoin,
+  Observable,
+  Subject,
+  takeUntil,
+} from 'rxjs';
 import { map } from 'rxjs/operators';
 import { CommentService } from '../../comment.service';
 import { ProfileService } from '../../profile.service';
@@ -40,7 +49,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PostProfileStub } from '@optimistic-tanuki/social-ui';
 import { SocialWebSocketService } from '../../social-websocket.service';
 import { AssetService } from '../../asset.service';
-import { CreateAssetDto, FollowDto } from '@optimistic-tanuki/ui-models';
+import {
+  AssetAudienceRestriction,
+  CreateAssetDto,
+  FollowDto,
+} from '@optimistic-tanuki/ui-models';
 import { FollowService } from '../../follow.service';
 import { HttpClient } from '@angular/common/http';
 import { CommunityService } from '../../community.service';
@@ -64,6 +77,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
     PostComponent,
     InfiniteScrollDirective,
     LazyLoadDirective,
+    ReportDialogComponent,
   ],
   providers: [
     ThemeService,
@@ -81,7 +95,16 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
   styleUrls: ['./feed.component.scss'],
 })
 export class FeedComponent implements OnInit, OnDestroy {
+  /** Set by audience-aware compose hosts; defaults to public uploads. */
+  assetAudienceRestrictions: AssetAudienceRestriction[] = [];
+  postAudienceOptions = [
+    { label: 'Public', value: 'public' as const },
+    { label: 'Followers', value: 'followers' as const },
+  ];
+  private contentReadVersion = 0;
+  private readonly contentReadCancelled$ = new Subject<void>();
   posts = signal<PostDto[]>([]);
+  postSaveStates = signal<Record<string, PostSaveState>>({});
   loading = signal(true);
   loadingMore = signal(false);
   hasMorePosts = signal(true);
@@ -91,9 +114,16 @@ export class FeedComponent implements OnInit, OnDestroy {
   private currentCommunityIds: string[] = [];
   followingIds = new Set<string>();
   blockedIds = new Set<string>();
+  mutedIds = new Set<string>();
+  reportTargetPostId = signal<string | null>(null);
   ownedCommunities = signal<{ id: string; name: string }[]>([]);
   communityInfo = signal<{
-    [key: string]: { id: string; name: string; logoUrl?: string };
+    [key: string]: {
+      id: string;
+      name: string;
+      logoUrl?: string;
+      isPrivate?: boolean;
+    };
   }>({});
   themeStyles!: {
     backgroundColor: string;
@@ -118,13 +148,16 @@ export class FeedComponent implements OnInit, OnDestroy {
   private readonly privacyService = inject(PrivacyService);
   private readonly socialFeedData = inject(SocialFeedDataService);
   private readonly messageService = inject(MessageService);
+  private privacyPreferencesLoaded = false;
+  private pendingRealtimePosts: PostDto[] | null = null;
 
   // Image upload callback for the compose component
   imageUploadCallback: ImageUploadCallback = async (
     dataUrl: string,
-    fileName: string
+    fileName: string,
+    audienceRestrictions?: AssetAudienceRestriction[]
   ): Promise<string> => {
-    const currentProfile = this.profileService.currentUserProfile();
+    const currentProfile = this.profileService.getCurrentUserProfile();
     if (!currentProfile) {
       throw new Error('No current profile found');
     }
@@ -138,6 +171,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       type: 'image',
       content: dataUrl,
       fileExtension: fileExtension,
+      ...(audienceRestrictions?.length ? { audienceRestrictions } : {}),
     };
 
     try {
@@ -185,20 +219,26 @@ export class FeedComponent implements OnInit, OnDestroy {
         };
       });
 
-    const currentProfile = this.profileService.currentUserProfile();
+    const currentProfile = this.profileService.getCurrentUserProfile();
     if (currentProfile) {
+      this.loadPrivacyPreferences();
       if (this.focusedPostId()) {
-        this.postService
-          .getPost(this.focusedPostId())
-          .pipe(map((post) => (post ? [post] : [])))
+        this.socialWebSocketService.connect();
+        this.socialWebSocketService
+          .getConnectionStatus()
           .pipe(takeUntil(this.destroy$))
-          .subscribe((posts) => {
-            this.posts.set(posts);
-            this.loading.set(false);
-            this.loadProfiles(posts);
-            this.loadReactionData(posts);
-            this.loadCommunityInfo(posts);
+          .subscribe((connected) => {
+            if (connected) {
+              this.socialWebSocketService.subscribeToPosts(currentProfile.id, [
+                this.focusedPostId(),
+              ]);
+            }
           });
+        this.socialWebSocketService
+          .getContentInvalidated()
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(() => this.loadFocusedPost());
+        this.loadFocusedPost();
         return;
       }
 
@@ -227,17 +267,36 @@ export class FeedComponent implements OnInit, OnDestroy {
         .getPosts()
         .pipe(takeUntil(this.destroy$))
         .subscribe((posts) => {
+          if (this.currentFeed !== 'public') return;
           console.log('Received posts from WebSocket:', posts.length);
-          this.posts.set(posts);
-          this.loading.set(false);
-          this.loadProfiles(posts);
-          this.loadReactionData(posts);
-          this.loadCommunityInfo(posts);
+          this.receiveRealtimePosts(posts);
+        });
+
+      this.socialWebSocketService
+        .getContentInvalidated()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(() => {
+          this.privacyPreferencesLoaded = false;
+          this.pendingRealtimePosts = null;
+          this.loadPrivacyPreferences();
+          this.clearContent();
+          this.loading.set(true);
+          if (this.currentFeed === 'following') {
+            this.loadFollowingFeed();
+          } else if (this.currentFeed === 'communities') {
+            this.loadCommunitiesFeed();
+          } else if (this.socialWebSocketService.isConnected()) {
+            this.socialWebSocketService.getFeed(currentProfile.id, 50, 0);
+          } else {
+            this.loadPublicFeed();
+          }
         });
 
       // Fallback to HTTP if WebSocket doesn't connect within 5 seconds
+      const fallbackVersion = this.contentReadVersion;
       setTimeout(() => {
         if (
+          fallbackVersion === this.contentReadVersion &&
           !this.socialWebSocketService.isConnected() &&
           this.posts().length === 0
         ) {
@@ -250,18 +309,65 @@ export class FeedComponent implements OnInit, OnDestroy {
                 {},
                 { orderBy: 'createdAt', orderDirection: 'desc' }
               );
-          feedRequest.pipe(takeUntil(this.destroy$)).subscribe((posts) => {
-            this.posts.set(posts);
-            this.loading.set(false);
-            this.loadProfiles(posts);
-            this.loadCommunityInfo(posts);
-            this.loadReactionData(posts);
-          });
+          this.currentContentRead(feedRequest, fallbackVersion).subscribe(
+            (posts) => {
+              this.posts.set(posts);
+              this.loading.set(false);
+              this.loadProfiles(posts);
+              this.loadCommunityInfo(posts);
+              this.loadReactionData(posts);
+            }
+          );
         }
       }, 5000);
     } else {
       this.router.navigate(['/login']);
     }
+  }
+
+  private loadFocusedPost(): void {
+    const version = this.clearContent();
+    this.loading.set(true);
+    this.currentContentRead(
+      this.postService.getPost(this.focusedPostId()),
+      version
+    )
+      .pipe(map((post) => (post ? [post] : [])))
+      .subscribe({
+        next: (posts) => {
+          this.posts.set(posts);
+          this.loading.set(false);
+          this.loadProfiles(posts);
+          this.loadReactionData(posts);
+          this.loadCommunityInfo(posts);
+        },
+        error: () => this.loading.set(false),
+      });
+  }
+
+  private clearContent(): number {
+    this.contentReadVersion++;
+    this.contentReadCancelled$.next();
+    this.posts.set([]);
+    this.postPendingDeletion.set(null);
+    this.userVotes.set({});
+    this.voteCounts.set({});
+    this.userReactions.set({});
+    this.reactionCounts.set({});
+    this.loadingMore.set(false);
+    this.currentPage = 0;
+    return this.contentReadVersion;
+  }
+
+  private currentContentRead<T>(
+    source: Observable<T>,
+    version = this.contentReadVersion
+  ): Observable<T> {
+    return source.pipe(
+      filter(() => version === this.contentReadVersion),
+      takeUntil(this.contentReadCancelled$),
+      takeUntil(this.destroy$)
+    );
   }
   profiles = signal<{ [key: string]: PostProfileStub }>({});
 
@@ -345,6 +451,7 @@ export class FeedComponent implements OnInit, OnDestroy {
               [communityId]: {
                 id: community.id,
                 name: community.name,
+                isPrivate: community.isPrivate,
                 logoUrl: community.logoAssetId
                   ? `/api/asset/${community.logoAssetId}`
                   : community.logoUrl,
@@ -360,8 +467,14 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   async createdPost(postData: PostData) {
     console.log('[Feed] create called with postData:', postData);
-    const { title, content, attachments, links, injectedComponentsNew } =
-      postData;
+    const {
+      title,
+      content,
+      attachments,
+      links,
+      injectedComponentsNew,
+      visibility,
+    } = postData;
     const currentProfile = this.profileService.currentUserProfile();
     if (!currentProfile) {
       console.error('No current profile found');
@@ -372,6 +485,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       title,
       content,
       profileId: currentProfile.id,
+      visibility,
     };
 
     let newPost: PostDto | null = null;
@@ -498,6 +612,9 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.contentReadVersion++;
+    this.destroy$.next();
+    this.destroy$.complete();
     const currentProfile = this.profileService.currentUserProfile();
     if (currentProfile) {
       // Unsubscribe from WebSocket topics
@@ -505,9 +622,6 @@ export class FeedComponent implements OnInit, OnDestroy {
       // Disconnect WebSocket
       this.socialWebSocketService.disconnect();
     }
-
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   commented(newComment: CreateCommentDto, postIndex: number) {
@@ -593,16 +707,46 @@ export class FeedComponent implements OnInit, OnDestroy {
     });
   }
 
-  async updatePost(id: string, updatePostDto: UpdatePostDto): Promise<PostDto> {
-    const updatedPost = await firstValueFrom(
-      this.postService.updatePost(id, updatePostDto)
-    );
+  async updatePost(
+    id: string,
+    updatePostDto: UpdatePostDto
+  ): Promise<PostDto | undefined> {
+    const previous = this.postSaveStates()[id];
+    if (previous?.status === 'pending') return undefined;
+    const requestId = (previous?.requestId ?? 0) + 1;
+    this.setPostSaveState(id, { status: 'pending', requestId });
 
-    this.posts.update((posts) =>
-      posts.map((post) => (post.id === id ? { ...post, ...updatedPost } : post))
-    );
+    try {
+      const updatedPost = await firstValueFrom(
+        this.postService.updatePost(id, updatePostDto)
+      );
 
-    return updatedPost;
+      this.posts.update((posts) =>
+        posts.map((post) =>
+          post.id === id ? { ...post, ...updatedPost } : post
+        )
+      );
+      this.setPostSaveState(id, { status: 'saved', requestId });
+      return updatedPost;
+    } catch (error) {
+      console.error('Failed to update post', error);
+      this.setPostSaveState(id, {
+        status: 'error',
+        requestId,
+        error:
+          'Your post could not be saved. Your draft is still here; try again.',
+      });
+      this.messageService.addMessage({
+        content:
+          'Your post could not be saved. Your draft is still here; try again.',
+        type: 'error',
+      });
+      return undefined;
+    }
+  }
+
+  private setPostSaveState(id: string, state: PostSaveState): void {
+    this.postSaveStates.update((states) => ({ ...states, [id]: state }));
   }
 
   canFollow(post: PostDto): boolean {
@@ -667,27 +811,138 @@ export class FeedComponent implements OnInit, OnDestroy {
     return this.blockedIds.has(post.profileId);
   }
 
+  isMuted(post: PostDto): boolean {
+    return this.mutedIds.has(post.profileId);
+  }
+
+  private loadPrivacyPreferences(): void {
+    forkJoin({
+      blocked: this.privacyService.getBlockedUsers(),
+      muted: this.privacyService.getMutedUsers(),
+    })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ({ blocked, muted }) => {
+          this.blockedIds = new Set(blocked.map((item) => item.blockedId));
+          this.mutedIds = new Set(muted.map((item) => item.mutedId));
+          this.privacyPreferencesLoaded = true;
+          if (this.pendingRealtimePosts) {
+            this.setRealtimePosts(this.pendingRealtimePosts);
+            this.pendingRealtimePosts = null;
+          }
+        },
+        error: () => {
+          this.pendingRealtimePosts = null;
+          // Keep websocket deliveries gated until privacy preferences can be
+          // refreshed. The HTTP feed uses the server's privacy filters while
+          // this client-side safety state is unavailable.
+          this.privacyPreferencesLoaded = false;
+          this.loadPublicFeed();
+        },
+      });
+  }
+
+  private receiveRealtimePosts(posts: PostDto[]): void {
+    if (!this.privacyPreferencesLoaded) {
+      this.pendingRealtimePosts = posts;
+      return;
+    }
+    this.setRealtimePosts(posts);
+  }
+
+  private setRealtimePosts(posts: PostDto[]): void {
+    if (this.currentFeed !== 'public') return;
+
+    const suppressed = new Set([...this.blockedIds, ...this.mutedIds]);
+    const visiblePosts = posts
+      .filter((post) => this.isPublicFeedPost(post))
+      .filter((post) => !suppressed.has(post.profileId));
+    this.posts.set(visiblePosts);
+    this.loading.set(false);
+    this.loadProfiles(visiblePosts);
+    this.loadReactionData(visiblePosts);
+    this.loadCommunityInfo(visiblePosts);
+  }
+
+  private isPublicFeedPost(post: PostDto): boolean {
+    return (
+      post.visibility === 'public' &&
+      (!post.communityId || post.publicAudienceExplicit === true)
+    );
+  }
+
   onBlockToggle(post: PostDto) {
-    const currentProfile = this.profileService.currentUserProfile();
-    if (!currentProfile) return;
+    const currentProfile = this.profileService.getCurrentUserProfile();
+    if (!currentProfile || currentProfile.id === post.profileId) return;
 
     if (this.isBlocked(post)) {
       this.privacyService.unblockUser(post.profileId).subscribe({
         next: () => {
           this.blockedIds.delete(post.profileId);
-          console.log('User unblocked:', post.profileId);
+          this.messageService.addMessage({
+            content: 'You unblocked this account.',
+            type: 'success',
+          });
         },
-        error: (err: any) => console.error('Failed to unblock user', err),
+        error: () =>
+          this.messageService.addMessage({
+            content: 'Could not unblock this account.',
+            type: 'error',
+          }),
       });
     } else {
       this.privacyService.blockUser({ blockedId: post.profileId }).subscribe({
         next: () => {
           this.blockedIds.add(post.profileId);
-          console.log('User blocked:', post.profileId);
+          this.messageService.addMessage({
+            content: 'You blocked this account.',
+            type: 'success',
+          });
         },
-        error: (err: any) => console.error('Failed to block user', err),
+        error: () =>
+          this.messageService.addMessage({
+            content: 'Could not block this account.',
+            type: 'error',
+          }),
       });
     }
+  }
+
+  onMuteToggle(post: PostDto): void {
+    const currentProfile = this.profileService.getCurrentUserProfile();
+    if (!currentProfile || currentProfile.id === post.profileId) return;
+    const request = this.isMuted(post)
+      ? this.privacyService.unmuteUser(post.profileId)
+      : this.privacyService.muteUser({ mutedId: post.profileId });
+    request.subscribe({
+      next: () => {
+        if (this.isMuted(post)) this.mutedIds.delete(post.profileId);
+        else this.mutedIds.add(post.profileId);
+        this.mutedIds = new Set(this.mutedIds);
+        this.messageService.addMessage({
+          content: this.isMuted(post)
+            ? 'This account is muted from your feeds.'
+            : 'This account is unmuted in your feeds.',
+          type: 'success',
+        });
+        if (this.currentFeed === 'following') this.loadFollowingFeed();
+        else if (this.currentFeed === 'communities') this.loadCommunitiesFeed();
+        else this.loadPublicFeed();
+      },
+      error: () =>
+        this.messageService.addMessage({
+          content: 'Could not update this feed preference.',
+          type: 'error',
+        }),
+    });
+  }
+
+  reportPost(post: PostDto): void {
+    this.reportTargetPostId.set(post.id);
+  }
+
+  closeReportDialog(): void {
+    this.reportTargetPostId.set(null);
   }
 
   onInviteToCommunity(event: { post: PostDto; communityId: string }) {
@@ -820,7 +1075,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   getCurrentUserId(): string {
-    const profile = this.profileService.currentUserProfile();
+    const profile = this.profileService.getCurrentUserProfile();
     // console.log('[Feed] Current profile:', profile);
     return profile?.id || '';
   }
@@ -897,6 +1152,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   loadPublicFeed() {
+    const version = this.clearContent();
     this.currentFeed = 'public';
     this.currentVisibility = 'public';
     this.currentPage = 0;
@@ -914,16 +1170,30 @@ export class FeedComponent implements OnInit, OnDestroy {
             offset: 0,
           }
         );
-    feedRequest.subscribe((posts: PostDto[]) => {
-      this.posts.set(posts);
-      this.hasMorePosts.set(posts.length >= this.pageSize);
-      this.loadReactionData(posts);
-      this.loadCommunityInfo(posts);
-      this.loadProfiles(posts);
-    });
+    this.currentContentRead(feedRequest, version).subscribe(
+      (posts: PostDto[]) => {
+        const livePublicPosts = this.posts().filter((post) =>
+          this.isPublicFeedPost(post)
+        );
+        const livePublicPostIds = new Set(
+          livePublicPosts.map((post) => post.id)
+        );
+        const mergedPosts = [
+          ...livePublicPosts,
+          ...posts.filter((post) => !livePublicPostIds.has(post.id)),
+        ];
+        this.posts.set(mergedPosts);
+        this.hasMorePosts.set(posts.length >= this.pageSize);
+        this.loadReactionData(mergedPosts);
+        this.loadCommunityInfo(mergedPosts);
+        this.loadProfiles(mergedPosts);
+        this.loading.set(false);
+      }
+    );
   }
 
   loadFollowingFeed() {
+    const version = this.clearContent();
     this.currentFeed = 'following';
     this.currentVisibility = 'following';
     this.currentPage = 0;
@@ -935,20 +1205,26 @@ export class FeedComponent implements OnInit, OnDestroy {
     }
 
     const loadPosts = () => {
-      this.socialFeedData
-        .loadFollowingFeed({ limit: this.pageSize, offset: 0 })
-        .subscribe((posts: PostDto[]) => {
-          const followingPosts = posts.filter(
-            (post) =>
-              this.followingIds.has(post.profileId) ||
-              post.profileId === currentProfile.id
-          );
-          this.posts.set(followingPosts);
-          this.hasMorePosts.set(followingPosts.length >= this.pageSize);
-          this.loadReactionData(posts);
-          this.loadCommunityInfo(posts);
-          this.loadProfiles(posts);
-        });
+      if (version !== this.contentReadVersion) return;
+      this.currentContentRead(
+        this.socialFeedData.loadFollowingFeed({
+          limit: this.pageSize,
+          offset: 0,
+        }),
+        version
+      ).subscribe((posts: PostDto[]) => {
+        const followingPosts = posts.filter(
+          (post) =>
+            this.followingIds.has(post.profileId) ||
+            post.profileId === currentProfile.id
+        );
+        this.posts.set(followingPosts);
+        this.hasMorePosts.set(followingPosts.length >= this.pageSize);
+        this.loadReactionData(posts);
+        this.loadCommunityInfo(posts);
+        this.loadProfiles(posts);
+        this.loading.set(false);
+      });
     };
 
     if (this.followingIds.size === 0) {
@@ -960,13 +1236,17 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   loadCommunitiesFeed() {
+    const version = this.clearContent();
     this.currentFeed = 'communities';
     this.currentVisibility = 'communities';
     this.currentPage = 0;
     this.hasMorePosts.set(true);
     this.loading.set(true);
 
-    this.socialFeedData.loadUserCommunities().subscribe({
+    this.currentContentRead(
+      this.socialFeedData.loadUserCommunities(),
+      version
+    ).subscribe({
       next: (communities) => {
         const communityIds = communities.map((c) => c.id);
         this.currentCommunityIds = communityIds;
@@ -976,22 +1256,26 @@ export class FeedComponent implements OnInit, OnDestroy {
           return;
         }
 
-        this.socialFeedData
-          .loadCommunityFeed(communityIds, { limit: this.pageSize, offset: 0 })
-          .subscribe({
-            next: (posts) => {
-              this.posts.set(posts);
-              this.hasMorePosts.set(posts.length >= this.pageSize);
-              this.loadReactionData(posts);
-              this.loadCommunityInfo(posts);
-              this.loading.set(false);
-              this.loadProfiles(posts);
-            },
-            error: (err) => {
-              console.error('Failed to load community posts:', err);
-              this.loading.set(false);
-            },
-          });
+        this.currentContentRead(
+          this.socialFeedData.loadCommunityFeed(communityIds, {
+            limit: this.pageSize,
+            offset: 0,
+          }),
+          version
+        ).subscribe({
+          next: (posts) => {
+            this.posts.set(posts);
+            this.hasMorePosts.set(posts.length >= this.pageSize);
+            this.loadReactionData(posts);
+            this.loadCommunityInfo(posts);
+            this.loading.set(false);
+            this.loadProfiles(posts);
+          },
+          error: (err) => {
+            console.error('Failed to load community posts:', err);
+            this.loading.set(false);
+          },
+        });
       },
       error: (err) => {
         console.error('Failed to load user communities:', err);
@@ -1009,10 +1293,11 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.currentPage++;
 
     const offset = this.currentPage * this.pageSize;
+    const version = this.contentReadVersion;
 
     if (this.currentVisibility === 'public') {
-      this.socialFeedData
-        .loadPublicFeed(
+      this.currentContentRead(
+        this.socialFeedData.loadPublicFeed(
           { visibility: 'public', communityId: null as any },
           {
             orderBy: 'createdAt',
@@ -1020,61 +1305,64 @@ export class FeedComponent implements OnInit, OnDestroy {
             limit: this.pageSize,
             offset,
           }
-        )
-        .subscribe({
-          next: (posts) => {
-            this.posts.update((current) => [...current, ...posts]);
-            this.hasMorePosts.set(posts.length >= this.pageSize);
-            this.loadReactionData(posts);
-            this.loadCommunityInfo(posts);
-            this.loadProfiles(posts);
-            this.loadingMore.set(false);
-          },
-          error: () => {
-            this.currentPage--;
-            this.loadingMore.set(false);
-          },
-        });
+        ),
+        version
+      ).subscribe({
+        next: (posts) => {
+          this.posts.update((current) => [...current, ...posts]);
+          this.hasMorePosts.set(posts.length >= this.pageSize);
+          this.loadReactionData(posts);
+          this.loadCommunityInfo(posts);
+          this.loadProfiles(posts);
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.currentPage--;
+          this.loadingMore.set(false);
+        },
+      });
     } else if (this.currentVisibility === 'following') {
-      this.socialFeedData
-        .loadFollowingFeed({ limit: this.pageSize, offset })
-        .subscribe({
-          next: (posts) => {
-            this.posts.update((current) => [...current, ...posts]);
-            this.hasMorePosts.set(posts.length >= this.pageSize);
-            this.loadReactionData(posts);
-            this.loadCommunityInfo(posts);
-            this.loadProfiles(posts);
-            this.loadingMore.set(false);
-          },
-          error: () => {
-            this.currentPage--;
-            this.loadingMore.set(false);
-          },
-        });
+      this.currentContentRead(
+        this.socialFeedData.loadFollowingFeed({ limit: this.pageSize, offset }),
+        version
+      ).subscribe({
+        next: (posts) => {
+          this.posts.update((current) => [...current, ...posts]);
+          this.hasMorePosts.set(posts.length >= this.pageSize);
+          this.loadReactionData(posts);
+          this.loadCommunityInfo(posts);
+          this.loadProfiles(posts);
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.currentPage--;
+          this.loadingMore.set(false);
+        },
+      });
     } else if (
       this.currentVisibility === 'communities' &&
       this.currentCommunityIds.length > 0
     ) {
-      this.socialFeedData
-        .loadCommunityFeed(this.currentCommunityIds, {
+      this.currentContentRead(
+        this.socialFeedData.loadCommunityFeed(this.currentCommunityIds, {
           limit: this.pageSize,
           offset,
-        })
-        .subscribe({
-          next: (posts) => {
-            this.posts.update((current) => [...current, ...posts]);
-            this.hasMorePosts.set(posts.length >= this.pageSize);
-            this.loadReactionData(posts);
-            this.loadCommunityInfo(posts);
-            this.loadProfiles(posts);
-            this.loadingMore.set(false);
-          },
-          error: () => {
-            this.currentPage--;
-            this.loadingMore.set(false);
-          },
-        });
+        }),
+        version
+      ).subscribe({
+        next: (posts) => {
+          this.posts.update((current) => [...current, ...posts]);
+          this.hasMorePosts.set(posts.length >= this.pageSize);
+          this.loadReactionData(posts);
+          this.loadCommunityInfo(posts);
+          this.loadProfiles(posts);
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.currentPage--;
+          this.loadingMore.set(false);
+        },
+      });
     } else {
       this.loadingMore.set(false);
     }

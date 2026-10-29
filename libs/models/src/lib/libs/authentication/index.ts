@@ -7,3 +7,4 @@ export type { UserContext } from './user-context';
 export { OAuthProvider, OAuthCallbackRequest } from './OAuthCallbackRequest';
 export { LinkProviderRequest } from './LinkProviderRequest';
 export { UnlinkProviderRequest } from './UnlinkProviderRequest';
+export * from './session-policy';

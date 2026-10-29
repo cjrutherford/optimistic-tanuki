@@ -37,6 +37,12 @@ const validInput = (): ClientDeploymentArtifactInput => ({
 });
 
 describe('compileClientDeploymentArtifacts', () => {
+  beforeEach(() =>
+    jest
+      .spyOn(Date, 'now')
+      .mockReturnValue(Date.parse('2026-09-28T12:00:00.000Z'))
+  );
+  afterEach(() => jest.restoreAllMocks());
   it('returns parseable Compose, a production env with 256-bit generated secrets, and a customer proposal', () => {
     let calls = 0;
     const artifacts = compileClientDeploymentArtifacts(validInput(), (size) => {

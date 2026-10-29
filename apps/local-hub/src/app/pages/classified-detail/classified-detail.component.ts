@@ -29,6 +29,7 @@ import {
   localityRouteContext,
 } from '../../utils/locality-route-context';
 
+import { ModalComponent } from '@optimistic-tanuki/common-ui';
 @Component({
   selector: 'app-classified-detail',
   standalone: true,
@@ -40,6 +41,7 @@ import {
     ClassifiedFormComponent,
     MakeOfferModalComponent,
     OfferListComponent,
+    ModalComponent,
   ],
   templateUrl: './classified-detail.component.html',
   styleUrls: ['./classified-detail.component.scss'],
@@ -185,12 +187,15 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
   uploadImage = async (file: File): Promise<string> => {
     const profileId = this.authState.getActingProfileId();
     const dataUrl = await this.assetService.fileToDataUrl(file);
+    const ad = this.ad();
     const asset = await this.assetService.createAsset({
       name: file.name,
       profileId,
       type: 'image',
       content: dataUrl,
       fileExtension: this.assetService.getFileExtension(dataUrl),
+      communityId: ad?.communityId || this.community()?.id,
+      classifiedAdId: ad?.id,
     });
     return this.assetService.getAssetUrl(asset.id);
   };
@@ -308,10 +313,9 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
 
     this.chatLoading.set(true);
     try {
-      let conversation = await this.chatService.getOrCreateDirectChat([
-        myProfileId,
-        sellerProfileId,
-      ]);
+      let conversation = await this.chatService.getOrCreateDirectChat(
+        sellerProfileId
+      );
       if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
         return;
 
@@ -456,7 +460,8 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
       if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
         return;
       this.messageService.addMessage({
-        content: 'Offer accepted! Payment has been initiated.',
+        content:
+          'Offer accepted. Card payment is pending and has not been processed.',
         type: 'success',
       });
       await this.loadOffers();

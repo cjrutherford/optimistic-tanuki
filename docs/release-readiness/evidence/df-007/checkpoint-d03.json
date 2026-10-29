@@ -1,0 +1,59 @@
+{
+  "slice": "D03",
+  "date": "2026-10-25",
+  "scope": ["client-interface", "local-hub"],
+  "status": "verified-local-owner-adapter",
+  "evidence": {
+    "ownerUnit": 6,
+    "readFenceUnit": 4,
+    "anonymousSpoolUnit": 8,
+    "localStorageUnit": 33,
+    "networkStorageUnit": 6,
+    "realAuthAssetsTcpPostgresFilesystem": 1,
+    "preE2E": 41,
+    "build": "assets production passed; storage has no build target",
+    "lint": "assets storage authentication-e2e passed",
+    "migrationCycle": "owning Nx generated; fresh up/down/up passed",
+    "migrationGovernance": "passed",
+    "review": "r11 Luna source GO; no independent runtime reproduction"
+  },
+  "independentFinalCounts": {
+    "d00": {
+      "user_entity": 0,
+      "token": 0,
+      "oauth_provider": 0,
+      "auth_action_token": 0,
+      "guardian_permission": 0,
+      "guardian_policy_notice": 0,
+      "account_export_jobs": 0,
+      "account_deletion_operations": 0,
+      "account_deletion_write_fence": 0
+    },
+    "d03_assets": {
+      "asset_entity": 0,
+      "guardian_asset_activity": 0,
+      "account_deletion_write_fence": 0
+    }
+  },
+  "protectedFilesUnchanged": 43,
+  "privateContainersRemaining": 0,
+  "limitations": [
+    "Other-owner acknowledgements and frozen Profile scope are fixture preconditions",
+    "Network version purge tested with SDK responses; no live S3 claim",
+    "No global deletion, public UI, external backup or final identity/key disposal claim"
+  ],
+  "sourceHashes": {
+    "apps/assets/migrations/1792902010764-AccountDeletionWriteFence.ts": "cd32cbb235a51ff89f0cfecfe176120e0ddf9841cb516d874cd4bbf027d867f3",
+    "apps/assets/src/app/account-deletion-owner.service.ts": "470a3404d8ea1f57a7376b6b09c58c19c6d6db06ada6fd6d5123d04b4d751031",
+    "apps/assets/src/app/asset-media-read-fence.service.ts": "64f4075a20c78a78c030f532f3c6bd1449e7e1f2e70d1f1c21e40c244df314d4",
+    "apps/assets/src/app/account-deletion-owner.controller.ts": "ba59e7114b4472f1319a60e5b57348de984d886dc37b31663ad912e67ce6006b",
+    "apps/assets/src/app/audit-erasure.service.ts": "3d4418d5d8733cddcae8c9a8e508134045a8df94f15021ccb4115db7943daf8f",
+    "apps/assets/src/app/app.module.ts": "f43057fd537f4866456b1c4ed5bca0cbb81f4184b7073eddc68d92f457379562",
+    "libs/storage/src/lib/local-storage.ts": "79c4a318d06ba760a2e1bc63171dad5623bead84d366add01b33a3ef88654890",
+    "libs/storage/src/lib/network-storage.ts": "c125c3009f17367dd25244f49b6d2a50859114b4a210f27249af202c5618cc0d",
+    "libs/storage/src/lib/verified-media-spool.service.ts": "2ef42001de804f45e24b4eb118d1c881e57dec638e537c8e187c3cef40562eb7",
+    "apps/authentication-e2e/src/authentication/assets-account-deletion.spec.ts": "443e5118b7213da9993adeb2e26b9359f74d6990faae8e0a6574a1f61de2c743",
+    "apps/authentication-e2e/src/authentication/d03-media-read.worker.ts": "33cc164321439ef7cb6db14dad21701a3df40b3ad03391e1bb11d4d7825a6ef8",
+    "apps/authentication-e2e/jest.deletion-private.config.ts": "6bf231156ab5350cd7c64c43bfc739a81355ff823dbdb5f315a499f238722f1e"
+  }
+}

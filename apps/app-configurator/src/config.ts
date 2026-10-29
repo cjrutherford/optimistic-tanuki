@@ -44,7 +44,6 @@ const loadConfig = (): AppConfiguratorConfigType => {
     },
   };
 
-  console.log('🚀 ~ loadConfig ~ config:', config);
   return config;
 };
 

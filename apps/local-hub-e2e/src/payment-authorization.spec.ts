@@ -7,7 +7,8 @@ import {
 import {
   apiUrl,
   createAuthenticatedSession,
-  findCommunity,
+  createCommunity,
+  findCity,
   getCommunities,
   AuthSession,
   localHubAuthHeaders,
@@ -64,11 +65,11 @@ test.describe('Classified offer and payment authorization', () => {
   test('limits offers and payment details to the buyer and canonical seller', async ({
     request,
   }) => {
-    const community = findCommunity(await getCommunities(request));
-    test.skip(
-      !community?.id,
-      'No seeded community is available for payment authorization'
-    );
+    const city = findCity(await getCommunities(request));
+    expect(
+      city?.id,
+      'A seeded city is required for payment authorization'
+    ).toBeTruthy();
 
     const sellerApi = await playwrightRequest.newContext();
     const buyerApi = await playwrightRequest.newContext();
@@ -77,6 +78,15 @@ test.describe('Classified offer and payment authorization', () => {
       const seller = await createAuthenticatedSession(sellerApi);
       const buyer = await createAuthenticatedSession(buyerApi);
       const unrelated = await createAuthenticatedSession(unrelatedApi);
+      const community = await createCommunity(
+        sellerApi,
+        seller.token,
+        city!.id!
+      );
+      expect(
+        community?.id,
+        'Seller-owned community must be created'
+      ).toBeTruthy();
 
       const classifiedResponse = await sellerApi.post(
         apiUrl('/api/classifieds'),

@@ -1,0 +1,286 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-06-06T00:00:00Z",
+  "apps": [
+    {
+      "appId": "hai",
+      "name": "HAI",
+      "domain": "localhost",
+      "uiBaseUrl": "http://127.0.0.1:8088",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Company website and ecosystem entry point.",
+      "iconUrl": "http://localhost:8088/assets/haidev-logo.png",
+      "sortOrder": 1
+    },
+    {
+      "appId": "system-configurator",
+      "name": "HAI Computer",
+      "domain": "localhost",
+      "uiBaseUrl": "http://localhost:8091",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Build-to-order personal cloud and homelab configurator.",
+      "iconUrl": "http://localhost:8091/assets/hai-computer.png",
+      "sortOrder": 2,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@hopefulaspirationsindustries.com"
+      }
+    },
+    {
+      "appId": "store",
+      "name": "HAI Store",
+      "domain": "localhost",
+      "uiBaseUrl": "http://127.0.0.1:8085",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Public store for HAI products and services.",
+      "iconUrl": "http://localhost:8085/assets/store-icon.png",
+      "sortOrder": 3
+    },
+    {
+      "appId": "opportunity-compass",
+      "name": "Opportunity Compass",
+      "domain": "localhost",
+      "uiBaseUrl": "http://localhost:8095",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Opportunity discovery from interests, locality, and skills.",
+      "iconUrl": "http://localhost:8095/favicon.ico",
+      "sortOrder": 4,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
+    },
+    {
+      "appId": "client-interface",
+      "name": "Optimistic Tanuki",
+      "domain": "localhost",
+      "uiBaseUrl": "http://127.0.0.1:8080",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Social media, identity, messaging, and utility workflows.",
+      "iconUrl": "http://localhost:8080/assets/tanuki.svg",
+      "sortOrder": 10,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@optimistic-tanuki.com"
+      }
+    },
+    {
+      "appId": "forgeofwill",
+      "name": "Forge of Will",
+      "domain": "forgeofwill.com",
+      "uiBaseUrl": "http://127.0.0.1:8081",
+      "apiBaseUrl": "https://forgeofwill.com/api",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Personal project planning and execution workspace.",
+      "iconUrl": "https://forgeofwill.com/android-chrome-192x192.png",
+      "sortOrder": 11,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@forgeofwill.com"
+      }
+    },
+    {
+      "appId": "digital-homestead",
+      "name": "Digital Grange",
+      "domain": "localhost",
+      "uiBaseUrl": "http://127.0.0.1:8082",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Homestead publishing and community storytelling experience.",
+      "iconUrl": "http://localhost:8082/assets/dh.png",
+      "sortOrder": 12,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
+    },
+    {
+      "appId": "christopherrutherford-net",
+      "name": "Christopher Rutherford",
+      "domain": "localhost",
+      "uiBaseUrl": "http://127.0.0.1:8083",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Portfolio and consulting site.",
+      "iconUrl": "http://localhost:8083/favicon.ico",
+      "sortOrder": 13
+    },
+    {
+      "appId": "owner-console",
+      "name": "Owner Console",
+      "domain": "localhost",
+      "uiBaseUrl": "http://127.0.0.1:8084",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "admin",
+      "visibility": "internal",
+      "description": "Internal operator console for registry and platform management.",
+      "iconUrl": "http://localhost:8084/tempest-in-a-teacup.png",
+      "sortOrder": 14,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
+    },
+    {
+      "appId": "d6",
+      "name": "D6 Wellness Tracker",
+      "domain": "localhost",
+      "uiBaseUrl": "http://127.0.0.1:8086",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Wellness tracking and daily practice workflows.",
+      "iconUrl": "http://localhost:8086/assets/box-logo.png",
+      "sortOrder": 15,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
+    },
+    {
+      "appId": "local-hub",
+      "name": "Towne Square",
+      "domain": "localhost",
+      "uiBaseUrl": "http://localhost:8087",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Local-first community, classifieds, and business listings.",
+      "iconUrl": "http://localhost:8087/assets/ts.png",
+      "sortOrder": 16,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@towne-square.com"
+      }
+    },
+    {
+      "appId": "fin-commander",
+      "name": "Fin Commander",
+      "domain": "localhost",
+      "uiBaseUrl": "http://127.0.0.1:8089",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Guided personal finance workflows for accounts, plans, and scenarios.",
+      "iconUrl": "http://localhost:8089/images/fin-commander-icon.png",
+      "sortOrder": 17,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
+    },
+    {
+      "appId": "configurable-client",
+      "name": "Configurable Client",
+      "domain": "localhost",
+      "uiBaseUrl": "http://127.0.0.1:8090",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "internal",
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      },
+      "description": "Config-driven application shell for generated client experiences.",
+      "iconUrl": "http://localhost:8090/favicon.ico",
+      "sortOrder": 18
+    },
+    {
+      "appId": "business-site",
+      "name": "Signal Foundry",
+      "domain": "localhost",
+      "uiBaseUrl": "http://127.0.0.1:8094",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Business marketing, scheduling, portal, and owner operations app.",
+      "iconUrl": "http://localhost:8094/assets/logo.png",
+      "sortOrder": 19,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
+    },
+    {
+      "appId": "business-configurator",
+      "name": "Business Site Builder",
+      "domain": "localhost",
+      "uiBaseUrl": "http://localhost:8096",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "admin",
+      "visibility": "internal",
+      "description": "Builder for configurable business-site experiences.",
+      "iconUrl": "http://localhost:8096/favicon.ico",
+      "sortOrder": 20
+    },
+    {
+      "appId": "developer-portal",
+      "name": "Developer Portal",
+      "domain": "localhost",
+      "uiBaseUrl": "http://localhost:8097",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Docs, onboarding, and developer-facing platform entry point.",
+      "iconUrl": "http://localhost:8097/favicon.ico",
+      "sortOrder": 21
+    },
+    {
+      "appId": "video-platform",
+      "name": "Video Platform",
+      "domain": "localhost",
+      "uiBaseUrl": "http://localhost:8093",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Upload, playback, and channel workflows for video content.",
+      "iconUrl": "http://localhost:8093/android-chrome-192x192.png",
+      "sortOrder": 22,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
+    },
+    {
+      "appId": "learning",
+      "name": "Let's Go",
+      "domain": "localhost",
+      "uiBaseUrl": "http://127.0.0.1:8099",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "A learning platform for any subject, with courses anyone can write.",
+      "iconUrl": "http://localhost:8099/favicon.ico",
+      "sortOrder": 23,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
+    },
+    {
+      "appId": "ui-playground",
+      "name": "UI Playground",
+      "domain": "localhost",
+      "uiBaseUrl": "http://localhost:4310",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "admin",
+      "visibility": "internal",
+      "description": "Internal component and docs playground.",
+      "iconUrl": "http://localhost:4310/favicon.svg",
+      "sortOrder": 90
+    }
+  ]
+}

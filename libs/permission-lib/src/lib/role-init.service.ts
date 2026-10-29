@@ -11,6 +11,12 @@ import {
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 
+const permissionKey = (
+  name: string,
+  appScope: string,
+  targetId?: string
+): string => `${name}\u0000${appScope}\u0000${targetId ?? ''}`;
+
 @Injectable()
 export class RoleInitService {
   private readonly queue: RoleInitOptions[] = [];
@@ -108,16 +114,40 @@ export class RoleInitService {
     const appScopeId = appScope?.id ?? item.scopeResourceId ?? item.scopeName;
 
     const scopeCache = new Map<string, any>();
+    if (item.scopeName) scopeCache.set(item.scopeName, appScope);
+    const getAppScope = async (name: string): Promise<any> => {
+      let scope = scopeCache.get(name);
+      if (!scope) {
+        scope = await firstValueFrom(
+          this.permissionsClient.send(
+            { cmd: AppScopeCommands.GetByName },
+            { name }
+          )
+        ).catch(() => null);
+        if (scope?.id) scopeCache.set(name, scope);
+      }
+      return scope;
+    };
 
     // 2) create permissions (match CreatePermissionDto)
     const permNameToId: Record<string, string> = {};
     for (const p of item.permissions || []) {
+      const permissionAppScopeName = p.appScope || item.scopeName || '';
+      const permissionAppScope = await getAppScope(permissionAppScopeName);
+      if (!permissionAppScope?.id) {
+        throw new RpcException(
+          `Permission app scope ${
+            permissionAppScopeName || '(missing)'
+          } not found`
+        );
+      }
       const payload = {
         name: p.name,
         description: p.description || '',
         resource: p.resource,
         action: p.action,
         targetId: p.targetId,
+        appScopeId: permissionAppScope.id,
       };
       try {
         const created = await firstValueFrom(
@@ -126,13 +156,55 @@ export class RoleInitService {
             payload
           )
         );
-        if (created?.id) permNameToId[p.name] = created.id;
+        if (created?.id) {
+          permNameToId[
+            permissionKey(p.name, permissionAppScopeName, p.targetId)
+          ] = created.id;
+        }
       } catch (e) {
         this.logger.debug(
           `Permission.Create failed for ${p.name}`,
           (e as { message: string })?.message || e
         );
-        // fallback: try lookup (optional)
+        try {
+          const existingPermissions = await firstValueFrom(
+            this.permissionsClient.send(
+              { cmd: PermissionCommands.GetAll },
+              {
+                where: {
+                  name: p.name,
+                  appScopeId: permissionAppScope.id,
+                },
+              }
+            )
+          );
+          const existing = (existingPermissions || []).find(
+            (permission: {
+              id?: string;
+              name?: string;
+              resource?: string;
+              action?: string;
+              appScopeId?: string;
+              targetId?: string | null;
+            }) =>
+              permission.name === p.name &&
+              permission.appScopeId === permissionAppScope.id &&
+              (p.resource === undefined ||
+                permission.resource === p.resource) &&
+              (p.action === undefined || permission.action === p.action) &&
+              (permission.targetId ?? null) === (p.targetId ?? null)
+          );
+          if (existing?.id) {
+            permNameToId[
+              permissionKey(p.name, permissionAppScopeName, p.targetId)
+            ] = existing.id;
+          }
+        } catch (lookupError) {
+          this.logger.debug(
+            `Permission lookup failed for ${p.name}`,
+            (lookupError as { message: string })?.message || lookupError
+          );
+        }
       }
     }
 
@@ -150,19 +222,7 @@ export class RoleInitService {
       }
 
       try {
-        let targetScope = scopeCache.get(mirror.targetScope);
-        if (!targetScope) {
-          targetScope = await firstValueFrom(
-            this.permissionsClient.send(
-              { cmd: AppScopeCommands.GetByName },
-              { name: mirror.targetScope }
-            )
-          ).catch(() => null);
-
-          if (targetScope) {
-            scopeCache.set(mirror.targetScope, targetScope);
-          }
-        }
+        const targetScope = await getAppScope(mirror.targetScope);
 
         if (!targetScope?.id) {
           this.logger.debug(
@@ -283,10 +343,30 @@ export class RoleInitService {
       }
 
       for (const pname of r.permissions || []) {
-        const pid = permNameToId[pname];
-        const attachPayload: any = { roleId: role.id };
-        if (pid) attachPayload.permissionId = pid;
-        else attachPayload.permissionName = pname;
+        const permissionSpecs = (item.permissions || []).filter(
+          (permission) => permission.name === pname
+        );
+        const permissionSpec =
+          permissionSpecs.find(
+            (permission) =>
+              (permission.appScope || item.scopeName) === item.scopeName
+          ) || permissionSpecs[0];
+        const pid = permissionSpec
+          ? permNameToId[
+              permissionKey(
+                pname,
+                permissionSpec.appScope || item.scopeName || '',
+                permissionSpec.targetId
+              )
+            ]
+          : undefined;
+        if (!pid) {
+          this.logger.debug(
+            `Role.AddPermission skipped without a resolved permission id role=${r.name} perm=${pname}`
+          );
+          continue;
+        }
+        const attachPayload = { roleId: role.id, permissionId: pid };
         try {
           await firstValueFrom(
             this.permissionsClient.send(

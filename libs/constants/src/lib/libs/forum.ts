@@ -20,6 +20,7 @@ export const ForumPostCommands = {
   DELETE: 'DELETE_FORUM_POST',
   FIND: 'FIND_FORUM_POST',
   FIND_MANY: 'FIND_MANY_FORUM_POST',
+  FIND_ASSET_AUDIENCES: 'FIND_FORUM_ASSET_AUDIENCES',
 };
 
 export const ForumModerationCommands = {
@@ -39,6 +40,22 @@ export const ForumLinkCommands = {
 };
 
 export const ForumCommands = {
+  FENCE_ACCOUNT_DELETION: 'forum.deletion.fence',
+  ERASE_ACCOUNT_DELETION: 'forum.deletion.erase',
+  READBACK_ACCOUNT_DELETION: 'forum.deletion.readback',
   SEED_DEMO_TOPICS: 'SEED_DEMO_FORUM_TOPICS',
   SEED_PRODUCTION_TOPICS: 'SEED_PRODUCTION_FORUM_TOPICS',
+  GetAccountExportSnapshot: 'GET_FORUM_ACCOUNT_EXPORT_SNAPSHOT',
+  OPEN_ACCOUNT_EXPORT_CAPTURE: 'Forum:OpenAccountExportCapture',
+  READ_ACCOUNT_EXPORT_CAPTURE: 'Forum:ReadAccountExportCapture',
+  RELEASE_ACCOUNT_EXPORT_CAPTURE: 'Forum:ReleaseAccountExportCapture',
 };
+
+export const FORUM_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
+  'Topic',
+  'Thread',
+  'ForumPost',
+  'ForumLink',
+  'ForumReport',
+  'ForumModerationAction',
+] as const;

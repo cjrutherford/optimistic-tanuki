@@ -1,0 +1,144 @@
+{
+  "slice": "DF-007-J14",
+  "date": "2026-10-20",
+  "status": "locally-verified-component-repair",
+  "baseRevision": "f62e26ad482b46a31902ec5ce5a1d2d065cccd64",
+  "sourceHashes": {
+    "apps/profile/src/app/account-export-legacy-reader.spec.ts": "95bd59c33af6f45b7d0ede8c061ec99716640720c2d64ee7bc465d1c4b9fc236",
+    "apps/profile/src/app/account-export-legacy-reader.ts": "fe25bbf0dc11caaae971fb8cb47447a71c3423b80d1a29650fddfdd2114c7623",
+    "apps/profile/src/app/account-export-owner.postgres.spec.ts": "16cd2c72d526c9a9ee3a109de15a1e49d26767caaa895237a7c1055d028ba865",
+    "apps/profile/src/app/account-export-owner.service.ts": "bc587419ab93b67861a691a6e99a062344492a576b912e05b9711696c0a5e660",
+    "apps/assets/src/app/account-export-hls.postgres.spec.ts": "6a074d7c1600ba96d18ef0126ed7a14f0fa7184eaab45b4b8c74b3bbad9af4e2",
+    "apps/assets/src/app/account-export-owner.service.spec.ts": "4c1fa83989e18a75c730eaca953001e2b69b0699bca3e4a7df4328f2b8d9da23",
+    "apps/assets/src/app/account-export-owner.service.ts": "848b63a0df89e431842bffc38dfa6011b23ef26079f14c3d26178a75cdab6b8a",
+    "apps/videos/src/app/account-export-owner.postgres.spec.ts": "6613d9ec25084261c3188c55fae2d1cec52b3378d0868ec1bf185615494142c5",
+    "apps/videos/src/app/account-export-owner.service.spec.ts": "a793626e68f0ab9e3271549524759c7223cbf03f197de344f56da41a442b86a9",
+    "apps/videos/src/app/account-export-owner.service.ts": "752582201606a146f0409e8debaf4a6f7f58bb4209ce6a86b71992b8e1a9fabb"
+  },
+  "sourceManifestSha256": "7e479390b909917d07d754e1fc0c7ca8707091c889d1a5980a320b5809f50fe3",
+  "policy": "canonical UUID varchar owner keys compare case-insensitively; validated UUID output canonicalizes; native UUID/freeform/app values retain semantics",
+  "unitTests": {
+    "profileOwner": 3,
+    "profileLegacy": 7,
+    "assetsOwner": 10,
+    "videosOwner": 5,
+    "passed": 25
+  },
+  "preE2E": {
+    "passed": [
+      "profile:build:production",
+      "profile:lint",
+      "assets:build:production",
+      "assets:lint",
+      "videos:build:production",
+      "videos:lint"
+    ]
+  },
+  "privatePostgresRuns": {
+    "profile": {
+      "acceptedAttempt": "attempt-2",
+      "passed": 2,
+      "unselected": 0,
+      "migrations": 3,
+      "readback": {
+        "profile": 0,
+        "timeline": 0,
+        "goal": 0,
+        "project": 0,
+        "guardian_profile_activity": 0,
+        "temporary_relations": 0
+      },
+      "teardown": {
+        "exitCode": 0,
+        "remainingContainers": false,
+        "remainingVolumes": []
+      }
+    },
+    "assets": {
+      "acceptedAttempt": "attempt-2",
+      "passed": 2,
+      "unselected": 7,
+      "migrations": 5,
+      "readback": {
+        "asset_entity": 0,
+        "guardian_asset_activity": 0,
+        "temporary_relations": 0
+      },
+      "teardown": {
+        "exitCode": 0,
+        "remainingContainers": false,
+        "remainingVolumes": []
+      }
+    },
+    "videos": {
+      "acceptedAttempt": "attempt-1",
+      "passed": 1,
+      "unselected": 5,
+      "migrations": 3,
+      "readback": {
+        "channel": 0,
+        "video": 0,
+        "channel_subscription": 0,
+        "video_view": 0,
+        "channel_feed": 0,
+        "program_block": 0,
+        "live_session": 0,
+        "temporary_relations": 0
+      },
+      "teardown": {
+        "exitCode": 0,
+        "remainingContainers": false,
+        "remainingVolumes": []
+      }
+    }
+  },
+  "passedUniqueSelectedCases": 5,
+  "unselectedUnchangedCases": 12,
+  "assetsMediaBoundary": {
+    "newRows": 201,
+    "storedVariantsPerCanonicalProfile": 2,
+    "profileGroups": 2,
+    "exactMediaManifestIdsVerified": true,
+    "sizesAndSha256Verified": true,
+    "keysetQueriesAtLeast": 2,
+    "hlsReferenceQueryBatchSizes": [200, 1]
+  },
+  "review": {
+    "peerSourceReview": "GO; no blocking media predicate/cursor finding",
+    "parent": "Profile predicate/reread and fixture review plus actual private runs"
+  },
+  "earlierRuns": [
+    {
+      "owner": "profile",
+      "attempt": 1,
+      "result": "launcher failed before test execution",
+      "issue": "temporary initialization socket accepted readiness before fixture database creation",
+      "change": "query exact private database over TCP",
+      "teardown": {
+        "containers": 0,
+        "volumes": 0
+      }
+    },
+    {
+      "owner": "assets",
+      "attempt": 1,
+      "result": "2passed/7unselected; mixed-case proof not accepted",
+      "issue": "both seed parameters uppercase",
+      "change": "canonical lower parameters plus explicit two stored variants assertion",
+      "productionChanged": false,
+      "teardown": {
+        "containers": 0,
+        "volumes": 0
+      }
+    }
+  ],
+  "limitations": [
+    "component evidence with existing simulated Auth/Profile RPC boundaries",
+    "no live TCP, browser, remote CI or production qualification",
+    "Permissions transport/jobs and remaining owners still required",
+    "no durable account artifact, authorized download or deletion"
+  ],
+  "evidenceRoot": ".runtime-artifacts/account-rights/finish-sequence/owner-uuid-case",
+  "overallDf007": "open",
+  "overallRr11": "open"
+}

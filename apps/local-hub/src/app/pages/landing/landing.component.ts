@@ -1,66 +1,42 @@
 import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import {
-  CommunityService,
-  City,
-  LocalCommunity,
-} from '../../services/community.service';
-import { DonationProgressComponent } from '../../components/donation-progress/donation-progress.component';
-import { PaymentService, DonationGoal } from '../../services/payment.service';
+import { CommunityService, City } from '../../services/community.service';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, DonationProgressComponent],
+  imports: [CommonModule],
   templateUrl: './landing.component.html',
   styleUrls: ['./landing.component.scss'],
 })
 export class LandingComponent implements OnInit {
   private router = inject(Router);
   private communityService = inject(CommunityService);
-  private paymentService = inject(PaymentService);
 
   cities = signal<City[]>([]);
-  communities = signal<LocalCommunity[]>([]);
   loading = signal(true);
-  donationGoal = signal<DonationGoal | null>(null);
+  loadError = signal(false);
 
-  totalCities = signal(0);
-  totalCommunities = signal(0);
-  totalMembers = signal(0);
   currentCityIndex = signal(0);
   visibleCityCount = signal(2);
 
   async ngOnInit(): Promise<void> {
     this.updateVisibleCityCount();
+    this.loadError.set(false);
 
     try {
       // Fetch communities once and derive cities from that list to avoid a
       // redundant second HTTP request (getCities() calls getCommunities() internally).
-      const [communitiesData, goalData] = await Promise.all([
-        this.communityService.getCommunities(),
-        this.paymentService.getDonationGoal(),
-      ]);
+      const communitiesData = await this.communityService.getCommunities();
 
       const citiesData =
         this.communityService.getCitiesFromCommunities(communitiesData);
 
       this.cities.set(citiesData);
-      this.communities.set(communitiesData);
-      this.donationGoal.set(goalData);
-
-      this.totalCities.set(citiesData.length);
-      this.totalCommunities.set(communitiesData.length);
-
-      const totalMembers = communitiesData.reduce(
-        (sum: number, c: { memberCount?: number }) =>
-          sum + (c.memberCount || 0),
-        0
-      );
-      this.totalMembers.set(totalMembers);
       this.clampCityIndex();
     } catch (error) {
+      this.loadError.set(true);
       console.error('Failed to load landing data:', error);
     } finally {
       this.loading.set(false);
@@ -82,6 +58,10 @@ export class LandingComponent implements OnInit {
 
     const start = this.currentCityIndex();
     return cities.slice(start, start + visibleCityCount);
+  }
+
+  get daylightCities(): City[] {
+    return this.cities().filter((city) => !!city.localitySlug);
   }
 
   get canScrollCitiesBackward(): boolean {
@@ -119,6 +99,10 @@ export class LandingComponent implements OnInit {
 
   navigateToCity(slug: string): void {
     this.router.navigate(['/city', slug]);
+  }
+
+  navigateToBriefing(slug: string): void {
+    this.router.navigate(['/city', slug, 'briefing']);
   }
 
   private updateVisibleCityCount(): void {

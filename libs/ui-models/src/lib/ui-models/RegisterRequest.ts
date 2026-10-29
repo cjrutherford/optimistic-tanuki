@@ -7,6 +7,10 @@ export default interface RegisterRequest {
   ln: string;
   confirm: string;
   bio?: string;
+  dateOfBirth?: string;
+  guardianEmail?: string;
+  guardianResumeToken?: string;
+  guardianConsentRequest?: boolean;
 }
 
 export const submitTypeToRegisterRequest = (
@@ -19,5 +23,9 @@ export const submitTypeToRegisterRequest = (
     ln: data.lastName,
     confirm: data.confirmation,
     bio: data.bio || '',
+    dateOfBirth: data.dateOfBirth,
+    guardianEmail: data.guardianEmail,
+    guardianResumeToken: data.guardianResumeToken,
+    guardianConsentRequest: data.guardianConsentRequest,
   };
 };

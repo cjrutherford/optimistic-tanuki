@@ -18,12 +18,14 @@ export interface Tab {
   host: {
     '[class.theme]': 'theme',
     '[class.tabs-vertical]': 'vertical',
+    '[class.tabs-wrap]': 'wrap',
   },
 })
 export class TabsComponent extends Themeable {
   @Input() tabs: Tab[] = [];
   @Input() activeTab = '';
   @Input() vertical = false;
+  @Input() wrap = false;
   @Output() tabChange = new EventEmitter<string>();
 
   override applyTheme(colors: ThemeColors): void {

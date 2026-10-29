@@ -13,10 +13,14 @@
     </ul>
   </div> -->
   <lib-register-block
+    [ageGateEnabled]="true"
+    [guardianResumeToken]="guardianResumeToken"
     registerHeader="Join Optimistic Tanuki"
+    [errorMessage]="errorMessage"
     callToAction="Create your account and start your first profile journey."
     heroSource="assets/tanuki-splash-a.png"
     (submitEvent)="onSubmit($event)"
+    [enabledOAuthProviders]="enabledOAuthProviders"
     (oauthProviderSelected)="onOAuthProvider($event)"
   >
   </lib-register-block>

@@ -41,7 +41,10 @@ import {
   CreateCommentDto,
   UpdatePostDto,
 } from '../../models';
-import { SocialComponentDto } from '@optimistic-tanuki/ui-models';
+import {
+  AssetAudienceRestriction,
+  SocialComponentDto,
+} from '@optimistic-tanuki/ui-models';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { LinkType } from '../link/link.component';
 import { ImageUploadCallback } from '..';
@@ -66,6 +69,12 @@ export declare type PostProfileStub = {
   id: string;
   name: string;
   avatar: string;
+};
+
+export type PostSaveState = {
+  status: 'idle' | 'pending' | 'error' | 'saved';
+  requestId: number;
+  error?: string;
 };
 
 @Component({
@@ -109,18 +118,71 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() attachments: AttachmentDto[] = [];
   @Input() links: LinkType[] = [];
   @Input() canDelete = false;
+  /** Enables the guardian scoped edit affordance; the server remains authoritative. */
+  @Input() guardianManagementMode = false;
   @Input() canFollow = false;
   @Input() isFollowing = false;
   @Input() isBlocked = false;
+  @Input() isMuted = false;
   @Input() ownedCommunities: { id: string; name: string }[] = [];
   @Input() imageUploadCallback?: ImageUploadCallback;
-  @Input() communityInfo?: { id: string; name: string; logoUrl?: string };
+  @Input() communityInfo?: {
+    id: string;
+    name: string;
+    logoUrl?: string;
+    isPrivate?: boolean;
+  };
   @Input() shareUrl: string = '';
+  /** When provided, the parent owns save acknowledgement and retry state. */
+  @Input() saveState?: PostSaveState;
+
+  get commentImageUploadCallback(): ImageUploadCallback | undefined {
+    if (!this.imageUploadCallback) return undefined;
+    if (
+      this.content?.communityId &&
+      typeof this.communityInfo?.isPrivate !== 'boolean'
+    ) {
+      // Community metadata is fetched asynchronously. Never create an
+      // unrestricted pending image while its membership policy is unknown.
+      return async () => {
+        throw new Error('Community audience is still loading');
+      };
+    }
+    const restrictions: AssetAudienceRestriction[] = [];
+    const memberOnly =
+      this.content?.visibility === 'community' ||
+      (this.content?.visibility === 'public' &&
+        this.content?.publicAudienceExplicit === false);
+    if (this.content?.visibility === 'followers' && this.content.profileId) {
+      restrictions.push({
+        type: 'followers',
+        profileId: this.content.profileId,
+      });
+    }
+    if (
+      (memberOnly || this.communityInfo?.isPrivate) &&
+      this.content?.communityId &&
+      this.profileId
+    ) {
+      restrictions.push({
+        type: 'community',
+        profileId: this.profileId,
+        communityId: this.content.communityId,
+      });
+    }
+    return (dataUrl, fileName, existingRestrictions) =>
+      this.imageUploadCallback!(dataUrl, fileName, [
+        ...(existingRestrictions ?? []),
+        ...restrictions,
+      ]);
+  }
   @Output() newCommentAdded: EventEmitter<CreateCommentDto> =
     new EventEmitter<CreateCommentDto>();
   @Output() postDeleted = new EventEmitter<void>();
   @Output() followToggle = new EventEmitter<void>();
   @Output() blockToggle = new EventEmitter<void>();
+  @Output() muteToggle = new EventEmitter<void>();
+  @Output() reportPost = new EventEmitter<void>();
   @Output() startChat = new EventEmitter<string>();
   @Output() profileClick = new EventEmitter<string>();
   @Output() voteChange = new EventEmitter<{ postId: string; value: number }>();
@@ -139,6 +201,10 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('contentContainer', { read: ElementRef })
   contentElement?: ElementRef<HTMLElement>;
 
+  @ViewChild('postMenu') private postMenu?: DropdownComponent;
+  @ViewChild('postMenu', { read: ElementRef })
+  private postMenuElement?: ElementRef<HTMLElement>;
+
   // Services and state
   private readonly componentPersistence = inject(
     SocialComponentPersistenceService
@@ -148,9 +214,18 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   isEditing = false;
   editTitle = '';
   editContent = '';
+  private acknowledgedSaveRequestId = 0;
 
   downloadAttachment(attachment: AttachmentDto) {
     console.log('Downloading attachment:', attachment);
+  }
+
+  openReport(): void {
+    this.postMenu?.closeDropdown();
+    this.postMenuElement?.nativeElement
+      .querySelector<HTMLButtonElement>('.dropdown-trigger')
+      ?.focus();
+    this.reportPost.emit();
   }
   openLink(link: { url: string }) {
     console.log('Opening link:', link);
@@ -166,6 +241,10 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   onBlockToggle() {
     this.blockToggle.emit();
+  }
+
+  onMuteToggle() {
+    this.muteToggle.emit();
   }
 
   onInviteToCommunity(communityId: string) {
@@ -184,7 +263,8 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   canEdit(): boolean {
     return (
-      !!this.currentUserId && this.currentUserId === this.content?.profileId
+      this.guardianManagementMode ||
+      (!!this.currentUserId && this.currentUserId === this.content?.profileId)
     );
   }
 
@@ -212,11 +292,14 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   saveEdit() {
+    if (this.saveState?.status === 'pending') return;
     this.postUpdated.emit({
       title: this.editTitle,
       content: this.editContent,
     });
-    this.isEditing = false;
+    // Legacy consumers still close immediately. Controlled consumers keep the
+    // draft visible until the parent supplies an authoritative saved post.
+    if (!this.saveState) this.cancelEdit();
   }
 
   onEditTitleInput(event: Event) {
@@ -279,8 +362,50 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['content'] && !changes['content'].firstChange) {
+    if (
+      changes['currentUserId'] &&
+      !changes['currentUserId'].firstChange &&
+      changes['currentUserId'].previousValue !==
+        changes['currentUserId'].currentValue
+    ) {
       this.cancelEdit();
+    }
+    if (
+      changes['content'] &&
+      !changes['content'].firstChange &&
+      changes['content'].previousValue?.profileId !==
+        changes['content'].currentValue?.profileId
+    ) {
+      this.cancelEdit();
+    }
+    if (changes['saveState']) {
+      const state = this.saveState;
+      if (state?.status === 'saved') {
+        const isNewAcknowledgement =
+          state.requestId > this.acknowledgedSaveRequestId;
+        this.acknowledgedSaveRequestId = Math.max(
+          this.acknowledgedSaveRequestId,
+          state.requestId
+        );
+        if (
+          isNewAcknowledgement &&
+          changes['content'] &&
+          !changes['content'].firstChange
+        ) {
+          this.cancelEdit();
+        }
+      }
+    }
+    if (
+      changes['content'] &&
+      !changes['content'].firstChange &&
+      !this.saveState
+    ) {
+      // Preserve the historical behavior for consumers that have not opted
+      // into parent-acknowledged save state.
+      this.cancelEdit();
+    }
+    if (changes['content'] && !changes['content'].firstChange) {
       // Reload component data when content changes
       this.loadComponentData();
     }

@@ -3,6 +3,9 @@
  * Allows switching between different caching strategies (memory, file, Redis)
  */
 export interface ICacheProvider {
+  /** Strong deletion APIs: errors must propagate; ordinary best-effort invalidation is insufficient. */
+  purgeProfiles?(profileIds: readonly string[]): Promise<void>;
+  countProfiles?(profileIds: readonly string[]): Promise<number>;
   /**
    * Get a cached value by key
    * @returns The cached value or null if not found/expired

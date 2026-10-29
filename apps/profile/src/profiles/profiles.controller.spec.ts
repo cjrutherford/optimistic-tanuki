@@ -4,6 +4,7 @@ import { Logger } from '@nestjs/common';
 
 import { ProfileService } from '../app/profile.service';
 import { ProfilesController } from './profiles.controller';
+import { GuardianProfileRequestDto } from '@optimistic-tanuki/profile-contracts';
 
 describe('ProfilesController', () => {
   let controller: ProfilesController;
@@ -20,6 +21,10 @@ describe('ProfilesController', () => {
             findOne: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
+            getGuardianProfile: jest.fn(),
+            updateGuardianProfile: jest.fn(),
+            getGuardianConsoleProfile: jest.fn(),
+            checkAccountProfileOwnership: jest.fn(),
           },
         },
         {
@@ -40,6 +45,24 @@ describe('ProfilesController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('routes ownership lookup directly to ProfileService', async () => {
+    const request = {
+      accountId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      profileId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    };
+    service.checkAccountProfileOwnership.mockResolvedValue({
+      ...request,
+      owned: true,
+    });
+    await expect(
+      controller.checkAccountProfileOwnership(request)
+    ).resolves.toEqual({
+      ...request,
+      owned: true,
+    });
+    expect(service.checkAccountProfileOwnership).toHaveBeenCalledWith(request);
   });
 
   it('should create a profile', async () => {
@@ -97,5 +120,39 @@ describe('ProfilesController', () => {
     const result = await controller.updateProfile(dto);
     expect(service.update).toHaveBeenCalledWith('1', dto);
     expect(result).toBe('updated');
+  });
+
+  it('routes guardian profile RPCs to the guarded profile service with server context', async () => {
+    const request = {
+      profileId: 'profile-1',
+      actorUserId: 'verified-guardian',
+      appId: 'client-interface',
+      operation: 'profile.view',
+    } as GuardianProfileRequestDto;
+    (service.getGuardianProfile as jest.Mock).mockResolvedValue({
+      id: 'profile-1',
+    });
+
+    await expect(controller.getGuardianProfile(request)).resolves.toEqual({
+      id: 'profile-1',
+    });
+    expect(service.getGuardianProfile).toHaveBeenCalledWith(request);
+  });
+
+  it('routes safe app-scoped guardian console profile resolution to ProfileService', async () => {
+    const request = { userId: 'linked-dependent', appScope: 'local-hub' };
+    (service.getGuardianConsoleProfile as jest.Mock).mockResolvedValue({
+      id: 'local-profile',
+      userId: 'linked-dependent',
+      appScope: 'local-hub',
+      profileName: 'Teen',
+    });
+    await expect(
+      controller.getGuardianConsoleProfile(request)
+    ).resolves.toMatchObject({ id: 'local-profile' });
+    expect(service.getGuardianConsoleProfile).toHaveBeenCalledWith(
+      'linked-dependent',
+      'local-hub'
+    );
   });
 });

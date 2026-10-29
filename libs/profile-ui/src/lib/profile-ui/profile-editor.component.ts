@@ -45,6 +45,9 @@ export class ProfileEditorComponent implements OnChanges {
   @Input() open = false;
   @Input() profile: ProfileDto | null = null;
   @Input() defaultName = '';
+  /** Optional parent-managed save state for delegated editors. */
+  @Input() externalSaveState: 'idle' | 'saving' | 'saved' | 'failed' | null =
+    null;
   @Output() createProfile = new EventEmitter<CreateProfileDto>();
   @Output() updateProfile = new EventEmitter<UpdateProfileDto>();
   @Output() closeEditor = new EventEmitter<void>();
@@ -68,6 +71,18 @@ export class ProfileEditorComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    if (changes['externalSaveState'] && this.externalSaveState) {
+      if (this.externalSaveState === 'saving') this.isSaving = true;
+      if (this.externalSaveState === 'failed') {
+        this.isSaving = false;
+        this.pendingSave = false;
+      }
+      if (this.externalSaveState === 'saved') {
+        this.isSaving = false;
+        this.pendingSave = false;
+        this.close();
+      }
+    }
     if (changes['open'] && this.open) {
       this.loadProfileIntoForm();
     }
@@ -116,7 +131,7 @@ export class ProfileEditorComponent implements OnChanges {
   save() {
     if (this.profileForm.valid) {
       this.isSaving = true;
-      this.pendingSave = true;
+      this.pendingSave = this.externalSaveState === null;
       const v = this.profileForm.value;
       if (this.profile) {
         const payload: UpdateProfileDto = {

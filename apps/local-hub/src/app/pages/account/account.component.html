@@ -141,6 +141,14 @@
       <app-daylight-account />
     </section>
 
+    @if(accountId) {
+    <lib-account-rights
+      [accountId]="accountId"
+      [accountLabel]="accountLabel"
+      appId="local-hub"
+      (deletionReceiptReady)="router.navigate(['/account-deletion'])"
+    ></lib-account-rights>
+    }
     <section class="account-actions">
       <button
         class="btn btn-primary"
@@ -155,3 +163,18 @@
     </section>
   </div>
 </div>
+
+<nav
+  aria-label="Getting started and privacy"
+  style="
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+    justify-content: center;
+  "
+>
+  <a href="/help">Getting started</a>
+  <a href="/privacy">Privacy and account data</a>
+  <a href="/contact">Contact and support</a>
+</nav>

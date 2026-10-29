@@ -1,3 +1,4 @@
+import { installPayloadFreeLogging } from '@optimistic-tanuki/logger';
 import { APP_BASE_HREF } from '@angular/common';
 import { CommonEngine, isMainModule } from '@angular/ssr/node';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -9,8 +10,14 @@ import { fileURLToPath } from 'node:url';
 import bootstrap from './main.server';
 import { createGatewaySessionValidator } from './server-session-validation';
 import { createProtectedRouteGate } from './server-route-guard';
+import {
+  createApiProxyOptions,
+  createSocketIoProxyOptions,
+} from './server-proxy';
 import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 import { applySsrProxyTrust } from '@optimistic-tanuki/common-ui/ssr-config';
+
+installPayloadFreeLogging();
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -42,11 +49,7 @@ app.use(cookieParser());
 
 app.use(
   '/socket.io',
-  createProxyMiddleware({
-    target: gatewayWsUrl,
-    ws: true,
-    changeOrigin: true,
-  })
+  createProxyMiddleware(createSocketIoProxyOptions(gatewayWsUrl))
 );
 
 app.use(
@@ -58,13 +61,7 @@ app.use(
   })
 );
 
-app.use(
-  '/api',
-  createProxyMiddleware({
-    target: `${gatewayUrl}/api`,
-    changeOrigin: true,
-  })
-);
+app.use('/api', createProxyMiddleware(createApiProxyOptions(gatewayUrl)));
 
 app.use(createProtectedRouteGate({ validateSession: validateGatewaySession }));
 
@@ -73,6 +70,13 @@ app.get(
   express.static(browserDistFolder, {
     maxAge: '1y',
     index: 'index.html',
+    setHeaders: (res, path) => {
+      // Development builds use stable JavaScript filenames across rebuilds.
+      // Revalidate them so a browser cannot keep running an old app bundle.
+      if (path.endsWith('.js') || path.endsWith('.mjs')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    },
   })
 );
 

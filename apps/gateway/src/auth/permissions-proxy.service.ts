@@ -38,38 +38,27 @@ export class PermissionsProxyService {
       }
 
       // 2. Try cache
-      let hasPermission = await this.cacheService.get(
-        profileId,
-        permission,
-        appScope.id
-      );
-
-      if (hasPermission !== null) {
-        return hasPermission;
-      }
-
-      // 3. Check with permissions service (with global fallback)
-      hasPermission = await firstValueFrom(
-        this.permissionsClient.send(
-          { cmd: RoleCommands.CheckPermission },
-          {
-            profileId,
-            permission,
-            profileAppScope: appScopeName,
-            appScopeId: appScope.id,
-            checkGlobalFallback: true,
-          }
-        )
-      );
-
-      // 4. Cache and return
-      await this.cacheService.set(
+      // Check with the permissions service on a miss. The cache service fences
+      // this lookup against role mutations that overlap the RPC.
+      const hasPermission = await this.cacheService.getOrLoad(
         profileId,
         permission,
         appScope.id,
-        hasPermission
+        undefined,
+        async () =>
+          await firstValueFrom(
+            this.permissionsClient.send(
+              { cmd: RoleCommands.CheckPermission },
+              {
+                profileId,
+                permission,
+                profileAppScope: appScopeName,
+                appScopeId: appScope.id,
+                checkGlobalFallback: true,
+              }
+            )
+          )
       );
-
       return !!hasPermission;
     } catch (error) {
       this.logger.error(

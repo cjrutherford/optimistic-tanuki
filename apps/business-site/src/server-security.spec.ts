@@ -14,10 +14,9 @@ describe('business-site OAuth popup security headers', () => {
     const server = readFileSync(resolve(__dirname, 'server.ts'), 'utf8');
 
     expect(server).toContain(
-      "import { shouldPreserveClientOrigin } from './server-proxy';"
+      "import { createBusinessApiProxy } from './server-proxy';"
     );
-    expect(server).toContain('!shouldPreserveClientOrigin(rawUrl)');
-    expect(server).toContain("setHeader('origin', gatewayOrigin)");
+    expect(server).toContain('createBusinessApiProxy(gatewayUrl)');
   });
 
   it('starts runtime monitoring only for the main server module', () => {

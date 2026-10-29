@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEmail, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEmail,
+  MinLength,
+  IsDateString,
+} from 'class-validator';
 
 export class LoginRequest {
   @IsEmail()
@@ -15,4 +21,12 @@ export class LoginRequest {
   @IsOptional()
   @ApiPropertyOptional({ default: false })
   mfa?: string;
+
+  @IsOptional()
+  @IsDateString()
+  dateOfBirth?: string;
+
+  @IsOptional()
+  @IsEmail()
+  guardianEmail?: string;
 }

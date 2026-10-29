@@ -28,6 +28,7 @@ describe('RolesController', () => {
             removePermissionFromRole: jest.fn(),
             assignRole: jest.fn(),
             unassignRole: jest.fn(),
+            unassignRoleByTarget: jest.fn(),
             previewBulkRoleMutation: jest.fn(),
             executeBulkRoleMutation: jest.fn(),
             getUserRoles: jest.fn(),
@@ -118,11 +119,55 @@ describe('RolesController', () => {
   });
 
   describe('unassignRole', () => {
-    it('should call service.unassignRole with the correct id', async () => {
-      const data = { assignmentId: '1' };
-      await controller.unassignRole(data);
-      expect(service.unassignRole).toHaveBeenCalledWith('1');
+    it('acknowledges only after the exact assignment has been removed', async () => {
+      const data = { assignmentId: 'assignment-1' };
+      let finishRemoval!: () => void;
+      jest.spyOn(service, 'unassignRole').mockImplementation(
+        () =>
+          new Promise<{ profileId: string; changed: boolean }>((resolve) => {
+            finishRemoval = () =>
+              resolve({ profileId: 'profile-1', changed: true });
+          })
+      );
+
+      const acknowledgement = controller.unassignRole(data);
+      await Promise.resolve();
+      let settled = false;
+      void acknowledgement.then(() => (settled = true));
+      await Promise.resolve();
+      expect(settled).toBe(false);
+      expect(service.unassignRole).toHaveBeenCalledWith(data.assignmentId);
+
+      finishRemoval();
+      await expect(acknowledgement).resolves.toEqual({
+        success: true,
+        assignmentId: data.assignmentId,
+        profileId: 'profile-1',
+        changed: true,
+      });
     });
+  });
+
+  it('returns profile metadata after a target-scoped role removal', async () => {
+    const data = {
+      profileId: 'profile-1',
+      roleId: 'role-1',
+      appScopeId: 'scope-1',
+      targetId: 'target-1',
+    };
+    jest.spyOn(service, 'unassignRoleByTarget').mockResolvedValue({
+      profileId: 'profile-1',
+    });
+
+    await expect(controller.unassignRoleByTarget(data)).resolves.toEqual({
+      profileId: 'profile-1',
+    });
+    expect(service.unassignRoleByTarget).toHaveBeenCalledWith(
+      data.profileId,
+      data.roleId,
+      data.appScopeId,
+      data.targetId
+    );
   });
 
   describe('previewBulkRoleMutation', () => {

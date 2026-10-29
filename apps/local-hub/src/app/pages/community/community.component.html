@@ -513,7 +513,9 @@
           } @if (activeTab() === 'chat') {
           <div class="community-tab-panel">
             @if (isMember()) {
-            <lib-community-chat></lib-community-chat>
+            <lib-community-chat
+              [actorProfileId]="chatActorProfileId"
+            ></lib-community-chat>
             } @else {
             <div class="tab-empty-state">
               <h3>Join to unlock community chat</h3>

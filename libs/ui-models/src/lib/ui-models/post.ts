@@ -8,6 +8,9 @@ export interface PostDto {
   updatedAt: Date;
   userId: string;
   profileId: string;
+  communityId?: string | null;
+  visibility?: 'public' | 'followers' | 'community';
+  publicAudienceExplicit?: boolean;
   themeConfig?: PostThemeConfig;
 }
 

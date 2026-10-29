@@ -1,0 +1,96 @@
+{
+  "slice": "DF-007-J10",
+  "date": "2026-10-20",
+  "status": "locally-verified-database-component",
+  "baseRevision": "af50e4a726f51746a3acb4de9ad77022928b4373",
+  "sourceHashes": {
+    "apps/assets/src/app/account-export-profile-snapshot.client.ts": "47aad9ea94e11d9e7a3a84368e25750c8c055e276f07e2f64d14237e69f4974c",
+    "libs/storage/src/index.ts": "ab18bf46e5e1ca522fb082ad782de560cba77b8704764473c4653abd099e26cb",
+    "libs/storage/src/lib/account-export-profile-snapshot.client.ts": "513ccbf229f9382e6e38f92900a1713cec1b87db90f15d1071fef2e55d0d15f3",
+    "apps/videos/src/app/account-export-owner.service.ts": "f91c01b509bece6c9a6d4f0c9141abed6aff052ee0f3453edebde9aa489bf2eb",
+    "apps/videos/src/app/account-export-owner.service.spec.ts": "ef17069394510da7276abe458cfe2c9c775b072474e7c85f31834074c1ca2c4b",
+    "apps/videos/src/app/account-export-owner.postgres.spec.ts": "918bca87c68cd73735bbed480d11d46af97f10f1212d8cdd6ad1f27922adc734"
+  },
+  "migrations": {
+    "apps/videos/migrations/1786715106275-video-processing-pipeline.ts": "7bed9c66427ef6a8faf4018080676d40c0caacfa917df9319f03f15095281080",
+    "apps/videos/migrations/1770152975983-initial.ts": "6c1892fe7345fec2f999dce49125e3c2535cf1ccf4e0dee24fc8491557a86d18",
+    "apps/videos/migrations/1786715103205-community-broadcast.ts": "31a66f877625ffb67f039ffb698d94ab541f44f4011e748a2cdd2e2f5cd31063"
+  },
+  "sharedIdentityRefactor": "Unchanged J7 algorithm moved to existing shared Storage; Assets compatibility aliases retained; nineteen regression tests pass",
+  "unitTests": {
+    "sharedIdentityRegression": 19,
+    "videosOwner": 5,
+    "passed": 24
+  },
+  "preE2E": {
+    "passed": [
+      "storage:lint",
+      "assets:lint",
+      "assets:build",
+      "videos:lint",
+      "videos:build"
+    ],
+    "sharedBuildProof": "Storage has no standalone build target; compiled through both affected consuming applications."
+  },
+  "postgres": {
+    "command": "VIDEOS_OWNER_PG_OPT_IN=videos_owner_j10_fixture VIDEOS_OWNER_PG_HOST=127.0.0.1 VIDEOS_OWNER_PG_PORT=15551 VIDEOS_OWNER_PG_PASSWORD=<isolated-fixture> pnpm exec nx run videos:test --testFile=account-export-owner.postgres.spec.ts --runInBand --skipNxCache",
+    "passed": 5,
+    "skipped": 0,
+    "migrationsRun": 3,
+    "synchronize": false,
+    "imageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+    "owningSources": 7,
+    "capturedProfileIdentities": 1006,
+    "ownedChannels": 1006,
+    "ownedVideos": 1006,
+    "checks": [
+      "all seven source projections and terminal counts/digest verified by real spool",
+      "minimum UUID and 20k+ full supported descriptions",
+      "personal views of foreign videos included; counterpart actors/IP/live URLs/processing errors absent",
+      "late channel insert excluded from captured snapshot; genuinely empty account",
+      "processing status race, contradictory owner/community and oversized text fail closed, then reader recovers",
+      "abort and lease denial drain owner cleanup before resource checks",
+      "actual PostgreSQL dirty connection evicted and owner quarantined on DROP cleanup failure",
+      "seven owning-table fingerprints unchanged; readback all seven tables plus temporary relations zero",
+      "no owner spool file descriptors or spool directories remain"
+    ],
+    "readback": "0|0|0|0|0|0|0|0",
+    "teardown": "exit=0 down=0 remaining-containers=0",
+    "earlierAttempts": [
+      {
+        "attempt": 1,
+        "result": "fixture compile error: asserted nonexistent metadata.sources instead of sourceDispositions keys; zero tests executed"
+      },
+      {
+        "attempt": 2,
+        "result": "fixture seed parameter needed explicit uuid/text casts; beforeAll failed, cleanup removed private container"
+      }
+    ],
+    "dependencyMocks": [
+      "Auth lease RPC",
+      "Profile identity-page RPC",
+      "Unrelated UUID adapter dependency only"
+    ]
+  },
+  "limits": [
+    "Authenticated media ownership/existence/version consistency for referenced Asset IDs",
+    "HLS manifest/segment portability",
+    "Frozen processing lifecycle/deletion safety",
+    "Snapshot RPC, Authentication job registration or final artifact",
+    "No browser, remote CI or production qualification; DF007/RR11 remain open",
+    "No module registration, snapshot transport or job marker yet; final account artifact/download/deletion remains unavailable",
+    "Existing shared generic spool cancellation does not itself wait producer; private fixture explicitly drains the owner promise"
+  ],
+  "evidenceSha256": {
+    ".runtime-artifacts/account-rights/finish-sequence/videos-owner/shared-identity-unit.log": "4e4751315720432c597c1dbe51d96a932ff720f2aabc93fe50746ce5f9aef753",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-owner/owner-unit.log": "78bd78da9ee426a5ba4b4d9dcb0976126d0852b471cd48bd991260b4670a4c21",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-owner/shared-pre-e2e.log": "8d6575e331f1ff2b957bbfff917f06ae427db5ede317385184937faf68df877c",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-owner/videos-pre-e2e.log": "f45f93e8e23fbf6d71250554de04fdb95d72f5a907cd5b76ce5227a6a8be13bc",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-owner/run-postgres.sh": "c254fd669c77f502efe57d8ee7c201da5ddae881d44a9f5b7b87f641ea2a89cc",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-owner/attempt-3/postgres.log": "0515f33ab69959e205d0ced17fb9835ebe22e36c488ea614c98f0ee5c9ffb2d5",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-owner/attempt-3/readback.txt": "dffb7fe348be48a5d48b675f35637c2b960e6ba2815b88ec38b0b3a28bb237bb",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-owner/attempt-3/summary.txt": "8735c72bda2bf14132071a91d9dafac19e706c1e17a222b95e0074c8bf8fea86",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-owner/attempt-3/image-id.txt": "6f52da7b65ec186d6170a362015a9cf9b1b149fe92540bb512d71c1ca6da2190",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-owner/final-lint.log": "24e18d52e66aa1dc4850a68a9b74446ba6aafdabdd93fe3bf220319543820d3d"
+  }
+}

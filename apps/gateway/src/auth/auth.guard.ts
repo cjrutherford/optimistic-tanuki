@@ -1,3 +1,5 @@
+import { verifySessionToken, sessionCookieOptions } from './session-policy';
+import { isRollingSessionApp } from '@optimistic-tanuki/models';
 import {
   CanActivate,
   ForbiddenException,
@@ -18,6 +20,8 @@ import { UserContext } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { UserDetails } from '../decorators/user.decorator';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import type { AppRegistry } from '@optimistic-tanuki/app-registry-backend';
+import { GATEWAY_APP_REGISTRY } from '../controllers/registry/registry.tokens';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -27,7 +31,8 @@ export class AuthGuard implements CanActivate {
     private reflector: Reflector,
     private readonly jwt: JwtService,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
-    private readonly permissionsClient: ClientProxy
+    private readonly permissionsClient: ClientProxy,
+    @Inject(GATEWAY_APP_REGISTRY) private readonly appRegistry: AppRegistry
   ) {}
 
   private async assertPrivilegedScopeAccess(
@@ -80,19 +85,76 @@ export class AuthGuard implements CanActivate {
 
   private async introspectToken(
     token: string,
-    userId: string
-  ): Promise<{ isValid: boolean; emailVerified: boolean }> {
+    userId: string,
+    appId?: string
+  ): Promise<{
+    isValid: boolean;
+    emailVerified: boolean;
+    sessionExpiresAt?: string;
+  }> {
     const response = (await firstValueFrom(
-      this.authService.send({ cmd: AuthCommands.Validate }, { token, userId })
-    )) as { isValid?: boolean; emailVerified?: boolean };
+      this.authService.send(
+        { cmd: AuthCommands.Validate },
+        { token, userId, appId, activity: true }
+      )
+    )) as {
+      isValid?: boolean;
+      emailVerified?: boolean;
+      sessionExpiresAt?: string;
+    };
     return {
       isValid: Boolean(response?.isValid),
       emailVerified: response?.emailVerified === true,
+      sessionExpiresAt: response?.sessionExpiresAt,
     };
   }
 
+  private registeredHostAppId(host: string | undefined): string | undefined {
+    if (!host) return undefined;
+    let normalizedHost: string;
+    try {
+      normalizedHost = new URL(`http://${host.trim()}`).host.toLowerCase();
+    } catch {
+      return undefined;
+    }
+    const matches = this.appRegistry.apps.filter((app) => {
+      try {
+        return [app.uiBaseUrl, app.apiBaseUrl].some(
+          (baseUrl) => new URL(baseUrl).host.toLowerCase() === normalizedHost
+        );
+      } catch {
+        return false;
+      }
+    });
+    return matches.length === 1 ? matches[0].appId : undefined;
+  }
+
+  private requestAppId(request: {
+    headers?: Record<string, string | undefined>;
+  }): string | undefined {
+    const origin = request.headers?.origin;
+    const hostAppId = this.registeredHostAppId(request.headers?.host);
+    if (!origin) return hostAppId;
+    try {
+      const normalized = new URL(origin).origin;
+      const originAppId = this.appRegistry.apps.find((app) => {
+        try {
+          return new URL(app.uiBaseUrl).origin === normalized;
+        } catch {
+          return false;
+        }
+      })?.appId;
+      // Origin is caller-controlled. When the gateway can identify the app
+      // from its actual Host header, require both signals to identify it.
+      if (hostAppId && hostAppId !== originAppId) return undefined;
+      return originAppId;
+    } catch {
+      return undefined;
+    }
+  }
+
   async parseToken(token: string): Promise<UserDetails> {
-    return await this.jwt.verifyAsync<UserDetails>(token);
+    return await verifySessionToken<UserDetails>(this.jwt, token);
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -120,10 +182,33 @@ export class AuthGuard implements CanActivate {
     // can influence membership-aware responses.
     if (credential) {
       try {
-        const user = await this.jwt.verifyAsync<UserDetails>(credential);
+        const user = await verifySessionToken<UserDetails>(
+          this.jwt,
+          credential
+        );
+        const origin = request.headers?.origin;
+        const hostAppId = this.registeredHostAppId(request.headers?.host);
+        const originAppId = this.requestAppId(request);
+        const signedAppId =
+          typeof (user as UserDetails & { appId?: unknown }).appId === 'string'
+            ? (user as UserDetails & { appId: string }).appId
+            : undefined;
+        if (
+          (origin && !originAppId) ||
+          (origin &&
+            !hostAppId &&
+            (!signedAppId || signedAppId !== originAppId)) ||
+          (signedAppId && originAppId && signedAppId !== originAppId) ||
+          (signedAppId && hostAppId && signedAppId !== hostAppId)
+        ) {
+          throw new UnauthorizedException(
+            'Session application scope does not match request origin.'
+          );
+        }
         const authentication = await this.introspectToken(
           credential,
-          user.userId
+          user.userId,
+          signedAppId || originAppId
         );
         if (!authentication.isValid) {
           throw new UnauthorizedException(
@@ -136,10 +221,12 @@ export class AuthGuard implements CanActivate {
           email: user.email,
           name: user.name,
           profileId: user.profileId,
+          appId: signedAppId || originAppId,
           scopes: [],
           roles: [],
         };
         userContext.emailVerified = authentication.emailVerified;
+        userContext.sessionExpiresAt = authentication.sessionExpiresAt;
         request.user = userContext;
         // The credential itself, whichever way it arrived.
         //
@@ -165,6 +252,20 @@ export class AuthGuard implements CanActivate {
     }
 
     if (isPublic) {
+      if (
+        request.user &&
+        cookieToken &&
+        credential === cookieToken &&
+        isRollingSessionApp(request.user.appId)
+      ) {
+        const response = context.switchToHttp().getResponse?.();
+        if (typeof response?.cookie === 'function')
+          response.cookie(
+            'ot_session',
+            cookieToken,
+            sessionCookieOptions(request.user.appId)
+          );
+      }
       return true;
     }
 
@@ -183,6 +284,19 @@ export class AuthGuard implements CanActivate {
       request.user.profileId
     );
 
+    if (
+      cookieToken &&
+      credential === cookieToken &&
+      isRollingSessionApp(request.user.appId)
+    ) {
+      const response = context.switchToHttp().getResponse?.();
+      if (typeof response?.cookie === 'function')
+        response.cookie(
+          'ot_session',
+          cookieToken,
+          sessionCookieOptions(request.user.appId)
+        );
+    }
     return true;
   }
 }

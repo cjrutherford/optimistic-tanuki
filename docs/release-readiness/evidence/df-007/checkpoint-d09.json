@@ -1,0 +1,85 @@
+{
+  "slice": "D09",
+  "date": "2026-10-25",
+  "scope": ["client-interface", "local-hub"],
+  "status": "verified-local-owner-component",
+  "evidence": {
+    "inventoryLoaderUnit": 8,
+    "jsonbSemanticsUnit": 4,
+    "realAuthAppConfiguratorTcpPostgres": 1,
+    "preE2E": 41,
+    "build": "App Configurator production passed",
+    "lint": "App Configurator Constants authentication-e2e passed",
+    "migration": "1792960866376 owning CLI generated; fence table/frozen SQL only; composite FKs preserved; fresh up/down/up passed",
+    "migrationGovernance": "passed",
+    "review": "bounded source-only GO no P1/P2; runtime not independently repeated"
+  },
+  "independentFinalCounts": {
+    "d00": {
+      "account_deletion_operations": 0,
+      "account_deletion_write_fence": 0,
+      "account_export_jobs": 0,
+      "auth_action_token": 0,
+      "guardian_permission": 0,
+      "guardian_policy_notice": 0,
+      "key_datum": 0,
+      "oauth_provider": 0,
+      "token": 0,
+      "user_entity": 0
+    },
+    "d09_app_configurator": {
+      "account_deletion_write_fence": 0,
+      "app_configuration_entity": 0,
+      "app_instances": 0,
+      "app_memberships": 0
+    }
+  },
+  "teardown": {
+    "removedOwnLabeledContainerAndVolumes": true,
+    "privateContainersRemaining": 0,
+    "protectedFilesUnchanged": 43,
+    "independentDatabaseCount": 2,
+    "independentTableCount": 14,
+    "allApplicationCountsZero": true
+  },
+  "jsonbRepair": "Real producer rejected equivalent jsonb key ordering. Recursive object-key comparison now preserves arrays/values/identity equality; real create/publish/delete fixture passed afterward.",
+  "sourceHashes": {
+    "apps/app-configurator/migrations/1792960866376-AccountDeletionWriteFence.ts": "c853d9b1c140300f0486a4f68115aed09c9bc053755f4b1a4f2b167535f458aa",
+    "apps/app-configurator/project.json": "aa836ddb75d2183bffa1829c8bb143a25d0d5fe960bef93ce2d9e253185bfef1",
+    "apps/app-configurator/src/app/account-deletion-owner.controller.ts": "43a1bf03c7f375cbaed098e7b69be568cb7673016105c23ad4f4f9f9d5129aaa",
+    "apps/app-configurator/src/app/account-deletion-owner.service.ts": "7babb27664c75af1a7ad70c90545d2c0f82a4b27f81291db3a231635736e2355",
+    "apps/app-configurator/src/app/account-deletion-policy.ts": "6327d6238f9a72ab4859918c750b6ec5fbaa46dee408a5c89c78bcaad08b2dc3",
+    "apps/app-configurator/src/app/app-configurator-account-export-dispositions.json": "9fea69852fc5868eb98cc13201287b283185369490afd8ed998046de0ca40e44",
+    "apps/app-configurator/src/app/app-configurator-account-export-dispositions.spec.ts": "eaa9d9ceaf1e75350ef4155a1b0c8692aecceeadfe99155dc78aec945039d26b",
+    "apps/app-configurator/src/app/app-configurator-account-export-dispositions.ts": "2dcef74effb837320922b8e16e43263bafdbaf1bfcbf13a3bc0d9bd3b4aaad46",
+    "apps/app-configurator/src/app/app-configurator-dispositions.postgres.spec.ts": "52ca7fe01f7450eeddf0c8fae105107fd8190c51ec3fe13140939725bf3d197b",
+    "apps/app-configurator/src/app/app.module.ts": "5d45ec86c5f712afdffdb1d4adfd57463251c819b82995ca2154479d5f1ce35b",
+    "apps/app-configurator/src/app/configurations-jsonb-equivalence.spec.ts": "aa6bc2bb6cd640d90f9c88e362c18d1720e828e05182365f081321d1a1785ade",
+    "apps/app-configurator/src/app/configurations.service.ts": "5ada69eec0aa862365adcde1e1df5d3cb7ce48bf2cc2925181b54ea2233b8d07",
+    "apps/app-configurator/src/app/loadDatabase.spec.ts": "9fdfddc43315c03e5f42bbf50da7f716b444c21b068d04e6ebc6fa015c698b9c",
+    "apps/app-configurator/src/app/loadDatabase.ts": "28ab2f555223f1d5f5a75a9ec950a2e48d3ecba37b3d869a5e0a8627feb0e9f8",
+    "apps/app-configurator/src/app/staticDatabase.ts": "8f411e9cbfb094330c786d617affee790c174fc58dea52cfd4d3112fba00d65d",
+    "apps/authentication-e2e/jest.deletion-private.config.ts": "b7014b1de9459cf7a43622b273539ec782aa6beb9e463b3ee80107a1259b53b2",
+    "apps/authentication-e2e/src/authentication/app-configurator-account-deletion.spec.ts": "b5e0de9f0e223aa6350d1677f2b39f3c0e0534f28bf53b8155ceef2d5324ba67",
+    "libs/constants/src/lib/libs/app-config.ts": "7f021f9cf5d0c5fdbdcdc33ce6d06f5a2e8d73c106327946ec455cc8316ff402"
+  },
+  "logHashes": {
+    ".runtime-artifacts/account-rights/deletion/d09/unit.log": "caaa9a3aee8f64ca28df503bf9160a58d63b728f9fe782495524975f6fa356b3",
+    ".runtime-artifacts/account-rights/deletion/d09/jsonb-final-unit.log": "958da3e0f6840e6287bdfb561136ba155bd68d1a269c0bd527e6a00f9a44689d",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d09-private-valid-manifest.log": "144bedf64a9098ec51898673cf2b765e96b37068efd4ec4e38f7fdbbd38e8e5d",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d09-private-jsonb-fixed.log": "8433154266cdfd5ac3282acaaadb94cf7be7bc9e256a19968e0b93986c5b1fef",
+    ".runtime-artifacts/account-rights/deletion/d09/final-build.log": "13ac38cac741ddb257d6967bd311e4e8af4e09376424acad79a2a9f0dd097553",
+    ".runtime-artifacts/account-rights/deletion/d09/lint.log": "6012e9831f68157da64c750ba4eda12d3939d449301d0a24fece234a204739cc",
+    ".runtime-artifacts/account-rights/deletion/d09/migration-governance.log": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9",
+    ".runtime-artifacts/account-rights/deletion/d09/pre-e2e.log": "8edf44b33325c0fa764370cbf9ef929dc15a5a986653c8ad646038f76360ca59",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d09-down.log": "e077f951347343469e119ae64c6e523fe18d952f2cb9f286286b187cc8d71b87",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d09-up-again.log": "8af2436921a739653167d4e7becba38c873576198c26389b1ce4b2a7154bebe1",
+    ".runtime-artifacts/account-rights/deletion/d09/source-review.md": "27bfa8acef2fe2fe2a27f840ffa146369f4747f06652b3d5b572a583d078080d"
+  },
+  "limitations": [
+    "Frozen profiles and other-owner fence acknowledgements are explicit fixture premises.",
+    "Counterpart configuration payloads and required deidentified containers are preserved.",
+    "No global non-ORM/root-key/coordinator/public-UI or deployed/external qualification is claimed.",
+    "Fixture publishes valid supported manifests; missing-manifest legacy publishing is not qualified."
+  ]
+}

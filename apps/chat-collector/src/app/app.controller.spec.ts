@@ -26,6 +26,7 @@ describe('AppController', () => {
             getConversations: jest.fn(),
             getConversation: jest.fn(),
             createCommunityChat: jest.fn(),
+            deleteOwnedCommunityConversation: jest.fn(),
             getOrCreateDirectChat: jest.fn(),
             getMessages: jest.fn(),
             postMessageHttp: jest.fn(),
@@ -107,8 +108,34 @@ describe('AppController', () => {
       expect(logger.log).toHaveBeenCalledWith(
         `Retrieving conversation for ID: ${conversationId}`
       );
-      expect(appService.getConversation).toHaveBeenCalledWith(conversationId);
+      expect(appService.getConversation).toHaveBeenCalledWith(
+        conversationId,
+        undefined,
+        undefined
+      );
       expect(result).toEqual(expectedResult);
+    });
+  });
+
+  describe('deleteOwnedCommunityConversation', () => {
+    it('routes only the internal owner-cleanup payload to the service', async () => {
+      const payload = {
+        conversationId: '78c973a8-0d2b-4a59-b8b0-83b7a0a0c1d1',
+        communityId: '67c973a8-0d2b-4a59-b8b0-83b7a0a0c1d2',
+        actorProfileId: 'owner-profile',
+        appScope: 'towne-square',
+      };
+      jest
+        .spyOn(appService, 'deleteOwnedCommunityConversation')
+        .mockResolvedValue({ success: true });
+
+      await expect(
+        appController.deleteOwnedCommunityConversation(payload as any)
+      ).resolves.toEqual({ success: true });
+
+      expect(appService.deleteOwnedCommunityConversation).toHaveBeenCalledWith(
+        payload
+      );
     });
   });
 

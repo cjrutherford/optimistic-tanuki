@@ -4,3 +4,5 @@
 import { ChatCommands } from '@optimistic-tanuki/chat-contracts';
 
 export default ChatCommands;
+
+export { CHAT_ACCOUNT_EXPORT_CAPTURE_SOURCES } from '@optimistic-tanuki/chat-contracts';

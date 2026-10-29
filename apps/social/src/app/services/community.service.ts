@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Equal } from 'typeorm';
+import { Repository, Equal, ILike } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { randomUUID } from 'node:crypto';
 import { Community } from '../../entities/community.entity';
@@ -157,10 +157,13 @@ export class CommunityService {
     return saved;
   }
 
-  async findBySlug(slug: string): Promise<Community | null> {
+  async findBySlug(
+    slug: string,
+    requestingProfileId?: string
+  ): Promise<Community | null> {
     const community = await this.communityRepo.findOne({ where: { slug } });
     if (community) {
-      return await this.addMemberInfo(community);
+      return await this.addMemberInfo(community, requestingProfileId);
     }
     return null;
   }
@@ -251,22 +254,26 @@ export class CommunityService {
     return Promise.all(communities.map((c) => this.addMemberInfo(c)));
   }
 
-  async findOne(id: string): Promise<Community | null> {
+  async findOne(
+    id: string,
+    requestingProfileId?: string
+  ): Promise<Community | null> {
     const community = await this.communityRepo.findOne({ where: { id } });
     if (community) {
-      return await this.addMemberInfo(community);
+      return await this.addMemberInfo(community, requestingProfileId);
     }
     return null;
   }
 
   async findAll(
     searchDto: SearchCommunityDto,
-    appScope: string
+    appScope: string,
+    requestingProfileId?: string
   ): Promise<Community[]> {
     const where: any = { appScope };
 
     if (searchDto.name) {
-      where.name = `%${searchDto.name}%`;
+      where.name = ILike(`%${searchDto.name}%`);
     }
     if (searchDto.ownerId) {
       where.ownerId = searchDto.ownerId;
@@ -284,13 +291,19 @@ export class CommunityService {
     });
 
     const communitiesWithMembers = await Promise.all(
-      communities.map((community) => this.addMemberInfo(community))
+      communities.map((community) =>
+        this.addMemberInfo(community, requestingProfileId)
+      )
     );
 
     return communitiesWithMembers;
   }
 
-  async getTopActive(limit: number, appScope: string): Promise<Community[]> {
+  async getTopActive(
+    limit: number,
+    appScope: string,
+    requestingProfileId?: string
+  ): Promise<Community[]> {
     const communities = await this.communityRepo.find({
       where: { appScope },
       order: { memberCount: 'DESC' },
@@ -298,13 +311,18 @@ export class CommunityService {
     });
 
     const communitiesWithMembers = await Promise.all(
-      communities.map((community) => this.addMemberInfo(community))
+      communities.map((community) =>
+        this.addMemberInfo(community, requestingProfileId)
+      )
     );
 
     return communitiesWithMembers;
   }
 
-  private async addMemberInfo(community: Community): Promise<Community> {
+  private async addMemberInfo(
+    community: Community,
+    requestingProfileId?: string
+  ): Promise<Community> {
     const members = await this.memberRepo.find({
       where: {
         communityId: community.id,
@@ -312,11 +330,18 @@ export class CommunityService {
       },
     });
 
-    (community as any).memberIds = members.map((m) => m.profileId);
-    (community as any).memberUserIds = members.map((m) => m.userId);
+    const visibleMembers =
+      community.isPrivate &&
+      !members.some((member) => member.profileId === requestingProfileId)
+        ? []
+        : members;
+    if (community.isPrivate && visibleMembers.length === 0)
+      delete (community as any).chatRoomId;
+    (community as any).memberIds = visibleMembers.map((m) => m.profileId);
+    (community as any).memberUserIds = visibleMembers.map((m) => m.userId);
     (community as any).ownerIds = [
       community.ownerId,
-      ...members
+      ...visibleMembers
         .filter(
           (m) =>
             m.role === CommunityMemberRole.OWNER ||
@@ -536,6 +561,48 @@ export class CommunityService {
     }
   }
 
+  async getChatMemberships(profileId: string): Promise<string[]> {
+    const members = await this.memberRepo.find({
+      where: { profileId, status: CommunityMembershipStatus.APPROVED },
+    });
+    return members.map((member) => member.communityId);
+  }
+
+  async getVisibleMembers(
+    communityId: string,
+    requestingProfileId?: string
+  ): Promise<CommunityMember[]> {
+    const community = await this.findOne(communityId);
+    if (!community)
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Community not found',
+      });
+    const members = await this.getMembers(communityId);
+    if (
+      community.isPrivate &&
+      !members.some((m) => m.profileId === requestingProfileId)
+    ) {
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Community membership is required',
+      });
+    }
+    return members;
+  }
+
+  async assertChatMembership(
+    communityId: string,
+    requestingProfileId: string
+  ): Promise<void> {
+    const members = await this.getMembers(communityId);
+    if (!members.some((m) => m.profileId === requestingProfileId))
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Approved community membership is required',
+      });
+  }
+
   async getMembers(communityId: string): Promise<CommunityMember[]> {
     return await this.memberRepo.find({
       where: { communityId, status: CommunityMembershipStatus.APPROVED },
@@ -732,13 +799,22 @@ export class CommunityService {
   ): Promise<{ invite: CommunityInvite; community: Community }> {
     const invite = await this.inviteRepo.findOne({ where: { token } });
     if (!invite || invite.status !== CommunityMembershipStatus.PENDING) {
-      throw new RpcException('Invitation not found or already used');
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Invitation not found or already used',
+      });
     }
     if (invite.expiresAt && invite.expiresAt.getTime() < Date.now()) {
-      throw new RpcException('Invitation has expired');
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Invitation has expired',
+      });
     }
     if (invite.inviteeId && invite.inviteeId !== userId) {
-      throw new RpcException('This invitation was addressed to someone else');
+      throw new RpcException({
+        statusCode: 403,
+        message: 'This invitation was addressed to someone else',
+      });
     }
 
     const community = await this.findOne(invite.communityId);
@@ -1148,7 +1224,9 @@ export class CommunityService {
   async getCommunityChatRoom(
     communityId: string
   ): Promise<{ id: string } | null> {
-    const community = await this.findOne(communityId);
+    const community = await this.communityRepo.findOne({
+      where: { id: communityId },
+    });
     if (!community || !community.chatRoomId) {
       return null;
     }

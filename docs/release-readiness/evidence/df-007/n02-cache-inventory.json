@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "slice": "N02",
+  "status": "locally-verified-OT-TS-N02",
+  "applications": {
+    "OT": "client-interface",
+    "TS": "local-hub"
+  },
+  "stores": [
+    {
+      "id": "gateway.permission-decisions",
+      "owners": ["Gateway", "Permissions"],
+      "storage": ["memory", "file", "Redis"],
+      "identity": "Profile UUID, permission, app scope and optional target; no token in key or value",
+      "authority": "getOrLoad always calls the owning Permissions service; diagnostic cache entries never authorize a request",
+      "invalidation": "Local profile epochs fence overlapping mutations; shared role/permission edits clear diagnostic entries. invalidateAccountProfiles accepts a validated, deduplicated authoritative owned-profile set; callers must prove ownership.",
+      "replicaBoundary": "Replicas do not need broadcast delivery to deny a revoked permission: each authorization reads current owning-service state. No permission-service availability means no grant.",
+      "evidence": [
+        "apps/gateway/src/auth/permissions-cache.service.ts",
+        "apps/gateway/src/auth/permissions-mutation-client.ts",
+        "apps/gateway/src/auth/permissions-proxy.service.ts",
+        "apps/gateway/src/guards/permissions.guard.ts"
+      ]
+    },
+    {
+      "id": "gateway.permission-inflight",
+      "storage": ["process-local generation/waiter maps"],
+      "identity": "Profile UUID",
+      "authority": "Temporary ordering state only; not a permission decision",
+      "invalidation": "Profile invalidation/clear changes generations; overlapping loaders repeat; idle entries released",
+      "evidence": ["apps/gateway/src/auth/permissions-cache.service.ts"]
+    },
+    {
+      "id": "gateway.http-session",
+      "storage": [],
+      "identity": "Signed account/profile/app claims plus durable Authentication validation",
+      "authority": "AuthGuard verifies JWT then AuthCommands.Validate for cookie and bearer credentials, including optional identities on public routes",
+      "invalidation": "Current-token logout changes durable state, so independent Gateway instances reject the token; no Gateway authentication cache to flush",
+      "evidence": [
+        "apps/gateway/src/auth/auth.guard.ts",
+        "apps/authentication/src/app/app.service.ts"
+      ]
+    },
+    {
+      "id": "gateway.socket-session",
+      "storage": ["connection-bound socket identity/room state"],
+      "identity": "Account/profile/app verified against Authentication",
+      "authority": "SocketSessionAuthService revalidates durable token state; Social/Chat use it on relevant subscriptions/delivery/operations",
+      "invalidation": "Existing scoped socket access controls remain; N02 does not claim a new live Socket.IO/browser qualification",
+      "evidence": [
+        "apps/gateway/src/auth/socket-session-auth.service.ts",
+        "apps/gateway/src/app/chat-gateway/chat.gateway.ts",
+        "apps/gateway/src/app/social-gateway/social.gateway.ts"
+      ]
+    },
+    {
+      "id": "authentication.session-ledger",
+      "storage": ["PostgreSQL token rows"],
+      "identity": "Account UUID and selected profile UUID; signed app claim",
+      "authority": "Existing credential ledger, not a permission cache. OAuth reference resolution checks row ID/account/profile/revoked flag, signed claims, guardian access and current Profile ownership.",
+      "invalidation": "Logout revokes a session. Permanent account-wide producer/session deletion fencing remains D00; never serialize credentials into operation ledgers or portability artifacts.",
+      "evidence": [
+        "apps/authentication/src/tokens/entities/token.entity.ts",
+        "apps/authentication/src/app/app.service.ts",
+        "apps/authentication/src/app/profile-ownership-verifier.service.ts"
+      ]
+    },
+    {
+      "id": "gateway.oauth-state",
+      "storage": [
+        "bounded local maps in explicit development/test",
+        "Redis in production"
+      ],
+      "identity": "One-time state ID, provider/app/return origin, browser nonce hash; optional authenticated account-link ID",
+      "authority": "PKCE and purpose-bound registration context, including guardian resume context, are protocol secrets; state is not an authenticated session. Ten-minute TTL and signed state/nonce validation apply.",
+      "invalidation": "Provider cancellation consumes state. Account invalidation removes linked states in the bounded managed index. Pre-login state has no established account association and expires; do not infer ownership.",
+      "evidence": [
+        "apps/gateway/src/controllers/oauth/oauth-state.store.ts",
+        "apps/gateway/src/controllers/oauth/oauth.controller.ts"
+      ]
+    },
+    {
+      "id": "gateway.oauth-callback-reference",
+      "storage": [
+        "bounded local maps in explicit development/test",
+        "Redis with TTL and atomic redemption"
+      ],
+      "identity": "Opaque durable session-row reference, account/profile/app and origin/state/nonce binding",
+      "authority": "No session bearer token is written to a new transient callback grant. Authentication resolves the reference only after Gateway consumes the bound one-time grant, and rechecks current session/profile authority.",
+      "invalidation": "Sixty-second producer TTL; replay and legacy raw-token grants rejected. Account invalidation removes matched managed grants without touching counterpart grants. Legacy unindexed grants expire under their original TTL and cannot redeem.",
+      "evidence": [
+        "apps/gateway/src/controllers/oauth/oauth-state.store.ts",
+        "apps/gateway/src/controllers/oauth/oauth.controller.ts",
+        "apps/authentication/src/app/app.controller.ts"
+      ]
+    }
+  ],
+  "exclusions": [
+    {
+      "id": "N06",
+      "reason": "Browser/local persisted state and account-switch cleanup remain the existing N06 slice; no new UI or storage behavior here."
+    },
+    {
+      "id": "D00",
+      "reason": "Permanent account-wide fencing, profile discovery and account deletion orchestration remain D00 and its scoped adapters. Internal invalidation methods do not expose public deletion."
+    },
+    {
+      "id": "external",
+      "reason": "No real OAuth provider handshake, inbox flow, deployed replica topology or production retention qualification."
+    }
+  ],
+  "runtimeProviderBoundary": "Private case covers independent memory permission caches and shared Redis OAuth state with real Authentication/Profile/Permissions and PostgreSQL. It does not instantiate the file diagnostic cache provider or a full production Gateway deployment."
+}

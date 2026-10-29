@@ -35,6 +35,9 @@ describe('SmtpEmailProvider', () => {
       port: 1025,
       secure: false,
       auth: undefined,
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 30_000,
     });
   });
 

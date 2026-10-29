@@ -126,7 +126,10 @@ describe('RegisterComponent behaviour', () => {
         component as unknown as {
           oauthService: { configureProviders: unknown };
         }
-      ).oauthService = { configureProviders } as never;
+      ).oauthService = {
+        configureProviders,
+        getEnabledProviders: jest.fn().mockReturnValue(['google']),
+      } as never;
 
       component.ngOnInit();
       httpMock.expectOne('/api/oauth/config').flush({ github: true });
@@ -136,7 +139,7 @@ describe('RegisterComponent behaviour', () => {
       expect(configureProviders).toHaveBeenCalledWith({ github: true });
     });
 
-    it('falls back to defaults when the request fails', async () => {
+    it('keeps OAuth providers hidden when configuration cannot be loaded', async () => {
       component.ngOnInit();
       httpMock
         .expectOne('/api/oauth/config')
@@ -144,9 +147,7 @@ describe('RegisterComponent behaviour', () => {
       await Promise.resolve();
       await Promise.resolve();
 
-      expect(logSpy).toHaveBeenCalledWith(
-        'OAuth config not loaded from server, using defaults'
-      );
+      expect(component.enabledOAuthProviders).toEqual([]);
     });
   });
 
@@ -177,8 +178,36 @@ describe('RegisterComponent behaviour', () => {
         fn: 'Ada',
         ln: 'Lovelace',
         bio: 'maths',
+        dateOfBirth: undefined,
+        guardianEmail: undefined,
+        guardianResumeToken: '',
+        guardianConsentRequest: undefined,
       });
       expect(router.navigate).toHaveBeenCalledWith(['/login']);
+    });
+
+    it('does not claim a guardian email was sent when the mail service rejected it', () => {
+      const authenticationService = (
+        component as unknown as { authenticationService: unknown }
+      ).authenticationService as { register: unknown };
+      jest
+        .spyOn(authenticationService as never, 'register' as never)
+        .mockReturnValue(
+          of({
+            data: { guardianConsentPending: true, request: { sent: false } },
+          }) as never
+        );
+
+      component.onSubmit({
+        ...(form as any),
+        guardianConsentRequest: true,
+      } as never);
+
+      expect(component.errorMessage).toContain(
+        "couldn't send the permission email"
+      );
+      expect(component.errorMessage).toContain('no account was created');
+      expect(router.navigate).not.toHaveBeenCalled();
     });
 
     it('logs a registration failure without redirecting', () => {
@@ -191,7 +220,9 @@ describe('RegisterComponent behaviour', () => {
 
       component.onSubmit(form);
 
-      expect(errorSpy).toHaveBeenCalledWith(expect.any(Error));
+      expect(component.errorMessage).toContain(
+        'Registration could not be completed'
+      );
       expect(router.navigate).not.toHaveBeenCalled();
     });
   });

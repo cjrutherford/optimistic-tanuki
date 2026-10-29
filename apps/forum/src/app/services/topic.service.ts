@@ -1,16 +1,22 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Topic } from '../../entities/topic.entity';
+import { Thread } from '../../entities/thread.entity';
 import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
 import { CreateTopicDto, UpdateTopicDto } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
 import { withIdConstraint } from './find-options';
+import { ForumAccessService } from './forum-access.service';
 
 @Injectable()
 export class TopicService {
   constructor(
     @Inject(getRepositoryToken(Topic))
-    private readonly topicRepo: Repository<Topic>
+    private readonly topicRepo: Repository<Topic>,
+    @Inject(getRepositoryToken(Thread))
+    private readonly threadRepo: Repository<Thread>,
+    @Optional() private readonly forumAccess?: ForumAccessService
   ) {}
 
   private sanitizeContent(content: string): string {
@@ -38,6 +44,12 @@ export class TopicService {
   }
 
   async create(createTopicDto: CreateTopicDto): Promise<Topic> {
+    await this.forumAccess?.latchAssetReferences(
+      `${createTopicDto.title ?? ''}\n${createTopicDto.description ?? ''}`,
+      createTopicDto.visibility === 'private'
+        ? createTopicDto.profileId
+        : undefined
+    );
     const topic = this.topicRepo.create({
       ...createTopicDto,
       title: this.sanitizeContent(createTopicDto.title),
@@ -63,6 +75,19 @@ export class TopicService {
       throw new Error(`Topic with ID ${id} not found`);
     }
 
+    await this.forumAccess?.latchAssetReferences(
+      `${topic.title ?? ''}\n${topic.description ?? ''}`,
+      topic.visibility === 'private' ? topic.profileId : undefined
+    );
+    await this.forumAccess?.latchAssetReferences(
+      `${updateTopicDto.title ?? topic.title ?? ''}\n${
+        updateTopicDto.description ?? topic.description ?? ''
+      }`,
+      (updateTopicDto.visibility ?? topic.visibility) === 'private'
+        ? topic.profileId
+        : undefined
+    );
+
     const updatedData: Partial<Topic> = {};
     if (updateTopicDto.title) {
       updatedData.title = this.sanitizeContent(updateTopicDto.title);
@@ -86,7 +111,38 @@ export class TopicService {
     return await this.findOne(id);
   }
 
-  async remove(id: string): Promise<void> {
-    await this.topicRepo.delete(id);
+  async remove(id: string): Promise<{ id: string; deleted: boolean }> {
+    const topic = await this.findOne(id);
+    if (topic) {
+      const threadCount = await this.threadRepo.count({
+        where: { topicId: id },
+      });
+      if (threadCount > 0) {
+        throw new RpcException({
+          statusCode: 409,
+          message: 'Topic still contains threads. Delete those threads first.',
+        });
+      }
+      await this.forumAccess?.latchAssetReferences(
+        `${topic.title ?? ''}\n${topic.description ?? ''}`,
+        topic.visibility === 'private' ? topic.profileId : undefined
+      );
+    }
+    try {
+      const result = await this.topicRepo.delete(id);
+      return { id, deleted: (result.affected ?? 0) > 0 };
+    } catch (error) {
+      if (this.isForeignKeyConstraintViolation(error)) {
+        throw new RpcException({
+          statusCode: 409,
+          message: 'Topic still contains threads. Delete those threads first.',
+        });
+      }
+      throw error;
+    }
+  }
+
+  private isForeignKeyConstraintViolation(error: any): boolean {
+    return error?.code === '23503' || error?.driverError?.code === '23503';
   }
 }

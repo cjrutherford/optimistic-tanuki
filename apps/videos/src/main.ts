@@ -1,3 +1,4 @@
+import { installPayloadFreeLogging } from '@optimistic-tanuki/logger';
 /**
  * This is not a production server yet!
  * This is only a minimal backend to get started.
@@ -11,6 +12,7 @@ import { AppModule } from './app/app.module';
 import loadConfig from './config';
 
 async function bootstrap() {
+  installPayloadFreeLogging();
   // Do not spin up a temporary Nest application just to read configuration:
   // lifecycle hooks on that context would start a second processing queue.
   const port = loadConfig().listenPort || 3016;

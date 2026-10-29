@@ -1,7 +1,33 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEmail, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  MinLength,
+  IsOptional,
+  IsDateString,
+} from 'class-validator';
 
 export class RegisterRequest {
+  @IsOptional()
+  @IsDateString()
+  @ApiProperty({
+    required: false,
+    description:
+      'Private age-eligibility input; never copied to the public profile.',
+  })
+  dateOfBirth?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({
+    required: false,
+    description: 'One-time applicant resume secret after guardian attestation.',
+  })
+  guardianResumeToken?: string;
+
+  /** Gateway-computed internal status; never trust this from HTTP input. */
+  ageEligibilityStatus?: 'adult' | 'minor';
+
   @IsString()
   @ApiProperty({
     description: 'First Name of the user.',

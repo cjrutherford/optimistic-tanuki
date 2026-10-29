@@ -2,6 +2,7 @@ import {
   Body,
   BadRequestException,
   Controller,
+  HttpException,
   Delete,
   Get,
   Inject,
@@ -38,7 +39,10 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { Public } from '../../decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { IdentityThrottlerGuard } from '../learning/identity-throttler.guard';
+import { gatewayWriteLimit } from '../../app/throttler-config';
 
 interface ReportForumContentDto {
   contentType: 'thread' | 'post';
@@ -57,6 +61,36 @@ interface ModerateForumContentDto {
   adminNotes?: string;
 }
 
+const REPORT_STATUSES = new Set([
+  'pending',
+  'reviewed',
+  'actioned',
+  'dismissed',
+]);
+const MODERATION_STATUSES = new Set(['visible', 'hidden']);
+const FORUM_REPORT_TYPES = new Set(['thread', 'post']);
+const FORUM_REPORT_REASONS = new Set([
+  'spam',
+  'harassment',
+  'hate_speech',
+  'violence',
+  'misinformation',
+  'inappropriate',
+  'other',
+]);
+const FORUM_WRITE_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_FORUM_WRITE_LIMIT', 20, 500, 2000),
+    ttl: 60000,
+  },
+};
+const FORUM_REPORT_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_FORUM_REPORT_LIMIT', 10, 200, 1000),
+    ttl: 60000,
+  },
+};
+
 @ApiTags('forum')
 @Controller('forum')
 export class ForumController {
@@ -67,6 +101,20 @@ export class ForumController {
     private readonly forumClient: ClientProxy
   ) {}
 
+  private async forward(
+    pattern: { cmd: string },
+    payload: unknown
+  ): Promise<any> {
+    try {
+      return await firstValueFrom(this.forumClient.send(pattern, payload));
+    } catch (error) {
+      throw new HttpException(
+        { message: error?.message ?? 'Discussion unavailable' },
+        error?.statusCode ?? 503
+      );
+    }
+  }
+
   private requireAppScope(appScope: string | null): string {
     if (!appScope) {
       throw new BadRequestException('x-ot-appscope header is required');
@@ -76,7 +124,7 @@ export class ForumController {
   }
 
   // Topic endpoints
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, IdentityThrottlerGuard)
   @ApiTags('topic')
   @ApiOperation({ summary: 'Create a new topic' })
   @ApiResponse({
@@ -86,7 +134,7 @@ export class ForumController {
   })
   @Post('topic')
   @RequirePermissions('forum.topic.create')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Throttle(FORUM_WRITE_THROTTLE)
   async createTopic(
     @User() user,
     @Body() topicDto: CreateTopicDto,
@@ -94,10 +142,9 @@ export class ForumController {
   ) {
     this.logger.log(`Creating topic for user: ${user.userId}`);
     topicDto.userId = user.userId;
+    topicDto.profileId = user.profileId;
     topicDto.appScope = this.requireAppScope(appScope);
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: TopicCommands.CREATE }, topicDto)
-    );
+    return await this.forward({ cmd: TopicCommands.CREATE }, topicDto);
   }
 
   @ApiTags('topic')
@@ -107,17 +154,23 @@ export class ForumController {
     description: 'The topic has been successfully retrieved.',
     type: TopicDto,
   })
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('topic/:id')
   async getTopic(
     @Param('id') id: string,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
   ): Promise<TopicDto> {
     appScope = this.requireAppScope(appScope);
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: TopicCommands.FIND }, { id, appScope })
+    return await this.forward(
+      { cmd: TopicCommands.FIND },
+      { id, appScope, requestingProfileId: user?.profileId }
     );
   }
 
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('topic/:topicId/threads')
   @ApiTags('topic')
   @ApiOperation({ summary: 'Get all threads for a topic' })
@@ -128,14 +181,13 @@ export class ForumController {
   })
   async getThreadsByTopic(
     @Param('topicId') topicId: string,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
   ): Promise<ThreadDto[]> {
     appScope = this.requireAppScope(appScope);
-    return await firstValueFrom(
-      this.forumClient.send(
-        { cmd: ThreadCommands.FIND_MANY },
-        { where: { topicId, appScope } }
-      )
+    return await this.forward(
+      { cmd: ThreadCommands.FIND_MANY },
+      { where: { topicId, appScope }, requestingProfileId: user?.profileId }
     );
   }
 
@@ -146,18 +198,21 @@ export class ForumController {
     description: 'The topics have been successfully retrieved.',
     type: [TopicDto],
   })
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('topics')
-  async getAllTopics(@AppScope() appScope: string): Promise<TopicDto[]> {
+  async getAllTopics(
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
+  ): Promise<TopicDto[]> {
     appScope = this.requireAppScope(appScope);
-    return await firstValueFrom(
-      this.forumClient.send(
-        { cmd: TopicCommands.FIND_MANY },
-        { where: { appScope } }
-      )
+    return await this.forward(
+      { cmd: TopicCommands.FIND_MANY },
+      { where: { appScope }, requestingProfileId: user?.profileId }
     );
   }
 
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, IdentityThrottlerGuard)
   @ApiTags('topic')
   @ApiOperation({ summary: 'Update a topic by ID' })
   @ApiResponse({
@@ -166,16 +221,23 @@ export class ForumController {
     type: TopicDto,
   })
   @Put('topic/:id')
+  @Throttle(FORUM_WRITE_THROTTLE)
   @RequirePermissions('forum.topic.update')
   async updateTopic(
     @Param('id') id: string,
-    @Body() updateTopicDto: UpdateTopicDto
+    @Body() updateTopicDto: UpdateTopicDto,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ): Promise<TopicDto> {
-    return await firstValueFrom(
-      this.forumClient.send(
-        { cmd: TopicCommands.UPDATE },
-        { id, data: updateTopicDto }
-      )
+    return await this.forward(
+      { cmd: TopicCommands.UPDATE },
+      {
+        id,
+        data: updateTopicDto,
+        userId: user.userId,
+        profileId: user.profileId,
+        appScope: this.requireAppScope(appScope),
+      }
     );
   }
 
@@ -188,14 +250,24 @@ export class ForumController {
   })
   @Delete('topic/:id')
   @RequirePermissions('forum.topic.delete')
-  async deleteTopic(@Param('id') id: string): Promise<void> {
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: TopicCommands.DELETE }, { id })
+  async deleteTopic(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ): Promise<void> {
+    return await this.forward(
+      { cmd: TopicCommands.DELETE },
+      {
+        id,
+        userId: user.userId,
+        profileId: user.profileId,
+        appScope: this.requireAppScope(appScope),
+      }
     );
   }
 
   // Thread endpoints
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, IdentityThrottlerGuard)
   @ApiTags('thread')
   @ApiOperation({ summary: 'Create a new thread' })
   @ApiResponse({
@@ -205,7 +277,7 @@ export class ForumController {
   })
   @Post('thread')
   @RequirePermissions('forum.thread.create')
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @Throttle(FORUM_WRITE_THROTTLE)
   async createThread(
     @User() user,
     @Body() threadDto: CreateThreadDto,
@@ -213,10 +285,9 @@ export class ForumController {
   ) {
     this.logger.log(`Creating thread for user: ${user.userId}`);
     threadDto.userId = user.userId;
+    threadDto.profileId = user.profileId;
     threadDto.appScope = this.requireAppScope(appScope);
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: ThreadCommands.CREATE }, threadDto)
-    );
+    return await this.forward({ cmd: ThreadCommands.CREATE }, threadDto);
   }
 
   @ApiTags('thread')
@@ -226,14 +297,18 @@ export class ForumController {
     description: 'The thread has been successfully retrieved.',
     type: ThreadDto,
   })
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('thread/:id')
   async getThread(
     @Param('id') id: string,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
   ): Promise<ThreadDto> {
     appScope = this.requireAppScope(appScope);
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: ThreadCommands.FIND }, { id, appScope })
+    return await this.forward(
+      { cmd: ThreadCommands.FIND },
+      { id, appScope, requestingProfileId: user?.profileId }
     );
   }
 
@@ -244,17 +319,18 @@ export class ForumController {
     description: 'The posts have been successfully retrieved.',
     type: [ForumPostDto],
   })
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('thread/:threadId/posts')
   async getPostsByThread(
     @Param('threadId') threadId: string,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
   ): Promise<ForumPostDto[]> {
     appScope = this.requireAppScope(appScope);
-    return await firstValueFrom(
-      this.forumClient.send(
-        { cmd: ForumPostCommands.FIND_MANY },
-        { where: { threadId, appScope } }
-      )
+    return await this.forward(
+      { cmd: ForumPostCommands.FIND_MANY },
+      { where: { threadId, appScope }, requestingProfileId: user?.profileId }
     );
   }
 
@@ -265,10 +341,19 @@ export class ForumController {
     description: 'The threads have been successfully retrieved.',
     type: [ThreadDto],
   })
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('threads')
-  async getAllThreads(): Promise<ThreadDto[]> {
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: ThreadCommands.FIND_MANY }, {})
+  async getAllThreads(
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
+  ): Promise<ThreadDto[]> {
+    return await this.forward(
+      { cmd: ThreadCommands.FIND_MANY },
+      {
+        where: { appScope: this.requireAppScope(appScope) },
+        requestingProfileId: user?.profileId,
+      }
     );
   }
 
@@ -284,13 +369,19 @@ export class ForumController {
   @RequirePermissions('forum.thread.update')
   async updateThread(
     @Param('id') id: string,
-    @Body() updateThreadDto: UpdateThreadDto
+    @Body() updateThreadDto: UpdateThreadDto,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ): Promise<ThreadDto> {
-    return await firstValueFrom(
-      this.forumClient.send(
-        { cmd: ThreadCommands.UPDATE },
-        { id, data: updateThreadDto }
-      )
+    return await this.forward(
+      { cmd: ThreadCommands.UPDATE },
+      {
+        id,
+        data: updateThreadDto,
+        userId: user.userId,
+        profileId: user.profileId,
+        appScope: this.requireAppScope(appScope),
+      }
     );
   }
 
@@ -303,14 +394,24 @@ export class ForumController {
   })
   @Delete('thread/:id')
   @RequirePermissions('forum.thread.delete')
-  async deleteThread(@Param('id') id: string): Promise<void> {
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: ThreadCommands.DELETE }, { id })
+  async deleteThread(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ): Promise<void> {
+    return await this.forward(
+      { cmd: ThreadCommands.DELETE },
+      {
+        id,
+        userId: user.userId,
+        profileId: user.profileId,
+        appScope: this.requireAppScope(appScope),
+      }
     );
   }
 
   // Forum Post endpoints
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, IdentityThrottlerGuard)
   @ApiTags('forum-post')
   @ApiOperation({ summary: 'Create a new forum post' })
   @ApiResponse({
@@ -320,7 +421,7 @@ export class ForumController {
   })
   @Post('post')
   @RequirePermissions('forum.post.create')
-  @Throttle({ default: { limit: 50, ttl: 60000 } })
+  @Throttle(FORUM_WRITE_THROTTLE)
   async createForumPost(
     @User() user,
     @Body() postDto: CreateForumPostDto,
@@ -328,10 +429,9 @@ export class ForumController {
   ) {
     this.logger.log(`Creating forum post for user: ${user.userId}`);
     postDto.userId = user.userId;
+    postDto.profileId = user.profileId;
     postDto.appScope = this.requireAppScope(appScope);
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: ForumPostCommands.CREATE }, postDto)
-    );
+    return await this.forward({ cmd: ForumPostCommands.CREATE }, postDto);
   }
 
   @ApiTags('forum-post')
@@ -341,10 +441,21 @@ export class ForumController {
     description: 'The post has been successfully retrieved.',
     type: ForumPostDto,
   })
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('post/:id')
-  async getForumPost(@Param('id') id: string): Promise<ForumPostDto> {
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: ForumPostCommands.FIND }, { id })
+  async getForumPost(
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
+  ): Promise<ForumPostDto> {
+    return await this.forward(
+      { cmd: ForumPostCommands.FIND },
+      {
+        id,
+        appScope: this.requireAppScope(appScope),
+        requestingProfileId: user?.profileId,
+      }
     );
   }
 
@@ -355,10 +466,18 @@ export class ForumController {
     description: 'The posts have been successfully retrieved.',
     type: [ForumPostDto],
   })
+  @Public()
   @Get('posts')
-  async getAllForumPosts(): Promise<ForumPostDto[]> {
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: ForumPostCommands.FIND_MANY }, {})
+  async getAllForumPosts(
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
+  ): Promise<ForumPostDto[]> {
+    return await this.forward(
+      { cmd: ForumPostCommands.FIND_MANY },
+      {
+        where: { appScope: this.requireAppScope(appScope) },
+        requestingProfileId: user?.profileId,
+      }
     );
   }
 
@@ -375,18 +494,18 @@ export class ForumController {
   async updateForumPost(
     @Param('id') id: string,
     @Body() updatePostDto: UpdateForumPostDto,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ): Promise<ForumPostDto> {
-    return await firstValueFrom(
-      this.forumClient.send(
-        { cmd: ForumPostCommands.UPDATE },
-        {
-          id,
-          data: updatePostDto,
-          userId: user.userId,
-          profileId: user.profileId,
-        }
-      )
+    return await this.forward(
+      { cmd: ForumPostCommands.UPDATE },
+      {
+        id,
+        data: updatePostDto,
+        userId: user.userId,
+        profileId: user.profileId,
+        appScope: this.requireAppScope(appScope),
+      }
     );
   }
 
@@ -399,31 +518,51 @@ export class ForumController {
   })
   @Delete('post/:id')
   @RequirePermissions('forum.post.delete')
-  async deleteForumPost(@Param('id') id: string): Promise<void> {
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: ForumPostCommands.DELETE }, { id })
+  async deleteForumPost(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ): Promise<void> {
+    return await this.forward(
+      { cmd: ForumPostCommands.DELETE },
+      {
+        id,
+        userId: user.userId,
+        profileId: user.profileId,
+        appScope: this.requireAppScope(appScope),
+      }
     );
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, IdentityThrottlerGuard)
   @ApiTags('forum-moderation')
   @ApiOperation({ summary: 'Report forum content for moderation review' })
   @Post('report')
+  @Throttle(FORUM_REPORT_THROTTLE)
   async reportForumContent(
     @Body() dto: ReportForumContentDto,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ) {
-    return await firstValueFrom(
-      this.forumClient.send(
-        { cmd: ForumModerationCommands.REPORT_CONTENT },
-        {
-          reporterId: user.profileId,
-          contentType: dto.contentType,
-          contentId: dto.contentId,
-          reason: dto.reason,
-          description: dto.description,
-        }
-      )
+    if (
+      !FORUM_REPORT_TYPES.has(dto.contentType) ||
+      typeof dto.contentId !== 'string' ||
+      !dto.contentId.trim() ||
+      !FORUM_REPORT_REASONS.has(dto.reason) ||
+      (dto.description !== undefined && dto.description.length > 2000)
+    ) {
+      throw new BadRequestException('Invalid forum report target or reason.');
+    }
+    return await this.forward(
+      { cmd: ForumModerationCommands.REPORT_CONTENT },
+      {
+        reporterId: user.profileId,
+        contentType: dto.contentType,
+        contentId: dto.contentId,
+        reason: dto.reason,
+        description: dto.description,
+        appScope: this.requireAppScope(appScope),
+      }
     );
   }
 
@@ -431,13 +570,11 @@ export class ForumController {
   @ApiTags('forum-moderation')
   @ApiOperation({ summary: 'Get all forum moderation reports' })
   @Get('admin/reports')
-  @RequirePermissions('community.manage')
-  async getForumReports() {
-    return await firstValueFrom(
-      this.forumClient.send(
-        { cmd: ForumModerationCommands.GET_ALL_REPORTS },
-        {}
-      )
+  @RequirePermissions('forum.moderate')
+  async getForumReports(@AppScope() appScope: string) {
+    return await this.forward(
+      { cmd: ForumModerationCommands.GET_ALL_REPORTS },
+      { appScope: this.requireAppScope(appScope) }
     );
   }
 
@@ -445,20 +582,25 @@ export class ForumController {
   @ApiTags('forum-moderation')
   @ApiOperation({ summary: 'Update a forum moderation report status' })
   @Put('admin/reports/:id')
-  @RequirePermissions('community.manage')
+  @RequirePermissions('forum.moderate')
   async updateForumReportStatus(
     @Param('id') id: string,
-    @Body() dto: UpdateForumReportStatusDto
+    @Body() dto: UpdateForumReportStatusDto,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ) {
-    return await firstValueFrom(
-      this.forumClient.send(
-        { cmd: ForumModerationCommands.UPDATE_REPORT_STATUS },
-        {
-          id,
-          status: dto.status,
-          adminNotes: dto.adminNotes,
-        }
-      )
+    if (!REPORT_STATUSES.has(dto.status)) {
+      throw new BadRequestException('Unsupported report status.');
+    }
+    return await this.forward(
+      { cmd: ForumModerationCommands.UPDATE_REPORT_STATUS },
+      {
+        id,
+        status: dto.status,
+        adminNotes: dto.adminNotes,
+        appScope: this.requireAppScope(appScope),
+        moderatedBy: user.profileId,
+      }
     );
   }
 
@@ -466,22 +608,25 @@ export class ForumController {
   @ApiTags('forum-moderation')
   @ApiOperation({ summary: 'Soft moderate a forum thread' })
   @Put('admin/thread/:id/moderation')
-  @RequirePermissions('community.manage')
+  @RequirePermissions('forum.moderate')
   async moderateForumThread(
     @Param('id') id: string,
     @Body() dto: ModerateForumContentDto,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ) {
-    return await firstValueFrom(
-      this.forumClient.send(
-        { cmd: ForumModerationCommands.MODERATE_THREAD },
-        {
-          id,
-          moderationStatus: dto.moderationStatus,
-          adminNotes: dto.adminNotes,
-          moderatedBy: user.profileId,
-        }
-      )
+    if (!MODERATION_STATUSES.has(dto.moderationStatus)) {
+      throw new BadRequestException('Unsupported moderation status.');
+    }
+    return await this.forward(
+      { cmd: ForumModerationCommands.MODERATE_THREAD },
+      {
+        id,
+        moderationStatus: dto.moderationStatus,
+        adminNotes: dto.adminNotes,
+        moderatedBy: user.profileId,
+        appScope: this.requireAppScope(appScope),
+      }
     );
   }
 
@@ -489,22 +634,25 @@ export class ForumController {
   @ApiTags('forum-moderation')
   @ApiOperation({ summary: 'Soft moderate a forum post' })
   @Put('admin/post/:id/moderation')
-  @RequirePermissions('community.manage')
+  @RequirePermissions('forum.moderate')
   async moderateForumPost(
     @Param('id') id: string,
     @Body() dto: ModerateForumContentDto,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ) {
-    return await firstValueFrom(
-      this.forumClient.send(
-        { cmd: ForumModerationCommands.MODERATE_POST },
-        {
-          id,
-          moderationStatus: dto.moderationStatus,
-          adminNotes: dto.adminNotes,
-          moderatedBy: user.profileId,
-        }
-      )
+    if (!MODERATION_STATUSES.has(dto.moderationStatus)) {
+      throw new BadRequestException('Unsupported moderation status.');
+    }
+    return await this.forward(
+      { cmd: ForumModerationCommands.MODERATE_POST },
+      {
+        id,
+        moderationStatus: dto.moderationStatus,
+        adminNotes: dto.adminNotes,
+        moderatedBy: user.profileId,
+        appScope: this.requireAppScope(appScope),
+      }
     );
   }
 
@@ -517,10 +665,23 @@ export class ForumController {
     description: 'The search results have been successfully retrieved.',
     type: [TopicDto],
   })
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('search/topics')
-  async searchTopics(@Query() query: Partial<TopicDto>): Promise<TopicDto[]> {
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: TopicCommands.FIND_MANY }, { where: query })
+  async searchTopics(
+    @Query() query: Partial<TopicDto>,
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
+  ): Promise<TopicDto[]> {
+    return await this.forward(
+      { cmd: TopicCommands.FIND_MANY },
+      {
+        where: {
+          ...(query.title ? { title: query.title } : {}),
+          appScope: this.requireAppScope(appScope),
+        },
+        requestingProfileId: user?.profileId,
+      }
     );
   }
 
@@ -531,12 +692,23 @@ export class ForumController {
     description: 'The search results have been successfully retrieved.',
     type: [ThreadDto],
   })
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('search/threads')
   async searchThreads(
-    @Query() query: Partial<ThreadDto>
+    @Query() query: Partial<ThreadDto>,
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
   ): Promise<ThreadDto[]> {
-    return await firstValueFrom(
-      this.forumClient.send({ cmd: ThreadCommands.FIND_MANY }, { where: query })
+    return await this.forward(
+      { cmd: ThreadCommands.FIND_MANY },
+      {
+        where: {
+          ...(query.title ? { title: query.title } : {}),
+          appScope: this.requireAppScope(appScope),
+        },
+        requestingProfileId: user?.profileId,
+      }
     );
   }
 }

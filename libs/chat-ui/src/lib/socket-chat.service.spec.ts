@@ -20,6 +20,7 @@ describe('SocketChatService', () => {
     mockSocket = {
       emit: jest.fn(),
       on: jest.fn(),
+      off: jest.fn(),
       disconnect: jest.fn(),
       connect: jest.fn(),
     };
@@ -70,6 +71,121 @@ describe('SocketChatService', () => {
     expect(mockSocket.emit).toHaveBeenCalledWith('message', message);
   });
 
+  it('resolves acknowledged sends only after the server confirms persistence', async () => {
+    const message = {
+      id: 'stable-id',
+      conversationId: 'conversation-1',
+      content: 'retryable',
+    } as ChatMessage;
+    const pending = service.sendMessageWithAck(message);
+    const ack = mockSocket.emit.mock.calls.find(
+      ([event]: [string]) => event === 'message'
+    )[2];
+    expect(typeof ack).toBe('function');
+
+    ack({ success: true, messageId: 'stable-id' });
+
+    await expect(pending).resolves.toEqual({
+      success: true,
+      messageId: 'stable-id',
+    });
+  });
+
+  it('rejects acknowledged sends when the gateway reports a denied write', async () => {
+    const pending = service.sendMessageWithAck({
+      id: 'stable-id',
+      conversationId: 'conversation-1',
+      content: 'retryable',
+    } as ChatMessage);
+    const ack = mockSocket.emit.mock.calls.find(
+      ([event]: [string]) => event === 'message'
+    )[2];
+
+    ack({ success: false, statusCode: 403, message: 'Access was revoked' });
+
+    await expect(pending).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  it('reuses a UUID for the same failed draft and creates a new UUID when edited', async () => {
+    const draft = {
+      conversationId: 'conversation-1',
+      content: 'same exact draft',
+      senderId: 'profile-1',
+    };
+    const first = service.sendDraftMessage(draft);
+    const firstAck = mockSocket.emit.mock.calls.at(-1)[2];
+    firstAck({ success: false, statusCode: 408, message: 'Timed out' });
+    await expect(first).rejects.toMatchObject({ statusCode: 408 });
+
+    const retry = service.sendDraftMessage(draft);
+    const retryMessage = mockSocket.emit.mock.calls.at(-1)[1];
+    expect(retryMessage.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
+    expect(retryMessage.id).toBe(mockSocket.emit.mock.calls.at(-2)[1].id);
+    mockSocket.emit.mock.calls.at(-1)[2]({
+      success: true,
+      messageId: retryMessage.id,
+    });
+    await expect(retry).resolves.toMatchObject({ success: true });
+
+    const edited = service.sendDraftMessage({ ...draft, content: 'edited' });
+    const editedMessage = mockSocket.emit.mock.calls.at(-1)[1];
+    expect(editedMessage.id).not.toBe(retryMessage.id);
+    mockSocket.emit.mock.calls.at(-1)[2]({
+      success: true,
+      messageId: editedMessage.id,
+    });
+    await expect(edited).resolves.toMatchObject({ success: true });
+  });
+
+  it('keeps the fallback draft ID in UUID format when randomUUID is unavailable', async () => {
+    const originalCrypto = globalThis.crypto;
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: { ...originalCrypto, randomUUID: undefined },
+    });
+    try {
+      const pending = service.sendDraftMessage({
+        conversationId: 'conversation-1',
+        content: 'fallback id',
+      });
+      const [event, message, acknowledge] = mockSocket.emit.mock.calls.at(-1);
+      expect(event).toBe('message');
+      expect(message.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      );
+      acknowledge({ success: true, messageId: message.id });
+      await expect(pending).resolves.toMatchObject({ success: true });
+    } finally {
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: originalCrypto,
+      });
+    }
+  });
+
+  it('observes disconnect and reconnect events and removes only its listeners', () => {
+    const callback = jest.fn();
+    const dispose = service.onConnectionState(callback);
+    const connect = mockSocket.on.mock.calls
+      .filter(([event]: [string]) => event === 'connect')
+      .at(-1)[1];
+    const disconnect = mockSocket.on.mock.calls
+      .filter(([event]: [string]) => event === 'disconnect')
+      .at(-1)[1];
+
+    connect();
+    disconnect();
+    dispose();
+
+    expect(callback).toHaveBeenNthCalledWith(1, false);
+    expect(callback).toHaveBeenNthCalledWith(2, true);
+    expect(callback).toHaveBeenNthCalledWith(3, false);
+    expect(mockSocket.off).toHaveBeenCalledWith('connect', connect);
+    expect(mockSocket.off).toHaveBeenCalledWith('disconnect', disconnect);
+  });
+
   it('reconnects a manually disconnected socket before sending a message', () => {
     mockSocket.disconnected = true;
 
@@ -86,8 +202,19 @@ describe('SocketChatService', () => {
 
   it('should register on message callback', () => {
     const callback = jest.fn();
-    service.onMessage(callback);
-    expect(mockSocket.on).toHaveBeenCalledWith('message', callback);
+    const dispose = service.onMessage(callback);
+    const listener = mockSocket.on.mock.calls.find(
+      ([event]: [string, unknown]) => event === 'message'
+    )[1];
+    listener({ id: 'm1', content: 'hello', timestamp: '2026-10-06T00:00:00Z' });
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'm1',
+        timestamp: new Date('2026-10-06T00:00:00Z'),
+      })
+    );
+    dispose();
+    expect(mockSocket.off).toHaveBeenCalledWith('message', listener);
   });
 
   it('should disconnect socket on destroy', () => {
@@ -340,5 +467,38 @@ describe('SocketChatService', () => {
     });
     TestBed.inject(SocketChatService);
     expect(nsIo).toHaveBeenCalledWith('/chat', expect.any(Object));
+  });
+  it('rejects old-session draft completion without unlocking a new-session draft', async () => {
+    let finishOld!: (value: any) => void;
+    let finishNew!: (value: any) => void;
+    const acknowledgement = jest
+      .spyOn(service, 'sendMessageWithAck')
+      .mockImplementationOnce(
+        (message) =>
+          new Promise((resolve) => {
+            finishOld = () =>
+              resolve({ success: true, messageId: message.id! });
+          })
+      )
+      .mockImplementationOnce(
+        (message) =>
+          new Promise((resolve) => {
+            finishNew = () =>
+              resolve({ success: true, messageId: message.id! });
+          })
+      );
+    const message = { conversationId: 'shared', content: 'private draft' };
+    const old = service.sendDraftMessage(message);
+    const rejected = expect(old).rejects.toThrow('Chat session changed');
+    service.destroy();
+    const current = service.sendDraftMessage(message);
+    finishOld(undefined);
+    await rejected;
+    await expect(service.sendDraftMessage(message)).rejects.toThrow(
+      'A message is already being sent'
+    );
+    finishNew(undefined);
+    await expect(current).resolves.toMatchObject({ success: true });
+    expect(acknowledgement).toHaveBeenCalledTimes(2);
   });
 });

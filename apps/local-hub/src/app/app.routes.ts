@@ -1,13 +1,39 @@
+import {
+  AccountDeletionStatusComponent,
+  ReleaseInformationComponent,
+} from '@optimistic-tanuki/profile-ui';
 import { Route } from '@angular/router';
 import {
   emailAuthRoutes,
+  guardianConsentRoutes,
   OAuthCallbackComponent,
 } from '@optimistic-tanuki/auth-ui';
 import { AuthGuard } from './guards/auth.guard';
 import { MemberGuard } from './guards/member.guard';
+import { PublicContactPageComponent } from '@optimistic-tanuki/common-ui';
 
 export const appRoutes: Route[] = [
+  {
+    path: 'help',
+    component: ReleaseInformationComponent,
+    data: { appId: 'local-hub', view: 'guide' },
+  },
+  {
+    path: 'privacy',
+    component: ReleaseInformationComponent,
+    data: { appId: 'local-hub', view: 'policy' },
+  },
+  {
+    path: 'account-deletion',
+    component: AccountDeletionStatusComponent,
+    data: { appId: 'local-hub' },
+  },
   ...emailAuthRoutes('ot-local-hub-authToken', true),
+  ...guardianConsentRoutes(),
+  {
+    path: 'contact',
+    component: PublicContactPageComponent,
+  },
   {
     path: '',
     loadComponent: () =>
@@ -169,6 +195,14 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/account/account.component').then(
         (m) => m.AccountComponent
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'guardian',
+    loadComponent: () =>
+      import('@optimistic-tanuki/guardian-ui').then(
+        (m) => m.GuardianConsoleComponent
       ),
     canActivate: [AuthGuard],
   },

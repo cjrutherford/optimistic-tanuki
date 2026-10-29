@@ -1,3 +1,34 @@
+import {
+  ActivityRetentionService,
+  activityRetentionRule,
+} from '@optimistic-tanuki/logger';
+import type { DataSource as RetentionDataSource } from 'typeorm';
+import { ActivityRetentionStatusService } from './activity-retention-status.service';
+import { AccountDeletionBrowserBoundaryAdapter } from '../account-deletion/account-deletion-browser-boundary.adapter';
+import { AccountDeletionRuntimeService } from '../account-deletion/account-deletion-runtime.service';
+import { AccountDeletionOwnerReadbacksAdapter } from '../account-deletion/account-deletion-owner-readbacks.adapter';
+import { AccountDeletionGatewayAdapter } from '../account-deletion/account-deletion-gateway.adapter';
+import type { DeletionNonOrmAdapter } from '../account-deletion/account-deletion-non-orm.service';
+import { AccountDeletionProviderGrantsAdapter } from '../account-deletion/account-deletion-provider-grants.adapter';
+import {
+  AccountDeletionNonOrmService,
+  DELETION_NON_ORM_ADAPTERS,
+} from '../account-deletion/account-deletion-non-orm.service';
+import { AccountDeletionFinalizerService } from '../account-deletion/account-deletion-finalizer.service';
+import {
+  AccountDeletionRunnerService,
+  DELETION_OWNER_PORTS,
+} from '../account-deletion/account-deletion-runner.service';
+import { AccountDeletionRpcOwnersService } from '../account-deletion/account-deletion-rpc-owners.service';
+import { AccountDeletionOwnerController } from '../account-deletion/account-deletion-owner.controller';
+import { AccountDeletionOwnerService } from '../account-deletion/account-deletion-owner.service';
+import { AccountDeletionController } from '../account-deletion/account-deletion.controller';
+import { AccountDeletionFenceService } from '../account-deletion/account-deletion-fence.service';
+import { AccountDeletionOperationEntity } from '../account-deletion/account-deletion-operation.entity';
+import { AccountDeletionAuthorityService } from '../account-deletion/account-deletion-authority.service';
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
+import { VideosAccountExportSnapshotClient } from '../account-export-jobs/videos-account-export-snapshot.client';
+import { AssetsAccountExportSnapshotClient } from '../account-export-jobs/assets-account-export-snapshot.client';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -34,6 +65,44 @@ import loadDatabase from './loadDatabase';
 import { BootstrapController } from './bootstrap.controller';
 import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
 import { EmailAuthService } from './email-auth.service';
+import { GuardianPermissionEntity } from '../guardian-permissions/entities/guardian-permission.entity';
+import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { GuardianPolicyNoticeService } from '../guardian-permissions/guardian-policy-notice.service';
+import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
+import { AccountExportService } from './account-export.service';
+import { AccountExportController } from './account-export.controller';
+import { AccountExportJobService } from '../account-export-jobs/account-export-job.service';
+import { AccountExportCaptureLeaseService } from '../account-export-jobs/account-export-capture-lease.service';
+import { ProfileAccountExportSnapshotClient } from '../account-export-jobs/profile-account-export-snapshot.client';
+import { PermissionsAccountExportSnapshotClient } from '../account-export-jobs/permissions-account-export-snapshot.client';
+import { SocialAccountExportSnapshotClient } from '../account-export-jobs/social-account-export-snapshot.client';
+import { ForumAccountExportSnapshotClient } from '../account-export-jobs/forum-account-export-snapshot.client';
+import { WorkspaceAccountExportSnapshotClient } from '../account-export-jobs/workspace-account-export-snapshot.client';
+import { AppConfiguratorAccountExportSnapshotClient } from '../account-export-jobs/app-configurator-account-export-snapshot.client';
+import { AccountExportArtifactService } from '../account-export-jobs/account-export-artifact.service';
+import { AccountExportDownloadService } from '../account-export-jobs/account-export-download.service';
+import { AccountExportArtifactRetentionService } from '../account-export-jobs/account-export-artifact-retention.service';
+import {
+  AccountExportArtifactBuilderService,
+  AccountExportArtifactStoreService,
+  EnvelopeEncryptionService,
+} from '@optimistic-tanuki/storage';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { ClassifiedsAccountExportSnapshotClient } from '../account-export-jobs/classifieds-account-export-snapshot.client';
+import { PaymentsAccountExportSnapshotClient } from '../account-export-jobs/payments-account-export-snapshot.client';
+import { ChatAccountExportSnapshotClient } from '../account-export-jobs/chat-account-export-snapshot.client';
+import { AccountExportJobEntity } from '../account-export-jobs/entities/account-export-job.entity';
+import { AccountDeletionPublicController } from '../account-deletion/account-deletion-public.controller';
+import { AccountDeletionReceiptService } from '../account-deletion/account-deletion-receipt.service';
+import { AuthenticationAccountExportOwnerService } from '../account-export-owner/account-export-owner.service';
+import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  AccountExportOwnerSpoolService,
+  AccountExportSnapshotPullService,
+} from '@optimistic-tanuki/storage';
 
 @Module({
   imports: [
@@ -73,8 +142,94 @@ import { EmailAuthService } from './email-auth.service';
       },
     }),
   ],
-  controllers: [AppController, BootstrapController],
+  controllers: [
+    AppController,
+    BootstrapController,
+    AccountExportController,
+    AccountDeletionController,
+    AccountDeletionPublicController,
+    AccountDeletionOwnerController,
+  ],
   providers: [
+    {
+      provide: ActivityRetentionService,
+      useFactory: (db: RetentionDataSource) =>
+        new ActivityRetentionService('authentication', db, [
+          activityRetentionRule(db.getMetadata(GuardianPolicyNoticeEntity)),
+        ]),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    ActivityRetentionStatusService,
+    AccountDeletionNonOrmService,
+    AccountDeletionReceiptService,
+    AccountDeletionRuntimeService,
+    AccountDeletionFinalizerService,
+    AccountDeletionRunnerService,
+    AccountDeletionRpcOwnersService,
+    AccountDeletionProviderGrantsAdapter,
+    AccountDeletionGatewayAdapter,
+    AccountDeletionBrowserBoundaryAdapter,
+    AccountDeletionOwnerReadbacksAdapter,
+    {
+      provide: DELETION_NON_ORM_ADAPTERS,
+      useFactory: (
+        provider: AccountDeletionProviderGrantsAdapter,
+        gateway: AccountDeletionGatewayAdapter,
+        readbacks: AccountDeletionOwnerReadbacksAdapter,
+        browser: AccountDeletionBrowserBoundaryAdapter
+      ) => {
+        const adapters = new Map<string, DeletionNonOrmAdapter>([
+          ['provider-grants', provider],
+          ['search-copies', readbacks.forFamily('search-copies')],
+          [
+            'media-versions-and-keys',
+            readbacks.forFamily('media-versions-and-keys'),
+          ],
+        ]);
+        if (gateway.origins.length) {
+          adapters.set('oauth-and-sessions', gateway);
+          adapters.set('permission-caches', gateway.permissionAdapter());
+          for (const family of [
+            'jobs-and-spools',
+            'diagnostics-and-audits',
+          ] as const) {
+            const sources = readbacks.forFamily(family);
+            const processes = gateway.runtimeAdapter(
+              family === 'diagnostics-and-audits'
+            );
+            adapters.set(family, {
+              purge: async (subject) => {
+                await sources.purge(subject);
+                await processes.purge(subject);
+              },
+              readback: async (subject) => {
+                const counts = await Promise.all([
+                  sources.readback(subject),
+                  processes.readback(subject),
+                ]);
+                if (counts.some((count) => count !== 0))
+                  throw Error('DELETION_RUNTIME_UNVERIFIED');
+                return 0;
+              },
+            });
+          }
+        }
+        if (browser.origins.length && gateway.origins.length)
+          adapters.set('browser-owned-state', browser);
+        return adapters;
+      },
+      inject: [
+        AccountDeletionProviderGrantsAdapter,
+        AccountDeletionGatewayAdapter,
+        AccountDeletionOwnerReadbacksAdapter,
+        AccountDeletionBrowserBoundaryAdapter,
+      ],
+    },
+    {
+      provide: DELETION_OWNER_PORTS,
+      useFactory: (owners: AccountDeletionRpcOwnersService) => owners.ports,
+      inject: [AccountDeletionRpcOwnersService],
+    },
     {
       provide: JwtService,
       useFactory: (config: ConfigService) => {
@@ -84,9 +239,185 @@ import { EmailAuthService } from './email-auth.service';
       inject: [ConfigService],
     },
     AppService,
+    AccountDeletionAuthorityService,
+    AccountDeletionOwnerService,
+    AccountDeletionFenceService,
+    AccountExportService,
+    AccountExportOwnerSpoolService,
+    {
+      provide: AccountExportSnapshotPullService,
+      useFactory: (spool: AccountExportOwnerSpoolService) =>
+        new AccountExportSnapshotPullService(spool),
+      inject: [AccountExportOwnerSpoolService],
+    },
+    ProfileAccountExportSnapshotClient,
+    AssetsAccountExportSnapshotClient,
+    VideosAccountExportSnapshotClient,
+    PermissionsAccountExportSnapshotClient,
+    SocialAccountExportSnapshotClient,
+    ForumAccountExportSnapshotClient,
+    WorkspaceAccountExportSnapshotClient,
+    AppConfiguratorAccountExportSnapshotClient,
+    ChatAccountExportSnapshotClient,
+    ClassifiedsAccountExportSnapshotClient,
+    PaymentsAccountExportSnapshotClient,
+    AccountExportArtifactService,
+    AccountExportDownloadService,
+    AccountExportArtifactRetentionService,
+    AccountExportArtifactBuilderService,
+    {
+      provide: EnvelopeEncryptionService,
+      useFactory: () => new EnvelopeEncryptionService(),
+    },
+    {
+      provide: AccountExportArtifactStoreService,
+      useFactory: (encryption: EnvelopeEncryptionService) =>
+        new AccountExportArtifactStoreService(encryption, {
+          root:
+            process.env['ACCOUNT_EXPORT_ARTIFACT_DIR'] ||
+            join(tmpdir(), 'ot-account-export-artifacts'),
+        }),
+      inject: [EnvelopeEncryptionService],
+    },
+    {
+      provide: AuthenticationAccountExportOwnerService,
+      useFactory: (dataSource: DataSource, auth: AppService) =>
+        new AuthenticationAccountExportOwnerService(dataSource, auth),
+      inject: ['AUTHENTICATION_CONNECTION', AppService],
+    },
+    AccountExportJobService,
+    AccountExportCaptureLeaseService,
+    {
+      provide: ServiceTokens.VIDEOS_SERVICE,
+      useFactory: (config: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: config.get<{ host: string; port: number }>(
+            'services.videos'
+          ),
+        }),
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.ASSETS_SERVICE,
+      useFactory: (config: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: config.get<{ host: string; port: number }>(
+            'services.assets'
+          ),
+        }),
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.PROFILE_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const target = configService.get<{ host: string; port: number }>(
+          'services.profile'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: target,
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.PERMISSIONS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const target = configService.get<{ host: string; port: number }>(
+          'services.permissions'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: target,
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.SOCIAL_SERVICE,
+      useFactory: (configService: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: configService.get<{ host: string; port: number }>(
+            'services.social'
+          ),
+        }),
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.FORUM_SERVICE,
+      useFactory: (configService: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: configService.get<{ host: string; port: number }>(
+            'services.forum'
+          ),
+        }),
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.WORKSPACE_SERVICE,
+      useFactory: (config: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: config.get<{ host: string; port: number }>(
+            'services.workspace'
+          ),
+        }),
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.APP_CONFIGURATOR_SERVICE,
+      useFactory: (config: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: config.get<{ host: string; port: number }>(
+            'services.app_configurator'
+          ),
+        }),
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
+      useFactory: (config: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: config.get<{ host: string; port: number }>(
+            'services.chat_collector'
+          ),
+        }),
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.CLASSIFIEDS_SERVICE,
+      useFactory: (config: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: config.get<{ host: string; port: number }>(
+            'services.classifieds'
+          ),
+        }),
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.PAYMENTS_SERVICE,
+      useFactory: (config: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: config.get<{ host: string; port: number }>(
+            'services.payments'
+          ),
+        }),
+      inject: [ConfigService],
+    },
     OAuthService,
     OAuthConfigValidator,
     EmailAuthService,
+    ProfileOwnershipVerifier,
+    GuardianPermissionService,
+    GuardianPolicyNoticeService,
     SaltedHashService,
     PasswordPolicyService,
     KeyService,
@@ -149,8 +480,37 @@ import { EmailAuthService } from './email-auth.service';
       inject: ['AUTHENTICATION_CONNECTION'],
     },
     {
+      provide: getRepositoryToken(GuardianPermissionEntity),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(GuardianPermissionEntity),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(GuardianPolicyNoticeEntity),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(GuardianPolicyNoticeEntity),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
       provide: getRepositoryToken(OAuthProviderEntity),
       useFactory: (ds: DataSource) => ds.getRepository(OAuthProviderEntity),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AccountDeletionOperationEntity),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(AccountDeletionOperationEntity),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AccountDeletionWriteFenceEntity),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(AccountDeletionWriteFenceEntity),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AccountExportJobEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(AccountExportJobEntity),
       inject: ['AUTHENTICATION_CONNECTION'],
     },
   ],

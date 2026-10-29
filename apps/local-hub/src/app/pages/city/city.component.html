@@ -269,7 +269,11 @@
             [loading]="classifiedsLoading()"
             [showPostButton]="canPostClassified()"
             [showContact]="isAuthenticated()"
+            [showSafetyActions]="isAuthenticated()"
             (postNew)="openClassifiedForm()"
+            (reportListing)="reportClassified($event)"
+            (reportSeller)="reportClassifiedSeller($event)"
+            (blockSeller)="blockClassifiedSeller($event)"
           ></lib-classified-list>
         </div>
       </section>
@@ -378,16 +382,24 @@
               [content]="post"
               [profile]="postProfiles()[post.profileId]"
               [availableProfiles]="postProfiles()"
+              [currentUserId]="getActingProfileId()"
               [communityInfo]="{
                 id: post.communityId || '',
                 name: city()!.name
               }"
+              (reportPost)="reportDiscussionPost(post)"
               (click)="navigateToPost(posts()[$index].communitySlug)"
             ></lib-post>
             }
           </div>
         </div>
       </section>
+      } @if (reportTargetPostId()) {
+      <lib-report-dialog
+        contentType="post"
+        [contentId]="reportTargetPostId()!"
+        (closeDialog)="closeDiscussionReport()"
+      ></lib-report-dialog>
       }
     </main>
   </div>
@@ -663,4 +675,11 @@
   ></lib-classified-form>
   }
 </otui-modal>
-} }
+} } @if (safetyReport(); as report) {
+<app-safety-report-dialog
+  [contentType]="report.contentType"
+  [contentId]="report.contentId"
+  (cancel)="safetyReport.set(null)"
+  (submitted)="submitClassifiedSafetyReport($event)"
+></app-safety-report-dialog>
+}

@@ -8,6 +8,8 @@ import {
 } from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { TcpServiceConfig } from '../config';
+import { PermissionsCacheService } from '../auth/permissions-cache.service';
+import { withPermissionMutationInvalidation } from '../auth/permissions-mutation-client';
 import {
   DisabledClientProxy,
   GatewayComposition,
@@ -204,7 +206,10 @@ export const createGatewayServiceProviders = (
 ): FactoryProvider[] =>
   gatewayServiceProviderDefinitions.map((definition) => ({
     provide: definition.token,
-    useFactory: (configService: ConfigService): ClientProxy => {
+    useFactory: (
+      configService: ConfigService,
+      permissionsCache?: PermissionsCacheService
+    ): ClientProxy => {
       if (!isServiceEnabled(composition, definition.serviceId)) {
         return new DisabledClientProxy(definition.serviceId);
       }
@@ -222,13 +227,20 @@ export const createGatewayServiceProviders = (
       // upstream service is therefore enforced at the request layer by the
       // RequestTimeoutInterceptor (RxJS `timeout`), which bounds how long any
       // gateway request will wait for a microservice reply.
-      return ClientProxyFactory.create({
+      const client = ClientProxyFactory.create({
         transport: Transport.TCP,
         options: {
           host: serviceConfig.host,
           port: serviceConfig.port,
         },
       });
+      return definition.token === ServiceTokens.PERMISSIONS_SERVICE &&
+        permissionsCache
+        ? withPermissionMutationInvalidation(client, permissionsCache)
+        : client;
     },
-    inject: [ConfigService],
+    inject:
+      definition.token === ServiceTokens.PERMISSIONS_SERVICE
+        ? [ConfigService, PermissionsCacheService]
+        : [ConfigService],
   }));

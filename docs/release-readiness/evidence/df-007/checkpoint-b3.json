@@ -1,0 +1,486 @@
+{
+  "checkpoint": "DF-007-B3",
+  "verifiedDate": "2026-10-18",
+  "result": "locally verified internal incomplete Permissions preview and owned-profile identity pages",
+  "baseRevision": "69e7388a84ddc9b2c0eaf79ea09f0c6ed829277d",
+  "commands": {
+    "test": {
+      "command": [
+        "pnpm",
+        "exec",
+        "nx",
+        "affected",
+        "-t",
+        "test",
+        "-c",
+        "ci",
+        "--files=apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/assets/config.yaml.sample,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/permissions/src/app/account-export.controller.ts,apps/permissions/src/app/account-export.service.spec.ts,apps/permissions/src/app/account-export.service.ts,apps/permissions/src/app/app.module.ts,apps/permissions/src/assets/config.yaml,apps/permissions/src/config.ts,apps/profile/src/app/account-export.service.spec.ts,apps/profile/src/app/account-export.service.ts,apps/profile/src/profiles/account-export.controller.ts,e2e/docker-compose.authentication-e2e.yaml,e2e/docker-compose.e2e-stack.yaml,libs/constants/src/lib/libs/permissions.ts,libs/constants/src/lib/libs/profile.test.ts,libs/profile/contracts/src/lib/profile-commands.ts,libs/profile/contracts/src/lib/profile-contract-parity.spec.ts,scripts/e2e-environment-manifest.mjs,scripts/tests/e2e-environment-manifest.test.mjs",
+        "--parallel=3",
+        "--outputStyle=static",
+        "--exclude=directory-*"
+      ],
+      "exitCode": 0
+    },
+    "lint": {
+      "command": [
+        "pnpm",
+        "exec",
+        "nx",
+        "affected",
+        "-t",
+        "lint",
+        "--files=apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/assets/config.yaml.sample,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/permissions/src/app/account-export.controller.ts,apps/permissions/src/app/account-export.service.spec.ts,apps/permissions/src/app/account-export.service.ts,apps/permissions/src/app/app.module.ts,apps/permissions/src/assets/config.yaml,apps/permissions/src/config.ts,apps/profile/src/app/account-export.service.spec.ts,apps/profile/src/app/account-export.service.ts,apps/profile/src/profiles/account-export.controller.ts,e2e/docker-compose.authentication-e2e.yaml,e2e/docker-compose.e2e-stack.yaml,libs/constants/src/lib/libs/permissions.ts,libs/constants/src/lib/libs/profile.test.ts,libs/profile/contracts/src/lib/profile-commands.ts,libs/profile/contracts/src/lib/profile-contract-parity.spec.ts,scripts/e2e-environment-manifest.mjs,scripts/tests/e2e-environment-manifest.test.mjs",
+        "--parallel=3",
+        "--outputStyle=static",
+        "--exclude=directory-*,*-e2e"
+      ],
+      "exitCode": 0
+    },
+    "build": {
+      "command": [
+        "pnpm",
+        "exec",
+        "nx",
+        "affected",
+        "-t",
+        "build",
+        "--files=apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/assets/config.yaml.sample,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/permissions/src/app/account-export.controller.ts,apps/permissions/src/app/account-export.service.spec.ts,apps/permissions/src/app/account-export.service.ts,apps/permissions/src/app/app.module.ts,apps/permissions/src/assets/config.yaml,apps/permissions/src/config.ts,apps/profile/src/app/account-export.service.spec.ts,apps/profile/src/app/account-export.service.ts,apps/profile/src/profiles/account-export.controller.ts,e2e/docker-compose.authentication-e2e.yaml,e2e/docker-compose.e2e-stack.yaml,libs/constants/src/lib/libs/permissions.ts,libs/constants/src/lib/libs/profile.test.ts,libs/profile/contracts/src/lib/profile-commands.ts,libs/profile/contracts/src/lib/profile-contract-parity.spec.ts,scripts/e2e-environment-manifest.mjs,scripts/tests/e2e-environment-manifest.test.mjs",
+        "--parallel=3",
+        "--outputStyle=static",
+        "--exclude=directory-*"
+      ],
+      "exitCode": 0
+    },
+    "final-format": {
+      "command": [
+        "pnpm",
+        "exec",
+        "nx",
+        "format:check",
+        "--files=apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/assets/config.yaml.sample,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/permissions/src/app/account-export.controller.ts,apps/permissions/src/app/account-export.service.spec.ts,apps/permissions/src/app/account-export.service.ts,apps/permissions/src/app/app.module.ts,apps/permissions/src/assets/config.yaml,apps/permissions/src/config.ts,apps/profile/src/app/account-export.service.spec.ts,apps/profile/src/app/account-export.service.ts,apps/profile/src/profiles/account-export.controller.ts,e2e/docker-compose.authentication-e2e.yaml,e2e/docker-compose.e2e-stack.yaml,libs/constants/src/lib/libs/permissions.ts,libs/constants/src/lib/libs/profile.test.ts,libs/profile/contracts/src/lib/profile-commands.ts,libs/profile/contracts/src/lib/profile-contract-parity.spec.ts,scripts/e2e-environment-manifest.mjs,scripts/tests/e2e-environment-manifest.test.mjs"
+      ],
+      "exitCode": 0
+    },
+    "final-workflow-contracts": {
+      "command": [
+        "node",
+        "--test",
+        "scripts/tests/e2e-environment-manifest.test.mjs",
+        "scripts/tests/wait-for-e2e-readiness.test.mjs",
+        "scripts/tests/resolve-e2e-images.test.mjs",
+        "scripts/tests/ui-e2e-ci-contract.test.mjs"
+      ],
+      "exitCode": 0
+    },
+    "final-diff": {
+      "command": ["git", "diff", "--check"],
+      "exitCode": 0
+    },
+    "migration-governance": {
+      "command": ["pnpm", "run", "validate:typeorm-migrations"],
+      "exitCode": 0
+    },
+    "migration-setup": {
+      "command": ["node", "--test", "scripts/tests/setup-and-migrate.test.mjs"],
+      "exitCode": 0
+    },
+    "e2e-environment": {
+      "command": ["node", "scripts/validate-e2e-environment.mjs"],
+      "exitCode": 0
+    },
+    "ui-heuristics": {
+      "command": ["pnpm", "run", "ui:heuristics:ci"],
+      "exitCode": 0
+    },
+    "no-personality-scss": {
+      "command": ["pnpm", "run", "check:no-personality-scss"],
+      "exitCode": 0
+    },
+    "personality-audit": {
+      "command": ["pnpm", "run", "check:personality-audit"],
+      "exitCode": 0
+    },
+    "client-interface-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/client-interface-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "forgeofwill-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/forgeofwill-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "digital-homestead-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/digital-homestead-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "christopherrutherford-net-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/christopherrutherford-net-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "owner-console-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/owner-console-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "store-client-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/store-client-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "learning-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/learning-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "configurable-client-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/configurable-client-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "openapi": {
+      "command": ["pnpm", "run", "get-openapi"],
+      "exitCode": 0
+    },
+    "orval": {
+      "command": ["pnpm", "exec", "orval", "--config", "orval.config.ts"],
+      "exitCode": 0
+    },
+    "generated-format": {
+      "command": [
+        "pnpm",
+        "exec",
+        "prettier",
+        "--write",
+        "libs/billing-sdk/src/generated/",
+        "libs/chat-ui-data-access/src/generated/",
+        "libs/payments-ui-data-access/src/generated/",
+        "libs/store-data-access/src/generated/",
+        "libs/finance/data-access/src/generated/",
+        "libs/blogging-data-access/src/generated/",
+        "libs/social-data-access/src/generated/",
+        "libs/learning-ui-data-access/src/generated/",
+        "libs/profile-ui-data-access/src/generated/"
+      ],
+      "exitCode": 0
+    },
+    "generated-drift": {
+      "command": [
+        "git",
+        "diff",
+        "--exit-code",
+        "--",
+        "libs/billing-sdk/src/generated/",
+        "libs/chat-ui-data-access/src/generated/",
+        "libs/payments-ui-data-access/src/generated/",
+        "libs/store-data-access/src/generated/",
+        "libs/finance/data-access/src/generated/",
+        "libs/blogging-data-access/src/generated/",
+        "libs/social-data-access/src/generated/",
+        "libs/learning-ui-data-access/src/generated/",
+        "libs/profile-ui-data-access/src/generated/"
+      ],
+      "exitCode": 0
+    },
+    "storybook-build": {
+      "command": [
+        "pnpm",
+        "exec",
+        "nx",
+        "build",
+        "ui-playground",
+        "--outputStyle=static"
+      ],
+      "exitCode": 0
+    },
+    "packages-test": {
+      "command": ["pnpm", "run", "packages:test"],
+      "exitCode": 0
+    },
+    "packages-check": {
+      "command": ["pnpm", "run", "packages:check"],
+      "exitCode": 0
+    },
+    "packages-build": {
+      "command": ["pnpm", "run", "packages:build"],
+      "exitCode": 0
+    },
+    "build-dev": {
+      "command": ["pnpm", "run", "build:dev"],
+      "exitCode": 0
+    }
+  },
+  "sourceFiles": {
+    "apps/authentication-e2e/project.json": "c0aad2ddf467ce3bde64a7136009efecf1ddca5dda676220d1644cdce5a4f091",
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "242201077ff1a96e0f1a080925a3aebac85479fc3fd097daedf1d414803d75f8",
+    "apps/authentication/src/app/account-export.service.spec.ts": "a62ce7cec9c6c58192c15b8e9c90fa74cd90d8d15fcec44dd76d31ba270ba2eb",
+    "apps/authentication/src/app/account-export.service.ts": "3a5e1215eb30c10223488ed3be6ce520036812bc19f0678440a5763b3e27610b",
+    "apps/authentication/src/app/app.module.ts": "58cbbd063edcbd713a1a73ea8355f112e25af59b6f7d835a763bd33421717b22",
+    "apps/authentication/src/assets/config.yaml.sample": "e84c457620bed5e8a6e6f54a5b8a499051a5c403ba73133ec5efb99e644b2563",
+    "apps/authentication/src/config.spec.ts": "af28f434fb49ecae81aefced44c66ef6cc4bbbc7967078d794b472ebcb8a43cf",
+    "apps/authentication/src/config.ts": "0f208e3e282c94288afc942dbd9452f0e723af1ac3a93b61bb42897a795fa3f0",
+    "apps/permissions/src/app/account-export.controller.ts": "0a712e04c96537008af82785653b4ee874eba3e00290bb7f6e643efefde6964d",
+    "apps/permissions/src/app/account-export.service.spec.ts": "0264f9aedde062fc81e7447be5bf07794599c51d350f8bab7821f034e5f137ac",
+    "apps/permissions/src/app/account-export.service.ts": "c402889969bf32866147bde8003f60039d043f04a0268c19c54f69fb321777a6",
+    "apps/permissions/src/app/app.module.ts": "deb2200d869f9a9de2cfb93cb9d333389fa1c10e64fb5794df7ac7dfb7a7fb40",
+    "apps/permissions/src/assets/config.yaml": "461009841bd17af6f44b70dfb78a1573365b1deaa8db97e083c38c283e1b40a0",
+    "apps/permissions/src/config.ts": "954dd47b7bb21577e34979a2afbcdd3fd66be1774b81c8d89615482828bad2b1",
+    "apps/profile/src/app/account-export.service.spec.ts": "a3df0b3e9babe97301bd63913c403a3e16cc11596c5f65cbd9295a56e747e389",
+    "apps/profile/src/app/account-export.service.ts": "9941586e8b81e09ff453df72acb1d0ad0d8bfda8c424330a46c829e3aa2c27f8",
+    "apps/profile/src/profiles/account-export.controller.ts": "2318b71a7b7c4cb28016fd598c29ad8ecd884f2a4178a7c4b40c75cbace9b3e3",
+    "e2e/docker-compose.authentication-e2e.yaml": "7567409af6a89456b182e3ebe258daa639f85f643827d197442d1d9968dc8a0f",
+    "e2e/docker-compose.e2e-stack.yaml": "cfc19229c2de5332d7263f9b5712700841e0e3dbcd1587d3b9c4382c28c2e7bf",
+    "libs/constants/src/lib/libs/permissions.ts": "e45c65643ceaacfedad9153a155801addaf61bb0fa14ac16fe73a30eacc47541",
+    "libs/constants/src/lib/libs/profile.test.ts": "4795d896840371829c8bc7d1e8b99ab96a54fd42d899b13dd6613e29bf9cbd74",
+    "libs/profile/contracts/src/lib/profile-commands.ts": "e80f85d20eaac78c06daf250db65e1ab661eda61bd9f4b78b65534ac636ecb8f",
+    "libs/profile/contracts/src/lib/profile-contract-parity.spec.ts": "9471c75fb187cac8fa5a2aeedbf54d5ad68e80ff2b492a5cc6e69fb8dc72bb56",
+    "scripts/e2e-environment-manifest.mjs": "1f15828341a525f1855618251afe17b3d1b9990ea2d7247c2df7336dfb1dd737",
+    "scripts/tests/e2e-environment-manifest.test.mjs": "d68b9d67811dce63db86766b63742cf9aaf902fcd9403f20d7ba988fad8805f9"
+  },
+  "excludedFileCount": 43,
+  "excludedFilesUnchanged": true,
+  "imagePatchSha256": "a1cfb912a8e3b86dd56a0ae957a7026ed7f15ad93dfc33676b8a61e837dabc24",
+  "fullStagedSourceManifestSha256": "d83728dcbee85d9864f104abdd6ea7015fcb6f5713ef8b81b6b71570e0b87831",
+  "images": {
+    "authentication": {
+      "tag": "ot-df007-b3-permissions/authentication:b3-a1cfb912a8e3",
+      "id": "sha256:ef98f191b001a73aaf9d58e9fd918b9bec1fc6e38b57e8a335b6e2bee5637745",
+      "labels": {
+        "io.optimistic-tanuki.account-rights.patch-sha256": "a1cfb912a8e3b86dd56a0ae957a7026ed7f15ad93dfc33676b8a61e837dabc24",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b3-permissions",
+        "org.opencontainers.image.revision": "69e7388a84ddc9b2c0eaf79ea09f0c6ed829277d"
+      }
+    },
+    "profile": {
+      "tag": "ot-df007-b3-permissions/profile:b3-a1cfb912a8e3",
+      "id": "sha256:25de20a8908e8ca9a856bcebc967d370c86f517e3847e6c63907765d229f1e68",
+      "labels": {
+        "io.optimistic-tanuki.account-rights.patch-sha256": "a1cfb912a8e3b86dd56a0ae957a7026ed7f15ad93dfc33676b8a61e837dabc24",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b3-permissions",
+        "org.opencontainers.image.revision": "69e7388a84ddc9b2c0eaf79ea09f0c6ed829277d"
+      }
+    },
+    "permissions": {
+      "tag": "ot-df007-b3-permissions/permissions:b3-a1cfb912a8e3",
+      "id": "sha256:2d81357b222d0f72826c642f7653e7dccd90f19e3129ac806b3acf2ac633a612",
+      "labels": {
+        "io.optimistic-tanuki.account-rights.patch-sha256": "a1cfb912a8e3b86dd56a0ae957a7026ed7f15ad93dfc33676b8a61e837dabc24",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b3-permissions",
+        "org.opencontainers.image.revision": "69e7388a84ddc9b2c0eaf79ea09f0c6ed829277d"
+      }
+    }
+  },
+  "verificationSummary": {
+    "affectedTestProjects": 81,
+    "affectedLintProjects": 79,
+    "productionBuildProjects": 62,
+    "productionBuildDependencyTasks": 17,
+    "developmentBuildProjects": 48,
+    "developmentBuildDependencyTasks": 27,
+    "authenticationTests": 285,
+    "profileTests": 68,
+    "permissionsTests": 123,
+    "profileContractTests": 12,
+    "constantsTests": 48,
+    "workflowContracts": 40,
+    "fastValidationChecks": 14,
+    "sampleYamlFormatExitCode": 0
+  },
+  "runtime": {
+    "command": ["pnpm", "exec", "nx", "run", "authentication-e2e:e2e:ci"],
+    "environment": {
+      "SKIP_SETUP": "true",
+      "HOST": "127.0.0.1",
+      "PORT": "3001",
+      "BASE_URL": "http://127.0.0.1:3001",
+      "ACCOUNT_EXPORT_E2E_DB_MARKER": "auth-profile-export-fixture-v1",
+      "ACCOUNT_EXPORT_E2E_DB_HOST": "127.0.0.1",
+      "E2E_DB_PORT": "15432"
+    },
+    "project": "ot-df007-b3-permissions",
+    "status": {
+      "startup": "0",
+      "e2e": "0",
+      "email-runtime-check": "0",
+      "fixture-readback": "0",
+      "fixture-readback-zero-counts": "0",
+      "teardown": "0"
+    },
+    "passedSuites": 2,
+    "passedTests": 20,
+    "directFixtureCounts": {
+      "fixture_users": 0,
+      "fixture_tokens": 0,
+      "fixture_action_tokens": 0,
+      "fixture_keys": 0,
+      "fixture_oauth_owned_prefix": 0,
+      "fixture_oauth_foreign_prefix": 0,
+      "fixture_guardian_permission_versions": 0,
+      "fixture_policy_notice_version": 0,
+      "fixture_action_token_hash": 0,
+      "fixture_profile_activity_tuples": 0,
+      "fixture_profiles": 0,
+      "fixture_timelines": 0,
+      "fixture_role_assignments_private_database": 0,
+      "fixture_roles_named_prefix": 0,
+      "fixture_app_scopes_named_prefix": 0,
+      "fixture_permission_rows_private_database": 0,
+      "fixture_role_permission_links_private_database": 0,
+      "fixture_app_scope_permission_links_private_database": 0
+    },
+    "emailLogCheck": {
+      "smtp_host": "explicit-empty",
+      "console_email": "0",
+      "emailservice_send": "0",
+      "emailservice_sensitive_send": "0",
+      "emailservice_send_failure": "0",
+      "emailservice_sensitive_send_failure": "0",
+      "emailservice_no_provider": "0"
+    },
+    "remainingProjectResources": {
+      "containers": 0,
+      "networks": 0,
+      "volumes": 0
+    },
+    "readbackLimit": "Token/key counts joined to remaining fixture users alone do not prove orphan absence; exact-ID assertions run in the test and the fresh private database was removed by project teardown. Permissions readback counts private assignment and join tables directly."
+  },
+  "reviewSha256": "f96981533dc22771c452d35e4bdd3c5f588674fd0bc9652b115707750ffee29f",
+  "privateLogHashes": {
+    "app-lint.log": "bddcf43e1344eecc7028514545bbdbd131756d3e4db2c735b75d2f50badfac2a",
+    "authentication-test.log": "e52b8e7b15ec9cfada7fcbc6aabe7eb41ca31ef793d3e4c1bbbe739076e86ca3",
+    "boundary-fix-build.log": "fc294fce39bbd45143d90c046bc91b7010e216a6d4c6c48ccdaa684919da2501",
+    "boundary-fix-checks.log": "962e7792307e13ec01d13a65bced88c29b8625c78add71c7747ef748a838e86f",
+    "boundary-fix-lint.log": "3ff5229852311d6270a68b52dcadcf283cebfc6931ac690adcb5c1caa9131bd2",
+    "boundary-fix-test.log": "8dadf9d7cf6b5bcb0b61975fd0b34b880cde205e5c6d9040f2fedc9f1d66f35a",
+    "contracts-checks.log": "6542fcbfe4c64678b70834429412fbbaee93b3081f89f63036b8f645da0bb367",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "e2e-lint.log": "7397c6aece90470eba1d231ddec7617d5e4661d88fcfed9f14ac9960d30f17fd",
+    "e2e-manifest.test.log": "e1a1d9d43fc6a7567e22a73dae98877f705b5400129da9c9217ec3bcf370ddea",
+    "e2e-typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "final-app-lint.log": "54d5b2ee6964c7985b559975adf8b4fb0d1d0f8dfb1277ca9dbc1d19ab2d763d",
+    "final-auth-permissions-tests.log": "30143daaf21457cbb0839621a146689b6ea8c473daacc58f04f17b418b8be1fb",
+    "final-e2e-lint.log": "708c4e9ed8b4dcd6f9a3229994592e0d58a035d4bf8c0cdad6ae3f1ca8942172",
+    "final-prod-build.log": "5814fbdada803d17763ce389008475a072c4ba6f51c251bb88e2827af066200e",
+    "final-profile-permissions-lint.log": "c71f3aaf1a60aeb4070899a05de011fd7b555c2c8632178e41ca12966a1f43ee",
+    "final-profile-permissions-tests.log": "7173e6054466dca0ae699472648df6b86842295505794313b441d059c2a8cbe7",
+    "final-unit-test.log": "8503c6b91d2b86e2c3d575d1a50c4fe9b9ddf2cfcd45560c848e45519947d9ac",
+    "format-check.log": "2941e4554b8ac9e56c55f1d561b10c95c3e93e99417bce694684d14adbe2df34",
+    "permissions-test.log": "7856097667a5ac6aebf15162d4c6e8dcb9636916c0763836b893aa365205ff98",
+    "prod-build.log": "905e2a3727fe271f7cf2f5c122f15384eeda19159c62d1165d40a4a8ee1356de",
+    "profile-test.log": "5d880cacc517c618501dfeda67d68fbd2dda80cc37c51faf4e64ab69a9e26930",
+    "protected-hashes.log": "8728b2d0f8fd75066e3514ab5412c4fc5ce462caceff81718a3cffb273968f2c",
+    "workflow-contracts.log": "834a8a243a88df9a94168100e85a932573af061c9da6d483062c5f06362fba6c",
+    "gates/build-dev.log": "9d3af715c3dc63b9d1f742076dde6e80f404089a97b231642742907c70b2b494",
+    "gates/build.log": "361ed1e77d30dfdced6ad320ec7978cc739ad7dd8ef8823891030890bc7e04c6",
+    "gates/christopherrutherford-net-collection.log": "799a0b1152280bb3dde7aef8e56927a4bf535a9eb7101a7af62e35fba6c5fcaa",
+    "gates/client-interface-collection.log": "6d5550f41056f5db71617ec7d07daabc9e824070eb7c94194ee01b00b6741b19",
+    "gates/configurable-client-collection.log": "2b298db54b2457b8d48fe5beee3187a4cc47fcbff94efdc8a63c54b12f82a085",
+    "gates/digital-homestead-collection.log": "98d57d38b524212a618cd80ff6fea3fedcd083c3c5d0ac9fa0dd42cc30071e36",
+    "gates/e2e-environment.log": "6f27f70ad91eec5257492a377d85cda4b45f97a63f3adee0bd91f2b2b9f0e600",
+    "gates/final-diff.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "gates/final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "gates/final-workflow-contracts.log": "6969e3a930eeaa16c7e3f10615d2c8ace0a4bb02ed0813b00776b5def08ae532",
+    "gates/forgeofwill-collection.log": "c18a9d4f8dc48b4a3eae901d156093f4c845d7f24c4ed3fe3e13192d4c6728c2",
+    "gates/generated-drift.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "gates/generated-format.log": "199bf1568c12f9ec763c73fe9c89705acf35aef579d31933af475a16626a4fe4",
+    "gates/learning-collection.log": "ff8e9b3c7b39a411ca8736ed4ffd57d7e6d211cf8759526a3a64de9a7321a1c1",
+    "gates/lint.log": "d66192547cd2abf861af411a4d9d1d91e99b57a6fe1fcab4dd5c686f1250f1d5",
+    "gates/migration-governance.log": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9",
+    "gates/migration-setup.log": "cb36223ecb9e1ad42f9f4183b786266067507e98726ab2937cae1267e665089a",
+    "gates/no-personality-scss.log": "c0c41ebfcacad923185d62f7cfde2cd49ed055c9be7c7774078ab95addc127ce",
+    "gates/openapi.log": "30c5175cce95b7dd5cb1c2d7acc710c1bc1d8ab69de225b58f77fe36e0985e64",
+    "gates/orval.log": "cb501bb9be1648ab50f3ba2901b46462850ff289230a46953597e7c71d8382ac",
+    "gates/owner-console-collection.log": "ff80e980c51d54a1cac275e187d8ccfbd01275a9fba0d83cc30450c5660470fa",
+    "gates/packages-build.log": "90e5fb298804de4ba345b159ed5883451f44397bd327965d5cb063755b40e903",
+    "gates/packages-check.log": "5412e075ae6be092d654198b9ca8c57afd3d43e5ac3c654df4267d276e623b50",
+    "gates/packages-test.log": "59da799af8ac5abef03f88ab6fcd1638bbc319a9eaac634d6f8f546b99891728",
+    "gates/personality-audit.log": "52c0a4ef0a86e32ba56209b0b9fd0bd7671eccded6974b37710cecf639026b5d",
+    "gates/sample-yaml-format.log": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20",
+    "gates/store-client-collection.log": "1fd7e20b1d63aca84f30dc17546a47356e8f7d4826498e887c2b30a747100d37",
+    "gates/storybook-build.log": "ff1714ff67c8200cca06b8fbf3f50013304ff3f9a36a7227c7a8a0747d0ff8b3",
+    "gates/test.log": "9c9d2907ef0fe55e6868c7cee9bf9516f23f23124f29a9cacb82e13ef54172f9",
+    "gates/ui-heuristics.log": "7d3254309f832127e6770ee157385de768e25a407ae1d5a8f066765523726897",
+    "runtime/final-a1cfb912a8e3/authentication-e2e-ci.log": "f1832f34484133898b32c672605fd8c1e151bc917eeaf6118ab5e8452d0003f7",
+    "runtime/final-a1cfb912a8e3/authentication-runtime.log": "bfbe767c8618e3eac47f3bb06084f858eab3315a918703db7c3e6cc994c18551",
+    "runtime/final-a1cfb912a8e3/build-authentication.log": "d57047a8f9d56de8f1157defbfa7562b03b1d4bc9a0ef7e45aabda7e42a553fa",
+    "runtime/final-a1cfb912a8e3/build-permissions.log": "4d3028ef595bfb4158cf37d36d35682bbdff8d694d20304e521dc67b32370b29",
+    "runtime/final-a1cfb912a8e3/build-profile.log": "f9f91ff967ed16bc1856b531dd30860724fe4e6073b1e1b0380db48a3a1ed2c2",
+    "runtime/final-a1cfb912a8e3/compose-config-final-preflight.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "runtime/final-a1cfb912a8e3/compose-config.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "runtime/final-a1cfb912a8e3/compose-down.log": "dff8e9580046a88bf94784df54912f14a9db644c2e5fac3ded8fa56e4e183f6c",
+    "runtime/final-a1cfb912a8e3/compose-ps-ready.log": "8f34d16a25483eb0fffce26b24250093a268c14f98fab81a8d1b119e3a196e53",
+    "runtime/final-a1cfb912a8e3/compose-up.log": "1f4dc28d390ead6f4141ef6cade1deea768d0496f3ae97e6a538aea53e5b4729",
+    "runtime/final-a1cfb912a8e3/gate-check-before-runtime-explicit.log": "30a8590ca3bed4c72f2666caa76ef2bd325573190ad2a4101ba2cdf983bb28cb",
+    "runtime/final-a1cfb912a8e3/gate-check-before-runtime.log": "30a8590ca3bed4c72f2666caa76ef2bd325573190ad2a4101ba2cdf983bb28cb",
+    "runtime/final-a1cfb912a8e3/image-label-preflight.log": "03844a7ef6200d8d5e86e71286751ae575d9a2b37af6d6d94425714e1c52614c",
+    "runtime/final-a1cfb912a8e3/port-preflight-explicit.log": "53a7a48aafced07664cf7761dd45ec45699def38c4e7f837c7e546bc5a562a26",
+    "runtime/final-a1cfb912a8e3/port-preflight.log": "53a7a48aafced07664cf7761dd45ec45699def38c4e7f837c7e546bc5a562a26"
+  },
+  "reusedBaseline": "Frozen installation retained from unchanged dependency/lockfile baseline; no dependencies changed.",
+  "verificationTiming": "All root gates and static review cover the frozen 25-file source before runtime; root independently verified every staged overlay, all three image IDs/source labels, excluded files, and final project resource absence.",
+  "repairs": "An initial writer lint check rejected a direct profile-contracts import across the existing scope boundary. The final Permissions type import uses the existing models barrel; no boundary rule or alias was relaxed. A private runner heredoc was corrected before startup without container impact; no application repair or runtime retry was required.",
+  "notRun": [
+    "Browser UX E2E: internal service-only checkpoint; no UI changes",
+    "Public export, deletion, portable media, providers/backups and production qualification",
+    "Real guardian activation or provider/email delivery: revoked links and terminal notice records are synthetic fixtures",
+    "Unchanged Go/catalog/deployment inventory advisory checks retained from checkpoint A; compliance-audit advisory discrepancy remains open"
+  ],
+  "acceptance": {
+    "fullExport": false,
+    "downloadable": false,
+    "deletion": false,
+    "inventoryAccepted": false,
+    "DF007Accepted": false,
+    "RR11Accepted": false
+  }
+}

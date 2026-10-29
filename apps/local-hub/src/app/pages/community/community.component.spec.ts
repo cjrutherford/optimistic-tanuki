@@ -99,6 +99,18 @@ describe('CommunityComponent', () => {
     fixture.detectChanges();
   });
 
+  it('uses only an authenticated acting profile for chat identity', () => {
+    authStateMock.isAuthenticated = true;
+    authStateMock.getActingProfileId.mockReturnValue('profile-1');
+    expect(component.chatActorProfileId).toBe('profile-1');
+    authStateMock.getUserData.mockReturnValueOnce({
+      userId: 'account-only',
+    } as any);
+    expect(component.chatActorProfileId).toBe('');
+    authStateMock.isAuthenticated = false;
+    expect(component.chatActorProfileId).toBe('');
+  });
+
   it('should create', () => {
     expect(component).toBeTruthy();
   });

@@ -1,3 +1,4 @@
+import { deletionProfiles, cacheKeySelected } from './cache-deletion';
 import { Injectable, Logger } from '@nestjs/common';
 import { ICacheProvider, CacheStats } from './cache-provider.interface';
 
@@ -27,6 +28,20 @@ export class MemoryCacheProvider implements ICacheProvider {
     this.logger.log(
       `MemoryCacheProvider initialized with TTL=${ttl}ms, maxSize=${maxSize}`
     );
+  }
+
+  async purgeProfiles(profileIds: readonly string[]): Promise<void> {
+    const profiles = deletionProfiles(profileIds);
+    if (this.cache.size > 10000) throw Error('PERMISSION_CACHE_BOUND');
+    for (const key of this.cache.keys())
+      if (cacheKeySelected(key, profiles)) this.cache.delete(key);
+  }
+  async countProfiles(profileIds: readonly string[]): Promise<number> {
+    const profiles = deletionProfiles(profileIds);
+    if (this.cache.size > 10000) throw Error('PERMISSION_CACHE_BOUND');
+    return [...this.cache.keys()].filter((key) =>
+      cacheKeySelected(key, profiles)
+    ).length;
   }
 
   async get(key: string): Promise<boolean | null> {

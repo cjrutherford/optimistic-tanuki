@@ -1,0 +1,191 @@
+{
+  "checkpoint": "DF-007-J4",
+  "date": "2026-10-20",
+  "status": "locally-verified-current-entity-reader-with-legacy-data-blocker",
+  "baseCommit": "b36ad2031f5ed1e0adbb958e2bb2373b83916ed0",
+  "sourceFiles": {
+    "apps/profile/src/app/app.module.ts": "2bcc21c53cf2bd48e74a013e6ceb2531e02348cc1e3a7abe3449ffcf06d1fea0",
+    "apps/profile/src/app/account-export-legacy-guard.ts": "efe40377a62bf4385bc7fe6807887ef6c1d82fe9f2986674d71c350f4ac06945",
+    "apps/profile/src/app/account-export-legacy-guard.spec.ts": "5e5415348a68ad7ee794cc0935fd6181980116e382ae7dbcc941e0f424510a05",
+    "apps/profile/src/app/account-export-owner.service.ts": "0a07846c45a863f99599c0b9e49e889e8c6b5e88e6a8a24a04e0845a68a711f9",
+    "apps/profile/src/app/account-export-owner.service.spec.ts": "f517a79539e22efc6576386e277a335e2310fc37f1a5f1cd83d1d693c174c9aa",
+    "apps/profile/src/app/account-export-owner.postgres.spec.ts": "a553d7f1d055fe72147374d3c869cc265ac4d46f109227d537ebdf5775a4b2f7",
+    "apps/profile/src/app/account-export-owner.failure.postgres.spec.ts": "143a5bae21f38477c8a45c31118721dbaae8e18aa7e983bdb56ec44c06129896",
+    "libs/storage/src/lib/account-export-owner-emitter.ts": "f9c33960279791d26e094e7f04424af392b85fd146fdd836ba7a26528a1ead96",
+    "libs/storage/src/lib/account-export-owner-emitter.spec.ts": "f916990cc64bb5372cd7f242b4500308f7c777011c32ce95779f97b2c6373044",
+    "libs/storage/src/index.ts": "730f534970f04820a5263b739dbb6fb50d1f2e1d71a1be977daabb94014d1d10"
+  },
+  "scope": {
+    "owner": "profile",
+    "currentEntityTables": 3,
+    "virtualSources": 7,
+    "legacyTablesUncovered": ["goal", "project"],
+    "legacyTimelineColumnsUncovered": ["relatedGoalId", "relatedProjectId"],
+    "legacyOwnedDataBehavior": "reject capture before terminal; adapters still required",
+    "profileJobIntegration": false,
+    "remoteSnapshotHandle": false,
+    "accountArtifact": false,
+    "deletion": false
+  },
+  "checks": {
+    "postgres": {
+      "command": [
+        "pnpm",
+        "exec",
+        "nx",
+        "run",
+        "profile:test",
+        "--testFile=account-export-owner.*postgres.spec.ts",
+        "--runInBand"
+      ],
+      "suitesPassed": 2,
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "realDatabase": true,
+      "actualOwningMigrations": true,
+      "synchronize": false,
+      "authClient": "stub",
+      "uuid": "Only unrelated Storage adapter dependency substituted with node crypto; actual reader/emitter/spool/barrel remain real",
+      "fixtureOwnedProfiles": 1006,
+      "fixtureOwnedTimelines": 1005,
+      "concurrentInsertExcluded": true,
+      "microsecondAndUnicodePreservation": true,
+      "inlinePngJpegBytesAndMultiChunkPng": true,
+      "dependentGuardianPrivacy": true,
+      "legacyGuardAndForeignLegacyRows": true,
+      "actualSpoolSuccessAndFailureFdCleanup": true,
+      "callbackEnteredBeforeTimeout": true
+    },
+    "units": {
+      "authorization": {
+        "passed": 3,
+        "evidence": "Luna direct tool output; no saved raw log; delegated handoff retained",
+        "command": "pnpm nx test profile --testFile=apps/profile/src/app/account-export-owner.service.spec.ts --runInBand"
+      },
+      "legacyGuard": {
+        "passed": 8,
+        "command": "pnpm exec nx run profile:test --testFile=account-export-legacy-guard.spec.ts --runInBand"
+      },
+      "emitterExisting": {
+        "passed": 4,
+        "command": "pnpm nx test storage --testFile=libs/storage/src/lib/account-export-owner-emitter.spec.ts --runInBand"
+      },
+      "emitterBytePacking": {
+        "passed": 1,
+        "unselected": 4,
+        "command": "pnpm exec nx run storage:test --testFile=account-export-owner-emitter.spec.ts --testNamePattern=\"packs pages by serialized bytes\" --runInBand"
+      }
+    },
+    "build": "profile production PASS",
+    "lint": "profile and storage PASS; Profile rechecked after final test amendment",
+    "schema": "No schema changes. Actual prior migrations applied to fresh isolated DB; no migration generation or revert claimed."
+  },
+  "runtime": {
+    "imageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+    "database": "profile_owner_j4_fixture",
+    "hostPort": 15549,
+    "realApplicationOrRpc": false,
+    "independentReadback": {
+      "database": "profile_owner_j4_fixture",
+      "sourceTableCounts": {
+        "profile": 0,
+        "timeline": 0,
+        "guardianProfileActivity": 0,
+        "legacyGoal": 0,
+        "legacyProject": 0
+      }
+    },
+    "teardown": {
+      "containerRemoved": "8f7716457e317b6bf19cb403e66a706ff7aea4b2468abbf94936f3d883a84d73",
+      "anonymousVolumesRemoved": [
+        "6d2e7ec6f668518e27749e091e33390fb5472f5e593ae70470bfe9e15cfe8c48"
+      ],
+      "remainingProjectContainers": 0,
+      "noHostBinds": true,
+      "sourceTableCountsBeforeTeardown": {
+        "profile": 0,
+        "timeline": 0,
+        "guardianProfileActivity": 0,
+        "legacyGoal": 0,
+        "legacyProject": 0
+      }
+    }
+  },
+  "fieldDispositions": {
+    "path": "profile-owner-fields-j4.json",
+    "sha256": "55bacd5e5a017bb43998008eea48289e68df706a35481231762a86fcb0f5c6a4"
+  },
+  "evidence": {
+    "postgres.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-owner/postgres.log",
+      "sha256": "d5b48e44c84aca907b51cfa1a3a7138448770288680fe6fbd3a711bf69de726a"
+    },
+    "postgres-result.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-owner/postgres-result.json",
+      "sha256": "4b5f1b4de751ab15d5406f8ecfec584e2529ecfee333018be0dd6c8047657478"
+    },
+    "emitter-byte-packing.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-owner/emitter-byte-packing.log",
+      "sha256": "c2acc0e6dd54d9e8ba99285161f5aebf66d4b79cd538857e662f63ec16b37302"
+    },
+    "emitter-delegated-four-tests.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-owner/emitter-delegated-four-tests.log",
+      "sha256": "24e021c61d1b5da38a6acd6b52f38ff03f507367fe2f4872936744787ea0a022"
+    },
+    "legacy-guard-tests.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-owner/legacy-guard-tests.log",
+      "sha256": "e22425806ea50adb8adf0670b6954eb4cecbd27b7dcecc4d1bbdc68e3b945783"
+    },
+    "delegated-unit-evidence.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-owner/delegated-unit-evidence.json",
+      "sha256": "4ad7fe534f015281bf7596a474c4eba0d20fe4f335b9cff47f86efbc44b14b0c"
+    },
+    "build.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-owner/build.log",
+      "sha256": "a168462a3c8a1e08f3612c9284e36ed9cf9af92db945539b2295367301f70449"
+    },
+    "lint.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-owner/lint.log",
+      "sha256": "4a6dbfd9fa4231ff3b8e2d49a716ddb6f02a33c15f1324584f0ed7a906ba9d0b"
+    },
+    "independent-db-readback.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-owner/independent-db-readback.json",
+      "sha256": "73bfeb8a73d15dc45da3a02320811751f969149d264ef9bf9c29c244d64a5cbf"
+    },
+    "teardown.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-owner/teardown.json",
+      "sha256": "1ff7933c2945b70229e2ce93bf5ab916db6ee20730656c7a076ba93810be5410"
+    },
+    "profile-lint-final.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-owner/profile-lint-final.log",
+      "sha256": "bd999688ad62967728c1e8ff78b89b266001086c30f4f9a8b68b3279772981be"
+    }
+  },
+  "protectedWip": {
+    "files": 43,
+    "unchanged": true
+  },
+  "diagnosticAttempts": [
+    "Initial isolatedPG:6passed3failed due substring untyped overload",
+    "After integer casts:6passed3failed due UUID/varchar guardianjoin",
+    "After join cast:8passed1failed due long-reference naming mismatch",
+    "Focused repaired case:1passed8unselected; final10case selection then passed",
+    "Temporary Storage barrel mocks were removed; diagnosed transitive uuid ESM dependency is substituted only in tests."
+  ],
+  "notVerified": [
+    "Live Auth/RPC validation or Profile coordinator integration",
+    "Legacy goal/project export adapters and legacy timeline projection",
+    "Cross-owner stable identity handle/remote transport",
+    "Complete ownership inventory, Assets/Videos bytes or global portable artifact",
+    "Deletion/revocation/readback and shared UI",
+    "Application container/restart, browser E2E, actual CI execution or production qualification",
+    "Aggregate capacity, full image-codec validation or hard cancellation of stalled DB acquisition"
+  ],
+  "remaining": [
+    "Legacy Profile adapters",
+    "Authorized remote snapshot/identity transport and Profile job consumption",
+    "Other owner adapters, portable artifacts, deletion and shared UI",
+    "Selected items2,4,6 in order after local item1; external flows and release qualification separately owned"
+  ]
+}

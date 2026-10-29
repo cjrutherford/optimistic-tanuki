@@ -1,13 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { JwtService } from '@nestjs/jwt';
 import { Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 import { ChatController } from './chat.controller';
+import { ChatGateway } from '../../app/chat-gateway/chat.gateway';
 import {
   ChatCommands,
+  PrivacyCommands,
   ProfileCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
@@ -17,6 +19,8 @@ describe('ChatController', () => {
   let controller: ChatController;
   let chatService: { send: jest.Mock };
   let profileService: { send: jest.Mock };
+  let socialService: { send: jest.Mock };
+  const notifications = { notifyPersistedMessage: jest.fn() };
 
   const mockUser: UserDetails = {
     userId: 'user-1',
@@ -28,6 +32,9 @@ describe('ChatController', () => {
   };
 
   beforeEach(async () => {
+    notifications.notifyPersistedMessage
+      .mockReset()
+      .mockResolvedValue(undefined);
     chatService = {
       send: jest.fn().mockReturnValue(of({})),
     };
@@ -40,9 +47,29 @@ describe('ChatController', () => {
         })
       ),
     };
+    socialService = {
+      send: jest.fn((pattern) =>
+        of(
+          pattern.cmd === 'GET_MEMBERS'
+            ? [
+                {
+                  profileId: 'profile-1',
+                  status: 'approved',
+                  role: 'owner',
+                },
+              ]
+            : false
+        )
+      ),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        { provide: ChatGateway, useValue: notifications },
+        {
+          provide: ServiceTokens.SOCIAL_SERVICE,
+          useValue: socialService,
+        },
         {
           provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
           useValue: chatService,
@@ -135,6 +162,35 @@ describe('ChatController', () => {
       { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
       { participantIds: ['profile-1', 'profile-2'] }
     );
+    expect(socialService.send).toHaveBeenCalledWith(
+      { cmd: PrivacyCommands.IS_USER_BLOCKED },
+      { blockerId: 'profile-1', blockedId: 'profile-2' }
+    );
+    expect(socialService.send).toHaveBeenCalledWith(
+      { cmd: PrivacyCommands.IS_USER_BLOCKED },
+      { blockerId: 'profile-2', blockedId: 'profile-1' }
+    );
+  });
+
+  it('refuses direct conversation creation when either participant blocked the other', async () => {
+    socialService.send.mockImplementation((pattern, payload) =>
+      of(
+        pattern.cmd === PrivacyCommands.IS_USER_BLOCKED &&
+          payload.blockerId === 'profile-2'
+      )
+    );
+
+    await expect(
+      controller.getOrCreateDirectChat(
+        { recipientProfileId: 'profile-2' },
+        mockUser,
+        'client-interface'
+      )
+    ).rejects.toMatchObject({ status: 403 });
+    expect(chatService.send).not.toHaveBeenCalledWith(
+      { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
+      expect.anything()
+    );
   });
 
   it('rejects a recipient outside the current app scope', async () => {
@@ -153,7 +209,13 @@ describe('ChatController', () => {
   });
 
   it('should send message with senderId bound to auth user profile', async () => {
-    chatService.send.mockReturnValue(of({ id: 'message-1' }));
+    chatService.send.mockImplementation((pattern) =>
+      of(
+        pattern.cmd === ChatCommands.GET_CONVERSATION
+          ? { type: 'direct', participants: ['profile-1', 'profile-2'] }
+          : { id: 'message-1' }
+      )
+    );
 
     await controller.sendMessage(
       {
@@ -172,6 +234,97 @@ describe('ChatController', () => {
         recipientIds: ['profile-2'],
         senderId: 'profile-1',
       }
+    );
+  });
+
+  it('notifies live recipients of the persisted REST message, not caller-supplied recipients', async () => {
+    const stored = {
+      id: 'message-1',
+      senderId: 'profile-1',
+      recipients: ['profile-2'],
+      content: 'saved',
+    };
+    chatService.send.mockImplementation(({ cmd }) =>
+      of(
+        cmd === ChatCommands.GET_CONVERSATION
+          ? { type: 'direct', participants: ['profile-1', 'profile-2'] }
+          : stored
+      )
+    );
+    await expect(
+      controller.sendMessage(
+        {
+          conversationId: 'conv-1',
+          content: 'saved',
+          recipientIds: ['forged'],
+        },
+        mockUser
+      )
+    ).resolves.toEqual(stored);
+    expect(notifications.notifyPersistedMessage).toHaveBeenCalledWith(
+      'conv-1',
+      stored
+    );
+  });
+
+  it('does not fail a durable REST send when live delivery fails', async () => {
+    const stored = { id: 'message-1', senderId: 'profile-1', recipients: [] };
+    chatService.send.mockReturnValue(of(stored));
+    notifications.notifyPersistedMessage.mockRejectedValue(
+      new Error('connection lost')
+    );
+    await expect(
+      controller.sendMessage(
+        { conversationId: 'conv-1', content: 'saved', recipientIds: [] },
+        mockUser
+      )
+    ).resolves.toEqual(stored);
+    expect(notifications.notifyPersistedMessage).toHaveBeenCalled();
+  });
+
+  it('does not notify recipients when persistence fails', async () => {
+    chatService.send.mockImplementation(({ cmd }) =>
+      cmd === ChatCommands.SEND_MESSAGE
+        ? throwError(() => ({ statusCode: 503 }))
+        : of({ type: 'community' })
+    );
+    await expect(
+      controller.sendMessage(
+        { conversationId: 'conv-1', content: 'saved', recipientIds: [] },
+        mockUser
+      )
+    ).rejects.toMatchObject({ status: 503 });
+    expect(notifications.notifyPersistedMessage).not.toHaveBeenCalled();
+  });
+
+  it('refuses to send into an existing direct conversation if either participant blocked the other', async () => {
+    chatService.send.mockImplementation((pattern) =>
+      of(
+        pattern.cmd === ChatCommands.GET_CONVERSATION
+          ? { type: 'direct', participants: ['profile-1', 'profile-2'] }
+          : { id: 'message-1' }
+      )
+    );
+    socialService.send.mockImplementation((pattern, payload) =>
+      of(
+        pattern.cmd === PrivacyCommands.IS_USER_BLOCKED &&
+          payload.blockerId === 'profile-2'
+      )
+    );
+
+    await expect(
+      controller.sendMessage(
+        {
+          conversationId: 'conv-1',
+          content: 'hello',
+          recipientIds: ['profile-2'],
+        },
+        mockUser
+      )
+    ).rejects.toMatchObject({ status: 403 });
+    expect(chatService.send).not.toHaveBeenCalledWith(
+      { cmd: ChatCommands.SEND_MESSAGE },
+      expect.anything()
     );
   });
 });

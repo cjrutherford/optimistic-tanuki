@@ -9,6 +9,82 @@ import {
 } from '@optimistic-tanuki/constants';
 
 describe('RoleInitService', () => {
+  it('attaches an existing permission by exact name and app scope', async () => {
+    const permissionsClient = {
+      send: jest
+        .fn()
+        .mockImplementation((pattern: { cmd: string }, payload: any) => {
+          if (pattern.cmd === AppScopeCommands.GetByName) {
+            return of({ id: 'scope-local-hub', name: payload.name });
+          }
+          if (pattern.cmd === PermissionCommands.Create) {
+            return throwError(() => new Error('permission already exists'));
+          }
+          if (pattern.cmd === PermissionCommands.GetAll) {
+            return of(
+              payload.where.name === 'asset.create'
+                ? [
+                    {
+                      id: 'permission-localhub-asset-create',
+                      name: 'asset.create',
+                      resource: 'asset',
+                      action: 'create',
+                      appScopeId: 'scope-local-hub',
+                      targetId: null,
+                    },
+                  ]
+                : []
+            );
+          }
+          if (pattern.cmd === RoleCommands.Create) {
+            return of({ id: 'role-local-hub-member', name: payload.name });
+          }
+          return of({ ok: true });
+        }),
+    };
+    const service = new RoleInitService(permissionsClient as any);
+    (service as any).logger = {
+      log: jest.fn(),
+      debug: jest.fn(),
+      error: jest.fn(),
+    } as unknown as Logger;
+    const options = new RoleInitBuilder()
+      .setScopeName('local-hub')
+      .setProfile('profile-1')
+      .addAppScopeDefaults()
+      .build();
+
+    await service.processNow(options);
+
+    expect(permissionsClient.send).toHaveBeenCalledWith(
+      { cmd: PermissionCommands.Create },
+      expect.objectContaining({
+        name: 'asset.create',
+        appScopeId: 'scope-local-hub',
+      })
+    );
+    expect(permissionsClient.send).toHaveBeenCalledWith(
+      { cmd: PermissionCommands.GetAll },
+      {
+        where: {
+          name: 'asset.create',
+          appScopeId: 'scope-local-hub',
+        },
+      }
+    );
+    expect(permissionsClient.send).toHaveBeenCalledWith(
+      { cmd: RoleCommands.AddPermission },
+      {
+        roleId: 'role-local-hub-member',
+        permissionId: 'permission-localhub-asset-create',
+      }
+    );
+    expect(permissionsClient.send).not.toHaveBeenCalledWith(
+      { cmd: RoleCommands.AddPermission },
+      expect.objectContaining({ permissionName: expect.any(String) })
+    );
+  });
+
   it('does not initialize the configurable-client owner role in the app scope', () => {
     const options = new RoleInitBuilder()
       .setScopeName('configurable-client')

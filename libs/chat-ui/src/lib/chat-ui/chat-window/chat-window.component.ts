@@ -27,6 +27,11 @@ export declare type ChatWindowState =
   | 'fullscreen'
   | 'embedded';
 
+export interface ChatMessageSubmission {
+  content: string;
+  settle: (accepted: boolean) => void;
+}
+
 @Component({
   selector: 'lib-chat-window',
   standalone: true,
@@ -75,8 +80,38 @@ export class ChatWindowComponent
     updatedAt: new Date(),
   };
   /**
-   * Indicates if AI is currently responding
+   * Connection of this client to the chat transport, separate from presence.
    */
+  @Input() connectionStatus: 'connecting' | 'connected' | 'reconnecting' =
+    'connecting';
+
+  get isGroupConversation(): boolean {
+    return (
+      this.messages.type === 'group' ||
+      this.messages.type === 'community' ||
+      this.messages.type === 'project'
+    );
+  }
+
+  statusLabel(contact: ChatContact): string {
+    if (this.isGroupConversation) {
+      return this.connectionStatus === 'connected'
+        ? 'Connected'
+        : this.connectionStatus === 'reconnecting'
+        ? 'Reconnecting'
+        : 'Connecting';
+    }
+    if (contact.presence === 'offline' && contact.lastSeen) return 'Last seen';
+    const labels = {
+      online: 'Online',
+      offline: 'Offline',
+      away: 'Away',
+      busy: 'Busy',
+    };
+    return contact.presence ? labels[contact.presence] : 'Unknown';
+  }
+
+  /** Indicates if AI is currently responding. */
   @Input() aiIsResponding = false;
 
   /**
@@ -106,6 +141,7 @@ export class ChatWindowComponent
   @Output() windowStateChange: EventEmitter<ChatWindowState> =
     new EventEmitter<ChatWindowState>();
   @Output() messageSubmitted: EventEmitter<string> = new EventEmitter<string>();
+  @Output() messageSubmission = new EventEmitter<ChatMessageSubmission>();
   /** The reader answered something a message in this window was waiting on. */
   @Output() decided = new EventEmitter<{ id: string; approved: boolean }>();
   @Output() reactionAdded = new EventEmitter<{
@@ -127,8 +163,20 @@ export class ChatWindowComponent
     this.windowStateChange.emit(newState);
   }
 
+  onMessageSubmission(submission: ChatMessageSubmission) {
+    if (this.messageSubmission.observed) {
+      this.messageSubmission.emit(submission);
+      return;
+    }
+
+    // Preserve the existing fire-and-forget contract for consumers that have
+    // not opted into acknowledgement and draft recovery.
+    this.messageSubmitted.emit(submission.content);
+    submission.settle(true);
+  }
+
+  /** Retained for callers that explicitly forward the legacy string event. */
   onMessageSubmitted(message: string) {
-    // Handle the submitted message
     this.messageSubmitted.emit(message);
   }
 

@@ -1202,6 +1202,13 @@
 // FOOTER
 // ============================================================================
 
+.landing-resource-link,
+.landing-resource-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
 .landing-footer {
   padding: 48px 24px;
   background: linear-gradient(

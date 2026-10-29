@@ -181,3 +181,13 @@ export class CommunityRefDto {
   @IsNotEmpty()
   communityId!: string;
 }
+
+/** Actor comes from the gateway session; internal approved-roster lookup stays separate. */
+export class CommunityRosterQueryDto {
+  @IsString() @IsNotEmpty() communityId!: string;
+  @IsOptional() @IsString() requestingProfileId?: string;
+}
+
+export class CommunityChatMembershipsQueryDto {
+  @IsString() @IsNotEmpty() profileId!: string;
+}

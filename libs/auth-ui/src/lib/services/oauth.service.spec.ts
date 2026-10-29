@@ -111,7 +111,10 @@ describe('OAuthService', () => {
     const http = TestBed.inject(HttpClient);
     jest
       .spyOn(http, 'post')
-      .mockReturnValue(
+      .mockReturnValueOnce(
+        of({ authorizationUrl: 'https://provider.example/authorize' }) as any
+      )
+      .mockReturnValueOnce(
         of({ session: true, returnOrigin: window.location.origin }) as any
       );
     service.configureProviders({ google: { clientId: 'google-client-id' } });
@@ -121,11 +124,19 @@ describe('OAuthService', () => {
       'client-interface',
       true
     );
-    expect(
-      new URL(
-        jest.mocked(window.open).mock.calls[0][0] as string
-      ).searchParams.get('sessionMode')
-    ).toBe('cookie');
+    expect(window.open).toHaveBeenCalledWith(
+      'about:blank',
+      expect.stringMatching(/^oauth-popup-/),
+      expect.any(String)
+    );
+    expect(http.post).toHaveBeenCalledWith(
+      '/api/oauth/start/google',
+      expect.objectContaining({
+        appScope: 'client-interface',
+        sessionMode: 'cookie',
+      }),
+      { withCredentials: true }
+    );
     window.dispatchEvent(
       new MessageEvent('message', {
         origin: window.location.origin,

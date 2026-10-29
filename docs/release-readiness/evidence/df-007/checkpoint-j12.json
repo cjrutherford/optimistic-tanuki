@@ -1,0 +1,99 @@
+{
+  "slice": "DF-007-J12",
+  "date": "2026-10-20",
+  "status": "locally-verified-bounded-owner-media-component",
+  "baseRevision": "8fb4f6afc62c821dc7dd12792249f9091041a62f",
+  "unitTests": {
+    "hlsParser": 13,
+    "assetsMediaReader": 14,
+    "assetsDatabaseConfig": 2,
+    "assetsOwnerRegression": 9,
+    "passed": 38
+  },
+  "preE2E": {
+    "passed": ["storage:lint", "assets:lint", "assets:build:production"],
+    "storageBuild": "no standalone target; compiled through Assets production build"
+  },
+  "runtime": {
+    "acceptedAttempt": "attempt-2",
+    "passed": 9,
+    "skipped": 0,
+    "suites": 1,
+    "postgresVersion": "15.19",
+    "migrations": 5,
+    "encryptedGeneratedHls": "exact original bytes/SHA and account-owned segment references",
+    "offlineProbe": "file,crypto protocols only; H.264/AAC and positive decoded frame counts/duration",
+    "batchReferenceCount": 201,
+    "observedQueryBatchSizes": [200, 1],
+    "invalidReferenceCases": [
+      "missing",
+      "foreign-profile",
+      "pending-upload",
+      "database-storage"
+    ],
+    "otherCases": [
+      "authenticated segment corruption",
+      "caller abort",
+      "mid-capture lease invalidation",
+      "occupied single-connection pool"
+    ],
+    "occupiedPoolMilliseconds": 3019,
+    "productionConnectTimeoutMS": 3000,
+    "readback": {
+      "assets": 0,
+      "guardianActivity": 0,
+      "temporaryProfileScopes": 0,
+      "migrations": 5
+    },
+    "processCleanup": "no owner-spool file descriptors or retained media spools; fixture root removed",
+    "teardown": {
+      "containers": 0,
+      "volumes": 0
+    },
+    "imageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb"
+  },
+  "limitations": [
+    "component evidence only; Auth/Profile RPC simulated at owner boundary",
+    "no durable account artifact, authorized download or deletion",
+    "remaining owner coverage and shared controls remain open",
+    "no live TCP, browser, remote CI or production qualification"
+  ],
+  "overallDf007": "open",
+  "overallRr11": "open",
+  "sourceHashes": {
+    "libs/storage/src/index.ts": "8c32dcb860bc6055fddd9737071c951902b6196ecc7210007217473ffa39bc47",
+    "libs/storage/src/lib/account-export-hls.ts": "76b957f4f280cfde3b2da436edcec26d9bc99a98e649c50d1a967b4e517bb502",
+    "libs/storage/src/lib/account-export-hls.spec.ts": "5959686a2c56057e7ef2f90dc153fcfa2c0cecd87eff49325f68ddc09f332ecd",
+    "apps/assets/src/app/account-export-media-reader.ts": "a059309c5254415cdce50a9d0396ad191e644cb57bc4aad0ed399da4a1766a65",
+    "apps/assets/src/app/account-export-media-reader.spec.ts": "7c1e567abdaf2925827cae7b36acb423987e9c475a86c02b8d37e27b8652031f",
+    "apps/assets/src/app/account-export-owner.service.ts": "785ddb4ae169e1174696329a07e748e947e47691616747e4a58fcac4a28593b9",
+    "apps/assets/src/app/loadDatabase.ts": "f20ea1268d2cba01f084f18ab0c1f55834858901f3f3324fe88d6ca1529b176b",
+    "apps/assets/src/app/loadDatabase.spec.ts": "d66529cea9a9770b6095e95a54d099be26be0dcaee3e345c7f90c7e8830b1452",
+    "apps/assets/src/app/account-export-hls.postgres.spec.ts": "465a890f0615a6eebd963caacec1a74ad119897f9495855a6998297f2cede8a1"
+  },
+  "sourceManifestSha256": "67969551ac05be1845602e7b83880cff1fbc77edd3304cc0c5a0dc5d7f833a72",
+  "lockfileSha256": "64299eef891a07af29a63f97598727494f607b930ab607f85ca28df7ec2ab71d",
+  "earlierAttempts": [
+    {
+      "attempt": 1,
+      "result": "fixture TypeScript compile failure before database migrations/test execution",
+      "cause": "dotAll regex flag unsupported by existing test TypeScript target",
+      "fix": "equivalent character-class expression; production sources unchanged",
+      "teardown": {
+        "containers": 0,
+        "volumes": 0
+      }
+    }
+  ],
+  "review": {
+    "outcome": "root resolved findings before acceptance",
+    "resolved": [
+      "required EXTINF before URI",
+      "nearest-integer HLS target-duration comparison per RFC8216 section4.3.3.1",
+      "lint-compatible control-character checks",
+      "reference storage strategy eligibility"
+    ],
+    "rfc": "https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.3.1"
+  },
+  "evidenceRoot": ".runtime-artifacts/account-rights/finish-sequence/assets-hls"
+}

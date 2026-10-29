@@ -1,3 +1,4 @@
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { DataSource } from 'typeorm';
 import fs from 'fs';
 import path from 'path';
@@ -21,6 +22,7 @@ import { UserMute } from '../entities/user-mute.entity';
 import { UserPresence } from '../entities/user-presence.entity';
 import { ProfileView } from '../entities/profile-view.entity';
 import { ContentReport } from '../entities/content-report.entity';
+import { ContentModerationAction } from '../entities/content-moderation-action.entity';
 import { SearchHistory } from '../entities/search-history.entity';
 import { Event } from '../entities/event.entity';
 import { BusinessPageContent } from '../entities/business-page-content.entity';
@@ -29,6 +31,11 @@ import { CommunitySponsorshipContent } from '../entities/community-sponsorship-c
 import { Poll } from '../entities/poll.entity';
 import { PostShare } from '../entities/post-share.entity';
 import { CommunityMembershipAudit } from '../entities/community-membership-audit.entity';
+import { GuardianContentAudit } from '../entities/guardian-content-audit.entity';
+import { GuardianPublishedAssetGrant } from '../entities/guardian-published-asset-grant.entity';
+import { CommunityElection } from '../entities/community-election.entity';
+import { ElectionCandidate } from '../entities/election-candidate.entity';
+import { ElectionVote } from '../entities/election-vote.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -36,20 +43,24 @@ const config = yaml.load(
 const {
   database: {
     host: configHost, // Renamed to avoid conflict
-    port,
-    username,
-    password,
+    port: configPort,
+    username: configUsername,
+    password: configPassword,
     name: configName, // Renamed to avoid conflict
     database: configDatabase, // Renamed to avoid conflict
   },
 } = config;
 
 // Use environment variable for host if available, otherwise use configHost
+const port = Number(process.env.POSTGRES_PORT || configPort);
+const username = process.env.POSTGRES_USER || configUsername;
+const password = process.env.POSTGRES_PASSWORD || configPassword;
 const host = process.env.POSTGRES_HOST || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
 const entities = [
+  AccountDeletionWriteFenceEntity,
   Post,
   Vote,
   Comment,
@@ -60,6 +71,8 @@ const entities = [
   Community,
   CommunityMember,
   CommunityMembershipAudit,
+  GuardianContentAudit,
+  GuardianPublishedAssetGrant,
   CommunityInvite,
   Notification,
   Reaction,
@@ -70,6 +83,7 @@ const entities = [
   UserPresence,
   ProfileView,
   ContentReport,
+  ContentModerationAction,
   SearchHistory,
   Event,
   BusinessPageContent,
@@ -77,6 +91,9 @@ const entities = [
   CommunitySponsorshipContent,
   Poll,
   PostShare,
+  CommunityElection,
+  ElectionCandidate,
+  ElectionVote,
 ];
 
 const staticSource = new DataSource({

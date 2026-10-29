@@ -1,0 +1,857 @@
+{
+  "checkpoint": "DF-007-B6",
+  "recordedAt": "2026-10-19",
+  "status": "ACCEPTED_BOUNDED_INTERNAL_PREVIEW",
+  "baseRevision": "e34f2f393efe556e47fcc95e73de387308c0eb6f",
+  "sourceManifest": {
+    "sourcePaths": [
+      ".github/workflows/ci-cd.yml",
+      "apps/authentication-e2e/project.json",
+      "apps/authentication-e2e/src/authentication/account-export.spec.ts",
+      "apps/authentication/src/app/account-export.service.spec.ts",
+      "apps/authentication/src/app/account-export.service.ts",
+      "apps/authentication/src/app/app.module.ts",
+      "apps/authentication/src/config.spec.ts",
+      "apps/authentication/src/config.ts",
+      "apps/forum/src/app/account-export.controller.spec.ts",
+      "apps/forum/src/app/account-export.controller.ts",
+      "apps/forum/src/app/account-export.service.spec.ts",
+      "apps/forum/src/app/account-export.service.ts",
+      "apps/forum/src/app/app.module.ts",
+      "docs/plans/2026-10-17-account-rights-implementation.md",
+      "e2e/README.md",
+      "e2e/docker-compose.authentication-e2e.yaml",
+      "libs/constants/src/lib/libs/forum-account-export.spec.ts",
+      "libs/constants/src/lib/libs/forum.ts",
+      "scripts/e2e-environment-manifest.mjs",
+      "scripts/run-all-e2e-locally.sh",
+      "scripts/tests/e2e-environment-manifest.test.mjs"
+    ],
+    "sourceHashes": {
+      ".github/workflows/ci-cd.yml": "84f31459c7f4b41f53afb4bedc8435bb46317a2856fa8facabff4e0d50fed627",
+      "apps/authentication-e2e/project.json": "b57254e02258c003f8ed6846cfdfb2b1dd36fb3eb9560d88ae4b550ea56c0022",
+      "apps/authentication-e2e/src/authentication/account-export.spec.ts": "9a3e58f67b8c41173d38e2972ccc68847818b4e1618576c5befee689e323678a",
+      "apps/authentication/src/app/account-export.service.spec.ts": "2b615ba084161637e865c6c4e4b32a62a6ad199cd28fdc80fcec6c3a9e1f1b14",
+      "apps/authentication/src/app/account-export.service.ts": "daee68a9d52dd83f436720e9c5076feac94be3ed5edb9540a557774c161a23c4",
+      "apps/authentication/src/app/app.module.ts": "b3eddc4724fab1dcfeb2ad2399a1095b20fb73f834a2b0af4c36cf58346bce7d",
+      "apps/authentication/src/config.spec.ts": "ac14bcc2f63489f04c1c2b5ce88f0b235abb63757296b536bcde72c936f1afda",
+      "apps/authentication/src/config.ts": "4a99117ee74563caa6b7036f67921ce8fe1f85b4aae829a005b91c540b988192",
+      "apps/forum/src/app/account-export.controller.spec.ts": "b96e93ee0921a5f1001130195c0c2993d015464bf711a724500bd7182cff9dcc",
+      "apps/forum/src/app/account-export.controller.ts": "26635393929efb9fb7b47f5d48098d6617660cf66398dbd59b50b61f9e06b7d9",
+      "apps/forum/src/app/account-export.service.spec.ts": "72a6ab4d1bab213c9c4bc1bfb7968bbe0920bebf764d08c54f60ef96efb79013",
+      "apps/forum/src/app/account-export.service.ts": "061c1f722126daf3ff6b13c3230ddb22715ffc7aa2e42186f14c7c087775d6df",
+      "apps/forum/src/app/app.module.ts": "2b621a16a092e7f98178b876c21d3616cb17f6caae5553c1d35a8a156413b982",
+      "docs/plans/2026-10-17-account-rights-implementation.md": "6fecce89097cc05c63f27dc13509e770a6803637da2b809d9643bfb44b2c085f",
+      "e2e/README.md": "23ef50e9bcd17c5cfb4286a7584f2e6585c3bddac0233d6a034c66035e7a14dc",
+      "e2e/docker-compose.authentication-e2e.yaml": "718af728dc4925f7e05e534bc94ccfa4beb8a70af1c6d6e67f80fc9214331fca",
+      "libs/constants/src/lib/libs/forum-account-export.spec.ts": "e42200530999072dab874878dfaa920634a87533f16db7d00528a7424664557b",
+      "libs/constants/src/lib/libs/forum.ts": "9214f39f5fcec3c68f90c2dfad450b01a5a14973250faf4c90e09049b0954003",
+      "scripts/e2e-environment-manifest.mjs": "a30313c612e25c9ba132a7697ec6f04c4973665248c4a09c4f3d20a97a118a11",
+      "scripts/run-all-e2e-locally.sh": "3ea60fb533de728b06e4b1b67112544e4b7cdaa5c2cafd507bbcbc6f9faa2b2a",
+      "scripts/tests/e2e-environment-manifest.test.mjs": "1b42ed2e1a130e5f58e2ec920a8e0d9af2f48fbd1c7c99399a56acf26a2effe2"
+    },
+    "sourceHashesSha256": "afaf07d21002cb46e333384efd92ea601cfee3e6cc8fecd8802a072385a75eb3",
+    "sourcePathCount": 21,
+    "baseRevision": "e34f2f393efe556e47fcc95e73de387308c0eb6f",
+    "sourcePathsManifestPrivateReference": ".runtime-artifacts/account-rights/checkpoint-b6-forum/source-paths.json",
+    "sourceHashesArtifactSha256": "afaf07d21002cb46e333384efd92ea601cfee3e6cc8fecd8802a072385a75eb3"
+  },
+  "protectedWipGuard": {
+    "count": 43,
+    "status": "PASS at source freeze; re-attest in final receipt"
+  },
+  "sourceReview": {
+    "status": "GO",
+    "reviewedAt": "2026-10-19",
+    "reviewArtifactPrivateReference": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/source-review.md",
+    "scope": "Independent GO applies to the original frozen implementation. The parent reviewed both fixture-only amendments; the other 20 source inputs remained unchanged."
+  },
+  "unitAndFocusedChecks": {
+    "forumAccountExportService": {
+      "status": "PASS",
+      "tests": 17,
+      "scope": "latest focused spec"
+    },
+    "authenticationAccountExportCoordinator": {
+      "status": "PASS",
+      "tests": 25,
+      "scope": "latest focused spec"
+    },
+    "freshAffectedCiSuites": {
+      "status": "PASS",
+      "forum": {
+        "suites": 10,
+        "tests": 123
+      },
+      "authentication": {
+        "suites": 23,
+        "tests": 293
+      },
+      "source": "independent affected-CI logs"
+    }
+  },
+  "independentGates": {
+    "status": "38_BLOCKING_PASS_2_ADVISORY_1_PASS_1_BASELINE_FAIL",
+    "totalCommands": 40,
+    "blockingPassed": 38,
+    "advisoryFailed": 1,
+    "asOf": "2026-10-19",
+    "phases": [
+      {
+        "name": "static",
+        "status": "PASS",
+        "outcomes": [
+          {
+            "name": "migration-governance",
+            "command": ["pnpm", "run", "validate:typeorm-migrations"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-migration-governance.log",
+            "logSha256": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9"
+          },
+          {
+            "name": "migration-setup",
+            "command": [
+              "node",
+              "--test",
+              "scripts/tests/setup-and-migrate.test.mjs"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-migration-setup.log",
+            "logSha256": "f9cc9773f84f782fd75f35730f9f1852043e31826994e078659c78565d349ac6"
+          },
+          {
+            "name": "e2e-environment",
+            "command": ["node", "scripts/validate-e2e-environment.mjs"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-e2e-environment.log",
+            "logSha256": "6f27f70ad91eec5257492a377d85cda4b45f97a63f3adee0bd91f2b2b9f0e600"
+          },
+          {
+            "name": "ui-heuristics",
+            "command": ["pnpm", "run", "ui:heuristics:ci"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-ui-heuristics.log",
+            "logSha256": "7d3254309f832127e6770ee157385de768e25a407ae1d5a8f066765523726897"
+          },
+          {
+            "name": "no-personality-scss",
+            "command": ["pnpm", "run", "check:no-personality-scss"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-no-personality-scss.log",
+            "logSha256": "c0c41ebfcacad923185d62f7cfde2cd49ed055c9be7c7774078ab95addc127ce"
+          },
+          {
+            "name": "personality-audit",
+            "command": ["pnpm", "run", "check:personality-audit"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-personality-audit.log",
+            "logSha256": "52c0a4ef0a86e32ba56209b0b9fd0bd7671eccded6974b37710cecf639026b5d"
+          },
+          {
+            "name": "client-interface-collection",
+            "command": [
+              "pnpm",
+              "exec",
+              "playwright",
+              "test",
+              "--config=apps/client-interface-e2e/playwright.config.ts",
+              "--list"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-client-interface-collection.log",
+            "logSha256": "6d5550f41056f5db71617ec7d07daabc9e824070eb7c94194ee01b00b6741b19"
+          },
+          {
+            "name": "forgeofwill-collection",
+            "command": [
+              "pnpm",
+              "exec",
+              "playwright",
+              "test",
+              "--config=apps/forgeofwill-e2e/playwright.config.ts",
+              "--list"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-forgeofwill-collection.log",
+            "logSha256": "c18a9d4f8dc48b4a3eae901d156093f4c845d7f24c4ed3fe3e13192d4c6728c2"
+          },
+          {
+            "name": "digital-homestead-collection",
+            "command": [
+              "pnpm",
+              "exec",
+              "playwright",
+              "test",
+              "--config=apps/digital-homestead-e2e/playwright.config.ts",
+              "--list"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-digital-homestead-collection.log",
+            "logSha256": "98d57d38b524212a618cd80ff6fea3fedcd083c3c5d0ac9fa0dd42cc30071e36"
+          },
+          {
+            "name": "christopherrutherford-net-collection",
+            "command": [
+              "pnpm",
+              "exec",
+              "playwright",
+              "test",
+              "--config=apps/christopherrutherford-net-e2e/playwright.config.ts",
+              "--list"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-christopherrutherford-net-collection.log",
+            "logSha256": "799a0b1152280bb3dde7aef8e56927a4bf535a9eb7101a7af62e35fba6c5fcaa"
+          },
+          {
+            "name": "owner-console-collection",
+            "command": [
+              "pnpm",
+              "exec",
+              "playwright",
+              "test",
+              "--config=apps/owner-console-e2e/playwright.config.ts",
+              "--list"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-owner-console-collection.log",
+            "logSha256": "ff80e980c51d54a1cac275e187d8ccfbd01275a9fba0d83cc30450c5660470fa"
+          },
+          {
+            "name": "store-client-collection",
+            "command": [
+              "pnpm",
+              "exec",
+              "playwright",
+              "test",
+              "--config=apps/store-client-e2e/playwright.config.ts",
+              "--list"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-store-client-collection.log",
+            "logSha256": "1fd7e20b1d63aca84f30dc17546a47356e8f7d4826498e887c2b30a747100d37"
+          },
+          {
+            "name": "learning-collection",
+            "command": [
+              "pnpm",
+              "exec",
+              "playwright",
+              "test",
+              "--config=apps/learning-e2e/playwright.config.ts",
+              "--list"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-learning-collection.log",
+            "logSha256": "ff8e9b3c7b39a411ca8736ed4ffd57d7e6d211cf8759526a3a64de9a7321a1c1"
+          },
+          {
+            "name": "configurable-client-collection",
+            "command": [
+              "pnpm",
+              "exec",
+              "playwright",
+              "test",
+              "--config=apps/configurable-client-e2e/playwright.config.ts",
+              "--list"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-configurable-client-collection.log",
+            "logSha256": "2b298db54b2457b8d48fe5beee3187a4cc47fcbff94efdc8a63c54b12f82a085"
+          },
+          {
+            "name": "workflow-contracts",
+            "command": [
+              "node",
+              "--test",
+              "scripts/tests/e2e-environment-manifest.test.mjs",
+              "scripts/tests/wait-for-e2e-readiness.test.mjs",
+              "scripts/tests/resolve-e2e-images.test.mjs",
+              "scripts/tests/ui-e2e-ci-contract.test.mjs"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-workflow-contracts.log",
+            "logSha256": "4a47e3d783a6c8fa6807a671672cc62c6528f1a05f987c9eabb5eb7d638f5132"
+          },
+          {
+            "name": "format-check",
+            "command": [
+              "pnpm",
+              "exec",
+              "nx",
+              "format:check",
+              "--files=.github/workflows/ci-cd.yml,apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/forum/src/app/account-export.controller.spec.ts,apps/forum/src/app/account-export.controller.ts,apps/forum/src/app/account-export.service.spec.ts,apps/forum/src/app/account-export.service.ts,apps/forum/src/app/app.module.ts,docs/plans/2026-10-17-account-rights-implementation.md,e2e/README.md,e2e/docker-compose.authentication-e2e.yaml,libs/constants/src/lib/libs/forum-account-export.spec.ts,libs/constants/src/lib/libs/forum.ts,scripts/e2e-environment-manifest.mjs,scripts/run-all-e2e-locally.sh,scripts/tests/e2e-environment-manifest.test.mjs"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-format-check.log",
+            "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "name": "diff-check",
+            "command": [
+              "git",
+              "diff",
+              "--check",
+              "--",
+              ".github/workflows/ci-cd.yml",
+              "apps/authentication-e2e/project.json",
+              "apps/authentication-e2e/src/authentication/account-export.spec.ts",
+              "apps/authentication/src/app/account-export.service.spec.ts",
+              "apps/authentication/src/app/account-export.service.ts",
+              "apps/authentication/src/app/app.module.ts",
+              "apps/authentication/src/config.spec.ts",
+              "apps/authentication/src/config.ts",
+              "apps/forum/src/app/account-export.controller.spec.ts",
+              "apps/forum/src/app/account-export.controller.ts",
+              "apps/forum/src/app/account-export.service.spec.ts",
+              "apps/forum/src/app/account-export.service.ts",
+              "apps/forum/src/app/app.module.ts",
+              "docs/plans/2026-10-17-account-rights-implementation.md",
+              "e2e/README.md",
+              "e2e/docker-compose.authentication-e2e.yaml",
+              "libs/constants/src/lib/libs/forum-account-export.spec.ts",
+              "libs/constants/src/lib/libs/forum.ts",
+              "scripts/e2e-environment-manifest.mjs",
+              "scripts/run-all-e2e-locally.sh",
+              "scripts/tests/e2e-environment-manifest.test.mjs"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-diff-check.log",
+            "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "name": "all-owned-whitespace",
+            "command": [
+              "python3",
+              "-c",
+              "from pathlib import Path; fs=['.github/workflows/ci-cd.yml', 'apps/authentication-e2e/project.json', 'apps/authentication-e2e/src/authentication/account-export.spec.ts', 'apps/authentication/src/app/account-export.service.spec.ts', 'apps/authentication/src/app/account-export.service.ts', 'apps/authentication/src/app/app.module.ts', 'apps/authentication/src/config.spec.ts', 'apps/authentication/src/config.ts', 'apps/forum/src/app/account-export.controller.spec.ts', 'apps/forum/src/app/account-export.controller.ts', 'apps/forum/src/app/account-export.service.spec.ts', 'apps/forum/src/app/account-export.service.ts', 'apps/forum/src/app/app.module.ts', 'docs/plans/2026-10-17-account-rights-implementation.md', 'e2e/README.md', 'e2e/docker-compose.authentication-e2e.yaml', 'libs/constants/src/lib/libs/forum-account-export.spec.ts', 'libs/constants/src/lib/libs/forum.ts', 'scripts/e2e-environment-manifest.mjs', 'scripts/run-all-e2e-locally.sh', 'scripts/tests/e2e-environment-manifest.test.mjs']; bad=[f'{p}:{i}' for p in fs if Path(p).is_file() for i,l in enumerate(Path(p).read_text().splitlines(),1) if l.endswith((' ','\\t'))]; print('trailing-whitespace='+','.join(bad)); raise SystemExit(bool(bad))"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-all-owned-whitespace.log",
+            "logSha256": "e4c505ffa28b8c3eebcd67ee3722ba92cd7b3ff60d6f2e3f1062f570763f02e2"
+          },
+          {
+            "name": "nx-show-projects",
+            "command": ["pnpm", "exec", "nx", "show", "projects"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/static-nx-show-projects.log",
+            "logSha256": "f088a91f31bdfa374501d56651a90f13fe539afe6346f5f865ea59c801a5fd13"
+          }
+        ]
+      },
+      {
+        "name": "quality",
+        "status": "PASS",
+        "outcomes": [
+          {
+            "name": "affected-test-ci",
+            "command": [
+              "pnpm",
+              "exec",
+              "nx",
+              "affected",
+              "-t",
+              "test",
+              "-c",
+              "ci",
+              "--files=.github/workflows/ci-cd.yml,apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/forum/src/app/account-export.controller.spec.ts,apps/forum/src/app/account-export.controller.ts,apps/forum/src/app/account-export.service.spec.ts,apps/forum/src/app/account-export.service.ts,apps/forum/src/app/app.module.ts,docs/plans/2026-10-17-account-rights-implementation.md,e2e/README.md,e2e/docker-compose.authentication-e2e.yaml,libs/constants/src/lib/libs/forum-account-export.spec.ts,libs/constants/src/lib/libs/forum.ts,scripts/e2e-environment-manifest.mjs,scripts/run-all-e2e-locally.sh,scripts/tests/e2e-environment-manifest.test.mjs",
+              "--parallel=1",
+              "--outputStyle=static",
+              "--exclude=directory-*"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/quality-affected-test-ci.log",
+            "logSha256": "48b766eccb962996ecfe4aa30ce24063347bf2bf0092d9b08f40dde1bb99e514"
+          },
+          {
+            "name": "affected-lint",
+            "command": [
+              "pnpm",
+              "exec",
+              "nx",
+              "affected",
+              "-t",
+              "lint",
+              "--files=.github/workflows/ci-cd.yml,apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/forum/src/app/account-export.controller.spec.ts,apps/forum/src/app/account-export.controller.ts,apps/forum/src/app/account-export.service.spec.ts,apps/forum/src/app/account-export.service.ts,apps/forum/src/app/app.module.ts,docs/plans/2026-10-17-account-rights-implementation.md,e2e/README.md,e2e/docker-compose.authentication-e2e.yaml,libs/constants/src/lib/libs/forum-account-export.spec.ts,libs/constants/src/lib/libs/forum.ts,scripts/e2e-environment-manifest.mjs,scripts/run-all-e2e-locally.sh,scripts/tests/e2e-environment-manifest.test.mjs",
+              "--parallel=1",
+              "--outputStyle=static",
+              "--exclude=directory-*,*-e2e"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/quality-affected-lint.log",
+            "logSha256": "1e8dabd1a60abffcd51691dc45a1752994ad5d2f5c700b03eb358e53baa8a433"
+          },
+          {
+            "name": "authentication-e2e-lint",
+            "command": [
+              "pnpm",
+              "exec",
+              "nx",
+              "run",
+              "authentication-e2e:lint",
+              "--outputStyle=static"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/quality-authentication-e2e-lint.log",
+            "logSha256": "16f4a141cfa22d70b4201f5133851af48edb7431074b72fd0855aa01ba0e218a"
+          },
+          {
+            "name": "affected-production-build",
+            "command": [
+              "pnpm",
+              "exec",
+              "nx",
+              "affected",
+              "-t",
+              "build",
+              "-c",
+              "production",
+              "--files=.github/workflows/ci-cd.yml,apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/forum/src/app/account-export.controller.spec.ts,apps/forum/src/app/account-export.controller.ts,apps/forum/src/app/account-export.service.spec.ts,apps/forum/src/app/account-export.service.ts,apps/forum/src/app/app.module.ts,docs/plans/2026-10-17-account-rights-implementation.md,e2e/README.md,e2e/docker-compose.authentication-e2e.yaml,libs/constants/src/lib/libs/forum-account-export.spec.ts,libs/constants/src/lib/libs/forum.ts,scripts/e2e-environment-manifest.mjs,scripts/run-all-e2e-locally.sh,scripts/tests/e2e-environment-manifest.test.mjs",
+              "--parallel=1",
+              "--outputStyle=static",
+              "--exclude=directory-*"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/quality-affected-production-build.log",
+            "logSha256": "2760f9084a84d8e447ead67aba981270fd4a5a054de3013f9712dc4024c60a6a"
+          },
+          {
+            "name": "affected-default-build",
+            "command": [
+              "pnpm",
+              "exec",
+              "nx",
+              "affected",
+              "-t",
+              "build",
+              "--files=.github/workflows/ci-cd.yml,apps/authentication-e2e/project.json,apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/authentication/src/app/app.module.ts,apps/authentication/src/config.spec.ts,apps/authentication/src/config.ts,apps/forum/src/app/account-export.controller.spec.ts,apps/forum/src/app/account-export.controller.ts,apps/forum/src/app/account-export.service.spec.ts,apps/forum/src/app/account-export.service.ts,apps/forum/src/app/app.module.ts,docs/plans/2026-10-17-account-rights-implementation.md,e2e/README.md,e2e/docker-compose.authentication-e2e.yaml,libs/constants/src/lib/libs/forum-account-export.spec.ts,libs/constants/src/lib/libs/forum.ts,scripts/e2e-environment-manifest.mjs,scripts/run-all-e2e-locally.sh,scripts/tests/e2e-environment-manifest.test.mjs",
+              "--parallel=1",
+              "--outputStyle=static",
+              "--exclude=directory-*"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/quality-affected-default-build.log",
+            "logSha256": "aa6a97c677ed171dd5241b1b2e480080110d68f999fd6abdd94f67e6bbe21a9e"
+          }
+        ]
+      },
+      {
+        "name": "packages",
+        "status": "PASS",
+        "outcomes": [
+          {
+            "name": "packages-test",
+            "command": ["pnpm", "run", "packages:test"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/packages-packages-test.log",
+            "logSha256": "e5578d93e2afbcae3f13cd6ef349923687a269590c882b697e68a8a47ec001d3"
+          },
+          {
+            "name": "packages-check",
+            "command": ["pnpm", "run", "packages:check"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/packages-packages-check.log",
+            "logSha256": "5412e075ae6be092d654198b9ca8c57afd3d43e5ac3c654df4267d276e623b50"
+          },
+          {
+            "name": "packages-build",
+            "command": ["pnpm", "run", "packages:build"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/packages-packages-build.log",
+            "logSha256": "eb4d7e510e5844bbea539b215a3b75f2a5c8a25e1713d4ae9b6480d4c59038c1"
+          }
+        ]
+      },
+      {
+        "name": "codegen",
+        "status": "PASS",
+        "outcomes": [
+          {
+            "name": "get-openapi",
+            "command": ["pnpm", "run", "get-openapi"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/codegen-get-openapi.log",
+            "logSha256": "628256298cd2f04fafc65277f276cc8a3132d5ebc6630ca0dc8c43a6e0f98fdb"
+          },
+          {
+            "name": "orval",
+            "command": ["pnpm", "exec", "orval", "--config", "orval.config.ts"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/codegen-orval.log",
+            "logSha256": "cb501bb9be1648ab50f3ba2901b46462850ff289230a46953597e7c71d8382ac"
+          },
+          {
+            "name": "generated-format",
+            "command": [
+              "pnpm",
+              "exec",
+              "prettier",
+              "--write",
+              "libs/billing-sdk/src/generated/",
+              "libs/chat-ui-data-access/src/generated/",
+              "libs/payments-ui-data-access/src/generated/",
+              "libs/store-data-access/src/generated/",
+              "libs/finance/data-access/src/generated/",
+              "libs/blogging-data-access/src/generated/",
+              "libs/social-data-access/src/generated/",
+              "libs/learning-ui-data-access/src/generated/",
+              "libs/profile-ui-data-access/src/generated/"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/codegen-generated-format.log",
+            "logSha256": "3c00ac51951cd89ba7128030259c7a1ba126e63bbec7239434e2151f1bf519ae"
+          },
+          {
+            "name": "generated-drift",
+            "command": [
+              "git",
+              "diff",
+              "--exit-code",
+              "--",
+              "libs/billing-sdk/src/generated/",
+              "libs/chat-ui-data-access/src/generated/",
+              "libs/payments-ui-data-access/src/generated/",
+              "libs/store-data-access/src/generated/",
+              "libs/finance/data-access/src/generated/",
+              "libs/blogging-data-access/src/generated/",
+              "libs/social-data-access/src/generated/",
+              "libs/learning-ui-data-access/src/generated/",
+              "libs/profile-ui-data-access/src/generated/"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/codegen-generated-drift.log",
+            "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "name": "generated-untracked",
+            "command": [
+              "python3",
+              "-c",
+              "import subprocess; ds=['libs/billing-sdk/src/generated/', 'libs/chat-ui-data-access/src/generated/', 'libs/payments-ui-data-access/src/generated/', 'libs/store-data-access/src/generated/', 'libs/finance/data-access/src/generated/', 'libs/blogging-data-access/src/generated/', 'libs/social-data-access/src/generated/', 'libs/learning-ui-data-access/src/generated/', 'libs/profile-ui-data-access/src/generated/']; rows=subprocess.check_output(['git','status','--porcelain=v1','--untracked-files=all'],text=True).splitlines(); bad=[r[3:] for r in rows if any(r[3:].startswith(d) for d in ds) and r[:2].strip()=='??']; print('untracked-generated='+','.join(bad)); raise SystemExit(bool(bad))"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/codegen-generated-untracked.log",
+            "logSha256": "d48481d7808bef036e4610e9b9636f338c60ed41bc08f0d0dcd3c0e550dd8672"
+          }
+        ]
+      },
+      {
+        "name": "ui",
+        "status": "PASS",
+        "outcomes": [
+          {
+            "name": "docs-site-jest",
+            "command": [
+              "pnpm",
+              "exec",
+              "jest",
+              "-c",
+              "tools/docs-site/jest.config.cjs"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/ui-docs-site-jest.log",
+            "logSha256": "0f86bc93d47ce495c39b6928baf15eddfd30d29021e67bd4acf416915b58bd4e"
+          },
+          {
+            "name": "storybook-build",
+            "command": [
+              "pnpm",
+              "exec",
+              "nx",
+              "build",
+              "ui-playground",
+              "--outputStyle=static"
+            ],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/ui-storybook-build.log",
+            "logSha256": "f2d5cbac749a579c0e02b5136a10643c1bf077f06a24ef437824e4de557c7229"
+          }
+        ]
+      },
+      {
+        "name": "go",
+        "status": "PASS_WITH_ADVISORY_FAILURES",
+        "outcomes": [
+          {
+            "name": "go-catalog",
+            "command": ["go", "test", "./internal/catalog/..."],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/go-go-catalog.log",
+            "logSha256": "3933db428cd3b338d6e181a353d58921df15aa4be09d83b7ccfb119c6deee28d"
+          },
+          {
+            "name": "go-generate",
+            "command": ["go", "test", "./internal/generate/..."],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/go-go-generate.log",
+            "logSha256": "35241eff29c0df32ba67b3caa3e9709cb0ff7319ec0f73e1119524349b7d85a2"
+          },
+          {
+            "name": "inventory-export",
+            "command": ["go", "run", "./cmd/deployment-inventory"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/go-inventory-export.log",
+            "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "name": "inventory-validate",
+            "command": ["node", "scripts/validate-deployment-inventory.mjs"],
+            "exitCode": 1,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/go-inventory-validate.log",
+            "logSha256": "b5eaf716466b2f18c0dbec00bc51b664b257c1671f4edfeef052153dfafcace2"
+          },
+          {
+            "name": "compose-k8s-parity",
+            "command": ["bash", "scripts/validate-compose-k8s-parity.sh"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/go-compose-k8s-parity.log",
+            "logSha256": "5daaf1efefdc2084566f167d85b78e7bc67e8104b60a025dc64a309800aa670e"
+          }
+        ]
+      },
+      {
+        "name": "builddev",
+        "status": "PASS",
+        "outcomes": [
+          {
+            "name": "build-dev",
+            "command": ["pnpm", "run", "build:dev"],
+            "exitCode": 0,
+            "log": ".runtime-artifacts/account-rights/checkpoint-b6-forum/archive-before-key-fixture-repair/gates/builddev-build-dev.log",
+            "logSha256": "550d2bf567a08a6882f49c277df7dc05449d14345e3f440df128560417325d30"
+          }
+        ]
+      }
+    ],
+    "knownAdvisoryBaseline": {
+      "validator": "deployment-inventory validation",
+      "command": "node scripts/validate-deployment-inventory.mjs",
+      "exit": 1,
+      "diagnostic": "base kustomization resources unexpected: services/compliance-audit.yaml",
+      "baselineComparison": "same recorded baseline diagnostic",
+      "composeKubernetesParity": "PASS"
+    },
+    "warnings": "Sanitized categories observed: Node color-environment warning; Jest TypeScript ESM-config warning; unavailable service-name DNS during OpenAPI generation; Sass/ES target and Storybook entrypoint-size warnings. Warning PID arrays and raw warning lines omitted.",
+    "affectedCiAndBroad": {
+      "status": "38_BLOCKING_PASS_2_ADVISORY_1_PASS_1_BASELINE_FAIL",
+      "passed": 39,
+      "total": 40,
+      "advisoryFailures": 1,
+      "affectedTestCi": {
+        "status": "PASS",
+        "selectedProjects": 32,
+        "forum": {
+          "suites": 10,
+          "tests": 123
+        },
+        "authentication": {
+          "suites": 23,
+          "tests": 293
+        }
+      },
+      "affectedLint": {
+        "status": "PASS",
+        "selectedProjects": 32
+      },
+      "authenticationE2eLint": {
+        "status": "PASS"
+      },
+      "affectedProductionBuild": {
+        "status": "PASS",
+        "directProjects": 30,
+        "tasksIncludingDependencies": 47,
+        "cachedTasks": 16
+      },
+      "affectedDefaultBuild": {
+        "status": "PASS",
+        "directProjects": 30,
+        "taskCount": "see linked verifier log; not separately summarized",
+        "tasksIncludingDependencies": 47,
+        "cachedTasks": 22
+      },
+      "packages": {
+        "status": "PASS",
+        "commands": 3
+      },
+      "codegen": {
+        "status": "PASS",
+        "commands": 5,
+        "generatedDirectoryDrift": 0
+      },
+      "docs": {
+        "jest": "PASS",
+        "storybookBuild": "PASS"
+      },
+      "goAndInventory": {
+        "goCatalog": "PASS",
+        "goGenerate": "PASS",
+        "inventoryExport": "PASS",
+        "composeKubernetesParity": "PASS",
+        "inventoryValidation": "ADVISORY_FAILURE_BASELINE"
+      },
+      "buildDev": {
+        "status": "PASS",
+        "projects": 48,
+        "dependencies": 27,
+        "tasks": 75,
+        "cached": 43,
+        "executed": 32
+      },
+      "commandsAndLogHashes": "See phases; all 40 exact command arrays, exits and log SHA-256 values are retained.",
+      "blockingPassed": 38,
+      "advisoryPassed": 1
+    },
+    "advisoryPassed": 1,
+    "advisoryOutcomes": [
+      {
+        "name": "compose-k8s-parity",
+        "status": "PASS",
+        "classification": "advisory"
+      },
+      {
+        "name": "inventory-validate",
+        "status": "FAIL_BASELINE",
+        "classification": "advisory"
+      }
+    ]
+  },
+  "scope": {
+    "participantOrder": [
+      "authentication",
+      "profile",
+      "permissions",
+      "social",
+      "forum"
+    ],
+    "forumEntities": ["Topic", "Thread", "ForumPost"],
+    "authProfileRpcTimeoutMs": 3000,
+    "forumParticipantBudgetMs": 15000,
+    "coordinatorForumTimeoutMs": 16000,
+    "profilePageSize": 100,
+    "profileMaxIds": 1000,
+    "profileMaxPages": 10,
+    "rowScanCapPerEntity": 1000,
+    "probeRowsPerEntity": 1,
+    "alwaysPartial": true,
+    "unfenced": true,
+    "authoredHtmlReturnedAsInertJsonStringMayContainUrls": true,
+    "fetchRenderParseOrDereferenceAuthoredReferences": false,
+    "embeddedReferenceMarker": "embedded-media-and-link-references-unresolved",
+    "legacyAuthorshipMarker": "forum-legacy-authorship-provenance-unverified",
+    "noSqlCancellationClaim": true
+  },
+  "runtime": {
+    "status": "PASS_FOCUSED_ATTEMPT_7",
+    "command": "pnpm exec nx run authentication-e2e:e2e:ci --testFile=account-export.spec.ts",
+    "suiteCount": 1,
+    "testsPassed": 5,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "targetActuallyRan": true,
+    "databaseGuardMarker": "auth-profile-forum-export-fixture-v1",
+    "fixtureStateBeforeAndAfterAccountA": "PASS: selected generated fixture state matched before and after account A preview; permission, Social and Forum fixture persistence assertions passed.",
+    "fixtureStateBeforeAndAfterAccountB": "PASS: same selected fixture state matched again after account B preview; account A/B Forum and participant isolation assertions passed.",
+    "exactFixtureCleanupAssertions": "PASS: exact generated IDs deleted and absence checked, including Forum Topic/Thread/ForumPost; Social and other fixture cleanup follows the checked-in cleanup assertions. This proves cleanup of these generated fixtures only.",
+    "sameRunDatabaseReadback": "PASS: Social baseline counters in ot_social (follow_entity, saved_item, search_history, user_block, user_mute) were zero before and after; all five table lists match.",
+    "crossAccountNegative": "PASS: direct cross-account Social participant request rejected. No direct Forum negative-request case is claimed.",
+    "privateComposeTeardown": {
+      "composeDownExit": 0,
+      "containers": 0,
+      "networks": 0,
+      "volumes": 0
+    },
+    "finalIntegrity": {
+      "exit": 0,
+      "sourcePaths": 21,
+      "sourceDrift": [],
+      "captureDrift": [],
+      "protectedFiles": 43,
+      "protectedDrift": [],
+      "rootConfigDrift": []
+    },
+    "attempts": {
+      "attempt3": "16 basic Authentication passed; five account-export cases failed during fixture key lookup; failed run.",
+      "attempt4": "No E2E: private images absent.",
+      "attempt5": "1 suite: 4 passed, 1 failed on absent Profile name column.",
+      "attempt6": "Diagnostic targeted case: 1 passed, 4 skipped.",
+      "attempt7": "1 suite: 5 passed, 0 failed, 0 skipped; accepted focused runtime."
+    },
+    "imageProvenance": {
+      "status": "MIXED_REBUILT_PROVENANCE",
+      "authentication": {
+        "tag": "ot-df007-b6-forum/authentication:b6-981665ddc7b4",
+        "id": "sha256:ae6eb36c23fffe43cfcd5678d8793c690bc07eb31e3c3563397b224fe20babef",
+        "origin": "rebuilt from frozen B6 capture"
+      },
+      "forum": {
+        "tag": "ot-df007-b6-forum/forum:b6-981665ddc7b4",
+        "id": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+        "origin": "rebuilt from frozen B6 capture"
+      },
+      "profile": {
+        "tag": "ot-df007-b5-social-state/profile:b5-7cdb1d7f1581",
+        "id": "sha256:a3bf0cffaf2551643e797da2abf78b10c0733a3cecc3cced85f2c979aee4db81",
+        "origin": "rebuilt from verified immutable B5 capture"
+      },
+      "permissions": {
+        "tag": "ot-df007-b5-social-state/permissions:b5-7cdb1d7f1581",
+        "id": "sha256:c0518f410f3b18dcfc7b85e763f622bd52fa64d9027853164f74e69f10e1bd91",
+        "origin": "rebuilt from verified immutable B5 capture"
+      },
+      "social": {
+        "tag": "ot-df007-b5-social-state/social:b5-7cdb1d7f1581",
+        "id": "sha256:01bb87b452b1833c275b79866e3a4937ff3964f7f079e3ba0e544ba0502d04be",
+        "origin": "rebuilt from verified immutable B5 capture"
+      },
+      "dbSetup": {
+        "tag": "ot-df007-b6-forum/db-setup:reconstructed-389e9fb743af",
+        "id": "sha256:b55e0b7bd7bfdbee8a919679df5e11f194b40ade5dd85c524dadd02a309c9db4",
+        "origin": "reconstructed from frozen B6-captured Dockerfile; original B2 image unavailable",
+        "dockerfileSha256": "389e9fb743af0dc016cdb5fddbbcbbf4b7ac76b03d34c080cacd649770525906"
+      }
+    },
+    "logHashes": {
+      "e2e": "769f980d83cf3c31676e30fd9c96f17f5771d8af793ef10ed886c2e6ea0ff608",
+      "validator": "85e65586feb7c215930300defe027c0d028f1af6133682c2f0d4646925472779",
+      "composeDown": "544d2069d50f49e034341107c9bb17533bec649c04f67bb637d9c47cd34c964e",
+      "socialCountsBefore": "3fe6241070298baafefcee0bf987cfee9ec5df5eb62646ba0ff6a6603471bfd8",
+      "socialCountsAfter": "3fe6241070298baafefcee0bf987cfee9ec5df5eb62646ba0ff6a6603471bfd8",
+      "imageProvenance": "394b35574e7541eb77bd75d04a399f039151c83eb2e14dbf7b5dd8a84b9f2cdb",
+      "sourceHashesArtifact": "afaf07d21002cb46e333384efd92ea601cfee3e6cc8fecd8802a072385a75eb3",
+      "focusedValidatorResult": "58324383ffde5d576992f6a05fe3ae0286369fc120cfb209d876cf01bee70502"
+    },
+    "evidenceReferences": {
+      "focusedE2eLog": ".runtime-artifacts/account-rights/checkpoint-b6-forum/runtime/focused-attempt-7/authentication-e2e-ci.log",
+      "focusedValidatorResult": ".runtime-artifacts/account-rights/checkpoint-b6-forum/runtime/e2e-execution-validation.json",
+      "attempt7ValidatorStdout": ".runtime-artifacts/account-rights/checkpoint-b6-forum/runtime/focused-attempt-7/e2e-execution-validation.stdout",
+      "scopedTeardown": ".runtime-artifacts/account-rights/checkpoint-b6-forum/runtime/focused-attempt-7/teardown-summary.txt",
+      "imageProvenance": ".runtime-artifacts/account-rights/checkpoint-b6-forum/runtime/image-provenance.json",
+      "rebuiltImageIds": ".runtime-artifacts/account-rights/checkpoint-b6-forum/runtime/verified-images.json",
+      "databaseImageReconciliation": ".runtime-artifacts/account-rights/checkpoint-b6-forum/runtime/runtime-image-id-reconciliation.json",
+      "fixtureRepair": ".runtime-artifacts/account-rights/checkpoint-b6-forum/fixture-schema-repair.json"
+    }
+  },
+  "nonAcceptance": [
+    "No full 165-entity/24-owner inventory completion",
+    "No public portable JSON/image/video export or download",
+    "No account deletion, provider/backup operations, durable snapshot or UI",
+    "DF-007 remains mandatory and open; RR-11 remains unaccepted"
+  ],
+  "publicCloseoutChecks": {
+    "formatJsonAndDiff": "PASS: JSON parsed; six owned publication paths reviewed for intended bounded update.",
+    "docsToolingJest": "Earlier passed; not rerun for documentation-only closeout.",
+    "storybookBuild": "Earlier passed; not rerun for documentation-only closeout.",
+    "finalDocHashReview": "Final 27-path hashes and parent review are recorded privately in commit-closeout-hashes.json and closeout-review.md."
+  },
+  "fixtureAmendment": {
+    "status": "RUNTIME_ACCEPTED_AFTER_TWO_REVIEWED_FIXTURE_AMENDMENTS",
+    "changedPath": "apps/authentication-e2e/src/authentication/account-export.spec.ts",
+    "originalSha256": "bef2546e8f218e128e200f65485aeb5c853711e67a174ad533920807cbc1e6db",
+    "keyLinkRepairSha256": "b227046a60394aa301b3078a57b890c7aaecdeaa45cd896fbeba092f3de6b52e",
+    "finalSha256": "9a3e58f67b8c41173d38e2972ccc68847818b4e1618576c5befee689e323678a",
+    "other20InputsUnchanged": true,
+    "protected43Unchanged": true,
+    "originalGateManifestSha256": "b7e2d4e082a93735be46487a5b22a652356537c4423615db848c25319f5f67d8",
+    "note": "Original 40-gate evidence belongs to the original fixture manifest. The two fixture-only amendments and focused runtime acceptance are recorded separately; no combined 21/21 claim."
+  }
+}

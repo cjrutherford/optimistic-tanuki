@@ -56,7 +56,10 @@ test.describe('OAuth cookie session', () => {
     ).toBeNull();
 
     const session = await page.request.get('/api/authentication/session');
-    expect(session.ok()).toBe(true);
+    expect(
+      session.ok(),
+      `session restore returned ${session.status()}: ${await session.text()}`
+    ).toBe(true);
     await expect(session.json()).resolves.toEqual(
       expect.objectContaining({
         data: expect.objectContaining({ email: 'oauth-e2e@example.test' }),

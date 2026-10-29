@@ -1,0 +1,55 @@
+{
+  "checkpoint": "DF-007-J7",
+  "date": "2026-10-20",
+  "baseCommit": "faf1c6b7020aa94d030924ed9d4f27d9fadc7290",
+  "status": "locally-verified-Assets-identity-consumer-component",
+  "sourceFiles": {
+    "apps/assets/src/app/account-export-profile-snapshot.client.ts": "34369b3f236873b310110d074ae9d8590f2fcfe8de15e5655f885a8780deec55",
+    "apps/assets/src/app/account-export-profile-snapshot.client.spec.ts": "f0c1b43b8d3d8f9e5612a55755c917305e023115b6c03114c71d223e95af16f8"
+  },
+  "scope": {
+    "completeFencedProfileIdentityTraversal": true,
+    "wholeAccountProfileArrayRetained": false,
+    "emptyCaptureRequiresRpc": true,
+    "moduleRegistration": false,
+    "route": false,
+    "assetsDatabaseReader": false,
+    "mediaExport": false,
+    "accountArtifact": false,
+    "deletion": false
+  },
+  "checks": {
+    "unit": {
+      "command": "pnpm nx run assets:test --testFile=account-export-profile-snapshot.client.spec.ts --runInBand",
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0,
+      "rpc": "simulated responses; no live Assets integration",
+      "log": ".runtime-artifacts/account-rights/finish-sequence/snapshot-integration/assets-identity-unit.log",
+      "sha256": "7fea1e855bacbd70fbbf60ef6fa8c0b194f862994e602a330c2d685692f74176"
+    },
+    "preE2e": {
+      "command": "pnpm nx run-many -t lint build -p assets --parallel=2",
+      "productionBuild": "PASS",
+      "lint": "PASS",
+      "log": ".runtime-artifacts/account-rights/finish-sequence/assets-identity/pre-e2e.log",
+      "sha256": "9a75a318eebad75372a17cb324acd8f64b3e2531561c8e1c09eb2c46a97e4238"
+    },
+    "sourceReview": "Root reviewed whole helper and focused tests; fixed nonstring UUID coercion, bounded timestamp, shared limits and cooperative deadline fixture",
+    "format": "Only two owned source files; root tsconfig sorting disabled",
+    "schemaChanges": false
+  },
+  "limits": {
+    "pageSize": 100,
+    "maxIdentityPages": 32768,
+    "rpcTimeoutMs": 3000,
+    "operationTimeoutMs": 120000
+  },
+  "limitations": [
+    "Not wired to module/controller/job/owner reader",
+    "No actual Assets RPC, database, media, browser or deployment proof",
+    "Callback must cooperate with combined abort signal; promise timeout alone does not prove downstream cancellation",
+    "Complete Assets and overall account rights remain open"
+  ],
+  "next": "Complete Assets table ownership and guardian roles, configured authenticated-media spool, private DB/encrypted local storage fixtures and transport/job wiring"
+}

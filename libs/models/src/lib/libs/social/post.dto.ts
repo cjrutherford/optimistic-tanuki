@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsBoolean } from 'class-validator';
 
 export class PostDto {
   @ApiProperty({ description: 'The unique identifier of the post' })
@@ -23,4 +24,19 @@ export class PostDto {
     description: 'The ID of the profile associated with the post',
   })
   profileId!: string;
+
+  @ApiProperty({ enum: ['public', 'followers', 'community'] })
+  visibility!: 'public' | 'followers' | 'community';
+
+  @ApiProperty({
+    description:
+      'Whether the author explicitly chose public visibility for this community post',
+    type: Boolean,
+    default: false,
+  })
+  @IsBoolean()
+  publicAudienceExplicit!: boolean;
+
+  @ApiProperty({ required: false, nullable: true })
+  communityId?: string | null;
 }

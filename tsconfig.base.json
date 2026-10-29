@@ -130,6 +130,7 @@
       "@optimistic-tanuki/form-ui": ["libs/form-ui/src/index.ts"],
       "@optimistic-tanuki/form-ui/*": ["libs/form-ui/src/lib/form-ui/*"],
       "@optimistic-tanuki/forum-ui": ["libs/forum-ui/src/index.ts"],
+      "@optimistic-tanuki/guardian-ui": ["libs/guardian-ui/src/index.ts"],
       "@optimistic-tanuki/hai-ui": ["libs/hai-ui/src/index.ts"],
       "@optimistic-tanuki/leads-contracts": [
         "libs/leads/contracts/src/index.ts"

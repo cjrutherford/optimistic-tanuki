@@ -3,6 +3,7 @@ import { inject, Injector } from '@angular/core';
 import { AuthStateService } from './auth-state.service';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { isAccountRightsRequest } from '@optimistic-tanuki/common-ui';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const injector = inject(Injector);
@@ -19,6 +20,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(clonedRequest).pipe(
     catchError((error) => {
+      if (isAccountRightsRequest(req.url)) return throwError(() => error);
       // Resolve auth state lazily. AuthStateService itself performs the
       // initial session request, so injecting it here eagerly creates a
       // circular dependency while that request is being constructed.

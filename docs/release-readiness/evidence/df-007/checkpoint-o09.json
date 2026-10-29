@@ -1,0 +1,324 @@
+{
+  "slice": "DF-007-O09",
+  "date": "2026-10-23",
+  "accepted": true,
+  "status": "locally-verified-OT-TS-classifieds-delivery",
+  "acceptedSlices": ["O09-P", "O09-C", "O09-I"],
+  "releaseApplications": {
+    "OT": "client-interface",
+    "TS": "local-hub"
+  },
+  "dataScope": ["client-interface", "local-hub"],
+  "otherApplicationRows": "excluded even when the requesting account owns them",
+  "baseRevision": "9db07b087e1b43a43aac191d74c0a858649c9b39",
+  "sourceManifestSha256": "6577fd181b52a7067039ab2ff37d4adc7ce6c38b7851f4d049e265cb7a2fa102",
+  "sourceHashes": {
+    "apps/authentication-e2e/project.json": "3eac743142c7defed7dc9838c4cdbdd99fa044a57affdb8ff43f4cbe5fe3cbde",
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "4d841a9052f54f69426ddae8e4d665ad15cbdd6ded6fb8e2a7705bd967606516",
+    "apps/authentication-e2e/src/authentication/app-configurator-account-export.spec.ts": "f1ab58c927ea29388e8600a3a6ea868b5b717da969d746c05aeef864d822a686",
+    "apps/authentication-e2e/src/authentication/assets-account-export.spec.ts": "bcc36beed580d7faab5bcc20f764c19a1727f469baca8b941f51fcf83be0c954",
+    "apps/authentication-e2e/src/authentication/chat-account-export.spec.ts": "38919132354a54547117313d7262af285c2ecfa3f7e18926af2ca2f1533eaae9",
+    "apps/authentication-e2e/src/authentication/classifieds-account-export.spec.ts": "6126464ea658b4171c293e39bc4df9f64f68e03887f35b3e3d965572e491acb4",
+    "apps/authentication-e2e/src/authentication/forum-account-export.spec.ts": "57903fcbebb345570bc9ab8339b35e21583123f7444b4137d1bb6b63da6bc20c",
+    "apps/authentication-e2e/src/authentication/permissions-account-export.spec.ts": "013594a5ccbef3b8405d748d95531ef7838197db90c8608dc1e3dac1e1e6a1e3",
+    "apps/authentication-e2e/src/authentication/social-account-export.spec.ts": "04578c31109ad20a3cc2467bd560c97451c715db2b565f1151328f1942a44c6f",
+    "apps/authentication-e2e/src/authentication/videos-account-export.spec.ts": "68cea55818fa2ba360eb973ec3871e8aac921bcd6137eb395ee88bccc61d6074",
+    "apps/authentication-e2e/src/authentication/workspace-account-export.spec.ts": "4a42b622f051d245b0c42c637ea5b36df9976b27c2f319a990abe004afed84e9",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "bab35a4cacde0e3e23d68ae6d85c1363fadc4a1b8ad5012e685213d5caa202de",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "b0e97217da30a3425a60c0755d9136ff6f5c7c2ef97e2ed17507e228babd30ce",
+    "apps/authentication/src/account-export-jobs/classifieds-account-export-snapshot.client.spec.ts": "8ed477c1971dc95b406d730c6777f00a061e599ab13d58e7c6cfb4a7a45cd35a",
+    "apps/authentication/src/account-export-jobs/classifieds-account-export-snapshot.client.ts": "ebf13b3a2226072af1a2a700953ee85fbd1501f50c8aed5a8bf6cc77be77b317",
+    "apps/authentication/src/app/app.module.ts": "a4715809757bb97b9e1eb4c18abe6b2b53d4bbb7fc699e9adce9507978bc22b2",
+    "apps/authentication/src/config.spec.ts": "b5fc9d092a236438194b27bfbcd91d1fe6146242361588ae75666d3bad099681",
+    "apps/authentication/src/config.ts": "094aa94217166d06be0faa27d95286dbdb92cadb0b74126402f38c3e7bc9d919",
+    "apps/classifieds/src/app/account-export-owner.service.spec.ts": "3c280a6a38c180430283d59538a146bfac3d7c7da23be4e415a17067cfeedcd1",
+    "apps/classifieds/src/app/account-export-owner.service.ts": "ce4314c3cc268f1cafec9bfd9c043e76291d6de2eef55563a2925e46dbffce30",
+    "apps/classifieds/src/app/account-export-snapshot.controller.spec.ts": "c91b0d2271644bd16ebbd40508b1180b6b9257018f2560eb614caeeea815432e",
+    "apps/classifieds/src/app/account-export-snapshot.controller.ts": "04e9771e542fcc67947755eb985716633ff603f77319628ec48685de038338e0",
+    "apps/classifieds/src/app/account-export-snapshot.service.spec.ts": "311b9313d870fd9c6ba459b998761971682833496f2bc44562a7083e4af3f06e",
+    "apps/classifieds/src/app/account-export-snapshot.service.ts": "2ced7a8ab2a5a986042795f6da53c7afce415ac0a0bbbaa061836b004ba3a423",
+    "apps/classifieds/src/app/account-export-sources.spec.ts": "19bce7fbfacaceb69cb3e8342d0e0e6f196518b3c2af2c9d3ed7a9de2a10b41c",
+    "apps/classifieds/src/app/account-export-sources.ts": "cf5d92fcfc8026a65ca290bb940614d936f85fab0f73823bdede4de815088c29",
+    "apps/classifieds/src/app/app.module.ts": "fdb0e47a93cc7c02995201676bf85e9f65e773b0fd90221180a64b8076b8c815",
+    "apps/classifieds/src/app/classifieds-account-export-dispositions.json": "56df54528196ba09581ce3ea7fac8cdb7f534be1e13af9aceda943b21b4a87d9",
+    "apps/classifieds/src/app/classifieds-account-export-dispositions.spec.ts": "59db30eb4d8162bbd33a86e2db596aa0a3b7c99d8604ceff775d01c1223f3e1d",
+    "apps/classifieds/src/app/classifieds-account-export-dispositions.ts": "fa0f7607edfa96f87e759c77259c482874cd2e24758577c04c225ebc79225de3",
+    "apps/classifieds/src/app/classifieds-dispositions.postgres.spec.ts": "dfcae0f2334518aa39be07d2d1d34a13b4b838a7e2c4e9aa421ac656e64d6b14",
+    "libs/constants/src/index.ts": "acc383a2e067d376c8039b8c0b80d1b1f88f21fa5400a1c1d8d324c558d8c1b9",
+    "libs/constants/src/lib/libs/classifieds.ts": "f2b052537b22e542ad6b7a32a8b81c8faa3d0e60c948cdcb6d89678058aa444d",
+    "libs/models/src/lib/libs/account-export/account-export-snapshot.contract.ts": "9911249dd953063cc294ec98e209430d222ddeace99a885063355cea1660eb5c",
+    "libs/storage/src/lib/account-export-profile-bound-snapshot.client.ts": "d47884739ced042a12f7ede813b83bdd7edf9be8d73c2c581a49882da5ebe612",
+    "libs/storage/src/lib/account-export-profile-bound-snapshot.service.ts": "93181c1b8b1e85af328be2e2a56c52945ac458bb2b9840b82661cfe3d9a3d69e"
+  },
+  "checks": {
+    "focusedDistinctUnitPassed": 60,
+    "classifieds": 10,
+    "authentication": 50,
+    "olderAuthDatabaseCasesSkipped": 3,
+    "privateCatalogCasesPassed": 1,
+    "privateJobCasesPassed": 1,
+    "privateCasesSkipped": 0,
+    "ciContractCasesPassed": 41,
+    "productionBuild": ["authentication", "classifieds"],
+    "developmentBuild": [
+      "client-interface",
+      "local-hub",
+      "authentication",
+      "classifieds"
+    ],
+    "lint": [
+      "authentication",
+      "classifieds",
+      "authentication-e2e",
+      "constants",
+      "models",
+      "storage"
+    ],
+    "format": "scoped PASS",
+    "migrationGovernance": "PASS"
+  },
+  "runtime": {
+    "result": {
+      "result": "PASS",
+      "seconds": 114.54,
+      "sourceManifestSha256": "6577fd181b52a7067039ab2ff37d4adc7ce6c38b7851f4d049e265cb7a2fa102",
+      "privateResources": {
+        "containers": [],
+        "networks": [],
+        "volumes": []
+      }
+    },
+    "stages": {
+      "normalTowneSquareProducerAndRead": true,
+      "sourceScopes": ["client-interface", "local-hub"],
+      "otherApplicationAndForeignRowsSeeded": 3,
+      "initialJobState": "incomplete",
+      "initialCapturedOwners": [
+        "authentication",
+        "profile",
+        "assets",
+        "videos",
+        "permissions",
+        "social",
+        "forum",
+        "workspace",
+        "app-configurator",
+        "chat-collector",
+        "classifieds"
+      ],
+      "initialBlockers": [
+        "coverage-inventory-unaccepted",
+        "required-participants-incomplete",
+        "portable-media-unverified"
+      ],
+      "jobCaptureOwners": [
+        "authentication",
+        "profile",
+        "assets",
+        "videos",
+        "permissions",
+        "social",
+        "forum",
+        "workspace",
+        "app-configurator",
+        "chat-collector",
+        "classifieds"
+      ],
+      "globalJobRemainsIncomplete": true,
+      "failurePrefix": [
+        "authentication",
+        "profile",
+        "assets",
+        "videos",
+        "permissions",
+        "social",
+        "forum",
+        "workspace",
+        "app-configurator",
+        "chat-collector"
+      ],
+      "overBoundListingFailsCapture": true,
+      "retryRestoresAllOwners": true,
+      "verifiedSourceRowCounts": {
+        "ClassifiedAdEntity": 253
+      },
+      "verifiedTerminalCount": 253,
+      "otherApplicationRowsExcluded": true,
+      "foreignAccountRowsExcluded": true,
+      "rawImageUrlsExcluded": true,
+      "exactDecimalAndZonedMicroseconds": true,
+      "verifiedTerminalChecksum": true,
+      "parentProfileBinding": true,
+      "privacyAssertions": true,
+      "multipleByteReads": 3,
+      "invalidRangeDenied": true,
+      "expiredLeaseDenied": true,
+      "restartInvalidatedHandle": true,
+      "recapturedWithNewId": true,
+      "logoutDeniedRead": true,
+      "foreignFingerprintPreserved": true
+    },
+    "catalog": {
+      "result": "PASS",
+      "readOnly": true,
+      "entities": 1,
+      "physicalTables": [
+        {
+          "table": "classified_ad",
+          "columns": [
+            "id",
+            "title",
+            "description",
+            "price",
+            "currency",
+            "category",
+            "condition",
+            "imageUrls",
+            "status",
+            "communityId",
+            "profileId",
+            "userId",
+            "appScope",
+            "isFeatured",
+            "featuredUntil",
+            "createdAt",
+            "updatedAt",
+            "expiresAt"
+          ]
+        },
+        {
+          "table": "migrations",
+          "columns": ["id", "timestamp", "name"]
+        }
+      ],
+      "foreignKeys": [],
+      "countsBefore": [
+        {
+          "table": "classified_ad",
+          "rows": "0"
+        },
+        {
+          "table": "migrations",
+          "rows": "2"
+        }
+      ],
+      "countsAfter": [
+        {
+          "table": "classified_ad",
+          "rows": "0"
+        },
+        {
+          "table": "migrations",
+          "rows": "2"
+        }
+      ]
+    },
+    "independentDatabaseCountsRestored": true,
+    "protectedPathsUnchanged": 43,
+    "images": {
+      "authentication": {
+        "tag": "ot-df007-classifieds-integration/authentication:6577fd181b52",
+        "id": "sha256:545614d0649ba31d41e806323818cb5ec2fd0c36693e5c6be79de15e70cd4866",
+        "seconds": 101,
+        "dockerfileSha256": "d44c8d8223b1551d792765a56da08f3984bb4dcf54302d43235e9fb7757a0db9"
+      },
+      "profile": {
+        "tag": "ot-df007-classifieds-integration/profile:6577fd181b52",
+        "id": "sha256:c80baaec300cfa1b5af4ad28f0ca38e05e17c0c81fec9b5887204b07f8c2d9e8",
+        "seconds": 100,
+        "dockerfileSha256": "57192be5bc836177222c3c6c5a14d6f56e8221711414ed7de574a05bf5e026b4"
+      },
+      "assets": {
+        "tag": "ot-df007-classifieds-integration/assets:6577fd181b52",
+        "id": "sha256:5728b28fafbcdfaa0ecd90ce080ea92d0c1fc3f040c3e568b7d4abbf2a499fd0",
+        "seconds": 97,
+        "dockerfileSha256": "8caae61b5d5ed6b061713f147665678659732249969bb696e814467f06ca5b06"
+      },
+      "videos": {
+        "tag": "ot-df007-classifieds-integration/videos:6577fd181b52",
+        "id": "sha256:2699a19458cb2d8d28f4517d127953885e980ea85871393f2348f04a98cdc502",
+        "seconds": 99,
+        "dockerfileSha256": "3a2d548ebbef5f4fe55a158dbb499c7d402b45a8e93bc5c9cfcf592d9eb840a4"
+      },
+      "permissions": {
+        "tag": "ot-df007-classifieds-integration/permissions:6577fd181b52",
+        "id": "sha256:3f8c3ef944b6fe8fe4d17f2c7f25a00b6908fe19c396a9af5bf6c56d55f125c1",
+        "seconds": 105,
+        "dockerfileSha256": "00e2af6391c1e962fac14b21d8a89a5b9f0641e06d3ad8f93b62795a27d1c021"
+      },
+      "social": {
+        "tag": "ot-df007-classifieds-integration/social:6577fd181b52",
+        "id": "sha256:d0c7ca39aff22098d2f529a0ddb830da55cd8b18f3ce71ea04938aa2aa1f1c6a",
+        "seconds": 107,
+        "dockerfileSha256": "5336a2e10dec5a133f9df440e6ec67a01e0c99ad5b079e30252a693ad31f6bf8"
+      },
+      "forum": {
+        "tag": "ot-df007-classifieds-integration/forum:6577fd181b52",
+        "id": "sha256:44078f26dbceffb106ba5eb86a456c13341df427f735fd848bb8f5cb6139447d",
+        "seconds": 96,
+        "dockerfileSha256": "5e638e8ed86883f8407505fd8e9ba9683d5174667a9e5d89204d196969b18d85"
+      },
+      "workspace": {
+        "tag": "ot-df007-classifieds-integration/workspace:6577fd181b52",
+        "id": "sha256:aed555932af73cf0cd0c4c9baa3960c34241a19935dcbe7ab757c1d0eb9e95f9",
+        "seconds": 91,
+        "dockerfileSha256": "b06291589cf2b08a809bfa8238297d001a8ae3304a56e5e0e552b3c901a4c9d5"
+      },
+      "app-configurator": {
+        "tag": "ot-df007-classifieds-integration/app-configurator:6577fd181b52",
+        "id": "sha256:49de212cbeb1688df57ba97e745d352a48eba03ac8040308dec6ddf9cba60dad",
+        "seconds": 110,
+        "dockerfileSha256": "e25b619d1bb847d7850323b69f6d15cee2ea58b9bd9fc7f25d8143b7cc3c60c4"
+      },
+      "chat-collector": {
+        "tag": "ot-df007-classifieds-integration/chat-collector:6577fd181b52",
+        "id": "sha256:94a932cf6db4ff4cef3e7e54f43acc94071e7a55eb75ebc6697cf028ff30e785",
+        "seconds": 101,
+        "dockerfileSha256": "e0ac0d0c2cb847dd477461e1f082de2f25c545158a36aec4660db5b211941320"
+      },
+      "classifieds": {
+        "tag": "ot-df007-classifieds-integration/classifieds:6577fd181b52",
+        "id": "sha256:5ec1514d411b74a6fed9eafe16395f03858996ab758b89dbf4d78291f09c8ba6",
+        "seconds": 69,
+        "dockerfileSha256": "28f30d56fe04d4ed0ecf08a30b8e3ec1eadacd232cd49cc2b193c887201964a1"
+      },
+      "db-setup": {
+        "tag": "ot-df007-classifieds-integration/db-setup:6577fd181b52",
+        "id": "sha256:3f33cecc1a90bc154fd4cb6878bd498829414c85749c98230e53f93484cadcac",
+        "seconds": 1,
+        "dockerfileSha256": "389e9fb743af0dc016cdb5fddbbcbbf4b7ac76b03d34c080cacd649770525906"
+      }
+    }
+  },
+  "evidenceHashes": {
+    "auth-unit.log": "a37dc138262fb0a3d31f80f3342ad08a7289c5cc9ea3731e2a1976791f361ee3",
+    "classifieds-unit.log": "da44021d82a849343ba896e4a6f827c79423dcae807fad03007c267e72c8dd73",
+    "source-policy-unit-fixed.log": "d0b48676febdefd90127744282350231129c3d20b76fa4530106429a344c147f",
+    "client-after-compat-unit.log": "094c6a7edf949c32e0588d786ace0538b7ff20fbd64d23034a2c2b0119c05e5a",
+    "final-prod-build.log": "009cc78703d527e6bfd4dfd027f051070e162fb844b82da01aa499ada3c90fbd",
+    "final-lint.log": "bbec2cd187d53870fca44be31ec1dd2dc139d6357ab861aa6ef60c088a77951d",
+    "fixture-final-lint.log": "19438cae80d0a6443b91271913902dbcf49af4d06001f5db925e1796bb2fe237",
+    "otts-dev-build-final.log": "20574c99653cb99705d30e89823be9d6344eff75f897f3e2802ff13cd4fcb656",
+    "ci-contracts.log": "dc4902d65271a2fbf814ceb122f577f07d83c9f32d174f96a44970cb7d8832d6",
+    "migration-governance.log": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9",
+    "runtime/result.json": "6b2ad941e80b2f33b9d91262f510285a1f21abbcfb97f29e42e80c0c9ab7286f",
+    "runtime/fixture-report.json": "236204753e05dd1fddde24f1bc7c33677e59f9376581940d7738215caad50902",
+    "runtime/catalog-report.json": "8f7a2351a1b867d7be0b00bc2ee809d08b25cbd87c5c913a674014347f583b38",
+    "runtime/database-counts-before.json": "c528ba54020ef03a2b162b8c75f9a67a812a84cf63f45bdf39fc2d54ef03b376",
+    "runtime/database-counts-after.json": "c528ba54020ef03a2b162b8c75f9a67a812a84cf63f45bdf39fc2d54ef03b376",
+    "runtime/identities-before.json": "2762f03b035bb6d0e7699e57c20886ee0b98ccaefed8ca4dd8192ed848972f1d",
+    "runtime/identities-after.json": "05374b2ed40db2dbaa1bf944d70febfe8dc87a28305e3524bde334b28f794f59",
+    "runtime/cleanup.json": "011b70eac3c85c5738f6b3803b77099d6e2070188c86b9f24f412560c309ce9d"
+  },
+  "review": {
+    "sourceReview": "GO; no concrete P1/P2, Luna",
+    "runtimeValidatedSeparately": true
+  },
+  "limitations": [
+    "No OT Classifieds UI consumer was established; the actual listing workflow is Towne Square. Both explicit stored scopes are tested, not other applications.",
+    "Image URLs and unverified media references are excluded; no asset ownership or byte capture inferred.",
+    "Overall export remains incomplete, artifactAvailable false and URL null; no download or deletion enabled.",
+    "No browser, remote CI or external-provider qualification. Earlier owner success expectations updated but full historical fixtures not rerun.",
+    "Process logs/retention remain N04; no invented external stores or other product qualification."
+  ]
+}

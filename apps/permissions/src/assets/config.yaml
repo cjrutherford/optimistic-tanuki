@@ -5,3 +5,10 @@ database:
   username: postgres
   password: postgres
   database: ot_permissions
+services:
+  authentication:
+    host: authentication
+    port: 3001
+  profile:
+    host: profile
+    port: 3002

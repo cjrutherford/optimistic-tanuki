@@ -1,3 +1,4 @@
+import { sessionCookieOptions } from '../../auth/session-policy';
 import {
   Body,
   Controller,
@@ -77,6 +78,12 @@ type OAuthStatePayload = {
   cookieSession?: boolean;
   /** Present only in the server-side one-time state record for link flows. */
   linkUserId?: string;
+  /** Gateway-validated age result or applicant resume secret, held only in server-side state. */
+  ageEligibilityStatus?: 'adult';
+  /** False means this flow may authenticate an existing account but never bootstrap a new one. */
+  registrationAllowed?: boolean;
+  guardianResumeToken?: string;
+  guardianApplicantEmail?: string;
 };
 
 type OAuthIdentity = {
@@ -149,6 +156,72 @@ export class OAuthController {
       true,
       sessionMode === 'cookie'
     );
+  }
+
+  @Post('start/:provider')
+  @Public()
+  @Throttle({ short: { limit: 20, ttl: 60_000 } })
+  async startAgeCheckedOAuth(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+    @Param('provider') _provider: string,
+    @Body()
+    body: {
+      returnTo: string;
+      appScope?: string;
+      sessionMode?: string;
+      dateOfBirth?: string;
+      guardianResumeToken?: string;
+    }
+  ): Promise<{ authorizationUrl: string }> {
+    const returnTo = this.validateReturnTo(body.returnTo);
+    const appId = this.resolveAppScopeForReturnTo(returnTo);
+    let ageEligibilityStatus: 'adult' | undefined;
+    let guardianApplicantEmail: string | undefined;
+    let registrationAllowed = true;
+    if (appId === 'client-interface' || appId === 'local-hub') {
+      if (body.guardianResumeToken) {
+        const resumed = (await firstValueFrom(
+          this.authClient.send(
+            { cmd: AuthCommands.ValidateGuardianResume },
+            { token: body.guardianResumeToken }
+          )
+        )) as { valid: true; email: string };
+        guardianApplicantEmail = resumed.email;
+      } else {
+        const age = this.ageAtRegistration(body.dateOfBirth);
+        if (age === null) {
+          registrationAllowed = false;
+        } else {
+          if (age < 13)
+            throw new HttpException(
+              'OAuth sign-in is unavailable under age 13.',
+              HttpStatus.FORBIDDEN
+            );
+          if (age < 18)
+            throw new HttpException(
+              'A parent or guardian must record permission before OAuth registration.',
+              HttpStatus.FORBIDDEN
+            );
+          ageEligibilityStatus = 'adult';
+        }
+      }
+    }
+    const authorizationUrl = await this.beginOAuthFlow(
+      request,
+      response,
+      returnTo,
+      body.appScope,
+      undefined,
+      undefined,
+      false,
+      body.sessionMode === 'cookie',
+      ageEligibilityStatus,
+      body.guardianResumeToken,
+      guardianApplicantEmail,
+      registrationAllowed
+    );
+    return { authorizationUrl };
   }
 
   /**
@@ -233,7 +306,11 @@ export class OAuthController {
     queryDomain: string | undefined,
     linkUserId?: string,
     redirect = true,
-    cookieSession = false
+    cookieSession = false,
+    ageEligibilityStatus?: 'adult',
+    guardianResumeToken?: string,
+    guardianApplicantEmail?: string,
+    registrationAllowed = true
   ): Promise<string> {
     const provider = String(
       (request.params as { provider?: string }).provider || ''
@@ -255,7 +332,7 @@ export class OAuthController {
     const resolvedAppScope = this.resolveAppScopeForReturnTo(validatedReturnTo);
     if (
       requestedAppScope?.trim() &&
-      requestedAppScope.trim() !== resolvedAppScope
+      this.canonicalAppIdForScope(requestedAppScope.trim()) !== resolvedAppScope
     ) {
       throw new HttpException(
         'appScope must match the registered returnTo application',
@@ -298,6 +375,10 @@ export class OAuthController {
       issuedAt: Date.now(),
       linkUserId,
       cookieSession,
+      ageEligibilityStatus,
+      registrationAllowed,
+      guardianResumeToken,
+      guardianApplicantEmail,
     } as Omit<OAuthStatePayload, 'codeVerifier'>);
 
     const params = new URLSearchParams({
@@ -468,6 +549,9 @@ export class OAuthController {
             email: identity.email,
             emailVerified: identity.emailVerified,
             displayName: identity.displayName,
+            appId: statePayload.appScope,
+            ageEligibilityStatus: statePayload.ageEligibilityStatus,
+            guardianResumeToken: statePayload.guardianResumeToken,
           }
         )
       );
@@ -491,10 +575,32 @@ export class OAuthController {
       }
       if (!userId && loginResult?.data?.needsRegistration) {
         this.requireUsableOAuthEmail(identity.email, provider);
+        const ageGateApp =
+          statePayload.appScope === 'client-interface' ||
+          statePayload.appScope === 'local-hub';
+        if (
+          ageGateApp &&
+          (statePayload.registrationAllowed === false ||
+            (!statePayload.ageEligibilityStatus &&
+              !statePayload.guardianResumeToken))
+        ) {
+          throw new Error('AGE_CHECK_REQUIRED');
+        }
+        if (
+          statePayload.guardianResumeToken &&
+          statePayload.guardianApplicantEmail?.trim().toLowerCase() !==
+            identity.email.trim().toLowerCase()
+        ) {
+          throw new Error(
+            'Guardian permission belongs to a different applicant.'
+          );
+        }
         const registeredUser = await this.registerOAuthUser(
           statePayload.appScope,
           provider,
-          identity
+          identity,
+          statePayload.ageEligibilityStatus,
+          statePayload.guardianResumeToken
         );
         userId = registeredUser.userId;
         if (!registeredUser.emailVerified) {
@@ -526,22 +632,31 @@ export class OAuthController {
         identity.email
       );
       await this.assertOwnerConsoleAccess(statePayload.appScope, profile.id);
-      const issueResult = await firstValueFrom(
+      const callbackSession = await firstValueFrom(
         this.authClient.send(
-          { cmd: AuthCommands.Issue },
-          { userId, profileId: profile.id }
+          { cmd: AuthCommands.CreateOAuthCallbackSession },
+          { userId, profileId: profile.id, appId: statePayload.appScope }
         )
       );
-      const token =
-        issueResult?.data?.newToken ||
-        issueResult?.newToken ||
-        issueResult?.token;
-      if (!token) {
-        throw new Error('Authentication service did not return a token');
+      const session = callbackSession?.data || callbackSession;
+      const isUUID = (value: unknown): value is string =>
+        typeof value === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          value
+        );
+      if (
+        !isUUID(session?.sessionId) ||
+        session.userId !== userId ||
+        session.profileId !== profile.id ||
+        session.appId !== statePayload.appScope
+      ) {
+        throw new Error(
+          'Authentication service returned an invalid callback session'
+        );
       }
 
       const callbackCode = await this.createCallbackGrant(
-        token,
+        session,
         statePayload.returnTo,
         statePayload.appScope,
         stateId,
@@ -629,21 +744,42 @@ export class OAuthController {
         HttpStatus.UNAUTHORIZED
       );
     }
+    let resolveResult: unknown;
+    try {
+      resolveResult = await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.ResolveOAuthCallbackSession },
+          {
+            sessionId: grant.sessionId,
+            userId: grant.userId,
+            profileId: grant.profileId,
+            appId: grant.appId,
+          }
+        )
+      );
+    } catch {
+      throw new HttpException(
+        'OAuth session is unavailable',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+    const token =
+      (resolveResult as any)?.data?.token || (resolveResult as any)?.token;
+    if (typeof token !== 'string' || !token.trim()) {
+      throw new HttpException(
+        'Invalid OAuth callback code',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
     if (
       (grant.cookieSession ||
         request.headers['x-ot-session-mode'] === 'cookie') &&
       response
     ) {
-      response.cookie('ot_session', grant.token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 1000,
-      });
+      response.cookie('ot_session', token, sessionCookieOptions(grant.appId));
       return { session: true, returnOrigin: grant.returnOrigin };
     }
-    return { token: grant.token, returnOrigin: grant.returnOrigin };
+    return { token, returnOrigin: grant.returnOrigin };
   }
 
   // Not @Public(): this mutates account state, so AuthGuard MUST reject an
@@ -924,7 +1060,7 @@ export class OAuthController {
     const configuredScope = [...this.configuredAppScopeOrigins()].find(
       ([, configuredOrigin]) => configuredOrigin === origin
     )?.[0];
-    if (configuredScope) return configuredScope;
+    if (configuredScope) return this.canonicalAppIdForScope(configuredScope);
 
     if (origin === this.safeOrigin(this.resolveClientInterfaceCallbackBase())) {
       return 'client-interface';
@@ -934,6 +1070,32 @@ export class OAuthController {
       (entry) => this.safeOrigin(entry.uiBaseUrl) === origin
     );
     return app?.appId ?? null;
+  }
+
+  private canonicalAppIdForScope(scope: string): string {
+    return (
+      (
+        {
+          finance: 'fin-commander',
+          'leads-app': 'opportunity-compass',
+          'video-client': 'video-platform',
+          D6: 'd6',
+        } as Record<string, string>
+      )[scope] || scope
+    );
+  }
+
+  private profileScopeForApp(appId: string): string {
+    return (
+      (
+        {
+          'fin-commander': 'finance',
+          'opportunity-compass': 'leads-app',
+          'video-platform': 'video-platform',
+          d6: 'D6',
+        } as Record<string, string>
+      )[appId] || appId
+    );
   }
 
   private configuredAppScopeOrigins(): Map<string, string> {
@@ -992,8 +1154,12 @@ export class OAuthController {
   }
 
   private resolveCallbackBase(appScope?: string): string {
+    const configuredOrigins = this.configuredAppScopeOrigins();
     const configuredOrigin = appScope
-      ? this.configuredAppScopeOrigins().get(appScope)
+      ? configuredOrigins.get(appScope) ||
+        [...configuredOrigins].find(
+          ([scope]) => this.canonicalAppIdForScope(scope) === appScope
+        )?.[1]
       : undefined;
 
     if (configuredOrigin) return configuredOrigin;
@@ -1096,7 +1262,12 @@ export class OAuthController {
   }
 
   private async createCallbackGrant(
-    token: string,
+    session: {
+      sessionId: string;
+      userId: string;
+      profileId: string;
+      appId: string;
+    },
     returnTo: string,
     appScope: string,
     stateId: string,
@@ -1105,7 +1276,7 @@ export class OAuthController {
   ): Promise<string> {
     const callbackCode = `${stateId}.${randomBytes(32).toString('base64url')}`;
     await this.oauthStateStore.createCallbackGrant(callbackCode, {
-      token,
+      ...session,
       returnOrigin: new URL(returnTo).origin,
       redemptionOrigin: new URL(this.resolveCallbackBase(appScope)).origin,
       cookieSession,
@@ -1477,7 +1648,9 @@ export class OAuthController {
   private async registerOAuthUser(
     appScope: string,
     provider: string,
-    identity: OAuthIdentity
+    identity: OAuthIdentity,
+    ageEligibilityStatus?: 'adult',
+    guardianResumeToken?: string
   ): Promise<{ userId: string; emailVerified: boolean }> {
     if (appScope === 'owner-console' && process.env.NODE_ENV === 'production') {
       throw new Error(
@@ -1501,11 +1674,13 @@ export class OAuthController {
       password: generatedPassword,
       confirm: generatedPassword,
       bio: '',
+      ...(guardianResumeToken ? { guardianResumeToken } : {}),
     };
 
     const registerResult = await this.registerBootstrap.register(
       registerRequest,
-      appScope
+      appScope,
+      ageEligibilityStatus
     );
     const user = registerResult?.data?.user as
       | { id?: string; emailVerifiedAt?: unknown }
@@ -1596,6 +1771,30 @@ export class OAuthController {
     return `Oauth!${randomBytes(18).toString('base64url')}9`;
   }
 
+  private ageAtRegistration(dateOfBirth?: string): number | null {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth || '')) return null;
+    const dob = new Date(`${dateOfBirth}T00:00:00.000Z`);
+    if (
+      Number.isNaN(dob.getTime()) ||
+      dob.toISOString().slice(0, 10) !== dateOfBirth
+    )
+      return null;
+    const today = new Date();
+    if (
+      dob.getTime() >
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+    )
+      return null;
+    let age = today.getUTCFullYear() - dob.getUTCFullYear();
+    if (
+      today.getUTCMonth() < dob.getUTCMonth() ||
+      (today.getUTCMonth() === dob.getUTCMonth() &&
+        today.getUTCDate() < dob.getUTCDate())
+    )
+      age--;
+    return age;
+  }
+
   private async getOrCreateAppScopedProfile(
     userId: string,
     targetAppId: string,
@@ -1603,7 +1802,9 @@ export class OAuthController {
     email: string
   ): Promise<ProfileDto> {
     const effectiveAppScope =
-      targetAppId === 'owner-console' ? 'global' : targetAppId;
+      targetAppId === 'owner-console'
+        ? 'global'
+        : this.profileScopeForApp(targetAppId);
     const profiles = (await firstValueFrom(
       this.profileClient.send(
         { cmd: ProfileCommands.GetAll },

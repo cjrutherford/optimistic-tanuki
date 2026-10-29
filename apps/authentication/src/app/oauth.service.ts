@@ -1,3 +1,4 @@
+import { isRollingSessionApp } from '@optimistic-tanuki/models';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -8,6 +9,10 @@ import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { OAuthConfigValidator } from './oauth-config.validator';
 import { randomUUID } from 'crypto';
+import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
+import { emitSafeDiagnostic } from '@optimistic-tanuki/logger';
+import { AccountDeletionFenceService } from '../account-deletion/account-deletion-fence.service';
 
 @Injectable()
 export class OAuthService {
@@ -21,7 +26,10 @@ export class OAuthService {
     private readonly tokenRepo: Repository<TokenEntity>,
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     private readonly jsonWebToken: JwtService,
-    private readonly configValidator: OAuthConfigValidator
+    private readonly configValidator: OAuthConfigValidator,
+    private readonly guardianPermissions: GuardianPermissionService,
+    private readonly profileOwnershipVerifier: ProfileOwnershipVerifier,
+    private readonly accountDeletionFence: AccountDeletionFenceService
   ) {}
 
   async oauthLogin(
@@ -30,7 +38,10 @@ export class OAuthService {
     email: string,
     displayName: string,
     profileId?: string,
-    emailVerified = false
+    emailVerified = false,
+    appId?: string,
+    ageEligibilityStatus?: 'adult',
+    guardianResumeToken?: string
   ) {
     try {
       // Check if the provider is enabled and properly configured
@@ -44,9 +55,7 @@ export class OAuthService {
         );
       }
 
-      this.l.debug(
-        `OAuth login attempt: provider=${provider}, providerUserId=${providerUserId}`
-      );
+      this.l.debug(`OAuth login attempt: provider=${provider}`);
 
       // Find existing linked account
       const linked = await this.oauthRepo.findOne({
@@ -55,8 +64,15 @@ export class OAuthService {
       });
 
       if (linked && linked.user) {
+        await this.accountDeletionFence.assertActiveAccount(linked.user.id);
+        await this.applyEligibility(
+          linked.user,
+          appId,
+          ageEligibilityStatus,
+          guardianResumeToken
+        );
         // Issue JWT for the linked user
-        return await this.issueTokenForUser(linked.user, profileId);
+        return await this.issueTokenForUser(linked.user, profileId, appId);
       }
 
       // Try to find user by email and auto-link
@@ -66,6 +82,7 @@ export class OAuthService {
         });
 
         if (existingUser) {
+          await this.accountDeletionFence.assertActiveAccount(existingUser.id);
           // Account-takeover guard: only auto-link when the provider asserts
           // the email is verified. Otherwise an attacker who controls an
           // unverified provider account with a victim's email could seize the
@@ -73,12 +90,21 @@ export class OAuthService {
           if (!emailVerified) {
             const providerLabel = this.getProviderDisplayName(provider);
             this.l.warn(
-              `Refused OAuth auto-link: provider=${provider} did not verify email for existing userId=${existingUser.id}`
+              `Refused OAuth auto-link: provider=${provider} did not verify email for an existing account`
             );
             throw new RpcException(
               `We found an existing account for ${email}, but ${providerLabel} did not confirm you own this email address. Please sign in with your password, then link ${providerLabel} from your account settings.`
             );
           }
+
+          // Evaluate age eligibility before persisting the provider binding.
+          // A denied pending/revoked account must not retain a new identity.
+          await this.applyEligibility(
+            existingUser,
+            appId,
+            ageEligibilityStatus,
+            guardianResumeToken
+          );
 
           // Auto-link the provider to the existing user
           await this.oauthRepo.save({
@@ -91,10 +117,10 @@ export class OAuthService {
 
           // Audit trail: a verified-email auto-link just occurred.
           this.l.log(
-            `OAuth auto-link: linked verified ${provider} identity (${providerUserId}) to existing userId=${existingUser.id}`
+            `OAuth auto-link: linked verified ${provider} identity to an existing account`
           );
 
-          return await this.issueTokenForUser(existingUser, profileId);
+          return await this.issueTokenForUser(existingUser, profileId, appId);
         }
       }
 
@@ -132,6 +158,7 @@ export class OAuthService {
       if (!user) {
         throw new RpcException('User not found');
       }
+      await this.accountDeletionFence.assertActiveAccount(user.id);
 
       // Check if this provider is already linked to this user
       const existing = await this.oauthRepo.findOne({
@@ -193,37 +220,48 @@ export class OAuthService {
 
   async unlinkProvider(userId: string, provider: string) {
     try {
-      this.l.debug(`Unlinking provider=${provider} from userId=${userId}`);
+      await this.accountDeletionFence.assertActiveAccount(userId);
+      await this.oauthRepo.manager.transaction(async (manager) => {
+        const users = manager.getRepository(UserEntity);
+        const providers = manager.getRepository(OAuthProviderEntity);
+        const user = await users.findOne({
+          where: { id: userId },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (!user) throw new RpcException('User account not found');
 
-      const linked = await this.oauthRepo.findOne({
-        where: { provider, userId },
+        const linked = await providers.findOne({
+          where: { provider, userId },
+        });
+        if (!linked) {
+          throw new RpcException(
+            `Provider ${provider} is not linked to this account`
+          );
+        }
+
+        // The user row lock serializes unlink attempts for this account.
+        const otherProviders = await providers.count({ where: { userId } });
+        if (!user.password && otherProviders <= 1) {
+          throw new RpcException(
+            'Cannot unlink the last authentication provider. Set a password first.'
+          );
+        }
+
+        const linkId = linked.id;
+        await providers.remove(linked);
+        const remaining = await providers.findOne({
+          where: { id: linkId, provider, userId },
+          select: ['id'],
+        });
+        if (remaining) throw new Error('Provider unlink did not complete');
       });
-      if (!linked) {
-        throw new RpcException(
-          `Provider ${provider} is not linked to this account`
-        );
-      }
-
-      // Ensure user has at least a password or another provider before unlinking
-      const user = await this.userRepo.findOne({ where: { id: userId } });
-      const otherProviders = await this.oauthRepo.count({
-        where: { userId },
-      });
-
-      if (!user.password && otherProviders <= 1) {
-        throw new RpcException(
-          'Cannot unlink the last authentication provider. Set a password first.'
-        );
-      }
-
-      await this.oauthRepo.remove(linked);
 
       return {
         message: `Provider ${provider} unlinked successfully`,
         code: 0,
       };
     } catch (e) {
-      this.l.error('Error in unlinkProvider:', e);
+      emitSafeDiagnostic(this.l, 'profile.operation', undefined, 'warn');
       if (e instanceof RpcException) throw e;
       throw new RpcException(e.message || e);
     }
@@ -256,7 +294,12 @@ export class OAuthService {
     }
   }
 
-  private async issueTokenForUser(user: UserEntity, profileId?: string) {
+  private async issueTokenForUser(
+    user: UserEntity,
+    profileId?: string,
+    appId?: string
+  ) {
+    await this.accountDeletionFence.assertActiveAccount(user.id);
     if (!user.emailVerifiedAt) {
       return {
         message: 'Email verification required',
@@ -269,17 +312,21 @@ export class OAuthService {
       };
     }
 
+    const selectedProfileId =
+      await this.profileOwnershipVerifier.resolveSelection(user.id, profileId);
+
     const pl = {
       userId: user.id,
       name: `${user.firstName} ${user.lastName}`,
       email: user.email,
-      profileId: profileId || '',
+      profileId: selectedProfileId || '',
       jti: randomUUID(),
+      ...(appId ? { appId } : {}),
     };
 
     const tk = this.jsonWebToken.sign(pl, {
       secret: this.jwtSecret,
-      expiresIn: '1h',
+      ...(isRollingSessionApp(appId) ? {} : { expiresIn: '1h' as const }),
     });
 
     const ntk = {
@@ -287,7 +334,7 @@ export class OAuthService {
       userId: user.id,
       user,
       revoked: false,
-      profileId: profileId || null,
+      profileId: selectedProfileId || null,
     };
     await this.tokenRepo.save(ntk);
 
@@ -296,6 +343,45 @@ export class OAuthService {
       code: 0,
       data: { newToken: tk, userId: user.id },
     };
+  }
+
+  private async applyEligibility(
+    user: UserEntity,
+    appId?: string,
+    ageEligibilityStatus?: 'adult',
+    guardianResumeToken?: string
+  ): Promise<void> {
+    if (guardianResumeToken) {
+      await this.guardianPermissions.attachAccount(
+        guardianResumeToken,
+        user.id
+      );
+      user.ageEligibilityStatus = 'minor';
+    } else if (user.ageEligibilityEndsAt) {
+      const eligibilityEndsAt = new Date(
+        `${user.ageEligibilityEndsAt}T00:00:00.000Z`
+      );
+      if (eligibilityEndsAt.getTime() <= Date.now()) {
+        await this.userRepo.update(user.id, {
+          ageEligibilityStatus: 'adult',
+          ageEligibilityEndsAt: null,
+        });
+        user.ageEligibilityStatus = 'adult';
+        user.ageEligibilityEndsAt = null;
+      } else if (ageEligibilityStatus === 'adult') {
+        throw new RpcException({ code: 'AGE_ASSESSMENT_MISMATCH' });
+      }
+    } else if (
+      ageEligibilityStatus === 'adult' &&
+      user.ageEligibilityStatus === 'unassessed'
+    ) {
+      await this.userRepo.update(user.id, {
+        ageEligibilityStatus: 'adult',
+        ageEligibilityEndsAt: null,
+      });
+      user.ageEligibilityStatus = 'adult';
+    }
+    await this.guardianPermissions.assertAccountAccess(user.id, appId);
   }
 
   private getProviderDisplayName(provider: string): string {

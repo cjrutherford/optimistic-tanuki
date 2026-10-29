@@ -17,7 +17,6 @@ const loadConfig = () => {
   const configPath = path.resolve(__dirname, './assets/config.yaml');
   const configFile = fs.readFileSync(configPath, 'utf8');
   const configData = yaml.load(configFile) as ChatCollectorConfigType;
-  console.log('🚀 ~ loadConfig ~ configData:', configData);
   return configData;
 };
 

@@ -4,7 +4,14 @@ import {
   AssetType,
   StorageStrategy,
 } from '@optimistic-tanuki/models';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  linkSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'fs';
 import * as fs from 'fs/promises';
 import { tmpdir } from 'os';
 import * as path from 'path';
@@ -14,13 +21,6 @@ import {
   VAULT_STORAGE_KEK_ENV,
 } from './envelope-encryption.service';
 import { ZfsStorageService } from './zfs-storage.service';
-
-// uuid ships as ESM, which this project's jest transform does not parse, so it
-// has to be stubbed. Ids still increment so two assets remain distinguishable.
-let uuidCounter = 0;
-jest.mock('uuid', () => ({
-  v4: jest.fn(() => `uuid-${++uuidCounter}`),
-}));
 
 process.env[VAULT_STORAGE_KEK_ENV] = 'local-storage-spec-kek';
 
@@ -79,6 +79,28 @@ describe('LocalStorageAdapter', () => {
   });
 
   describe('create', () => {
+    it('rejects a traversal filename before reserving bytes', () => {
+      expect(() =>
+        adapter.reservationPath({
+          id: '11111111-1111-4111-8111-111111111111',
+          name: '../sentinel',
+        } as never)
+      ).toThrow('Asset filename is invalid');
+    });
+    it('uses a caller-reserved id so lifecycle cleanup can find the same bytes', async () => {
+      const created = await adapter.create({
+        id: '11111111-1111-4111-8111-111111111111',
+        name: 'photo.png',
+        profileId: 'profile-1',
+        type: AssetType.IMAGE,
+        content: Buffer.from('lifecycle'),
+      } as never);
+      expect(created.id).toBe('11111111-1111-4111-8111-111111111111');
+      expect(created.storagePath).toBe(
+        path.join('assets', '11111111-1111-4111-8111-111111111111', 'photo.png')
+      );
+    });
+
     it('writes a data-url payload and returns a relative storage path', async () => {
       const created = await adapter.create({
         name: 'photo.png',
@@ -194,6 +216,84 @@ describe('LocalStorageAdapter', () => {
     });
   });
 
+  describe('purgeOwnedAsset', () => {
+    const owned = (overrides: Partial<AssetDto> = {}) =>
+      asset({
+        id: '11111111-1111-4111-8111-111111111111',
+        name: 'owned.bin',
+        storagePath: 'assets/11111111-1111-4111-8111-111111111111/owned.bin',
+        ...overrides,
+      });
+
+    it('removes the owned directory contents, preserves siblings, and is idempotent', async () => {
+      const id = '11111111-1111-4111-8111-111111111111';
+      const directory = path.join(basePath, 'assets', id);
+      const other = path.join(
+        basePath,
+        'assets',
+        '22222222-2222-4222-8222-222222222222'
+      );
+      await fs.mkdir(directory, { recursive: true });
+      await fs.mkdir(other, { recursive: true });
+      await fs.writeFile(path.join(directory, 'owned.bin'), 'owned bytes');
+      await fs.writeFile(path.join(directory, 'extra'), 'owned sibling');
+      await fs.writeFile(path.join(other, 'keep'), 'other asset');
+
+      await expect(adapter.purgeOwnedAsset!(owned())).resolves.toEqual({
+        verifiedAbsent: true,
+      });
+      await expect(fs.lstat(directory)).rejects.toMatchObject({
+        code: 'ENOENT',
+      });
+      await expect(fs.readFile(path.join(other, 'keep'), 'utf8')).resolves.toBe(
+        'other asset'
+      );
+      await expect(adapter.purgeOwnedAsset!(owned())).resolves.toEqual({
+        verifiedAbsent: true,
+      });
+    });
+
+    it.each([
+      ['wrong id', { id: 'not-a-uuid' }],
+      [
+        'wrong path',
+        {
+          storagePath: 'assets/11111111-1111-4111-8111-111111111111/other.bin',
+        },
+      ],
+      [
+        'wrong strategy',
+        { storageStrategy: StorageStrategy.REMOTE_BLOCK_STORAGE },
+      ],
+    ])('rejects %s custody', async (_label, overrides) => {
+      await expect(
+        adapter.purgeOwnedAsset!(owned(overrides as Partial<AssetDto>))
+      ).rejects.toThrow('custody');
+    });
+
+    it('rejects symlinks and hard links without following them', async () => {
+      const id = '11111111-1111-4111-8111-111111111111';
+      const directory = path.join(basePath, 'assets', id);
+      const outside = path.join(basePath, 'outside');
+      await fs.mkdir(directory, { recursive: true });
+      await fs.writeFile(outside, 'keep');
+      symlinkSync(outside, path.join(directory, 'link'));
+      await expect(adapter.purgeOwnedAsset!(owned())).rejects.toThrow(
+        'Symlink'
+      );
+      await fs.unlink(path.join(directory, 'link'));
+      await fs.writeFile(path.join(directory, 'owned.bin'), 'owned');
+      linkSync(
+        path.join(directory, 'owned.bin'),
+        path.join(basePath, 'external-link')
+      );
+      await expect(adapter.purgeOwnedAsset!(owned())).rejects.toThrow(
+        'Hard-linked'
+      );
+      expect(await fs.readFile(outside, 'utf8')).toBe('keep');
+    });
+  });
+
   describe('read', () => {
     it('returns the content as a data url with a mime type from the extension', async () => {
       const created = await adapter.create({
@@ -208,6 +308,28 @@ describe('LocalStorageAdapter', () => {
       expect(result).toBe(
         `data:image/png;base64,${Buffer.from('hello').toString('base64')}`
       );
+    });
+
+    it('returns bounded authenticated plaintext without exposing the stored envelope', async () => {
+      const payload = Buffer.from(
+        'image bytes that should not be encrypted on the response'
+      );
+      const created = await adapter.create({
+        name: 'bounded.png',
+        profileId: 'p',
+        type: AssetType.IMAGE,
+        content: payload,
+      } as never);
+      const stored = await fs.readFile(
+        path.join(basePath, created.storagePath)
+      );
+
+      await expect(adapter.readBuffer(created, stored.length)).resolves.toEqual(
+        payload
+      );
+      await expect(
+        adapter.readBuffer(created, stored.length - 1)
+      ).rejects.toThrow('exceeds the supported retrieval size');
     });
 
     it('falls back to the asset type when the extension is unknown', async () => {
@@ -255,8 +377,17 @@ describe('LocalStorageAdapter', () => {
   });
 
   describe('remove', () => {
+    it('refuses a persisted traversal path without touching a sibling sentinel', async () => {
+      const sentinel = path.join(basePath, 'sentinel');
+      writeFileSync(sentinel, 'keep');
+      await expect(
+        adapter.remove(asset({ storagePath: path.join('..', 'sentinel') }))
+      ).rejects.toThrow('outside local storage');
+      expect(existsSync(sentinel)).toBe(true);
+    });
     it('deletes the stored file', async () => {
       const created = await adapter.create({
+        id: '22222222-2222-4222-8222-222222222222',
         name: 'gone.png',
         profileId: 'p',
         type: AssetType.IMAGE,
@@ -264,10 +395,13 @@ describe('LocalStorageAdapter', () => {
       } as never);
       const absolute = path.join(basePath, created.storagePath);
       expect(existsSync(absolute)).toBe(true);
+      const crashTemp = path.join(path.dirname(absolute), '.gone.png.abcd.tmp');
+      writeFileSync(crashTemp, 'partial');
 
       await adapter.remove(created);
 
       expect(existsSync(absolute)).toBe(false);
+      expect(existsSync(crashTemp)).toBe(false);
     });
 
     it('treats a missing file as already removed', async () => {

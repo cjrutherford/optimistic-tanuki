@@ -100,10 +100,8 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
             *ngIf="offer.status === 'accepted' && offer.acceptedPaymentId"
           >
             <p>
-              Payment pending.
-              <a (click)="viewPayment.emit(offer.acceptedPaymentId)"
-                >View payment details</a
-              >
+              A payment record was created. Accepting an offer does not confirm
+              a card charge.
             </p>
           </div>
         </div>
@@ -240,17 +238,17 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
 
       .status-badge[data-status='pending'] {
         background: var(--warning-bg);
-        color: var(--warning);
+        color: var(--warning-text, var(--foreground));
       }
 
       .status-badge[data-status='countered'] {
         background: var(--info-bg);
-        color: var(--info);
+        color: var(--info-text, var(--foreground));
       }
 
       .status-badge[data-status='accepted'] {
         background: var(--success-bg);
-        color: var(--success);
+        color: var(--success-text, var(--foreground));
       }
 
       .status-badge[data-status='rejected'],

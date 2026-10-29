@@ -147,3 +147,7 @@
     }
   }
 }
+
+:host.tabs-wrap .tabs-header {
+  flex-wrap: wrap;
+}

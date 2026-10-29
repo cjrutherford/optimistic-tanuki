@@ -1,11 +1,23 @@
 export const PermissionCommands = {
+  FENCE_ACCOUNT_DELETION: 'permissions.deletion.fence',
+  ERASE_ACCOUNT_DELETION: 'permissions.deletion.erase',
+  READBACK_ACCOUNT_DELETION: 'permissions.deletion.readback',
   Create: 'Create:Permission',
   Update: 'Update:Permission',
   Delete: 'Delete:Permission',
   Get: 'Get:Permission',
   GetAll: 'GetAll:Permission',
   Search: 'Search:Permission',
+  GetAccountExportSnapshot: 'Get:AccountExportSnapshot:Permissions',
+  OPEN_ACCOUNT_EXPORT_CAPTURE: 'permissions.export.open',
+  READ_ACCOUNT_EXPORT_CAPTURE: 'permissions.export.read',
+  RELEASE_ACCOUNT_EXPORT_CAPTURE: 'permissions.export.release',
 };
+
+export const PERMISSIONS_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
+  'roleAssignment',
+  'rolePermission',
+] as const;
 
 export const RoleCommands = {
   Create: 'Create:Role',

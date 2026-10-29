@@ -18,6 +18,8 @@ describe('Workspace governance fixture', () => {
   const headers = {
     'x-ot-appscope': 'client-interface',
     'x-ot-app-id': 'client-interface',
+    Origin: 'http://127.0.0.1:8080',
+    Host: '127.0.0.1:8080',
   };
   const anonymous = axios.create({
     baseURL: `${baseURL}/api`,
@@ -50,6 +52,7 @@ describe('Workspace governance fixture', () => {
       password,
       confirm: password,
       bio: 'G19 isolated governance fixture',
+      dateOfBirth: '1990-01-01',
     });
     expect(registration.status).toBe(201);
 

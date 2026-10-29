@@ -1,7 +1,9 @@
 import { APIRequestContext, expect, test } from '@playwright/test';
+import { clientInterfaceHeaders } from './e2e-headers';
 
 const PASSWORD = 'Password123!';
 const APP_HEADERS = {
+  ...clientInterfaceHeaders,
   'x-ot-app-id': 'client-interface',
   'x-ot-appscope': 'client-interface',
 };
@@ -42,10 +44,11 @@ async function registerAndLogin(
       ln: 'Community',
       password: PASSWORD,
       confirm: PASSWORD,
+      dateOfBirth: '1990-01-01',
       bio: 'Community permissions test participant',
     },
   });
-  expect(register.status()).toBe(201);
+  expect(register.status(), await register.text()).toBe(201);
 
   const login = await request.post('/api/authentication/login', {
     headers: APP_HEADERS,

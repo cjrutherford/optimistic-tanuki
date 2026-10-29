@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PostShare } from '../../entities/post-share.entity';
@@ -40,7 +41,20 @@ export class PostShareService {
     });
   }
 
-  async remove(id: string): Promise<void> {
-    await this.postShareRepo.delete(id);
+  async remove(id: string, sharedById: string): Promise<void> {
+    const share = await this.postShareRepo.findOne({ where: { id } });
+    if (!share) {
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Share not found',
+      });
+    }
+    if (!sharedById || share.sharedById !== sharedById) {
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Only the share owner can delete it',
+      });
+    }
+    await this.postShareRepo.delete({ id, sharedById });
   }
 }

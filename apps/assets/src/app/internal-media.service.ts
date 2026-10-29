@@ -1,19 +1,33 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
-import { StorageStrategy } from '@optimistic-tanuki/models';
-import { createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
-import { basename, extname, resolve, sep } from 'node:path';
-import { ReadStream } from 'node:fs';
+import {
+  GuardianContentCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
+import {
+  InternalGuardianMediaAssertion,
+  StorageStrategy,
+} from '@optimistic-tanuki/models';
+import { basename, extname } from 'node:path';
+import { Readable } from 'node:stream';
+import { firstValueFrom, timeout } from 'rxjs';
 
 import { AppService } from './app.service';
+import { GuardianAssetActor } from './guardian-asset-authorization.service';
 
 export type MediaStreamResult = {
   statusCode: 200 | 206;
   contentType: string;
   contentLength: number;
   contentRange?: string;
-  stream: ReadStream;
+  stream: Readable;
+  cleanup: () => Promise<void>;
 };
 
 export type UnsatisfiedMediaRange = {
@@ -23,73 +37,209 @@ export type UnsatisfiedMediaRange = {
 
 @Injectable()
 export class InternalMediaService {
+  private readonly maxPlaintextBytes: number;
+
   constructor(
     private readonly appService: AppService,
-    private readonly configService: ConfigService
-  ) {}
+    private readonly configService: ConfigService,
+    @Optional()
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialService?: ClientProxy
+  ) {
+    const configured = this.configService.get<number>('mediaMaxReadBytes');
+    this.maxPlaintextBytes =
+      Number.isSafeInteger(configured) && (configured as number) > 0
+        ? (configured as number)
+        : 1024 * 1024 * 1024;
+  }
 
   async open(
     id: string,
-    range?: string
+    range?: string,
+    viewerAuthorized = false,
+    signal?: AbortSignal,
+    guardianActor?: GuardianAssetActor,
+    mediaAssertion?: InternalGuardianMediaAssertion,
+    signedViewerProfileId?: string
   ): Promise<MediaStreamResult | UnsatisfiedMediaRange> {
     let asset: Awaited<ReturnType<AppService['retrieveAsset']>>;
     try {
       asset = await this.appService.retrieveAsset({ id });
-    } catch {
-      throw new NotFoundException(`Asset with id ${id} not found`);
+    } catch (error) {
+      const detail = error instanceof RpcException ? error.getError() : error;
+      const statusCode =
+        detail && typeof detail === 'object' && 'statusCode' in detail
+          ? detail.statusCode
+          : undefined;
+      if (error instanceof NotFoundException || statusCode === 404) {
+        throw new NotFoundException(`Asset with id ${id} not found`);
+      }
+      throw error;
     }
-    if (asset.storageStrategy !== StorageStrategy.LOCAL_BLOCK_STORAGE) {
-      throw new NotFoundException(`Asset with id ${id} is not locally stored`);
-    }
-
-    const filePath = this.resolveLocalPath(asset.storagePath);
-    let fileStats: Awaited<ReturnType<typeof stat>>;
-    try {
-      fileStats = await stat(filePath);
-    } catch {
-      throw new NotFoundException(`Asset with id ${id} not found`);
-    }
-
-    if (!fileStats.isFile()) {
-      throw new NotFoundException(`Asset with id ${id} not found`);
-    }
-
-    const byteRange = this.parseRange(range, fileStats.size);
-    if (byteRange === null) {
-      return { statusCode: 416, contentRange: `bytes */${fileStats.size}` };
-    }
-
-    if (!byteRange) {
-      return {
-        statusCode: 200,
-        contentType: this.getContentType(asset.name),
-        contentLength: fileStats.size,
-        stream: createReadStream(filePath),
-      };
-    }
-
-    const { start, end } = byteRange;
-    return {
-      statusCode: 206,
-      contentType: this.getContentType(asset.name),
-      contentLength: end - start + 1,
-      contentRange: `bytes ${start}-${end}/${fileStats.size}`,
-      stream: createReadStream(filePath, { start, end }),
-    };
-  }
-
-  private resolveLocalPath(storagePath: string): string {
-    const storageRoot = resolve(
-      this.configService.get<string>('storagePath') || '/usr/src/app/storage'
+    const restrictions = Array.isArray(asset.audienceRestrictions)
+      ? asset.audienceRestrictions
+      : [];
+    const staged = asset.originKind === 'guardian-staged';
+    const stageMarkers = restrictions.filter(
+      (restriction) => restriction?.type === 'guardian-staged'
     );
-    const filePath = resolve(storageRoot, storagePath);
-    if (
-      filePath !== storageRoot &&
-      !filePath.startsWith(`${storageRoot}${sep}`)
-    ) {
-      throw new NotFoundException('Asset not found');
+    let legacyGuardianLibraryAuthorized = false;
+    if (!staged && guardianActor) {
+      const pureOwnerLibrary =
+        asset.profileId === guardianActor.targetProfileId &&
+        !asset.audienceCommunityIds?.length &&
+        restrictions.length > 0 &&
+        restrictions.every(
+          (restriction) =>
+            restriction?.type === 'owner' &&
+            restriction.profileId === guardianActor.targetProfileId
+        );
+      if (pureOwnerLibrary) {
+        try {
+          await this.appService.authorizeGuardianRead({ ...guardianActor, id });
+          legacyGuardianLibraryAuthorized = true;
+        } catch (error) {
+          const detail =
+            error instanceof RpcException ? error.getError() : error;
+          if (
+            detail &&
+            typeof detail === 'object' &&
+            'code' in detail &&
+            detail.code === 'GUARDIAN_CONTENT_ACCESS_DENIED'
+          )
+            throw new NotFoundException(`Asset with id ${id} not found`);
+          throw error;
+        }
+      }
     }
-    return filePath;
+    if (staged || stageMarkers.length) {
+      if (
+        !staged ||
+        asset.originProfileId !== asset.profileId ||
+        !['client-interface', 'local-hub'].includes(asset.originAppId ?? '') ||
+        stageMarkers.length !== 1 ||
+        stageMarkers[0].profileId !== asset.originProfileId ||
+        stageMarkers[0].appId !== asset.originAppId ||
+        !mediaAssertion ||
+        mediaAssertion.version !== 1 ||
+        mediaAssertion.assetId !== id ||
+        mediaAssertion.dependentProfileId !== asset.originProfileId ||
+        mediaAssertion.appId !== asset.originAppId ||
+        mediaAssertion.path !== `/api/asset/${id}` ||
+        mediaAssertion.range !== (range ?? null) ||
+        mediaAssertion.viewerProfileId !==
+          (signedViewerProfileId === 'public'
+            ? null
+            : signedViewerProfileId ?? null)
+      )
+        throw new NotFoundException(`Asset with id ${id} not found`);
+      try {
+        if (mediaAssertion.accessMode === 'published') {
+          if (
+            !this.socialService ||
+            !mediaAssertion.resourceType ||
+            !mediaAssertion.resourceId
+          )
+            throw new Error('grant unavailable');
+          const allowed = await firstValueFrom(
+            this.socialService
+              .send<boolean>(
+                { cmd: GuardianContentCommands.CheckPublishedAssetGrant },
+                {
+                  assetId: id,
+                  appId: mediaAssertion.appId,
+                  dependentProfileId: mediaAssertion.dependentProfileId,
+                  resourceType: mediaAssertion.resourceType,
+                  resourceId: mediaAssertion.resourceId,
+                  viewerProfileId: mediaAssertion.viewerProfileId ?? undefined,
+                  viewerUserId: mediaAssertion.viewerUserId ?? undefined,
+                }
+              )
+              .pipe(timeout({ first: 3000 }))
+          );
+          if (allowed !== true)
+            throw new NotFoundException(`Asset with id ${id} not found`);
+        } else if (mediaAssertion.accessMode === 'guardian-library') {
+          if (
+            !mediaAssertion.viewerUserId ||
+            !guardianActor ||
+            guardianActor.actorUserId !== mediaAssertion.viewerUserId ||
+            guardianActor.targetProfileId !==
+              mediaAssertion.dependentProfileId ||
+            guardianActor.appId !== mediaAssertion.appId
+          )
+            throw new NotFoundException(`Asset with id ${id} not found`);
+          await this.appService.authorizeGuardianRead({ ...guardianActor, id });
+        } else if (mediaAssertion.accessMode === 'dependent-owner') {
+          if (
+            !mediaAssertion.viewerProfileId ||
+            mediaAssertion.viewerProfileId !== asset.profileId ||
+            mediaAssertion.resourceId !== null ||
+            mediaAssertion.resourceType !== null
+          )
+            throw new NotFoundException(`Asset with id ${id} not found`);
+        } else throw new NotFoundException(`Asset with id ${id} not found`);
+      } catch (error) {
+        if (error instanceof NotFoundException) throw error;
+        const detail = error instanceof RpcException ? error.getError() : error;
+        if (
+          detail &&
+          typeof detail === 'object' &&
+          'code' in detail &&
+          detail.code === 'GUARDIAN_CONTENT_ACCESS_DENIED'
+        )
+          throw new NotFoundException(`Asset with id ${id} not found`);
+        throw new NotFoundException(`Asset with id ${id} not found`);
+      }
+    } else if (
+      asset.originKind !== 'ordinary' ||
+      asset.originProfileId ||
+      asset.originAppId
+    ) {
+      throw new NotFoundException(`Asset with id ${id} not found`);
+    }
+    const ordinaryRestrictions = restrictions.filter(
+      (restriction) => restriction?.type !== 'guardian-staged'
+    );
+    if (
+      (asset.audienceCommunityIds?.length || ordinaryRestrictions.length) &&
+      !viewerAuthorized &&
+      !legacyGuardianLibraryAuthorized
+    ) {
+      throw new NotFoundException(`Asset with id ${id} not found`);
+    }
+    if (
+      asset.storageStrategy !== StorageStrategy.LOCAL_BLOCK_STORAGE &&
+      asset.storageStrategy !== StorageStrategy.REMOTE_BLOCK_STORAGE
+    ) {
+      throw new NotFoundException(`Asset with id ${id} cannot be streamed`);
+    }
+
+    const content = await this.appService.openAuthenticatedMedia(asset, {
+      maxPlaintextBytes: this.maxPlaintextBytes,
+      signal,
+    });
+    const byteRange = this.parseRange(range, content.size);
+    if (byteRange === null) {
+      await content.cleanup();
+      return { statusCode: 416, contentRange: `bytes */${content.size}` };
+    }
+
+    const start = byteRange?.start ?? 0;
+    const end = byteRange?.end ?? content.size - 1;
+    return {
+      statusCode: byteRange ? 206 : 200,
+      contentType: this.getContentType(asset.name),
+      contentLength: content.size === 0 ? 0 : end - start + 1,
+      ...(byteRange
+        ? { contentRange: `bytes ${start}-${end}/${content.size}` }
+        : {}),
+      stream: content.createReadStream(
+        content.size === 0 ? undefined : start,
+        content.size === 0 ? undefined : end
+      ),
+      cleanup: content.cleanup,
+    };
   }
 
   private parseRange(
@@ -132,6 +282,11 @@ export class InternalMediaService {
 
   private getContentType(name: string): string {
     const contentTypes: Record<string, string> = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
       '.mp4': 'video/mp4',
       '.m4v': 'video/mp4',
       '.webm': 'video/webm',

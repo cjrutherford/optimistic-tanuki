@@ -59,11 +59,11 @@ export class HaiAboutModalComponent
   }
 
   override applyTheme(colors: ThemeColors): void {
-    const foregroundSoft = this.mix(colors.foreground, colors.background, 0.62);
+    const foregroundSoft = colors.foreground;
     const foregroundMuted = this.mix(
       colors.foreground,
       colors.background,
-      0.48
+      0.18
     );
     const bodySurface = this.mix(colors.background, colors.accent, 0.08);
     const heroPanel = this.mix(colors.background, colors.complementary, 0.18);

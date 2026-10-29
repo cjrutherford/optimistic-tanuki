@@ -18,6 +18,25 @@
               label="Email"
               autocomplete="username"
             ></lib-text-input>
+            @if (showAgeEligibilityFields) {
+            <label for="login-date-of-birth">Date of birth</label>
+            <input
+              id="login-date-of-birth"
+              type="date"
+              formControlName="dateOfBirth"
+              autocomplete="bday"
+              required
+            />
+            } @if (showGuardianEmailField) {
+            <label for="login-guardian-email">Parent or guardian email</label>
+            <input
+              id="login-guardian-email"
+              type="email"
+              formControlName="guardianEmail"
+              autocomplete="email"
+              required
+            />
+            }
             <lib-text-input
               formControlName="password"
               label="Password"

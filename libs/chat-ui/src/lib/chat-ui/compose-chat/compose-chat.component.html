@@ -25,14 +25,18 @@
       placeholder="Type a message..."
       class="compose-textarea"
       rows="1"
+      [disabled]="pendingSubmission"
     ></textarea>
   </div>
+  @if (submissionError) {
+  <p class="compose-error" role="alert">{{ submissionError }}</p>
+  }
   <div class="compose-actions">
     <otui-button
       class="send-button"
       variant="rounded"
       [useGradient]="false"
-      [disabled]="!content.trim()"
+      [disabled]="!content.trim() || pendingSubmission"
       (action)="submitMessage()"
     >
       <span class="send-icon">➤</span>

@@ -1,5 +1,7 @@
 # Observability and edge-security setup
 
+For the two-product local release, start with [OT/TS observability setup](./ot-ts-observability.md). The operator confirmed on 2026-10-25 that no forwarded log capture destinations are currently configured. The resources below are deployment instructions, not a statement that a collector is running.
+
 This runbook installs the OpenTelemetry, Loki, Prometheus, and Grafana
 configuration delivered by `k8s/base/observability` and connects it to a
 separately deployed CrowdSec LAPI/bouncer. It separates

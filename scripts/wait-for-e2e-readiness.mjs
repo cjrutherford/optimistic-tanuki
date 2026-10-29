@@ -10,7 +10,8 @@ import {
 } from './e2e-environment-manifest.mjs';
 
 const execFileAsync = promisify(execFile);
-const DEFAULT_TIMEOUT_MS = 180_000;
+// CI initializes and migrates the full service database set before startup.
+const DEFAULT_TIMEOUT_MS = 600_000;
 const DEFAULT_INTERVAL_MS = 2_000;
 
 function createRuntime() {

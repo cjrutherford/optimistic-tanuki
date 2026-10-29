@@ -1,0 +1,245 @@
+{
+  "slice": "DF-007-J11",
+  "date": "2026-10-20",
+  "status": "locally-verified-bounded-internal-integration",
+  "baseRevision": "8c14d1c8b24f98616ba0e22ffc3aff4f8d1f6ab6",
+  "sourceManifestSha256": "a2ae5b2fe7ca60183d003fab0953e362c6163a81df4560a95879f38a1a75be21",
+  "sourceHashes": {
+    "apps/assets/src/app/account-export-snapshot.service.ts": "fcbd015eb02d6bf10f20448e7745a3ce7234b06fab730ef1c3aa80d47a8804c7",
+    "apps/authentication-e2e/project.json": "efbfb2e1cb45cffc72165b14474c604cceb28d0e324d7180749be877dc6d57cd",
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "ce7799b2e1d5f5a4cbb6905b65afbc3e5991f85e2cf8c92314b1e76620d34320",
+    "apps/authentication-e2e/src/authentication/assets-account-export.spec.ts": "792e3011d6cdae4d6a9dbc4414a25777e1b6e4160d232ca175d0a7e16c987b15",
+    "apps/authentication-e2e/src/authentication/videos-account-export.spec.ts": "f543d84b7c3c1c79a40aaeeb5f014b36f9dbf06e0cf7bfba56a250e24bf2f60b",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "aa8dd8483fd5f097770d48b9675f4731026383aefcd94d5b3cb42a8b53d20229",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "ba330c0abf5807f55b83f84bb526cee9cc184fbdca95b1bb9de95182ece2ef67",
+    "apps/authentication/src/account-export-jobs/assets-account-export-snapshot.client.ts": "583bcb0a50700ae89a5af8b0d7b4f7008bfdcade9f1dbef183acb6051c2297ec",
+    "apps/authentication/src/account-export-jobs/videos-account-export-snapshot.client.spec.ts": "20a17164a78ebd16fc74f7202d3f24e81a6601a25e2a61ae7e1ca86de59fe9e3",
+    "apps/authentication/src/account-export-jobs/videos-account-export-snapshot.client.ts": "0db7282040eedc9ab5cfac1665920596ada7bd706a0bbe08364c4b0f988da337",
+    "apps/authentication/src/app/app.module.ts": "a8b4898863d1c5d6d711839da01bb82a2daf15f46eda873fa5abea4f67b2bede",
+    "apps/authentication/src/config.spec.ts": "c1b676a318869b21ac0715b8d4d217c85adffccda423ad9b31dd1d0ae2192bed",
+    "apps/authentication/src/config.ts": "22b7e4434fc970a33fcc3e1263b8ac295ec79fe8475f2d1960e47a3ee1c93212",
+    "apps/videos/Dockerfile": "3a2d548ebbef5f4fe55a158dbb499c7d402b45a8e93bc5c9cfcf592d9eb840a4",
+    "apps/videos/src/app/account-export-owner.postgres.spec.ts": "98293620a381ca33cc80888ad9b9b8b5cff2249d5af2a6d4e489bc6d0607d6c0",
+    "apps/videos/src/app/account-export-owner.service.ts": "20ae1f199e7ecc6ce4c39fbf94057e7512655725abebb055c8e8ed1d8cbf5f81",
+    "apps/videos/src/app/account-export-snapshot.service.spec.ts": "c2065f0dea23f0529a0d04cb6bc8a325f2a337b31d534bcfa0c05359d054916d",
+    "apps/videos/src/app/account-export-snapshot.service.ts": "c0456f37aa6d7bf77f20d9639f34670fdb2212d2e895ecfe5d75aaf6ba88bd67",
+    "apps/videos/src/app/account-export.controller.ts": "025add757d28e62970b873db4928b6ec36c62a2410b2886849e3c146d8fcf82d",
+    "apps/videos/src/app/app.module.ts": "56b413eee46a2e36994d9a57303f8071c49ef4db5dd57cd6625dd8c195c801bb",
+    "apps/videos/src/app/loadDatabase.spec.ts": "769a2cc698015e9fd894991b859494afd005c81736035fd9e5976c65fa54a688",
+    "apps/videos/src/app/loadDatabase.ts": "518108b9936ecc261addedcca05978f78f82a4e44b5ca1b4ab8df90a26e7cfd8",
+    "libs/constants/src/index.ts": "88b2834e50a9d1272eabd5f31b1b30d40299f9f48372bac75c7377d26c7c74d5",
+    "libs/constants/src/lib/libs/videos.ts": "e5f6ac383cb22d613eda1a500fdae1c2491aa4fe1e3f0970467438d8e7940a96",
+    "libs/models/src/lib/libs/account-export/account-export-snapshot.contract.ts": "b4f8be6da7620aa7d84e9d934e95cf4bf52c3cf2b5ab27e6f6801f03ea06b266",
+    "libs/storage/src/index.ts": "fda2e12253b4728dc7cd8adbee9891cca128eedfb844e372ca983c8686ad73e5",
+    "libs/storage/src/lib/account-export-profile-bound-snapshot.client.ts": "48b97af40745fae9d4bf57287a54401003215c5775029bb581612f6401055ead",
+    "libs/storage/src/lib/account-export-profile-bound-snapshot.service.ts": "a37b1ea6ea762d07dacdc7a1ba958f59aa44e9e9746d3b90bd8ac729cb62008f"
+  },
+  "fixtureConfigHashes": {
+    "apps/profile/src/assets/config.yaml": "4f322561d91db3aabcf8a5d6daf84b397e1f2a02984cd6dedad0bc72e4e67307",
+    "apps/permissions/src/assets/config.yaml": "461009841bd17af6f44b70dfb78a1573365b1deaa8db97e083c38c283e1b40a0",
+    "apps/social/src/assets/config.yaml": "59c4f45bd734c88ade4f46d72ec2537952861ea0207f716ec34365fa0c392a46",
+    "apps/forum/src/assets/config.yaml": "25d59375fe2dcdd6a9c291d33a5ab3ce2b55becf8783cfe998800262a7a5c728",
+    "apps/assets/src/assets/config.yaml": "70a106e2f559f0795fc2f78b8d9b04280dcda19558e2f78cf656fade62ddf138",
+    "apps/videos/src/assets/config.yaml": "270df8cae878a9c3add87652ff01332c36c10b154d8246c2854029c00afac013"
+  },
+  "unitTests": {
+    "assetsRegistryRegression": 7,
+    "videosRegistry": 1,
+    "assetsVideosClientRegression": 28,
+    "jobIntegration": 16,
+    "authenticationConfig": 10,
+    "videosDatabaseConfig": 2,
+    "passed": 64,
+    "unselectedOptInJobPostgres": 3
+  },
+  "occupiedPoolPostgres": {
+    "passed": 1,
+    "unselectedUnchangedComponentCases": 5,
+    "connectTimeoutMS": 3000,
+    "migrations": 3,
+    "readback": "0|0|0|0|0|0|0|0",
+    "teardown": "exit=0 down=0 remaining-containers=0",
+    "productionSettingsUsed": true
+  },
+  "preE2E": {
+    "passed": [
+      "models:lint",
+      "models:build",
+      "constants:lint",
+      "constants:build",
+      "storage:lint",
+      "authentication:lint",
+      "authentication:build:production",
+      "assets:lint",
+      "assets:build:production",
+      "videos:lint",
+      "videos:build",
+      "authentication-e2e:lint"
+    ],
+    "sharedBuildProof": "Storage has no standalone build target; compiled through consuming application builds. Final Videos and E2E gates rerun after targeted changes."
+  },
+  "runtime": {
+    "command": "SKIP_SETUP=true ACCOUNT_EXPORT_E2E_DB_MARKER=auth-profile-forum-export-fixture-v1 ACCOUNT_EXPORT_E2E_DB_HOST=127.0.0.1 E2E_DB_PORT=15548 ASSETS_JOB_E2E_MARKER=private-assets-j9-v1 VIDEOS_JOB_E2E_MARKER=private-videos-j11-v1 ASSETS_JOB_E2E_CONTAINER_ID=<label-verified> VIDEOS_JOB_E2E_CONTAINER_ID=<label-verified> ASSETS_JOB_E2E_MEDIA_DIR=<private-media-fixtures> pnpm exec nx run authentication-e2e:e2e:ci --testFile='(account-export|assets-account-export|videos-account-export).spec.ts$' --testNamePattern='stores resumable export job|recovers an expired job lease|captures Assets over leased RPC|captures Videos over leased RPC' --runInBand --skipNxCache",
+    "acceptedAttempt": 5,
+    "result": {
+      "result": "PASS",
+      "passed": 4,
+      "skipped": 6,
+      "failed": 0,
+      "logSha256": "68c711775272b653159f778347b3e5d9bda5749e902b43236a1d1367b595efb9"
+    },
+    "narrowAttempt4": {
+      "result": "PASS",
+      "passed": 1,
+      "skipped": 0,
+      "failed": 0,
+      "logSha256": "0a932e8580c2a90a9b120d54db5a0e7300fe9662ac14a343c4845b37591ebde6"
+    },
+    "fixtureReadback": {
+      "result": "PASS",
+      "counts": {
+        "users": 0,
+        "jobs": 0,
+        "fixtureAssetRows": 0,
+        "guardianActivity": 0,
+        "assetsJ9Profiles": 0,
+        "temporaryRelations": 0,
+        "videos_channel": 0,
+        "videos_video": 0,
+        "videos_channel_subscription": 0,
+        "videos_video_view": 0,
+        "videos_channel_feed": 0,
+        "videos_program_block": 0,
+        "videos_live_session": 0,
+        "videosTemporaryRelations": 0,
+        "videosProfiles": 0
+      }
+    },
+    "teardown": "exit=0 down=0 containers=0 networks=0 volumes=0",
+    "imageIds": {
+      "assets": "sha256:71767b9251ac2df540a655f269fc1e111f69ea44023072c39948e9f61af73ddb",
+      "authentication": "sha256:b8e9ef51e7b9557bb16065e170a65d071a4b67ca97a2f33ff70e2299518c520a",
+      "db": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+      "forum": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+      "permissions": "sha256:c0518f410f3b18dcfc7b85e763f622bd52fa64d9027853164f74e69f10e1bd91",
+      "profile": "sha256:34440d4535ea98cbe7b2da491ba1d381e8880b4cec4f4076204bef5f4da15163",
+      "social": "sha256:01bb87b452b1833c275b79866e3a4937ff3964f7f079e3ba0e544ba0502d04be",
+      "videos": "sha256:a8d1e660f814220e719f1eda9369843238077b31c80127a08d9744fa34f8959a"
+    },
+    "imageProvenance": "New J11 Auth/Assets images built from frozen source78d28df8d176; final Videos image built from source39bc3cff09c2 after connection/Docker repair. Exact Docker COPY inputs compared before retagging final fixture-only source revisions. Retained J6 Profile and prior verified Permissions/Social/Forum and reconstructed setup image. Mixed provenance does not qualify combined production deployment.",
+    "imageInputEqualityProof": {
+      "authentication": {
+        "copyInputFilesCompared": 3021,
+        "allEqual": true,
+        "originalTag": "ot-df007-videos-integration/authentication:39bc3cff09c2",
+        "finalTag": "ot-df007-videos-integration/authentication:a2ae5b2fe7ca",
+        "imageId": "sha256:b8e9ef51e7b9557bb16065e170a65d071a4b67ca97a2f33ff70e2299518c520a"
+      },
+      "assets": {
+        "copyInputFilesCompared": 2965,
+        "allEqual": true,
+        "originalTag": "ot-df007-videos-integration/assets:39bc3cff09c2",
+        "finalTag": "ot-df007-videos-integration/assets:a2ae5b2fe7ca",
+        "imageId": "sha256:71767b9251ac2df540a655f269fc1e111f69ea44023072c39948e9f61af73ddb"
+      },
+      "videos": {
+        "copyInputFilesCompared": 2973,
+        "allEqual": true,
+        "originalTag": "ot-df007-videos-integration/videos:39bc3cff09c2",
+        "finalTag": "ot-df007-videos-integration/videos:a2ae5b2fe7ca",
+        "imageId": "sha256:a8d1e660f814220e719f1eda9369843238077b31c80127a08d9744fa34f8959a"
+      }
+    },
+    "passedScenarios": [
+      "Auth jobs stage four database captures, remain incomplete with no artifact",
+      "all seven Videos sources through actual leased TCP and actual PostgreSQL",
+      "owned views of counterpart videos retained without viewer IP, counterpart actor/profile IDs, stream URLs or raw processing errors",
+      "pending processing fails actual job with only Auth/Profile/Assets markers; ready retry restores Videos marker",
+      "Profile parent kept alive across both child captures; child cleanup before Profile",
+      "wrong account/app/attempt/nonce, DB-clock expiry and logout revocation deny data; stale exact-scope release permitted",
+      "both Assets and Videos guarded restart invalidate old handles and permit recapture against surviving Profile parents",
+      "whole-spool SHA plus independent terminal record checksum/source counts verified",
+      "actual encrypted PNG/MP4 capture preserved through shared Assets wrappers",
+      "owning-table fingerprints unchanged, all fixture rows and temporary relations absent",
+      "four actual service processes retain zero owner-spool FDs; no media spool/fixture files; Auth/Profile processes and all image IDs unchanged",
+      "protected43 and frozen28 hashes unchanged; no private project containers/networks/volumes remain"
+    ],
+    "earlierAttempts": [
+      {
+        "attempt": 1,
+        "passed": 2,
+        "failed": 2,
+        "unselected": 6,
+        "cause": "Fixture expected only three owners; new fixture cleanup called catch on synchronous ClientProxy.close and masked registration error.",
+        "teardown": "exit=1 down=0 containers=0 networks=0 volumes=0"
+      },
+      {
+        "attempt": 2,
+        "passed": 3,
+        "failed": 1,
+        "unselected": 6,
+        "cause": "Synthetic counterpart email local part exceeded allowed length; shortened fixture value.",
+        "teardown": "exit=1 down=0 containers=0 networks=0 volumes=0"
+      },
+      {
+        "attempt": 3,
+        "passed": 0,
+        "failed": 1,
+        "unselected": 0,
+        "cause": "Narrow fixture SQL bound user UUID into integer viewCount; corrected seed. Terminal checksum assertion also corrected after contract review.",
+        "teardown": "exit=1 down=0 containers=0 networks=0 volumes=0"
+      }
+    ]
+  },
+  "reviewRepairs": [
+    "Bound database connection/pool wait in all environments; real occupied-pool regression",
+    "Remove unused runtime nodemon install and recursive dependency-tree chown after observed stalled build; retain production install and writable storage path"
+  ],
+  "limits": [
+    "Database markers do not establish ownership/existence/byte integrity of referenced media",
+    "HLS manifest/segment export and offline rewriting not implemented yet",
+    "No durable account artifact, download, deletion or new UI",
+    "Complete owner inventory and remaining Permissions/Social/Forum/domain captures not accepted",
+    "45s cooperative capture budget is not hard process/network cancellation; generic registry retains owner promise through cleanup",
+    "Live selection does not prove cancellation cleanup-failure injection; covered by earlier components/unit regressions",
+    "External providers, browser, remote CI and production qualification outside evidence",
+    "DF007/RR11 remain open"
+  ],
+  "evidenceSha256": {
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/client-regressions.log": "dce0dfb07243559169c9037b160fc4934be0c9bf63555769a9805d8a346abc56",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/job-config-unit.log": "1697a7d4ca7288151a4ce8ef74a97c0e6320c56371194bc4ddea5b302315b0fa",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/db-config-unit-final.log": "444e9a2aad83ea6361dcac525ca7daa6c4d9c44c56d37f4f5aaffc93091aa08b",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/pre-e2e.log": "4182c93b6ab6595a399c2d30aa48134cd0450d65692fa678ef9d6161895c28cd",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/videos-gates-final.log": "5842051227230d42b5e65bf722fa15687aee4cf311ec3d0f8b3c85d5c2b641da",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/seed-lint-final.log": "f88ccb0845f7f7739c77254f9f296d2fc7535de6979fe9e7d2965674220a5acc",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-owner/assets-registry.log": "30be02354f9aa6ec5a5cd3c3fbe9b76e78097d3e21209a8107bff48f377ad084",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-owner/videos-integration.log": "5c954e57e7d3647550f53332a02fde6dd5df6c047e83cb6be2402558888edb96",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/e2e.log": "68c711775272b653159f778347b3e5d9bda5749e902b43236a1d1367b595efb9",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/result.json": "d48958553b61d74f428de31592eee760b5794d65d30496a5bea21df99882898f",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/summary.txt": "e47f952af6b895b642ebf98c91c291e49e15f870f9eec1d8bee59fe8c0e9f1e7",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/fixture-readback.json": "4be619111c88a583ae04cea15a2fa81330b0aab3a4471f859f35108dd89dc0b6",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/image-ids.json": "a5bfa5abae1466f4aaae765dd6d16cd3d226f412066f604dff4ae6ffed0d425c",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/authentication-fds-after.json": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/profile-fds-after.json": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/assets-fds-after.json": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/videos-fds-after.json": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/assets-before.json": "39282939934bc47527f08e3df222675f5a8f6a95922c6d4d5d49936a35cba48b",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/assets-after.json": "258e409ddd0de7c1e7341cc54db4189feadcd392eb5b955186114122758361bb",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/videos-before.json": "6552596821767619d1ce1c170f9b5eb75b48551b9f25790eac390d987fb0bd61",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/videos-after.json": "c83e8022278c1376c0a988e32bdc9f2e950f5859adfc63e2fb86ea92dc68202e",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/services.log": "44701a719fc1b23c0a806c69f2df3726081d882bce2639fdc2c74fa309ac6e26",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/attempt-5/preflight.json": "5fa375db950bbf53b9a86f1418ce44a474d9a5ccaa2103e3609a25c96a28e402",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/compose.json": "1fe99d820b4f99cbf7f50d92f9d77bbfa5867b955a2f600851e2c81f9f4d0ff9",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/run.sh": "106344ca717fb5a6b88bb024c71098d705ca0759b363021ee790d6c7b806beb8",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/image-reuse-proof.json": "127af0db543dea342f2be0b575dd1cf3ae541e2d016f75332d0b0ba76bfd2a39",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/image-reuse-proof-accepted.json": "967edd148414ddde551c59e0f31a71c29c7b9e5e47af79ed38ad99bb4d1cfeeb",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/video-build-stall.json": "8dcc17ba6821ae6f9bfd578b43b274bec659d7d8b983e338e0783fd02948f705",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/authentication-image-build.log": "62549432324caa482b8accebca2d01b10f8115034765cb1fad15076ef26db672",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/assets-image-build.log": "95b822eef6cbe7b5058650786d6ee170cf0540026554d0b638761afccc2cc826",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/videos-image-build-final.log": "b06da6f4508e400c01309b7b0e339b2b89e981d4865e7cca1eb78a6bc073cd96",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/pool-timeout/attempt-2/postgres.log": "429e04d5950878b0eca1701532ac27f2122c0da92d33b40808b537cf66f4afd5",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/pool-timeout/attempt-2/readback.txt": "dffb7fe348be48a5d48b675f35637c2b960e6ba2815b88ec38b0b3a28bb237bb",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/pool-timeout/attempt-2/summary.txt": "8735c72bda2bf14132071a91d9dafac19e706c1e17a222b95e0074c8bf8fea86",
+    ".runtime-artifacts/account-rights/finish-sequence/videos-integration/pool-timeout/attempt-2/image-id.txt": "6f52da7b65ec186d6170a362015a9cf9b1b149fe92540bb512d71c1ca6da2190"
+  }
+}

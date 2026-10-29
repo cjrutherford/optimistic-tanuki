@@ -14,8 +14,8 @@ import {
 } from '@optimistic-tanuki/constants';
 import { AuthenticationController } from './authentication.controller';
 import { ClientProxy } from '@nestjs/microservices';
-import { HttpException, Logger } from '@nestjs/common';
-import { of } from 'rxjs';
+import { ForbiddenException, HttpException, Logger } from '@nestjs/common';
+import { of, throwError } from 'rxjs';
 import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 import {
   LoginAccountBootstrapService,
@@ -102,6 +102,32 @@ describe('AuthenticationController', () => {
             generatedAt: '2026-07-13T00:00:00Z',
             apps: [
               {
+                appId: 'client-interface',
+                name: 'Optimistic Tanuki',
+                domain: 'optimistic-tanuki.com',
+                uiBaseUrl: 'https://optimistic-tanuki.com',
+                apiBaseUrl: 'https://optimistic-tanuki.com/api',
+                appType: 'client',
+                visibility: 'public',
+                authEmail: {
+                  enabled: true,
+                  from: 'no-reply@optimistic-tanuki.com',
+                },
+              },
+              {
+                appId: 'local-hub',
+                name: 'Towne Square',
+                domain: 'towne-square.com',
+                uiBaseUrl: 'https://towne-square.com',
+                apiBaseUrl: 'https://towne-square.com/api',
+                appType: 'client',
+                visibility: 'public',
+                authEmail: {
+                  enabled: true,
+                  from: 'no-reply@towne-square.com',
+                },
+              },
+              {
                 appId: 'system-configurator',
                 name: 'HAI Computer',
                 domain: 'hopefulaspirationsindustries.com',
@@ -157,6 +183,104 @@ describe('AuthenticationController', () => {
     controller = module.get<AuthenticationController>(AuthenticationController);
   });
 
+  it('requires an authenticated guardian and derives guardian identity from the verified session', async () => {
+    const user = {
+      userId: 'session-guardian',
+      email: 'guardian@example.invalid',
+    } as any;
+    const forgedBody = {
+      token: 'private-link-token',
+      attested: true,
+      attestationVersion: 'guardian-attestation-v1',
+      dateOfBirth: '2000-01-01',
+      guardianUserId: 'forged-user',
+      guardianEmail: 'forged@example.invalid',
+    };
+    await controller.attestGuardianPermission(forgedBody as any, user);
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.AttestGuardianPermission },
+      {
+        token: 'private-link-token',
+        attested: true,
+        attestationVersion: 'guardian-attestation-v1',
+        guardianUserId: 'session-guardian',
+        dateOfBirth: '2000-01-01',
+      }
+    );
+    expect(
+      Reflect.getMetadata(IS_PUBLIC_KEY, controller.attestGuardianPermission)
+    ).not.toBe(true);
+    expect(
+      Reflect.getMetadata('__guards__', controller.attestGuardianPermission)
+    ).toContain(AuthGuard);
+  });
+
+  it('withdraws a linked permission using the authenticated guardian identity, not request actor fields', async () => {
+    const user = { userId: 'session-guardian', appId: 'local-hub' } as any;
+    await controller.withdrawLinkedGuardianPermission(
+      {
+        dependentUserId: 'dependent-1',
+        guardianUserId: 'forged-guardian',
+        appId: 'client-interface',
+      } as any,
+      user
+    );
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.WithdrawGuardianPermissionForGuardian },
+      { guardianUserId: 'session-guardian', dependentUserId: 'dependent-1' }
+    );
+    expect(
+      Reflect.getMetadata(
+        '__guards__',
+        controller.withdrawLinkedGuardianPermission
+      )
+    ).toContain(AuthGuard);
+  });
+
+  it.each([
+    [{ code: 'GUARDIAN_TOKEN_INVALID' }, 400],
+    [{ code: 'GUARDIAN_ATTESTATION_REQUIRED' }, 400],
+    [{ code: 'GUARDIAN_ADULT_REQUIRED' }, 403],
+    [{ code: 'GUARDIAN_TOKEN_USED' }, 409],
+  ])(
+    'maps expected guardian attestation refusal %j to HTTP %s',
+    async (rpcError, status) => {
+      (clientProxy.send as jest.Mock).mockReturnValueOnce(
+        throwError(() => rpcError)
+      );
+
+      await expect(
+        controller.attestGuardianPermission(
+          {
+            token: 'private-link-token',
+            attested: true,
+            attestationVersion: 'guardian-attestation-v1',
+          },
+          { userId: 'session-guardian' } as any
+        )
+      ).rejects.toMatchObject({ status });
+    }
+  );
+
+  it('leaves unexpected guardian attestation backend failures unclassified', async () => {
+    const failure = new Error('database unavailable');
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      throwError(() => failure)
+    );
+
+    await expect(
+      controller.attestGuardianPermission(
+        {
+          token: 'private-link-token',
+          attested: true,
+          attestationVersion: 'guardian-attestation-v1',
+        },
+        { userId: 'session-guardian' } as any
+      )
+    ).rejects.toBe(failure);
+  });
+
   it('allows logout to clear an expired browser session', () => {
     expect(Reflect.getMetadata(IS_PUBLIC_KEY, controller.logoutUser)).toBe(
       true
@@ -165,6 +289,27 @@ describe('AuthenticationController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('exposes guardian-authorized continuation retry as a public rate-limited control', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ sent: false }));
+
+    await expect(
+      controller.resendGuardianApplicantContinuation({
+        token: 'guardian-control-token',
+      })
+    ).resolves.toEqual({ sent: false });
+
+    expect(
+      Reflect.getMetadata(
+        IS_PUBLIC_KEY,
+        controller.resendGuardianApplicantContinuation
+      )
+    ).toBe(true);
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.ResendGuardianApplicantContinuation },
+      { token: 'guardian-control-token' }
+    );
   });
 
   it('returns the guard-verified identity for a browser session without exposing a token', async () => {
@@ -208,10 +353,215 @@ describe('AuthenticationController', () => {
       email: 'test@test.com',
       password: 'test',
     };
-    await expect(controller.loginUser(loginRequest, 'test')).resolves.toBe(
-      true
+    await expect(
+      controller.loginUser(
+        loginRequest,
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
+        undefined,
+        undefined,
+        { headers: { host: 'optimistic-tanuki.com' } } as any
+      )
+    ).resolves.toBe(true);
+    expect(loginBootstrap.login).toHaveBeenCalledWith(
+      loginRequest,
+      'client-interface',
+      'client-interface'
     );
-    expect(loginBootstrap.login).toHaveBeenCalledWith(loginRequest, 'test');
+  });
+
+  it('uses a session-free eligibility precheck and scopes the issued login token', async () => {
+    const loginRequest = {
+      email: 'adult@example.invalid',
+      password: 'password',
+      dateOfBirth: '1990-01-01',
+    } as any;
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ code: 0, data: { eligibilityChecked: true } })
+    );
+    loginBootstrap.login.mockResolvedValueOnce({
+      code: 0,
+      data: { newToken: 'client-scoped-token' },
+    });
+
+    await expect(
+      controller.loginUser(
+        loginRequest,
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
+        undefined,
+        undefined,
+        { headers: { host: 'optimistic-tanuki.com' } } as any
+      )
+    ).resolves.toEqual({
+      code: 0,
+      data: { newToken: 'client-scoped-token' },
+    });
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.Login },
+      expect.objectContaining({
+        appId: 'client-interface',
+        deferSession: true,
+        ageAssessment: expect.objectContaining({ dateOfBirth: '1990-01-01' }),
+      })
+    );
+    expect(loginBootstrap.login).toHaveBeenCalledWith(
+      loginRequest,
+      'client-interface',
+      'client-interface'
+    );
+  });
+
+  it('binds a registered origin to an app-specific request host when available', () => {
+    expect(
+      (controller as any).resolveRegistrationAppId(
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
+        'towne-square.com'
+      )
+    ).toBeNull();
+    expect(
+      (controller as any).resolveRegistrationAppId(
+        'local-hub',
+        'local-hub',
+        'https://towne-square.com',
+        'towne-square.com'
+      )
+    ).toBe('local-hub');
+  });
+
+  it('uses the registered UI port to disambiguate apps sharing a local hostname', () => {
+    const registry = (controller as any).appRegistry;
+    const clientInterface = registry.apps.find(
+      (app: any) => app.appId === 'client-interface'
+    );
+    clientInterface.uiBaseUrl = 'http://127.0.0.1:8080';
+    registry.apps.push({
+      ...clientInterface,
+      appId: 'forgeofwill',
+      uiBaseUrl: 'http://127.0.0.1:8081',
+    });
+
+    expect(
+      (controller as any).resolveRegistrationAppId(
+        'forgeofwill',
+        'forgeofwill',
+        'http://127.0.0.1:8081',
+        '127.0.0.1:8081'
+      )
+    ).toBe('forgeofwill');
+    expect(
+      (controller as any).resolveRegistrationAppId(
+        'forgeofwill',
+        'forgeofwill',
+        'http://127.0.0.1:8081',
+        '127.0.0.1:8080'
+      )
+    ).toBeNull();
+  });
+
+  it('derives a missing login scope from the verified app while preserving app scope aliases', async () => {
+    await expect(
+      controller.loginUser(
+        { email: 'owner@example.invalid', password: 'password' },
+        undefined as any,
+        undefined,
+        'https://opportunities.example.com',
+        undefined,
+        undefined,
+        { headers: { host: 'opportunities.example.com' } } as any
+      )
+    ).resolves.toBe(true);
+
+    expect(loginBootstrap.login).toHaveBeenCalledWith(
+      expect.anything(),
+      'leads-app',
+      'opportunity-compass'
+    );
+  });
+
+  it.each([
+    {
+      label: 'rejects a mismatched app scope',
+      appScope: 'local-hub',
+      appId: 'client-interface',
+      origin: 'https://optimistic-tanuki.com',
+      host: 'optimistic-tanuki.com',
+    },
+    {
+      label: 'rejects an unregistered origin',
+      appScope: undefined,
+      appId: undefined,
+      origin: 'https://unknown.example.invalid',
+      host: 'unknown.example.invalid',
+    },
+  ])('$label before authentication or bootstrap RPCs', async (request) => {
+    await expect(
+      controller.loginUser(
+        { email: 'owner@example.invalid', password: 'password' },
+        request.appScope as any,
+        request.appId,
+        request.origin,
+        undefined,
+        undefined,
+        { headers: { host: request.host } } as any
+      )
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(clientProxy.send).not.toHaveBeenCalled();
+    expect(loginBootstrap.login).not.toHaveBeenCalled();
+  });
+
+  it('does not return the private age expiry field in a public registration response', async () => {
+    const dateOfBirth = new Date();
+    dateOfBirth.setFullYear(dateOfBirth.getFullYear() - 30);
+    registerBootstrap.register.mockResolvedValue({
+      data: {
+        user: {
+          id: 'new-user',
+          emailVerifiedAt: new Date(),
+          ageEligibilityEndsAt: '2044-01-01',
+        },
+      },
+    });
+
+    const result = await controller.registerUser(
+      {
+        email: 'person@example.invalid',
+        fn: 'Person',
+        ln: 'Example',
+        password: 'password',
+        confirm: 'password',
+        dateOfBirth: dateOfBirth.toISOString().slice(0, 10),
+      } as any,
+      'client-interface',
+      'client-interface',
+      'https://optimistic-tanuki.com',
+      { headers: { host: 'optimistic-tanuki.com' } } as any
+    );
+
+    expect(result.data.user).not.toHaveProperty('ageEligibilityEndsAt');
+    expect(registerBootstrap.register).toHaveBeenCalledWith(
+      expect.not.objectContaining({ dateOfBirth: expect.anything() }),
+      'client-interface',
+      'adult'
+    );
+  });
+
+  it('blocks an under-13 registration before account bootstrap', async () => {
+    await expect(
+      controller.registerUser(
+        { dateOfBirth: '2016-01-01' } as any,
+        'client-interface',
+        'client-interface'
+      )
+    ).rejects.toMatchObject({ status: 403 });
+
+    expect(registerBootstrap.register).not.toHaveBeenCalled();
   });
 
   it('rejects invalid credentials before invoking account bootstrap', async () => {
@@ -224,7 +574,15 @@ describe('AuthenticationController', () => {
     });
 
     await expect(
-      controller.loginUser(loginRequest, 'test')
+      controller.loginUser(
+        loginRequest,
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
+        undefined,
+        undefined,
+        { headers: { host: 'optimistic-tanuki.com' } } as any
+      )
     ).rejects.toMatchObject({
       status: 500,
     });
@@ -247,7 +605,12 @@ describe('AuthenticationController', () => {
     await expect(
       controller.loginUser(
         { email: 'valid@test.com', password: 'correct-password' },
-        'test'
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
+        undefined,
+        undefined,
+        { headers: { host: 'optimistic-tanuki.com' } } as any
       )
     ).resolves.toEqual({ code: 0, data: { newToken: 'authenticated-token' } });
     expect(callOrder).toEqual([AuthCommands.Login, 'bootstrap']);
@@ -259,7 +622,12 @@ describe('AuthenticationController', () => {
 
     const loginPromise = controller.loginUser(
       { email: 'valid@test.com', password: 'correct-password' },
-      'test'
+      'client-interface',
+      'client-interface',
+      'https://optimistic-tanuki.com',
+      undefined,
+      undefined,
+      { headers: { host: 'optimistic-tanuki.com' } } as any
     );
     const rejection = expect(loginPromise).rejects.toMatchObject({
       status: 503,
@@ -278,7 +646,12 @@ describe('AuthenticationController', () => {
     await expect(
       controller.loginUser(
         { email: 'valid@test.com', password: 'correct-password' },
-        'test'
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
+        undefined,
+        undefined,
+        { headers: { host: 'optimistic-tanuki.com' } } as any
       )
     ).rejects.toMatchObject({
       status: 500,
@@ -299,7 +672,15 @@ describe('AuthenticationController', () => {
       of({ code: 0, data: { newToken: token } })
     );
 
-    await controller.loginUser({ email: 'valid@test.com', password }, 'test');
+    await controller.loginUser(
+      { email: 'valid@test.com', password },
+      'client-interface',
+      'client-interface',
+      'https://optimistic-tanuki.com',
+      undefined,
+      undefined,
+      { headers: { host: 'optimistic-tanuki.com' } } as any
+    );
 
     expect(debugSpy.mock.calls.flat().join(' ')).not.toContain(password);
     expect(errorSpy.mock.calls.flat().join(' ')).not.toContain(password);
@@ -318,9 +699,12 @@ describe('AuthenticationController', () => {
     await expect(
       controller.loginUser(
         { email: 'test@test.com', password: 'test' },
-        'test',
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
         'cookie',
-        response as any
+        response as any,
+        { headers: { host: 'optimistic-tanuki.com' } } as any
       )
     ).resolves.toEqual({ data: { profileId: 'profile-1' } });
 
@@ -360,9 +744,12 @@ describe('AuthenticationController', () => {
     try {
       await controller.loginUser(
         { email: 'test@test.com', password: 'test' },
-        'test',
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
         'cookie',
-        response as any
+        response as any,
+        { headers: { host: 'optimistic-tanuki.com' } } as any
       );
     } finally {
       if (original === undefined) delete process.env.AUTH_COOKIE_SECURE;
@@ -405,13 +792,48 @@ describe('AuthenticationController', () => {
     };
 
     await expect(
-      controller.loginUser(loginRequest, 'forgeofwill')
+      controller.loginUser(
+        loginRequest,
+        'opportunity-compass',
+        'opportunity-compass',
+        'https://opportunities.example.com',
+        undefined,
+        undefined,
+        { headers: { host: 'opportunities.example.com' } } as any
+      )
     ).resolves.toBe(true);
 
     expect(loginBootstrap.login).toHaveBeenCalledWith(
       loginRequest,
-      'forgeofwill'
+      'opportunity-compass',
+      'opportunity-compass'
     );
+  });
+
+  it('maps a withdrawn guardian permission denial to 403 without bootstrapping a session', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      throwError(() => ({ code: 'GUARDIAN_PERMISSION_REQUIRED' }))
+    );
+    await expect(
+      controller.loginUser(
+        { email: 'minor@example.invalid', password: 'password' },
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
+        undefined,
+        undefined,
+        { headers: { host: 'optimistic-tanuki.com' } } as any
+      )
+    ).rejects.toMatchObject({
+      status: 403,
+      response: expect.objectContaining({
+        code: 'GUARDIAN_PERMISSION_REQUIRED',
+        message: expect.stringContaining(
+          'guardian permission is no longer active'
+        ),
+      }),
+    });
+    expect(loginBootstrap.login).not.toHaveBeenCalled();
   });
 
   it('should throw HttpException if loginUser fails', async () => {
@@ -428,22 +850,282 @@ describe('AuthenticationController', () => {
     );
   });
 
-  it('should issue a fresh token for the requested profile', async () => {
-    (clientProxy.send as jest.Mock).mockReturnValueOnce(
-      of({ data: { newToken: 'fresh-token' } })
+  describe('issueTokenForProfile', () => {
+    const currentUser = {
+      userId: 'user-1',
+      email: 'u@example.com',
+      name: 'U',
+      profileId: 'profile-current',
+    } as any;
+    const browserResponse = () => ({ cookie: jest.fn() } as any);
+
+    it('issues a same-profile refresh after verifying ownership, even without app scope', async () => {
+      const response = browserResponse();
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'profile-current',
+            userId: 'user-1',
+            appScope: 'leads-app',
+          },
+        ])
+      ) as any;
+      clientProxy.send = jest
+        .fn()
+        .mockReturnValueOnce(of({ data: { newToken: 'fresh-token' } })) as any;
+
+      await expect(
+        controller.issueTokenForProfile(
+          currentUser,
+          {},
+          undefined,
+          'cookie',
+          response
+        )
+      ).resolves.toEqual({ data: {} });
+
+      expect(profileService.send).toHaveBeenCalledWith(
+        { cmd: ProfileCommands.GetAll },
+        { where: { userId: 'user-1' } }
+      );
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.Issue },
+        { userId: 'user-1', profileId: 'profile-current', appId: null }
+      );
+      expect(response.cookie).toHaveBeenCalledWith(
+        'ot_session',
+        'fresh-token',
+        expect.any(Object)
+      );
+    });
+
+    it('allows an owned current-app profile and a global profile in cookie mode', async () => {
+      const response = browserResponse();
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'profile-current',
+            userId: 'user-1',
+            appScope: 'client-interface',
+          },
+          {
+            id: 'profile-global',
+            userId: 'user-1',
+            appScope: 'global',
+          },
+        ])
+      ) as any;
+      clientProxy.send = jest
+        .fn()
+        .mockReturnValueOnce(of({ data: { newToken: 'global-token' } })) as any;
+
+      await expect(
+        controller.issueTokenForProfile(
+          currentUser,
+          { profileId: 'profile-global' },
+          'leads-app',
+          'cookie',
+          response
+        )
+      ).resolves.toEqual({ data: {} });
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.Issue },
+        {
+          userId: 'user-1',
+          profileId: 'profile-global',
+          appId: 'opportunity-compass',
+        }
+      );
+      expect(response.cookie).toHaveBeenCalledWith(
+        'ot_session',
+        'global-token',
+        expect.any(Object)
+      );
+    });
+
+    it('allows an owned profile whose app scope matches the registered current app', async () => {
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'lead-profile',
+            userId: 'user-1',
+            appScope: 'opportunity-compass',
+          },
+        ])
+      ) as any;
+
+      await expect(
+        controller.issueTokenForProfile(
+          currentUser,
+          { profileId: 'lead-profile' },
+          'leads-app'
+        )
+      ).resolves.toEqual(true);
+    });
+
+    it('allows an owned app-scope alias after canonicalizing it', async () => {
+      const user = { ...currentUser, profileId: 'global-profile' };
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'global-profile',
+            userId: 'user-1',
+            appScope: 'global',
+          },
+          {
+            id: 'lead-profile',
+            userId: 'user-1',
+            appScope: 'opportunity-compass',
+          },
+        ])
+      ) as any;
+      clientProxy.send = jest
+        .fn()
+        .mockReturnValueOnce(of({ data: { newToken: 'lead-token' } })) as any;
+
+      await expect(
+        controller.issueTokenForProfile(
+          user,
+          { profileId: 'lead-profile' },
+          'leads-app'
+        )
+      ).resolves.toEqual({ data: { newToken: 'lead-token' } });
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.Issue },
+        {
+          userId: 'user-1',
+          profileId: 'lead-profile',
+          appId: 'opportunity-compass',
+        }
+      );
+    });
+
+    it('allows a null-scope profile with a registered app scope', async () => {
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'profile-null-scope',
+            userId: 'user-1',
+            appScope: null,
+          },
+        ])
+      ) as any;
+      clientProxy.send = jest
+        .fn()
+        .mockReturnValueOnce(
+          of({ data: { newToken: 'null-scope-token' } })
+        ) as any;
+
+      await expect(
+        controller.issueTokenForProfile(
+          currentUser,
+          { profileId: 'profile-null-scope' },
+          'leads-app'
+        )
+      ).resolves.toEqual({ data: { newToken: 'null-scope-token' } });
+    });
+
+    it.each([
+      ['another user profile', 'leads-app', 'other-user'],
+      ['a foreign app-scope profile', 'leads-app', 'user-1'],
+    ])(
+      'denies %s before issuing or setting a cookie',
+      async (reason, scope, ownerId) => {
+        const response = browserResponse();
+        const profileScope =
+          reason === 'a foreign app-scope profile'
+            ? 'fin-commander'
+            : 'leads-app';
+        profileService.send = jest.fn().mockReturnValueOnce(
+          of([
+            {
+              id: 'profile-target',
+              userId: ownerId,
+              appScope: profileScope,
+            },
+          ])
+        ) as any;
+
+        await expect(
+          controller.issueTokenForProfile(
+            currentUser,
+            { profileId: 'profile-target' },
+            scope,
+            'cookie',
+            response
+          )
+        ).rejects.toBeInstanceOf(ForbiddenException);
+
+        expect(clientProxy.send).not.toHaveBeenCalledWith(
+          { cmd: AuthCommands.Issue },
+          expect.anything()
+        );
+        expect(response.cookie).not.toHaveBeenCalled();
+      }
     );
 
-    await expect(
-      controller.issueTokenForProfile(
-        { userId: 'user-1', email: 'u@example.com', name: 'U' } as any,
-        { profileId: 'profile-2' }
-      )
-    ).resolves.toEqual({ data: { newToken: 'fresh-token' } });
+    it.each([undefined, 'not-registered'])(
+      'denies a different profile when scope is %s',
+      async (scope) => {
+        const response = browserResponse();
+        profileService.send = jest.fn().mockReturnValueOnce(
+          of([
+            {
+              id: 'profile-target',
+              userId: 'user-1',
+              appScope: 'leads-app',
+            },
+          ])
+        ) as any;
 
-    expect(clientProxy.send).toHaveBeenCalledWith(
-      { cmd: AuthCommands.Issue },
-      { userId: 'user-1', profileId: 'profile-2' }
+        await expect(
+          controller.issueTokenForProfile(
+            currentUser,
+            { profileId: 'profile-target' },
+            scope,
+            'cookie',
+            response
+          )
+        ).rejects.toBeInstanceOf(ForbiddenException);
+
+        expect(clientProxy.send).not.toHaveBeenCalledWith(
+          { cmd: AuthCommands.Issue },
+          expect.anything()
+        );
+        expect(response.cookie).not.toHaveBeenCalled();
+      }
     );
+
+    it('rejects a current-profile refresh if that profile is not owned by the authenticated user', async () => {
+      const response = browserResponse();
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'profile-current',
+            userId: 'someone-else',
+            appScope: 'client-interface',
+          },
+        ])
+      ) as any;
+
+      await expect(
+        controller.issueTokenForProfile(
+          currentUser,
+          {},
+          'leads-app',
+          'cookie',
+          response
+        )
+      ).rejects.toBeInstanceOf(ForbiddenException);
+
+      expect(clientProxy.send).not.toHaveBeenCalledWith(
+        { cmd: AuthCommands.Issue },
+        expect.anything()
+      );
+      expect(response.cookie).not.toHaveBeenCalled();
+    });
   });
 
   it('should register user', async () => {
@@ -467,15 +1149,50 @@ describe('AuthenticationController', () => {
     };
     registerBootstrap.register.mockResolvedValueOnce(mockResult);
     await expect(
-      controller.registerUser(registerRequest, 'system-configurator')
+      controller.registerUser(
+        registerRequest,
+        'system-configurator',
+        'system-configurator',
+        'https://hardware.hopefulaspirationsindustries.com'
+      )
     ).resolves.toEqual({
       ...mockResult,
       data: { ...mockResult.data, verificationPending: true },
     });
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registerRequest,
-      'system-configurator'
+      'system-configurator',
+      undefined
     );
+  });
+
+  it('reports guardian email delivery failure without claiming it was sent', async () => {
+    const request = {
+      dateOfBirth: '2010-06-01',
+      email: 'teen@example.com',
+      guardianEmail: 'guardian@example.com',
+    } as RegisterRequest & { guardianEmail: string };
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ pending: true, sent: false })
+    );
+
+    await expect(
+      controller.registerUser(
+        request,
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
+        { headers: { host: 'optimistic-tanuki.com' } } as any
+      )
+    ).resolves.toEqual({
+      message:
+        'Guardian permission request is pending, but the email could not be sent.',
+      data: {
+        guardianConsentPending: true,
+        request: { pending: true, sent: false },
+      },
+    });
+    expect(registerBootstrap.register).not.toHaveBeenCalled();
   });
 
   it('rejects public owner-console registration in production', async () => {
@@ -518,7 +1235,8 @@ describe('AuthenticationController', () => {
       controller.registerUser(
         registration,
         'system-configurator',
-        'system-configurator'
+        'system-configurator',
+        'https://hardware.hopefulaspirationsindustries.com'
       )
     ).resolves.toEqual(
       expect.objectContaining({
@@ -547,7 +1265,14 @@ describe('AuthenticationController', () => {
     };
 
     await expect(
-      controller.registerUser(registration, 'configurable-client')
+      controller.registerUser(
+        registration,
+        'configurable-client',
+        'configurable-client',
+        DEFAULT_APP_REGISTRY.apps.find(
+          (app) => app.appId === 'configurable-client'
+        )!.uiBaseUrl
+      )
     ).resolves.toEqual(
       expect.objectContaining({
         data: expect.objectContaining({ verificationPending: true }),
@@ -556,7 +1281,8 @@ describe('AuthenticationController', () => {
 
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registration,
-      'configurable-client'
+      'configurable-client',
+      undefined
     );
     expect(requestSpy).toHaveBeenCalledWith(
       'configurable-client',
@@ -581,7 +1307,8 @@ describe('AuthenticationController', () => {
           bio: '',
         },
         'system-configurator',
-        'system-configurator'
+        'system-configurator',
+        'https://hardware.hopefulaspirationsindustries.com'
       )
     ).resolves.toEqual(
       expect.objectContaining({
@@ -655,7 +1382,8 @@ describe('AuthenticationController', () => {
         bio: '',
       },
       'system-configurator',
-      'system-configurator'
+      'system-configurator',
+      'https://hardware.hopefulaspirationsindustries.com'
     );
 
     expect(requestSpy).not.toHaveBeenCalled();
@@ -729,7 +1457,12 @@ describe('AuthenticationController', () => {
     registerBootstrap.register.mockResolvedValueOnce(mockResult);
 
     await expect(
-      controller.registerUser(registerRequest, 'leads-app')
+      controller.registerUser(
+        registerRequest,
+        'leads-app',
+        'leads-app',
+        'https://opportunities.example.com'
+      )
     ).resolves.toEqual({
       ...mockResult,
       data: { ...mockResult.data, verificationPending: true },
@@ -737,7 +1470,8 @@ describe('AuthenticationController', () => {
 
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registerRequest,
-      'leads-app'
+      'leads-app',
+      undefined
     );
   });
 
@@ -870,7 +1604,12 @@ describe('AuthenticationController', () => {
     registerBootstrap.register.mockResolvedValueOnce(mockResult);
 
     await expect(
-      controller.registerUser(registerRequest, 'finance')
+      controller.registerUser(
+        registerRequest,
+        'finance',
+        'finance',
+        'https://finance.example.com'
+      )
     ).resolves.toEqual({
       ...mockResult,
       data: { ...mockResult.data, verificationPending: true },
@@ -878,7 +1617,8 @@ describe('AuthenticationController', () => {
 
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registerRequest,
-      'finance'
+      'finance',
+      undefined
     );
   });
 
@@ -970,7 +1710,7 @@ describe('AuthenticationController', () => {
     );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Validate },
-      validateTokenRequest
+      { ...validateTokenRequest, appId: null }
     );
   });
 
@@ -984,9 +1724,9 @@ describe('AuthenticationController', () => {
         },
       ])
     );
-    (clientProxy.send as jest.Mock).mockReturnValueOnce(
-      of({ data: { newToken: 'target-token' } })
-    );
+    (clientProxy.send as jest.Mock)
+      .mockReturnValueOnce(of(true))
+      .mockReturnValueOnce(of({ data: { newToken: 'target-token' } }));
 
     await expect(
       controller.exchangeTokenForApp(
@@ -1011,7 +1751,38 @@ describe('AuthenticationController', () => {
     );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Issue },
-      { userId: 'user-1', profileId: 'profile-target' }
+      { userId: 'user-1', profileId: 'profile-target', appId: 'hai' }
+    );
+  });
+
+  it('exchanges Fin Commander sessions using the finance-scoped profile', async () => {
+    (profileService.send as jest.Mock).mockReturnValueOnce(
+      of([{ id: 'finance-profile', userId: 'user-1', appScope: 'finance' }])
+    );
+    (clientProxy.send as jest.Mock)
+      .mockReturnValueOnce(of(true))
+      .mockReturnValueOnce(of({ data: { newToken: 'fin-commander-token' } }));
+
+    await expect(
+      controller.exchangeTokenForApp(
+        {
+          userId: 'user-1',
+          email: 'user@example.com',
+          name: 'User',
+          profileId: 'profile-source',
+          exp: 1,
+          iat: 1,
+        },
+        { targetAppId: 'fin-commander' }
+      )
+    ).resolves.toEqual({
+      token: 'fin-commander-token',
+      targetAppId: 'fin-commander',
+      profileId: 'finance-profile',
+    });
+    expect(clientProxy.send).toHaveBeenLastCalledWith(
+      { cmd: AuthCommands.Issue },
+      { userId: 'user-1', profileId: 'finance-profile', appId: 'fin-commander' }
     );
   });
 
@@ -1036,9 +1807,9 @@ describe('AuthenticationController', () => {
           appScope: 'forgeofwill',
         })
       );
-    (clientProxy.send as jest.Mock).mockReturnValueOnce(
-      of({ data: { newToken: 'target-token' } })
-    );
+    (clientProxy.send as jest.Mock)
+      .mockReturnValueOnce(of(true))
+      .mockReturnValueOnce(of({ data: { newToken: 'target-token' } }));
 
     await expect(
       controller.exchangeTokenForApp(
@@ -1066,6 +1837,36 @@ describe('AuthenticationController', () => {
       })
     );
     expect(roleInitService.processNow).toHaveBeenCalled();
+  });
+
+  it('blocks an unassessed foreign-app account before bootstrapping an OTTS profile', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      throwError(() => new Error('AGE_CHECK_REQUIRED'))
+    );
+
+    await expect(
+      controller.exchangeTokenForApp(
+        {
+          userId: 'new-foreign-app-user',
+          email: 'new-user@example.com',
+          name: 'New User',
+          profileId: 'profile-foreign',
+          exp: 1,
+          iat: 1,
+        },
+        { targetAppId: 'client-interface' }
+      )
+    ).rejects.toBeInstanceOf(HttpException);
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.CheckGuardianAccess },
+      { userId: 'new-foreign-app-user', appId: 'client-interface' }
+    );
+    expect(profileService.send).not.toHaveBeenCalled();
+    expect(clientProxy.send).not.toHaveBeenCalledWith(
+      { cmd: AuthCommands.Issue },
+      expect.anything()
+    );
   });
 
   it('should reject token exchange without a target app', async () => {

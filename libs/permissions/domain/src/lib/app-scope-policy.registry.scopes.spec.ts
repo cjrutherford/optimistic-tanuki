@@ -80,6 +80,121 @@ describe('AppScopePolicyRegistry scopes', () => {
     });
   });
 
+  it('keeps report-review roles isolated to their owning app scopes', () => {
+    const clientDefaults = registry.get('client-interface').buildDefaults();
+    const localHubDefaults = registry.get('local-hub').buildDefaults();
+
+    expect(
+      clientDefaults.roles.find(
+        (role) => role.name === 'client_interface_operator'
+      )?.permissions
+    ).toEqual(['content.report.review']);
+    expect(
+      clientDefaults.permissions.filter(
+        (permission) => permission.name === 'content.report.review'
+      )
+    ).toEqual([
+      expect.objectContaining({
+        name: 'content.report.review',
+        appScope: 'client-interface',
+      }),
+    ]);
+    expect(
+      localHubDefaults.roles.find((role) => role.name === 'local_hub_operator')
+        ?.permissions
+    ).toEqual(['content.report.review']);
+    expect(
+      localHubDefaults.permissions.some(
+        (permission) =>
+          permission.name === 'content.report.review' &&
+          permission.appScope !== 'local-hub'
+      )
+    ).toBe(false);
+  });
+
+  it('keeps global forum moderation roles inside their real owning apps', () => {
+    const clientDefaults = registry.get('client-interface').buildDefaults();
+    const localHubDefaults = registry.get('local-hub').buildDefaults();
+    const leadsDefaults = registry.get('leads-app').buildDefaults();
+
+    expect(
+      clientDefaults.permissions.filter(
+        (permission) => permission.name === 'forum.moderate'
+      )
+    ).toEqual([
+      expect.objectContaining({
+        name: 'forum.moderate',
+        appScope: 'client-interface',
+      }),
+    ]);
+    expect(
+      clientDefaults.roles.find(
+        (role) => role.name === 'client_interface_forum_moderator'
+      )?.permissions
+    ).toEqual(['forum.moderate']);
+    expect(
+      clientDefaults.assignments?.map((assignment) => assignment.roleName)
+    ).not.toContain('client_interface_forum_moderator');
+    expect(
+      localHubDefaults.permissions.filter(
+        (permission) => permission.name === 'forum.moderate'
+      )
+    ).toEqual([
+      expect.objectContaining({
+        name: 'forum.moderate',
+        appScope: 'local-hub',
+      }),
+    ]);
+    expect(
+      localHubDefaults.roles.find(
+        (role) => role.name === 'local_hub_forum_moderator'
+      )?.permissions
+    ).toEqual(['forum.moderate']);
+    expect(
+      localHubDefaults.assignments?.map((assignment) => assignment.roleName)
+    ).not.toContain('local_hub_forum_moderator');
+    expect(
+      leadsDefaults.roles.some((role) => role.name.includes('forum_moderator'))
+    ).toBe(false);
+    expect(
+      new Set(
+        [
+          ...clientDefaults.roles,
+          ...localHubDefaults.roles,
+          ...leadsDefaults.roles,
+        ].map((role) => role.name)
+      ).size
+    ).toBe(
+      clientDefaults.roles.length +
+        localHubDefaults.roles.length +
+        leadsDefaults.roles.length
+    );
+  });
+
+  it('grants local-hub members only the Local Hub asset-create capability', () => {
+    const localHubDefaults = registry.get('local-hub').buildDefaults();
+    const memberRole = localHubDefaults.roles.find(
+      (role) => role.name === 'local_hub_member'
+    );
+
+    expect(
+      localHubDefaults.permissions.filter((permission) =>
+        permission.name.startsWith('asset.')
+      )
+    ).toEqual([
+      expect.objectContaining({
+        name: 'asset.create',
+        resource: 'asset',
+        action: 'create',
+        appScope: 'local-hub',
+      }),
+    ]);
+    expect(memberRole?.permissions).toContain('asset.create');
+    expect(memberRole?.permissions).not.toEqual(
+      expect.arrayContaining(['asset.read', 'asset.update', 'asset.delete'])
+    );
+  });
+
   describe('client-interface cross-scope mapping', () => {
     it.each(['client_interface_user', 'community_owner'])(
       'mirrors a %s assignment into social',

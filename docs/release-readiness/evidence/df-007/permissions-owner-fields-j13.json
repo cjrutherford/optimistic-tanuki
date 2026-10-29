@@ -1,0 +1,81 @@
+{
+  "slice": "DF-007-J13",
+  "status": "locally-verified-bounded-owner-component",
+  "accountBoundary": "role_assignment.profileId in all identities of retained Profile snapshot",
+  "sources": {
+    "roleAssignment": {
+      "ownership": "account-owned assignment rows only",
+      "fields": [
+        "id",
+        "profileId",
+        "roleId",
+        "appScopeId",
+        "targetId",
+        "createdAt"
+      ],
+      "context": ["role", "role.appScope", "appScope"]
+    },
+    "rolePermission": {
+      "ownership": "shared definition links reachable from account-owned assignments; context only",
+      "key": ["roleId", "permissionId"],
+      "fields": [
+        "id",
+        "roleId",
+        "permissionId",
+        "role",
+        "permission",
+        "permission.appScope"
+      ]
+    }
+  },
+  "sharedTables": {
+    "role": "context only; no mutations",
+    "permission": "context only; no mutations",
+    "app_scope": "reachable context only; no mutations",
+    "role_permissions": "reachable relationship context only; no mutations",
+    "app_scope_permissions": "scope-wide shared matrix excluded; no mutations"
+  },
+  "contextFields": {
+    "role": [
+      "id",
+      "name",
+      "description",
+      "appScopeId",
+      "createdAt",
+      "appScope"
+    ],
+    "permission": [
+      "id",
+      "name",
+      "description",
+      "resource",
+      "action",
+      "targetId",
+      "appScopeId",
+      "createdAt",
+      "appScope"
+    ],
+    "scope": ["id", "name", "description", "active", "createdAt", "updatedAt"]
+  },
+  "textLimitsCodePoints": {
+    "name": 1024,
+    "resource": 1024,
+    "action": 1024,
+    "description": 65536,
+    "opaqueTargetId": 4096
+  },
+  "validStates": [
+    "independent cross-scope links",
+    "role with zero permissions",
+    "null assignment/role/permission scope",
+    "opaque target whose resource is missing"
+  ],
+  "failClosed": [
+    "missing required Role or Permission",
+    "missing referenced non-null scope",
+    "oversize text or invalid UUID/timestamp",
+    "lease loss, interruption or cleanup failure"
+  ],
+  "excludedPersonalData": "foreign-profile assignments and unrelated shared definitions",
+  "mutationPolicy": "read-only export; no deletion adapter in this slice"
+}

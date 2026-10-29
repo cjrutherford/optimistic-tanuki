@@ -1,0 +1,429 @@
+{
+  "baseRevision": "4aa670e5f8b1ae1f3283c2df0b11cb64bdc361c6",
+  "commands": {
+    "test": {
+      "command": [
+        "pnpm",
+        "exec",
+        "nx",
+        "affected",
+        "-t",
+        "test",
+        "-c",
+        "ci",
+        "--files=apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/profile/src/app/account-export.service.spec.ts,apps/profile/src/app/account-export.service.ts",
+        "--parallel=3",
+        "--outputStyle=static",
+        "--exclude=directory-*"
+      ],
+      "exitCode": 0
+    },
+    "lint": {
+      "command": [
+        "pnpm",
+        "exec",
+        "nx",
+        "affected",
+        "-t",
+        "lint",
+        "--files=apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/profile/src/app/account-export.service.spec.ts,apps/profile/src/app/account-export.service.ts",
+        "--parallel=3",
+        "--outputStyle=static",
+        "--exclude=directory-*,*-e2e"
+      ],
+      "exitCode": 0
+    },
+    "build": {
+      "command": [
+        "pnpm",
+        "exec",
+        "nx",
+        "affected",
+        "-t",
+        "build",
+        "--files=apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/profile/src/app/account-export.service.spec.ts,apps/profile/src/app/account-export.service.ts",
+        "--parallel=3",
+        "--outputStyle=static",
+        "--exclude=directory-*"
+      ],
+      "exitCode": 0
+    },
+    "final-format": {
+      "command": [
+        "pnpm",
+        "exec",
+        "nx",
+        "format:check",
+        "--files=apps/authentication-e2e/src/authentication/account-export.spec.ts,apps/authentication/src/app/account-export.service.spec.ts,apps/authentication/src/app/account-export.service.ts,apps/profile/src/app/account-export.service.spec.ts,apps/profile/src/app/account-export.service.ts"
+      ],
+      "exitCode": 0
+    },
+    "final-workflow-contracts": {
+      "command": [
+        "node",
+        "--test",
+        "scripts/tests/e2e-environment-manifest.test.mjs",
+        "scripts/tests/wait-for-e2e-readiness.test.mjs",
+        "scripts/tests/resolve-e2e-images.test.mjs",
+        "scripts/tests/ui-e2e-ci-contract.test.mjs"
+      ],
+      "exitCode": 0
+    },
+    "final-diff": {
+      "command": ["git", "diff", "--check"],
+      "exitCode": 0
+    },
+    "migration-governance": {
+      "command": ["pnpm", "run", "validate:typeorm-migrations"],
+      "exitCode": 0
+    },
+    "migration-setup": {
+      "command": ["node", "--test", "scripts/tests/setup-and-migrate.test.mjs"],
+      "exitCode": 0
+    },
+    "e2e-environment": {
+      "command": ["node", "scripts/validate-e2e-environment.mjs"],
+      "exitCode": 0
+    },
+    "ui-heuristics": {
+      "command": ["pnpm", "run", "ui:heuristics:ci"],
+      "exitCode": 0
+    },
+    "no-personality-scss": {
+      "command": ["pnpm", "run", "check:no-personality-scss"],
+      "exitCode": 0
+    },
+    "personality-audit": {
+      "command": ["pnpm", "run", "check:personality-audit"],
+      "exitCode": 0
+    },
+    "client-interface-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/client-interface-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "forgeofwill-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/forgeofwill-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "digital-homestead-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/digital-homestead-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "christopherrutherford-net-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/christopherrutherford-net-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "owner-console-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/owner-console-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "store-client-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/store-client-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "learning-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/learning-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "configurable-client-collection": {
+      "command": [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "--config=apps/configurable-client-e2e/playwright.config.ts",
+        "--list"
+      ],
+      "exitCode": 0
+    },
+    "openapi": {
+      "command": ["pnpm", "run", "get-openapi"],
+      "exitCode": 0
+    },
+    "orval": {
+      "command": ["pnpm", "exec", "orval", "--config", "orval.config.ts"],
+      "exitCode": 0
+    },
+    "generated-format": {
+      "command": [
+        "pnpm",
+        "exec",
+        "prettier",
+        "--write",
+        "libs/billing-sdk/src/generated/",
+        "libs/chat-ui-data-access/src/generated/",
+        "libs/payments-ui-data-access/src/generated/",
+        "libs/store-data-access/src/generated/",
+        "libs/finance/data-access/src/generated/",
+        "libs/blogging-data-access/src/generated/",
+        "libs/social-data-access/src/generated/",
+        "libs/learning-ui-data-access/src/generated/",
+        "libs/profile-ui-data-access/src/generated/"
+      ],
+      "exitCode": 0
+    },
+    "generated-drift": {
+      "command": [
+        "git",
+        "diff",
+        "--exit-code",
+        "--",
+        "libs/billing-sdk/src/generated/",
+        "libs/chat-ui-data-access/src/generated/",
+        "libs/payments-ui-data-access/src/generated/",
+        "libs/store-data-access/src/generated/",
+        "libs/finance/data-access/src/generated/",
+        "libs/blogging-data-access/src/generated/",
+        "libs/social-data-access/src/generated/",
+        "libs/learning-ui-data-access/src/generated/",
+        "libs/profile-ui-data-access/src/generated/"
+      ],
+      "exitCode": 0
+    },
+    "storybook-build": {
+      "command": [
+        "pnpm",
+        "exec",
+        "nx",
+        "build",
+        "ui-playground",
+        "--outputStyle=static"
+      ],
+      "exitCode": 0
+    },
+    "packages-test": {
+      "command": ["pnpm", "run", "packages:test"],
+      "exitCode": 0
+    },
+    "packages-check": {
+      "command": ["pnpm", "run", "packages:check"],
+      "exitCode": 0
+    },
+    "packages-build": {
+      "command": ["pnpm", "run", "packages:build"],
+      "exitCode": 0
+    },
+    "build-dev": {
+      "command": ["pnpm", "run", "build:dev"],
+      "exitCode": 0,
+      "sourcePhase": "after final Profile operation guard and static GO"
+    }
+  },
+  "sourceFiles": {
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "fa1002557ba9cb041ff7ebc75f3bd3140d29afea83b01138f3fd4d7ceef95753",
+    "apps/authentication/src/app/account-export.service.spec.ts": "cfc9130dfa6b6af972c2b0540ec3b69cbb2b812d3fb2af937818996e12b28ca0",
+    "apps/authentication/src/app/account-export.service.ts": "6f28e0cf9267567275e17016c8ea809a0fa75eb830351c7a36c488e80b5543d6",
+    "apps/profile/src/app/account-export.service.spec.ts": "c9f35d7a553db66843aca9f234a9b5c5fcc56dd7e023bb521daf28ab0bc287ae",
+    "apps/profile/src/app/account-export.service.ts": "117865293b4c74702c8b4442e0ecbc0ba8c28ce99b718d4ddfa0db342cc86661"
+  },
+  "excludedFileCount": 43,
+  "excludedFilesUnchanged": true,
+  "checkpoint": "DF-007-B2",
+  "result": "locally verified internal incomplete guardian/security metadata preview",
+  "imagePatchSha256": "4e9b348c7fed43c782c65e5927c82c653f8973725a1099a1149312e0875fb6e1",
+  "fullStagedSourceManifestSha256": "c0a1a72719cc55e83471ba9c2731e4b111c57d873a7ef0cc6812bb0315109b52",
+  "images": {
+    "authentication": {
+      "tag": "ot-df007-b2/authentication:b2-4e9b348c7fed",
+      "id": "sha256:de6c4681da37676d121b7c5a538fb6879d077138d601a3693f2fae15975d88d4",
+      "labels": {
+        "io.optimistic-tanuki.account-rights.patch-sha256": "4e9b348c7fed43c782c65e5927c82c653f8973725a1099a1149312e0875fb6e1",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b2",
+        "org.opencontainers.image.revision": "4aa670e5f8b1ae1f3283c2df0b11cb64bdc361c6"
+      }
+    },
+    "profile": {
+      "tag": "ot-df007-b2/profile:b2-4e9b348c7fed",
+      "id": "sha256:466f8bb74bff6993b1bacbc68264db6beeb75fd419753269f18a905fd72c557c",
+      "labels": {
+        "io.optimistic-tanuki.account-rights.patch-sha256": "4e9b348c7fed43c782c65e5927c82c653f8973725a1099a1149312e0875fb6e1",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b2",
+        "org.opencontainers.image.revision": "4aa670e5f8b1ae1f3283c2df0b11cb64bdc361c6"
+      }
+    }
+  },
+  "runtime": {
+    "command": ["pnpm", "exec", "nx", "run", "authentication-e2e:e2e:ci"],
+    "environment": {
+      "SKIP_SETUP": "true",
+      "HOST": "127.0.0.1",
+      "PORT": "3001",
+      "BASE_URL": "http://127.0.0.1:3001",
+      "ACCOUNT_EXPORT_E2E_DB_MARKER": "auth-profile-export-fixture-v1",
+      "ACCOUNT_EXPORT_E2E_DB_HOST": "127.0.0.1",
+      "E2E_DB_PORT": "15432"
+    },
+    "project": "ot-df007-b2",
+    "status": {
+      "startup": "0",
+      "e2e": "0",
+      "email-runtime-check": "0",
+      "fixture-readback": "0",
+      "fixture-readback-zero-counts": "0",
+      "teardown": "0"
+    },
+    "passedSuites": 2,
+    "passedTests": 20,
+    "directFixtureCounts": {
+      "fixture_users": 0,
+      "fixture_tokens": 0,
+      "fixture_action_tokens": 0,
+      "fixture_keys": 0,
+      "fixture_oauth_owned_prefix": 0,
+      "fixture_oauth_foreign_prefix": 0,
+      "fixture_guardian_permission_versions": 0,
+      "fixture_policy_notice_version": 0,
+      "fixture_action_token_hash": 0,
+      "fixture_profile_activity_tuples": 0,
+      "fixture_profiles": 0,
+      "fixture_timelines": 0
+    },
+    "emailLogCheck": {
+      "smtp_host": "explicit-empty",
+      "console_email": "0",
+      "emailservice_send": "0",
+      "emailservice_sensitive_send": "0",
+      "emailservice_send_failure": "0",
+      "emailservice_sensitive_send_failure": "0",
+      "emailservice_no_provider": "0"
+    },
+    "remainingProjectContainers": 0,
+    "remainingProjectNetworks": 0,
+    "remainingProjectVolumes": 0,
+    "readbackLimit": "Token/key counts joined to remaining fixture users alone do not prove orphan absence; the fresh private database was removed by project teardown."
+  },
+  "privateLogHashes": {
+    "auth-build.log": "bb7f51f68b221048e42859952f22252f08f3185b117c0a15bd8a75e8f17eff45",
+    "auth-ci-final.log": "85b42396c89452de552147f65729ff62ed104ac377d7257fe9960f3f6f1568fc",
+    "auth-lint.log": "48fd4d5921295145be649d712a7783352feb7f4bf032c34d37947051e3613a55",
+    "auth-unit.log": "22c456bd528cd3d05650b2a1261f74f00dbae3eb99aa496bae8c00c5b4d830ee",
+    "e2e-lint.log": "5156d4d881fbebef46de12d32fe900d228fde7fb1d5a42d2c41d189eb88c5004",
+    "final-format.log": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20",
+    "gates/build-dev.log": "18369e3e5cc832c7b1f6a2ffac2de40dcf4d1db5ee8a0fd59f1e2efc76f1d204",
+    "gates/build.log": "52d84d95f10c646b0d658d85c71c5f6fa0150b787e7bb0bb8bc6dd801f01963a",
+    "gates/christopherrutherford-net-collection.log": "799a0b1152280bb3dde7aef8e56927a4bf535a9eb7101a7af62e35fba6c5fcaa",
+    "gates/client-interface-collection.log": "6d5550f41056f5db71617ec7d07daabc9e824070eb7c94194ee01b00b6741b19",
+    "gates/configurable-client-collection.log": "2b298db54b2457b8d48fe5beee3187a4cc47fcbff94efdc8a63c54b12f82a085",
+    "gates/digital-homestead-collection.log": "98d57d38b524212a618cd80ff6fea3fedcd083c3c5d0ac9fa0dd42cc30071e36",
+    "gates/e2e-environment.log": "6f27f70ad91eec5257492a377d85cda4b45f97a63f3adee0bd91f2b2b9f0e600",
+    "gates/final-diff.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "gates/final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "gates/final-workflow-contracts.log": "08533ecb426082ed2eed7e10fab94ea00fcbd918817d265630a0c8bf52086a0a",
+    "gates/forgeofwill-collection.log": "c18a9d4f8dc48b4a3eae901d156093f4c845d7f24c4ed3fe3e13192d4c6728c2",
+    "gates/generated-drift.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "gates/generated-format.log": "a9c6fbcf239211b0f101962878c72921dcb6ef934acdcd6a59748006bdca2e89",
+    "gates/initial-failed/final-format.log": "954eb7c5cb3757f3601869b8eb1d81e8ba7b08ed394edbbe9efc4105c2d9ec37",
+    "gates/initial-failed/test.log": "343244568171da7810e0f22d511c40f286f53eadf2ca7922535f931c2cf7218c",
+    "gates/learning-collection.log": "ff8e9b3c7b39a411ca8736ed4ffd57d7e6d211cf8759526a3a64de9a7321a1c1",
+    "gates/lint.log": "1d7bc95cdc5740e6bc1f6ef467008ddaa18c2ec0e0b4b3931be4012b0c274e2e",
+    "gates/migration-governance.log": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9",
+    "gates/migration-setup.log": "7769d35185546bdf418a9f3592720097f2232c0831aa17f03e65344fb66879c9",
+    "gates/no-personality-scss.log": "c0c41ebfcacad923185d62f7cfde2cd49ed055c9be7c7774078ab95addc127ce",
+    "gates/openapi.log": "d4fc85bf6fa646303191ef6a5a3608578713d74ec0e24649074f720f2370fa05",
+    "gates/orval.log": "cb501bb9be1648ab50f3ba2901b46462850ff289230a46953597e7c71d8382ac",
+    "gates/owner-console-collection.log": "ff80e980c51d54a1cac275e187d8ccfbd01275a9fba0d83cc30450c5660470fa",
+    "gates/packages-build.log": "2e15bea585742cfcdc88e466107dfb64d3a6ba86346714d75a7c39be91b8b78f",
+    "gates/packages-check.log": "5412e075ae6be092d654198b9ca8c57afd3d43e5ac3c654df4267d276e623b50",
+    "gates/packages-test.log": "51c729fd08de10dc2d563094a537e3af416e2bb85c3375c517deb8493da729ce",
+    "gates/personality-audit.log": "52c0a4ef0a86e32ba56209b0b9fd0bd7671eccded6974b37710cecf639026b5d",
+    "gates/pre-operation-fix/build-dev.log": "afcc79c70c6af921ddcdd5a9bd42a126ffea85dd937de32141e2ed9f30022551",
+    "gates/pre-operation-fix/build.log": "831a34ec08ef539b576e65184faef0e5b288e808e19c633b224320f62f4351eb",
+    "gates/pre-operation-fix/lint.log": "6b53b03013fa277bd2882fb6888443f5dfd733640d70cc04a2de0ffe56cd16aa",
+    "gates/pre-operation-fix/test.log": "fcb2995f8bff26a0b4034de95b9ca80abe0bd7d8aadc69d5f5c49938baa60523",
+    "gates/store-client-collection.log": "1fd7e20b1d63aca84f30dc17546a47356e8f7d4826498e887c2b30a747100d37",
+    "gates/storybook-build.log": "f149f500acc03e6a3a40b081b705b8ec3ee39506bc9a62f03c8bae2cd767a0ff",
+    "gates/test.log": "decf3fdb52ed6725c14ecc65f5addc4e176d8e00bea1775548a0a6aafa764ea3",
+    "gates/ui-heuristics.log": "7d3254309f832127e6770ee157385de768e25a407ae1d5a8f066765523726897",
+    "profile-build.log": "f50f6539b9defb1d79a7911841681359808cf03da4b4c1c7c5780bb926b07641",
+    "profile-ci-final.log": "1bfaf0c06ba6ce422b36f54d4399d598387de59885e3aa9fa61209c077f16c7f",
+    "profile-focused.log": "ca4ebeea627a788c07859eb345765de3b3dcf4f2e6f019dd9c39280147212e06",
+    "profile-lint.log": "fd463181be16abfef064472bf0327006b3d11bca47ef863ae9e8735c1acca2e7",
+    "profile-operation-build-final.log": "4b86dbb0a5bffd3c8a042f6897109310658794a34f9f1cf47c1f7e4cf33b676f",
+    "profile-operation-ci-final.log": "b2a0b1b7022943b1c1375ac7b0b69ad386040b913b08f5d02e749304c308c4d9",
+    "profile-operation-format-final.log": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20",
+    "profile-operation-green.log": "47c4c9fd67439e235973d5c0d1b0f10fb3c1d2560a4bd3742b2d415cd67aebc4",
+    "profile-operation-lint-final.log": "812ea7152413ef80fa4fd09f5eecabd7111a77b49a70572b98f3f8c76608a62f",
+    "profile-operation-red.log": "9522966fc00e90675445a1289d2362b89c8285413c547b130a46bf9268bf3ced",
+    "profile-unit.log": "fa6598fe07f73ced49c910c0582fa896c2b359b9a062e3a0164d1d33f782a7a9",
+    "runtime/final-4e9b348c7fed/authentication-e2e-ci.log": "28c7cbac14f756a18529685696d963e348539556e18b82c3d045f4a3a5ebbd5b",
+    "runtime/final-4e9b348c7fed/authentication-runtime.log": "69a8551db7418e90c1a76f880923c3c63e1d8ae4c818842e1c9cf81a19f598aa",
+    "runtime/final-4e9b348c7fed/build-authentication.log": "1a0c44a390d0296d9c3f669796aff1e12b67da1b24574fcf0ced5657db60e314",
+    "runtime/final-4e9b348c7fed/build-profile.log": "ef01b41b17d290b8752a5175fe2771f6c653151ae604c538e0d7b9171cfd62e8",
+    "runtime/final-4e9b348c7fed/compose-config-final-preflight.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "runtime/final-4e9b348c7fed/compose-config-prebuild.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "runtime/final-4e9b348c7fed/compose-config.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "runtime/final-4e9b348c7fed/compose-down.log": "8ce24e0e811fd1034ac2c29cc58e97d29ffba12c52cff840cf4a746844be21cd",
+    "runtime/final-4e9b348c7fed/compose-ps-ready.log": "957976bbd1529e60cf469f9a97e2b1c39ef138a379d73339b0ebe89396b82705",
+    "runtime/final-4e9b348c7fed/compose-up.log": "f479bd7bad2973dd9454222693f09f02708c63f8a01a7132a510f6c1612b2d1b",
+    "runtime/final-4e9b348c7fed/gate-check-before-runtime-explicit.log": "30a8590ca3bed4c72f2666caa76ef2bd325573190ad2a4101ba2cdf983bb28cb",
+    "runtime/final-4e9b348c7fed/gate-check-before-runtime.log": "30a8590ca3bed4c72f2666caa76ef2bd325573190ad2a4101ba2cdf983bb28cb",
+    "runtime/final-4e9b348c7fed/port-preflight.log": "3a1952605223b3483ee7976a7c1848a35e1016dcaa5f9288819c20e6928af5c8"
+  },
+  "reviewSha256": "ac17bbc3988df0d32bdadb618de5717f41d859fecc71b8b4469790e970ecd961",
+  "reusedBaseline": "Frozen installation from unchanged dependency/lockfile baseline; no B2 dependencies changed.",
+  "verificationTiming": "Affected test/lint/production build, formatting/contracts, aggregate development build and static review cover final operation-guard source. Unchanged API generation, Storybook, package and validation checks were retained from the same checkpoint before that local Profile guard fix.",
+  "notRun": [
+    "Browser UX E2E: internal service-only checkpoint; no UI changes",
+    "Public export, deletion, portable media, providers/backups and production qualification",
+    "Real guardian activation or provider/email delivery: revoked links and terminal accepted notice rows are synthetic export fixtures",
+    "Unchanged Go/catalog/deployment inventory advisory checks retained from checkpoint A; compliance-audit advisory discrepancy remains open"
+  ],
+  "acceptance": {
+    "fullExport": false,
+    "downloadable": false,
+    "deletion": false,
+    "inventoryAccepted": false,
+    "DF007Accepted": false,
+    "RR11Accepted": false
+  },
+  "supersededIterations": "Initial/intermediate B2 captures and builds are not final acceptance evidence."
+}

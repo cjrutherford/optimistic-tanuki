@@ -22,6 +22,7 @@ import { LinkService } from './services/link.service';
 
 interface QueryBuilderMock {
   where: jest.Mock;
+  andWhere: jest.Mock;
   orderBy: jest.Mock;
   skip: jest.Mock;
   take: jest.Mock;
@@ -31,12 +32,14 @@ interface QueryBuilderMock {
 function makeQueryBuilder(posts: unknown[]): QueryBuilderMock {
   const qb: QueryBuilderMock = {
     where: jest.fn(),
+    andWhere: jest.fn(),
     orderBy: jest.fn(),
     skip: jest.fn(),
     take: jest.fn(),
     getMany: jest.fn().mockResolvedValue(posts),
   };
   qb.where.mockReturnValue(qb);
+  qb.andWhere.mockReturnValue(qb);
   qb.orderBy.mockReturnValue(qb);
   qb.skip.mockReturnValue(qb);
   qb.take.mockReturnValue(qb);
@@ -125,6 +128,9 @@ function createHarness() {
     getMembers: jest.fn(),
     isMember: jest.fn(),
     getUserCommunities: jest.fn().mockResolvedValue([]),
+    getPostAccessibleCommunityIds: jest
+      .fn()
+      .mockResolvedValue(['public-community']),
     getCommunitiesByProfileId: jest.fn(),
     invite: jest.fn(),
     cancelInvite: jest.fn(),
@@ -168,6 +174,7 @@ function createHarness() {
     unblockUser: jest.fn(),
     getBlockedUsers: jest.fn().mockResolvedValue([]),
     getBlockersOf: jest.fn().mockResolvedValue([]),
+    getActiveMutedUsers: jest.fn().mockResolvedValue([]),
     isUserBlocked: jest.fn(),
     muteUser: jest.fn(),
     unmuteUser: jest.fn(),
@@ -936,7 +943,8 @@ describe('AppController delegation', () => {
         h.controller.findCommunityBySlug({ slug: 'my-community' })
       ).resolves.toEqual({ id: 'c1' });
       expect(h.communityService.findBySlug).toHaveBeenCalledWith(
-        'my-community'
+        'my-community',
+        undefined
       );
 
       await h.controller.listLocalityCommunities({
@@ -957,14 +965,19 @@ describe('AppController delegation', () => {
       });
       expect(h.communityService.findAll).toHaveBeenCalledWith(
         { name: 'x' },
-        'app'
+        'app',
+        undefined
       );
 
       await h.controller.getTopActiveCommunities({
         limit: 5,
         appScope: 'app',
       });
-      expect(h.communityService.getTopActive).toHaveBeenCalledWith(5, 'app');
+      expect(h.communityService.getTopActive).toHaveBeenCalledWith(
+        5,
+        'app',
+        undefined
+      );
 
       await h.controller.updateCommunity({
         id: 'c1',
@@ -1215,7 +1228,6 @@ describe('AppController delegation', () => {
       h.communityService.getUserCommunities.mockResolvedValue([{ id: 'c1' }]);
       h.queryBuilder.getMany.mockResolvedValue([
         { id: 'p1', profileId: 'author-1' },
-        { id: 'p2', profileId: 'blocked-1' },
       ]);
       h.privacyService.getBlockedUsers.mockResolvedValue([
         { blockedId: 'blocked-1' },
@@ -1236,10 +1248,14 @@ describe('AppController delegation', () => {
 
       const [where, params] = h.queryBuilder.where.mock.calls[0];
       expect(where).toContain('post.visibility = :public');
-      expect(where).toContain('post.userId IN (:...followingIds)');
+      expect(where).toContain('post.profileId IN (:...followingIds)');
       expect(where).toContain('post.communityId IN (:...communityIds)');
       expect(params.followingIds).toEqual(['followed-1']);
       expect(params.communityIds).toEqual(['c1']);
+      expect(h.queryBuilder.andWhere).toHaveBeenCalledWith(
+        'post.profileId NOT IN (:...suppressedProfileIds)',
+        { suppressedProfileIds: ['blocked-1'] }
+      );
       expect(h.queryBuilder.skip).toHaveBeenCalledWith(5);
       expect(h.queryBuilder.take).toHaveBeenCalledWith(100);
 
@@ -1274,20 +1290,21 @@ describe('AppController delegation', () => {
         h.controller.findNotificationsByRecipient('r1')
       ).resolves.toEqual([{ id: 'n1' }]);
 
-      await expect(h.controller.markNotificationRead('n1')).resolves.toEqual({
-        success: true,
-      });
-      expect(h.notificationService.markAsRead).toHaveBeenCalledWith('n1');
+      const notificationMutation = { id: 'n1', recipientId: 'r1' };
+      await expect(
+        h.controller.markNotificationRead(notificationMutation)
+      ).resolves.toEqual({ success: true });
+      expect(h.notificationService.markAsRead).toHaveBeenCalledWith('n1', 'r1');
 
       await expect(
         h.controller.markAllNotificationsRead('r1')
       ).resolves.toEqual({ success: true });
       expect(h.notificationService.markAllAsRead).toHaveBeenCalledWith('r1');
 
-      await expect(h.controller.deleteNotification('n1')).resolves.toEqual({
-        success: true,
-      });
-      expect(h.notificationService.delete).toHaveBeenCalledWith('n1');
+      await expect(
+        h.controller.deleteNotification(notificationMutation)
+      ).resolves.toEqual({ success: true });
+      expect(h.notificationService.delete).toHaveBeenCalledWith('n1', 'r1');
 
       await expect(
         h.controller.getUnreadNotificationCount('r1')
@@ -1333,7 +1350,7 @@ describe('AppController delegation', () => {
       h.privacyService.blockUser.mockResolvedValue({ id: 'b1' });
       h.privacyService.isUserBlocked.mockResolvedValue(true);
       h.privacyService.muteUser.mockResolvedValue({ id: 'mu1' });
-      h.privacyService.getMutedUsers.mockResolvedValue([{ id: 'mu1' }]);
+      h.privacyService.getActiveMutedUsers.mockResolvedValue([{ id: 'mu1' }]);
       h.privacyService.getBlockedUsers.mockResolvedValue([{ id: 'b1' }]);
 
       await h.controller.blockUser({
@@ -1398,38 +1415,59 @@ describe('AppController delegation', () => {
       );
 
       await expect(
-        h.controller.getMyReports({ reporterId: 'a' })
+        h.controller.getMyReports({
+          reporterId: 'a',
+          appScope: 'client-interface',
+        })
       ).resolves.toEqual([{ id: 'rep1' }]);
-      await expect(h.controller.getAllReports({})).resolves.toEqual([
-        { id: 'rep1' },
-      ]);
-      expect(h.privacyService.getAllReports).toHaveBeenCalledWith(undefined);
+      await expect(
+        h.controller.getAllReports({ appScope: 'client-interface' })
+      ).resolves.toEqual([{ id: 'rep1' }]);
+      expect(h.privacyService.getMyReports).toHaveBeenCalledWith(
+        'a',
+        'client-interface'
+      );
+      expect(h.privacyService.getAllReports).toHaveBeenCalledWith(
+        undefined,
+        'client-interface'
+      );
 
       await h.controller.updateReportStatus({
         id: 'rep1',
         status: 'reviewed',
         adminNotes: 'looked at it',
+        appScope: 'client-interface',
+        moderatedBy: 'moderator-1',
+        workspaceId: 'workspace-1',
       });
       expect(h.privacyService.updateReportStatus).toHaveBeenCalledWith(
         'rep1',
         'reviewed',
         'looked at it',
-        undefined
+        'workspace-1',
+        'client-interface',
+        'moderator-1'
       );
 
       await h.controller.moderateContent({
         contentType: 'post',
         contentId: 'p1',
+        reportId: 'rep1',
         moderationStatus: 'hidden',
         moderatedBy: 'admin',
         adminNotes: 'nope',
+        workspaceId: 'workspace-1',
+        appScope: 'client-interface',
       });
       expect(h.privacyService.moderateContent).toHaveBeenCalledWith(
         'post',
         'p1',
         'hidden',
         'admin',
-        'nope'
+        'nope',
+        'rep1',
+        'client-interface',
+        'workspace-1'
       );
     });
   });
@@ -1528,7 +1566,10 @@ describe('AppController delegation', () => {
       await expect(
         h.controller.getPresenceBatch(['u1', 'u2'])
       ).resolves.toEqual([{ status: 'online' }]);
-      await expect(h.controller.getOnlineUsers()).resolves.toEqual(['u1']);
+      await expect(
+        h.controller.getOnlineUsers({ userIds: ['u1'] })
+      ).resolves.toEqual(['u1']);
+      expect(h.presenceService.getOnlineUsers).toHaveBeenCalledWith(['u1']);
 
       await expect(h.controller.updateLastSeen('u1')).resolves.toEqual({
         success: true,
@@ -1617,27 +1658,95 @@ describe('AppController delegation', () => {
 
   describe('post shares', () => {
     it('delegates the post share surface', async () => {
+      jest
+        .spyOn(h.controller as any, 'buildPostVisibilityScope')
+        .mockResolvedValue({
+          viewerProfileId: 'pr1',
+          followedProfileIds: [],
+          blockedProfileIds: [],
+        });
+      h.postService.findOne.mockResolvedValue({
+        id: 'p1',
+        visibility: 'public',
+        communityId: null,
+      } as never);
       h.postShareService.create.mockResolvedValue({ id: 'ps1' });
-      h.postShareService.findByPost.mockResolvedValue([{ id: 'ps1' }]);
-      h.postShareService.findByProfile.mockResolvedValue([{ id: 'ps1' }]);
+      h.postShareService.findByPost.mockResolvedValue([
+        {
+          id: 'ps1',
+          originalPostId: 'p1',
+          sharedById: 'pr1',
+          visibility: 'public',
+        },
+      ]);
+      h.postShareService.findByProfile.mockResolvedValue([
+        {
+          id: 'ps1',
+          originalPostId: 'p1',
+          sharedById: 'pr1',
+          visibility: 'public',
+        },
+      ]);
 
-      const dto = { originalPostId: 'p1', sharedById: 'pr1' };
+      const dto = { originalPostId: 'p1', sharedById: 'pr1', userId: 'u1' };
       await expect(h.controller.createPostShare(dto as never)).resolves.toEqual(
         { id: 'ps1' }
       );
-      expect(h.postShareService.create).toHaveBeenCalledWith(dto);
+      expect(h.postShareService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ ...dto, visibility: 'public' })
+      );
 
-      await expect(h.controller.deletePostShare('ps1')).resolves.toEqual({
-        success: true,
-      });
-      expect(h.postShareService.remove).toHaveBeenCalledWith('ps1');
+      await expect(h.controller.deletePostShare('ps1', 'pr1')).resolves.toEqual(
+        {
+          success: true,
+        }
+      );
+      expect(h.postShareService.remove).toHaveBeenCalledWith('ps1', 'pr1');
 
-      await expect(h.controller.findPostSharesByPost('p1')).resolves.toEqual([
-        { id: 'ps1' },
+      await expect(
+        h.controller.findPostSharesByPost({
+          originalPostId: 'p1',
+          profileId: 'pr1',
+          userId: 'u1',
+        })
+      ).resolves.toEqual([
+        {
+          id: 'ps1',
+          originalPostId: 'p1',
+          sharedById: 'pr1',
+          visibility: 'public',
+        },
       ]);
       await expect(
-        h.controller.findPostSharesByProfile('pr1')
-      ).resolves.toEqual([{ id: 'ps1' }]);
+        h.controller.findPostSharesByProfile({
+          sharedById: 'pr1',
+          profileId: 'pr1',
+          userId: 'u1',
+        })
+      ).resolves.toEqual([
+        {
+          id: 'ps1',
+          originalPostId: 'p1',
+          sharedById: 'pr1',
+          visibility: 'public',
+        },
+      ]);
+    });
+
+    it('preserves a status-bearing owner refusal across the social handler', async () => {
+      const refusal = new RpcException({
+        statusCode: 403,
+        message: 'Only the share owner can delete it',
+      });
+      h.postShareService.remove.mockRejectedValue(refusal);
+
+      await expect(
+        h.controller.deletePostShare('share-1', 'other-profile')
+      ).rejects.toBe(refusal);
+      expect(h.postShareService.remove).toHaveBeenCalledWith(
+        'share-1',
+        'other-profile'
+      );
     });
   });
 

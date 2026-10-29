@@ -38,12 +38,27 @@ test('the registry exposes the CI microservice and UI suites by kind', () => {
 });
 
 test('target resolution returns bounded, purpose-specific service sets for pull and start', () => {
+  // TrainerController requires blogging alongside store and lead-tracker.
+  assert.ok(resolveE2eServices('business-site-e2e').includes('blogging'));
+  assert.ok(resolveE2eServices('business-site-e2e').includes('workspace'));
   assert.deepEqual(resolveE2eServices('authentication-e2e'), [
     'db',
     'db-setup',
+    'profile',
+    'permissions',
+    'social',
+    'forum',
     'authentication',
   ]);
-  assert.equal(resolveE2eTarget('authentication-e2e').readiness.url, null);
+  const authentication = resolveE2eTarget('authentication-e2e');
+  assert.equal(authentication.readiness.url, null);
+  assert.equal(authentication.imageBudget.maxPullServices, 7);
+  assert.deepEqual(
+    authentication.lifecycle.phases.find(
+      (phase) => phase.name === 'dependencies'
+    ).services,
+    ['profile', 'permissions', 'social', 'forum']
+  );
   assert.deepEqual(resolveE2eServices('client-interface-e2e'), [
     'db',
     'db-setup',
@@ -108,14 +123,14 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     resolveE2eServices(entry).join(',')
   );
   assert.equal(new Set(uiServiceSets).size, 10);
-  // local-hub is the largest closure at 20: Daylight adds civic-briefing,
+  // local-hub is the largest closure at 21: cross-app tests require OT and Daylight adds civic-briefing,
   // civic-contributions, ClamAV, the model stub and two fixture seeds to the
   // classifieds, payments, social and workspace services the older local-hub
   // suites drive.
   // client-interface follows at 15 (community creation provisions a
   // workspace, and the bug-report spec needs the bug-report service).
   assert.ok(
-    uiServiceSets.every((services) => services.split(',').length <= 20)
+    uiServiceSets.every((services) => services.split(',').length <= 21)
   );
   assert.deepEqual(resolveE2eTarget('local-hub-e2e').completedServices, [
     'db-setup',
@@ -126,6 +141,36 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
   assert.throws(() => resolveE2eTarget('missing-e2e'), /Unknown E2E target/);
 });
 
+test('dedicated Authentication E2E stack includes Profile, Permissions, Social, and Forum participants', () => {
+  const compose = readFileSync(
+    new URL(
+      '../../e2e/docker-compose.authentication-e2e.yaml',
+      import.meta.url
+    ),
+    'utf8'
+  );
+
+  assert.match(compose, /^  profile:\n/m);
+  assert.match(compose, /^  permissions:\n/m);
+  assert.match(compose, /^  social:\n/m);
+  assert.match(compose, /^  forum:\n/m);
+  assert.match(compose, /AUTH_AUTO_VERIFY_EMAILS: ['"]true['"]/);
+  assert.match(compose, /SERVICE_AUTHENTICATION_HOST: authentication/);
+  assert.match(compose, /SERVICE_AUTHENTICATION_PORT: 3001/);
+  assert.match(compose, /SERVICE_PERMISSIONS_HOST: permissions/);
+  assert.match(compose, /SERVICE_PROFILE_HOST: profile/);
+  assert.match(compose, /SERVICE_SOCIAL_HOST: social/);
+  assert.match(compose, /SERVICE_FORUM_HOST: forum/);
+  assert.match(
+    compose,
+    /ADDITIONAL_DBS: ot_authentication,ot_profile,ot_permissions,ot_social,ot_forum/
+  );
+  assert.match(
+    compose,
+    /^  profile:\n[\s\S]*?3002:3002[\s\S]*?DATABASE_NAME: ot_profile/m
+  );
+});
+
 test('client-interface closure includes every service reached by its chat and forum routes', () => {
   const client = resolveE2eTarget('client-interface-e2e');
   assert.ok(client.backendDependencies.includes('chat-collector'));
@@ -133,6 +178,11 @@ test('client-interface closure includes every service reached by its chat and fo
   assert.ok(client.backendDependencies.includes('telos-docs-service'));
   const forge = resolveE2eTarget('forgeofwill-e2e');
   assert.ok(forge.backendDependencies.includes('client-interface'));
+  assert.ok(
+    resolveE2eTarget('local-hub-e2e').backendDependencies.includes(
+      'client-interface'
+    )
+  );
   assert.ok(forge.backendDependencies.includes('oauth-provider'));
 
   const compose = readFileSync(

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from 'node:fs';
+import { parse as parseEnv } from 'dotenv';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
@@ -112,6 +113,19 @@ function readChangedFiles({
 
 const args = parseArgs(process.argv.slice(2));
 const workspaceRoot = path.resolve(args.workspaceRoot);
+if (args.composeFile.includes('dev') && args.selectedServices.length === 0) {
+  const envPath = path.join(workspaceRoot, '.env');
+  const local = fs.existsSync(envPath)
+    ? parseEnv(fs.readFileSync(envPath))
+    : {};
+  const selected = process.env.DOCKER_DEV_SERVICES || local.DOCKER_DEV_SERVICES;
+  if (selected)
+    args.selectedServices = selected
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+}
+
 const previousState = args.stateFile ? loadPlannerState(args.stateFile) : null;
 const changedFiles = readChangedFiles({
   changedFilesFile: args.changedFilesFile,

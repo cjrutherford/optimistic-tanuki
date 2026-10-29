@@ -1,0 +1,11 @@
+{
+  "sourceArtifactSha256": "51a6389430e0d370370d6dd6536722acfe7e9b18461a1864a45739fb5b121dca",
+  "runtimeSourceRevision": "c739a46c457ceafdf052db8752371787480c25aa",
+  "scope": ["client-interface", "local-hub"],
+  "receiptSourceBundleHashesVerified": true,
+  "freshGuardianAndDependentSessions": true,
+  "noticeProfilePostsCommentsAndMediaJourneys": "verified",
+  "withdrawalAndDependentSessionDenial": "verified",
+  "apiMode": "actual-gateway-responses-through-temporary-same-origin-proxy",
+  "privateIdentifiersIncluded": false
+}

@@ -1482,6 +1482,19 @@ export class ConfigurationsService {
     );
   }
 
+  /** PostgreSQL jsonb preserves values and array order, but normalizes object key order. */
+  private comparisonJson(value: unknown): string | undefined {
+    return JSON.stringify(value, (_key, current: unknown) =>
+      current !== null && typeof current === 'object' && !Array.isArray(current)
+        ? Object.fromEntries(
+            Object.entries(current).sort(([left], [right]) =>
+              left < right ? -1 : left > right ? 1 : 0
+            )
+          )
+        : current
+    );
+  }
+
   private configurationMatchesSeed(
     existing: AppConfigurationEntity,
     requested: AppConfigurationEntity
@@ -1505,12 +1518,12 @@ export class ConfigurationsService {
     ];
     return !fields.some(
       (field) =>
-        JSON.stringify(
+        this.comparisonJson(
           field === 'accessPolicy'
             ? existing[field] ?? 'public'
             : existing[field] ?? null
         ) !==
-        JSON.stringify(
+        this.comparisonJson(
           field === 'accessPolicy'
             ? requested[field] ?? 'public'
             : requested[field] ?? null
@@ -1560,7 +1573,7 @@ export class ConfigurationsService {
       return false;
     }
 
-    return JSON.stringify(left) === JSON.stringify(right);
+    return this.comparisonJson(left) === this.comparisonJson(right);
   }
 
   private assertManifest(manifest: unknown): void {

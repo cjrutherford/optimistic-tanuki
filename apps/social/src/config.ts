@@ -4,7 +4,7 @@ import * as path from 'path';
 import { TcpClientOptions, Transport } from '@nestjs/microservices';
 
 export type TcpServiceConfig = {
-  name: 'authentication' | 'profile' | 'social';
+  name: 'authentication' | 'profile' | 'social' | 'assets';
   transport: Transport;
   options: TcpClientOptions;
   host: string;
@@ -23,6 +23,7 @@ export type SocialConfigType = {
   services?: {
     authentication?: TcpServiceConfig;
     profile: TcpServiceConfig;
+    assets: TcpServiceConfig;
   };
 };
 
@@ -72,6 +73,15 @@ const loadConfig = () => {
     if (process.env.SERVICE_PROFILE_PORT) {
       configData.services.profile.port = parseInt(
         process.env.SERVICE_PROFILE_PORT,
+        10
+      );
+    }
+    if (process.env.SERVICE_ASSETS_HOST) {
+      configData.services.assets.host = process.env.SERVICE_ASSETS_HOST;
+    }
+    if (process.env.SERVICE_ASSETS_PORT) {
+      configData.services.assets.port = parseInt(
+        process.env.SERVICE_ASSETS_PORT,
         10
       );
     }

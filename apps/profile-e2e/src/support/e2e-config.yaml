@@ -9,3 +9,6 @@ services:
   permissions:
     host: ot_permissions
     port: 3012
+  authentication:
+    host: authentication
+    port: 3001

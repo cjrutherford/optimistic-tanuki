@@ -218,6 +218,8 @@ describe('Social Microservice E2E', () => {
               update: {
                 content: 'Updated comment content',
               },
+              userId: testUserId,
+              profileId: testProfileId,
             }
           ),
           { defaultValue: true }
@@ -418,6 +420,8 @@ describe('Social Microservice E2E', () => {
           { cmd: CommentCommands.DELETE },
           {
             id: createdCommentId,
+            userId: testUserId,
+            profileId: testProfileId,
           }
         ),
         { defaultValue: true }
@@ -461,6 +465,8 @@ describe('Social Microservice E2E', () => {
           { cmd: PostCommands.DELETE },
           {
             id: createdPostId,
+            userId: testUserId,
+            profileId: testProfileId,
           }
         ),
         { defaultValue: true }

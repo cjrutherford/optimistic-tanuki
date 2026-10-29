@@ -1,4 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { AssetCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import { firstValueFrom, timeout } from 'rxjs';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Comment } from '../../entities/comment.entity';
 import {
@@ -10,6 +13,7 @@ import {
 import { CreateCommentDto, UpdateCommentDto } from '@optimistic-tanuki/models';
 import { RpcException } from '@nestjs/microservices';
 import { Post } from '../../entities/post.entity';
+import { CommunityService } from './community.service';
 import DOMPurify from 'isomorphic-dompurify';
 import {
   PostVisibilityScope,
@@ -22,39 +26,126 @@ export class CommentService {
     @Inject(getRepositoryToken(Comment))
     private readonly commentRepo: Repository<Comment>,
     @Inject(getRepositoryToken(Post))
-    private readonly postRepo: Repository<Post>
+    private readonly postRepo: Repository<Post>,
+    @Optional()
+    @Inject(ServiceTokens.ASSETS_SERVICE)
+    private readonly assetService?: ClientProxy,
+    @Optional()
+    private readonly communityService?: CommunityService
   ) {}
 
   private sanitizeContent(content: string): string {
     return DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'code'],
-      ALLOWED_ATTR: ['href'],
+      ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'code', 'img'],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'title'],
       ALLOW_DATA_ATTR: false,
     });
   }
 
+  private async latchParentAudience(
+    content: string,
+    post: Post,
+    commenterProfileId: string
+  ): Promise<void> {
+    const ids = [
+      ...new Set(
+        content
+          .match(
+            /(?:\/api)?\/asset\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?=$|[^0-9a-f-])/gi
+          )
+          ?.map((match) => match.split('/').pop()!) ?? []
+      ),
+    ];
+    if (!ids.length) return;
+    if (!this.assetService) {
+      throw new RpcException('Comment image audience service unavailable');
+    }
+
+    const community =
+      post.communityId && this.communityService
+        ? await this.communityService.findOne(post.communityId)
+        : undefined;
+    const memberOnly =
+      post.visibility === 'community' ||
+      (post.visibility === 'public' && post.publicAudienceExplicit === false);
+    const privateCommunity = !!community?.isPrivate;
+    for (const id of ids) {
+      const asset = await firstValueFrom(
+        this.assetService
+          .send({ cmd: AssetCommands.RETRIEVE }, { id })
+          .pipe(timeout({ first: 5000 }))
+      );
+      const restrictions: Array<Record<string, string>> = [];
+      if (post.visibility === 'followers' && post.profileId) {
+        restrictions.push({ type: 'followers', profileId: post.profileId });
+      }
+      if (
+        (memberOnly || privateCommunity) &&
+        post.communityId &&
+        asset.profileId
+      ) {
+        restrictions.push({
+          type: 'community',
+          profileId: asset.profileId,
+          communityId: post.communityId,
+        });
+      }
+      if (restrictions.length) {
+        if (asset.profileId !== commenterProfileId) {
+          throw new RpcException({
+            statusCode: 403,
+            message:
+              'Comment images must belong to the commenting profile for restricted posts',
+          });
+        }
+        await firstValueFrom(
+          this.assetService
+            .send(
+              { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+              { id, restrictions }
+            )
+            .pipe(timeout({ first: 5000 }))
+        );
+      }
+    }
+  }
+
   async create(createCommentDto: CreateCommentDto): Promise<Comment> {
     console.log('Creating comment');
-    try {
-      console.log('finding post');
-      const post = await this.postRepo.findOne({
-        where: { id: createCommentDto.postId },
-      }); // njsscan-ignore: node_nosqli_injection
-      if (!post) {
-        console.log('post not found');
-        throw new RpcException('Post not found');
+    return this.postRepo.manager.transaction(async (manager) => {
+      const postRepo = manager.getRepository(Post);
+      const commentRepo = manager.getRepository(Comment);
+      try {
+        console.log('finding post');
+        const post = await postRepo.findOne({
+          where: { id: createCommentDto.postId },
+          lock: { mode: 'pessimistic_write' },
+        }); // njsscan-ignore: node_nosqli_injection
+        if (!post) {
+          console.log('post not found');
+          throw new RpcException('Post not found');
+        }
+        console.log('post found', post);
+        const sanitizedContent = this.sanitizeContent(
+          createCommentDto.content || ''
+        );
+        await this.latchParentAudience(
+          sanitizedContent,
+          post,
+          createCommentDto.profileId
+        );
+        const commentToCreate: Partial<Comment> = {
+          ...createCommentDto,
+          content: sanitizedContent,
+          post,
+        };
+        const comment = await commentRepo.create(commentToCreate);
+        return await commentRepo.save(comment);
+      } catch (error) {
+        if (error instanceof RpcException) throw error;
+        throw new RpcException(error.message);
       }
-      console.log('post found', post);
-      const commentToCreate: Partial<Comment> = {
-        ...createCommentDto,
-        content: this.sanitizeContent(createCommentDto.content || ''),
-        post,
-      };
-      const comment = await this.commentRepo.create(commentToCreate);
-      return await this.commentRepo.save(comment);
-    } catch (error) {
-      throw new RpcException(error.message);
-    }
+    });
   }
 
   async findAll(options?: FindManyOptions<Comment>): Promise<Comment[]> {
@@ -163,19 +254,119 @@ export class CommentService {
     return { ...relations, post: true };
   }
 
-  async update(id: string, updateCommentDto: UpdateCommentDto): Promise<void> {
-    const sanitizedDto = {
-      ...updateCommentDto,
-    };
-    if (updateCommentDto.content) {
-      sanitizedDto.content = this.sanitizeContent(updateCommentDto.content);
-    }
-    await this.commentRepo.update(id, sanitizedDto);
+  async update(
+    id: string,
+    updateCommentDto: UpdateCommentDto,
+    userId: string,
+    profileId: string
+  ): Promise<void> {
+    return this.postRepo.manager.transaction(async (manager) => {
+      const postRepo = manager.getRepository(Post);
+      const commentRepo = manager.getRepository(Comment);
+      const initial = await commentRepo.findOne({
+        where: { id },
+        relations: ['post'],
+      });
+      if (
+        !initial ||
+        initial.userId !== userId ||
+        initial.profileId !== profileId ||
+        !initial.post
+      ) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'You do not have permission to update this comment',
+        });
+      }
+      const parent = await postRepo.findOne({
+        where: { id: initial.post.id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!parent) throw new RpcException('Post not found');
+      const existing = await commentRepo.findOne({
+        where: { id },
+        relations: ['post'],
+      });
+      if (
+        !existing ||
+        existing.post?.id !== parent.id ||
+        existing.userId !== userId ||
+        existing.profileId !== profileId
+      ) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'You do not have permission to update this comment',
+        });
+      }
+      const sanitizedDto: Partial<Comment> = {};
+      if (typeof updateCommentDto.content === 'string') {
+        sanitizedDto.content = this.sanitizeContent(updateCommentDto.content);
+        await this.latchParentAudience(
+          existing.content,
+          parent,
+          existing.profileId
+        );
+        await this.latchParentAudience(
+          sanitizedDto.content,
+          parent,
+          existing.profileId
+        );
+      }
+      await commentRepo.update(id, sanitizedDto);
+    });
   }
 
-  async remove(id: string): Promise<{ success: boolean }> {
-    await this.commentRepo.delete(id);
-    return { success: true };
+  async remove(
+    id: string,
+    userId: string,
+    profileId: string
+  ): Promise<{ success: boolean }> {
+    return this.postRepo.manager.transaction(async (manager) => {
+      const postRepo = manager.getRepository(Post);
+      const commentRepo = manager.getRepository(Comment);
+      const initial = await commentRepo.findOne({
+        where: { id },
+        relations: ['post'],
+      });
+      if (
+        !initial ||
+        initial.userId !== userId ||
+        initial.profileId !== profileId ||
+        !initial.post
+      ) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'You do not have permission to delete this comment',
+        });
+      }
+      const parent = await postRepo.findOne({
+        where: { id: initial.post.id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!parent) throw new RpcException('Post not found');
+      const existing = await commentRepo.findOne({
+        where: { id },
+        relations: ['post'],
+      });
+      if (
+        !existing ||
+        existing.post?.id !== parent.id ||
+        existing.userId !== userId ||
+        existing.profileId !== profileId
+      ) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'You do not have permission to delete this comment',
+        });
+      }
+      await this.latchParentAudience(
+        existing.content,
+        parent,
+        existing.profileId
+      );
+      await commentRepo.delete(id);
+      return { success: true };
+    });
   }
 
   async moderate(

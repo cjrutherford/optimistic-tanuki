@@ -19,7 +19,13 @@ const loadConfig = () => {
   const configPath = path.resolve(__dirname, '../assets/config.yaml');
   const configFile = fs.readFileSync(configPath, 'utf8');
   const configData = yaml.load(configFile) as ClassifiedsConfigType;
-  return configData;
+  return {
+    ...configData,
+    database: {
+      ...configData.database,
+      database: process.env['POSTGRES_DB'] || configData.database.database,
+    },
+  };
 };
 
 export default loadConfig;

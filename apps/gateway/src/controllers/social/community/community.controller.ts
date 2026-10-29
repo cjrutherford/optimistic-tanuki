@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpException,
   Body,
   Controller,
   Delete,
@@ -10,12 +11,12 @@ import {
   Post,
   Put,
   Query,
+  Optional,
   Req,
   UseGuards,
   Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { Optional } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
   ApiTags,
@@ -61,6 +62,8 @@ import { WorkspaceContext } from '../../../decorators/workspace-context.decorato
 import { WorkspaceContextGuard } from '../../../guards/workspace-context.guard';
 import { CommunityWorkspaceProvisioner } from '../../../app/community-provisioning/community-workspace-provisioner.service';
 import { CommunityInviteMailer } from './community-invite.mailer';
+import { ChatGateway } from '../../../app/chat-gateway/chat.gateway';
+import { SocialGateway } from '../../../app/social-gateway/social.gateway';
 
 @ApiBearerAuth()
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -84,8 +87,18 @@ export class CommunityController {
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
     private readonly communityProvisioner: CommunityWorkspaceProvisioner,
-    private readonly inviteMailer: CommunityInviteMailer
+    private readonly inviteMailer: CommunityInviteMailer,
+    @Optional() private readonly socialGateway?: SocialGateway
   ) {}
+
+  @Optional() @Inject(ChatGateway) private readonly chatGateway?: ChatGateway;
+
+  private invalidateSocialContent(): void {
+    void this.chatGateway?.invalidateConversations();
+    void Promise.resolve(
+      this.socialGateway?.broadcastSocialContentInvalidated()
+    ).catch(() => this.logger.warn('Live social invalidation unavailable'));
+  }
 
   @Post()
   @RequirePermissions('community.create')
@@ -167,6 +180,7 @@ export class CommunityController {
       this.logger.error(`Failed to create chat room: ${err?.message || err}`);
     }
 
+    this.invalidateSocialContent();
     return community;
   }
 
@@ -190,12 +204,17 @@ export class CommunityController {
   })
   async getTopActiveCommunities(
     @Query('limit') limit?: number,
-    @Query('appScope') appScope?: string
+    @Query('appScope') appScope?: string,
+    @User() user?: UserDetails
   ): Promise<CommunityDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: CommunityCommands.GET_TOP_ACTIVE },
-        { limit: limit || 10, appScope: appScope || 'social' }
+        {
+          limit: limit || 10,
+          appScope: appScope || 'social',
+          ...(user?.profileId ? { requestingProfileId: user.profileId } : {}),
+        }
       )
     );
   }
@@ -209,10 +228,17 @@ export class CommunityController {
     type: CommunityDto,
   })
   async getCommunityBySlug(
-    @Param('slug') slug: string
+    @Param('slug') slug: string,
+    @User() user?: UserDetails
   ): Promise<CommunityDto | null> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: CommunityCommands.FIND_BY_SLUG }, { slug })
+      this.socialClient.send(
+        { cmd: CommunityCommands.FIND_BY_SLUG },
+        {
+          slug,
+          ...(user?.profileId ? { requestingProfileId: user.profileId } : {}),
+        }
+      )
     );
   }
 
@@ -223,9 +249,18 @@ export class CommunityController {
     description: 'The community has been successfully retrieved.',
     type: CommunityDto,
   })
-  async getCommunity(@Param('id') id: string): Promise<CommunityDto> {
+  async getCommunity(
+    @Param('id') id: string,
+    @User() user?: UserDetails
+  ): Promise<CommunityDto> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: CommunityCommands.FIND }, { id })
+      this.socialClient.send(
+        { cmd: CommunityCommands.FIND },
+        {
+          id,
+          ...(user?.profileId ? { requestingProfileId: user.profileId } : {}),
+        }
+      )
     );
   }
 
@@ -238,12 +273,17 @@ export class CommunityController {
   })
   async searchCommunities(
     @Body() criteria: SearchCommunityDto,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
   ): Promise<CommunityDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: CommunityCommands.FIND_MANY },
-        { criteria, appScope }
+        {
+          criteria,
+          appScope,
+          ...(user?.profileId ? { requestingProfileId: user.profileId } : {}),
+        }
       )
     );
   }
@@ -258,12 +298,17 @@ export class CommunityController {
   @ApiQuery({ name: 'name', required: false })
   async listCommunities(
     @Query('name') name?: string,
-    @AppScope() appScope?: string
+    @AppScope() appScope?: string,
+    @User() user?: UserDetails
   ): Promise<CommunityDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: CommunityCommands.FIND_MANY },
-        { criteria: { name }, appScope }
+        {
+          criteria: { name },
+          appScope,
+          ...(user?.profileId ? { requestingProfileId: user.profileId } : {}),
+        }
       )
     );
   }
@@ -289,12 +334,14 @@ export class CommunityController {
     @User() user: UserDetails,
     @Body() dto: UpdateCommunityDto
   ): Promise<CommunityDto> {
-    return await firstValueFrom(
+    const updated = await firstValueFrom(
       this.socialClient.send(
         { cmd: CommunityCommands.UPDATE },
         { id, dto, userId: user.userId }
       )
     );
+    this.invalidateSocialContent();
+    return updated;
   }
 
   @Delete(':id')
@@ -322,6 +369,7 @@ export class CommunityController {
         { id, userId: user.userId }
       )
     );
+    this.invalidateSocialContent();
   }
 
   @Post(':id/join')
@@ -348,6 +396,7 @@ export class CommunityController {
     );
 
     if (member?.status === CommunityMembershipStatus.APPROVED) {
+      this.invalidateSocialContent();
       await this.assignCommunityPostingRole(user.profileId, id, appScope);
     }
 
@@ -372,6 +421,7 @@ export class CommunityController {
       )
     );
 
+    this.invalidateSocialContent();
     await this.unassignCommunityPostingRole(user.profileId, id, appScope);
   }
 
@@ -382,13 +432,21 @@ export class CommunityController {
     description: 'The members have been successfully retrieved.',
     type: [CommunityMemberDto],
   })
-  async getMembers(@Param('id') id: string): Promise<CommunityMemberDto[]> {
+  async getMembers(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ): Promise<CommunityMemberDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
-        { cmd: CommunityCommands.GET_MEMBERS },
-        { communityId: id }
+        { cmd: CommunityCommands.GET_VISIBLE_MEMBERS },
+        { communityId: id, requestingProfileId: user?.profileId }
       )
-    );
+    ).catch((error) => {
+      throw new HttpException(
+        { message: error?.message },
+        error?.statusCode ?? 503
+      );
+    });
   }
 
   @Get('user/communities')
@@ -420,7 +478,8 @@ export class CommunityController {
   })
   async getCommunitiesByProfileId(
     @Param('profileId') profileId: string,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
   ): Promise<CommunityDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
@@ -529,6 +588,8 @@ export class CommunityController {
 
     // Courtesy only: the committed invitation works with or without the mail.
     await this.inviteMailer.send({
+      actorAccountId: user.userId,
+      recipientAccountId: inviteeUserId,
       email,
       token: created.token,
       communityName: community?.name,
@@ -578,7 +639,12 @@ export class CommunityController {
         { cmd: CommunityCommands.ACCEPT_INVITE_BY_TOKEN },
         { token: dto.token, userId: user.userId, profileId: user.profileId }
       )
-    );
+    ).catch((error) => {
+      throw new HttpException(
+        { message: error?.message ?? 'Invitation unavailable' },
+        error?.statusCode ?? 503
+      );
+    });
     return community;
   }
 
@@ -652,6 +718,7 @@ export class CommunityController {
     );
 
     if (member?.status === CommunityMembershipStatus.APPROVED) {
+      this.invalidateSocialContent();
       await this.assignCommunityPostingRole(
         member.profileId,
         member.communityId,
@@ -688,6 +755,7 @@ export class CommunityController {
         { memberId, rejecterId: user.userId }
       )
     );
+    this.invalidateSocialContent();
   }
 
   @Delete('members/:memberId')
@@ -718,6 +786,7 @@ export class CommunityController {
         { memberId, removerId: user.userId }
       )
     );
+    this.invalidateSocialContent();
 
     if (body.profileId && body.communityId) {
       await this.unassignCommunityPostingRole(
@@ -772,7 +841,7 @@ export class CommunityController {
     @User() user: UserDetails,
     @Req() request: any
   ) {
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: 'SUSPEND_COMMUNITY_MEMBER' },
         {
@@ -782,6 +851,8 @@ export class CommunityController {
         }
       )
     );
+    this.invalidateSocialContent();
+    return result;
   }
 
   @Post('members/:memberId/reactivate')
@@ -800,7 +871,7 @@ export class CommunityController {
     @User() user: UserDetails,
     @Req() request: any
   ) {
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: 'REACTIVATE_COMMUNITY_MEMBER' },
         {
@@ -810,6 +881,8 @@ export class CommunityController {
         }
       )
     );
+    this.invalidateSocialContent();
+    return result;
   }
 
   @Delete('invites/:inviteId')
@@ -1034,19 +1107,23 @@ export class CommunityController {
     description: 'The community chat room',
   })
   async getChatRoom(
-    @Param('id') communityId: string
+    @Param('id') communityId: string,
+    @User() user: UserDetails
   ): Promise<{ id: string } | null> {
     try {
       const result = await firstValueFrom(
         this.socialClient.send(
           { cmd: 'GET_COMMUNITY_CHAT_ROOM' },
-          { communityId }
+          { communityId, requestingProfileId: user.profileId }
         )
       );
       return result;
     } catch (err) {
       this.logger.error(`Failed to get chat room: ${err}`);
-      return null;
+      throw new HttpException(
+        { message: err?.message ?? 'Chat room unavailable' },
+        err?.statusCode ?? 503
+      );
     }
   }
 

@@ -1,0 +1,62 @@
+{
+  "slice": "DF-007-J10",
+  "sources": {
+    "channel": {
+      "ownership": "userId matches account OR profileId captured; require both to agree",
+      "included": "id, name, description, profileId, communityId/slug, policy, app scope, counts, public flag, timezone, banner/avatar references, timestamps",
+      "excluded": ["userId (account known from manifest)"]
+    },
+    "video": {
+      "ownership": "joined owned channel, optional community must agree; pending/processing fails capture",
+      "included": "id, full supported title/description, typed legacy/source/playback/HLS/thumbnail Asset references, channel/community, duration/resolution/encoding, processingStatus, counts, visibility, timestamps",
+      "excluded": ["processingError (can contain paths/credentials)"]
+    },
+    "channelSubscription": {
+      "ownership": "actor userId OR captured profileId; both must agree",
+      "included": "id, opaque target channelId, subscribedAt",
+      "excluded": [
+        "actor user/profile IDs (known account)",
+        "counterpart subscriber rows"
+      ]
+    },
+    "videoView": {
+      "ownership": "actor userId OR captured profileId; every present identity must agree, including personal views of foreign videos",
+      "included": "id, opaque target videoId, watchDurationSeconds, viewedAt",
+      "excluded": [
+        "ipAddress",
+        "actor identity IDs",
+        "anonymous/counterpart viewer rows"
+      ]
+    },
+    "channelFeed": {
+      "ownership": "joined owned channel; community must agree",
+      "included": "id, channel/community, timezone, currentMode, active program/live/video opaque references and timestamps"
+    },
+    "programBlock": {
+      "ownership": "joined owned channel; community must agree",
+      "included": "id, channel/community/video references, blockType, supported full title/description, status, scheduling/actual timestamps"
+    },
+    "liveSession": {
+      "ownership": "joined owned channel OR account-created; partial creator identity match fails; attached community must agree",
+      "included": "id, community/channel, supported title/description, status, start/end/created/update timestamps, thumbnail Asset reference; creator IDs only for own-created records",
+      "excluded": ["liveSourceUrl", "foreign host creator IDs"]
+    }
+  },
+  "limits": {
+    "keysetPageRows": 200,
+    "sqlProbeRows": 201,
+    "titleNameCharacters": 200,
+    "descriptionCharacters": 65536,
+    "identityVarcharCharacters": 36,
+    "communityCharacters": 256,
+    "captureDeadlineMs": 45000,
+    "statementTimeoutMs": 10000,
+    "lockTimeoutMs": 2000
+  },
+  "notEstablished": [
+    "Authenticated media ownership/existence/version consistency for referenced Asset IDs",
+    "HLS manifest/segment portability",
+    "Frozen processing lifecycle/deletion safety",
+    "Snapshot RPC, Authentication job registration or final artifact"
+  ]
+}

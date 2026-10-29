@@ -3,11 +3,14 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  Unique,
+  Index,
 } from 'typeorm';
 
 @Entity()
-@Unique(['muterId', 'mutedId'])
+@Index(['muterId', 'mutedId'], {
+  unique: true,
+  where: '"mutedId" <> \'00000000-0000-0000-0000-000000000000\'',
+})
 export class UserMute {
   @PrimaryGeneratedColumn('uuid')
   id: string;

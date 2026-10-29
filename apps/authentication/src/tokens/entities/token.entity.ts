@@ -22,6 +22,10 @@ export class TokenEntity {
   @JoinColumn({ name: 'userId' })
   user: UserEntity | null;
 
+  /** Null legacy rows use their verified JWT issuance time until actual activity. */
+  @Column({ type: 'timestamptz', nullable: true })
+  lastActivityAt: Date | null;
+
   @Column({ type: 'boolean', default: false })
   revoked = false;
 

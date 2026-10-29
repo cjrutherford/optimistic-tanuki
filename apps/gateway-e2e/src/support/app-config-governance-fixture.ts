@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { Pool, type PoolConfig } from 'pg';
 
 const APP_SCOPE = 'business-site';
+const APP_ORIGIN = 'http://127.0.0.1:8094';
 const FIXTURE_PREFIX = 'p33-gateway-app-config';
 const WORKSPACE_SCOPE_PREFIX = 'workspace:';
 
@@ -93,6 +94,8 @@ function createApi(baseURL: string, token?: string): AxiosInstance {
     headers: {
       'x-ot-appscope': APP_SCOPE,
       'x-ot-app-id': APP_SCOPE,
+      Origin: APP_ORIGIN,
+      Host: new URL(APP_ORIGIN).host,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     validateStatus: () => true,
@@ -113,6 +116,7 @@ async function registerIdentity(
     password,
     confirm: password,
     bio: 'P3.3 app-config governance fixture',
+    dateOfBirth: '1990-01-01',
   });
   if (registration.status !== 201 || !registration.data?.data?.user?.id) {
     throw new Error(

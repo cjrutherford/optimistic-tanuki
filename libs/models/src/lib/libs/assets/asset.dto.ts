@@ -6,8 +6,73 @@ import {
   MaxLength,
   MinLength,
   IsNotEmpty,
+  IsIn,
+  IsArray,
+  ValidateNested,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+
+export class AssetAudienceRestrictionDto {
+  @ApiProperty({ enum: ['owner', 'followers', 'community'] })
+  @IsIn(['owner', 'followers', 'community'])
+  type!: 'owner' | 'followers' | 'community';
+
+  @ApiProperty({ description: 'Profile whose audience governs this asset' })
+  @IsString()
+  @IsUUID()
+  profileId!: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Community that can access this asset',
+  })
+  @ValidateIf((restriction) => restriction.type === 'community')
+  @IsUUID()
+  communityId?: string;
+}
+
+export type AssetAudienceRestriction =
+  | { type: 'owner' | 'followers'; profileId: string }
+  | { type: 'community'; profileId: string; communityId: string }
+  /** Reserved for Assets GUARDIAN_CREATE. Generic callers must reject it. */
+  | { type: 'guardian-staged'; profileId: string; appId: string };
+
+export type AssetOriginKind = 'ordinary' | 'guardian-staged';
+
+export type GuardianMediaResourceType = 'post' | 'comment';
+
+export interface GuardianPublishedAssetGrantContext {
+  assetId: string;
+  dependentProfileId: string;
+  appId: string;
+  viewerProfileId: string | null;
+  resourceType?: GuardianMediaResourceType;
+  resourceId?: string;
+}
+
+export interface InternalGuardianMediaAssertion {
+  version: 1;
+  assetId: string;
+  viewerUserId: string | null;
+  viewerProfileId: string | null;
+  appId: string;
+  dependentProfileId: string;
+  resourceType: GuardianMediaResourceType | null;
+  resourceId: string | null;
+  /** Canonical public gateway path and the internal Assets route, both request-bound. */
+  path: string;
+  internalPath: string;
+  range: string | null;
+  accessMode: 'published' | 'guardian-library' | 'dependent-owner';
+  issuedAt: number;
+}
+
+export interface AssetContentAudienceReference {
+  restrictions: AssetAudienceRestriction[];
+  communityIds: string[];
+}
 
 export enum AssetType {
   IMAGE = 'image',
@@ -71,6 +136,30 @@ export class CreateAssetDto {
   @IsString()
   @MaxLength(10)
   fileExtension?: string;
+
+  /**
+   * Optional owning community for content that is private while an upload or
+   * edit is in progress. The gateway validates this against the session and
+   * current community before it reaches the asset service.
+   */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsUUID()
+  communityId?: string;
+
+  /** Existing listing context for a profile-owned edit after community leave. */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsUUID()
+  classifiedAdId?: string;
+
+  /** Optional, server-validated private audience for an in-progress upload. */
+  @ApiProperty({ type: [AssetAudienceRestrictionDto], required: false })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AssetAudienceRestrictionDto)
+  audienceRestrictions?: AssetAudienceRestriction[];
 }
 
 export class AssetDto {

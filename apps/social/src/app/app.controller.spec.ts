@@ -22,6 +22,7 @@ import { PostShareService } from './services/post-share.service';
 import { EventService } from './services/event.service';
 import { LinkService } from './services/link.service';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { of, throwError } from 'rxjs';
 
 describe('AppController', () => {
   let controller: AppController;
@@ -60,7 +61,9 @@ describe('AppController', () => {
     attachmentService = {
       create: jest.fn(),
       findAll: jest.fn(),
+      findAllForApp: jest.fn(),
       findOne: jest.fn(),
+      findOneForApp: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
     } as any;
@@ -133,6 +136,7 @@ describe('AppController', () => {
             getMembers: jest.fn(),
             isMember: jest.fn(),
             getUserCommunities: jest.fn(),
+            getPostAccessibleCommunityIds: jest.fn().mockResolvedValue([]),
             getCommunitiesByProfileId: jest.fn(),
             invite: jest.fn(),
             cancelInvite: jest.fn(),
@@ -189,6 +193,7 @@ describe('AppController', () => {
             muteUser: jest.fn(),
             unmuteUser: jest.fn(),
             getMutedUsers: jest.fn(),
+            getActiveMutedUsers: jest.fn(),
             reportContent: jest.fn(),
             getMyReports: jest.fn(),
           },
@@ -281,7 +286,11 @@ describe('AppController', () => {
         },
         {
           provide: ServiceTokens.PROFILE_SERVICE,
-          useValue: { send: jest.fn() },
+          useValue: {
+            send: jest.fn((_pattern, payload) =>
+              of({ id: payload.id, userId: 'account-1' })
+            ),
+          },
         },
         {
           provide: BusinessContentService,
@@ -324,11 +333,79 @@ describe('AppController', () => {
     expect(postService.findAll).toHaveBeenCalled();
   });
 
+  it('limits anonymous post lists to public, visible, published posts', async () => {
+    postService.findAll.mockResolvedValue([]);
+    await controller.findAllPosts({} as any);
+    expect(postService.findAll).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: [
+          expect.objectContaining({
+            visibility: 'public',
+            communityId: expect.anything(),
+            moderationStatus: 'visible',
+            isScheduled: false,
+          }),
+          expect.objectContaining({
+            visibility: 'public',
+            publicAudienceExplicit: true,
+            communityId: expect.anything(),
+            moderationStatus: 'visible',
+            isScheduled: false,
+          }),
+        ],
+      })
+    );
+  });
+
+  it('applies the anonymous audience policy to shared direct reads', async () => {
+    await controller.findOnePost('restricted-post');
+    expect(postService.findOne).toHaveBeenCalledWith('restricted-post', {
+      where: [
+        expect.objectContaining({
+          visibility: 'public',
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
+        expect.objectContaining({
+          visibility: 'public',
+          publicAudienceExplicit: true,
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
+      ],
+    });
+  });
+
   it('should find one post', async () => {
     postService.findOne.mockResolvedValue({ id: 1 });
     const result = await controller.findOnePost('1');
     expect(result).toEqual({ id: 1 });
-    expect(postService.findOne).toHaveBeenCalledWith('1', {});
+    expect(postService.findOne).toHaveBeenCalledWith('1', {
+      where: [
+        expect.objectContaining({
+          visibility: 'public',
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
+        expect.objectContaining({
+          visibility: 'public',
+          publicAudienceExplicit: true,
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
+      ],
+    });
+  });
+
+  it('does not query for a post when the FIND id is missing', async () => {
+    await expect(
+      controller.findOnePost(undefined as any)
+    ).resolves.toBeUndefined();
+    expect(postService.findOne).not.toHaveBeenCalled();
   });
 
   it('should update a post', async () => {
@@ -351,9 +428,9 @@ describe('AppController', () => {
 
   it('should remove a post', async () => {
     postService.remove.mockResolvedValue(undefined);
-    const result = await controller.removePost('1', 'user-1');
+    const result = await controller.removePost('1', 'user-1', 'profile-1');
     expect(result).toBeUndefined();
-    expect(postService.remove).toHaveBeenCalledWith('1', 'user-1');
+    expect(postService.remove).toHaveBeenCalledWith('1', 'user-1', 'profile-1');
   });
 
   it('should upvote a post', async () => {
@@ -411,6 +488,15 @@ describe('AppController', () => {
     expect(result).toEqual(['vote']);
     expect(voteService.findAll).toHaveBeenCalledWith({
       where: { post: { id: '1' } },
+      relations: ['post'],
+    });
+  });
+
+  it('finds a vote by id with its post or comment parent loaded', async () => {
+    voteService.findOne.mockResolvedValue({ id: 'vote-1' } as any);
+    await controller.getVote(undefined, 'vote-1');
+    expect(voteService.findOne).toHaveBeenCalledWith('vote-1', {
+      relations: ['post', 'comment', 'comment.post'],
     });
   });
 
@@ -473,7 +559,7 @@ describe('AppController', () => {
     const privacyService = (controller as any).privacyService;
     privacyService.getBlockedUsers.mockResolvedValue([]);
 
-    const result = await controller.findOneComment('c1', {} as any, 'viewer-1');
+    const result = await controller.findOneComment('c1', undefined, 'viewer-1');
 
     expect(result).toBeUndefined();
     expect(commentService.findOneVisible).toHaveBeenCalledWith(
@@ -484,54 +570,106 @@ describe('AppController', () => {
   });
 
   it('should update a comment', async () => {
-    commentService.update.mockResolvedValue('updated');
-    const result = await controller.updateComment('1', {} as any);
-    expect(result).toBe('updated');
-    expect(commentService.update).toHaveBeenCalledWith('1', {});
+    commentService.update.mockResolvedValue(undefined);
+    const result = await controller.updateComment(
+      '1',
+      {} as any,
+      'user-1',
+      'profile-1'
+    );
+    expect(result).toEqual({ success: true });
+    expect(commentService.update).toHaveBeenCalledWith(
+      '1',
+      {},
+      'user-1',
+      'profile-1'
+    );
   });
 
   it('should remove a comment', async () => {
     commentService.remove.mockResolvedValue('removed');
-    const result = await controller.removeComment('1');
+    const result = await controller.removeComment('1', 'user-1', 'profile-1');
     expect(result).toBe('removed');
-    expect(commentService.remove).toHaveBeenCalledWith('1');
+    expect(commentService.remove).toHaveBeenCalledWith(
+      '1',
+      'user-1',
+      'profile-1'
+    );
   });
 
   it('should create an attachment', async () => {
-    postService.findOne.mockResolvedValue('post');
+    const actor = { userId: 'u1', profileId: 'p1', appId: 'client-interface' };
     attachmentService.create.mockResolvedValue('attachment');
-    const result = await controller.createAttachment({} as any, '1');
+    const result = await controller.createAttachment({} as any, '1', actor);
     expect(result).toBe('attachment');
-    expect(postService.findOne).toHaveBeenCalledWith('1');
-    expect(attachmentService.create).toHaveBeenCalledWith({} as any, 'post');
+    expect(attachmentService.create).toHaveBeenCalledWith(
+      {} as any,
+      '1',
+      actor
+    );
   });
 
-  it('should find all attachments', async () => {
-    attachmentService.findAll.mockResolvedValue(['attachment']);
-    const result = await controller.findAllAttachments({} as any);
+  it('should find all attachments only in the requested app scope', async () => {
+    attachmentService.findAllForApp.mockResolvedValue(['attachment']);
+    const result = await controller.findAllAttachments({
+      appId: 'client-interface',
+    });
     expect(result).toEqual(['attachment']);
-    expect(attachmentService.findAll).toHaveBeenCalled();
+    expect(attachmentService.findAllForApp).toHaveBeenCalledWith(
+      {
+        where: {},
+        relations: ['post'],
+      },
+      'client-interface'
+    );
+  });
+
+  it('rejects attachment list reads without verified app scope', async () => {
+    await expect(controller.findAllAttachments({})).rejects.toThrow();
+    expect(attachmentService.findAll).not.toHaveBeenCalled();
+    expect(attachmentService.findAllForApp).not.toHaveBeenCalled();
   });
 
   it('should find an attachment', async () => {
-    attachmentService.findOne.mockResolvedValue('attachment');
-    const result = await controller.findAttachment('1', {} as any);
+    attachmentService.findOneForApp.mockResolvedValue('attachment');
+    const result = await controller.findAttachment(
+      '1',
+      undefined,
+      'client-interface'
+    );
     expect(result).toBe('attachment');
-    expect(attachmentService.findOne).toHaveBeenCalled();
+    expect(attachmentService.findOneForApp).toHaveBeenCalledWith(
+      '1',
+      'client-interface',
+      {
+        where: {},
+        relations: ['post'],
+      }
+    );
+  });
+
+  it('rejects attachment reads without verified app scope', async () => {
+    await expect(
+      controller.findAttachment('1', undefined, undefined)
+    ).rejects.toThrow();
+    expect(attachmentService.findOne).not.toHaveBeenCalled();
+    expect(attachmentService.findOneForApp).not.toHaveBeenCalled();
   });
 
   it('should update an attachment', async () => {
     attachmentService.update.mockResolvedValue('updated');
-    const result = await controller.updateAttachment('1', {} as any);
+    const actor = { userId: 'u1', profileId: 'p1', appId: 'client-interface' };
+    const result = await controller.updateAttachment('1', {} as any, actor);
     expect(result).toBe('updated');
-    expect(attachmentService.update).toHaveBeenCalledWith('1', {});
+    expect(attachmentService.update).toHaveBeenCalledWith('1', {}, actor);
   });
 
   it('should delete an attachment', async () => {
-    attachmentService.remove.mockResolvedValue('deleted');
-    const result = await controller.deleteAttachment('1');
-    expect(result).toBe('deleted');
-    expect(attachmentService.remove).toHaveBeenCalledWith('1');
+    attachmentService.remove.mockResolvedValue(undefined);
+    const actor = { userId: 'u1', profileId: 'p1', appId: 'client-interface' };
+    const result = await controller.deleteAttachment('1', actor);
+    expect(result).toEqual({ id: '1', deleted: true });
+    expect(attachmentService.remove).toHaveBeenCalledWith('1', actor);
   });
 
   it('should throw for unimplemented link methods', async () => {
@@ -556,7 +694,24 @@ describe('AppController', () => {
     );
 
     expect(postService.findAll).toHaveBeenCalledWith({
-      where: { title: Like('%Test%') },
+      relations: { links: true },
+      where: [
+        expect.objectContaining({
+          title: Like('%Test%'),
+          visibility: 'public',
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
+        expect.objectContaining({
+          title: Like('%Test%'),
+          visibility: 'public',
+          publicAudienceExplicit: true,
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
+      ],
       take: 2,
       // skip: 0,
     });
@@ -566,7 +721,6 @@ describe('AppController', () => {
         title: 'Post 1',
         attachments: [],
         comments: [],
-        links: [],
         votes: [],
       },
       {
@@ -574,7 +728,6 @@ describe('AppController', () => {
         title: 'Post 2',
         attachments: [],
         comments: [],
-        links: [],
         votes: [],
       },
     ]);
@@ -587,7 +740,24 @@ describe('AppController', () => {
     );
 
     expect(postService.findAll).toHaveBeenCalledWith({
-      where: { title: Like('%Test%') },
+      relations: { links: true },
+      where: [
+        expect.objectContaining({
+          title: Like('%Test%'),
+          visibility: 'public',
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
+        expect.objectContaining({
+          title: Like('%Test%'),
+          visibility: 'public',
+          publicAudienceExplicit: true,
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
+      ],
       take: 100, // Should be capped at MAX_LIMIT
     });
   });
@@ -599,7 +769,24 @@ describe('AppController', () => {
     );
 
     expect(postService.findAll).toHaveBeenCalledWith({
-      where: { title: Like('%Test%') },
+      relations: { links: true },
+      where: [
+        expect.objectContaining({
+          title: Like('%Test%'),
+          visibility: 'public',
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
+        expect.objectContaining({
+          title: Like('%Test%'),
+          visibility: 'public',
+          publicAudienceExplicit: true,
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
+      ],
       take: 20, // Should default to 20
     });
   });
@@ -608,7 +795,24 @@ describe('AppController', () => {
     const result = await controller.findAllPosts({ title: 'Test' }, undefined);
 
     expect(postService.findAll).toHaveBeenCalledWith({
-      where: { title: Like('%Test%') },
+      relations: { links: true },
+      where: [
+        expect.objectContaining({
+          title: Like('%Test%'),
+          visibility: 'public',
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
+        expect.objectContaining({
+          title: Like('%Test%'),
+          visibility: 'public',
+          publicAudienceExplicit: true,
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
+      ],
       take: 20, // Should default to 20
     });
   });
@@ -639,23 +843,34 @@ describe('AppController', () => {
     expect(publicBranch.profileId?.value).toEqual(['blocked-1']);
   });
 
+  it('fails closed to private-community access when profile ownership lookup fails', async () => {
+    const profileClient = (controller as any).profileClient;
+    profileClient.send.mockReturnValue(throwError(() => new Error('offline')));
+    await controller.findAllPosts({} as any, {} as any, 'claimed-profile');
+    const branches = postService.findAll.mock.calls.at(-1)![0].where as any[];
+    const communityScope = branches[0].communityId;
+    expect(communityScope.type).toBe('and');
+    expect(communityScope.value[1].objectLiteralParameters).toEqual({
+      pv_account_id: '__anonymous__',
+    });
+  });
+
   it('filters posts authored by blocked profiles from community feed results', async () => {
     const queryBuilder = {
       where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       skip: jest.fn().mockReturnThis(),
       take: jest.fn().mockReturnThis(),
-      getMany: jest
-        .fn()
-        .mockResolvedValue([
-          { id: 'post-1', title: 'Post 1', profileId: 'blocked-1' },
-        ]),
+      getMany: jest.fn().mockResolvedValue([]),
     };
 
     (postService as any).postRepo = {
       createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
     };
-    followService.getFollowing.mockResolvedValue([] as any);
+    followService.getFollowing.mockResolvedValue([
+      { followeeId: 'followed-1' },
+    ] as any);
     const communityService = (controller as any).communityService;
     communityService.getUserCommunities.mockResolvedValue([]);
     voteService.findAll.mockResolvedValue([]);
@@ -666,16 +881,184 @@ describe('AppController', () => {
     privacyService.getBlockedUsers.mockResolvedValue([
       { blockedId: 'blocked-1' },
     ]);
+    privacyService.getActiveMutedUsers.mockResolvedValue([
+      { mutedId: 'muted-1', duration: null, createdAt: new Date() },
+    ]);
 
     const result = await controller.getCommunityFeed({
       userId: 'user-1',
       profileId: 'viewer-1',
       appScope: 'client-interface',
       includePublic: true,
+      includeFollowing: true,
     });
 
     expect(privacyService.getBlockedUsers).toHaveBeenCalledWith('viewer-1');
+    expect(privacyService.getActiveMutedUsers).toHaveBeenCalledWith('viewer-1');
+    expect(followService.getFollowing).toHaveBeenCalledWith('viewer-1');
+    expect(queryBuilder.where.mock.calls[0][0]).toMatch(/^\(.* OR .*\)$/);
+    expect(queryBuilder.where.mock.calls[0][0]).toContain(
+      'post.profileId IN (:...followingIds)'
+    );
+    expect(queryBuilder.where.mock.calls[0][0]).not.toContain(
+      'post.userId IN (:...followingIds)'
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'post.profileId NOT IN (:...suppressedProfileIds)',
+      { suppressedProfileIds: ['blocked-1', 'muted-1'] }
+    );
     expect(result).toEqual([]);
+  });
+
+  it('rejects sharing a followers-only source with a public audience', async () => {
+    jest
+      .spyOn(controller as any, 'buildPostVisibilityScope')
+      .mockResolvedValue({
+        viewerProfileId: 'sharer-profile',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      });
+    postService.findOne.mockResolvedValue({
+      id: 'source',
+      profileId: 'author',
+      visibility: 'followers',
+      communityId: null,
+    } as any);
+    const failure = await controller
+      .createPostShare({
+        originalPostId: 'source',
+        sharedById: 'sharer-profile',
+        userId: 'account',
+        visibility: 'public',
+      } as any)
+      .catch((error) => error);
+    expect(failure.getError()).toMatchObject({
+      statusCode: 403,
+      message: 'A restricted post cannot be shared publicly',
+    });
+    expect(postService.findOne).toHaveBeenCalledWith(
+      'source',
+      expect.objectContaining({ where: expect.any(Array) })
+    );
+    expect((controller as any).postShareService.create).not.toHaveBeenCalled();
+  });
+
+  it('uses a source-compatible default audience when sharing a followers-only post', async () => {
+    jest
+      .spyOn(controller as any, 'buildPostVisibilityScope')
+      .mockResolvedValue({
+        viewerProfileId: 'sharer-profile',
+        followedProfileIds: ['author'],
+        blockedProfileIds: [],
+      });
+    postService.findOne.mockResolvedValue({
+      id: 'source',
+      profileId: 'author',
+      visibility: 'followers',
+      communityId: null,
+    } as any);
+    const service = (controller as any).postShareService;
+    service.create.mockImplementation(async (input: any) => input);
+    await expect(
+      controller.createPostShare({
+        originalPostId: 'source',
+        sharedById: 'sharer-profile',
+        userId: 'account',
+      } as any)
+    ).resolves.toMatchObject({
+      visibility: 'followers',
+      sharedById: 'sharer-profile',
+    });
+  });
+
+  it('hides a share when its original post is no longer visible', async () => {
+    jest
+      .spyOn(controller as any, 'buildPostVisibilityScope')
+      .mockResolvedValue({
+        viewerProfileId: 'viewer',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      });
+    postService.findOne.mockResolvedValue(undefined);
+    const service = (controller as any).postShareService;
+    service.findByPost.mockResolvedValue([
+      {
+        id: 'share',
+        originalPostId: 'source',
+        sharedById: 'sharer',
+        visibility: 'public',
+      },
+    ]);
+    await expect(
+      controller.findPostSharesByPost({
+        originalPostId: 'source',
+        profileId: 'viewer',
+        userId: 'account',
+      } as any)
+    ).resolves.toEqual([]);
+    expect(postService.findOne).toHaveBeenCalledWith(
+      'source',
+      expect.objectContaining({ where: expect.any(Array) })
+    );
+  });
+
+  it('hides shares authored by a profile the viewer has blocked', async () => {
+    jest
+      .spyOn(controller as any, 'buildPostVisibilityScope')
+      .mockResolvedValue({
+        viewerProfileId: 'viewer',
+        followedProfileIds: [],
+        blockedProfileIds: ['sharer'],
+      });
+    postService.findOne.mockResolvedValue({
+      id: 'source',
+      visibility: 'public',
+      communityId: null,
+    } as any);
+    const service = (controller as any).postShareService;
+    service.findByPost.mockResolvedValue([
+      {
+        id: 'share',
+        originalPostId: 'source',
+        sharedById: 'sharer',
+        visibility: 'public',
+      },
+    ]);
+    await expect(
+      controller.findPostSharesByPost({
+        originalPostId: 'source',
+        profileId: 'viewer',
+        userId: 'account',
+      } as any)
+    ).resolves.toEqual([]);
+    expect(postService.findOne).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unsupported share audience value', async () => {
+    jest
+      .spyOn(controller as any, 'buildPostVisibilityScope')
+      .mockResolvedValue({
+        viewerProfileId: 'viewer',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      });
+    postService.findOne.mockResolvedValue({
+      id: 'source',
+      visibility: 'public',
+      communityId: null,
+    } as any);
+    const failure = await controller
+      .createPostShare({
+        originalPostId: 'source',
+        sharedById: 'viewer',
+        userId: 'account',
+        visibility: 'everyone',
+      } as any)
+      .catch((error) => error);
+    expect(failure.getError()).toMatchObject({
+      statusCode: 400,
+      message: 'Invalid share visibility',
+    });
   });
 
   it('should call follow methods', async () => {

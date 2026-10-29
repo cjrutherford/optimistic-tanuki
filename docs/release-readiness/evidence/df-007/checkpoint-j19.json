@@ -1,0 +1,220 @@
+{
+  "slice": "DF-007-J19",
+  "date": "2026-10-21",
+  "status": "locally-verified-bounded-runtime-harness",
+  "accepted": true,
+  "baseRevision": "4c5d8661781e652d8b7c76c6c47d71e9e8ccf6ae",
+  "sourceManifestSha256": "8ae75f8bcf6126d2a3fb5232ab9d3d29cef87e575d180eede3d509e4b572bb1f",
+  "sourceHashes": {
+    "apps/gateway/src/controllers/social/profile-analytics/profile-analytics.controller.ts": "4bdf8f058b6c1180a26b56329cee8503418c8cb37a3da97ef99f6cf968826bd6",
+    "apps/gateway/src/controllers/social/profile-analytics/profile-analytics.controller.spec.ts": "1a3b52b3a078ca0f0074f970c637d89adf10dddd9168ac1b057b5dfe91ab9490",
+    "apps/social/src/app/services/profile-analytics.service.ts": "9e4cc9691d4038ce7e444bccb67e0e27aff484cce1e97e2c54e7e691676bc240",
+    "apps/social/src/app/services/profile-analytics.service.spec.ts": "df1fdf915a148fbe7099926aa3ee1679140498067f9a3f40446ffb8cec940393",
+    "apps/gateway-e2e/src/gateway/profile-analytics-ownership.spec.ts": "99da0cb84429a1023151cddb793c14cbcfb77a2c361a32a40b01f8a9f25cf2bb",
+    "apps/client-interface/src/app/profile-analytics.service.ts": "3ce160542a1faef6981512f494f830a7527c60dc8d76ea16eeb00d1166d67a53"
+  },
+  "behavior": {
+    "recording": "Gateway takes viewer identity from the authenticated account userId, ignores a legacy body viewerId, canonicalizes UUIDs, and allows viewing a foreign target.",
+    "analyticsReads": "Both GET routes verify the current account/profile ownership through Profile RPC with a three-second bound, strict canonical account/profile echoes and owned === true; owned secondary profiles work, foreign or missing profiles are denied before Social.",
+    "errors": "Missing or malformed account principal returns 401; invalid target or limit returns 400; foreign/missing ownership returns 403; malformed or unavailable ownership proof maps to 503 before Social.",
+    "privacy": "Social writes an acknowledgement and projects timestamp-only recent views; direct Social RPC exposes the same reduced projection. The bounded newest-100 source summary uses direct/profile/search/feed/other; unknown legacy source labels map to other.",
+    "limitsAndLegacyData": "Recent-view limits default to 10 and cap at 100; uppercase legacy target UUIDs are queried case-insensitively. Historical viewer IDs are not rewritten or treated as verified ownership; export disposition remains J23/J24.",
+    "staleSelection": "The private E2E moves the selected profile owner after token issuance, confirms both analytics reads deny the still-valid signed selection, and restores the profile row.",
+    "client": "Existing client wrapper types match timestamp-only responses; no UI component or generated SDK change was introduced."
+  },
+  "focusedUnits": {
+    "passed": 22,
+    "skipped": 0,
+    "gateway": {
+      "passed": 15,
+      "redRun": false,
+      "note": "The first invocation had a test-constructor argument compile error and ran zero tests; the fixture was corrected and the focused 15-test run passed."
+    },
+    "social": {
+      "passed": 7,
+      "redRun": true,
+      "redFailed": 7,
+      "note": "RED then GREEN; final service tests include the raw timestamp projection refinement."
+    }
+  },
+  "preRuntime": {
+    "gatewayProductionBuild": "PASS",
+    "gatewayLint": "PASS",
+    "socialProductionBuild": "PASS",
+    "socialLint": "PASS",
+    "gatewayE2eLint": "PASS after fixture corrections and before runtime attempt 2",
+    "clientProductionBuild": "PASS; 8 of 12 Nx tasks read from cache",
+    "clientLint": "PASS",
+    "evidenceDirectory": ".runtime-artifacts/account-rights/finish-sequence/profile-analytics-ownership"
+  },
+  "runtimePreparation": {
+    "project": "ot-df007-profile-analytics-j19",
+    "baseRevision": "4c5d8661781e652d8b7c76c6c47d71e9e8ccf6ae",
+    "sourceManifestSha256": "8ae75f8bcf6126d2a3fb5232ab9d3d29cef87e575d180eede3d509e4b572bb1f",
+    "sourceFiles": 6,
+    "protectedFilesExcluded": 43,
+    "composeSha256": "0f97df5e05f8d2ca4db91ad5e03b03f6db6d605b4b46dce6bc4a6561ccf091e0",
+    "freshImages": {
+      "social": {
+        "tag": "ot-df007-profile-analytics-j19/social:8ae75f8bcf61",
+        "imageId": "sha256:b1d8cc1479646f31e0c6d03ef6dcc03b7654b252b596302b0a402d1f047aaeab",
+        "dockerCopyInputCount": 3061
+      }
+    },
+    "freshImageReuseAfterFixtureRepair": {
+      "priorManifestSha256": "0531d9b1f9e2857bb8c1b52e47265c3a0c278a14d9d4aa27b40f41af6c7317a2",
+      "priorBuildProof": "/home/cjrutherford/workspace/optimistic-tanuki/.runtime-artifacts/account-rights/finish-sequence/profile-analytics-ownership/runtime/attempt-1-preparation/build-results.json",
+      "freshImageCopyInputSetsChecked": 1,
+      "freshImageApps": ["social"],
+      "authenticationAndProfileCopyProofsRechecked": true,
+      "imageIdsPreserved": true
+    },
+    "fixtureConfigHashes": {
+      "apps/profile/src/assets/config.yaml": "4f322561d91db3aabcf8a5d6daf84b397e1f2a02984cd6dedad0bc72e4e67307",
+      "apps/permissions/src/assets/config.yaml": "461009841bd17af6f44b70dfb78a1573365b1deaa8db97e083c38c283e1b40a0",
+      "apps/social/src/assets/config.yaml": "59c4f45bd734c88ade4f46d72ec2537952861ea0207f716ec34365fa0c392a46",
+      "apps/forum/src/assets/config.yaml": "25d59375fe2dcdd6a9c291d33a5ab3ce2b55becf8783cfe998800262a7a5c728",
+      "apps/assets/src/assets/config.yaml": "70a106e2f559f0795fc2f78b8d9b04280dcda19558e2f78cf656fade62ddf138",
+      "apps/videos/src/assets/config.yaml": "270df8cae878a9c3add87652ff01332c36c10b154d8246c2854029c00afac013"
+    },
+    "retainedImages": {
+      "authentication": {
+        "tag": "ot-df007-selected-profile-j18/authentication:5de1d1aa3794",
+        "imageId": "sha256:3d658283bcce1579e874c4f9e474494a21876dcb2869637ade6ca18df367e182",
+        "reuseFrom": "ot-df007-selected-profile-j18/authentication:5de1d1aa3794",
+        "reuseImageId": "sha256:3d658283bcce1579e874c4f9e474494a21876dcb2869637ade6ca18df367e182",
+        "dockerCopyInputCount": 3029
+      },
+      "db": {
+        "tag": "postgres:15",
+        "imageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+        "reuseFrom": null,
+        "reuseImageId": null,
+        "dockerCopyInputCount": null
+      },
+      "db_setup": {
+        "tag": "ot-df007-b6-forum/db-setup:reconstructed-389e9fb743af",
+        "imageId": "sha256:b55e0b7bd7bfdbee8a919679df5e11f194b40ade5dd85c524dadd02a309c9db4",
+        "reuseFrom": null,
+        "reuseImageId": null,
+        "dockerCopyInputCount": null
+      },
+      "forum": {
+        "tag": "ot-df007-b6-forum/forum:b6-981665ddc7b4",
+        "imageId": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+        "reuseFrom": null,
+        "reuseImageId": null,
+        "dockerCopyInputCount": null
+      },
+      "permissions": {
+        "tag": "ot-df007-permissions-integration/permissions:bf5389a29c23",
+        "imageId": "sha256:86e75b83b4fb51277d20a0915933b2f06dab6350a40b8a1273dc3acc6457760d",
+        "reuseFrom": null,
+        "reuseImageId": null,
+        "dockerCopyInputCount": null
+      },
+      "profile": {
+        "tag": "ot-df007-selected-profile-j18/profile:5de1d1aa3794",
+        "imageId": "sha256:8ba8ec306950ba6bdb0a98a61c5deda2ba049989916d4be471f43f817195435b",
+        "reuseFrom": "ot-df007-selected-profile-j18/profile:5de1d1aa3794",
+        "reuseImageId": "sha256:8ba8ec306950ba6bdb0a98a61c5deda2ba049989916d4be471f43f817195435b",
+        "dockerCopyInputCount": 2978
+      },
+      "assets": {
+        "tag": "ot-df007-permissions-integration/assets:bf5389a29c23",
+        "imageId": "sha256:325831f665cd65ec59d4ee5f61f49b162846a98a5f6120d08ff003c9bfcb3c46",
+        "reuseFrom": null,
+        "reuseImageId": null,
+        "dockerCopyInputCount": null
+      },
+      "videos": {
+        "tag": "ot-df007-permissions-integration/videos:bf5389a29c23",
+        "imageId": "sha256:7f78e7b92597514ff788945635d595e198e88f87e5d3dad1841dad1bac5f494a",
+        "reuseFrom": null,
+        "reuseImageId": null,
+        "dockerCopyInputCount": null
+      }
+    },
+    "dependencyLimitation": "Social is rebuilt from this J19 source capture. Authentication and Profile retain J18 images only after exact Docker COPY input path/hash equality. Assets, Videos, Permissions, Forum, PostgreSQL, and db setup retain reviewed J18 image IDs; their COPY inputs are not claimed equal.",
+    "configuration": "Synthetic private fixture configuration; no operator secrets or private configuration were copied."
+  },
+  "runtime": {
+    "acceptedAttempt": 2,
+    "result": {
+      "result": "PASS",
+      "project": "ot-df007-profile-analytics-j19",
+      "sourceManifestSha256": "8ae75f8bcf6126d2a3fb5232ab9d3d29cef87e575d180eede3d509e4b572bb1f",
+      "gatewayE2ePassed": 1,
+      "skipped": 0,
+      "cleanupCounts": {
+        "authSessions": 0,
+        "authKeys": 0,
+        "authActionTokens": 0,
+        "profiles": 0,
+        "profileViews": 0,
+        "j19FixtureUsers": 0,
+        "temporaryRelations": 0
+      },
+      "imageIds": {
+        "social": "sha256:b1d8cc1479646f31e0c6d03ef6dcc03b7654b252b596302b0a402d1f047aaeab",
+        "permissions": "sha256:86e75b83b4fb51277d20a0915933b2f06dab6350a40b8a1273dc3acc6457760d",
+        "forum": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+        "profile": "sha256:8ba8ec306950ba6bdb0a98a61c5deda2ba049989916d4be471f43f817195435b",
+        "assets": "sha256:325831f665cd65ec59d4ee5f61f49b162846a98a5f6120d08ff003c9bfcb3c46",
+        "authentication": "sha256:3d658283bcce1579e874c4f9e474494a21876dcb2869637ade6ca18df367e182",
+        "videos": "sha256:7f78e7b92597514ff788945635d595e198e88f87e5d3dad1841dad1bac5f494a",
+        "db": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb"
+      },
+      "protectedFilesChecked": 43,
+      "remainingComposeResources": {
+        "containers": 0,
+        "networks": 0,
+        "volumes": 0
+      },
+      "sourceAndProtectedHashesPreserved": true
+    },
+    "attemptOne": {
+      "result": "FAIL",
+      "error": "profile-analytics-ownership-e2e.log exited 1; see /home/cjrutherford/workspace/optimistic-tanuki/.runtime-artifacts/account-rights/finish-sequence/profile-analytics-ownership/runtime/attempt-1/profile-analytics-ownership-e2e.log",
+      "cause": "Attempt 1 failed only at timestamp equality: pg parsed PostgreSQL TIMESTAMP without time zone as local America/New_York while the container emitted UTC, producing a four-hour comparison mismatch. The E2E fixture now normalizes DB readback with AT TIME ZONE UTC; the production behavior was not changed for this failure.",
+      "sourceAndProtectedHashesPreserved": true,
+      "remainingComposeResources": {
+        "containers": 0,
+        "networks": 0,
+        "volumes": 0
+      }
+    },
+    "commands": [
+      "NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx run gateway-e2e:e2e --testFile=profile-analytics-ownership.spec.ts$ --runInBand --skipNxCache"
+    ],
+    "evidence": ".runtime-artifacts/account-rights/finish-sequence/profile-analytics-ownership/runtime/attempt-2",
+    "proof": [
+      "Real Auth, Profile and Social TCP services behind a production Gateway controller/AuthGuard mini HTTP server.",
+      "Body viewerId spoof is ignored; authenticated account UUID is stored when recording a view of a foreign target.",
+      "Bearer and cookie sessions can read their actually owned profiles, including a secondary profile with legacy uppercase account ownership.",
+      "Foreign/missing target reads are denied; malformed input, invalid limits, stale signed profile ownership, counterpart projections and fixture cleanup are checked.",
+      "Direct Social RPC and Gateway endpoints return timestamp-only recent-view objects; counterpart Profile rows and seeded analytics rows remain unchanged."
+    ],
+    "cleanupCounts": {
+      "authSessions": 0,
+      "authKeys": 0,
+      "authActionTokens": 0,
+      "profiles": 0,
+      "profileViews": 0,
+      "j19FixtureUsers": 0,
+      "temporaryRelations": 0
+    },
+    "remainingComposeResources": {
+      "containers": 0,
+      "networks": 0,
+      "volumes": 0
+    },
+    "skipped": 0
+  },
+  "limitations": [
+    "Internal service communication remains a trusted TCP boundary.",
+    "Ownership RPC waits are configured at three seconds. Malformed replies and mocked RPC failure mapping have unit evidence; no timer-expiry assertion or live Profile outage was run.",
+    "The private harness hosts the production controller and AuthGuard with real Auth/Profile/Social services; it is not a full Gateway deployment, browser journey, external-provider run, remote CI run or production qualification.",
+    "Bounded result counts and readbacks do not prove database query cancellation or a byte-level retention guarantee."
+  ]
+}

@@ -1,0 +1,56 @@
+:host {
+  display: block;
+}
+
+.public-info-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(100% - 2rem, 80rem);
+  margin: 0 auto;
+  padding: 1rem 0 1.5rem;
+  border-top: 1px solid var(--border, #cbd5e1);
+  color: var(--foreground, #172033);
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+
+.public-info-footer__brand {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.public-info-footer__brand span {
+  color: var(--muted, #475569);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.public-info-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  flex: 0 1 auto;
+}
+
+.public-info-footer a {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  color: var(--primary-text, var(--primary, #075985));
+  font-weight: 700;
+  text-underline-offset: 0.2em;
+}
+
+.public-info-footer a:focus-visible {
+  outline: 3px solid var(--focus-ring, #075985);
+  outline-offset: 3px;
+}
+
+@media (max-width: 36rem) {
+  .public-info-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

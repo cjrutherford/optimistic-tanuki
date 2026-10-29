@@ -45,6 +45,10 @@
     letter-spacing: 0.08em;
     @include p.small-text(0.8125rem);
   }
+
+  #postAudience {
+    @include p.keyboard-focus-ring(var(--foreground));
+  }
 }
 
 // Theme config panel

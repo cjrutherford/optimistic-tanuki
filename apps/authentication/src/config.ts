@@ -33,6 +33,19 @@ export declare type AuthConfigType = {
     microsoft?: OAuthProviderConfig;
     facebook?: OAuthProviderConfig;
   };
+  services?: {
+    assets?: { host: string; port: number };
+    videos?: { host: string; port: number };
+    profile?: { host: string; port: number };
+    permissions?: { host: string; port: number };
+    social?: { host: string; port: number };
+    forum?: { host: string; port: number };
+    workspace?: { host: string; port: number };
+    app_configurator?: { host: string; port: number };
+    classifieds?: { host: string; port: number };
+    payments?: { host: string; port: number };
+    chat_collector?: { host: string; port: number };
+  };
 };
 
 const oauthProviders = ['google', 'github', 'microsoft', 'facebook'] as const;
@@ -167,6 +180,119 @@ const loadConfig = () => {
 
   return {
     ...configData,
+    services: {
+      ...configData.services,
+      assets: {
+        host:
+          process.env.SERVICE_ASSETS_HOST ||
+          configData.services?.assets?.host ||
+          'assets',
+        port:
+          Number(process.env.SERVICE_ASSETS_PORT) ||
+          configData.services?.assets?.port ||
+          3005,
+      },
+      videos: {
+        host:
+          process.env.SERVICE_VIDEOS_HOST ||
+          configData.services?.videos?.host ||
+          'videos',
+        port:
+          Number(process.env.SERVICE_VIDEOS_PORT) ||
+          configData.services?.videos?.port ||
+          3022,
+      },
+      profile: {
+        host:
+          process.env.SERVICE_PROFILE_HOST ||
+          configData.services?.profile?.host ||
+          'profile',
+        port:
+          Number(process.env.SERVICE_PROFILE_PORT) ||
+          configData.services?.profile?.port ||
+          3002,
+      },
+      permissions: {
+        host:
+          process.env.SERVICE_PERMISSIONS_HOST ||
+          configData.services?.permissions?.host ||
+          'permissions',
+        port:
+          Number(process.env.SERVICE_PERMISSIONS_PORT) ||
+          configData.services?.permissions?.port ||
+          3012,
+      },
+      social: {
+        host:
+          process.env.SERVICE_SOCIAL_HOST ||
+          configData.services?.social?.host ||
+          'social',
+        port:
+          Number(process.env.SERVICE_SOCIAL_PORT) ||
+          configData.services?.social?.port ||
+          3003,
+      },
+      forum: {
+        host:
+          process.env.SERVICE_FORUM_HOST ||
+          configData.services?.forum?.host ||
+          'forum',
+        port:
+          Number(process.env.SERVICE_FORUM_PORT) ||
+          configData.services?.forum?.port ||
+          3015,
+      },
+      workspace: {
+        host:
+          process.env.SERVICE_WORKSPACE_HOST ||
+          configData.services?.workspace?.host ||
+          'workspace',
+        port:
+          Number(process.env.SERVICE_WORKSPACE_PORT) ||
+          configData.services?.workspace?.port ||
+          3024,
+      },
+      chat_collector: {
+        host:
+          process.env.SERVICE_CHAT_COLLECTOR_HOST ||
+          configData.services?.chat_collector?.host ||
+          'chat-collector',
+        port:
+          Number(process.env.SERVICE_CHAT_COLLECTOR_PORT) ||
+          configData.services?.chat_collector?.port ||
+          3007,
+      },
+      classifieds: {
+        host:
+          process.env.SERVICE_CLASSIFIEDS_HOST ||
+          configData.services?.classifieds?.host ||
+          'classifieds',
+        port:
+          Number(process.env.SERVICE_CLASSIFIEDS_PORT) ||
+          configData.services?.classifieds?.port ||
+          3017,
+      },
+      payments: {
+        host:
+          process.env.SERVICE_PAYMENTS_HOST ||
+          configData.services?.payments?.host ||
+          'payments',
+        port:
+          Number(process.env.SERVICE_PAYMENTS_PORT) ||
+          configData.services?.payments?.port ||
+          3004,
+      },
+      app_configurator: {
+        host:
+          process.env.SERVICE_APP_CONFIGURATOR_HOST ||
+          configData.services?.app_configurator?.host ||
+          'app-configurator',
+        port:
+          Number(process.env.SERVICE_APP_CONFIGURATOR_PORT) ||
+          configData.services?.app_configurator?.port ||
+          3014,
+      },
+    },
     database: {
       ...configData.database,
       host: process.env.POSTGRES_HOST || configData.database.host,

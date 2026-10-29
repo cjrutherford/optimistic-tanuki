@@ -1,3 +1,4 @@
+import { notifyAccountDeletion } from '@optimistic-tanuki/common-ui';
 import { Injectable, OnDestroy, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { io, Socket } from 'socket.io-client';
@@ -19,6 +20,7 @@ export class SocialWebSocketService implements OnDestroy {
   private socket: Socket | null = null;
   private connected$ = new BehaviorSubject<boolean>(false);
   private posts$ = new BehaviorSubject<PostDto[]>([]);
+  private readonly contentInvalidated$ = new Subject<void>();
   private connectionError$ = new BehaviorSubject<string | null>(null);
   private typingIndicators = new Subject<{
     conversationId: string;
@@ -34,8 +36,14 @@ export class SocialWebSocketService implements OnDestroy {
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
 
+  private readonly resetSession = () => {
+    if (this.reconnectTimeoutId) clearTimeout(this.reconnectTimeoutId);
+    this.reconnectTimeoutId = null;
+    this.disconnect();
+  };
   constructor() {
-    // Service initializes on demand via connect()
+    if (isPlatformBrowser(this.platformId))
+      window.addEventListener('ot:session-reset', this.resetSession);
   }
 
   /**
@@ -69,7 +77,7 @@ export class SocialWebSocketService implements OnDestroy {
       socketEnvironment?.SOCKET_URL || `${url.protocol}//${url.hostname}:3301`;
     const socketPath = socketEnvironment?.SOCKET_PATH || '/socket.io';
 
-    console.log('Connecting to Social WebSocket at:', wsUrl);
+    console.log('Connecting to Social WebSocket');
 
     this.socket = io(`${wsUrl}/social`, {
       path: socketPath,
@@ -89,24 +97,33 @@ export class SocialWebSocketService implements OnDestroy {
    */
   disconnect(): void {
     if (this.socket) {
+      this.socket.removeAllListeners?.();
       this.socket.disconnect();
       this.socket = null;
       this.connected$.next(false);
     }
+    this.clearCachedPosts();
+    this.contentInvalidated$.next();
   }
 
   private setupSocketListeners(): void {
     if (!this.socket) return;
 
+    this.socket.on('account_deleted', (value: { accountId?: unknown }) =>
+      notifyAccountDeletion(value?.accountId)
+    );
     this.socket.on('connect', () => {
       console.log('Connected to Social WebSocket');
       this.connected$.next(true);
       this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+      this.clearCachedPosts();
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('Disconnected from Social WebSocket:', reason);
+      console.log('Disconnected from Social WebSocket');
       this.connected$.next(false);
+      this.clearCachedPosts();
+      this.contentInvalidated$.next();
 
       if (reason !== 'io client disconnect') {
         // Trigger backoff for unexpected disconnections
@@ -115,8 +132,8 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
-      this.connectionError$.next('Connection error ' + error.message);
+      console.error('Connection error');
+      this.connectionError$.next('Connection error');
 
       // Check if this is an authentication error
       if (
@@ -147,7 +164,7 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     this.socket.on('error', (error) => {
-      console.error('Socket error:', error);
+      console.error('Socket error');
 
       // Handle authorization errors from the server
       if (typeof error === 'object' && error !== null) {
@@ -170,7 +187,7 @@ export class SocialWebSocketService implements OnDestroy {
     });
     // Post events
     this.socket.on('post_created', (post: PostDto) => {
-      console.log('Post created:', post);
+      console.log('Post created');
       const currentPosts = this.posts$.value;
       if (!currentPosts.some((p) => p.id === post.id)) {
         this.posts$.next([post, ...currentPosts]);
@@ -178,7 +195,7 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     this.socket.on('post_updated', (post: PostDto) => {
-      console.log('Post updated:', post);
+      console.log('Post updated');
       const currentPosts = this.posts$.value;
       const index = currentPosts.findIndex((p) => p.id === post.id);
       if (index !== -1) {
@@ -188,61 +205,66 @@ export class SocialWebSocketService implements OnDestroy {
     });
 
     this.socket.on('post_deleted', (data: { postId: string }) => {
-      console.log('Post deleted:', data.postId);
+      console.log('Post deleted');
       const currentPosts = this.posts$.value;
       this.posts$.next(currentPosts.filter((p) => p.id !== data.postId));
     });
 
+    this.socket.on('social_content_invalidated', () => {
+      this.clearCachedPosts();
+      this.contentInvalidated$.next();
+    });
+
     // Comment events
     this.socket.on('comment_created', (comment: CommentDto) => {
-      console.log('Comment created:', comment);
+      console.log('Comment created');
     });
 
     this.socket.on('comment_updated', (comment: CommentDto) => {
-      console.log('Comment updated:', comment);
+      console.log('Comment updated');
     });
 
     this.socket.on(
       'comment_deleted',
       (data: { commentId: string; postId: string }) => {
-        console.log('Comment deleted:', data);
+        console.log('Comment deleted');
       }
     );
 
     // Vote events
     this.socket.on('vote_updated', (vote: VoteDto) => {
-      console.log('Vote updated:', vote);
+      console.log('Vote updated');
     });
 
     // Follow events
     this.socket.on('user_follow', (data: FollowEventDto) => {
-      console.log('User followed:', data);
+      console.log('User followed');
     });
 
     this.socket.on('user_unfollow', (data: FollowEventDto) => {
-      console.log('User unfollowed:', data);
+      console.log('User unfollowed');
     });
 
     // Feed response
     this.socket.on('feed', (posts: PostDto[]) => {
-      console.log('Feed received:', posts);
+      console.log('Feed received');
       this.posts$.next(posts);
     });
 
     // Subscription confirmations
     this.socket.on('subscribed', (data: any) => {
-      console.log('Subscribed:', data);
+      console.log('Subscribed');
     });
 
     this.socket.on('unsubscribed', (data: any) => {
-      console.log('Unsubscribed:', data);
+      console.log('Unsubscribed');
     });
 
     // Typing indicators
     this.socket.on(
       'typing',
       (data: { conversationId: string; userId: string; isTyping: boolean }) => {
-        console.log('Typing indicator:', data);
+        console.log('Typing indicator');
         this.typingIndicators.next(data);
       }
     );
@@ -343,6 +365,14 @@ export class SocialWebSocketService implements OnDestroy {
     return this.posts$.asObservable();
   }
 
+  getContentInvalidated(): Observable<void> {
+    return this.contentInvalidated$.asObservable();
+  }
+
+  private clearCachedPosts(): void {
+    this.posts$.next([]);
+  }
+
   /**
    * Send typing indicator
    */
@@ -373,6 +403,8 @@ export class SocialWebSocketService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (isPlatformBrowser(this.platformId))
+      window.removeEventListener('ot:session-reset', this.resetSession);
     this.disconnect();
 
     if (this.reconnectTimeoutId) {

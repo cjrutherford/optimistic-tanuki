@@ -39,7 +39,7 @@ export class Attachment {
   post: Post;
 }
 export function toFindOptions(
-  searchDto: SearchAttachmentDto
+  searchDto: SearchAttachmentDto = {}
 ): FindOptions<Attachment> {
   const findOptions: FindOptionsWhere<Attachment> = {};
 

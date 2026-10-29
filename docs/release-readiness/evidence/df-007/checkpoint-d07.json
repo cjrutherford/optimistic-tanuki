@@ -1,0 +1,92 @@
+{
+  "slice": "D07",
+  "date": "2026-10-25",
+  "scope": ["client-interface", "local-hub"],
+  "status": "verified-local-owner-component",
+  "evidence": {
+    "batchDispositionUnit": 4,
+    "resolvedPlaceholderUnit": 3,
+    "realAuthForumWorkspaceTcpPostgres": "1 combined scenario, 2 owner flows, 3 migrated databases",
+    "preE2E": 41,
+    "build": "Forum and Workspace production passed; affected Forum build repeated after late-context fix",
+    "lint": "Forum Workspace Models Constants authentication-e2e passed; affected final paths passed",
+    "migration": "1792953049098 owning CLI generated; reviewed frozen producer SQL; fresh up/down/up passed",
+    "migrationGovernance": "passed",
+    "review": "Independent source-only batch GO; subsequent Forum late-context delta root-reviewed and red/green PostgreSQL verified"
+  },
+  "independentFinalCounts": {
+    "d00": {
+      "account_deletion_operations": 0,
+      "account_deletion_write_fence": 0,
+      "account_export_jobs": 0,
+      "auth_action_token": 0,
+      "guardian_permission": 0,
+      "guardian_policy_notice": 0,
+      "key_datum": 0,
+      "oauth_provider": 0,
+      "token": 0,
+      "user_entity": 0
+    },
+    "d07_forum": {
+      "account_deletion_write_fence": 0,
+      "forum_link": 0,
+      "forum_moderation_action": 0,
+      "forum_post": 0,
+      "forum_post_links_forum_link": 0,
+      "forum_report": 0,
+      "thread": 0,
+      "topic": 0
+    },
+    "d08_workspace": {
+      "account_deletion_write_fence": 0,
+      "workspaces": 0
+    }
+  },
+  "teardown": {
+    "removedOwnLabeledContainerAndVolumes": true,
+    "privateContainersRemaining": 0,
+    "protectedFilesUnchanged": 43,
+    "independentDatabaseCount": 3,
+    "independentTableCount": 20,
+    "allApplicationCountsZero": true
+  },
+  "sourceHashes": {
+    "apps/authentication-e2e/jest.deletion-private.config.ts": "13d52e57dc693dcae83b67b244224725a75e29c03d95db18e45571f3b8f04d69",
+    "apps/authentication-e2e/src/authentication/forum-workspace-account-deletion.spec.ts": "5a6cee119d9a4b794b1a29d3736c302495e9130f551b50773a2d01246f4a33ba",
+    "apps/forum/migrations/1792953049098-AccountDeletionWriteFence.ts": "fd179eaa062e760ff5a9281a259b9b85e83db35fb5646dfc0f3861e811229cf5",
+    "apps/forum/project.json": "26df385f2863fff31fa49339d3506dae06c3ecf4fade83b21d48d8518913a61b",
+    "apps/forum/src/app/account-deletion-owner.controller.ts": "d0fafdb95538a41dccb5c43ffbfbd00f24054e0a667421445157691c70e6a3e7",
+    "apps/forum/src/app/account-deletion-owner.service.ts": "ae9c6be0df66c732d0327bbc2327d2ac47ba83bb739f762f02f2bbbe9b0c33f9",
+    "apps/forum/src/app/account-deletion-policy.ts": "5fb308dcf50e40a52a36c1253ccedda1c568376fffe393e4ee39ef9cd0b962a6",
+    "apps/forum/src/app/app.module.ts": "bf8f39ac0ee8e530c4e3a877db497baac0050f10c6b9d137d5670611b6c238bb",
+    "apps/forum/src/app/audit-erasure.service.ts": "3ac224ca9cdeb6870564ef322201f0615cbb1ef78c2905fdc0aa0a53ffebea49",
+    "apps/forum/src/app/forum-account-export-dispositions.json": "63c8c13c8982ab6a8369f50e308c83d87219cd6f9b2fc0d92db77b114ed28ce3",
+    "apps/forum/src/app/forum-account-export-dispositions.spec.ts": "31939a92ccf8fb0fbcdfd9603ab620f7c841f56c9a8b21cef18c61456ecd5e8c",
+    "apps/forum/src/app/forum-account-export-dispositions.ts": "3053f71796d14e6566ce517881e2b12057acaba7bec476d810143141693e6472",
+    "apps/forum/src/app/forum-dispositions.postgres.spec.ts": "699efe2db42977717c9f5c4ad8c69730a2a7af867238f3c7f1d6645dc94cdcdd",
+    "apps/forum/src/app/loadDatabase.ts": "f991622140ed3daa485b6738242ff5fad8415ac42feafd59116eeba03e982d8b",
+    "apps/forum/src/app/staticDatabase.ts": "14941b891449cd9c48356a8eee6469f098659fb748e316266b04ce866bc0fc21",
+    "libs/constants/src/lib/libs/forum.ts": "e2f0cf568be1eefbee2982ecd7cd6cbedbcf1ff2f6b0d8631ec4fafc8df17b42"
+  },
+  "logHashes": {
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d07-d08-private-final.log": "cb2de9013aad1df03881f363bf6505ea78e5c26bb4a3ee3ca7e860e8690207a4",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d07-late-context-red.log": "9384cda046e258761bfb7d3e3d92896cea52ce1935e8deb36215ff929430a1f7",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/dispositions-final.log": "693908e074fd92ba1b1ceaf06ec6b22d81af5a4e6afdf438fb1f3d414bf0a33b",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/model-unit.log": "276bb0bb5ce9e9ab3ee5e7b8db301cfe4eb12661eee984a48357c5d6e9f83621",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/build.log": "f4f678eda334686843a5758284bdde9963dc17111f4a741c69651db187d56295",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/forum-final-build.log": "93a842713b04ead5fb7ceaaa98932547a554c910ed5fb25997d5c62b3475fddb",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/lint.log": "b99c36bbc270a9cedc67e70428f0f9b278452d45e0aeac1bcb36159fcff12f2e",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/final-lint.log": "133673855e9d40d38b4798f1b504b8987c4aa72e62c5c6dc74cd130d9f2d2fd4",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/migration-governance-final.log": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/pre-e2e.log": "613843a41f10adf9bcf7d55a57ed32a8abf8d26dd0a3b3a4e95aa4b4d822a3c7",
+    ".runtime-artifacts/account-rights/deletion/d07-d08/source-review.md": "f7957d02e6e6b7fecfc441028c0ec910c457a842a20001f7bcc91d983a245e9a",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d07-context-down.log": "f0e0ca206519ec0ac97fc68117cd808382f51bae6d4748794260ef768d3ac853",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d07-context-up.log": "a9236a12938643f5887ff8f5f00ddf733bfb6f0be57b8d6a841976752de1706b"
+  },
+  "limitations": [
+    "Frozen Profile scope and other-owner fence acknowledgements are fixture premises.",
+    "Root identity/key removal and global coordinator/recovery/public controls remain later slices.",
+    "No whole-product browser, external-provider/backup or deployed qualification is claimed."
+  ],
+  "lateContextRegression": "Pre-fix report insertion against retained erased Thread resolved unexpectedly. Updated guard denies report/moderation insertion/update on erased targets; final combined TCP/PG fixture passed."
+}

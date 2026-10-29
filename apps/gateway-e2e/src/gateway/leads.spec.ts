@@ -18,6 +18,8 @@ describe('Leads API E2E Tests', () => {
     headers: {
       'x-ot-appscope': 'leads-app',
       'x-ot-app-id': 'opportunity-compass',
+      Origin: 'http://localhost:8095',
+      Host: 'localhost:8095',
     },
     validateStatus: () => true,
   });

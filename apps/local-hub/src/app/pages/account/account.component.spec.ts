@@ -41,6 +41,7 @@ describe('AccountComponent profile section', () => {
           provide: AuthStateService,
           useValue: {
             logout: jest.fn(),
+            getUserData: () => null,
             getActingProfileId: () => 'profile-1',
           },
         },

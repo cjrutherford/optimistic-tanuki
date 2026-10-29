@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { ProfileComponent } from './profile.component';
 import { ProfileService } from '../profile.service';
 import { of, throwError } from 'rxjs';
@@ -21,7 +22,7 @@ describe('ProfileComponent', () => {
   let fixture: ComponentFixture<ProfileComponent>;
   let profileService: ProfileService;
   let router: Router;
-  let profileServiceMock: Record<string, jest.Mock | (() => unknown)>;
+  let profileServiceMock: Record<string, any>;
   let privacyServiceMock: Record<string, jest.Mock | (() => unknown)>;
 
   const mockProfile: ProfileDto = {
@@ -51,6 +52,8 @@ describe('ProfileComponent', () => {
     profileOverrides: Record<string, unknown> = {}
   ) => {
     profileServiceMock = {
+      currentUserProfiles: signal([mockProfile]),
+      currentUserProfile: signal(mockProfile),
       getCurrentUserProfile: jest.fn().mockReturnValue(mockProfile),
       selectProfile: jest.fn(),
       restorePersistedSelectedProfile: jest.fn(() => {
@@ -209,7 +212,7 @@ describe('ProfileComponent', () => {
 describe('ProfileComponent interactions', () => {
   let component: ProfileComponent;
   let fixture: ComponentFixture<ProfileComponent>;
-  let profileServiceMock: Record<string, jest.Mock>;
+  let profileServiceMock: Record<string, any>;
   let privacyServiceMock: Record<string, jest.Mock>;
   let communityServiceMock: Record<string, jest.Mock>;
   let postServiceMock: Record<string, jest.Mock>;
@@ -239,8 +242,11 @@ describe('ProfileComponent interactions', () => {
   ) => {
     TestBed.resetTestingModule();
     profileServiceMock = {
+      currentUserProfiles: signal([owner]),
+      currentUserProfile: signal(owner),
       getCurrentUserProfile: jest.fn().mockReturnValue(owner),
       selectProfile: jest.fn(),
+      activateProfile: jest.fn().mockResolvedValue(undefined),
       restorePersistedSelectedProfile: jest.fn().mockReturnValue(null),
       getAllProfiles: jest.fn().mockResolvedValue(undefined),
       getCurrentUserProfiles: jest.fn().mockReturnValue([owner]),
@@ -249,7 +255,7 @@ describe('ProfileComponent interactions', () => {
       getProfileById: jest.fn(),
       getDisplayProfile: jest.fn().mockReturnValue(of(other)),
       ...overrides,
-    } as Record<string, jest.Mock>;
+    } as Record<string, any>;
     privacyServiceMock = {
       getBlockedUsers: jest.fn().mockReturnValue(of([])),
       blockUser: jest.fn().mockReturnValue(of(undefined)),
@@ -655,23 +661,42 @@ describe('ProfileComponent interactions', () => {
       expect(component.showProfileEditor).toBe(false);
     });
 
-    it('selects a profile and moves to the feed', async () => {
-      await build({ userId: '2' });
-      jest.useFakeTimers();
-      try {
-        component.selectProfile(other);
+    it('selects an alternate profile after its session is activated', async () => {
+      await build({ userId: '1' });
 
-        expect(profileServiceMock['selectProfile']).toHaveBeenCalledWith(other);
-        expect(messageServiceMock.addMessage).toHaveBeenCalledWith({
-          content: 'Profile selected!',
-          type: 'success',
-        });
+      await component.selectProfile(other);
 
-        jest.advanceTimersByTime(500);
-        expect(router.navigate).toHaveBeenCalledWith(['/feed']);
-      } finally {
-        jest.useRealTimers();
-      }
+      expect(profileServiceMock['activateProfile']).toHaveBeenCalledWith(other);
+      expect(profileServiceMock['selectProfile']).not.toHaveBeenCalled();
+      expect(messageServiceMock.addMessage).toHaveBeenCalledWith({
+        content: 'Profile selected!',
+        type: 'success',
+      });
+      expect(router.navigate).toHaveBeenCalledWith(['/profile', other.id]);
+      expect(component.profileSelectionPending()).toBe(false);
+    });
+
+    it('leaves the current profile selected and reports a recoverable activation failure', async () => {
+      const activationError = new Error(
+        'Profile switching failed. Your previous profile remains active; please try again.'
+      );
+      await build(
+        { userId: '1' },
+        {
+          activateProfile: jest.fn().mockRejectedValue(activationError),
+        }
+      );
+
+      await component.selectProfile(other);
+
+      expect(profileServiceMock['selectProfile']).not.toHaveBeenCalled();
+      expect(component.profileSelectionError()).toBe(activationError.message);
+      expect(component.profileSelectionPending()).toBe(false);
+      expect(router.navigate).not.toHaveBeenCalled();
+      expect(messageServiceMock.addMessage).toHaveBeenCalledWith({
+        content: activationError.message,
+        type: 'error',
+      });
     });
 
     it('navigates to settings', async () => {

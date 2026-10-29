@@ -1,8 +1,23 @@
 package protocol
 
+import "encoding/json"
+
 type Request struct {
-	Command string       `json:"command"`
-	Request TranscodeJob `json:"request"`
+	Command string          `json:"command"`
+	Request json.RawMessage `json:"request"`
+}
+
+type FenceVideoRequest struct {
+	VideoID     string `json:"videoId"`
+	OperationID string `json:"operationId"`
+	ExpiresAt   int64  `json:"expiresAt"`
+	Signature   string `json:"signature"`
+}
+
+type DeletionFenceResult struct {
+	VideoID        string `json:"videoId"`
+	VerifiedAbsent bool   `json:"verifiedAbsent"`
+	Fenced         bool   `json:"fenced"`
 }
 
 type TranscodeJob struct {
@@ -11,9 +26,10 @@ type TranscodeJob struct {
 }
 
 type Response struct {
-	OK     bool             `json:"ok"`
-	Result *TranscodeResult `json:"result,omitempty"`
-	Error  string           `json:"error,omitempty"`
+	OK       bool                 `json:"ok"`
+	Result   *TranscodeResult     `json:"result,omitempty"`
+	Deletion *DeletionFenceResult `json:"deletion,omitempty"`
+	Error    string               `json:"error,omitempty"`
 }
 
 type TranscodeResult struct {

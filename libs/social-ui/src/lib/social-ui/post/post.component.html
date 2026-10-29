@@ -2,13 +2,22 @@
   <div class="post-header">
     @if (profile) {
     <div class="post-profile">
-      <otui-dropdown [triggerLabel]="'...'">
-        <button class="dropdown-item" (click)="onProfileClick()">
+      <otui-dropdown
+        #postMenu
+        [triggerLabel]="'...'"
+        (click)="$event.stopPropagation()"
+      >
+        <button
+          *ngIf="!guardianManagementMode"
+          class="dropdown-item"
+          (click)="onProfileClick()"
+        >
           View Profile
         </button>
         @if (canEdit()) {
         <button class="dropdown-item" (click)="startEdit()">Edit post</button>
-        } @if (profile.id !== currentUserId) { @if (canFollow) {
+        } @if (!guardianManagementMode && profile.id !== currentUserId) { @if
+        (canFollow) {
         <button class="dropdown-item" (click)="onFollowToggle()">
           {{ isFollowing ? 'Unfollow' : 'Follow' }}
         </button>
@@ -18,6 +27,12 @@
         </button>
         <button class="dropdown-item" (click)="onBlockToggle()">
           {{ isBlocked ? 'Unblock' : 'Block' }}
+        </button>
+        <button class="dropdown-item" (click)="onMuteToggle()">
+          {{ isMuted ? 'Unmute from feed' : 'Mute from feed' }}
+        </button>
+        <button class="dropdown-item" (click)="openReport()">
+          Report post
         </button>
         @if (ownedCommunities.length > 0) {
         <div class="dropdown-submenu">
@@ -77,8 +92,22 @@
         [value]="editContent"
         (input)="onEditContentInput($event)"
       ></textarea>
+      @if (saveState?.status === 'pending') {
+      <div class="edit-save-status" role="status" aria-live="polite">
+        Saving changes…
+      </div>
+      } @if (saveState?.status === 'error' && saveState?.error) {
+      <div class="edit-save-error" role="alert" aria-live="assertive">
+        {{ saveState?.error }}
+      </div>
+      }
       <div class="edit-actions">
-        <otui-button variant="primary" (action)="saveEdit()">Save</otui-button>
+        <otui-button
+          variant="primary"
+          [disabled]="saveState?.status === 'pending'"
+          (action)="saveEdit()"
+          >Save</otui-button
+        >
         <otui-button variant="secondary" (action)="cancelEdit()"
           >Cancel</otui-button
         >
@@ -112,7 +141,7 @@
         }
       </otui-grid>
     </div>
-    }
+    } @if (!guardianManagementMode) {
     <div class="actions">
       <lib-vote
         [postId]="content.id"
@@ -140,13 +169,22 @@
       }
       <lib-comment
         (commentAdded)="onCommentAdd($event)"
-        [imageUploadCallback]="imageUploadCallback"
+        [imageUploadCallback]="commentImageUploadCallback"
       ></lib-comment>
     </div>
+    } @else if (canDelete) {
+    <div class="actions">
+      <otui-button variant="danger" (action)="onDelete()"
+        >Delete eligible post</otui-button
+      >
+    </div>
+    }
   </div>
+  @if (!guardianManagementMode) {
   <lib-comment-list
     [availableProfiles]="availableProfiles"
     (commentAdded)="onCommentReply($event)"
     [comments]="comments"
   ></lib-comment-list>
+  }
 </otui-card>

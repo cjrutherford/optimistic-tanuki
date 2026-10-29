@@ -1,6 +1,21 @@
 import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
+import { VerifiedMediaSpoolHandle } from './verified-media-spool.service';
+
+export interface AuthenticatedMediaReadOptions {
+  maxPlaintextBytes: number;
+  signal?: AbortSignal;
+}
 
 export interface StorageAdapter {
+  custodyProbe?(
+    nonce: string,
+    mode: 'write' | 'read' | 'remove'
+  ): Promise<string>;
+  /** Internal deletion capability: prove exclusive key custody and verify removal before metadata disposal. */
+  purgeOwnedAsset?(data: AssetDto): Promise<{ verifiedAbsent: true }>;
+
+  /** Returns the immutable storage key for a server-reserved asset ID. */
+  reservationPath?(data: CreateAssetDto): string;
   /***
    * Creates a new asset in the storage system.
    * @param data - The asset data to be created.
@@ -28,4 +43,16 @@ export interface StorageAdapter {
    * @return A promise that resolves to the asset's content as a Buffer.
    */
   read(data: AssetDto): Promise<Buffer | string>;
+
+  /** Returns authenticated plaintext bytes without data-URL/base64 expansion. */
+  readBuffer?(data: AssetDto, maxStoredBytes?: number): Promise<Buffer>;
+
+  /**
+   * Opens an authenticated plaintext spool only after the complete envelope
+   * tag has verified. Adapters that cannot provide this must not stream media.
+   */
+  openAuthenticatedMedia?(
+    data: AssetDto,
+    options: AuthenticatedMediaReadOptions
+  ): Promise<VerifiedMediaSpoolHandle>;
 }

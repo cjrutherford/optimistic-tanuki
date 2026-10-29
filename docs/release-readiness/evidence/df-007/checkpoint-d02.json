@@ -1,0 +1,94 @@
+{
+  "slice": "D02",
+  "date": "2026-10-25",
+  "scope": ["client-interface", "local-hub"],
+  "status": "verified-local-owner-adapter",
+  "evidence": {
+    "profileOwnerUnit": 7,
+    "authorityClientUnit": 6,
+    "profileContractParity": 12,
+    "sharedFenceUnit": 4,
+    "sharedFencePostgres": 4,
+    "authProfileTcpPostgres": 3,
+    "authRegressionPostgres": 6,
+    "preE2E": 40,
+    "unmarkedTarget": "rejected before connecting",
+    "build": "profile authentication storage logger profile-contracts passed",
+    "lint": "five source projects and authentication-e2e passed",
+    "migrationGovernance": "passed",
+    "migrationCycles": "Auth/Profile generated migrations fresh up/down/up passed",
+    "review": "r7 source GO; no independent runtime reproduction"
+  },
+  "independentFinalCounts": {
+    "d00": {
+      "user_entity": 0,
+      "token": 0,
+      "oauth_provider": 0,
+      "auth_action_token": 0,
+      "guardian_permission": 0,
+      "guardian_policy_notice": 0,
+      "account_export_jobs": 0,
+      "account_deletion_operations": 0,
+      "account_deletion_write_fence": 0
+    },
+    "d02_profile": {
+      "profile": 0,
+      "timeline": 0,
+      "goal": 0,
+      "project": 0,
+      "guardian_profile_activity": 0,
+      "account_deletion_write_fence": 0
+    }
+  },
+  "privateContainersRemaining": 0,
+  "protectedFilesUnchanged": 43,
+  "profileIdentityDisposition": "id/userId/appScope retained through dependent acknowledgements and D26; personal projection cleared",
+  "legacyIdentityDisposition": "No independent legacy Profile identity table in the five scoped owner tables; three retained reference FKs target current Profile PK. Goal/project IDs are not profile IDs.",
+  "operationalDispositions": [
+    {
+      "owner": "authentication",
+      "table": "account_deletion_operations",
+      "disposition": "deletion-control exclusion; raw account/scope disposed at D26/D27"
+    },
+    {
+      "owner": "authentication",
+      "table": "account_deletion_write_fence",
+      "disposition": "permanent hashed identity write fence; not content export"
+    },
+    {
+      "owner": "profile",
+      "table": "account_deletion_write_fence",
+      "disposition": "permanent hashed identity write fence; not content export"
+    }
+  ],
+  "sourceHashes": {
+    "apps/authentication-e2e/jest.deletion-private.config.ts": "0592313e9c6fc8f30c7e884493287d070b586d8a0ef01f68bcb259f51a5fed33",
+    "apps/authentication-e2e/project.json": "e42eaff21cb152914f3ad106f549bbf5737c11b104a6b735cc7b18d2591e420b",
+    "apps/authentication-e2e/src/authentication/profile-account-deletion.spec.ts": "c8c6874974a2569aa3484d248cdd91a137ddede5a9f663ef7d45e3501a55d21b",
+    "apps/authentication-e2e/src/support/deletion-private-setup.ts": "5327b5e7a7557dc7eab5f9368e9dfaa387f651fdcaca57706ef934a8277ac3b9",
+    "apps/authentication/migrations/1792886267140-AccountDeletionControl.ts": "dcb6255a27e9c5211fbe85da56f47ecb55ce93918c42d96a0df6a987cb479a48",
+    "apps/authentication/src/account-deletion/account-deletion.controller.ts": "30dc5f277d0ddd420217408467b3540c30ff875a4f7a174fecc06007db898ff2",
+    "apps/profile/migrations/1792900054691-AccountDeletionWriteFence.ts": "95f1a9365d6677a325946fecc943de5acc42e793535db6de4145cc48a07553ad",
+    "apps/profile/src/app/account-deletion-owner.controller.ts": "a28c2f63f579c63abe76274430c83f8be7a2d674f81c263f29d7cfa8652bded6",
+    "apps/profile/src/app/account-deletion-owner.service.spec.ts": "552798a49894416f968b73b4f2652fa8ce9c33551effed6af6ca5e46b6956e7b",
+    "apps/profile/src/app/account-deletion-owner.service.ts": "b3c3fcbcdb1b5b760bdfd68e84961ff54a63d3ea984dbdfdc6fcd098aa7d5f9d",
+    "apps/profile/src/app/app.module.ts": "712c5592290017a031c624da6ea57b64b81655cc6b7f7d74e6434b9497603cdf",
+    "apps/profile/src/app/audit-erasure.service.ts": "5d34dfbf2582c3817a455ac39c282ab9c86cd037f6ac4fb76261470fd187d36a",
+    "apps/profile/src/app/loadDatabase.ts": "5f9aa298e6019685def6f670ffdc1842b14142169fb11e8c8eed4ff09b762c08",
+    "apps/profile/src/app/staticDatabase.ts": "258b8ae06984785cc32afe334a364bdf38f289c36fa87eee2c3bb6c5c9b81d97",
+    "libs/constants/src/lib/libs/authentication.ts": "8fca8c2fe97b16bfa91a602ce028a34ee43baf0e83488b7dcdbdbba2da2a1a6c",
+    "libs/logger/src/lib/audit-erasure.ts": "8e091e0ce449bb628d6be9c5a560d95e30b57d5acc434d43baca9f9f68bec605",
+    "libs/profile/contracts/src/lib/profile-commands.ts": "4b0c3acb9db0c4b01e3c1a25b991b10183fffb4f7b207a7b1672e09b6ad2bb35",
+    "libs/profile/contracts/src/lib/profile-contract-parity.spec.ts": "5e9ac1dea2f5038481f71d4b9dc627c235afae33878bd66272cf32ea3f8f540e",
+    "libs/storage/src/index.ts": "9fa974e182e2f76beea6c39cd96f33341435a2b892e98c3abae6d75d9b0138a8",
+    "libs/storage/src/lib/account-deletion-authority.client.spec.ts": "4a782fdd64c15e414fd591bca5a7ee741474df4c58a1956ab80f2e3952c3fbaf",
+    "libs/storage/src/lib/account-deletion-authority.client.ts": "3cbea04a7f20f89388e66628eacf35e8df11ecfec058f47712220de5bb1c7c39",
+    "libs/storage/src/lib/account-deletion-write-fence.postgres.spec.ts": "5a296fff54496434ae4e52bf631969fdc0b67ca375799088524feb3f6e65cc17",
+    "libs/storage/src/lib/account-deletion-write-fence.ts": "f1cf412fc3e84779db0e14d319def93107d6533dd92df94ac396544c946c35d0"
+  },
+  "limits": [
+    "Other-owner acknowledgements are explicit fixture preconditions; no global completion.",
+    "Final Profile identity disposal remains D26 after dependent owner acknowledgements.",
+    "Live deployment, public deletion UI and external provider qualification remain future work."
+  ]
+}

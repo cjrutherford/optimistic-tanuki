@@ -33,10 +33,10 @@ export class Activity {
   @Column()
   description: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   resourceId: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   resourceType: string;
 
   @CreateDateColumn()

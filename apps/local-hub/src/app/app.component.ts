@@ -18,7 +18,10 @@ import {
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
 import { Router } from '@angular/router';
-import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
+import {
+  DevInfoComponent,
+  PublicInfoFooterComponent,
+} from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
 import { AuthStateService } from './services/auth-state.service';
@@ -37,6 +40,7 @@ import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
     AppBarComponent,
     NavSidebarComponent,
     DevInfoComponent,
+    PublicInfoFooterComponent,
     HaiAboutTagComponent,
     MessageComponent,
     PersonalitySceneComponent,
@@ -65,11 +69,14 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly haiAboutConfig = {
     appId: 'towne-square',
     appName: 'Towne Square',
-    appTagline: 'Neighborhood commerce and local community tools.',
+    appTagline: 'Connect around the places that matter to you.',
     appDescription:
-      'Towne Square is HAI software for local communities, neighborhood commerce, and civic connection that still feels human-scale.',
-    appUrl: '/towne-square',
+      'Towne Square is an early-access place to explore localities and connect with people where you live, work, or visit.',
+    appUrl: '/',
+    accountNotice:
+      'Optimistic Tanuki and Towne Square use the same account credentials. Sign in separately in each app.',
   };
+  readonly publicFooterTagline = this.haiAboutConfig.appTagline;
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -130,6 +137,11 @@ export class AppComponent implements OnInit, OnDestroy {
           label: 'Account',
           action: () => this.navigateTo('/account'),
           isActive: currentUrl === '/account',
+        },
+        {
+          label: 'Guardian controls',
+          action: () => this.navigateTo('/guardian'),
+          isActive: currentUrl.startsWith('/guardian'),
         },
         {
           label: 'Logout',

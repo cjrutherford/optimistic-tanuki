@@ -8,6 +8,8 @@ import {
 } from '../index';
 import {
   BlogRole,
+  GuardianConsoleProfileRequestDto,
+  GuardianProfileRequestDto,
   CreateProfileDto,
   CreateTimelineDto,
   GetProfileDto,
@@ -78,6 +80,49 @@ const COVERED: Array<{
     invalidProps: ['blogRole'],
   },
   {
+    pattern: ProfileCommands.GetGuardian,
+    dto: GuardianProfileRequestDto,
+    valid: {
+      profileId: '2d3f1f90-3ac6-4d2e-9d5e-0e4f0c9d8a11',
+      actorUserId: '3d3f1f90-3ac6-4d2e-9d5e-0e4f0c9d8a22',
+      appId: 'client-interface',
+      operation: 'profile.view',
+    },
+    invalid: {
+      profileId: 'not-a-uuid',
+      actorUserId: 'not-a-uuid',
+      appId: 'other',
+      operation: 'profile.read',
+    },
+    invalidProps: ['profileId', 'actorUserId', 'appId', 'operation'],
+  },
+  {
+    pattern: ProfileCommands.UpdateGuardian,
+    dto: GuardianProfileRequestDto,
+    valid: {
+      profileId: '2d3f1f90-3ac6-4d2e-9d5e-0e4f0c9d8a11',
+      actorUserId: '3d3f1f90-3ac6-4d2e-9d5e-0e4f0c9d8a22',
+      appId: 'local-hub',
+      operation: 'profile.manage',
+      updates: { bio: 'Updated bio' },
+    },
+    invalid: {
+      profileId: 'not-a-uuid',
+      actorUserId: 'not-a-uuid',
+      appId: 'other',
+      operation: 'profile.write',
+      updates: [],
+    },
+    invalidProps: ['profileId', 'actorUserId', 'appId', 'operation', 'updates'],
+  },
+  {
+    pattern: ProfileCommands.GetGuardianConsoleProfile,
+    dto: GuardianConsoleProfileRequestDto,
+    valid: { userId: 'user-1', appScope: 'local-hub' },
+    invalid: { userId: 42, appScope: 'social' },
+    invalidProps: ['userId', 'appScope'],
+  },
+  {
     pattern: TimelineCommands.Create,
     dto: CreateTimelineDto,
     valid: {
@@ -123,6 +168,21 @@ const FIND_MANY: string[] = [ProfileCommands.GetAll, TimelineCommands.GetAll];
 
 /** Raw-string payloads — complete by definition. */
 const SCALAR: string[] = [ProfileCommands.GetBlogRole, TimelineCommands.Get];
+/** Internal object payload with strict validation at the handler boundary. */
+const OBJECT: string[] = [
+  ProfileCommands.FinalizeAccountDeletion,
+  ProfileCommands.FenceAccountDeletion,
+  ProfileCommands.EraseAccountDeletion,
+  ProfileCommands.ReadbackAccountDeletion,
+  ProfileCommands.CheckAccountProfileOwnership,
+  ProfileCommands.ResolveAccountBindings,
+  ProfileCommands.OpenAccountExportCapture,
+  ProfileCommands.ReadAccountExportCapture,
+  ProfileCommands.ReadAccountExportCaptureIdentities,
+  ProfileCommands.ReleaseAccountExportCapture,
+  ProfileCommands.GetAccountExportSnapshot,
+  ProfileCommands.GetOwnedAccountProfileIdPage,
+];
 
 /**
  * Sent or defined with no live handler (Delete), or neither sender nor
@@ -161,7 +221,7 @@ describe('profile-contract-parity', () => {
 
   it('accounts for every Profile/Timeline command key', () => {
     const coveredValues = new Set(COVERED.map((c) => c.pattern));
-    const allowed = new Set([...FIND_MANY, ...SCALAR, ...UNHANDLED]);
+    const allowed = new Set([...FIND_MANY, ...SCALAR, ...OBJECT, ...UNHANDLED]);
     for (const commands of [ProfileCommands, TimelineCommands]) {
       for (const value of Object.values(commands)) {
         expect(coveredValues.has(value) || allowed.has(value)).toBe(true);

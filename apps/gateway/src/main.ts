@@ -1,3 +1,4 @@
+import { installPayloadFreeLogging } from '@optimistic-tanuki/logger';
 /**
  * This is not a production server yet!
  * This is only a minimal backend to get started.
@@ -24,6 +25,7 @@ import { assertOAuthStateEnvironment } from './controllers/oauth/oauth-state.sto
 import { MicroserviceExceptionFilter } from './filters/microservice-exception.filter';
 
 async function bootstrap() {
+  installPayloadFreeLogging();
   assertOAuthStateEnvironment();
   const registry = loadConfiguredRegistry(process.env.APP_REGISTRY_PATH);
   const app = await NestFactory.create(AppModule);
@@ -85,7 +87,7 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
     allowedHeaders:
-      'Authorization,Content-Type,X-Requested-With,X-ot-appscope,X-ot-app-id,X-ot-session-mode',
+      'Authorization,Content-Type,X-Requested-With,X-ot-appscope,X-ot-app-id,X-ot-session-mode,X-ot-deletion-receipt',
     preflightContinue: false,
     optionsSuccessStatus: 204,
   });

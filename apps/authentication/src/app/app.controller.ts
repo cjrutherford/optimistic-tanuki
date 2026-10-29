@@ -16,6 +16,11 @@ import {
 import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import { EmailAuthService, AuthEmailContext } from './email-auth.service';
 import { AuthActionPurpose } from '../email-auth/entities/auth-action-token.entity';
+import {
+  GuardianPermissionService,
+  GuardianPermissionContext,
+} from '../guardian-permissions/guardian-permission.service';
+import { GuardianPolicyNoticeService } from '../guardian-permissions/guardian-policy-notice.service';
 
 @Controller()
 export class AppController {
@@ -23,6 +28,8 @@ export class AppController {
     private readonly appService: AppService,
     private readonly oauthService: OAuthService,
     private readonly emailAuthService: EmailAuthService,
+    private readonly guardianPermissions: GuardianPermissionService,
+    private readonly guardianPolicyNotices: GuardianPolicyNoticeService,
     private readonly l: Logger
   ) {}
 
@@ -78,12 +85,180 @@ export class AppController {
       token: string;
       purpose: AuthActionPurpose.Verification | AuthActionPurpose.MagicLink;
       profileId?: string;
+      appId?: string;
     }
   ) {
     return this.emailAuthService.consumeLoginAction(
       data.token,
       data.purpose,
-      data.profileId
+      data.profileId,
+      data.appId
+    );
+  }
+
+  @MessagePattern({ cmd: AuthCommands.RequestGuardianPermission })
+  requestGuardianPermission(
+    @Payload()
+    data: {
+      dateOfBirth: string;
+      applicantEmail: string;
+      guardianEmail: string;
+      context: GuardianPermissionContext;
+    }
+  ) {
+    return this.guardianPermissions.requestPermission({
+      dateOfBirth: data.dateOfBirth,
+      applicantEmail: data.applicantEmail,
+      guardianEmail: data.guardianEmail,
+      context: data.context,
+    });
+  }
+
+  @MessagePattern({ cmd: AuthCommands.AttestGuardianPermission })
+  attestGuardianPermission(
+    @Payload()
+    data: {
+      token: string;
+      guardianUserId: string;
+      attested: true;
+      attestationVersion: string;
+      dateOfBirth?: string;
+    }
+  ) {
+    return this.guardianPermissions.attestAsGuardian(
+      data.token,
+      data.guardianUserId,
+      data
+    );
+  }
+
+  @MessagePattern({ cmd: AuthCommands.ValidateGuardianResume })
+  validateGuardianResume(@Payload() data: { token: string }) {
+    return this.guardianPermissions.validateResume(data.token);
+  }
+
+  @MessagePattern({ cmd: AuthCommands.AttachGuardianPermission })
+  attachGuardianPermission(@Payload() data: { token: string; userId: string }) {
+    return this.guardianPermissions.attachAccount(data.token, data.userId);
+  }
+
+  @MessagePattern({ cmd: AuthCommands.CheckGuardianAccess })
+  async checkGuardianAccess(
+    @Payload() data: { userId: string; appId?: string }
+  ) {
+    await this.guardianPermissions.assertAccountAccess(data.userId, data.appId);
+    return { allowed: true };
+  }
+
+  @MessagePattern({ cmd: AuthCommands.AuthorizeGuardianProfileOperation })
+  async authorizeGuardianProfileOperation(
+    @Payload()
+    data: {
+      actorUserId: string;
+      dependentUserId: string;
+      appId: string;
+      operation: string;
+    }
+  ) {
+    await this.guardianPermissions.assertDelegatedProfileAccess(data);
+    return { allowed: true };
+  }
+
+  @MessagePattern({ cmd: AuthCommands.AuthorizeGuardianContentOperation })
+  async authorizeGuardianContentOperation(
+    @Payload()
+    data: {
+      actorUserId: string;
+      dependentUserId: string;
+      appId: string;
+      operation: string;
+    }
+  ) {
+    await this.guardianPermissions.assertDelegatedContentAccess(data);
+    return { allowed: true };
+  }
+
+  @MessagePattern({ cmd: AuthCommands.ListGuardianDependents })
+  listGuardianDependents(@Payload() data: { guardianUserId: string }) {
+    return this.guardianPermissions.listGuardianDependents(data.guardianUserId);
+  }
+
+  @MessagePattern({ cmd: AuthCommands.WithdrawGuardianPermissionForGuardian })
+  withdrawGuardianPermissionForGuardian(
+    @Payload() data: { guardianUserId: string; dependentUserId: string }
+  ) {
+    return this.guardianPermissions.withdrawForGuardian(
+      data.guardianUserId,
+      data.dependentUserId
+    );
+  }
+
+  @MessagePattern({ cmd: AuthCommands.WithdrawGuardianPermission })
+  withdrawGuardianPermission(@Payload() data: { userId: string }) {
+    return this.guardianPermissions.withdraw(data.userId);
+  }
+
+  @MessagePattern({ cmd: AuthCommands.WithdrawGuardianPermissionByToken })
+  withdrawGuardianPermissionByToken(@Payload() data: { token: string }) {
+    return this.guardianPermissions.withdrawByToken(data.token);
+  }
+
+  @MessagePattern({ cmd: AuthCommands.ResendGuardianApplicantContinuation })
+  resendGuardianApplicantContinuation(@Payload() data: { token: string }) {
+    return this.guardianPermissions.resendApplicantContinuation(data.token);
+  }
+
+  @MessagePattern({ cmd: AuthCommands.ScheduleGuardianPolicyNotice })
+  scheduleGuardianPolicyNotice(
+    @Payload() data: { policyVersion?: string; operatorToken?: string }
+  ) {
+    if (
+      typeof data?.policyVersion !== 'string' ||
+      typeof data?.operatorToken !== 'string'
+    ) {
+      throw new RpcException(
+        'A guardian policy version and operator token are required'
+      );
+    }
+    return this.guardianPolicyNotices.schedulePolicyNotice(
+      data.policyVersion,
+      data.operatorToken
+    );
+  }
+
+  @MessagePattern({ cmd: AuthCommands.RetryGuardianPolicyNoticeFailures })
+  retryGuardianPolicyNoticeFailures(
+    @Payload() data: { policyVersion?: string; operatorToken?: string }
+  ) {
+    if (
+      typeof data?.policyVersion !== 'string' ||
+      typeof data?.operatorToken !== 'string'
+    ) {
+      throw new RpcException(
+        'A guardian policy version and operator token are required'
+      );
+    }
+    return this.guardianPolicyNotices.retryFailedNotices(
+      data.policyVersion,
+      data.operatorToken
+    );
+  }
+
+  @MessagePattern({ cmd: AuthCommands.GetGuardianPolicyNoticeStatus })
+  getGuardianPolicyNoticeStatus(
+    @Payload() data: { policyVersion?: string; operatorToken?: string }
+  ) {
+    if (
+      typeof data?.policyVersion !== 'string' ||
+      typeof data?.operatorToken !== 'string'
+    ) {
+      throw new RpcException(
+        'A guardian policy version and operator token are required'
+      );
+    }
+    return this.guardianPolicyNotices.getNoticeStatus(
+      data.policyVersion,
+      data.operatorToken
     );
   }
 
@@ -128,7 +303,19 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: AuthCommands.Login })
-  async login(@Payload() data: LoginRequest & { profileId: string }) {
+  async login(
+    @Payload()
+    data: LoginRequest & {
+      profileId: string;
+      appId?: string;
+      ageAssessment?: {
+        dateOfBirth?: string;
+        guardianEmail?: string;
+        context: GuardianPermissionContext;
+      };
+      deferSession?: boolean;
+    }
+  ) {
     try {
       const missingFields = validateRequiredFields<LoginRequest>(data, [
         'email',
@@ -140,7 +327,15 @@ export class AppController {
         );
       }
       const { email, password, mfa } = data;
-      return await this.appService.login(email, password, mfa, data.profileId);
+      return await this.appService.login(
+        email,
+        password,
+        mfa,
+        data.profileId,
+        data.appId,
+        data.ageAssessment,
+        data.deferSession
+      );
     } catch (e) {
       if (e instanceof RpcException) {
         throw e;
@@ -165,15 +360,23 @@ export class AppController {
         );
       }
 
-      const { email, fn, ln, password, confirm, bio } = data;
+      const { email, fn, ln, password, confirm, bio, ageEligibilityStatus } =
+        data;
       const userReg = await this.appService.registerUser(
         email,
         fn,
         ln,
         password,
         confirm,
-        bio
+        bio,
+        ageEligibilityStatus === 'adult' ? 'adult' : undefined
       );
+      if (data.guardianResumeToken) {
+        await this.guardianPermissions.attachAccount(
+          data.guardianResumeToken,
+          userReg.data.user.id
+        );
+      }
       return userReg;
     } catch (e) {
       if (e instanceof RpcException) {
@@ -234,7 +437,10 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: AuthCommands.Validate })
-  async validate(@Payload() data: ValidateTokenRequest) {
+  async validate(
+    @Payload()
+    data: ValidateTokenRequest & { appId?: string; activity?: boolean }
+  ) {
     try {
       const missingFields = validateRequiredFields<ValidateTokenRequest>(data, [
         'token',
@@ -246,7 +452,11 @@ export class AppController {
         );
       }
       const { token } = data;
-      const tokenValidation = await this.appService.validateToken(token);
+      const tokenValidation = await this.appService.validateToken(
+        token,
+        data.appId,
+        data.activity === true
+      );
       return tokenValidation;
     } catch (e) {
       if (e instanceof RpcException) {
@@ -257,17 +467,39 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: AuthCommands.Issue })
-  async issue(@Payload() data: { userId: string; profileId?: string }) {
+  async issue(
+    @Payload() data: { userId: string; profileId?: string; appId?: string }
+  ) {
     try {
       const { userId, profileId } = data;
       if (!userId) throw new RpcException('userId is required');
-      return await this.appService.issueToken(userId, profileId);
+      return await this.appService.issueToken(userId, profileId, data.appId);
     } catch (e) {
       if (e instanceof RpcException) {
         throw e;
       }
       throw new RpcException(e);
     }
+  }
+
+  @MessagePattern({ cmd: AuthCommands.CreateOAuthCallbackSession })
+  createOAuthCallbackSession(
+    @Payload() data: { userId: string; profileId: string; appId: string }
+  ) {
+    return this.appService.createOAuthCallbackSession(data);
+  }
+
+  @MessagePattern({ cmd: AuthCommands.ResolveOAuthCallbackSession })
+  resolveOAuthCallbackSession(
+    @Payload()
+    data: {
+      sessionId: string;
+      userId: string;
+      profileId: string;
+      appId: string;
+    }
+  ) {
+    return this.appService.resolveOAuthCallbackSession(data);
   }
 
   @MessagePattern({ cmd: AuthCommands.EnableMultiFactor })
@@ -323,6 +555,9 @@ export class AppController {
       displayName: string;
       profileId?: string;
       emailVerified?: boolean;
+      appId?: string;
+      ageEligibilityStatus?: 'adult';
+      guardianResumeToken?: string;
     }
   ) {
     try {
@@ -341,7 +576,10 @@ export class AppController {
         data.email,
         data.displayName,
         data.profileId,
-        data.emailVerified ?? false
+        data.emailVerified ?? false,
+        data.appId,
+        data.ageEligibilityStatus,
+        data.guardianResumeToken
       );
     } catch (e) {
       if (e instanceof RpcException) throw e;

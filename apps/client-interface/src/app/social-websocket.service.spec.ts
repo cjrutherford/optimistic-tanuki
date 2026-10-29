@@ -277,10 +277,23 @@ describe('SocialWebSocketService socket lifecycle', () => {
       }
     );
 
+    it('does not log socket error payloads or event DTOs', () => {
+      const secretError = { message: 'private gateway token' };
+      const secretPost = { id: 'private-post-id', content: 'private body' };
+
+      handlers['error'](secretError);
+      handlers['post_created'](secretPost);
+
+      expect(errorSpy).toHaveBeenCalledWith('Socket error');
+      expect(logSpy).toHaveBeenCalledWith('Post created');
+      expect(errorSpy).not.toHaveBeenCalledWith('Socket error:', secretError);
+      expect(logSpy).not.toHaveBeenCalledWith('Post created:', secretPost);
+    });
+
     it('retries instead of logging out for a non-auth connect error', (done) => {
       service.getConnectionError().subscribe((error) => {
         if (error) {
-          expect(error).toBe('Connection error boom');
+          expect(error).toBe('Connection error');
           done();
         }
       });
@@ -376,6 +389,15 @@ describe('SocialWebSocketService socket lifecycle', () => {
     it('replaces the whole list on a feed response', () => {
       handlers['feed']([post('7')]);
       expect(service['posts$'].value.map((p) => p.id)).toEqual(['7']);
+    });
+
+    it('clears cached posts and announces a privacy invalidation', () => {
+      handlers['feed']([post('private-1')]);
+      const invalidations = jest.fn();
+      service.getContentInvalidated().subscribe(invalidations);
+      handlers['social_content_invalidated']({});
+      expect(service['posts$'].value).toEqual([]);
+      expect(invalidations).toHaveBeenCalledTimes(1);
     });
   });
 

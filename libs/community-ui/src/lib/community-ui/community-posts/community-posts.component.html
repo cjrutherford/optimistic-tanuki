@@ -71,6 +71,8 @@
       <lib-social-compose
         [title]="'Create Post'"
         [profileId]="currentProfileId"
+        [communityId]="community()?.id"
+        [audienceOptions]="communityAudienceOptions"
         (postSubmitted)="createdPost($event)"
       ></lib-social-compose>
       } @else {
@@ -85,7 +87,7 @@
       <lib-post
         [content]="post"
         [profile]="profiles()[post.profileId]"
-        [currentUserId]="currentUserId"
+        [currentUserId]="currentProfileId"
         [profileId]="currentProfileId"
         [userVote]="getUserVote(post.id)"
         [voteCount]="getVoteCount(post.id)"
@@ -96,6 +98,7 @@
         (reactionChange)="onReactionChanged($event)"
         (startChat)="onStartChat($event)"
         (newCommentAdded)="onCommentAdded($event)"
+        (reportPost)="reportPost(post)"
       ></lib-post>
       } @empty {
       <div class="no-posts">
@@ -108,7 +111,13 @@
       </div>
       }
     </div>
-    } @if (activeTab() === 'manage') {
+    @if (reportTargetPostId()) {
+    <lib-report-dialog
+      contentType="post"
+      [contentId]="reportTargetPostId()!"
+      (closeDialog)="closeReportDialog()"
+    ></lib-report-dialog>
+    } } @if (activeTab() === 'manage') {
     <div class="manage-content">
       <h3>Community Management</h3>
       <p>Manage your community members, settings, and more.</p>

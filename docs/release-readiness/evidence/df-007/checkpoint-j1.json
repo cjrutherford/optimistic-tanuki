@@ -1,0 +1,287 @@
+{
+  "checkpoint": "DF-007-J1",
+  "recordedAt": "2026-10-19T19:26:50.651312+00:00",
+  "status": "LOCALLY_VERIFIED_INTERNAL_JOB_FOUNDATION",
+  "baseRevision": "ae5e06802baa0a638acff568c64ea3f263c8e43a",
+  "sourceManifest": {
+    "inputCount": 15,
+    "sourceHashes": {
+      "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "def70680ba746caeffa288502464bc7eb9fa92920516d3a28e289e4692f6a799",
+      "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "7a9575378da3170ab1d76826f9e2021ed84d5b44a43bccf2177f7b7f2a8ff342",
+      "apps/authentication/src/account-export-jobs/entities/account-export-job.entity.ts": "88edcd6c8a894e5d9ae7da50b4792bd2616290861633efc46a382eb29a304310",
+      "apps/authentication/migrations/1792435947180-AccountExportJobs.ts": "15c7797af34b9a9439f64e77502ff6ae6ca2b5d4c0f1d794c5d96c9866f35a74",
+      "apps/authentication/src/app/account-export.controller.ts": "94568eb53ecfff90762a0846454adc2fdf1788d3d1597ca624ba47399ccd3885",
+      "apps/authentication/src/app/account-export.service.ts": "0dc967ebc11a55e143e9aee5825ef6fe6dc80e9e7021491eca54fb57ece724a7",
+      "apps/authentication/src/app/app.module.ts": "2c291b7f4d1ec86ff7672f392605f544c801923da6ad62369b2f8b5f2ae2dae6",
+      "apps/authentication/src/app/loadDatabase.ts": "061039f70ff1a494e90f8ecbcb0189f76d15de0f12bcd76c39e6e38730340e71",
+      "apps/authentication/src/app/loadDatabase.spec.ts": "f3613066a78ecf8160027ba992f24a81e1e2342be00d7aeb3e70468f02382312",
+      "apps/authentication/src/app/staticDatabase.ts": "41657f762cc5b3c5f1e31669edb7a9b0bef0e13ee89ea34128904c242cc0dbbc",
+      "apps/authentication-e2e/src/authentication/account-export.spec.ts": "25d8ba5dccf6ff16f8ac71843de77782dd695d11ec88d39034983f577afcb6c0",
+      "libs/constants/src/lib/libs/authentication.ts": "2ed4b9758659d3e9fab901078a4530a5546816de544d109169a56facf92ca584",
+      "libs/models/src/lib/libs/account-export/account-export.contract.ts": "8e6eda8b1a7c5ae271b401d58b339f6a96fb2f51967b6e2ad86db4b062b8addc",
+      "libs/models/src/lib/libs/account-export/account-export.contract.spec.ts": "2a11bd04ab672103d7fdd6597b163b87a43df8112f2c15d2763c394bdbcc156d",
+      "libs/models/src/index.ts": "73969e39943899d18bbf840c0998a4eb450052791ae8393457b9574b02e23b56"
+    },
+    "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/source-freeze.json",
+    "sha256": "5ad3943e28be0782c70a75c8e574d0b886cd2097822a49f5186579da16053254"
+  },
+  "fixtureAmendments": [
+    {
+      "path": "apps/authentication-e2e/src/authentication/account-export.spec.ts",
+      "beforeSha256": "9cb42c34e75bf771630675d969633ade37a913e6b30e3fe2086dafca97de178f",
+      "afterSha256": "d66d139828044e57f91b698a7718980483082c8a049e04f50598e5da2e024729",
+      "change": "Use AccountExportJobStatus for settled result; fixes TS2345/TS2339 in new fixture only",
+      "other14InputsUnchanged": true,
+      "imageRebuildRequired": false
+    },
+    {
+      "path": "apps/authentication-e2e/src/authentication/account-export.spec.ts",
+      "beforeSha256": "d66d139828044e57f91b698a7718980483082c8a049e04f50598e5da2e024729",
+      "afterSha256": "9bdda90d0d8575b2b04e751b860bb44819615ddc48e2de3cae27388668a2166b",
+      "change": "Typed named accountId requests, exact RPC negative assertions, capture all accepted fixture IDs for cleanup; remove duplicate handwritten fencing SQL (production method separately DB-tested)",
+      "other14InputsUnchanged": true,
+      "imageRebuildRequired": false
+    },
+    {
+      "path": "apps/authentication-e2e/src/authentication/account-export.spec.ts",
+      "beforeSha256": "9bdda90d0d8575b2b04e751b860bb44819615ddc48e2de3cae27388668a2166b",
+      "afterSha256": "25d8ba5dccf6ff16f8ac71843de77782dd695d11ec88d39034983f577afcb6c0",
+      "change": "Both new TCP cases compare selected five-database fixture state before/after intentional job metadata operations; exact job metadata checked separately",
+      "other14InputsUnchanged": true,
+      "imageRebuildRequired": false
+    }
+  ],
+  "migration": {
+    "path": "apps/authentication/migrations/1792435947180-AccountExportJobs.ts",
+    "generation": "Authentication Nx typeorm:migration:generate target",
+    "isolatedFreshDatabaseBaselineApplyRevertReapply": "PASS",
+    "governance": "PASS",
+    "scope": "New job table and two indexes only"
+  },
+  "verification": {
+    "models": {
+      "suitesPassed": 11,
+      "testsPassed": 108,
+      "scope": "Full target; requested runTestsByPath did not narrow Nx executor"
+    },
+    "authenticationInitial": {
+      "suitesPassed": 23,
+      "suitesFailed": 1,
+      "testsPassed": 297,
+      "testsFailed": 1,
+      "newJobTestsPassed": 5,
+      "enabledPostgresFenceTestsPassed": 2,
+      "failure": "Migration count expected12 instead of13; caused by the new migration and subsequently corrected"
+    },
+    "authenticationAfterMigrationTestRepair": {
+      "suitesPassed": 24,
+      "testsPassed": 296,
+      "testsSkipped": 2,
+      "testsFailed": 0,
+      "skips": "Opt-in PostgreSQL fence tests; separately passed in the earlier enabled run",
+      "scope": "Full target, not a focused spec run"
+    },
+    "authenticationBuild": "PASS",
+    "authenticationLint": "PASS",
+    "modelsLint": "PASS",
+    "authenticationE2eLint": {
+      "result": "PASS",
+      "command": "pnpm exec nx run authentication-e2e:lint"
+    }
+  },
+  "runtime": {
+    "command": "pnpm exec nx run authentication-e2e:e2e:ci --testFile=account-export.spec.ts --testNamePattern=\"stores resumable export job|recovers an expired job lease\"",
+    "acceptedAttempt": 4,
+    "suiteCount": 1,
+    "testsPassed": 2,
+    "testsFailed": 0,
+    "testsSkippedUnselected": 5,
+    "totalTestsInFile": 7,
+    "cacheEnabled": false,
+    "selectedFiveDatabaseFixtureStateBeforeAfter": "PASS in both new cases; intentional job metadata checked separately",
+    "exactJobAndOtherFixtureCleanup": "PASS",
+    "teardown": {
+      "exit": 0,
+      "containers": 0,
+      "networks": 0,
+      "volumes": 0
+    },
+    "postflight": {
+      "sourceCaptureOriginalInputsMatch": 15,
+      "hostFreezeInputsMatch": 15,
+      "otherOriginalInputsUnchanged": 14,
+      "fixtureAmendmentHistory": [
+        "9cb42c34e75bf771630675d969633ade37a913e6b30e3fe2086dafca97de178f",
+        "d66d139828044e57f91b698a7718980483082c8a049e04f50598e5da2e024729",
+        "9bdda90d0d8575b2b04e751b860bb44819615ddc48e2de3cae27388668a2166b",
+        "25d8ba5dccf6ff16f8ac71843de77782dd695d11ec88d39034983f577afcb6c0"
+      ],
+      "protectedFileHashesMatch": 43,
+      "imageIdsMatchFrozenReceipts": 7,
+      "attempt4": {
+        "result": "PASS",
+        "passed": 2,
+        "skippedUnselectedCases": 5,
+        "failed": 0,
+        "logSha256": "ddbe1b666731c87474b4b859bb305c412563f06d859e38dc2875c88ff1cc59a2"
+      },
+      "projectTeardown": "exit=0 down=0 containers=0 networks=0 volumes=0",
+      "privateProjectResourcesRemain": 0
+    },
+    "imageProvenance": {
+      "allImageIdsUnchangedFromFrozenRuntime": true,
+      "authenticationImageId": "sha256:be3879734b3ca6bfaaedebd33b71cfa2a7f5704044d6ababd85952c1b8cf519d",
+      "images": {
+        "authentication": {
+          "tag": "ot-df007-export-jobs/authentication:4e280cf16d6d",
+          "id": "sha256:be3879734b3ca6bfaaedebd33b71cfa2a7f5704044d6ababd85952c1b8cf519d",
+          "labels": {
+            "io.optimistic-tanuki.account-rights.private-project": "ot-df007-export-jobs",
+            "io.optimistic-tanuki.account-rights.source-manifest-sha256": "4e280cf16d6df071f41925d57eb1a2731bf5b43030a496eadad10fae5ee21419",
+            "org.opencontainers.image.revision": "ae5e06802baa0a638acff568c64ea3f263c8e43a"
+          }
+        },
+        "db": {
+          "tag": "postgres:15",
+          "id": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+          "labels": {}
+        },
+        "db_setup": {
+          "tag": "ot-df007-b6-forum/db-setup:reconstructed-389e9fb743af",
+          "id": "sha256:b55e0b7bd7bfdbee8a919679df5e11f194b40ade5dd85c524dadd02a309c9db4",
+          "labels": {
+            "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b6-forum",
+            "org.opencontainers.image.revision": "e34f2f393efe556e47fcc95e73de387308c0eb6f"
+          }
+        },
+        "forum": {
+          "tag": "ot-df007-b6-forum/forum:b6-981665ddc7b4",
+          "id": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+          "labels": {
+            "io.optimistic-tanuki.account-rights.patch-sha256": "981665ddc7b49171e7e716bf58e0a72d10b549a84673fc5bec283f5978166045",
+            "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b6-forum",
+            "io.optimistic-tanuki.account-rights.source-manifest-sha256": "3fa42ca1c1f8257a05105b15e9563b6a853d2dc3464a3c85d05cb91f0f3c55cb",
+            "org.opencontainers.image.revision": "e34f2f393efe556e47fcc95e73de387308c0eb6f"
+          }
+        },
+        "permissions": {
+          "tag": "ot-df007-b5-social-state/permissions:b5-7cdb1d7f1581",
+          "id": "sha256:c0518f410f3b18dcfc7b85e763f622bd52fa64d9027853164f74e69f10e1bd91",
+          "labels": {
+            "io.optimistic-tanuki.account-rights.patch-sha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+            "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b5-social-state",
+            "io.optimistic-tanuki.account-rights.source-manifest-sha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+            "org.opencontainers.image.revision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f"
+          }
+        },
+        "profile": {
+          "tag": "ot-df007-b5-social-state/profile:b5-7cdb1d7f1581",
+          "id": "sha256:a3bf0cffaf2551643e797da2abf78b10c0733a3cecc3cced85f2c979aee4db81",
+          "labels": {
+            "io.optimistic-tanuki.account-rights.patch-sha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+            "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b5-social-state",
+            "io.optimistic-tanuki.account-rights.source-manifest-sha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+            "org.opencontainers.image.revision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f"
+          }
+        },
+        "social": {
+          "tag": "ot-df007-b5-social-state/social:b5-7cdb1d7f1581",
+          "id": "sha256:01bb87b452b1833c275b79866e3a4937ff3964f7f079e3ba0e544ba0502d04be",
+          "labels": {
+            "io.optimistic-tanuki.account-rights.patch-sha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+            "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b5-social-state",
+            "io.optimistic-tanuki.account-rights.source-manifest-sha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+            "org.opencontainers.image.revision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f"
+          }
+        }
+      }
+    },
+    "actualProcessRestartTested": false,
+    "unattendedBackgroundWorkerImplemented": false
+  },
+  "protectedWip": {
+    "files": 43,
+    "hashGuard": "PASS",
+    "accidentalFormatterChangesRestoredToOriginalHashes": 6,
+    "privateRecoveryReceipt": ".runtime-artifacts/account-rights/finish-sequence/coordinator/protected-recovery.json"
+  },
+  "evidence": {
+    "authentication-lint.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/authentication-lint.log",
+      "sha256": "c01de40fd19bc20fb981236a325676fe2c2a032d9326c6d74086b8e3c1cecbc2"
+    },
+    "models-account-export-test.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/models-account-export-test.log",
+      "sha256": "a7339b8ba7d8bd5e0e9c3d0c4cc239d7db910426f903a36a09f44ffd8f734f19"
+    },
+    "authentication-job-test.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/authentication-job-test.log",
+      "sha256": "1bc94d1651eeb7cd0efc134444c40db1af47c83b410c5f29f197a7aff6e96f32"
+    },
+    "migration-governance.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/migration-governance.log",
+      "sha256": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9"
+    },
+    "migration-revert.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/migration-revert.log",
+      "sha256": "3ae77abb9e23795ce9a33d88ed0dd6752ffc84d3ccaa839d76591a1095b41e4b"
+    },
+    "models-lint.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/models-lint.log",
+      "sha256": "08ad94a04403947cdc126287d18bcfca1aa5e51df12f2cd4ac64209ae56fbe6f"
+    },
+    "loadDatabase-spec.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/loadDatabase-spec.log",
+      "sha256": "e00088f99a7b98fdc7d9e9177eb49e5437a53d75d6e8e58bb087f509a19cb853"
+    },
+    "migration-rerun.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/migration-rerun.log",
+      "sha256": "a9207c18f77b6ae10feed6fa9b627f1fa15e59b7dddb0cbdd50ec7862f336564"
+    },
+    "migration-run.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/migration-run.log",
+      "sha256": "2644f9cfd953c180279ac79809d761f97397dff44577c404b5a3615f60969bba"
+    },
+    "authentication-build.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/authentication-build.log",
+      "sha256": "4384b193b7228b4c274bc3c7259f152471d9dc23f4532debef9df5c6851d77f7"
+    },
+    "runtime/attempt-4/e2e.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/runtime/attempt-4/e2e.log",
+      "sha256": "ddbe1b666731c87474b4b859bb305c412563f06d859e38dc2875c88ff1cc59a2"
+    },
+    "runtime/attempt-4/result.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/runtime/attempt-4/result.json",
+      "sha256": "578dcbb56f47d8afd937f886793824a79a502d0d1cbadebce10d21298daefd14"
+    },
+    "runtime/attempt-4/summary.txt": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/runtime/attempt-4/summary.txt",
+      "sha256": "e47f952af6b895b642ebf98c91c291e49e15f870f9eec1d8bee59fe8c0e9f1e7"
+    },
+    "runtime/attempt-4/postflight.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/runtime/attempt-4/postflight.json",
+      "sha256": "caac3b3ce25312dc2206fc39c80d0a8bf551d5c389bf2dc8f1366e19558c7391"
+    },
+    "runtime/imageinspect/attempt-4-receipts.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/runtime/imageinspect/attempt-4-receipts.json",
+      "sha256": "56d31b7bdf59a265a9c1f42bbdb1431e6dc93e9f33de40bbb95850acecbd9485"
+    },
+    "e2e-lint.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/coordinator/e2e-lint.log",
+      "sha256": "4ff1dd8781845ec4cd7c45fd9c61665244cf9cd5ee023216ef81fd130a567c96"
+    }
+  },
+  "remaining": [
+    "Complete owner/store register and full export/delete/readback adapters",
+    "Portable JSON and image/video artifacts",
+    "Deletion fencing, session revocation, counterpart preservation and final readback",
+    "Job metadata expiry/deletion and per-owner orchestration checkpoints",
+    "Shared user-facing lifecycle UI",
+    "Separately owned provider/backup/deployment acceptance"
+  ],
+  "nonAcceptance": [
+    "No downloadable artifact or complete account export",
+    "No deletion implementation or account-wide snapshot claim",
+    "No DF-007/RR-11 or production release acceptance"
+  ]
+}

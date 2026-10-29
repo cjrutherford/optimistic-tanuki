@@ -33,7 +33,11 @@ import {
   BadgeComponent,
   IconComponent,
 } from '@optimistic-tanuki/common-ui';
-import { PostComponent, PostDto } from '@optimistic-tanuki/social-ui';
+import {
+  PostComponent,
+  PostDto,
+  ReportDialogComponent,
+} from '@optimistic-tanuki/social-ui';
 import { OptomisitcTanukiAPIService as ProfileAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { PaymentService, BusinessPage } from '../../services/payment.service';
 import {
@@ -50,6 +54,10 @@ import {
   UpdateClassifiedAdDto,
 } from '@optimistic-tanuki/classified-ui';
 import { SelectComponent } from '@optimistic-tanuki/form-ui';
+import {
+  SafetyReportDialogComponent,
+  SafetyReportSubmission,
+} from '../../components/safety-report-dialog.component';
 
 interface CommunityTreeNode {
   community: LocalCommunity;
@@ -72,9 +80,11 @@ interface CommunityTreeNode {
     BadgeComponent,
     IconComponent,
     PostComponent,
+    ReportDialogComponent,
     ClassifiedListComponent,
     ClassifiedFormComponent,
     SelectComponent,
+    SafetyReportDialogComponent,
   ],
   templateUrl: './city.component.html',
   styleUrls: ['./city.component.scss'],
@@ -122,6 +132,11 @@ export class CityComponent implements OnInit, OnDestroy {
   showCreateBusinessModal = signal(false);
   showElectionModal = signal(false);
   showClassifiedForm = signal(false);
+  safetyReport = signal<{
+    contentType: 'classified' | 'seller';
+    contentId: string;
+  } | null>(null);
+  reportTargetPostId = signal<string | null>(null);
   creatingCommunity = signal(false);
   creatingBusiness = signal(false);
 
@@ -131,25 +146,26 @@ export class CityComponent implements OnInit, OnDestroy {
   });
 
   discussionPosts = computed(() =>
-    this.posts().map(
-      (post): PostDto => ({
+    this.posts().map((post): PostDto => {
+      return {
         id: post.id,
         title: post.title,
         content: post.content,
-        userId: post.authorName,
-        profileId: post.authorName,
+        userId: post.authorUserId || '',
+        profileId: post.authorProfileId || '',
         communityId: post.communityId,
         createdAt: new Date(post.createdAt),
-      })
-    )
+      };
+    })
   );
 
   postProfiles = computed(() =>
     this.posts().reduce<
       Record<string, { id: string; name: string; avatar: string }>
     >((profiles, post) => {
-      profiles[post.authorName] = {
-        id: post.authorName,
+      if (!post.authorProfileId) return profiles;
+      profiles[post.authorProfileId] = {
+        id: post.authorProfileId,
         name: post.authorName,
         avatar: post.authorAvatar || CityComponent.fallbackProfileAvatar,
       };
@@ -674,6 +690,71 @@ export class CityComponent implements OnInit, OnDestroy {
     } catch {
       this.messageService.addMessage({
         content: 'Failed to post listing. Please try again.',
+        type: 'error',
+      });
+    }
+  }
+
+  async reportClassified(ad: ClassifiedAdDto): Promise<void> {
+    this.safetyReport.set({ contentType: 'classified', contentId: ad.id });
+  }
+
+  reportDiscussionPost(post: PostDto): void {
+    this.reportTargetPostId.set(post.id);
+  }
+
+  closeDiscussionReport(): void {
+    this.reportTargetPostId.set(null);
+  }
+
+  getActingProfileId(): string {
+    return this.authState.getActingProfileId();
+  }
+
+  async reportClassifiedSeller(ad: ClassifiedAdDto): Promise<void> {
+    if (ad.profileId)
+      this.safetyReport.set({ contentType: 'seller', contentId: ad.profileId });
+  }
+
+  async blockClassifiedSeller(ad: ClassifiedAdDto): Promise<void> {
+    if (!ad.profileId || ad.profileId === this.authState.getActingProfileId())
+      return;
+    try {
+      await firstValueFrom(
+        this.http.post(`${this.apiBaseUrl}/privacy/block`, {
+          blockedId: ad.profileId,
+          reason: 'Blocked from Local Hub classifieds',
+        })
+      );
+      this.messageService.addMessage({
+        content: 'Seller blocked.',
+        type: 'success',
+      });
+    } catch {
+      this.messageService.addMessage({
+        content: 'Could not block this seller.',
+        type: 'error',
+      });
+    }
+  }
+
+  async submitClassifiedSafetyReport(
+    report: SafetyReportSubmission
+  ): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.post(`${this.apiBaseUrl}/privacy/report`, {
+          ...report,
+        })
+      );
+      this.safetyReport.set(null);
+      this.messageService.addMessage({
+        content: 'Report sent to Towne Square for human review.',
+        type: 'success',
+      });
+    } catch {
+      this.messageService.addMessage({
+        content: 'Could not submit the report to Towne Square.',
         type: 'error',
       });
     }

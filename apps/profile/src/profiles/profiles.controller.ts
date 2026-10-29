@@ -5,6 +5,11 @@ import { ProfileService } from '../app/profile.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ProfileCommands } from '@optimistic-tanuki/constants';
 import { CreateProfileDto, UpdateProfileDto } from '@optimistic-tanuki/models';
+import {
+  GuardianConsoleProfileRequestDto,
+  GuardianProfileRequestDto,
+  AccountProfileOwnershipRequest,
+} from '@optimistic-tanuki/profile-contracts';
 
 @Controller('profiles')
 export class ProfilesController {
@@ -12,6 +17,18 @@ export class ProfilesController {
     private readonly profileService: ProfileService,
     private readonly logger: Logger
   ) {}
+
+  @MessagePattern({ cmd: ProfileCommands.CheckAccountProfileOwnership })
+  checkAccountProfileOwnership(
+    @Payload() request: AccountProfileOwnershipRequest
+  ) {
+    return this.profileService.checkAccountProfileOwnership(request);
+  }
+
+  @MessagePattern({ cmd: ProfileCommands.ResolveAccountBindings })
+  resolveAccountBindings(@Payload() request: { profileIds: string[] }) {
+    return this.profileService.resolveAccountBindings(request);
+  }
 
   @MessagePattern({ cmd: ProfileCommands.Create })
   async createProfile(@Payload() createProfileDto: CreateProfileDto) {
@@ -41,6 +58,14 @@ export class ProfilesController {
     throw new Error('Must provide either id or userId to get profile');
   }
 
+  @MessagePattern({ cmd: ProfileCommands.GetGuardianConsoleProfile })
+  getGuardianConsoleProfile(@Payload() data: GuardianConsoleProfileRequestDto) {
+    return this.profileService.getGuardianConsoleProfile(
+      data.userId,
+      data.appScope
+    );
+  }
+
   @MessagePattern({ cmd: ProfileCommands.GetAll })
   async getAllProfiles(@Payload() query: FindManyOptions<Profile>) {
     return await this.profileService.findAll(query || {});
@@ -65,6 +90,16 @@ export class ProfilesController {
     // contracts type keeps it optional because gateway bodies omit it.
     const id = data.id as string;
     return await this.profileService.update(id, { ...data, id });
+  }
+
+  @MessagePattern({ cmd: ProfileCommands.GetGuardian })
+  async getGuardianProfile(@Payload() request: GuardianProfileRequestDto) {
+    return this.profileService.getGuardianProfile(request);
+  }
+
+  @MessagePattern({ cmd: ProfileCommands.UpdateGuardian })
+  async updateGuardianProfile(@Payload() request: GuardianProfileRequestDto) {
+    return this.profileService.updateGuardianProfile(request);
   }
 
   @MessagePattern({ cmd: ProfileCommands.SetBlogRole })

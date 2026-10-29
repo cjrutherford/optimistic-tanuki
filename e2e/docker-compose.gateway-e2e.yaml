@@ -73,7 +73,7 @@ services:
       DATABASE_NAME: postgres
       POSTGRES_DB: ot_authentication
       AUTH_AUTO_VERIFY_EMAILS: 'true'
-      JWT_SECRET: e2e-test-jwt-secret
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
     depends_on:
       db:
         condition: service_healthy
@@ -198,7 +198,7 @@ services:
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
       NODE_ENV: test
-      JWT_SECRET: e2e-test-jwt-secret
+      JWT_SECRET: e2e-only-jwt-secret-for-isolated-tests-2026
       OAUTH_STATE_SECRET: e2e-oauth-state-secret
       REDIS_HOST: redis
       REDIS_PORT: 6379

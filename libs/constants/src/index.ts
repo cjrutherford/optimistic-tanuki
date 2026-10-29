@@ -1,7 +1,12 @@
 export * from './lib/libs/constants.module';
 export { default as AuthCommands } from './lib/libs/authentication';
+export type {
+  AccountProfileOwnershipRequest,
+  AccountProfileOwnershipResult,
+} from './lib/libs/profile';
 export {
   ProfileCommands,
+  PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES,
   GoalCommands,
   TimelineCommands,
 } from './lib/libs/profile';
@@ -14,6 +19,8 @@ export {
   LinkCommands,
   FollowCommands,
   SocialComponentCommands,
+  SocialCommands,
+  SOCIAL_ACCOUNT_EXPORT_CAPTURE_SOURCES,
   SocialRealtimeCommands,
   CommunityCommands,
   NotificationCommands,
@@ -41,7 +48,11 @@ export {
   filterEnabledEntries,
   DisabledClientProxy,
 } from './lib/libs/service-composition';
-export { AssetCommands } from './lib/libs/asset';
+export {
+  AssetCommands,
+  ASSETS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from './lib/libs/asset';
+export { GuardianContentCommands } from './lib/libs/guardian-content';
 export {
   ProjectCommands,
   ProjectInviteCommands,
@@ -55,7 +66,10 @@ export {
   TaskNoteCommands,
   AnalyticsCommands,
 } from './lib/libs/project';
-export { default as ChatCommands } from './lib/libs/chat';
+export {
+  default as ChatCommands,
+  CHAT_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from './lib/libs/chat';
 export * from './lib/libs/telos';
 export * from './lib/libs/prompt';
 export * from './lib/libs/ai-orchestration';
@@ -72,6 +86,7 @@ export {
 
 export {
   PermissionCommands,
+  PERMISSIONS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
   RoleCommands,
   AppScopeCommands,
   ALL_APP_SCOPES,
@@ -91,9 +106,15 @@ export {
   CatalogCommands,
 } from './lib/libs/store';
 
-export { AppConfigCommands } from './lib/libs/app-config';
+export {
+  AppConfigCommands,
+  APP_CONFIGURATOR_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from './lib/libs/app-config';
 export { TrainerConfigCommands } from './lib/libs/trainer';
-export { WorkspaceCommands } from './lib/libs/workspace';
+export {
+  WorkspaceCommands,
+  WORKSPACE_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from './lib/libs/workspace';
 export { HardwareCommands } from './lib/libs/system-configurator';
 export {
   AppointmentCommands,
@@ -108,16 +129,24 @@ export {
   ForumModerationCommands,
   ForumLinkCommands,
   ForumCommands,
+  FORUM_ACCOUNT_EXPORT_CAPTURE_SOURCES,
 } from './lib/libs/forum';
 
-export { VideoCommands } from './lib/libs/videos';
+export {
+  VideoCommands,
+  VIDEOS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from './lib/libs/videos';
 
 export { WellnessCommands } from './lib/libs/wellness';
 
 export { WellnessAiCommands } from './lib/libs/ai-orchestration';
 
-export { ClassifiedCommands } from './lib/libs/classifieds';
+export {
+  ClassifiedCommands,
+  CLASSIFIEDS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from './lib/libs/classifieds';
 export { BillingCommands } from './lib/libs/billing';
+export { PAYMENTS_ACCOUNT_EXPORT_CAPTURE_SOURCES } from './lib/libs/payments';
 
 export {
   PLATFORM_FEE_PERCENTAGE,

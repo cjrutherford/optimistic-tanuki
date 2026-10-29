@@ -25,6 +25,8 @@ import {
 } from './sponsorship';
 import {
   CommunityDto,
+  CommunityRosterQueryDto,
+  CommunityChatMembershipsQueryDto,
   CommunityRefDto,
   CreateCommunityDto,
   JoinCommunityDto,
@@ -50,6 +52,7 @@ import {
   CreateSocialPostDto,
   SocialPostDto,
   SocialPostRefDto,
+  UpdateSocialPostDto,
 } from './social-post';
 
 const validPost = {
@@ -79,6 +82,20 @@ const COVERED: Array<{
   invalid: Record<string, unknown>;
   invalidProps: string[];
 }> = [
+  {
+    pattern: CommunityCommands.GET_VISIBLE_MEMBERS,
+    dto: CommunityRosterQueryDto,
+    valid: { communityId: 'community-1', requestingProfileId: 'profile-1' },
+    invalid: {},
+    invalidProps: ['communityId'],
+  },
+  {
+    pattern: CommunityCommands.GET_CHAT_MEMBERSHIPS,
+    dto: CommunityChatMembershipsQueryDto,
+    valid: { profileId: 'profile-1' },
+    invalid: {},
+    invalidProps: ['profileId'],
+  },
   {
     pattern: PostCommands.CREATE,
     dto: CreateSocialPostDto,
@@ -259,7 +276,7 @@ const COVERED: Array<{
 ];
 
 const DEFERRED_KEYS: Record<string, string[]> = {
-  PostCommands: ['UPDATE', 'DELETE', 'FIND_MANY'],
+  PostCommands: ['UPDATE', 'DELETE', 'FIND_MANY', 'FIND_ASSET_AUDIENCES'],
   CommunityCommands: [
     'UPDATE',
     'DELETE',
@@ -320,6 +337,10 @@ const DEFERRED_KEYS: Record<string, string[]> = {
   BusinessContentCommands: [],
 };
 
+const INTERNAL_KEYS: Record<string, string[]> = {
+  PresenceCommands: ['GET_CONVERSATION_PRESENCE'],
+};
+
 const COMMAND_OBJECTS: Record<string, Record<string, string>> = {
   PostCommands: PostCommands as Record<string, string>,
   CommunityCommands: CommunityCommands as Record<string, string>,
@@ -355,6 +376,7 @@ describe('social-contract-parity', () => {
           Object.values(commands).includes(c.pattern)
         ).map((c) => c.pattern),
         ...DEFERRED_KEYS[name].map((k) => commands[k]),
+        ...(INTERNAL_KEYS[name] ?? []).map((k) => commands[k]),
       ]);
       expect(new Set(Object.values(commands))).toEqual(expected);
       for (const key of DEFERRED_KEYS[name]) {
@@ -383,8 +405,49 @@ describe('social-contract-parity', () => {
       ...validPost,
       appScope: 'social',
       visibility: 'public',
+      publicAudienceExplicit: false,
     });
     expect(await validate(dto)).toEqual([]);
+  });
+
+  it('supports community post visibility and keeps the explicit-public marker read-only', async () => {
+    const create = plainToInstance(CreateSocialPostDto, {
+      ...validPost,
+      visibility: 'community',
+    });
+    expect(await validate(create)).toEqual([]);
+
+    const update = plainToInstance(UpdateSocialPostDto, {
+      visibility: 'community',
+    });
+    expect(await validate(update)).toEqual([]);
+
+    const read = plainToInstance(SocialPostDto, {
+      ...validPost,
+      appScope: 'social',
+      visibility: 'community',
+      publicAudienceExplicit: false,
+    });
+    expect(await validate(read)).toEqual([]);
+
+    const forgedCreate = plainToInstance(CreateSocialPostDto, {
+      ...validPost,
+      visibility: 'public',
+      publicAudienceExplicit: true,
+    });
+    const forgedUpdate = plainToInstance(UpdateSocialPostDto, {
+      visibility: 'public',
+      publicAudienceExplicit: true,
+    });
+    for (const dto of [forgedCreate, forgedUpdate]) {
+      const errors = await validate(dto, {
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      });
+      expect(errors.map((error) => error.property)).toContain(
+        'publicAudienceExplicit'
+      );
+    }
   });
 
   it('SocialEventDto accepts the canonical read shape', async () => {

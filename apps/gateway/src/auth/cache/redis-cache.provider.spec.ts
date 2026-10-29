@@ -11,6 +11,7 @@ const redisClient = {
   del: jest.fn(),
   keys: jest.fn(),
   quit: jest.fn(),
+  isOpen: false,
 };
 
 jest.mock('redis', () => ({
@@ -55,6 +56,15 @@ describe('RedisCacheProvider', () => {
     expect(provider).toBeDefined();
   });
 
+  it('rejects an empty or glob-bearing namespace prefix', () => {
+    expect(
+      () => new RedisCacheProvider('localhost', 6379, '', 0, 5000, '')
+    ).toThrow('key prefix must be non-empty');
+    expect(
+      () => new RedisCacheProvider('localhost', 6379, '', 0, 5000, '*')
+    ).toThrow('key prefix must be non-empty');
+  });
+
   describe('get and set', () => {
     it('should return null for non-existent key', async () => {
       redisClient.get.mockResolvedValue(null);
@@ -96,6 +106,9 @@ describe('RedisCacheProvider', () => {
         'permissions:key1',
         'permissions:key2',
       ]);
+      expect(redisClient.del).not.toHaveBeenCalledWith(
+        expect.arrayContaining(['session:unrelated'])
+      );
     });
   });
 
@@ -109,21 +122,32 @@ describe('RedisCacheProvider', () => {
       expect(result).toBeNull();
     });
 
-    it('set/delete/clear skip redis operations when not connected', async () => {
+    it('set/delete skip redis operations when not connected', async () => {
       await provider.set('k', true);
       await provider.delete('k');
-      await provider.clear();
       expect(redisClient.setEx).not.toHaveBeenCalled();
       expect(redisClient.del).not.toHaveBeenCalled();
       expect(redisClient.keys).not.toHaveBeenCalled();
+    });
+
+    it('fails closed when profile invalidation is requested while disconnected', async () => {
+      await expect(provider.deletePattern('profile:*')).rejects.toThrow(
+        'Redis not connected'
+      );
+    });
+
+    it('fails closed when global clear is requested while disconnected', async () => {
+      await expect(provider.clear()).rejects.toThrow('Redis not connected');
     });
   });
 
   describe('errors and lifecycle', () => {
     it('onModuleDestroy quits when connected', async () => {
       (provider as any).isConnected = true;
+      redisClient.isOpen = true;
       await provider.onModuleDestroy();
       expect(redisClient.quit).toHaveBeenCalled();
+      redisClient.isOpen = false;
     });
 
     it('get handles redis error', async () => {
@@ -144,6 +168,14 @@ describe('RedisCacheProvider', () => {
       redisClient.keys.mockResolvedValue([]);
       await provider.deletePattern('*');
       expect(redisClient.del).not.toHaveBeenCalledWith(expect.anything());
+    });
+
+    it('propagates Redis deletePattern failures', async () => {
+      (provider as any).isConnected = true;
+      redisClient.keys.mockRejectedValue(new Error('redis unavailable'));
+      await expect(provider.deletePattern('profile:*')).rejects.toThrow(
+        'redis unavailable'
+      );
     });
   });
 });

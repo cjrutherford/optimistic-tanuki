@@ -7,6 +7,7 @@ import { ChannelFeed } from '../entities/channel-feed.entity';
 import { ProgramBlock } from '../entities/program-block.entity';
 import { LiveSession } from '../entities/live-session.entity';
 import { ConfigService } from '@nestjs/config';
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 
 export default function loadDatabase(config: ConfigService): DataSourceOptions {
   const database = config.get('database');
@@ -18,6 +19,7 @@ export default function loadDatabase(config: ConfigService): DataSourceOptions {
     ChannelFeed,
     ProgramBlock,
     LiveSession,
+    AccountDeletionWriteFenceEntity,
   ];
   const { host, port, username, password, database: dbName } = database;
   const ormConfig: DataSourceOptions = {
@@ -28,7 +30,8 @@ export default function loadDatabase(config: ConfigService): DataSourceOptions {
     password: password,
     database: dbName,
     entities,
-    synchronize: process.env['NODE_ENV'] !== 'production',
+    connectTimeoutMS: 3000,
+    synchronize: false,
     logging: process.env['NODE_ENV'] === 'development',
   };
   console.log('Database configuration:', {

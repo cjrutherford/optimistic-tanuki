@@ -1,0 +1,219 @@
+# DF-007 account-rights completion map
+
+**Active release scope:** Optimistic Tanuki = `client-interface`; Towne Square = `local-hub`. **N04–N07, A01–A07, D00–D09, D11, D16, D17, D25–D27, U01–U03, R2-01–R2-03, R4-01–R4-05 and R6-01–R6-05 are locally verified; no local slice remains.** Only services/data needed by these two applications enter the remaining release work. The historical platform inventory is reference material, not a count of required release slices. See the [R6 handoff](./R6-LAUNCH-HANDOFF.md).
+
+**Scope clarification (2026-10-23):** The authoritative audit scope is `client-interface` (Optimistic Tanuki), `local-hub` (Towne Square), their required shared services and shared HAI navigation. Historical platform records retain their IDs and accepted evidence as reference. Another product does not become release work through queue position or shared infrastructure alone.
+
+**Status: open.** This map distinguishes bounded internal preview evidence from account-level export, deletion, media portability, and operational acceptance. The local account-controls boundary is verified; external obligations and the remaining journey and claim gates prevent a public release-completion claim. DF-007 remains a release prerequisite; RR-11 remains unaccepted.
+
+## What is verified
+
+The current OT/TS job captures twelve required owners and publishes verified artifacts under [A01–A07](./findings/DF-007-A07.md). Public account controls and integrated browser recovery are locally qualified through [U01–U03](./findings/DF-007-U03.md). The older five-participant preview below remains historical and partial; its completion flag is separate from current job readiness.
+
+Authentication coordinates five internal participants: Authentication, Profile, Permissions, Social, and Forum. They return partial previews. Social B4 and B5 add eleven bounded arrays in one existing participant: six authored-content/interaction projections and five personal-state projections. Results are always partial and unfenced. Social relationship rows are actor-side only; counterpart IDs remain opaque, and the projection omits inbound relationships, copied counterpart content, `itemTitle`, `resultCount`, and `isMutual`. B5's new stores use selected columns, bounded pages and a 1,000-row cap plus one truncation probe per store. That bound is not a claim about rows scanned or memory used inside the database. The existing 15-second deadline does not prove SQL cancellation.
+
+The B5 private run and the later default-target cache-baseline run are separately documented. The cache-baseline run executed the ordinary Authentication E2E Nx target with `cache: false`, against the same approved B5 application images. It qualifies that local preview command only; it does not expand B5's feature or deployment acceptance. See the [B5 finding and receipt](./findings/DF-007-B5.md) and [cache-baseline finding and receipt](./findings/AUTHENTICATION-E2E-CACHE.md).
+
+The ORM source reconciliation found 165 tracked entity files across 24 candidate owner groups, matching the catalog at its reviewed revision. This is structural source evidence, not a complete account inventory: it does not cover all non-ORM stores or establish semantic ownership. Selected non-ORM review identified additional open areas including user-wide Authentication revocation, local OAuth provider unlink, permission-cache consistency, logs, transient OAuth state, video source/generated-media cleanup and processing races, object-storage versions and retention, shared-key custody, providers, and backups. Operator evidence for deployment, sinks, retention, and restore behavior is still required.
+
+The Gateway cache diagnostic repair is independently source-reviewed. Its debug message now serializes only the explicit fields `provider`, `ttl`, and `maxSize`; the configured Redis password still reaches the Redis client. A synthetic sentinel test demonstrated the leak before the fix and its absence afterward. No production credentials, configuration, log level, or log output were inspected, and this narrow fix does not prove compliance with the owner's log-retention policy. See the [cache-log finding and receipt](./findings/GATEWAY-CACHE-LOG-REDACTION.md).
+
+## Six recommendation areas remain open
+
+1. **Portable shared-account export and deletion:** no complete inventory, user-accessible download, portable image/video export, deletion workflow, counterpart-preservation proof exists. Durable job metadata is now implemented by J1; full owner orchestration is not. Existing partial previews are not an account-wide artifact.
+2. **Inactivity, privacy, and log retention:** preserve the owner's policy of seven-day rolling inactivity expiry with no absolute cap and removal of all account-activity logs after 90 days with no exceptions. Source fixes and one scheduled purge are not operational proof; inventory sinks, access, retention, backups, and execution.
+3. **Public support and abuse operations:** account-lifecycle support, escalation, and administrative operations have not been verified.
+4. **OAuth, email, recovery, and invitations:** no live delivery or external-provider acceptance was run. Application-held grants and local identity links must remain distinct from a provider account; provider-side revocation/deletion is not claimed.
+5. **Accessibility and integrated reliability:** no shared lifecycle UI or end-user account-rights flow is accepted.
+6. **Exact-revision deployment qualification:** local private evidence does not qualify production configuration, providers, backups, restoration, or deployment operations.
+
+The original frozen implementation received an independent source-review GO; the parent reviewed the fixture-only amendments. The B6 Forum preview is locally verified as an always-partial, unfenced participant for authored Topic, Thread and ForumPost rows. Attempt 7 passed the focused five-case suite with no skips; it checked A/B preview isolation, selected fixture-state stability and fixture persistence. A direct cross-account Social request was rejected; no direct Forum negative-request case is claimed. Exact-ID cleanup and scoped teardown passed with zero project resources. Attempts 3–6 are recorded separately and do not form a 21/21 acceptance. Image provenance is mixed and reconstructed; see the [B6 finding and receipt](./findings/DF-007-B6.md) and [receipt](./evidence/df-007/checkpoint-b6.json). DF-007 and RR-11 remain open.
+
+The [J1 job foundation](./findings/DF-007-J1.md) now provides locally verified durable create/status/resume behavior around those partial previews. It stores bounded job metadata, serializes active requests and fences stale acknowledgements; it provides no artifact or deletion. Two new TCP cases passed with selected fixture-state preservation and exact cleanup; the five prior cases were intentionally skipped. Job-metadata cleanup and full per-owner orchestration remain open.
+
+The owner selected local delivery in the order **account rights, inactivity/log retention, integrated journeys, then launch materials**. Real external flows and release qualification will be handled separately, with their evidence still required for release claims. Follow the [finish sequence](../plans/2026-10-19-release-finish-sequence.md).
+
+The [J2 Authentication reader](./findings/DF-007-J2.md) now captures eight retained DB sources transaction-consistently, with 15 Models tests and nine Auth tests (one real-PostgreSQL case). At J2 it was not yet consumed by the job runner; J3 now stages that capture. Neither checkpoint enables an account artifact or deletion. See the explicit field dispositions and limitations in its receipt.
+
+The [J3 integration](./findings/DF-007-J3.md) runs the Authentication DB reader through verified, pathless temporary staging from internal jobs. Fifteen Storage, 11 owner and seven job tests passed; the private stack passed two TCP cases and three actual PostgreSQL fence cases. The safe database-owner progress marker is not full owner/inventory acceptance.
+
+[J4 Profile capture](./findings/DF-007-J4.md) locally verifies the three current entity tables and same-snapshot identities, full text and inline PNG/JPEG bytes. Ten enabled PostgreSQL cases passed. Migration review also found retained legacy goal/project data and timeline links; unsupported owned legacy data blocks capture until adapters exist. No remote snapshot handle, Profile job integration, artifact or deletion is enabled; item 1/DF-007/RR-11 remain open.
+
+[J5 legacy Profile capture](./findings/DF-007-J5.md) replaces the J4 guard with same-snapshot goal/project adapters and ownership-checked Timeline links. Eleven enabled PostgreSQL cases passed, including 1,006 goals and 1,006 projects plus real staging of long legacy text. Remote snapshot transport and Profile job integration remain next; no download or deletion is enabled. Item 1/DF-007/RR-11 remain open.
+
+**2026-10-20 J6 checkpoint:** [Secure Profile snapshots and job integration](./findings/DF-007-J6.md) now pass three selected live-service cases, including exact lease/session fencing, 1,006 stable captured identities, guarded restart/recapture and cleanup/readback. Authentication jobs verify both database owners while remaining incomplete with no artifact. Next is complete Assets ownership and portable bytes using the fenced identities, then remaining owners/media/artifact/deletion/shared UI. Item 1/DF-007/RR-11 remain open.
+
+**2026-10-20 J7 component:** [Assets snapshot identity consumer](./findings/DF-007-J7.md) passes 19 focused simulated-RPC tests plus Assets production build and lint. It traverses all fenced Profile identity pages without retaining a whole-account ID array. It is not wired to Assets capture; complete table ownership, decrypted media and actual integration evidence remain next. Item 1/DF-007/RR-11 remain open.
+
+**2026-10-20 J8 component:** [Assets database and decrypted-media capture](./findings/DF-007-J8.md) passes four enabled private PostgreSQL/encrypted-storage cases with zero skips, plus 20 focused unit cases and Assets production build/lint. The fixture captures 1,006 owned uploads, preserves counterpart rows and verifies cleanup/readback. Auth/Profile RPC is simulated here. Provider registration, Assets snapshot transport and job integration remain next; no account artifact or deletion is enabled. Item 1/DF-007/RR-11 remain open.
+
+**2026-10-20 J9 checkpoint:** [Assets snapshots and job integration](./findings/DF-007-J9.md) pass three selected real-service cases (six unrelated cases unselected), plus 54 focused unit tests. Auth jobs verify Authentication, Profile and Assets captures while remaining incomplete with no artifact. Encrypted PNG/MP4 transport, lease/session fences, Assets restart/recapture, corrupt-media failure/retry and independent cleanup/readback passed. Videos and remaining owners, artifact/download, deletion and shared UI remain next. Item 1/DF-007/RR-11 remain open.
+
+**2026-10-20 J10 component:** [Videos database ownership](./findings/DF-007-J10.md) passes five enabled private PostgreSQL cases with zero skips and 24 focused unit/regression tests. It captures seven tables through all fenced Profile identities, preserves counterpart rows and verifies cleanup, including actual dirty-connection eviction. Videos transport/jobs and HLS portability remain next, followed by remaining owners and artifacts. Item 1/DF-007/RR-11 remain open.
+
+**2026-10-20 J11 checkpoint:** [Videos snapshots and export jobs](./findings/DF-007-J11.md) pass four selected real-service cases across three suites (six unrelated cases unselected), 64 focused unit/regression cases and a real occupied-pool timeout case. Jobs verify Auth/Profile/Assets/Videos database captures while remaining incomplete without artifacts. Shared registry/client reuse, authorization, failure/retry, both child restarts and independent cleanup pass. HLS portability and remaining owners precede artifacts/downloads; item 1/DF-007/RR-11 remain open.
+
+**2026-10-20 J12 component:** [HLS media portability](./findings/DF-007-J12.md) passes nine fresh private PostgreSQL/encrypted-storage cases with zero skips and 38 focused tests. Account-owned references are checked before playlist delivery, 201 segments exercise bounded queries, and a verified local-file rewrite decodes offline. Storage lint and Assets production build/lint passed; independent readback and private resource teardown passed. This component does not create account artifacts or downloads. Permissions and remaining owners, artifact delivery, deletion and shared controls remain open; DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j12.json).
+
+**2026-10-20 J13 component:** [Complete Permissions ownership](./findings/DF-007-J13.md) passes seven fresh private PostgreSQL cases with zero skips and seven focused tests. It captures 205 personal assignments and 203 reachable shared permission links through 1,006 identities/eleven pages, preserving cross-scope/null context and excluding counterparts. Snapshot consistency, malformed-reference/oversize/lease/cleanup failures, validated FK restoration, occupied-pool timeout and independent readback/teardown passed. Permissions production build/lint passed. Transport/job registration, other owners, UUID case follow-up, artifacts/downloads, deletion and shared controls remain open; DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j13.json).
+
+**2026-10-20 J14 repair:** [UUID case coverage](./findings/DF-007-J14.md) fixes silent omissions in varchar-backed Profile/current and retained owners, Assets media/HLS/guardian selectors and Videos actors. Twenty-five focused tests and five selected private PostgreSQL cases passed across three owner runs; twelve unchanged cases were unselected. Mixed-case media keysets, full bytes/text, counterpart preservation, all fourteen table readbacks, spools and private teardown passed; all three owning builds/lints passed. Authentication native UUID predicates needed no repair. Permissions transport/jobs, remaining owners, artifacts/downloads, deletion and shared controls stay open; DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j14.json).
+
+**2026-10-20 J15 integration:** [Permissions leased snapshots and jobs](./findings/DF-007-J15-PERMISSIONS-SNAPSHOT-INTEGRATION.md) now locally verify the fifth captured database owner after Authentication, Profile, Assets and Videos, with reverse child cleanup and truthful incomplete/artifact-null status. Twenty-three distinct focused tests passed; three database-gated unit cases were skipped, and three of the client tests were rerun after a type repair. Four existing live cases passed in the initial run; the corrected Permissions case passed in a fresh narrow run. The first run failed on test-fixture expectations, so this is five unique verified cases across two runs, not one green combined invocation. All five current owner images were built; fixture-only refreezes preserved every Docker COPY input and image ID. Accepted-run database/temporary-table readback, five-process spool checks, media cleanup and private teardown passed. Permissions coverage is now integrated; Social/Forum and remaining owners, durable artifacts/downloads, deletion and shared controls remain. DF-007/RR-11 stay open. See the [receipt](./evidence/df-007/checkpoint-j15.json).
+
+**2026-10-20 J16 prerequisite:** [Social entity registration parity](./findings/DF-007-J16.md) now aligns both datasources and repository providers with the same 33 existing entities. The parity test failed before repair and passed afterward, including actual offline metadata construction. Social production build/lint and one fresh PostgreSQL case passed: 26 existing migrations, 33 resolved repository factories with mapped-column reads, unchanged counts across 34 public tables and zero private-resource teardown. No new schema, owner adapter or relationship-traversal acceptance is claimed. Next: Social principal/field dispositions and complete captured ownership, then Forum/remaining owners before artifacts/downloads. DF-007/RR-11 stay open. See the [receipt](./evidence/df-007/checkpoint-j16.json).
+
+## Next bounded work
+
+J24-A/B/C/D source components and J25 Social leased snapshot/job integration are locally verified under the J23 field policy. J25 verified exact Profile-parent binding, reverse cleanup, the failure prefix, retry, restart/logout protections and preserved incomplete status. J26 Forum policy/schema coverage is locally verified. J27 Forum owner capture is locally verified. J28 integration and the seventeen other owner domains follow before artifacts/downloads. Existing Authentication, Profile, Assets, Videos and Permissions components retain their earlier evidence; DF-007/RR-11 remain open.
+
+Presence actor/audience, ProfileView attribution, Notification provenance and Post/Link associations have their J17–J22 local evidence. Browser notification delivery and normal producer push remain deferred. Social capture excludes unproven Post/Poll associations, raw component payloads, poll votes, attendees and raw storage paths; asset references convey no ownership or current access. The four J23 non-ORM/store dispositions remain unchanged. The account-rights feature remains incomplete until the remaining integration, owner, artifact, deletion and shared-control slices pass.
+
+The J15 source audit found 33 Social entity classes but mismatched sets of 30 datasource entities and repository providers. J16 repairs and verifies registration parity for all 33 against a freshly migrated database. J17–J22 subsequently verified the bounded Presence/ProfileView, Notification and Post/Link repairs, and J25 integrated Social capture locally. Forum and the other owner domains remain. The ownership catalog is heuristic and not exhaustive.
+
+Owner policies remain controlling: delete the account's own content, preserve others' content with deleted-account placeholders, provide portable JSON with associated images/video, and add no retention exceptions. Provider-account deletion is not required; application-held data and grants remain subject to the approved policy and evidence. Keep the [execution plan](./EXECUTION-PLAN.md), [master audit](./MASTER-AUDIT.md), and [DF-007 evidence index](./evidence/df-007/README.md) synchronized as bounded slices close. Do not mark DF-007 or RR-11 accepted until every owner, media, revocation, deletion, backup, support, accessibility, and exact-revision gate has evidence.
+
+**2026-10-21 J17 authorization:** [Presence write binding](./findings/DF-007-J17.md) now derives POST actors from the authenticated account and denies foreign-account last-seen/offline paths before Social RPC. Eight focused tests, Gateway production build/lint and Gateway E2E lint passed. One private HTTP case using the production controller/AuthGuard and real Auth/Social services passed with bearer and cookie sessions, mismatched selected-profile claims, foreign/anonymous/revoked denials and exact counterpart preservation. Independent sessions/keys/Presence/fixture-user/temp readback and private teardown were zero. This is a focused HTTP harness, not full Gateway deployment qualification. Presence read privacy, selected-profile ownership and complete Social capture remain open. See the [receipt](./evidence/df-007/checkpoint-j17.json).
+
+**2026-10-21 J18 authorization:** [Selected-profile session ownership](./findings/DF-007-J18.md) now gates all four Auth signing paths on a bounded, canonical Profile ownership proof. Separate focused runs passed 169 tests; owning production/shared builds and lints passed. The corrected private run passed one real Auth/Profile case and the updated Presence HTTP/Auth/Social case, with zero skips, independent fixture readbacks and private teardown. Attempt 1 failed on a too-long fixture email and is recorded separately. Email/OAuth external flows, full Gateway deployment and production qualification remain unverified. J19 analytics ownership is next; DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j18.json).
+
+**2026-10-21 J19 analytics privacy:** [ProfileView attribution and private analytics](./findings/DF-007-J19.md) binds viewer identity to the authenticated account, gates analytics reads on current profile ownership and returns timestamp-only recent projections. The focused Gateway/Social tests, owning builds/lints and client gates passed; private attempt 2 passed one AuthGuard/controller E2E case with zero skips and zero fixture/resource readbacks. Attempt 1's four-hour fixture timestamp comparison mismatch and repair are recorded. External flows, full Gateway deployment and production qualification remain unverified. J20 Presence audience binding is next; DF-007/RR-11 remain open. See [receipt](./evidence/df-007/checkpoint-j19.json).
+
+**2026-10-21 J20 Presence audience:** [Conversation-scoped Presence](./findings/DF-007-J20.md) limits unscoped discovery to the authenticated account and checks current selected-profile ownership, Chat membership, account bindings and bilateral blocks for peer status. Existing Messages UI consumes profile/status-only results per conversation. The 177 distinct focused tests, owning production builds/lints and E2E lint passed; two private real-service cases passed with zero skips, ten zero database readbacks and zero private resources. Community/project membership has unit evidence only. J21 Notifications is next; DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j20.json).
+
+**2026-10-21 J21 Notification provenance:** [Recipient and provenance protection](./findings/DF-007-J21.md) rejects public creation, checks current selected-profile ownership and projects generic previews without sender/resource/action fields. Notification server rooms recheck ownership/subscription/session; performance alerts target actual profile UUIDs. All 68 focused tests and owning gates passed; one private real-service API/Socket.IO case passed with zero skips, seven zero database readbacks and zero private resources. Browser notification transport and normal producer push remain DEFER. J22 Post/Link relationships is next; DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j21.json).
+
+**2026-10-21 J22 Post/Link associations:** [Migrated associations and safe references](./findings/DF-007-J22.md) adds the explicit junction, actor-bound transactional creation and owned-only partial preview projection. All 66 focused tests, Social production build/lint and migration validation passed. Fresh PostgreSQL applied 27 migrations, reverted/reapplied the new migration and passed one relation/export case with zero skips. All 35 public table counts matched after cleanup and private resources were zero. Assets remain opaque references; full capture is later. J23 dispositions is next; DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j22.json).
+
+**2026-10-21 J23 Social dispositions:** [Policy and physical-schema coverage](./findings/DF-007-J23.md) settles selectors and field actions for 33 entities, 314 columns, 27 relations, the Post/Link junction and four declared stores. Eight focused tests and Social production build/lint passed; one fresh PostgreSQL read-only catalog case passed with zero skips, matching all 35 tables/319 columns. Counts were unchanged and private resources were zero. This is policy approval, not capture enforcement. J24-A authored-content capture is next; DF-007/RR-11 remain open. See the [policy](./SOCIAL-DISPOSITIONS.md) and [receipt](./evidence/df-007/checkpoint-j23.json).
+
+**2026-10-21 J24 Social owner components:** [Four bounded source sets](./findings/DF-007-J24.md) implement the J23 policy for all 33 Social entities: authored, personal, community and business/safety. Seventeen focused tests, Social production build/lint and six PostgreSQL tests passed across the accepted runs. The 261-row personal-state case crosses database and emitter page boundaries. All 35 table counts were unchanged, private resources were zero and protected files were preserved. Lease/Profile replies are controlled; this does not qualify RPC/job integration, downloads or deletion. J25 is next; DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j24.json).
+
+**2026-10-22 J25 Social snapshot/job integration:** [Local integration finding](./findings/DF-007-J25.md) records a real six-owner job invoking the leased Social participant and all 33 declared sources. The selected Profile parent was verified; the job remained incomplete with no artifact; failure stopped at the five-owner prefix, retry restored all owners, and range/lease/restart/logout checks passed. The runtime fixture verified 265 representative rows and restored table counts; J24's unchanged source-specific evidence supplies the positive 33-source coverage. Seven fresh application images plus the generic database setup image were used. The first combined production gate recorded and the repair gate cleared a Social type error. 35 distinct focused unit tests passed (9 Social, 26 Authentication); three DB-gated Authentication unit tests remained skipped. Authentication and Social production builds, Auth/Social/Constants/Models/Storage lint, Authentication E2E lint, and Social production build/lint after its recorded type repair passed. This is local capture/job integration evidence only. The real runtime captured 265 representative A/B/C/D records (Post 1, SearchHistory 261, Notification 1, CommunityMembershipAudit 1, GuardianContentAudit 1); it does not establish 33 positive source fixtures in J25. The unchanged J24 source-set proof remains the positive coverage evidence for all 33 sources. No schema, UI, download, deletion, remote-CI, or production-qualification claim is made. The job remains incomplete and DF-007/RR-11 remain open. See the [J25 receipt](./evidence/df-007/checkpoint-j25.json).
+
+**2026-10-22 J26 Forum dispositions:** [Policy and schema coverage](./findings/DF-007-J26.md) resolves all six entities, 66 mapped columns, six relations, the Post–Link junction and three operational stores. Account/profile and profile-only actor domains, shared stewardship, private audit exclusions, nullable legacy scope and safe media-reference boundaries are explicit. Two focused tests and Forum production build/lint passed; one fresh PostgreSQL read-only case passed with zero skips after three existing migrations. All eight tables/71 columns and junction constraints matched, counts were unchanged and private resources were zero. This approves policy, not capture enforcement. J27 capture is next; DF-007/RR-11 remain open. See the [human policy](./FORUM-DISPOSITIONS.md) and [receipt](./evidence/df-007/checkpoint-j26.json).
+
+**2026-10-22 J27 Forum owner capture:** [Six-source capture](./findings/DF-007-J27.md) enforces the J26 field policy with typed references and a reusable PostgreSQL/Profile driver. All three child slices passed: 25 focused tests, owning builds/lints, and one fresh PostgreSQL case with zero skips after three migrations. It captured 267 records, including 261 Posts across database/emitter pages, and verified the snapshot fence with a concurrent insert. Failure/privacy, restored eight-table counts, spool cleanup, private teardown and protected-file checks passed. Capability replies are controlled; actual RPC/jobs remain J28. See the [receipt](./evidence/df-007/checkpoint-j27.json). DF-007/RR-11 remain open.
+
+**2026-10-22 J28 Forum integration:** [Seventh-owner integration](./findings/DF-007-J28.md). Forum now participates in the real seven-owner leased export job. One private TCP case passed with zero skips, covering all six Forum sources/seven representative rows, exact Profile-parent/session/lease checks, failure-prefix/retry, multibyte checksum, restart and logout denial. Independent seven-database counts were restored, spool descriptors and private resources were zero, and 43 protected paths were unchanged. The job remains incomplete with no artifact. O01-P (Workspace policy) is next; the seventeen other owners, non-ORM stores, artifacts/downloads, deletion, shared controls and claims remain open. DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j28.json).
+
+**2026-10-23 O01 Workspace delivery:** [Policy, capture and integration](./findings/DF-007-O01.md) are locally verified. One real eight-service case captured 252 owned rows across two profiles/scopes, excluded foreign/mismatched bindings, and proved parent/session/lease denial, integrity, failure-prefix/retry, restart/logout and independent cleanup. Global jobs remain incomplete with no artifact. **1/75 local deliveries complete; 74 remain. Next: O02 App Configurator.** [Receipt](./evidence/df-007/checkpoint-o01.json).
+
+**2026-10-23 O02 App Configurator delivery:** [Policy, capture and integration](./findings/DF-007-O02.md) are locally verified. One private nine-service case captured 757 receipts across all three sources, excluded counterpart/configuration secrets, and proved parent/session/lease checks, failure-prefix/retry, integrity, restart/logout and independent cleanup. Migrated physical catalog parity passed read-only. Global jobs remain incomplete with no artifact. **2/75 local deliveries complete; 73 remain. Next planned ID: O03 Blogging, pending OT/TS scope reconciliation.** [Receipt](./evidence/df-007/checkpoint-o02.json).
+
+**2026-10-23 O04 messaging delivery:** [Policy, capture and integration](./findings/DF-007-O04.md) are locally verified for the shared Messages backend used by `client-interface` and `local-hub`. Private catalog and ten-service cases passed without skips, capturing 255 minimal conversation receipts and 254 sent-message receipts; counterpart content, failure/retry, grant/lease/restart/logout boundaries and independent cleanup were verified. Global export remains incomplete with no artifact. **3/75 inventory deliveries accepted; 72 open, subject to OT/TS scope reconciliation.** O03 remains unstarted; another owner requires a release-app/shared-account dependency trace. [Receipt](./evidence/df-007/checkpoint-o04.json).
+
+**2026-10-23 O09-P/C/I:** locally verified for OT/TS only. Real catalog and job cases passed without skips; 253 listing receipts proved account/profile binding, explicit two-app filtering, other-product/counterpart preservation, integrity, failure/retry/restart/revocation and independent cleanup. See [finding](./findings/DF-007-O09.md) and [receipt](./evidence/df-007/checkpoint-o09.json). Overall export remains incomplete with no artifact.
+
+**2026-10-23 N01:** locally verified for OT/TS only. Nine work/store families are inventoried. One private runtime case passed with zero skips, proving upload compensation/crash recovery, notification drain, export cancellation/stale-completion denial and notice suppression. Independent four-database counts matched; encrypted files, temporary tables and private resources were zero. 118 focused tests and 41 CI contract checks passed. Per-item cancellation does not complete D00 account-wide fencing/deletion or U01 controls. See [finding](./findings/DF-007-N01.md) and [receipt](./evidence/df-007/checkpoint-n01.json). **Next: N02.**
+
+**2026-10-23 N02:** locally verified for OT/TS only. Authorization reloads current Permissions state; OAuth callback grants store session references rather than bearer tokens. One private two-process HTTP case passed seven stages with zero skips, including replica revocation, cookie/bearer logout, OAuth replay/expiry/revocation, changed-profile ownership and account invalidation. Independent three-database counts matched; Redis, temporary tables and private resources were zero. See [finding](./findings/DF-007-N02.md) and [receipt](./evidence/df-007/checkpoint-n02.json). D00 permanent fencing/deletion and N06 browser cleanup remain open. **Next: N03.**
+
+**2026-10-23 N03:** locally verified for OT/TS only. Eleven fresh catalogs reconciled 87 tables, 781 columns and 161 native indexes, including explicit migration-only Profile structures. One private case passed without skips, proving scoped history cleanup, counterpart/excluded-scope preservation, query/write races, SQL failure/retry, index reads and restart. Independent counts/schema shape were restored; private resources were zero. Community discovery now excludes private communities. See [finding](./findings/DF-007-N03.md) and [receipt](./evidence/df-007/checkpoint-n03.json). D00 permanent fencing/deletion and N06 browser cleanup remain open. **Next: N04.**
+
+**Historical checkpoint, superseded by the N04 closeout below (2026-10-24):** N04's broader Node/SSR/browser diagnostic boundary is verified, but the mixed-party audit erasure rule remains pending and N04 is not accepted. Existing N05 storage-version/key-custody, N06 browser-state and N07 local provider-link contracts are locally verified with their explicit runtime limits. See [N04](./findings/DF-007-N04.md), [N05](./findings/DF-007-N05.md), [N06](./findings/DF-007-N06.md), [N07](./findings/DF-007-N07.md). DF-007/RR-11, artifacts, full deletion, controls, retention and release qualification remain open.
+
+## N04 local closeout — 2026-10-24
+
+The user approved preserving shared audit history while erasing identifying fields. Four owner contracts and eight sources passed private PostgreSQL erasure, rollback/retry, counterpart preservation and independent readback. Four generated migrations passed reviewed fresh up/down/up; 47 focused tests and 34 pre-E2E checks passed. See the [N04 final finding](./findings/DF-007-N04.md). This supersedes earlier N04 pending-policy notes. N04–N07 are locally verified. A01–A07 are next; selected OT/TS deletion slices, U01–U03, retention, journey and claim checks remain. Full account deletion and artifact availability remain incomplete. External flows and production qualification stay outside this local loop.
+
+## A01 started — 2026-10-24
+
+The committed branch was pushed at `3070fe316`. The scoped capture gate now checks the existing eleven owners and exact source evidence, without changing the unaccepted platform-wide preview inventory. A reachable TS Payments dependency is explicitly blocked as `unaccepted-owner:payments`; it is the existing O10 owner. Its legacy records/wallet totals lack durable product scope. See the [A01 finding](./findings/DF-007-A01.md) and [pending Payments export policy](./decisions/A01-PAYMENTS-EXPORT-POLICY.md). A01 is not accepted; A02–A07 remain pending. No artifact readiness or download availability is claimed.
+
+## A01 local closeout — 2026-10-24
+
+The user approved own shared-account financial receipts and wallet totals. Existing O10 Payments capture and leased integration passed the private twelve-service case; A01 now requires all twelve owners and exact source evidence. The catalog matched ten Payments entities/eleven tables/142 columns, and all twelve database baselines were restored with zero project resources left. Fifty-six focused tests and 34 pre-E2E checks passed. See the [A01 finding](./findings/DF-007-A01.md). This supersedes earlier pending-policy/A01-active notes. A02–A07 remain the existing next export deliveries; no downloadable artifact or full deletion claim is made. The existing D17 Payments owner is required later for the demonstrated TS path.
+
+## D25–D27 local closeout — 2026-10-26
+
+The real twelve-owner multiprocess protocol passed without fabricated acknowledgements or successful fake cleanup adapters: coordinator kill/restart, stale-grant denial, scope/custody failure and retry, Profile-before-Auth finalization failure/recovery, counterpart preservation and independent identifier/content readback across 99 tables. Fourteen owner processes and two Gateways exercised singleton and replica endpoints. Six rebuilt OT/TS Chrome cases independently passed the N06 session boundary. Thirteen backend builds and affected lint passed. All private resources were torn down and 43 protected paths were unchanged.
+
+See [D25](./findings/DF-007-D25.md), [D26](./findings/DF-007-D26.md), [D27](./findings/DF-007-D27.md) and the [D27 receipt](./evidence/df-007/checkpoint-d27.json). This supersedes earlier D25-active/D26–D27-pending notes. Backend local acceptance does not expose public account controls or qualify external providers, backups, live S3, offline-device wiping or deployment/load. DF-007/RR-11 remain open for U01–U03 and external obligations. **Next: U01; 16 existing local slices remain, plus X01–X04 external acceptance.**
+
+## 2026-10-26 — U01–U03 locally verified
+
+OT Settings and TS My Account now use shared export/deletion controls. The real
+12-owner browser/backend run passed native export downloads, independent TAR
+digests, explicit confirmation, revoked-session receipt status, manual receipt
+restore, UI retry, coordinator restart and a surviving different-account session.
+Scoped accessibility checks passed at 390/1280 widths and in both dialogs; the
+completed receipt page passed as well. Independent 99-table readback and teardown
+passed, with all 43 protected paths unchanged. The media descriptor full-read
+regression and exact TS public SSR receipt route were fixed and covered by tests.
+
+See [U01](./findings/DF-007-U01.md), [U02](./findings/DF-007-U02.md),
+[U03](./findings/DF-007-U03.md) and the [U03 receipt](./evidence/df-007/checkpoint-u03.json).
+At the U closeout, R2-01 was next and thirteen local slices remained. That
+count is historical; the R2 closeout below gives the current remaining work.
+X01–X04 remain separate external acceptance; other products do not enter this
+denominator.
+
+## 2026-10-27 — R2-01–R2-03 locally verified
+
+Seven-day rolling session inactivity, ninety-day activity/history retention and
+retention/deletion/job integration are locally qualified for OT and TS. Database
+cutoff, legacy bootstrap, revocation, failure/retry and independent readback
+checks passed. The real twelve-owner replica/browser fixture also passed,
+including seven post-deletion sweepers and denial of old session activity on
+both Auth replicas. Shared status reconciles eleven history sources.
+
+See [R2-01](./findings/DF-007-R2-01.md), [R2-02](./findings/DF-007-R2-02.md),
+[R2-03](./findings/DF-007-R2-03.md) and the
+[R2-03 receipt](./evidence/df-007/checkpoint-r2-03.json). Historical U/D receipts
+remain snapshots; they were not rewritten to match later source changes.
+
+At the R2 closeout, R4-01 was next and ten local slices remained. The R4
+closeout below supersedes that historical position. X01–X04 remain separately owned
+external acceptance. No other product enters this denominator. DF-007/RR-11
+remain open until the remaining release gates are satisfied.
+
+## 2026-10-27 R4-01–R4-05 local closeout
+
+R4-01 account isolation, R4-02 locality/membership, R4-03 buyer/seller journeys,
+R4-04 shared accessibility and R4-05 upload/realtime/route recovery are **VERIFIED
+LOCAL** for OT (`client-interface`) and TS (`local-hub`). The coupled system-Chrome
+case passed all five gates with twelve migrated owner databases and real services;
+214 focused unit tests passed. Eight scoped axe reports contain no violations.
+Independent teardown read all 99 application tables empty, removed private
+resources and confirmed 43 protected files unchanged.
+
+Receipts: [R4-01](./evidence/df-007/checkpoint-r4-01.json),
+[R4-02](./evidence/df-007/checkpoint-r4-02.json),
+[R4-03](./evidence/df-007/checkpoint-r4-03.json),
+[R4-04](./evidence/df-007/checkpoint-r4-04.json),
+[R4-05](./evidence/df-007/checkpoint-r4-05.json).
+Historical D/U/R2 receipts remain revision snapshots and were not rewritten.
+
+At the R4 closeout, R6-01–R6-05 were the five remaining local slices. The R6 closeout below supersedes that historical position. These cover claim
+reconciliation, first-session guidance, policy/support text, verified demos and
+launch handoff. X01–X04 remain separately owned external acceptance. Real local
+cash records do not establish money movement; the isolated one-signature ClamAV
+engine does not qualify production malware definitions. DF-007/RR-11 remain open.
+
+## 2026-10-27 R6-01–R6-05 local closeout
+
+**R6-01 through R6-05 are VERIFIED LOCAL for OT and TS. No local slice remains
+in this scoped sequence.** The 58-statement claim ledger, shared first-session
+and privacy pages, real rebuilt demos and operator handoff are complete locally.
+Four focused tests and both app builds passed; three owning lint targets passed
+before the final copy-only clarification. One private real-service/browser case
+passed with zero skips, sixteen zero-violation light/dark accessibility reports
+and twenty source-linked screenshots. Diagnostics show only expected anonymous
+session 401s. Teardown read all 99 application tables empty, removed its resources
+and confirmed 43 protected files unchanged.
+
+See [the launch handoff](./R6-LAUNCH-HANDOFF.md),
+[claim ledger](./evidence/df-007/r6-claim-ledger.json),
+[screenshot provenance](./evidence/r6-local/manifest.json), and receipts
+[R6-01](./evidence/df-007/checkpoint-r6-01.json),
+[R6-02](./evidence/df-007/checkpoint-r6-02.json),
+[R6-03](./evidence/df-007/checkpoint-r6-03.json),
+[R6-04](./evidence/df-007/checkpoint-r6-04.json),
+[R6-05](./evidence/df-007/checkpoint-r6-05.json).
+
+**X01–X04 remain open and separately owned.** Local completion does not qualify
+provider/email/payment operations, deployment/load/production AV definitions,
+backups/remote copies or operational support. The project owner/operator must
+record the external evidence and final release decision. DF-007/RR-11 remain
+open. Earlier D/U/R2/R4 receipts remain immutable revision snapshots.

@@ -79,7 +79,7 @@ async function exchangeForFinance(
 ) {
   const response = await apiContext.post('/api/authentication/exchange', {
     headers: { authorization: `Bearer ${token}` },
-    data: { targetAppId: 'finance' },
+    data: { targetAppId: 'fin-commander' },
     failOnStatusCode: false,
   });
   expect(
@@ -126,7 +126,10 @@ test.describe('entity membership role isolation', () => {
       name: `Five User Matrix ${suffix}`,
       type: 'household',
     });
-    expect(createTenantResponse.ok()).toBe(true);
+    expect(
+      createTenantResponse.ok(),
+      `tenant creation returned ${createTenantResponse.status()}: ${await createTenantResponse.text()}`
+    ).toBe(true);
     const tenant = await createTenantResponse.json();
     expect(
       tenant.id,

@@ -1,0 +1,62 @@
+{
+  "inventory": "DF-007 tracked TypeORM entity source reconciliation",
+  "generatedAtUtc": "2026-10-20",
+  "sourceHead": "ec543b0df5059ca75d163aa11a9931626cec3d88",
+  "previousCatalogSourceHead": "6fc407676f4eb2b9b5b9a0fd5ffba2ab44f32f42",
+  "previousEntityFileCount": 165,
+  "currentTrackedEntityFileCount": 166,
+  "catalogEntityFileCount": 166,
+  "catalogSourceCountBefore": 167,
+  "catalogSourceCountAfter": 168,
+  "oldCatalogSourcesVerifiedUnchanged": 167,
+  "oldCatalogSourcesMissing": [],
+  "oldCatalogSourcesChanged": [],
+  "entitySourceDelta": {
+    "added": [
+      {
+        "path": "apps/authentication/src/account-export-jobs/entities/account-export-job.entity.ts",
+        "class": "AccountExportJobEntity",
+        "service": "authentication",
+        "table": "account_export_jobs",
+        "sha256": "88edcd6c8a894e5d9ae7da50b4792bd2616290861633efc46a382eb29a304310",
+        "classification": "direct_identity_link_candidate",
+        "accountScopeField": "accountId",
+        "fieldDispositions": {
+          "accountId": "Account/job scope key validated by the accepted Authentication owner; envelope supplies account scope.",
+          "idempotencyKey": "operational idempotency value; do not serialize as account export content",
+          "leaseOwner": "worker coordination value; not account export content",
+          "coverageSummary": "Exported through the bounded allowlisted exportJob projection in J2; raw stored JSON is not emitted.",
+          "lastErrorCode": "Exported through the stable sanitized exportJob error-code projection in J2."
+        },
+        "credentialOrSecretValuesRead": false,
+        "existingCaptureSource": "authentication/exportJob"
+      }
+    ],
+    "deleted": [],
+    "modifiedOldSources": []
+  },
+  "migrationOnlySources": {
+    "count": 2,
+    "allSha256Unchanged": true,
+    "sources": [
+      {
+        "path": "apps/compliance-audit/migrations/1790340457168-initial.ts",
+        "sha256": "0102f060256b5a9f223f4bed4ad8b35c0634e8b24f534dcca70d310b4fed62a1"
+      },
+      {
+        "path": "apps/compliance-audit/migrations/1790347292239-vault-doc-schema.ts",
+        "sha256": "2d3c5bf891a9c4f7ba6c3536234167f0d14aef796ac0955b76a3111e64c54e6f"
+      }
+    ]
+  },
+  "scope": "Tracked apps/**/*.entity.ts and libs/**/*.entity.ts; source-only; no runtime data or secret/config reads.",
+  "limitations": [
+    "This is a structural catalog refresh, not a semantic ownership closure or exhaustive store inventory.",
+    "Raw SQL, unlisted/migration-only schemas, non-ORM stores, external providers, object storage, logs, browser state, queues, caches and backups remain separate reconciliation work.",
+    "Entity registration, physical schema, FK/cascade behavior and account ownership semantics are not proved by this catalog.",
+    "The untracked Directory files remain excluded and untouched."
+  ],
+  "reconciliationGate": "Before DF-007 acceptance, reconcile tracked entities and migration-only tables against runtime datasource/repository registrations, raw SQL and non-ORM stores, then record an explicit owner disposition for every candidate and verify source hashes at the implementation revision.",
+  "catalogPath": "docs/release-readiness/evidence/df-007/ownership-catalog.json",
+  "catalogSha256": "6b8bd570611c2517b937abe686f34f382fa606c23c302f20574d466a1634c147"
+}

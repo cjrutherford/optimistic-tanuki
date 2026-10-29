@@ -1,0 +1,317 @@
+{
+  "slice": "DF-007-J26",
+  "date": "2026-10-22",
+  "status": "locally-verified-policy-and-schema",
+  "accepted": true,
+  "baseRevision": "b4a804e33bc1899e10b15d6c06e6f42f06707497",
+  "sourceManifestSha256": "799c1f7c9d80bb1359c0464d979250cd384d0a1f220029b8eb74eda30ffb40b0",
+  "sourceHashes": {
+    "apps/forum/src/app/forum-account-export-dispositions.json": "ba8d4b1d9c78202b75f7ab6d92de54c738f8c15cd51f24b94ce5ee38872e3a1f",
+    "apps/forum/src/app/forum-account-export-dispositions.ts": "8eb02fed7354d361faaf659d543de64c0054d1b2c940d949e242acc7e030339f",
+    "apps/forum/src/app/forum-account-export-dispositions.spec.ts": "1293bb7625dbd307591e326bb24e1dae633ecf8afa831fdeecb3c447768888e3",
+    "apps/forum/src/app/forum-dispositions.postgres.spec.ts": "c94374ea2b0c5597f75b8d34264103c7ba289883e33630acce9d1251638ffa97"
+  },
+  "policy": {
+    "entities": 6,
+    "entityColumns": 66,
+    "relations": 6,
+    "associationTables": 1,
+    "associationColumns": 2,
+    "stores": 3,
+    "accountScope": "account-wide across recorded scopes; operation appId is not a row filter",
+    "subjectDomains": {
+      "Topic": "account-and-current-profile",
+      "Thread": "account-and-current-profile",
+      "ForumPost": "account-and-current-profile",
+      "ForumLink": "selected-own-post-association-only",
+      "ForumReport": "reporter-profile",
+      "ForumModerationAction": "actor-profile"
+    },
+    "legacyAttribution": "recorded-unverified; consent and current authority not inferred",
+    "nullableLegacyReportScope": "retained explicitly unknown, not guessed"
+  },
+  "verification": {
+    "unitTests": {
+      "passed": 2,
+      "skipped": 0
+    },
+    "forumProductionBuild": "PASS",
+    "forumLint": "PASS",
+    "privatePostgresTest": {
+      "passed": 1,
+      "skipped": 0,
+      "readOnly": true,
+      "migrationsApplied": 3,
+      "physicalTables": 8,
+      "physicalColumns": 71,
+      "catalog": {
+        "result": "PASS",
+        "readOnly": true,
+        "entities": 6,
+        "relations": 6,
+        "associationTables": 1,
+        "junctionConstraints": [
+          {
+            "type": "f",
+            "definition": "FOREIGN KEY (\"forumPostId\") REFERENCES forum_post(id) ON UPDATE CASCADE ON DELETE CASCADE"
+          },
+          {
+            "type": "f",
+            "definition": "FOREIGN KEY (\"forumLinkId\") REFERENCES forum_link(id)"
+          },
+          {
+            "type": "p",
+            "definition": "PRIMARY KEY (\"forumPostId\", \"forumLinkId\")"
+          }
+        ],
+        "physicalTables": [
+          {
+            "table": "forum_link",
+            "columns": [
+              "id",
+              "url",
+              "title",
+              "description",
+              "appScope",
+              "createdAt"
+            ]
+          },
+          {
+            "table": "forum_moderation_action",
+            "columns": [
+              "id",
+              "appScope",
+              "action",
+              "subjectType",
+              "subjectId",
+              "actorProfileId",
+              "details",
+              "createdAt"
+            ]
+          },
+          {
+            "table": "forum_post",
+            "columns": [
+              "id",
+              "content",
+              "userId",
+              "profileId",
+              "appScope",
+              "threadId",
+              "createdAt",
+              "updatedAt",
+              "isEdited",
+              "moderationStatus",
+              "moderationNotes",
+              "moderatedBy",
+              "moderatedAt"
+            ]
+          },
+          {
+            "table": "forum_post_links_forum_link",
+            "columns": ["forumPostId", "forumLinkId"]
+          },
+          {
+            "table": "forum_report",
+            "columns": [
+              "id",
+              "reporterId",
+              "contentType",
+              "contentId",
+              "reason",
+              "description",
+              "status",
+              "adminNotes",
+              "createdAt",
+              "appScope"
+            ]
+          },
+          {
+            "table": "migrations",
+            "columns": ["id", "timestamp", "name"]
+          },
+          {
+            "table": "thread",
+            "columns": [
+              "id",
+              "title",
+              "description",
+              "content",
+              "userId",
+              "profileId",
+              "appScope",
+              "topicId",
+              "createdAt",
+              "updatedAt",
+              "visibility",
+              "isPinned",
+              "isLocked",
+              "viewCount",
+              "moderationStatus",
+              "moderationNotes",
+              "moderatedBy",
+              "moderatedAt"
+            ]
+          },
+          {
+            "table": "topic",
+            "columns": [
+              "id",
+              "title",
+              "description",
+              "userId",
+              "profileId",
+              "appScope",
+              "createdAt",
+              "updatedAt",
+              "visibility",
+              "isPinned",
+              "isLocked"
+            ]
+          }
+        ],
+        "countsBefore": [
+          {
+            "table": "forum_link",
+            "rows": 0
+          },
+          {
+            "table": "forum_moderation_action",
+            "rows": 0
+          },
+          {
+            "table": "forum_post",
+            "rows": 0
+          },
+          {
+            "table": "forum_post_links_forum_link",
+            "rows": 0
+          },
+          {
+            "table": "forum_report",
+            "rows": 0
+          },
+          {
+            "table": "migrations",
+            "rows": 3
+          },
+          {
+            "table": "thread",
+            "rows": 0
+          },
+          {
+            "table": "topic",
+            "rows": 0
+          }
+        ],
+        "countsAfter": [
+          {
+            "table": "forum_link",
+            "rows": 0
+          },
+          {
+            "table": "forum_moderation_action",
+            "rows": 0
+          },
+          {
+            "table": "forum_post",
+            "rows": 0
+          },
+          {
+            "table": "forum_post_links_forum_link",
+            "rows": 0
+          },
+          {
+            "table": "forum_report",
+            "rows": 0
+          },
+          {
+            "table": "migrations",
+            "rows": 3
+          },
+          {
+            "table": "thread",
+            "rows": 0
+          },
+          {
+            "table": "topic",
+            "rows": 0
+          }
+        ]
+      },
+      "independentCountsBefore": {
+        "forum_link": "0",
+        "forum_moderation_action": "0",
+        "forum_post": "0",
+        "forum_post_links_forum_link": "0",
+        "forum_report": "0",
+        "migrations": "3",
+        "thread": "0",
+        "topic": "0"
+      },
+      "independentCountsAfter": {
+        "forum_link": "0",
+        "forum_moderation_action": "0",
+        "forum_post": "0",
+        "forum_post_links_forum_link": "0",
+        "forum_report": "0",
+        "migrations": "3",
+        "thread": "0",
+        "topic": "0"
+      }
+    },
+    "runtimeSummary": {
+      "project": "ot-forum-dispositions-j26",
+      "startedAt": "2026-10-22T23:04:09.951177+00:00",
+      "baseRevision": "b4a804e33bc1899e10b15d6c06e6f42f06707497",
+      "sourceManifestSha256": "799c1f7c9d80bb1359c0464d979250cd384d0a1f220029b8eb74eda30ffb40b0",
+      "database": "forum_dispositions_j26_fixture",
+      "migrationCommand": "pnpm exec nx run forum:typeorm:migration:run",
+      "containerId": "066e803d986c4218c8a9095f02814fddac8b65aa53d7ef3b42baaeedc388df64",
+      "databaseReadiness": {
+        "database": "forum_dispositions_j26_fixture",
+        "serverVersionNum": 150019
+      },
+      "uuidExtension": {
+        "database": "forum_dispositions_j26_fixture",
+        "extension": "uuid-ossp"
+      },
+      "migrationExitCode": 0,
+      "testExitCode": 0,
+      "tableCountsUnchanged": true,
+      "remainingPrivateContainers": 0,
+      "remainingPrivateNetworks": 0,
+      "remainingPrivateVolumes": 0,
+      "containerMountTypes": [],
+      "finishedAt": "2026-10-22T23:04:25.456252+00:00",
+      "sourceAndProtectedHashesPreserved": true,
+      "result": "PASS"
+    },
+    "review": {
+      "result": "GO",
+      "reviewer": "Luna rr-j26-forum-final-review-20261022-r1",
+      "mode": "read-only source review, not runtime proof",
+      "scope": "Forum policy/inventory/validator/spec and isolated PG harness",
+      "blockers": []
+    },
+    "privateHarnessHashes": {
+      "prepare.py": "c050ea0a808e1084af4c4048fd405d2a269985605cc510bed75b3b549c086f16",
+      "run.py": "e67889e528230a200647980c4621bf024302a014d1ff5ea4cf9d9869d1f637ea",
+      "nx-private-launch.cjs": "55fd652c695dc1c5fcf0f53090e9d6fae8a4582a6bbf8a14634f6d073819518d"
+    },
+    "protectedFilesUnchanged": 43
+  },
+  "history": [
+    "First validator draft used generated sample policies; final tests use checked-in inventory and both registration lists.",
+    "Worker verification did not execute because pnpm was absent from its shell PATH; root used established Node24/pnpm environment without installation.",
+    "Root removed eager static configuration imports from gated specs and strengthened actual private-field/identity drift assertions before runtime."
+  ],
+  "limits": [
+    "Policy/metadata/catalog evidence only; no authored-row capture enforcement or pagination proof.",
+    "No schema change, new endpoint or UI.",
+    "No Forum leased snapshot/job integration, portable media, artifact/download or deletion acceptance.",
+    "Operational log sinks/retention remain later N/X work; no absence or nonpersonal-log claim.",
+    "DF-007 and RR-11 remain open; external flows and production qualification remain outside this loop."
+  ],
+  "next": "J27"
+}

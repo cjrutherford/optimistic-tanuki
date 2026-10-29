@@ -51,7 +51,11 @@ export {
   PollDto,
   PollWithResultsDto,
 } from './poll.dto';
-export { CreatePostShareDto, PostShareDto } from './post-share.dto';
+export {
+  CreatePostShareDto,
+  PostShareDto,
+  SharePostRequestDto,
+} from './post-share.dto';
 export {
   CreateEventDto,
   UpdateEventDto,

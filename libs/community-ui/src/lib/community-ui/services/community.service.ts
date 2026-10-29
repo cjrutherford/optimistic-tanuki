@@ -320,6 +320,7 @@ export class CommunityService {
     profileId: string;
     communityId: string;
     attachmentIds?: string[];
+    visibility?: 'public' | 'followers' | 'community';
   }): Promise<any> {
     return firstValueFrom(
       this.social.socialControllerPost(postData)

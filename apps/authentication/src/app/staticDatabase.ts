@@ -1,3 +1,5 @@
+import { AccountDeletionOperationEntity } from '../account-deletion/account-deletion-operation.entity';
+import { AccountDeletionWriteFenceEntity } from '@optimistic-tanuki/storage';
 import { DataSource } from 'typeorm';
 import fs from 'fs';
 import path from 'path';
@@ -7,6 +9,9 @@ import { TokenEntity } from '../tokens/entities/token.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
 import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
+import { GuardianPermissionEntity } from '../guardian-permissions/entities/guardian-permission.entity';
+import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
+import { AccountExportJobEntity } from '../account-export-jobs/entities/account-export-job.entity';
 
 const resolveConfigPath = () => {
   const candidates = [
@@ -55,6 +60,11 @@ const entities = [
   TokenEntity,
   OAuthProviderEntity,
   AuthActionTokenEntity,
+  GuardianPermissionEntity,
+  GuardianPolicyNoticeEntity,
+  AccountExportJobEntity,
+  AccountDeletionOperationEntity,
+  AccountDeletionWriteFenceEntity,
 ];
 
 console.log(

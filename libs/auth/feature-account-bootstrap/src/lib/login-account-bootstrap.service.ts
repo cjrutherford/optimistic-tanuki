@@ -151,7 +151,7 @@ export class LoginAccountBootstrapService {
     );
   }
 
-  async login(data: LoginRequest, appScope: string) {
+  async login(data: LoginRequest, appScope?: string, appId?: string) {
     const normalizedRequest: LoginRequest = {
       ...data,
       email: data.email.trim().toLowerCase(),
@@ -175,10 +175,16 @@ export class LoginAccountBootstrapService {
       );
     }
 
-    const profiles = await this.getProfiles(userId);
-
+    const normalizedAppScope = appScope?.trim();
     const effectiveAppScope =
-      appScope === 'owner-console' ? 'global' : appScope;
+      normalizedAppScope === 'owner-console'
+        ? 'global'
+        : normalizedAppScope || appId?.trim();
+    if (!effectiveAppScope) {
+      throw new Error('App scope required for login');
+    }
+
+    const profiles = await this.getProfiles(userId);
     let appScopedProfile = profiles.find(
       (profile) => profile.appScope === effectiveAppScope
     );
@@ -288,7 +294,11 @@ export class LoginAccountBootstrapService {
     return firstValueFrom(
       this.authClient.send(
         { cmd: AuthCommands.Login },
-        { ...normalizedRequest, profileId: profileToUse.id }
+        {
+          ...normalizedRequest,
+          profileId: profileToUse.id,
+          ...(appId ? { appId } : {}),
+        }
       )
     );
   }

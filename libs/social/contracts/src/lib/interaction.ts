@@ -105,3 +105,13 @@ export class GetPresenceDto {
   @IsNotEmpty()
   userId!: string;
 }
+
+/** Bound peer presence lookup; account identifiers remain internal to RPC. */
+export interface GetConversationPresenceRequest {
+  actorProfileId: string;
+  bindings: Array<{ profileId: string; accountId: string }>;
+}
+export interface ConversationPeerPresence {
+  profileId: string;
+  status: PresenceStatus;
+}

@@ -4,6 +4,7 @@ import {
   IsUrl,
   IsNumber,
   IsUUID,
+  IsOptional,
   MaxLength,
   MinLength,
   Min,
@@ -37,11 +38,13 @@ export class CreateAttachmentDto {
   @ApiProperty({
     description: 'Name of the attachment',
     example: 'document.pdf',
+    required: false,
   })
+  @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(255)
-  name!: string;
+  name?: string;
 
   @ApiProperty({
     description: 'URL of the attachment',
@@ -62,9 +65,18 @@ export class CreateAttachmentDto {
   @ApiProperty({
     description: 'Size of the attachment in bytes',
     example: 1024000,
+    required: false,
   })
+  @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100 * 1024 * 1024) // 100MB max
-  size!: number;
+  size?: number;
+
+  @ApiProperty({
+    description: 'ID of the Social post that owns this attachment',
+    format: 'uuid',
+  })
+  @IsUUID()
+  postId!: string;
 }

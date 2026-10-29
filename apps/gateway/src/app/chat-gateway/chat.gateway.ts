@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   Inject,
   Logger,
@@ -7,13 +8,16 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import {
   ConnectedSocket,
+  Ack,
   MessageBody,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsException,
 } from '@nestjs/websockets';
 import {
   ChatCommands,
+  PrivacyCommands,
   ServiceTokens,
   AIOrchestrationCommands,
 } from '@optimistic-tanuki/constants';
@@ -29,6 +33,19 @@ import { firstValueFrom } from 'rxjs';
 import { AiOrchestrationReadinessInterceptor } from '../../interceptors/ai-orchestration-readiness.interceptor';
 import { Server, Socket } from 'socket.io';
 import { SocketSessionAuthService } from '../../auth/socket-session-auth.service';
+import { gatewayWriteLimit } from '../throttler-config';
+
+const CHAT_WRITE_TTL_MS = 60_000;
+const CHAT_WRITE_PRODUCTION_LIMIT = 60;
+const CHAT_WRITE_RELAXED_LIMIT = 1000;
+const CHAT_WRITE_LIMIT_CEILING = 2000;
+
+export interface PersistedChatMessageNotification {
+  id: string;
+  senderId: string;
+  recipients?: string[];
+  createdAt?: Date | string;
+}
 
 @WebSocketGateway(Number(process.env.SOCKET_PORT) || 3300, {
   namespace: 'chat',
@@ -42,6 +59,12 @@ export class ChatGateway {
   server: Server;
 
   private connectedClients: { id: string; client: Socket }[] = [];
+  private readonly chatWriteBuckets = new Map<
+    string,
+    { windowStartedAt: number; count: number }
+  >();
+  private lastChatWritePruneAt = 0;
+  private readonly deletedSecurityAccounts = new Set<string>();
 
   constructor(
     private readonly l: Logger,
@@ -53,12 +76,93 @@ export class ChatGateway {
     private readonly telosDocsClient: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialClient: ClientProxy,
     private readonly socketSessionAuth: SocketSessionAuthService
   ) {}
 
+  private securityAccountKey(accountId: string): string {
+    return createHash('sha256')
+      .update('ot:chat-security:' + accountId.toLowerCase())
+      .digest('hex');
+  }
+  purgeAccountSecurityState(accountId: string): void {
+    const key = this.securityAccountKey(accountId);
+    if (
+      !this.deletedSecurityAccounts.has(key) &&
+      this.deletedSecurityAccounts.size >= 10000
+    )
+      throw Error('CHAT_SECURITY_DELETION_BOUND');
+    this.deletedSecurityAccounts.add(key);
+    for (const id of this.chatWriteBuckets.keys())
+      if (id.toLowerCase() === accountId.toLowerCase())
+        this.chatWriteBuckets.delete(id);
+  }
+  readbackAccountSecurityState(accountId: string): number {
+    if (!this.deletedSecurityAccounts.has(this.securityAccountKey(accountId)))
+      throw Error('CHAT_SECURITY_FENCE_REQUIRED');
+    return [...this.chatWriteBuckets.keys()].filter(
+      (id) => id.toLowerCase() === accountId.toLowerCase()
+    ).length;
+  }
+
+  private assertChatWriteAllowed(userId: string): void {
+    if (this.deletedSecurityAccounts.has(this.securityAccountKey(userId)))
+      throw new WsException('Account unavailable');
+    const now = Date.now();
+    if (now - this.lastChatWritePruneAt >= CHAT_WRITE_TTL_MS) {
+      for (const [key, bucket] of this.chatWriteBuckets) {
+        if (now - bucket.windowStartedAt >= CHAT_WRITE_TTL_MS) {
+          this.chatWriteBuckets.delete(key);
+        }
+      }
+      this.lastChatWritePruneAt = now;
+    }
+
+    const limit = gatewayWriteLimit(
+      'THROTTLE_CHAT_WRITE_LIMIT',
+      CHAT_WRITE_PRODUCTION_LIMIT,
+      CHAT_WRITE_RELAXED_LIMIT,
+      CHAT_WRITE_LIMIT_CEILING
+    );
+    let bucket = this.chatWriteBuckets.get(userId);
+    if (!bucket || now - bucket.windowStartedAt >= CHAT_WRITE_TTL_MS) {
+      bucket = { windowStartedAt: now, count: 0 };
+      this.chatWriteBuckets.set(userId, bucket);
+    }
+    if (bucket.count >= limit) {
+      throw new WsException('Too many chat writes. Please try again shortly.');
+    }
+    bucket.count += 1;
+  }
+
+  private async ensureDirectChatAllowed(
+    participantIds: string[]
+  ): Promise<void> {
+    const [first, second] = [...new Set(participantIds)].sort();
+    if (!first || !second) return;
+    const [firstBlockedSecond, secondBlockedFirst] = await Promise.all([
+      firstValueFrom(
+        this.socialClient.send(
+          { cmd: PrivacyCommands.IS_USER_BLOCKED },
+          { blockerId: first, blockedId: second }
+        )
+      ),
+      firstValueFrom(
+        this.socialClient.send(
+          { cmd: PrivacyCommands.IS_USER_BLOCKED },
+          { blockerId: second, blockedId: first }
+        )
+      ),
+    ]);
+    if (firstBlockedSecond || secondBlockedFirst) {
+      throw new WsException('Direct messaging is unavailable');
+    }
+  }
+
   async handleConnection(client: Socket): Promise<void> {
     try {
-      const user = await this.socketSessionAuth.authenticate(client);
+      const user = await this.socketSessionAuth.authenticate(client, true);
       await client.join(user.profileId);
       this.updateConnectedSockets(user.profileId, client, 'connect');
     } catch {
@@ -77,6 +181,7 @@ export class ChatGateway {
       client,
       payload.profileId
     );
+    this.assertChatWriteAllowed(user.userId);
     payload.profileId = user.profileId;
     const profile: ProfileDto = await firstValueFrom(
       this.profileClient.send(
@@ -165,23 +270,86 @@ export class ChatGateway {
   @SubscribeMessage('message')
   async handleMessage(
     @MessageBody() payload: ChatMessage,
-    @ConnectedSocket() client: Socket
+    @ConnectedSocket() client: Socket,
+    @Ack()
+    acknowledge?: (response: {
+      success: boolean;
+      messageId?: string;
+      statusCode?: number;
+      message?: string;
+    }) => void
   ): Promise<void> {
-    const user = this.socketSessionAuth.getUser(client);
+    const user = await this.socketSessionAuth
+      .authenticate(client, true)
+      .catch((error) => {
+        this.acknowledgeMessageFailure(acknowledge, 401);
+        throw new WsException(error.message);
+      });
     if (payload.senderId && payload.senderId !== user.profileId) {
+      this.acknowledgeMessageFailure(acknowledge, 403);
       throw new UnauthorizedException('Message sender does not match session');
+    }
+    try {
+      this.assertChatWriteAllowed(user.userId);
+    } catch (error) {
+      this.acknowledgeMessageFailure(
+        acknowledge,
+        error instanceof Error && error.message.includes('Too many') ? 429 : 403
+      );
+      throw error;
     }
     payload.senderId = user.profileId;
     this.l.log('New Message Received');
     console.log('[ChatGateway] handleMessage received payload id:', payload.id);
     const senderId = payload.senderId;
-    // O26: canonical `recipientIds`; legacy singular `recipientId` still
-    // accepted from older clients.
-    const recipientIds =
-      payload.recipientIds ??
-      (payload as unknown as { recipientId?: string[] }).recipientId ??
-      [];
-    payload.recipientIds = recipientIds;
+    const conversation = await firstValueFrom(
+      this.chatCollectorClient.send(
+        { cmd: ChatCommands.GET_CONVERSATION },
+        {
+          conversationId: payload.conversationId,
+          requestingProfileId: senderId,
+        }
+      )
+    ).catch((error) => {
+      this.acknowledgeMessageFailure(acknowledge, this.rpcStatus(error));
+      throw new WsException(error);
+    });
+    if (!conversation) {
+      this.acknowledgeMessageFailure(acknowledge, 404);
+      throw new WsException('Conversation unavailable');
+    }
+    if (conversation.type === 'direct') {
+      try {
+        await this.ensureDirectChatAllowed(conversation.participants ?? []);
+      } catch (error) {
+        this.acknowledgeMessageFailure(acknowledge, this.rpcStatus(error));
+        throw error;
+      }
+    }
+    // The collector resolves current community recipients and validates every send.
+    payload.recipientIds = (conversation.participants ?? []).filter(
+      (id) => id !== senderId
+    );
+    const messageReceipt = await firstValueFrom(
+      this.chatCollectorClient.send({ cmd: ChatCommands.POST_MESSAGE }, payload)
+    ).catch((error) => {
+      this.acknowledgeMessageFailure(acknowledge, this.rpcStatus(error));
+      throw new WsException(error);
+    });
+    const receiptMessages = Array.isArray(messageReceipt?.messages)
+      ? messageReceipt.messages
+      : [];
+    const storedMessage = payload.id
+      ? receiptMessages.find((message) => message.id === payload.id)
+      : receiptMessages[receiptMessages.length - 1];
+    if (!storedMessage?.id) {
+      this.acknowledgeMessageFailure(acknowledge, 503);
+      throw new WsException('Message persistence could not be confirmed');
+    }
+    // The receipt is returned only after the collector's durable POST has
+    // completed. Delivery fan-out may still be recovered from authorized history.
+    acknowledge?.({ success: true, messageId: storedMessage.id });
+    const recipientIds = storedMessage.recipients ?? [];
     this.updateConnectedSockets(senderId, client, 'connect');
     this.l.log(`Sender ID: ${senderId} connected.`);
 
@@ -219,12 +387,6 @@ export class ChatGateway {
       });
     }
 
-    // Post the message
-    const messageReceipt = await firstValueFrom(
-      this.chatCollectorClient.send({ cmd: ChatCommands.POST_MESSAGE }, payload)
-    );
-    this.l.log('Message Posted: ', messageReceipt);
-
     // Continue processing for AI recipients if any
     if (aiRecipients && aiRecipients.length > 0) {
       this.l.log('Sending to AI Orchestration Service');
@@ -238,10 +400,13 @@ export class ChatGateway {
       const aiPayload: ChatConversation = await firstValueFrom(
         this.chatCollectorClient.send(
           { cmd: ChatCommands.GET_CONVERSATION },
-          { conversationId: payload.conversationId }
+          {
+            conversationId: payload.conversationId,
+            requestingProfileId: senderId,
+          }
         )
       );
-      aiPayload.messages.push(payload);
+
       this.l.debug(
         "Current ai payload: aiPayload='" +
           JSON.stringify(aiPayload) +
@@ -263,6 +428,19 @@ export class ChatGateway {
             );
 
             if (participantSocket) {
+              await this.socketSessionAuth.authenticate(
+                participantSocket.client
+              );
+              await firstValueFrom(
+                this.chatCollectorClient.send(
+                  { cmd: ChatCommands.GET_CONVERSATION },
+                  {
+                    conversationId,
+                    requestingProfileId: participantId,
+                    deliverySenderId: senderId,
+                  }
+                )
+              );
               const conversations = await firstValueFrom(
                 this.chatCollectorClient.send(
                   { cmd: ChatCommands.GET_CONVERSATIONS },
@@ -316,20 +494,124 @@ export class ChatGateway {
     } else {
       this.l.log('Message handling complete.');
     }
-    const recipientProfileIds = [...new Set([...recipientIds, senderId])];
+    await this.notifyPersistedMessage(payload.conversationId, storedMessage);
+  }
+
+  async notifyPersistedMessage(
+    conversationId: string,
+    storedMessage: PersistedChatMessageNotification
+  ): Promise<void> {
+    const senderId = storedMessage.senderId;
+    const recipientProfileIds = [
+      ...new Set([...(storedMessage.recipients ?? []), senderId]),
+    ];
     this.l.log(
       'Updating recipient sockets...' + JSON.stringify(recipientProfileIds)
     );
     for (const id of recipientProfileIds) {
       this.l.log(`Notifying recipient: ${id}`);
-      this.server.to(id).emit('message', messageReceipt);
+      try {
+        await firstValueFrom(
+          this.chatCollectorClient.send(
+            { cmd: ChatCommands.GET_CONVERSATION },
+            { conversationId, requestingProfileId: id }
+          )
+        );
+      } catch {
+        continue;
+      }
       const conversations = await firstValueFrom(
         this.chatCollectorClient.send(
           { cmd: ChatCommands.GET_CONVERSATIONS },
           { profileId: id }
         )
       );
-      this.server.to(id).emit('conversations', conversations || []);
+      for (const connected of this.connectedClients.filter(
+        (item) => item.id === id
+      )) {
+        try {
+          await this.socketSessionAuth.authenticate(connected.client);
+          await firstValueFrom(
+            this.chatCollectorClient.send(
+              { cmd: ChatCommands.GET_CONVERSATION },
+              {
+                conversationId,
+                requestingProfileId: id,
+                deliverySenderId: senderId,
+              }
+            )
+          );
+          connected.client.emit('message', {
+            ...storedMessage,
+            conversationId,
+            recipientIds: storedMessage.recipients,
+            recipientId: storedMessage.recipients,
+            timestamp: storedMessage.createdAt,
+          });
+          connected.client.emit('conversations', conversations ?? []);
+        } catch {
+          /* Membership, block or session changed before delivery. */
+        }
+      }
+    }
+  }
+
+  private rpcStatus(error: unknown): number {
+    const direct = error as {
+      statusCode?: unknown;
+      error?: { statusCode?: unknown };
+      response?: { statusCode?: unknown };
+      getError?: () => unknown;
+    };
+    const nested = direct?.getError?.() as {
+      statusCode?: unknown;
+      error?: { statusCode?: unknown };
+    };
+    const status =
+      direct?.statusCode ??
+      direct?.error?.statusCode ??
+      direct?.response?.statusCode ??
+      nested?.statusCode ??
+      nested?.error?.statusCode;
+    return typeof status === 'number' ? status : 500;
+  }
+
+  private acknowledgeMessageFailure(
+    acknowledge:
+      | ((response: {
+          success: boolean;
+          statusCode?: number;
+          message?: string;
+        }) => void)
+      | undefined,
+    statusCode: number
+  ): void {
+    if (!acknowledge) return;
+    const message =
+      statusCode === 401
+        ? 'Sign in again to send this message.'
+        : statusCode === 403
+        ? 'You no longer have access to this conversation.'
+        : statusCode === 404
+        ? 'This conversation is no longer available.'
+        : 'Message could not be saved. Please retry.';
+    acknowledge({ success: false, statusCode, message });
+  }
+
+  async invalidateConversations(): Promise<void> {
+    for (const { id, client } of this.connectedClients) {
+      try {
+        const conversations = await firstValueFrom(
+          this.chatCollectorClient.send(
+            { cmd: ChatCommands.GET_CONVERSATIONS },
+            { profileId: id }
+          )
+        );
+        await this.socketSessionAuth.authenticate(client);
+        client.emit('conversations', conversations ?? []);
+      } catch {
+        client.emit('conversations', []);
+      }
     }
   }
 
@@ -339,6 +621,7 @@ export class ChatGateway {
     @ConnectedSocket() client: Socket
   ): Promise<void> {
     this.l.log('starting the call to get conversations.');
+    await this.socketSessionAuth.authenticate(client, true);
     const senderId = this.socketSessionAuth.assertProfile(
       client,
       payload.profileId
@@ -360,6 +643,8 @@ export class ChatGateway {
     client: Socket,
     type: 'connect' | 'disconnect'
   ) {
+    if (type === 'connect' && client.data?.deletionPurged)
+      throw new WsException('Socket session unavailable');
     console.log(
       `Updating connected sockets for '${senderId}' with event type '${type}'`
     );
@@ -369,12 +654,12 @@ export class ChatGateway {
     }
     if (type === 'connect') {
       this.connectedClients = this.connectedClients.filter(
-        (connectedClient) => connectedClient.id !== senderId
+        (connectedClient) => connectedClient.client !== client
       );
       this.connectedClients.push({ id: senderId, client });
     } else {
       this.connectedClients = this.connectedClients.filter(
-        (c) => c.id !== senderId
+        (c) => c.client !== client
       );
     }
     this.l.debug(
@@ -389,22 +674,51 @@ export class ChatGateway {
     @MessageBody() payload: { participantIds: string[] },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const user = this.socketSessionAuth.getUser(client);
-    if (!payload.participantIds.includes(user.profileId)) {
-      payload.participantIds = [user.profileId, ...payload.participantIds];
-    }
-    this.l.log(
-      `get_or_create_direct_chat for participants: ${payload.participantIds.join(
-        ', '
-      )}`
-    );
-    const conversation = await firstValueFrom(
-      this.chatCollectorClient.send(
-        { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
-        { participantIds: payload.participantIds }
+    const user = await this.socketSessionAuth
+      .authenticate(client, true)
+      .catch((error) => {
+        throw new WsException(error.message);
+      });
+    this.assertChatWriteAllowed(user.userId);
+    try {
+      const participants = [...new Set(payload.participantIds ?? [])];
+      const recipients = participants.filter((id) => id !== user.profileId);
+      if (recipients.length !== 1)
+        throw new Error('Exactly one recipient is required');
+      const senderProfile = await firstValueFrom(
+        this.profileClient.send(
+          { cmd: ProfileCommands.Get },
+          { id: user.profileId }
+        )
+      );
+      const recipient = await firstValueFrom(
+        this.profileClient.send(
+          { cmd: ProfileCommands.Get },
+          { id: recipients[0] }
+        )
+      );
+      const scope =
+        senderProfile?.appScope === 'owner-console'
+          ? 'global'
+          : senderProfile?.appScope;
+      if (
+        !senderProfile ||
+        !recipient ||
+        recipient.userId === user.userId ||
+        ![scope, 'global', null].includes(recipient.appScope ?? null)
       )
-    );
-    client.emit('conversation', conversation);
+        throw new Error('Recipient is not available in this app');
+      await this.ensureDirectChatAllowed([user.profileId, recipient.id]);
+      const conversation = await firstValueFrom(
+        this.chatCollectorClient.send(
+          { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
+          { participantIds: [user.profileId, recipient.id] }
+        )
+      );
+      client.emit('conversation', conversation);
+    } catch (error) {
+      throw new WsException(error instanceof Error ? error.message : error);
+    }
   }
 
   @SubscribeMessage('get_messages')
@@ -414,7 +728,11 @@ export class ChatGateway {
   ): Promise<void> {
     // The result was resolved and thrown away, so the socket path read any
     // conversation regardless of who was asking.
-    const user = this.socketSessionAuth.getUser(client);
+    const user = await this.socketSessionAuth
+      .authenticate(client, true)
+      .catch((error) => {
+        throw new WsException(error.message);
+      });
     this.l.log(`get_messages for conversation: ${payload.conversationId}`);
     const messages = await firstValueFrom(
       this.chatCollectorClient.send(
@@ -428,7 +746,6 @@ export class ChatGateway {
     client.emit('messages', messages || []);
   }
 
-  @SubscribeMessage('disconnect')
   handleDisconnect(@ConnectedSocket() client: Socket): void {
     const disconnectedClient = this.connectedClients.find(
       (c) => c.client === client
@@ -443,18 +760,24 @@ export class ChatGateway {
   /**
    * Broadcast AI status updates to all clients in a conversation
    */
-  private broadcastToConversation(
+  private async broadcastToConversation(
     conversationId: string,
     event: string,
-    data: any
+    data: unknown
   ) {
-    this.l.debug(
-      `Broadcasting ${event} to conversation ${conversationId}:`,
-      data
-    );
-    // Send to all connected clients - in a real implementation, we'd filter by conversation participants
-    this.connectedClients.forEach(({ client }) => {
-      client.emit(event, data);
-    });
+    for (const { id, client } of this.connectedClients) {
+      try {
+        await firstValueFrom(
+          this.chatCollectorClient.send(
+            { cmd: ChatCommands.GET_CONVERSATION },
+            { conversationId, requestingProfileId: id }
+          )
+        );
+        await this.socketSessionAuth.authenticate(client);
+        client.emit(event, data);
+      } catch {
+        /* A revoked or unrelated profile receives no event. */
+      }
+    }
   }
 }

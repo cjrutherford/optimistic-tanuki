@@ -17,14 +17,14 @@ export class CommunityMembershipAudit {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  workspaceId: string;
+  @Column({ type: 'varchar', nullable: true })
+  workspaceId: string | null;
 
-  @Column()
-  subjectId: string;
+  @Column({ type: 'varchar', nullable: true })
+  subjectId: string | null;
 
-  @Column()
-  actorId: string;
+  @Column({ type: 'varchar', nullable: true })
+  actorId: string | null;
 
   @Column({ type: 'varchar' })
   actor: MembershipLifecycleActor;

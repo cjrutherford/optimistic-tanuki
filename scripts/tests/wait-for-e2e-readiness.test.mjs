@@ -2,11 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  parseReadinessCliArgs,
   parseComposePsJson,
   prepareRunner,
   resolveReadinessOptions,
   waitForE2eReadiness,
 } from '../wait-for-e2e-readiness.mjs';
+
+test('allows the full database migration phase ten minutes by default', () => {
+  assert.equal(parseReadinessCliArgs([]).timeoutMs, 600_000);
+  assert.equal(parseReadinessCliArgs(['--timeout-ms', '1234']).timeoutMs, 1234);
+});
 
 function makeRuntime({ psSnapshots, responses = [] }) {
   const commands = [];
@@ -320,6 +326,8 @@ test('resolves a manifest target to its compose files, dependency closure, and t
       'permissions',
       'store',
       'lead-tracker',
+      'blogging',
+      'workspace',
       'gateway',
       'business-site',
     ],

@@ -3,6 +3,7 @@ import { inject, Injector } from '@angular/core';
 import { AuthStateService } from './state/auth-state.service';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { isAccountRightsRequest } from '@optimistic-tanuki/common-ui';
 
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   // Resolved lazily: AuthStateService's constructor sends the session request
@@ -15,7 +16,11 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   let appScope = 'client-interface';
   const url = req.url || '';
 
-  if (
+  if (url.includes('/api/social/guardian/')) {
+    // Guardian content remains bound to the authenticated application even
+    // though its routes share the Social API prefix.
+    appScope = 'client-interface';
+  } else if (
     url.includes('/api/social') ||
     url.includes('/api/workspaces/communities')
   ) {
@@ -36,6 +41,7 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(clonedRequest).pipe(
     catchError((error) => {
+      if (isAccountRightsRequest(req.url)) return throwError(() => error);
       // Only logout on 401 (Unauthorized - token expired/invalid)
       // Do NOT logout on 403 (Forbidden - permission denied)
       if (

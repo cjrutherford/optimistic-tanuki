@@ -1,4 +1,10 @@
 import {
+  OAuthDeletionController,
+  SocketSessionDeletionController,
+  PermissionCacheDeletionController,
+  GatewayRuntimeDeletionController,
+} from '../controllers/oauth/oauth-deletion.controller';
+import {
   ClientProxy,
   ClientProxyFactory,
   Transport,
@@ -12,12 +18,16 @@ import {
 } from '@optimistic-tanuki/auth-feature-account-bootstrap';
 
 import { AssetController } from '../controllers/asset.controller';
+import { GuardianAssetController } from '../controllers/social/guardian-asset.controller';
 import { BugReportProxyController } from '../controllers/bug-report-proxy.controller';
 import { PalettesController } from '../controllers/palettes.controller';
 import { PersonalitiesController } from '../controllers/personalities.controller';
 import { AuthGuard } from '../auth/auth.guard';
 import { SocketSessionAuthService } from '../auth/socket-session-auth.service';
 import { AuthenticationController } from '../controllers/authentication/authentication.controller';
+import { AccountExportDownloadController } from '../controllers/authentication/account-export-download.controller';
+import { AccountExportJobsController } from '../controllers/authentication/account-export-jobs.controller';
+import { AccountDeletionHttpController } from '../controllers/authentication/account-deletion.controller';
 import { JwtService } from '@nestjs/jwt';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import {
@@ -49,7 +59,10 @@ import {
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { CacheProviderFactory } from '../auth/cache/cache-provider.factory';
 import { PersonaController } from '../controllers/persona/persona.controller';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { gatewayThrottleLimits } from './throttler-config';
+import { GatewayBroadThrottlerGuard } from './gateway-broad-throttler.guard';
+import { IdentityThrottlerGuard } from '../controllers/learning/identity-throttler.guard';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { RequestTimeoutInterceptor } from '../interceptors/request-timeout.interceptor';
 import {
@@ -86,10 +99,12 @@ import { WellnessController } from '../controllers/wellness/wellness.controller'
 import { ClassifiedsController } from '../controllers/classifieds/classifieds.controller';
 import { CommunitiesController } from '../controllers/communities/communities.controller';
 import { NotificationController } from '../controllers/social/notification/notification.controller';
+import { GatewayNotificationRecipientService } from '../controllers/social/notification/gateway-notification-recipient.service';
 import { SearchController } from '../controllers/social/search/search.controller';
 import { PrivacyController } from '../controllers/social/privacy/privacy.controller';
 import { ActivityController } from '../controllers/social/activity/activity.controller';
 import { PresenceController } from '../controllers/social/presence/presence.controller';
+import { GatewayPresenceAudienceService } from '../controllers/social/presence/gateway-presence-audience.service';
 import { ProfileAnalyticsController } from '../controllers/social/profile-analytics/profile-analytics.controller';
 import { PollController } from '../controllers/social/poll/poll.controller';
 import { PostShareController } from '../controllers/social/post-share/post-share.controller';
@@ -165,6 +180,21 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         value: AuthenticationController,
       },
       {
+        id: 'account-export-download',
+        requiredServices: ['authentication'],
+        value: AccountExportDownloadController,
+      },
+      {
+        id: 'account-export-jobs',
+        requiredServices: ['authentication'],
+        value: AccountExportJobsController,
+      },
+      {
+        id: 'account-deletion',
+        requiredServices: ['authentication'],
+        value: AccountDeletionHttpController,
+      },
+      {
         id: 'profile',
         requiredServices: [
           'profile',
@@ -179,7 +209,7 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
       { id: 'social', requiredServices: ['social'], value: SocialController },
       {
         id: 'social-components',
-        requiredServices: ['social'],
+        requiredServices: ['social', 'profile'],
         value: SocialComponentController,
       },
       {
@@ -199,8 +229,23 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
       },
       {
         id: 'asset',
-        requiredServices: ['assets', 'authentication', 'permissions'],
+        // Public media authorization also resolves the asset owner, current
+        // community membership, and legacy classified image references.
+        requiredServices: [
+          'assets',
+          'authentication',
+          'permissions',
+          'profile',
+          'social',
+          'classifieds',
+          'forum',
+        ],
         value: AssetController,
+      },
+      {
+        id: 'guardian-assets',
+        requiredServices: ['assets', 'authentication', 'profile'],
+        value: GuardianAssetController,
       },
       { id: 'bug-reports', value: BugReportProxyController },
       {
@@ -399,7 +444,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
       },
       {
         id: 'social-gateway',
-        requiredServices: ['social'],
+        requiredServices: ['social', 'profile'],
         value: SocialGateway,
       },
     ] as Array<ValueComposableEntry<any>>,
@@ -411,23 +456,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
       isGlobal: true,
       load: [loadConfig],
     }),
-    ThrottlerModule.forRoot([
-      {
-        name: 'short',
-        ttl: 1000,
-        limit: 10000, // Increased for E2E
-      },
-      {
-        name: 'medium',
-        ttl: 10000,
-        limit: 50000, // Increased for E2E
-      },
-      {
-        name: 'long',
-        ttl: 60000,
-        limit: 100000, // Increased for E2E
-      },
-    ]),
+    ThrottlerModule.forRoot(gatewayThrottleLimits()),
     LoggerModule,
     EmailModule.forRootAsync({
       inject: [ConfigService],
@@ -455,6 +484,10 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     ...createMcpToolImports(gatewayComposition),
   ],
   controllers: [
+    OAuthDeletionController,
+    SocketSessionDeletionController,
+    PermissionCacheDeletionController,
+    GatewayRuntimeDeletionController,
     ...controllerEntries.map((entry) => entry.value),
     SecurityTelemetryController,
     PerformanceTelemetryController,
@@ -466,6 +499,8 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     // Sends the invitation email. Here rather than in project-planning, which
     // owns the invitation and knows nothing about which application it is for.
     ProjectInviteMailer,
+    GatewayPresenceAudienceService,
+    GatewayNotificationRecipientService,
     // Same courtesy contract for community email invitations (token-based,
     // owned by social, addressed from the gateway-held app registry).
     CommunityInviteMailer,
@@ -503,7 +538,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     },
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: GatewayBroadThrottlerGuard,
     },
     {
       // Enforce a uniform request timeout across every gateway route so a

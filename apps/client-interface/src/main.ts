@@ -1,9 +1,14 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { appConfig } from './app/app.config';
 import { AppComponent } from './app/app.component';
-import { startPerformanceMonitoring } from '@optimistic-tanuki/common-ui';
+import {
+  installBrowserDiagnosticBoundary,
+  startGatedPerformanceMonitoring,
+} from '@optimistic-tanuki/common-ui';
 
-startPerformanceMonitoring({ appId: 'client-interface' });
+installBrowserDiagnosticBoundary();
+
+startGatedPerformanceMonitoring({ appId: 'client-interface' });
 
 bootstrapApplication(AppComponent, appConfig).catch((err) =>
   console.error(err)

@@ -1,7 +1,23 @@
 export * from './lib/common-ui/index';
+export { installBrowserDiagnosticBoundary } from './lib/browser-diagnostics';
+export {
+  SessionGeneration,
+  isAccountRightsRequest,
+  clearOwnedBrowserSessionKeys,
+  notifyBrowserSessionReset,
+  notifyAccountDeletion,
+  watchAccountDeletion,
+  watchBrowserSessionBoundary,
+  publishBrowserSessionBoundary,
+} from './lib/session-state';
 // Re-export theme interfaces from theme-lib for backward compatibility
 export type { ThemeColors, ThemeGradients } from '@optimistic-tanuki/theme-lib';
 export * from './lib/common-ui/gradient-builder';
 
 // Export SCSS mixins path for import usage
 export const MIXINS_SCSS_PATH = './lib/styles/mixins.scss';
+
+export * from './lib/common-ui/public-info-footer/public-info-footer.component';
+
+export * from './lib/common-ui/public-contact-page/public-contact-page.component';
+export * from './lib/authenticated-activity';

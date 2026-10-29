@@ -1,0 +1,165 @@
+{
+  "slice": "DF-007-J21",
+  "date": "2026-10-21",
+  "status": "locally-verified-bounded-runtime-harness",
+  "accepted": true,
+  "baseRevision": "a3a3bc5e9d896dd5426a9b95cb3c9dc246ccbaf6",
+  "sourceManifestSha256": "b1cc1094d3fa540eacbb1c9bc98d6a57a6a2d3ab88e79468f6bad432da4115d3",
+  "sourceHashes": {
+    "apps/client-interface-e2e/src/rr04-i03-acceptance.spec.ts": "d6d4e393c48661bee595b5b956f24bd07061a68ad9ef4fe44653c826959338f2",
+    "apps/gateway-e2e/src/gateway/notification-provenance.spec.ts": "d143a752fedf3d890f7e8fefa3b30d4d99872fd61bcaef6b875e899235a37334",
+    "apps/gateway/src/app/app.module.ts": "9588734f744e3495a78daf1e0c55bd9e3dc65d32a9663e30ac55378c80c94934",
+    "apps/gateway/src/app/social-gateway/social.gateway.spec.ts": "ea50f41443c0c419847b55fce113a1d664d25e56523695be65c3b3d31adb31e1",
+    "apps/gateway/src/app/social-gateway/social.gateway.ts": "e975292d9107e275673c4b9390ca6cfb4f9322adfc0c31955721c67b6c1b8c48",
+    "apps/gateway/src/controllers/social/notification/gateway-notification-recipient.service.spec.ts": "e0c6d5a05ae1edb441adccdce8c97aa6c326b8aa1b325ed3614ca02dea140082",
+    "apps/gateway/src/controllers/social/notification/gateway-notification-recipient.service.ts": "1cba41fa9ab6914611553683ff9058edc59083ba97506b605da3f0d32f0d5eb3",
+    "apps/gateway/src/controllers/social/notification/notification.controller.spec.ts": "a73020ccfc631121ddbbd2cec6c01c399278ba1b14abe0a7a4ccfa6afa75539b",
+    "apps/gateway/src/controllers/social/notification/notification.controller.ts": "7fa45c953f4955c8ec3533b17bf570a3cc0890fbd85efc9270b0f21aaa66196b",
+    "apps/gateway/src/performance/performance-telemetry.controller.spec.ts": "67f426c61a30494dd5f0485c7caa4d9322cb927422b972b0a54f9685d4157815",
+    "apps/gateway/src/performance/performance-telemetry.controller.ts": "1681ea79f3ab3a40df9d49f8a9efc4eb4dface15e5df05fbf41376767090e6b1",
+    "apps/social/src/app/services/notification.service.spec.ts": "e35b9a2dabee07d15162840fe9836c252cbf4d4a21f4462ab7703108c0a5c7f5",
+    "apps/social/src/app/services/notification.service.ts": "04eec0bb07c15f08fd5a92b4a73c63a40d5a01a81e72a274e4602e29f672c5a1",
+    "libs/social/contracts/src/index.ts": "effb022dc7a360b63cb6107a91c2ac0fb818c2aed377c2c70b980bf15fdee32c",
+    "libs/social/contracts/src/lib/notification.spec.ts": "94169b5d18b6a7e67ca92a63e71186e06b2cd898b023cff347057376c2534546",
+    "libs/social/contracts/src/lib/notification.ts": "a3be7476d6c99e38b161a2d7113a7dcfd8a2346cfa98c4039c5596cb8ff1cdac"
+  },
+  "behavior": {
+    "publicCreation": "Authenticated public notification creation always returns 403 without creating rows or broadcasting. Existing internal server commands remain trusted TCP.",
+    "recipient": "HTTP stream reads/count/read-all and mutations require the signed selected profile, strict current account/profile ownership proof and canonical UUIDs. Foreign mutation targets return 404.",
+    "projection": "Shared projection emits exactly id, recipientId, type, title, body, isRead, createdAt. Templates replace all stored free text; sender/resource/action fields and unknown properties are omitted. Unknown legacy types become generic system notices; malformed records are omitted.",
+    "persistence": "New records accept canonical recipient and known type and store server template text; caller metadata, identity, timestamps and read state cannot override storage. Existing debounce grouping remains.",
+    "socket": "Notification subscribe/unsubscribe and delivery check current profile ownership; delivery requires an active subscription and a current session. The same safe projection is used.",
+    "performance": "Owner-console notifications use canonical profile IDs, deduplicated by profile; email recipients deduplicated by account. No account UUID fallback."
+  },
+  "focusedUnits": {
+    "passed": 68,
+    "skipped": 0,
+    "gateway": 59,
+    "gatewaySuites": 4,
+    "social": 6,
+    "contracts": 3,
+    "note": "Distinct final runs. Initial Gateway run had 49 passing/8 failing tests before fixture corrections and review fixes; it was not acceptance. No comprehensive RED claim."
+  },
+  "preRuntime": {
+    "owningBuildsAndLints": "Gateway production build/lint; Social and social-contracts build/lint PASS",
+    "primaryClientProductionBuilds": "client-interface, forgeofwill and business-site PASS; 13 of 17 Nx tasks cached",
+    "e2eLint": "gateway-e2e and client-interface-e2e PASS; root final fixture lint recorded separately",
+    "formatAndDiff": "Explicit scoped Nx formatting and diff check PASS before capture",
+    "evidenceDirectory": ".runtime-artifacts/account-rights/finish-sequence/notification-provenance"
+  },
+  "runtimePreparation": {
+    "project": "ot-df007-notification-j21",
+    "baseRevision": "a3a3bc5e9d896dd5426a9b95cb3c9dc246ccbaf6",
+    "sourceManifestSha256": "b1cc1094d3fa540eacbb1c9bc98d6a57a6a2d3ab88e79468f6bad432da4115d3",
+    "sourceFiles": 16,
+    "protectedFilesExcluded": 43,
+    "composeSha256": "7dc4882d4d7cef593365a7a4687e00c8962afc27d5793a84f0227b4d7d0de636",
+    "freshImages": {
+      "profile": {
+        "tag": "ot-df007-notification-j21/profile:b1cc1094d3fa",
+        "imageId": "sha256:f383d83b0660860cac895475d58734fe6f2704d2086432e8b04464e3d8eb0d37",
+        "dockerCopyInputCount": 2981
+      },
+      "authentication": {
+        "tag": "ot-df007-notification-j21/authentication:b1cc1094d3fa",
+        "imageId": "sha256:651980b0287e8dc2489baece338cb43fb629b4536569eea6fd7eedc8e4681ff8",
+        "dockerCopyInputCount": 3031
+      },
+      "social": {
+        "tag": "ot-df007-notification-j21/social:b1cc1094d3fa",
+        "imageId": "sha256:c2e2dbf493c2d0dcd2dd4242188a83cc365d3d419c12cd80aeb949b12653d2ad",
+        "dockerCopyInputCount": 3063
+      }
+    },
+    "retainedImages": {
+      "db": {
+        "tag": "postgres:15",
+        "imageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+        "j18RunImageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb"
+      },
+      "db_setup": {
+        "tag": "ot-df007-b6-forum/db-setup:reconstructed-389e9fb743af",
+        "imageId": "sha256:b55e0b7bd7bfdbee8a919679df5e11f194b40ade5dd85c524dadd02a309c9db4",
+        "j18RunImageId": "sha256:b55e0b7bd7bfdbee8a919679df5e11f194b40ade5dd85c524dadd02a309c9db4"
+      },
+      "forum": {
+        "tag": "ot-df007-b6-forum/forum:b6-981665ddc7b4",
+        "imageId": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+        "j18RunImageId": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4"
+      },
+      "permissions": {
+        "tag": "ot-df007-permissions-integration/permissions:bf5389a29c23",
+        "imageId": "sha256:86e75b83b4fb51277d20a0915933b2f06dab6350a40b8a1273dc3acc6457760d",
+        "j18RunImageId": "sha256:86e75b83b4fb51277d20a0915933b2f06dab6350a40b8a1273dc3acc6457760d"
+      },
+      "assets": {
+        "tag": "ot-df007-permissions-integration/assets:bf5389a29c23",
+        "imageId": "sha256:325831f665cd65ec59d4ee5f61f49b162846a98a5f6120d08ff003c9bfcb3c46",
+        "j18RunImageId": "sha256:325831f665cd65ec59d4ee5f61f49b162846a98a5f6120d08ff003c9bfcb3c46"
+      },
+      "videos": {
+        "tag": "ot-df007-permissions-integration/videos:bf5389a29c23",
+        "imageId": "sha256:7f78e7b92597514ff788945635d595e198e88f87e5d3dad1841dad1bac5f494a",
+        "j18RunImageId": "sha256:7f78e7b92597514ff788945635d595e198e88f87e5d3dad1841dad1bac5f494a"
+      }
+    },
+    "dependencyLimitation": "Authentication, Profile and Social are freshly built from the J21 capture. Six other dependency images retain reviewed J20 IDs; their current COPY equality is not claimed.",
+    "configuration": "Synthetic private fixture configuration; no operator secrets/config copied."
+  },
+  "runtime": {
+    "acceptedAttempt": 1,
+    "result": {
+      "result": "PASS",
+      "project": "ot-df007-notification-j21",
+      "sourceManifestSha256": "b1cc1094d3fa540eacbb1c9bc98d6a57a6a2d3ab88e79468f6bad432da4115d3",
+      "gatewayE2ePassed": 1,
+      "skipped": 0,
+      "cleanupCounts": {
+        "authSessions": 0,
+        "authKeys": 0,
+        "authActionTokens": 0,
+        "profiles": 0,
+        "notifications": 0,
+        "j21FixtureUsers": 0,
+        "temporaryRelations": 0
+      },
+      "imageIds": {
+        "social": "sha256:c2e2dbf493c2d0dcd2dd4242188a83cc365d3d419c12cd80aeb949b12653d2ad",
+        "permissions": "sha256:86e75b83b4fb51277d20a0915933b2f06dab6350a40b8a1273dc3acc6457760d",
+        "forum": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+        "profile": "sha256:f383d83b0660860cac895475d58734fe6f2704d2086432e8b04464e3d8eb0d37",
+        "authentication": "sha256:651980b0287e8dc2489baece338cb43fb629b4536569eea6fd7eedc8e4681ff8",
+        "assets": "sha256:325831f665cd65ec59d4ee5f61f49b162846a98a5f6120d08ff003c9bfcb3c46",
+        "videos": "sha256:7f78e7b92597514ff788945635d595e198e88f87e5d3dad1841dad1bac5f494a",
+        "db": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb"
+      },
+      "protectedFilesChecked": 43,
+      "remainingComposeResources": {
+        "containers": 0,
+        "networks": 0,
+        "volumes": 0
+      },
+      "sourceAndProtectedHashesPreserved": true
+    },
+    "commands": [
+      "NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx run gateway-e2e:e2e --testFile=notification-provenance.spec.ts$ --runInBand --skipNxCache"
+    ],
+    "evidence": ".runtime-artifacts/account-rights/finish-sequence/notification-provenance/runtime/attempt-1",
+    "otherAttempts": [],
+    "proof": [
+      "Production controller/AuthGuard/exception filter HTTP harness with real Auth/Profile/Social TCP services.",
+      "Public own/foreign creation rejected; recipient list/count/read/delete work, foreign mutations denied, stale signed ownership denied.",
+      "Legacy private marker and external URL omitted in both API/direct RPC and actual authenticated server Socket.IO notification delivery. Active subscription isolation, unsubscribe and stale ownership checked.",
+      "Real PerformanceTelemetryController producer method uses real Profile/Auth/Social RPC; two owned console profiles receive distinct notifications, one email call observed through stub. No external email sent."
+    ]
+  },
+  "limitations": [
+    "Trusted internal TCP boundary. No historical attribution repair or provenance column.",
+    "Ownership waits configured at three seconds; no timed-expiry or live-outage assertion.",
+    "The runtime hosts selected production controller/guard/filter/socket components, not a full Gateway deployment.",
+    "Direct server broadcast proof does not establish normal Social producer push, shared UI transport or browser realtime delivery. These remain DEFER.",
+    "RR04 fixture was adapted and linted but its live browser/API suite was not run.",
+    "Performance method uses a stub email sender; no external email/provider flow or remote CI/production qualification.",
+    "No Notification snapshot capture, download artifacts or deletion in J21."
+  ]
+}

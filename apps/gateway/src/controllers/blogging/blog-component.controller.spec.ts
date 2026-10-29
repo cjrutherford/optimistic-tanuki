@@ -51,6 +51,7 @@ describe('BlogComponentController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BlogComponentController],
       providers: [
+        { provide: 'GATEWAY_APP_REGISTRY', useValue: { apps: [] } },
         JwtService,
         {
           provide: PermissionsCacheService,

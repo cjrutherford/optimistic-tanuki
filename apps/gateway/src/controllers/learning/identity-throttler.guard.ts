@@ -27,6 +27,15 @@ export class IdentityThrottlerGuard extends ThrottlerGuard {
       // Namespaced so a user id can never collide with an address.
       return `user:${user.userId}`;
     }
-    return `ip:${await super.getTracker(req)}`;
+    // Do not consume X-Forwarded-For here. Unless proxy trust is explicitly
+    // configured, an Internet caller can forge that header. The socket peer
+    // may be the shared reverse proxy; authenticated writes use the verified
+    // session user ID above, while anonymous callers remain conservatively
+    // grouped at the trusted network boundary.
+    const socket = req?.['socket'] as { remoteAddress?: unknown } | undefined;
+    const remoteAddress = socket?.remoteAddress;
+    return `ip:${
+      typeof remoteAddress === 'string' ? remoteAddress : 'unknown'
+    }`;
   }
 }

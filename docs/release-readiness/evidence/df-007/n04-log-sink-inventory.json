@@ -1,0 +1,121 @@
+{
+  "slice": "N04",
+  "scope": ["client-interface", "local-hub"],
+  "status": "VERIFIED_LOCAL_OT_TS",
+  "inventoryComplete": false,
+  "sinks": [
+    {
+      "id": "application.console",
+      "owner": "Gateway and required Nest services",
+      "identity": "Arbitrary legacy diagnostics may contain account/profile IDs, credentials and free text",
+      "disposition": "Closed projection installed before 12 required service bootstraps; real isolated Nest HTTP process proves console/Nest sentinel containment; not historical or host-runtime erasure",
+      "status": "bootstrap-boundary-verified"
+    },
+    {
+      "id": "browser.console",
+      "owner": "client-interface/local-hub",
+      "identity": "Social events, HTTP error bodies, resolved profiles and payment errors",
+      "disposition": "Shared browser boundary in both app bootstraps; all six rebuilt Chrome cases exclude sentinel; not browser-managed network panels/extensions",
+      "status": "chrome-boundary-verified"
+    },
+    {
+      "id": "ssr.telemetry",
+      "owner": "client-interface/local-hub SSR and runtime monitoring",
+      "identity": "Configuration-dependent logs and optional OTEL telemetry",
+      "disposition": "Collector routing/retention and account-keyed purge not established",
+      "status": "unverified"
+    },
+    {
+      "id": "docker.stdout",
+      "owner": "Local Docker/operator",
+      "identity": "Historical application stdout/stderr",
+      "disposition": "Observed default driver json-file; no account-keyed purge adapter. No existing logs read or deleted",
+      "status": "unsupported"
+    },
+    {
+      "id": "downstream.collectors",
+      "owner": "Operator",
+      "identity": "No forwarded log capture destination currently configured; operator-confirmed 2026-10-25",
+      "disposition": "Exclude an absent forwarded destination from the current local purge set. Future OTEL/Grafana setup is documented in docs/operators/ot-ts-observability.md. This does not establish local historical stdout/browser/container erasure.",
+      "status": "operator-confirmed-not-configured"
+    },
+    {
+      "id": "profile.guardian_activity",
+      "owner": "Profile",
+      "identity": "actorUserId/dependentUserId account UUIDs; profileId profile UUID",
+      "disposition": "Approved preserve-history identity/payload transform; real PostgreSQL rollback/retry/readback and counterpart preservation verified. See checkpoint-n04.json for exact source policies. No reference cascade.",
+      "status": "local-owner-contract-verified"
+    },
+    {
+      "id": "assets.guardian_activity",
+      "owner": "Assets",
+      "identity": "actorUserId/dependentUserId account UUIDs; profileId profile UUID; asset reference",
+      "disposition": "Approved preserve-history identity/payload transform; real PostgreSQL rollback/retry/readback and counterpart preservation verified. See checkpoint-n04.json for exact source policies. No reference cascade.",
+      "status": "local-owner-contract-verified"
+    },
+    {
+      "id": "social.activity",
+      "owner": "Social",
+      "identity": "Activity profileId with free-text description/resource references; profile-view viewer account differs from viewed profile",
+      "disposition": "Owned-profile private activity facts are deleted without traversing resource references; profile-view participation is separately redacted. Real PostgreSQL rollback/retry/readback verified.",
+      "status": "local-owner-contract-verified"
+    },
+    {
+      "id": "social.membership_audit",
+      "owner": "Social",
+      "identity": "actorId account UUID; subjectId profile UUID; workspace/community context",
+      "disposition": "Approved preserve-history identity/payload transform; real PostgreSQL rollback/retry/readback and counterpart preservation verified. See checkpoint-n04.json for exact source policies. No reference cascade.",
+      "status": "local-owner-contract-verified"
+    },
+    {
+      "id": "social.moderation_guardian_audit",
+      "owner": "Social",
+      "identity": "Moderation actorProfileId; subjectId is content reference; passive Guardian audit actor/dependent fields. Active grants excluded.",
+      "disposition": "Approved preserve-history identity/payload transform; real PostgreSQL rollback/retry/readback and counterpart preservation verified. See checkpoint-n04.json for exact source policies. No reference cascade.",
+      "status": "local-owner-contract-verified"
+    },
+    {
+      "id": "forum.moderation_audit",
+      "owner": "Forum",
+      "identity": "actorProfileId profile UUID; subjectId content reference; private details JSON",
+      "disposition": "Approved preserve-history identity/payload transform; real PostgreSQL rollback/retry/readback and counterpart preservation verified. See checkpoint-n04.json for exact source policies. No reference cascade.",
+      "status": "local-owner-contract-verified"
+    },
+    {
+      "id": "social.search_history",
+      "owner": "Social",
+      "identity": "SearchHistory profileId",
+      "disposition": "Approved preserve-history identity/payload transform; real PostgreSQL rollback/retry/readback and counterpart preservation verified. See checkpoint-n04.json for exact source policies. No reference cascade.",
+      "status": "local-owner-contract-verified"
+    }
+  ],
+  "limitations": [
+    "Bounded source inventory, not exhaustive deployed sink discovery",
+    "No deployed collector or immediate whole-account deletion proof",
+    "No real production purge adapter registered by this change"
+  ],
+  "updatedAt": "2026-10-26",
+  "localDeclaredAuditSourcesVerified": 8,
+  "qualificationBoundary": "Declared local owner contracts only; deployed collectors, historical copies and backups remain operator qualification.",
+  "auditSources": {
+    "profile.guardian_profile_activity": "actorUserId/dependentUserId account; profileId profile; dependent binding; changedFieldNames cleared",
+    "assets.guardian_asset_activity": "actorUserId/dependentUserId account; profileId profile; dependent binding; assetId and changedFieldNames cleared",
+    "social.activity": "owned profile private facts deleted; referenced resources untouched",
+    "social.community_membership_audit": "actorId account; subjectId profile; workspaceId cleared",
+    "social.guardian_content_audit": "actor/dependent account; dependent profile binding; resourceId and changedFields cleared",
+    "social.content_moderation_action": "actorProfileId profile; subjectId/reportId/workspaceId/details cleared",
+    "social.profile_view": "viewerId account; profileId viewed profile; only matched participation cleared; source removed",
+    "forum.forum_moderation_action": "actorProfileId profile; subjectId/details cleared"
+  },
+  "activeAuthorizationExclusion": "guardian_published_asset_grant remains untouched; requires owner revocation and D00/D06 fencing.",
+  "dockerMetadata": "No current/stopped containers with inspected OT/TS compose service labels; no payload inspection and no absence claim for unlabelled/forwarded/backup copies.",
+  "operatorConfirmation": {
+    "date": "2026-10-26",
+    "forwardedLogDestinationsConfigured": false,
+    "retainedLegacyOtTsLogs": false,
+    "manualLegacyOtTsLogCopies": false,
+    "setupOnly": "docs/operators/ot-ts-observability.md",
+    "evidenceKind": "operator-confirmed-local-inventory",
+    "qualificationBoundary": "This is an absence declaration, not historical purge execution or current replica logging proof."
+  }
+}

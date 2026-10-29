@@ -1,0 +1,164 @@
+{
+  "checkpoint": "DF-007-J5",
+  "date": "2026-10-20",
+  "baseCommit": "ae0411f835a754c5f83a0220c6c7ac90fd276207",
+  "status": "locally-verified-legacy-Profile-database-integration",
+  "sourceFiles": {
+    "apps/profile/src/app/account-export-owner.service.ts": "8f1e25cc9fd9c6bee0ff0ae28e5659657670b983195aac0f0c1caa152da012aa",
+    "apps/profile/src/app/account-export-owner.postgres.spec.ts": "e217f1c54cb11d581971e4caa38249fa451c1cbbf6478ba43db7187390d9bd36",
+    "apps/profile/src/app/account-export-owner.failure.postgres.spec.ts": "56c12b039c381596845f466aba60b06e19b85e4bb4ae1b3b9d3d7c3fdea1d917",
+    "apps/profile/src/app/account-export-legacy-reader.ts": "be036d6da45127233650a03a947bde74cee1d6aacccb943fc1365d3d42b675aa",
+    "apps/profile/src/app/account-export-legacy-reader.spec.ts": "b23741d88dc5f7881a2fc3b38449ad6acdc602b3e82592de9766001c1d2110ce",
+    "apps/profile/src/app/account-export-legacy-reader.postgres.spec.ts": "55ffba4626f2b112bf620688d11b4fa8cafe5757794bb737a56f1aba25e29510",
+    "apps/profile/src/app/account-export-legacy-guard.ts": null,
+    "apps/profile/src/app/account-export-legacy-guard.spec.ts": null
+  },
+  "scope": {
+    "retainedDatabaseTables": [
+      "profile",
+      "timeline",
+      "guardian_profile_activity",
+      "goal",
+      "project"
+    ],
+    "streamSourceCount": 11,
+    "sameCaptureTransaction": true,
+    "temporaryLegacyGuardReplaced": true,
+    "remoteSnapshotHandle": false,
+    "profileJobIntegration": false,
+    "download": false,
+    "deletion": false
+  },
+  "checks": {
+    "postgres": {
+      "command": [
+        "pnpm",
+        "exec",
+        "nx",
+        "run",
+        "profile:test",
+        "--testFile=account-export-(owner.*|legacy-reader).postgres.spec.ts",
+        "--runInBand"
+      ],
+      "suitesPassed": 3,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0,
+      "realDatabaseAndMigrations": true,
+      "synchronize": false,
+      "legacyFixtureGoals": 1006,
+      "legacyFixtureProjects": 1006,
+      "minimumUuidUnicodeTimestampsNullsStoredIntegers": true,
+      "circularOwnedReferencesForeignReferenceRedaction": true,
+      "counterpartFingerprintPreserved": true,
+      "actualWholeOwnerAndSpoolIncludeLongLegacyText": true,
+      "auth": "stub in owner suites; helper receives caller-owned snapshot query; no live AuthRPC proof",
+      "uuid": "Only unrelated Storage adapter dependency substituted with node crypto"
+    },
+    "unit": {
+      "passed": 6,
+      "command": "pnpm nx test profile --testFile=apps/profile/src/app/account-export-legacy-reader.spec.ts --runInBand",
+      "rawLogAvailable": false,
+      "evidence": "Luna direct tool stdout and final handoff, retained in delegated-unit-evidence.json"
+    },
+    "build": "profile production PASS",
+    "lint": "profile PASS after final integration test amendment",
+    "format": "scoped17-path check (2 deleted guards excluded from formatter)",
+    "schema": "No schema changes. Actual existing Profile migrations applied to a fresh database; no synchronize or new migration."
+  },
+  "runtime": {
+    "database": "profile_owner_j5_fixture",
+    "hostPort": 15549,
+    "imageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+    "independentReadback": {
+      "database": "profile_owner_j5_fixture",
+      "sourceTableCounts": {
+        "profile": 0,
+        "timeline": 0,
+        "guardianProfileActivity": 0,
+        "legacyGoal": 0,
+        "legacyProject": 0
+      }
+    },
+    "teardown": {
+      "containerRemoved": "da59c884bf36f242e83ed23fa57e3d4624baa29210efa5029e580e44dc8071a3",
+      "anonymousVolumesRemoved": [
+        "5c80583e0783f96ed3a23f08881e25d38a0d9002ee648d7b15bdf923c0c52869"
+      ],
+      "remainingProjectContainers": 0,
+      "noHostBinds": true,
+      "sourceTableCountsBeforeTeardown": {
+        "profile": 0,
+        "timeline": 0,
+        "guardianProfileActivity": 0,
+        "legacyGoal": 0,
+        "legacyProject": 0
+      }
+    },
+    "realApplicationContainer": false
+  },
+  "fieldDispositions": {
+    "path": "profile-owner-fields-j5.json",
+    "sha256": "d4135ec85c5deb8462537c3ed05fea6cfb6137a0d4700233ec39ddbc3c693b18"
+  },
+  "evidence": {
+    "postgres.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-legacy/postgres.log",
+      "sha256": "5d211dc2cf556b604672953216a9530cd2cbe7329487bfc02a04bcf0ed1add5d"
+    },
+    "postgres-result.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-legacy/postgres-result.json",
+      "sha256": "18df8ab725d94756561b8d38f170ae071e90601c6b5b94322df746eca7aa5450"
+    },
+    "postgres-attempt1.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-legacy/postgres-attempt1.log",
+      "sha256": "13160baa12bdb5f2514ca740cc5131867c5dad32cb9ad1dac99bd0656267a2c5"
+    },
+    "postgres-focused-fixture-repair.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-legacy/postgres-focused-fixture-repair.log",
+      "sha256": "44456c2db91c573a49b63e9ec756584f984f79d28c3f72b86ba32750a9af9041"
+    },
+    "build.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-legacy/build.log",
+      "sha256": "b8f757eb90516b962cc3839a2ce8a7c9fbe40214c254a39b3e472897b88228de"
+    },
+    "lint-final.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-legacy/lint-final.log",
+      "sha256": "20e68652e071c74dc71d959782c8f28688bd31da69ebc4f83e8eabebce31af5e"
+    },
+    "delegated-unit-evidence.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-legacy/delegated-unit-evidence.json",
+      "sha256": "e983d2dc73cb85d3f459a04a905460eddf5b47fe9d74b887316c2a91b5a88333"
+    },
+    "independent-db-readback.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-legacy/independent-db-readback.json",
+      "sha256": "ba76ee2606a4e4404d6f41fc6f347143e1c33340825bc6c73d1c1492c23a1ead"
+    },
+    "teardown.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/profile-legacy/teardown.json",
+      "sha256": "16bd1edc65270b5079c40c6755f3e53139eb9ca0b490bc503235b82762043811"
+    }
+  },
+  "protectedWip": {
+    "files": 43,
+    "unchanged": true
+  },
+  "diagnostics": [
+    "First combinedPG selection:10passed1failed. The project long-text fixture used1800PGcodepoints and was below the2500character chunk threshold; production reader correctly kept it inline.",
+    "Project fixture increased to3200+codepoints; focusedcase1passed10unselected, followed by final11passed0skips selection. No aggregation of diagnostic runs as a single acceptance."
+  ],
+  "review": "Luna read-only root integration review found no concrete blocker. Its noted long-text integration gap was covered by the final actual owner-to-spool case.",
+  "notVerified": [
+    "Live Auth/RPC and authorized remote snapshot/identity transport",
+    "Profile job-runner consumption, complete global owner inventory",
+    "Assets/Videos bytes, portable account artifact, expiry/download",
+    "Deletion/revocation/readback/shared controls",
+    "App process restart, browser, actual CI execution or production qualification"
+  ],
+  "remaining": [
+    "Authorized bounded remote snapshot/identity transport",
+    "Profile coordinator integration and remaining owners",
+    "Portable artifact, deletion/readback and shared UI",
+    "Selected items2,4,6 afterlocalitem1; externalflows and releasequalification separatelyowned"
+  ]
+}

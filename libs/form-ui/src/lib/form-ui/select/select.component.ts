@@ -21,7 +21,6 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
   styleUrl: './select.component.scss',
   standalone: true,
   host: {
-    '[attr.id]': 'id',
     // Using standardized local variables with fallbacks
     '[style.--local-background]': 'background',
     '[style.--local-foreground]': 'foreground',
@@ -32,7 +31,13 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
   },
 })
 export class SelectComponent extends Themeable implements ControlValueAccessor {
+  private static nextInputId = 0;
   @Input() id = '';
+  @Input() label = '';
+  readonly generatedId = `otui-select-${++SelectComponent.nextInputId}`;
+  get controlId(): string {
+    return this.id ? `${this.id}-control` : this.generatedId;
+  }
   @Input() options: Array<{ value: string; label: string }> = [
     { value: '', label: 'Please select' },
     { value: 'option1', label: 'Option 1' },

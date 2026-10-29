@@ -1,3 +1,10 @@
+import {
+  AccountDeletionSnapshotController,
+  ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+} from '@optimistic-tanuki/storage';
+import { PaymentsAccountDeletionOwnerController } from './account-deletion-owner.controller';
+import { PaymentsAccountDeletionOwnerService } from './account-deletion-owner.service';
+import { AccountDeletionAuthorityClient } from '@optimistic-tanuki/storage';
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
@@ -27,6 +34,13 @@ import { LemonSqueezyAdapter } from '@optimistic-tanuki/payments-domain';
 import { PAYMENT_PROVIDER_ADAPTER } from './services/payment-provider.tokens';
 import { BillingReconciliationService } from './services/billing-reconciliation.service';
 import { FlowDepositService } from './services/flow-deposit.service';
+import {
+  AccountExportOwnerSpoolService,
+  AccountExportProfileSnapshotClient,
+} from '@optimistic-tanuki/storage';
+import { PaymentsAccountExportOwnerService } from './account-export-owner.service';
+import { PaymentsAccountExportSnapshotService } from './account-export-snapshot.service';
+import { PaymentsAccountExportSnapshotController } from './account-export-snapshot.controller';
 
 @Module({
   imports: [
@@ -39,8 +53,89 @@ import { FlowDepositService } from './services/flow-deposit.service';
       factory: loadDatabase,
     }),
   ],
-  controllers: [AppController],
+  controllers: [
+    AccountDeletionSnapshotController,
+    PaymentsAccountDeletionOwnerController,
+    AppController,
+    PaymentsAccountExportSnapshotController,
+  ],
   providers: [
+    {
+      provide: ACCOUNT_DELETION_SNAPSHOT_OPTIONS,
+      useFactory: (
+        snapshot: PaymentsAccountExportSnapshotService,
+        authority: AccountDeletionAuthorityClient,
+        spool: AccountExportOwnerSpoolService,
+        database: { query(sql: string): Promise<unknown> }
+      ) => ({ owner: 'payments', snapshot, authority, spool, database }),
+      inject: [
+        PaymentsAccountExportSnapshotService,
+        AccountDeletionAuthorityClient,
+        AccountExportOwnerSpoolService,
+        'PAYMENTS_CONNECTION',
+      ],
+    },
+    PaymentsAccountDeletionOwnerService,
+    {
+      provide: AccountDeletionAuthorityClient,
+      useFactory: (auth: any) => new AccountDeletionAuthorityClient(auth),
+      inject: [ServiceTokens.AUTHENTICATION_SERVICE],
+    },
+    AccountExportOwnerSpoolService,
+    AccountExportProfileSnapshotClient,
+    {
+      provide: ServiceTokens.AUTHENTICATION_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const config = configService.get<
+          PaymentsConfigType['services']['authentication']
+        >('services.authentication');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: { host: config.host, port: config.port },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.PROFILE_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const config =
+          configService.get<PaymentsConfigType['services']['profile']>(
+            'services.profile'
+          );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: { host: config.host, port: config.port },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: PaymentsAccountExportOwnerService,
+      useFactory: (
+        ds: DataSource,
+        identities: AccountExportProfileSnapshotClient,
+        auth: any
+      ) => new PaymentsAccountExportOwnerService(ds, identities, auth),
+      inject: [
+        'PAYMENTS_CONNECTION',
+        AccountExportProfileSnapshotClient,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
+    {
+      provide: PaymentsAccountExportSnapshotService,
+      useFactory: (
+        owner: PaymentsAccountExportOwnerService,
+        spool: AccountExportOwnerSpoolService,
+        auth: any
+      ) => new PaymentsAccountExportSnapshotService(owner, spool, auth),
+      inject: [
+        PaymentsAccountExportOwnerService,
+        AccountExportOwnerSpoolService,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
     PaymentService,
     FlowDepositService,
     {

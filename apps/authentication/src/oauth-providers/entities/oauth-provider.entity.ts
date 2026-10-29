@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  Index,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -10,6 +11,13 @@ import {
 import { UserEntity } from '../../user/entities/user.entity';
 
 @Entity({ name: 'oauth_provider' })
+@Index('IDX_oauth_provider_userId', ['userId'])
+@Index('UQ_oauth_provider_identity', ['provider', 'providerUserId'], {
+  unique: true,
+})
+@Index('UQ_oauth_provider_user_provider', ['provider', 'userId'], {
+  unique: true,
+})
 export class OAuthProviderEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -29,8 +37,13 @@ export class OAuthProviderEntity {
   @Column()
   userId: string;
 
-  @ManyToOne(() => UserEntity, (user) => user.oauthProviders)
-  @JoinColumn({ name: 'userId' })
+  @ManyToOne(() => UserEntity, (user) => user.oauthProviders, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({
+    name: 'userId',
+    foreignKeyConstraintName: 'FK_oauth_provider_userId',
+  })
   user: UserEntity;
 
   @CreateDateColumn()

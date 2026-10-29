@@ -1,16 +1,22 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Thread } from '../../entities/thread.entity';
+import { ForumPost } from '../../entities/forum-post.entity';
 import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
 import { CreateThreadDto, UpdateThreadDto } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
 import { withIdConstraint } from './find-options';
+import { ForumAccessService } from './forum-access.service';
 
 @Injectable()
 export class ThreadService {
   constructor(
     @Inject(getRepositoryToken(Thread))
-    private readonly threadRepo: Repository<Thread>
+    private readonly threadRepo: Repository<Thread>,
+    @Inject(getRepositoryToken(ForumPost))
+    private readonly postRepo: Repository<ForumPost>,
+    @Optional() private readonly forumAccess?: ForumAccessService
   ) {}
 
   private sanitizeContent(content: string): string {
@@ -31,15 +37,27 @@ export class ThreadService {
         'ol',
         'li',
         'a',
+        'img',
         'blockquote',
         'code',
         'pre',
       ],
-      ALLOWED_ATTR: ['href', 'target', 'class'],
+      ALLOWED_ATTR: ['href', 'target', 'class', 'src', 'alt', 'title'],
     });
   }
 
   async create(createThreadDto: CreateThreadDto): Promise<Thread> {
+    const audienceOwner = await this.forumAccess?.resolveThreadAudienceOwner(
+      createThreadDto.topicId,
+      createThreadDto.visibility,
+      createThreadDto.profileId
+    );
+    await this.forumAccess?.latchAssetReferences(
+      `${createThreadDto.title ?? ''}\n${createThreadDto.description ?? ''}\n${
+        createThreadDto.content ?? ''
+      }`,
+      audienceOwner
+    );
     const thread = this.threadRepo.create({
       ...createThreadDto,
       title: this.sanitizeContent(createThreadDto.title),
@@ -79,6 +97,29 @@ export class ThreadService {
       throw new Error(`Thread with ID ${id} not found`);
     }
 
+    const oldAudienceOwner = await this.forumAccess?.resolveThreadAudienceOwner(
+      thread.topicId,
+      thread.visibility,
+      thread.profileId
+    );
+    await this.forumAccess?.latchAssetReferences(
+      `${thread.title ?? ''}\n${thread.description ?? ''}\n${
+        thread.content ?? ''
+      }`,
+      oldAudienceOwner
+    );
+    const newAudienceOwner = await this.forumAccess?.resolveThreadAudienceOwner(
+      thread.topicId,
+      updateThreadDto.visibility ?? thread.visibility,
+      thread.profileId
+    );
+    await this.forumAccess?.latchAssetReferences(
+      `${updateThreadDto.title ?? thread.title ?? ''}\n${
+        thread.description ?? ''
+      }\n${updateThreadDto.content ?? thread.content ?? ''}`,
+      newAudienceOwner
+    );
+
     const updatedData: Partial<Thread> = {};
     if (updateThreadDto.title) {
       updatedData.title = this.sanitizeContent(updateThreadDto.title);
@@ -105,8 +146,40 @@ export class ThreadService {
     return updatedThread;
   }
 
-  async remove(id: string): Promise<void> {
-    await this.threadRepo.delete(id);
+  async remove(id: string): Promise<{ id: string; deleted: boolean }> {
+    const thread = await this.threadRepo.findOne({ where: { id } });
+    if (thread) {
+      const postCount = await this.postRepo.count({ where: { threadId: id } });
+      if (postCount > 0) {
+        throw new RpcException({
+          statusCode: 409,
+          message: 'Thread still contains posts. Delete those posts first.',
+        });
+      }
+      const audienceOwner = await this.forumAccess?.resolveThreadAudienceOwner(
+        thread.topicId,
+        thread.visibility,
+        thread.profileId
+      );
+      await this.forumAccess?.latchAssetReferences(
+        `${thread.title ?? ''}\n${thread.description ?? ''}\n${
+          thread.content ?? ''
+        }`,
+        audienceOwner
+      );
+    }
+    try {
+      const result = await this.threadRepo.delete(id);
+      return { id, deleted: (result.affected ?? 0) > 0 };
+    } catch (error) {
+      if (this.isForeignKeyConstraintViolation(error)) {
+        throw new RpcException({
+          statusCode: 409,
+          message: 'Thread still contains posts. Delete those posts first.',
+        });
+      }
+      throw error;
+    }
   }
 
   async moderate(
@@ -163,5 +236,9 @@ export class ThreadService {
     }
 
     return normalized;
+  }
+
+  private isForeignKeyConstraintViolation(error: any): boolean {
+    return error?.code === '23503' || error?.driverError?.code === '23503';
   }
 }

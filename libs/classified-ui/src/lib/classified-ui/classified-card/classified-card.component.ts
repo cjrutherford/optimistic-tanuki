@@ -73,6 +73,16 @@ import { ClassifiedAdDto } from '../models/index';
           <button class="btn btn-secondary" (click)="contact.emit(ad)">
             Contact Seller
           </button>
+          } @if (showSafetyActions) {
+          <button class="btn btn-secondary" (click)="reportListing.emit(ad)">
+            Report listing
+          </button>
+          <button class="btn btn-secondary" (click)="reportSeller.emit(ad)">
+            Report seller
+          </button>
+          <button class="btn btn-secondary" (click)="blockSeller.emit(ad)">
+            Block seller
+          </button>
           }
         </div>
       </div>
@@ -219,7 +229,7 @@ import { ClassifiedAdDto } from '../models/index';
       .card-price {
         font-size: 1.1rem;
         font-weight: 700;
-        color: var(--primary, #3f51b5);
+        color: var(--primary-text, var(--foreground, #212121));
       }
       .card-condition {
         display: inline-block;
@@ -244,10 +254,10 @@ import { ClassifiedAdDto } from '../models/index';
         margin-bottom: 10px;
       }
       .status-sold {
-        color: var(--error, #d32f2f);
+        color: var(--danger-text, var(--foreground, #212121));
       }
       .status-active {
-        color: var(--success, #388e3c);
+        color: var(--success-text, var(--foreground, #212121));
       }
       .card-status {
         font-weight: 700;
@@ -276,7 +286,7 @@ import { ClassifiedAdDto } from '../models/index';
         background: color-mix(in srgb, var(--surface) 82%, transparent);
         border: 1px solid
           color-mix(in srgb, var(--primary) 30%, var(--border, var(--muted)));
-        color: var(--primary, #3f51b5);
+        color: var(--primary-text, var(--foreground, #212121));
         &:hover {
           background: color-mix(in srgb, var(--primary) 8%, var(--surface));
         }
@@ -288,8 +298,12 @@ export class ClassifiedCardComponent {
   @Input({ required: true }) ad!: ClassifiedAdDto;
   /** Whether to show the "Contact Seller" button */
   @Input() showContact = false;
+  @Input() showSafetyActions = false;
   @Output() view = new EventEmitter<ClassifiedAdDto>();
   @Output() contact = new EventEmitter<ClassifiedAdDto>();
+  @Output() reportListing = new EventEmitter<ClassifiedAdDto>();
+  @Output() reportSeller = new EventEmitter<ClassifiedAdDto>();
+  @Output() blockSeller = new EventEmitter<ClassifiedAdDto>();
 
   get sellerInitials(): string {
     const source = this.ad?.sellerProfileName?.trim() || 'CM';

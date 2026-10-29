@@ -1,3 +1,4 @@
+import { isRollingSessionApp } from '@optimistic-tanuki/models';
 import { randomUUID } from 'crypto';
 
 export type AuthTokenUser = {
@@ -13,6 +14,7 @@ export type AuthTokenPayload = {
   email: string;
   profileId: string;
   jti: string;
+  appId?: string;
 };
 
 export type AuthTokenExpiry = '1h';
@@ -20,7 +22,7 @@ export type AuthTokenExpiry = '1h';
 export type TokenSigner = {
   sign(
     payload: AuthTokenPayload,
-    options: { secret: string; expiresIn: AuthTokenExpiry }
+    options: { secret: string; expiresIn?: AuthTokenExpiry }
   ): string;
 };
 
@@ -31,7 +33,11 @@ export class TokenIssuerService {
     private readonly expiresIn: AuthTokenExpiry = '1h'
   ) {}
 
-  issueForUser(user: AuthTokenUser, profileId?: string): string {
+  issueForUser(
+    user: AuthTokenUser,
+    profileId?: string,
+    appId?: string
+  ): string {
     return this.signer.sign(
       {
         userId: user.userId,
@@ -39,10 +45,11 @@ export class TokenIssuerService {
         email: user.email,
         profileId: profileId ?? '',
         jti: randomUUID(),
+        ...(appId ? { appId } : {}),
       },
       {
         secret: this.secret,
-        expiresIn: this.expiresIn,
+        ...(isRollingSessionApp(appId) ? {} : { expiresIn: this.expiresIn }),
       }
     );
   }

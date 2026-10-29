@@ -8,16 +8,19 @@ import {
   ContentReport,
   ReportReason,
 } from '../../entities/content-report.entity';
-import { PostService } from './post.service';
-import { CommentService } from './comment.service';
+import { Post } from '../../entities/post.entity';
 
 describe('PrivacyService', () => {
   let service: PrivacyService;
   let userBlockRepo: Repository<UserBlock>;
   let userMuteRepo: Repository<UserMute>;
   let contentReportRepo: Repository<ContentReport>;
-  let postService: { moderate: jest.Mock };
-  let commentService: { moderate: jest.Mock };
+  const transactionManager = {
+    findOne: jest.fn(),
+    update: jest.fn().mockResolvedValue({ affected: 1 }),
+    save: jest.fn((value) => Promise.resolve(value)),
+    create: jest.fn((_entity, value) => value),
+  };
 
   const mockUserBlock: UserBlock = {
     id: 'block-123',
@@ -78,15 +81,10 @@ describe('PrivacyService', () => {
             save: jest.fn(),
             update: jest.fn(),
             findOne: jest.fn(),
+            manager: {
+              transaction: jest.fn((callback) => callback(transactionManager)),
+            },
           },
-        },
-        {
-          provide: PostService,
-          useValue: { moderate: jest.fn() },
-        },
-        {
-          provide: CommentService,
-          useValue: { moderate: jest.fn() },
         },
       ],
     }).compile();
@@ -101,15 +99,52 @@ describe('PrivacyService', () => {
     contentReportRepo = module.get<Repository<ContentReport>>(
       getRepositoryToken(ContentReport)
     );
-    postService = module.get(PostService);
-    commentService = module.get(CommentService);
+    transactionManager.findOne.mockReset();
+    transactionManager.update.mockReset().mockResolvedValue({ affected: 1 });
+    transactionManager.save
+      .mockReset()
+      .mockImplementation((value) => Promise.resolve(value));
+    transactionManager.create
+      .mockReset()
+      .mockImplementation((_entity, value) => value);
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
+  it('requires a report bound to the target app and workspace before moderator action', async () => {
+    transactionManager.findOne.mockResolvedValue(mockContentReport);
+
+    await (service.moderateContent as any)(
+      'post',
+      'post-123',
+      'hidden',
+      'moderator-1',
+      'Reviewed',
+      'report-123',
+      'client-interface',
+      'workspace-1'
+    );
+
+    expect(transactionManager.findOne).toHaveBeenCalledWith(ContentReport, {
+      where: {
+        id: 'report-123',
+        appScope: 'client-interface',
+        workspaceId: 'workspace-1',
+        contentType: 'post',
+        contentId: 'post-123',
+      },
+    });
+  });
+
   describe('blockUser', () => {
+    it('rejects malformed and self block targets before database access', async () => {
+      await expect(service.blockUser('user-1', 'user-1')).rejects.toThrow(
+        'different target profile'
+      );
+      expect(userBlockRepo.findOne).not.toHaveBeenCalled();
+    });
     it('should create a new block when none exists', async () => {
       jest.spyOn(userBlockRepo, 'findOne').mockResolvedValue(null);
       jest.spyOn(userBlockRepo, 'create').mockReturnValue(mockUserBlock);
@@ -230,48 +265,107 @@ describe('PrivacyService', () => {
   });
 
   describe('moderateContent', () => {
-    it('moderates a reported post through the post service', async () => {
-      postService.moderate.mockResolvedValue({ id: 'post-123' });
+    it('rejects unsupported moderation values before opening a transaction', async () => {
+      await expect(
+        service.moderateContent(
+          'post' as any,
+          'post-123',
+          'suppressed' as any,
+          'moderator-1',
+          undefined,
+          'report-123',
+          'client-interface',
+          'workspace-1'
+        )
+      ).rejects.toThrow('Unsupported moderation status.');
+      expect(contentReportRepo.manager.transaction).not.toHaveBeenCalled();
+    });
+
+    it('moderates a reported post and writes its audit in the same transaction', async () => {
+      transactionManager.findOne.mockResolvedValue({
+        id: 'report-123',
+        appScope: 'client-interface',
+        workspaceId: 'workspace-1',
+        contentType: 'post',
+        contentId: 'post-123',
+      });
 
       const result = await service.moderateContent(
         'post',
         'post-123',
         'hidden',
         'moderator-1',
-        'Spam cleanup'
+        'Spam cleanup',
+        'report-123',
+        'client-interface',
+        'workspace-1'
       );
 
-      expect(postService.moderate).toHaveBeenCalledWith(
-        'post-123',
-        'hidden',
-        'moderator-1',
-        'Spam cleanup'
+      expect(transactionManager.update).toHaveBeenCalledWith(
+        Post,
+        { id: 'post-123' },
+        expect.objectContaining({
+          moderatedBy: 'moderator-1',
+          moderationStatus: 'hidden',
+        })
+      );
+      expect(transactionManager.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'content_moderation',
+          appScope: 'client-interface',
+          workspaceId: 'workspace-1',
+          actorProfileId: 'moderator-1',
+          reportId: 'report-123',
+        })
       );
       expect(result).toEqual({ success: true });
     });
 
-    it('moderates a reported comment through the comment service', async () => {
-      commentService.moderate.mockResolvedValue({ id: 'comment-123' });
+    it('rejects a report from another workspace before changing content', async () => {
+      transactionManager.findOne.mockResolvedValue(null);
 
-      const result = await service.moderateContent(
-        'comment',
-        'comment-123',
-        'visible',
-        'moderator-2',
-        'Restored after appeal'
-      );
+      await expect(
+        service.moderateContent(
+          'comment',
+          'comment-123',
+          'visible',
+          'moderator-2',
+          'Restored after appeal',
+          'report-other-workspace',
+          'client-interface',
+          'workspace-1'
+        )
+      ).rejects.toThrow('Report was not found in this workspace.');
 
-      expect(commentService.moderate).toHaveBeenCalledWith(
-        'comment-123',
-        'visible',
-        'moderator-2',
-        'Restored after appeal'
-      );
-      expect(result).toEqual({ success: true });
+      expect(transactionManager.update).not.toHaveBeenCalled();
     });
   });
 
   describe('muteUser', () => {
+    it('replaces an expired timed mute so a new mute takes effect', async () => {
+      jest.spyOn(userMuteRepo, 'findOne').mockResolvedValue({
+        ...mockUserMute,
+        createdAt: new Date(Date.now() - 5000),
+        duration: 1,
+      });
+      jest.spyOn(userMuteRepo, 'create').mockReturnValue(mockUserMute);
+      jest.spyOn(userMuteRepo, 'save').mockResolvedValue(mockUserMute);
+
+      await service.muteUser('user-1', 'user-3', 3600);
+
+      expect(userMuteRepo.delete).toHaveBeenCalledWith({
+        muterId: 'user-1',
+        mutedId: 'user-3',
+      });
+      expect(userMuteRepo.save).toHaveBeenCalledWith(mockUserMute);
+    });
+
+    it('rejects invalid durations before database access', async () => {
+      await expect(service.muteUser('user-1', 'user-3', -1)).rejects.toThrow(
+        'Invalid mute target or duration'
+      );
+      expect(userMuteRepo.findOne).not.toHaveBeenCalled();
+    });
     it('should create a new mute when none exists', async () => {
       jest.spyOn(userMuteRepo, 'findOne').mockResolvedValue(null);
       jest.spyOn(userMuteRepo, 'create').mockReturnValue(mockUserMute);
@@ -292,14 +386,18 @@ describe('PrivacyService', () => {
     });
 
     it('should return existing mute if already muted', async () => {
-      jest.spyOn(userMuteRepo, 'findOne').mockResolvedValue(mockUserMute);
+      const activeMute = {
+        ...mockUserMute,
+        createdAt: new Date(),
+      };
+      jest.spyOn(userMuteRepo, 'findOne').mockResolvedValue(activeMute);
 
       const result = await service.muteUser('user-1', 'user-3');
 
       expect(userMuteRepo.findOne).toHaveBeenCalled();
       expect(userMuteRepo.create).not.toHaveBeenCalled();
       expect(userMuteRepo.save).not.toHaveBeenCalled();
-      expect(result).toEqual(mockUserMute);
+      expect(result).toEqual(activeMute);
     });
 
     it('should create mute without duration (permanent)', async () => {
@@ -367,7 +465,54 @@ describe('PrivacyService', () => {
     });
   });
 
+  describe('getActiveMutedUsers', () => {
+    it('expires timed mutes from createdAt plus duration while retaining indefinite mutes', async () => {
+      const now = new Date('2026-10-07T12:00:00.000Z');
+      jest.spyOn(userMuteRepo, 'find').mockResolvedValue([
+        {
+          ...mockUserMute,
+          mutedId: 'indefinite',
+          duration: null,
+          createdAt: new Date('2026-10-01T00:00:00.000Z'),
+        },
+        {
+          ...mockUserMute,
+          mutedId: 'active',
+          duration: 3600,
+          createdAt: new Date('2026-10-07T11:30:00.000Z'),
+        },
+        {
+          ...mockUserMute,
+          mutedId: 'expired',
+          duration: 60,
+          createdAt: new Date('2026-10-07T11:00:00.000Z'),
+        },
+      ] as UserMute[]);
+
+      const result = await service.getActiveMutedUsers('user-1', now);
+
+      expect(result.map((mute) => mute.mutedId)).toEqual([
+        'indefinite',
+        'active',
+      ]);
+    });
+  });
+
   describe('reportContent', () => {
+    it('rejects unsupported report reason or malformed target before persistence', async () => {
+      await expect(
+        service.reportContent(
+          'reporter-1',
+          'post',
+          'post-1',
+          'invented-reason' as ReportReason
+        )
+      ).rejects.toThrow('Invalid content report target or reason.');
+      await expect(
+        service.reportContent('reporter-1', 'post', '   ', ReportReason.SPAM)
+      ).rejects.toThrow('Invalid content report target or reason.');
+      expect(contentReportRepo.create).not.toHaveBeenCalled();
+    });
     it('should create a content report', async () => {
       jest
         .spyOn(contentReportRepo, 'create')
@@ -432,8 +577,22 @@ describe('PrivacyService', () => {
 
     it('should handle different content types', async () => {
       const contentTypes: Array<
-        'post' | 'comment' | 'profile' | 'community' | 'message'
-      > = ['post', 'comment', 'profile', 'community', 'message'];
+        | 'post'
+        | 'comment'
+        | 'profile'
+        | 'community'
+        | 'message'
+        | 'classified'
+        | 'seller'
+      > = [
+        'post',
+        'comment',
+        'profile',
+        'community',
+        'message',
+        'classified',
+        'seller',
+      ];
 
       for (const type of contentTypes) {
         const report = { ...mockContentReport, contentType: type };
@@ -460,10 +619,10 @@ describe('PrivacyService', () => {
       ];
       jest.spyOn(contentReportRepo, 'find').mockResolvedValue(reports);
 
-      const result = await service.getMyReports('user-1');
+      const result = await service.getMyReports('user-1', 'client-interface');
 
       expect(contentReportRepo.find).toHaveBeenCalledWith({
-        where: { reporterId: 'user-1' },
+        where: { reporterId: 'user-1', appScope: 'client-interface' },
         order: { createdAt: 'DESC' },
       });
       expect(result).toEqual(reports);
@@ -472,13 +631,22 @@ describe('PrivacyService', () => {
     it('should return empty array if no reports', async () => {
       jest.spyOn(contentReportRepo, 'find').mockResolvedValue([]);
 
-      const result = await service.getMyReports('user-1');
+      const result = await service.getMyReports('user-1', 'client-interface');
 
       expect(result).toEqual([]);
     });
   });
 
   describe('moderator report scope', () => {
+    it('lists and updates workspace-free reports by exact app scope', async () => {
+      jest.spyOn(contentReportRepo, 'find').mockResolvedValue([]);
+      await service.getAllReports(null, 'local-hub');
+      expect(contentReportRepo.find).toHaveBeenCalledWith({
+        where: { appScope: 'local-hub', workspaceId: expect.anything() },
+        order: { createdAt: 'DESC' },
+      });
+    });
+
     it('lists only reports for the resolved workspace', async () => {
       jest
         .spyOn(contentReportRepo, 'find')
@@ -486,28 +654,34 @@ describe('PrivacyService', () => {
           { ...mockContentReport, workspaceId: 'workspace-1' },
         ]);
 
-      await (service as any).getAllReports('workspace-1');
+      await (service as any).getAllReports('workspace-1', 'client-interface');
 
       expect(contentReportRepo.find).toHaveBeenCalledWith({
-        where: { workspaceId: 'workspace-1' },
+        where: { appScope: 'client-interface', workspaceId: 'workspace-1' },
         order: { createdAt: 'DESC' },
       });
     });
 
     it('does not update a report outside the resolved workspace', async () => {
-      jest.spyOn(contentReportRepo, 'findOne').mockResolvedValue(null);
+      transactionManager.findOne.mockResolvedValue(null);
 
       const result = await (service as any).updateReportStatus(
         'report-other-workspace',
         'reviewed',
         undefined,
-        'workspace-1'
+        'workspace-1',
+        'client-interface',
+        'moderator-1'
       );
 
-      expect(contentReportRepo.findOne).toHaveBeenCalledWith({
-        where: { id: 'report-other-workspace', workspaceId: 'workspace-1' },
+      expect(transactionManager.findOne).toHaveBeenCalledWith(ContentReport, {
+        where: {
+          id: 'report-other-workspace',
+          appScope: 'client-interface',
+          workspaceId: 'workspace-1',
+        },
       });
-      expect(contentReportRepo.update).not.toHaveBeenCalled();
+      expect(transactionManager.update).not.toHaveBeenCalled();
       expect(result).toBeNull();
     });
   });

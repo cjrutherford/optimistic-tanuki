@@ -1,0 +1,50 @@
+{
+  "slice": "D11",
+  "date": "2026-10-25",
+  "scope": ["client-interface", "local-hub"],
+  "status": "verified-local-owner-component",
+  "focusedInventoryTests": 2,
+  "realAuthOwnerTcpPostgresTests": 1,
+  "productionBuild": "passed",
+  "scopedLint": "passed",
+  "migrationCycle": "fresh up/down/up passed",
+  "migrationGovernance": "passed",
+  "preE2eToolingTests": 41,
+  "independentApplicationTablesZero": 26,
+  "protectedFilesUnchanged": 43,
+  "sourceReview": "GO source-only for the bounded D11/D16/D17 pass; no P1/P2 reported. Reviewer ran no tests. Root subsequently found and reproduced unscoped nil-row cleanup in D17, restricted it to selected row IDs, and verified the correction with real PostgreSQL/TCP red/green evidence. Root also hardened malformed operational metadata handling and verified production Chat history reads. No global deletion or browser claim.",
+  "limitations": [
+    "Frozen Profile discovery and other-owner fence acknowledgements are fixture premises.",
+    "No full account coordination, final identity/key deletion or public UI acceptance.",
+    "No external-provider qualification."
+  ],
+  "sourceSha256": {
+    "apps/authentication-e2e/src/authentication/chat-account-deletion.spec.ts": "a3f3232d98412cbcdd485d26b1f322536f4b6ec553f7efb68472d9fdc46264e8",
+    "apps/authentication-e2e/src/authentication/deletion-owner.fixture.ts": "601d14f724059dc0861d27062a6f12d728adb8c6851a8ba0419aee05b6cdf6c3",
+    "apps/chat-collector/migrations/1792969644467-AccountDeletionWriteFence.ts": "ded8aa7f771786fde85444d03efc6eab505ccc0300f3c133909608359189585b",
+    "apps/chat-collector/project.json": "75d8a4981b5e574f9f01340a76aeaf4fdad5ba5dc803f371bcc4bdfb6e391a17",
+    "apps/chat-collector/src/app/account-deletion-owner.controller.ts": "b50a5fb825605d0ea060448bc5ef1d88016dc4f58cf0a390853f298c59e15d4d",
+    "apps/chat-collector/src/app/account-deletion-owner.service.ts": "0493b2b11d2ea471a85158ba0acdc39b506a650451ca5b4e8306b5990fa484a4",
+    "apps/chat-collector/src/app/account-deletion-policy.ts": "53faffad8b240099a54a1b445c8807bdcd0bbb2fed770b82ab9d4bd62e0a28f7",
+    "apps/chat-collector/src/app/app.module.ts": "d4dd801acf9694a37f28060c0631a7628b52ad16566e9e7917cfedafbfd8977f",
+    "apps/chat-collector/src/app/chat-account-export-dispositions.json": "6ec59a398cedb1e60dea6bd0e2634648c7f0487490e4ab146d02c8304faf6a4f",
+    "apps/chat-collector/src/app/chat-account-export-dispositions.spec.ts": "5ac988629e4193cbaeddd1c1e2a8cefb47b4b5d4f9e8442b71f241c768e20a2e",
+    "apps/chat-collector/src/app/chat-account-export-dispositions.ts": "64efcff878fb2aeebc430bfe84dd39d2b411a5bd9e790981f134b4f8ab8a4a36",
+    "apps/chat-collector/src/app/loadDatabase.ts": "ff3a581dc87b3b7340a807177cc6e38f3bba7e78e6396e6d2b8d6faa419f8dde",
+    "apps/chat-collector/src/app/staticDatabase.ts": "3dd93762051065f2c471408d0356e9fa2f3740e2afcde5f5a3a9e2dbdae9263f",
+    "libs/chat/contracts/src/lib/chat-commands.ts": "41d6666963b9f60205b32fc04d6985389cc649af5d0548cc89cf267bcd7e4009"
+  },
+  "evidenceSha256": {
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d11-production-read.log": "0f7d1ca07c4e53a5aadada2513d459207c695ecbbb435a1aca01adadd7ee55ff",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d11-unit.log": "22c2624963e2b09db178ca68378535ee1a7d63a4abddd15a39e5065a3adbcfc4",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d11-build.log": "b343a7376718b7ef746c03f37cf6d3c19cfcab6d4650f2ee20dfcfe6e41ecb83",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d11-lint.log": "2b2530dbced17807d96c82374358e35e43357e03abecf642ad3866a9bc829a3b",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d11-down.log": "cc74ce95a97355318a2f367ccb821e2cec17bc2b069f0b28e39c9bdd6cba8c4a",
+    ".runtime-artifacts/account-rights/deletion/auth-pg/d11-up-again.log": "9015cabb41c9bb6694731ad3445e05c7ae006774bf01f9096a432e02e000b067",
+    ".runtime-artifacts/account-rights/deletion/d17/migration-governance.log": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9",
+    ".runtime-artifacts/account-rights/deletion/d17/pre-e2e.log": "74a4981c58a3d9b930e6b206d3b10efa9578ae83f10d6605b90faff0f0b152fa",
+    ".runtime-artifacts/account-rights/deletion/d17/source-review.md": "c2a0d6a64f990ad0dd645936eb8db1a6d41b43764fd8c0d0f3c0eb2d48625e28",
+    ".runtime-artifacts/account-rights/deletion/d17/independent-counts.json": "3eb421632c146990d168e9a113a23f41ba7c336327673cb802978b94a9429afb",
+    ".runtime-artifacts/account-rights/deletion/d17/teardown.json": "20622b5d11be4f20ba7ba04be0ba7d61dc47495aa5f0814c215f7110b450e143"
+  }
+}

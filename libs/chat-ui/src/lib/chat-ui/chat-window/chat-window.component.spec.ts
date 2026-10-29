@@ -15,6 +15,39 @@ describe('ChatWindowComponent', () => {
     component = fixture.componentInstance;
   });
 
+  it('shows group transport changes independently of participant presence', () => {
+    component.contact = [{ id: 'room', name: 'Room' }];
+    component.messages = {
+      id: 'room',
+      type: 'community',
+      participants: ['self'],
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Connecting');
+    component.connectionStatus = 'connected';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Connected');
+    component.messages.participants.push('another');
+    component.connectionStatus = 'reconnecting';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Reconnecting');
+    component.connectionStatus = 'connected';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Connected');
+  });
+
+  it('distinguishes unknown and offline direct presence', () => {
+    component.contact = [{ id: 'person', name: 'Person' }];
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Unknown');
+    component.contact = [{ id: 'person', name: 'Person', presence: 'offline' }];
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Offline');
+  });
+
   it('should create', () => {
     expect(component).toBeTruthy();
   });
@@ -63,6 +96,31 @@ describe('ChatWindowComponent', () => {
       messageId: 'm1',
       emoji: '👍',
     });
+  });
+
+  it('uses only the acknowledged submission path when a consumer opts in', () => {
+    const legacy = jest.fn();
+    const acknowledged = jest.fn();
+    const settle = jest.fn();
+    component.messageSubmitted.subscribe(legacy);
+    component.messageSubmission.subscribe(acknowledged);
+
+    component.onMessageSubmission({ content: 'hello', settle });
+
+    expect(acknowledged).toHaveBeenCalledWith({ content: 'hello', settle });
+    expect(legacy).not.toHaveBeenCalled();
+    expect(settle).not.toHaveBeenCalled();
+  });
+
+  it('keeps the legacy string event for consumers without an ack listener', () => {
+    const legacy = jest.fn();
+    const settle = jest.fn();
+    component.messageSubmitted.subscribe(legacy);
+
+    component.onMessageSubmission({ content: 'hello', settle });
+
+    expect(legacy).toHaveBeenCalledWith('hello');
+    expect(settle).toHaveBeenCalledWith(true);
   });
 
   it('marks the window as mobile at small viewports', () => {

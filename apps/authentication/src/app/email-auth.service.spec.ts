@@ -19,6 +19,8 @@ describe('EmailAuthService', () => {
   let email: any;
   let password: any;
   let service: EmailAuthService;
+  let profileOwnershipVerifier: { resolveSelection: jest.Mock };
+  let accountDeletionFence: { assertActiveAccount: jest.Mock };
 
   beforeEach(() => {
     users = {
@@ -53,6 +55,14 @@ describe('EmailAuthService', () => {
         .fn()
         .mockReturnValue({ hash: 'new-hash', salt: 'new-salt' }),
     };
+    profileOwnershipVerifier = {
+      resolveSelection: jest.fn((_accountId, selectedProfile) =>
+        Promise.resolve(selectedProfile || undefined)
+      ),
+    };
+    accountDeletionFence = {
+      assertActiveAccount: jest.fn().mockResolvedValue(undefined),
+    };
     service = new EmailAuthService(
       users,
       actions,
@@ -62,7 +72,10 @@ describe('EmailAuthService', () => {
       password,
       {
         issueForUser: jest.fn().mockReturnValue('session-token'),
-      } as any
+      } as any,
+      { assertAccountAccess: jest.fn().mockResolvedValue(undefined) } as any,
+      profileOwnershipVerifier as any,
+      accountDeletionFence as any
     );
   });
 
@@ -155,7 +168,7 @@ describe('EmailAuthService', () => {
       service.consumeLoginAction(
         'raw-token',
         AuthActionPurpose.Verification,
-        'profile-1'
+        'b2222222-b222-4222-8222-b22222222222'
       )
     ).resolves.toEqual(
       expect.objectContaining({
@@ -166,10 +179,33 @@ describe('EmailAuthService', () => {
     expect(users.save).toHaveBeenCalledWith(
       expect.objectContaining({ emailVerifiedAt: expect.any(Date) })
     );
+    expect(profileOwnershipVerifier.resolveSelection).toHaveBeenCalledWith(
+      'user-1',
+      'b2222222-b222-4222-8222-b22222222222'
+    );
     expect(actions.update).toHaveBeenCalledWith(
       { id: 'action-1', consumedAt: expect.anything() },
       expect.anything()
     );
+  });
+
+  it('does not consume an email action or mint a session for a fenced account', async () => {
+    actions.findOne.mockResolvedValue({
+      id: 'action-1',
+      purpose: AuthActionPurpose.MagicLink,
+      appId: 'forgeofwill',
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      user: { ...user },
+    });
+    const denied = new RpcException('ACCOUNT_DELETION_FENCED');
+    accountDeletionFence.assertActiveAccount.mockRejectedValue(denied);
+
+    await expect(
+      service.consumeLoginAction('raw-token', AuthActionPurpose.MagicLink)
+    ).rejects.toBe(denied);
+    expect(actions.update).not.toHaveBeenCalled();
+    expect(sessions.save).not.toHaveBeenCalled();
   });
 
   it('consumes a magic link before downstream profile work without issuing a session', async () => {
@@ -192,6 +228,65 @@ describe('EmailAuthService', () => {
         data: { userId: 'user-1', email: 'person@example.com' },
       })
     );
+    expect(sessions.save).not.toHaveBeenCalled();
+    expect(profileOwnershipVerifier.resolveSelection).toHaveBeenCalledWith(
+      'user-1',
+      undefined
+    );
+  });
+
+  it('does not mint or persist a selected-profile session when ownership is denied', async () => {
+    actions.findOne.mockResolvedValue({
+      id: 'action-1',
+      purpose: AuthActionPurpose.MagicLink,
+      appId: 'forgeofwill',
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      user: { ...user },
+    });
+    const denied = new RpcException({
+      code: 'SELECTED_PROFILE_OWNERSHIP_UNVERIFIED',
+    });
+    profileOwnershipVerifier.resolveSelection.mockRejectedValue(denied);
+
+    await expect(
+      service.consumeLoginAction(
+        'raw-token',
+        AuthActionPurpose.MagicLink,
+        '22222222-2222-4222-8222-222222222222'
+      )
+    ).rejects.toBe(denied);
+    expect(actions.update).not.toHaveBeenCalled();
+    expect(users.save).not.toHaveBeenCalled();
+    expect((service as any).tokenIssuer.issueForUser).not.toHaveBeenCalled();
+    expect(sessions.save).not.toHaveBeenCalled();
+  });
+
+  it('keeps an age-gated login action reusable when account eligibility blocks access', async () => {
+    actions.findOne.mockResolvedValue({
+      id: 'action-1',
+      purpose: AuthActionPurpose.MagicLink,
+      appId: 'client-interface',
+      returnPath: '/dashboard',
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      user: { ...user },
+    });
+    const eligibilityError = new RpcException({ code: 'AGE_CHECK_REQUIRED' });
+    (service as any).guardianPermissions.assertAccountAccess.mockRejectedValue(
+      eligibilityError
+    );
+
+    await expect(
+      service.consumeLoginAction(
+        'raw-token',
+        AuthActionPurpose.MagicLink,
+        undefined,
+        'client-interface'
+      )
+    ).rejects.toBe(eligibilityError);
+    expect(actions.update).not.toHaveBeenCalled();
+    expect(users.save).not.toHaveBeenCalled();
     expect(sessions.save).not.toHaveBeenCalled();
   });
 

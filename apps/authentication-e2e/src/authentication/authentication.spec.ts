@@ -15,6 +15,10 @@ describe('Authentication Microservice E2E', () => {
     password: 'Test@Password123',
     confirm: 'Test@Password123',
     bio: 'Test user bio',
+    // The internal auth RPC accepts the adult assessment produced by the
+    // gateway. This fixture exercises auth mechanics with a synthetic adult;
+    // it must not create an unassessed account that login correctly blocks.
+    ageEligibilityStatus: 'adult' as const,
   };
   let authToken: string;
   let userId: string;
@@ -298,6 +302,21 @@ describe('Authentication Microservice E2E', () => {
       } catch (error) {
         expect(error).toBeDefined();
       }
+    });
+  });
+  describe('Logout', () => {
+    it('revokes a real issued token', async () => {
+      await firstValueFrom(
+        authClient.send({ cmd: AuthCommands.Logout }, { token: authToken })
+      );
+      await expect(
+        firstValueFrom(
+          authClient.send(
+            { cmd: AuthCommands.Validate },
+            { token: authToken, userId }
+          )
+        )
+      ).rejects.toBeDefined();
     });
   });
 });

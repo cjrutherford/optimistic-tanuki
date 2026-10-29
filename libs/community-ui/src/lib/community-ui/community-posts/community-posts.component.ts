@@ -13,6 +13,7 @@ import {
   PostData,
   PostDto,
   PostProfileStub,
+  ReportDialogComponent,
 } from '@optimistic-tanuki/social-ui';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { CommunityService } from '../services/community.service';
@@ -27,7 +28,13 @@ import { firstValueFrom } from 'rxjs';
   selector: 'lib-community-posts',
   standalone: true,
   providers: [ThemeVariableService],
-  imports: [CommonModule, ComposeComponent, PostComponent, ButtonComponent],
+  imports: [
+    CommonModule,
+    ComposeComponent,
+    PostComponent,
+    ButtonComponent,
+    ReportDialogComponent,
+  ],
   host: {
     '[class.theme]': 'theme',
     '[style.--local-background]': 'background',
@@ -55,11 +62,16 @@ export class CommunityPostsComponent extends Variantable {
 
   community = signal<CommunityDto | null>(null);
   posts = signal<PostDto[]>([]);
+  reportTargetPostId = signal<string | null>(null);
   profiles = signal<{ [key: string]: PostProfileStub }>({});
   loading = signal(true);
   error = signal<string | null>(null);
   activeTab = signal<'posts' | 'create' | 'manage'>('posts');
   isOwnerOrManager = signal(false);
+  readonly communityAudienceOptions = [
+    { label: 'Community members', value: 'community' as const },
+    { label: 'Public', value: 'public' as const },
+  ];
 
   userVotes = signal<{ [postId: string]: number }>({});
   voteCounts = signal<{ [postId: string]: number }>({});
@@ -74,6 +86,14 @@ export class CommunityPostsComponent extends Variantable {
 
   setActiveTab(tab: 'posts' | 'create' | 'manage') {
     this.activeTab.set(tab);
+  }
+
+  reportPost(post: PostDto): void {
+    this.reportTargetPostId.set(post.id);
+  }
+
+  closeReportDialog(): void {
+    this.reportTargetPostId.set(null);
   }
 
   goToManage() {
@@ -345,7 +365,7 @@ export class CommunityPostsComponent extends Variantable {
   }
 
   async createdPost(postData: PostData) {
-    const { title, content, attachments } = postData;
+    const { title, content, attachments, visibility } = postData;
     const community = this.community();
 
     if (!this.currentProfileId) {
@@ -367,6 +387,7 @@ export class CommunityPostsComponent extends Variantable {
         profileId: this.currentProfileId,
         communityId: community.id,
         attachmentIds,
+        visibility,
       });
 
       const postWithProfile: PostDto = {

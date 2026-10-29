@@ -1,7 +1,10 @@
 <div class="form-field">
+  @if (label) {
+  <label class="form-label" [for]="controlId">{{ label }}</label> }
   <div class="select-shell">
     <select
-      [id]="id"
+      [id]="controlId"
+      [attr.aria-label]="label ? null : 'Select an option'"
       class="form-control form-control-select"
       [(ngModel)]="value"
       (ngModelChange)="onChange($event); onTouched()"

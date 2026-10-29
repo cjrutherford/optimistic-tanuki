@@ -1,7 +1,11 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
-import { SettingsShellComponent } from '@optimistic-tanuki/profile-ui';
+import {
+  SettingsShellComponent,
+  AccountRightsComponent,
+} from '@optimistic-tanuki/profile-ui';
 import { ProfileService } from '../profile.service';
 import { AuthStateService } from '../state/auth-state.service';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
@@ -17,12 +21,19 @@ import {
     CommonModule,
     ThemeDesignerComponent,
     SettingsShellComponent,
+    AccountRightsComponent,
     ButtonComponent,
   ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
 export class SettingsComponent {
+  get accountId() {
+    return this.auth.getDecodedTokenValue()?.userId ?? '';
+  }
+  get accountLabel() {
+    return this.auth.getDecodedTokenValue()?.name ?? '';
+  }
   title = 'Settings';
   description =
     'Keep your profile current, shape the visual identity of your space, and make the next step obvious for people who visit it.';
@@ -38,7 +49,8 @@ export class SettingsComponent {
 
   constructor(
     public profileService: ProfileService,
-    private auth: AuthStateService
+    private auth: AuthStateService,
+    public readonly router: Router
   ) {
     try {
       // Load current profile if present

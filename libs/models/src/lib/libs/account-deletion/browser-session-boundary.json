@@ -1,0 +1,10 @@
+{
+  "contractVersion": 1,
+  "applications": ["client-interface", "local-hub"],
+  "mode": "session-boundary",
+  "currentAccountDeletionEvent": "ot:account-deleted",
+  "storagePolicy": "owned-keys-only",
+  "oldAccountEvents": "ignored",
+  "sessionLoss": "generation-fenced-reset",
+  "offlineCopies": "reset-on-next-session-boundary"
+}

@@ -1,8 +1,12 @@
+import { createHash } from 'node:crypto';
 import {
+  DeleteObjectsCommand,
   DeleteObjectCommand,
   GetBucketVersioningCommand,
   GetObjectCommand,
   GetObjectLockConfigurationCommand,
+  HeadObjectCommand,
+  ListObjectVersionsCommand,
   ObjectLockEnabled,
   ObjectLockLegalHoldStatus,
   ObjectLockMode,
@@ -177,6 +181,8 @@ export function resolveS3ServiceOptions(
 
 @Injectable()
 export class S3Service {
+  private static readonly VERSION_PURGE_MAX_PAGES = 100;
+  private static readonly VERSION_PURGE_MAX_ENTRIES = 1000;
   private s3Client: S3Client;
   private bucketName: string;
   private objectLockReadiness?: Promise<ObjectLockReadiness>;
@@ -206,6 +212,70 @@ export class S3Service {
   /**
    * Generate a pre-signed URL for uploading a file directly to S3
    */
+  async custodyProbe(
+    nonce: string,
+    mode: 'write' | 'read' | 'remove'
+  ): Promise<string> {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+        nonce
+      ) ||
+      !['write', 'read', 'remove'].includes(mode)
+    )
+      throw Error('CUSTODY_PROBE_INVALID');
+    const key = '.ot-store-probe/' + nonce;
+    if (mode === 'write')
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+          Body: nonce,
+          ContentType: 'text/plain',
+          IfNoneMatch: '*',
+        })
+      );
+    else if (mode === 'remove') await this.purgeObjectVersions(key);
+    else {
+      const response = await this.s3Client.send(
+        new GetObjectCommand({ Bucket: this.bucketName, Key: key })
+      );
+      const body = response.Body as AsyncIterable<Uint8Array> & {
+        destroy?: () => void;
+      };
+      if (!body || typeof body[Symbol.asyncIterator] !== 'function')
+        throw Error('CUSTODY_PROBE_INVALID');
+      const chunks: Buffer[] = [];
+      let size = 0;
+      try {
+        for await (const chunk of body) {
+          const bytes = Buffer.from(chunk);
+          size += bytes.length;
+          if (size > 36) throw Error('CUSTODY_PROBE_INVALID');
+          chunks.push(bytes);
+        }
+      } finally {
+        body.destroy?.();
+      }
+      if (size !== 36 || Buffer.concat(chunks).toString('utf8') !== nonce)
+        throw Error('CUSTODY_PROBE_INVALID');
+    }
+    const endpoint = new URL(this.options.endpoint);
+    if (endpoint.username || endpoint.password)
+      throw Error('CUSTODY_ENDPOINT_INVALID');
+    return (
+      's3:' +
+      createHash('sha256')
+        .update(
+          JSON.stringify([
+            endpoint.origin,
+            this.bucketName,
+            this.options.region,
+          ])
+        )
+        .digest('hex')
+    );
+  }
+
   async generateUploadUrl(options: SignedUrlOptions): Promise<SignedUrlResult> {
     const expiresIn = options.expiresIn || 3600; // Default 1 hour
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
@@ -358,6 +428,122 @@ export class S3Service {
     }
   }
 
+  /** Permanently removes all versions and delete markers for one exact key. */
+  async purgeObjectVersions(key: string): Promise<void> {
+    const entries: Array<{ Key: string; VersionId?: string }> = [];
+    let KeyMarker: string | undefined;
+    let VersionIdMarker: string | undefined;
+    let pages = 0;
+    let truncated = true;
+
+    while (truncated) {
+      if (pages >= S3Service.VERSION_PURGE_MAX_PAGES) {
+        throw new ServiceUnavailableException(
+          'S3 version purge exceeded its page limit.'
+        );
+      }
+      const page = await this.s3Client.send(
+        new ListObjectVersionsCommand({
+          Bucket: this.bucketName,
+          Prefix: key,
+          ...(KeyMarker ? { KeyMarker } : {}),
+          ...(VersionIdMarker ? { VersionIdMarker } : {}),
+        })
+      );
+      pages++;
+      for (const item of [
+        ...(page.Versions ?? []),
+        ...(page.DeleteMarkers ?? []),
+      ]) {
+        if (item.Key !== key) continue;
+        if (!item.VersionId) {
+          throw new ServiceUnavailableException(
+            'S3 returned a matching version without a version ID.'
+          );
+        }
+        const lock = item as {
+          ObjectLockLegalHoldStatus?: string;
+          ObjectLockRetainUntilDate?: Date;
+        };
+        if (
+          lock.ObjectLockLegalHoldStatus === 'ON' ||
+          (lock.ObjectLockRetainUntilDate &&
+            lock.ObjectLockRetainUntilDate > new Date())
+        ) {
+          throw new ServiceUnavailableException(
+            `S3 version is retained or under legal hold; refusing purge for ${key}.`
+          );
+        }
+        entries.push({ Key: key, VersionId: item.VersionId });
+        if (entries.length > S3Service.VERSION_PURGE_MAX_ENTRIES) {
+          throw new ServiceUnavailableException(
+            'S3 version purge exceeded its version limit.'
+          );
+        }
+      }
+      truncated = page.IsTruncated === true;
+      if (truncated) {
+        if (!page.NextKeyMarker)
+          throw new ServiceUnavailableException(
+            'S3 version listing was truncated without a continuation marker.'
+          );
+        KeyMarker = page.NextKeyMarker;
+        VersionIdMarker = page.NextVersionIdMarker;
+      }
+    }
+
+    // No governance bypass is ever sent. S3 itself rejects any concurrent lock.
+
+    for (let offset = 0; offset < entries.length; offset += 100) {
+      const result = await this.s3Client.send(
+        new DeleteObjectsCommand({
+          Bucket: this.bucketName,
+          Delete: {
+            Objects: entries.slice(offset, offset + 100),
+            Quiet: false,
+          },
+        })
+      );
+      if (result.Errors?.length) {
+        throw new ServiceUnavailableException(
+          `S3 version purge partially failed for ${key}; retry after resolving the reported version errors.`
+        );
+      }
+    }
+
+    // Independent readback: listing establishes version absence, HEAD establishes
+    // that no current object remains. Missing is accepted only for recognized 404s.
+    const readback = await this.s3Client.send(
+      new ListObjectVersionsCommand({ Bucket: this.bucketName, Prefix: key })
+    );
+    if (
+      readback.IsTruncated === true ||
+      [...(readback.Versions ?? []), ...(readback.DeleteMarkers ?? [])].some(
+        (item) => item.Key === key
+      )
+    ) {
+      throw new ServiceUnavailableException(
+        `S3 version purge readback still finds versions for ${key}.`
+      );
+    }
+    try {
+      await this.s3Client.send(
+        new HeadObjectCommand({ Bucket: this.bucketName, Key: key })
+      );
+      throw new ServiceUnavailableException(
+        `S3 version purge readback still finds a current object for ${key}.`
+      );
+    } catch (error: any) {
+      if (error instanceof ServiceUnavailableException) throw error;
+      if (
+        error?.name !== 'NotFound' &&
+        error?.name !== 'NoSuchKey' &&
+        error?.$metadata?.httpStatusCode !== 404
+      )
+        throw error;
+    }
+  }
+
   async getObject(key: string): Promise<Buffer> {
     this.l.log(`S3Service: Getting object from s3://${this.bucketName}/${key}`);
     const getParams = {
@@ -392,6 +578,29 @@ export class S3Service {
       );
       throw error;
     }
+  }
+
+  /** Return the S3 object body without materializing it into a Buffer. */
+  async getObjectStream(key: string, signal?: AbortSignal): Promise<Readable> {
+    const response = await this.s3Client.send(
+      new GetObjectCommand({ Bucket: this.bucketName, Key: key }),
+      signal ? { abortSignal: signal } : undefined
+    );
+    if (!response.Body) {
+      throw new ServiceUnavailableException(
+        `No content body received for s3://${this.bucketName}/${key}.`
+      );
+    }
+    if (response.Body instanceof Readable) return response.Body;
+    const body = response.Body as unknown as {
+      transformToWebStream?: () => ReadableStream<Uint8Array>;
+    };
+    if (body.transformToWebStream) {
+      return Readable.fromWeb(body.transformToWebStream() as never);
+    }
+    throw new ServiceUnavailableException(
+      'S3 object body does not support streaming in this runtime.'
+    );
   }
 
   // Helper to extract key from S3 path
