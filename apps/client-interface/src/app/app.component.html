@@ -105,10 +105,9 @@
     <otui-dev-info />
 
     <lib-message />
-
-    @if (!suppressFixedChatOverlays()) {
+    } @if (!suppressFixedChatOverlays()) {
     <hai-about-tag [config]="haiAboutConfig" placement="inline"></hai-about-tag>
-    } }
+    }
     <lib-bug-report-ui />
     <otui-public-info-footer
       [accountRightsAvailable]="true"

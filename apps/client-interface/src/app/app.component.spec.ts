@@ -195,6 +195,14 @@ describe('AppComponent', () => {
     });
   });
 
+  it('shows the HAI control to signed-out visitors', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.componentInstance.isAuthenticated.set(false);
+    fixture.componentInstance.currentPath.set('/');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('hai-about-tag')).not.toBeNull();
+  });
+
   it('suppresses fixed chat overlays on the desktop messages workspace', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
