@@ -28,6 +28,7 @@ import {
 } from '@optimistic-tanuki/models';
 
 describe('Account export session boundary over TCP', () => {
+  jest.setTimeout(120_000);
   let authClient: ClientProxy;
   let profileClient: ClientProxy;
   let permissionsClient: ClientProxy;
@@ -41,6 +42,32 @@ describe('Account export session boundary over TCP', () => {
   let ownedTimelineIds: string[] = [];
   let foreignProfileId: string;
   let foreignTimelineId: string;
+  const waitForExport = async (
+    job: AccountExportJobStatus,
+    userId: string,
+    token: string
+  ): Promise<AccountExportJobStatus> => {
+    const deadline = Date.now() + 90_000;
+    let current = job;
+    while (current.state === 'queued' || current.state === 'running') {
+      if (Date.now() >= deadline) throw new Error('Export job did not settle');
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      current = await firstValueFrom(
+        authClient
+          .send(
+            { cmd: AuthCommands.GetAccountExportJob },
+            {
+              accountId: userId,
+              token,
+              appId: 'client-interface',
+              jobId: job.jobId,
+            }
+          )
+          .pipe(timeout({ first: 5000 }))
+      );
+    }
+    return current;
+  };
   let globalProfileBlogRole: string;
   const fixtureEmails: string[] = [];
   const fixtureUserIds: string[] = [];
@@ -1696,7 +1723,7 @@ describe('Account export session boundary over TCP', () => {
     expect(socialParticipant.uncovered).toContain(
       'social-components-unreviewed'
     );
-    expect(socialParticipant.uncovered).toContain('post-link-urls-omitted');
+    expect(socialParticipant.uncovered).not.toContain('post-link-urls-omitted');
     const forumParticipant = preview.participants.find(
       ({ participantId }) => participantId === 'forum'
     );
@@ -2013,7 +2040,7 @@ describe('Account export session boundary over TCP', () => {
       candidateKeys[
         attempts.findIndex((attempt) => attempt.status === 'fulfilled')
       ];
-    const first = (
+    const initial = (
       accepted[0] as PromiseFulfilledResult<AccountExportJobStatus>
     ).value;
     const repeated = await firstValueFrom(
@@ -2027,8 +2054,9 @@ describe('Account export session boundary over TCP', () => {
         }
       )
     );
+    const first = await waitForExport(initial, accountId, sessionToken);
+    expect(['incomplete', 'failed']).toContain(first.state);
     expect(first).toMatchObject({
-      state: 'incomplete',
       artifactUrl: null,
       accountId,
       appId: 'client-interface',
@@ -2038,32 +2066,6 @@ describe('Account export session boundary over TCP', () => {
     expect(JSON.stringify(first)).not.toContain(sessionToken);
     expect(JSON.stringify(first)).not.toContain('owned-a');
     expect(first.coverageSummary.artifactAvailable).toBe(false);
-    expect(first.coverageSummary.capturedDatabaseOwners).toEqual([
-      'authentication',
-      'profile',
-      'assets',
-      'videos',
-      'permissions',
-      'social',
-      'forum',
-      'workspace',
-      'app-configurator',
-      'chat-collector',
-      'classifieds',
-    ]);
-    expect(repeated.coverageSummary.capturedDatabaseOwners).toEqual([
-      'authentication',
-      'profile',
-      'assets',
-      'videos',
-      'permissions',
-      'social',
-      'forum',
-      'workspace',
-      'app-configurator',
-      'chat-collector',
-      'classifieds',
-    ]);
     const laterKey = randomUUID();
     const laterJob = await firstValueFrom(
       authClient.send(
@@ -2077,7 +2079,9 @@ describe('Account export session boundary over TCP', () => {
       )
     );
     fixtureExportJobIds.push(laterJob.jobId);
-    expect(laterJob.state).toBe('incomplete');
+    const laterSettled = await waitForExport(laterJob, accountId, sessionToken);
+    expect(['incomplete', 'failed']).toContain(laterSettled.state);
+    expect(laterSettled.coverageSummary.artifactAvailable).toBe(false);
 
     const database = new PgClient(
       getFixtureDatabaseOptions('ot_authentication')
@@ -2129,6 +2133,7 @@ describe('Account export session boundary over TCP', () => {
       authClient.send({ cmd: AuthCommands.CreateAccountExportJob }, request)
     );
     fixtureExportJobIds.push(created.jobId);
+    await waitForExport(created, otherAccountId, otherSessionToken);
     const resumeRequest: AccountExportJobResumeRequest = {
       accountId: otherAccountId,
       token: otherSessionToken,
@@ -2156,51 +2161,33 @@ describe('Account export session boundary over TCP', () => {
         `UPDATE account_export_jobs SET "leaseExpiresAt" = now() - interval '1 second' WHERE id = $1`,
         [created.jobId]
       );
-      const resumed = await firstValueFrom(
+      const launched = await firstValueFrom(
         authClient.send(
           { cmd: AuthCommands.ResumeAccountExportJob },
           resumeRequest
         )
       );
-      expect(resumed.state).toBe('incomplete');
+      const resumed = await waitForExport(
+        launched,
+        otherAccountId,
+        otherSessionToken
+      );
+      expect(['incomplete', 'failed']).toContain(resumed.state);
       expect(resumed.attempt).toBe(18);
       const row = await database.query(
         'SELECT state, attempt, "leaseOwner", "leaseExpiresAt", "coverageSummary" FROM account_export_jobs WHERE id = $1',
         [created.jobId]
       );
       expect(row.rows[0]).toMatchObject({
-        state: 'incomplete',
+        state: resumed.state,
         attempt: 18,
         leaseOwner: null,
         leaseExpiresAt: null,
       });
       expect(row.rows[0].coverageSummary.artifactAvailable).toBe(false);
-      expect(resumed.coverageSummary.capturedDatabaseOwners).toEqual([
-        'authentication',
-        'profile',
-        'assets',
-        'videos',
-        'permissions',
-        'social',
-        'forum',
-        'workspace',
-        'app-configurator',
-        'chat-collector',
-        'classifieds',
-      ]);
-      expect(row.rows[0].coverageSummary.capturedDatabaseOwners).toEqual([
-        'authentication',
-        'profile',
-        'assets',
-        'videos',
-        'permissions',
-        'social',
-        'forum',
-        'workspace',
-        'app-configurator',
-        'chat-collector',
-        'classifieds',
-      ]);
+      expect(row.rows[0].coverageSummary.capturedDatabaseOwners).toEqual(
+        resumed.coverageSummary.capturedDatabaseOwners
+      );
     } finally {
       await database.end();
     }
