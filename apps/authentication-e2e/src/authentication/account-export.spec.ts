@@ -2149,14 +2149,25 @@ describe('Account export session boundary over TCP', () => {
         `UPDATE account_export_jobs SET state = $1, attempt = $2, "leaseOwner" = $3, "leaseExpiresAt" = now() + interval '1 minute' WHERE id = $4`,
         ['running', 17, 'stale-worker', created.jobId]
       );
-      await expect(
-        firstValueFrom(
-          authClient.send(
-            { cmd: AuthCommands.ResumeAccountExportJob },
-            resumeRequest
-          )
+      const active = await firstValueFrom(
+        authClient.send(
+          { cmd: AuthCommands.ResumeAccountExportJob },
+          resumeRequest
         )
-      ).rejects.toMatchObject({ code: 'EXPORT_JOB_BUSY', statusCode: 409 });
+      );
+      expect(active).toMatchObject({ state: 'running', attempt: 17 });
+      const activeRow = await database.query(
+        'SELECT attempt, "leaseOwner", "leaseExpiresAt" FROM account_export_jobs WHERE id = $1',
+        [created.jobId]
+      );
+      expect(activeRow.rows[0]).toMatchObject({
+        attempt: 17,
+        leaseOwner: 'stale-worker',
+        leaseExpiresAt: expect.any(Date),
+      });
+      expect(activeRow.rows[0].leaseExpiresAt.getTime()).toBeGreaterThan(
+        Date.now()
+      );
       await database.query(
         `UPDATE account_export_jobs SET "leaseExpiresAt" = now() - interval '1 second' WHERE id = $1`,
         [created.jobId]
