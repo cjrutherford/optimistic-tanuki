@@ -123,14 +123,14 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     resolveE2eServices(entry).join(',')
   );
   assert.equal(new Set(uiServiceSets).size, 10);
-  // local-hub is the largest closure at 20: Daylight adds civic-briefing,
+  // local-hub is the largest closure at 21: cross-app tests require OT and Daylight adds civic-briefing,
   // civic-contributions, ClamAV, the model stub and two fixture seeds to the
   // classifieds, payments, social and workspace services the older local-hub
   // suites drive.
   // client-interface follows at 15 (community creation provisions a
   // workspace, and the bug-report spec needs the bug-report service).
   assert.ok(
-    uiServiceSets.every((services) => services.split(',').length <= 20)
+    uiServiceSets.every((services) => services.split(',').length <= 21)
   );
   assert.deepEqual(resolveE2eTarget('local-hub-e2e').completedServices, [
     'db-setup',
@@ -178,6 +178,11 @@ test('client-interface closure includes every service reached by its chat and fo
   assert.ok(client.backendDependencies.includes('telos-docs-service'));
   const forge = resolveE2eTarget('forgeofwill-e2e');
   assert.ok(forge.backendDependencies.includes('client-interface'));
+  assert.ok(
+    resolveE2eTarget('local-hub-e2e').backendDependencies.includes(
+      'client-interface'
+    )
+  );
   assert.ok(forge.backendDependencies.includes('oauth-provider'));
 
   const compose = readFileSync(

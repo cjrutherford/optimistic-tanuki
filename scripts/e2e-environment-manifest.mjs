@@ -491,6 +491,8 @@ const UI_ENVIRONMENTS = [
     profile: 'local-hub',
     environmentGroup: 'local-hub-daylight',
     backendDependencies: [
+      // The cross-app auth and HAI regressions also open Optimistic Tanuki.
+      'client-interface',
       'db',
       'redis',
       'db-setup',

@@ -395,7 +395,7 @@ describe('Account export session boundary over TCP', () => {
       );
       await database.query(
         `INSERT INTO poll (id, question, options, votes, "isMultipleChoice", "showResultsBeforeVote", "isAnonymous", "profileId", "userId")
-         VALUES ($1::uuid, 'fixture poll', 'yes,no', 'foreign-vote-must-not-export', false, true, false, $2, $3),
+         VALUES ($1::uuid, 'fixture poll', 'yes,no', $10, false, true, false, $2, $3),
                 ($4::uuid, 'second profile fixture poll', 'one,two', NULL, false, true, false, $5, $6),
                 ($7::uuid, 'foreign fixture poll', 'foreign,no', NULL, false, true, false, $8, $9)`,
         [
@@ -408,6 +408,11 @@ describe('Account export session boundary over TCP', () => {
           socialPollIds[2],
           foreignProfile,
           otherAccountId,
+          JSON.stringify({
+            userId: otherAccountId,
+            optionIndices: [0],
+            privateNote: 'foreign-vote-must-not-export',
+          }),
         ]
       );
       await database.query(

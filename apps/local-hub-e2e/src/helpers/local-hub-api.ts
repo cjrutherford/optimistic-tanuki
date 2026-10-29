@@ -2,9 +2,13 @@ import { APIRequestContext, APIResponse, expect, Page } from '@playwright/test';
 import { getBaseUrl, getGatewayUrl } from '../fixtures/helpers';
 
 const TEST_PASSWORD = 'TestPass123!';
+const LOCAL_HUB_ORIGIN =
+  process.env['LOCAL_HUB_AUTH_ORIGIN'] || 'http://localhost:8087';
 export const LOCAL_HUB_HEADERS = {
   'X-ot-appscope': 'local-hub',
   'X-ot-app-id': 'local-hub',
+  Origin: LOCAL_HUB_ORIGIN,
+  Host: new URL(LOCAL_HUB_ORIGIN).host,
 };
 
 export function localHubAuthHeaders(token: string): Record<string, string> {
@@ -149,6 +153,7 @@ export async function createAuthenticatedSession(
         fn: 'Test',
         ln: 'User',
         email,
+        dateOfBirth: '1990-01-01',
         password: TEST_PASSWORD,
         confirm: TEST_PASSWORD,
         bio: 'E2E test user',

@@ -40,6 +40,11 @@ for (const app of apps) {
       })
     );
     await page.goto(app.origin + '/register');
+    const dateOfBirth = page.getByLabel('Date of birth');
+    if (await dateOfBirth.isVisible()) {
+      await dateOfBirth.fill('1990-01-01');
+      await page.getByRole('button', { name: 'Continue' }).click();
+    }
     await page.getByLabel('First Name', { exact: true }).fill('RR03');
     await page.getByLabel('Last Name', { exact: true }).fill('Test');
     await page.getByLabel('Email', { exact: true }).fill('rr03@example.test');
