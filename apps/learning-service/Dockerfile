@@ -1,4 +1,4 @@
-FROM docker.io/node:lts-alpine AS builder
+FROM docker.io/node:24-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /usr/src/app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig*.json nx.json ./
@@ -7,7 +7,7 @@ COPY apps/learning-service/ ./apps/learning-service/
 RUN corepack enable && pnpm install --frozen-lockfile
 RUN pnpm exec nx build learning-service --configuration=development
 
-FROM docker.io/node:lts-alpine AS runner
+FROM docker.io/node:24-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3024
