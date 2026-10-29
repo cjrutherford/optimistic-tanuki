@@ -1,0 +1,18 @@
+version: 2
+
+secret:
+  # Documentation and non-executable sample configuration only. Application
+  # code, tests, scripts, and runtime configuration remain in scope.
+  ignored_paths:
+    - '**/*.md'
+    - '**/*.rst'
+    - 'docs/**/*.json'
+    - '**/*.yaml.sample'
+    - '**/*.yml.sample'
+    - '**/*.json.sample'
+    - '**/*.conf.sample'
+    - '**/*.inc.sample'
+    - '**/.env.example'
+    - '**/*.sample.yaml'
+    - '**/*.sample.yml'
+    - '**/*.sample.json'
