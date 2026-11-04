@@ -140,6 +140,9 @@ importers:
       '@ng-icons/material-icons':
         specifier: ^32.1.0
         version: 32.5.0
+      '@photostructure/tz-lookup':
+        specifier: ^11.7.0
+        version: 11.7.0
       '@rekog/mcp-nest':
         specifier: ^1.9.11
         version: 1.9.11(8ae59398e8d17145a6101171ebb64d9c)
@@ -5619,6 +5622,9 @@ packages:
     resolution: {integrity: sha512-3nVv+e2FQwsW8Aw6qTU6f+1rfcJ3hrcnvH/mu9i8YhxO+9sqbOfpL8m6PbET5+xKOlz/VSbp0RoYWYCtIsnmuA==}
     peerDependencies:
       typescript: ^3 || ^4 || ^5
+
+  '@photostructure/tz-lookup@11.7.0':
+    resolution: {integrity: sha512-QbKHXvleluMIlAHf2JiQTJNU5rLQBeQhLobyRqgXZ6NNGKqNikaRkjYviJ4nMU7Y75QE7bBYM8xjiFGjAukyhw==}
 
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
@@ -21762,6 +21768,8 @@ snapshots:
     dependencies:
       esquery: 1.7.0
       typescript: 5.9.3
+
+  '@photostructure/tz-lookup@11.7.0': {}
 
   '@pinojs/redact@0.4.0': {}
 

@@ -18,8 +18,8 @@
     </p>
     @if (pipelineReport(); as report) { @if (!report.configured) {
     <p class="quiet">
-      No towns are scheduled: civic-briefing has no locality registry
-      (CIVIC_LOCALITIES_DIR).
+      No towns are scheduled: the daily schedule is off
+      (DAYLIGHT_SCHEDULE_ENABLED) or no towns have synced from social yet.
     </p>
     } @else {
     <div class="table-wrap">

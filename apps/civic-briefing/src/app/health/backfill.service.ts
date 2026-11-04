@@ -54,7 +54,7 @@ export class BackfillService {
       return {
         ...this.status(),
         problem:
-          'No town registry is configured (CIVIC_LOCALITIES_DIR), so there is nothing to backfill.',
+          'The daily schedule is not attached, so there is nothing to backfill.',
       };
     if (this.state.running) return this.status();
     const known = schedule.townSlugs();

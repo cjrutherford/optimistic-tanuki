@@ -12,6 +12,9 @@ import {
 } from '@optimistic-tanuki/civic-core';
 import type { DataSource } from 'typeorm';
 import { AppModule } from './app/app.module';
+import { DbLocalityRegistrySource } from './app/registry/db-locality-registry.source';
+import { localitySyncIntervalMs } from './app/locality-sync/locality-sync.service';
+import { LocalityRegistrySource } from './app/registry/locality-registry.source';
 import { BackfillService } from './app/health/backfill.service';
 import { PipelineHealthService } from './app/health/pipeline-health.service';
 import { DailySchedule, MODEL_TIMEOUT_MS } from './app/schedule/daily';
@@ -29,18 +32,11 @@ import loadConfig, { databaseUrl } from './config';
 
 /**
  * Builds the daily schedule from the running Nest context, on the app's own
- * database connection. Returns null, with a warning, when no locality
- * registry is configured: the service still runs, it just publishes nothing.
+ * database connection, over the database-built locality registry. Building it
+ * does not start it: DAYLIGHT_SCHEDULE_ENABLED decides that.
  */
-function buildSchedule(app: INestApplicationContext): DailySchedule | null {
+function buildSchedule(app: INestApplicationContext): DailySchedule {
   const config = loadScheduleConfig();
-  if (!config.localitiesDir) {
-    Logger.warn(
-      'CIVIC_LOCALITIES_DIR is not set; the daily schedule will not start',
-      'Bootstrap'
-    );
-    return null;
-  }
   const modelFetch =
     config.model.transport === 'prompt-proxy'
       ? promptProxyFetch(
@@ -68,9 +64,10 @@ function buildSchedule(app: INestApplicationContext): DailySchedule | null {
   );
   registerAdapter(createCivicCoreAdapter(civicCore));
   return new DailySchedule(
-    { ...config, localitiesDir: config.localitiesDir },
+    config,
     app.get<DataSource>(getDataSourceToken(), { strict: false }),
     portedStages(app),
+    app.get(LocalityRegistrySource),
     modelFetch,
     app.get<BlobStore>(BLOB_STORE),
     civicCore
@@ -98,11 +95,9 @@ async function runOnce(mode: OnceMode, args: string[]) {
     logger: ['log', 'error', 'warn'],
   });
   try {
+    // One sync, render and load, so the command sees every town in the database.
+    await app.get(LocalityRegistrySource).refresh();
     const schedule = buildSchedule(app);
-    if (!schedule) {
-      process.exitCode = 1;
-      return;
-    }
     const daysAt = args.indexOf('--days');
     const days = daysAt >= 0 ? Number(args[daysAt + 1]) : undefined;
     if (days !== undefined && !(Number.isInteger(days) && days > 0))
@@ -162,23 +157,36 @@ async function bootstrap() {
     );
   });
 
+  // The registry is refreshed whether or not the schedule runs: other
+  // services read the town list from here. The first refresh finishes before
+  // the schedule's first tick; a social outage is logged, not fatal.
+  const registry = app.get(DbLocalityRegistrySource);
+  await registry.start(localitySyncIntervalMs());
+
   const schedule = buildSchedule(app);
-  if (schedule) {
+  const enabled = loadScheduleConfig().scheduleEnabled;
+  const health = app.get(PipelineHealthService);
+  // An operator's pull and backfill (D31) run on this schedule, switch or not.
+  app.get(BackfillService).attach(schedule);
+  const shutdown = async () => {
+    schedule.stop();
+    health.stopAlerts();
+    registry.stop();
+    await app.close();
+    process.exit(0);
+  };
+  process.once('SIGINT', () => void shutdown());
+  process.once('SIGTERM', () => void shutdown());
+  if (enabled) {
     // Pipeline problems reach an operator (P5.2); only where runs happen.
-    const health = app.get(PipelineHealthService);
     health.startAlerts();
-    // An operator's pull and backfill (D31) run on this schedule.
-    app.get(BackfillService).attach(schedule);
-    const shutdown = async () => {
-      schedule.stop();
-      health.stopAlerts();
-      await app.close();
-      process.exit(0);
-    };
-    process.once('SIGINT', () => void shutdown());
-    process.once('SIGTERM', () => void shutdown());
     schedule.start();
     Logger.log('Civic briefing daily schedule running', 'Bootstrap');
+  } else {
+    Logger.warn(
+      'DAYLIGHT_SCHEDULE_ENABLED is off; the daily schedule is not running',
+      'Bootstrap'
+    );
   }
 }
 

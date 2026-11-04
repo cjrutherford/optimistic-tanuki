@@ -23,4 +23,6 @@ export const CivicBriefingCommands = {
   EDITION_HISTORY: 'civic-briefing.editions.history',
   /** One published briefing: a town's newest, or the one for a date. */
   BRIEFING: 'civic-briefing.editions.briefing',
+  /** Every locality in the registry, with its sources and officials, for civic-contributions. */
+  LIST_LOCALITIES: 'civic-briefing.localities.list',
 } as const;

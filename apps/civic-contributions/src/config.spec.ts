@@ -11,7 +11,6 @@ describe('loadConfig', () => {
     });
     expect(config.llmTransport).toBe('prompt-proxy');
     expect(config.promptProxy).toEqual({ host: 'prompt-proxy', port: 3009 });
-    expect(config.localitiesDir).toBeNull();
   });
 
   it('keeps data directories under the working directory unless told otherwise', () => {
@@ -42,14 +41,12 @@ describe('loadConfig', () => {
       LLM_TRANSPORT: 'direct',
       PROMPT_PROXY_HOST: 'proxy.test',
       PROMPT_PROXY_PORT: '4009',
-      CIVIC_LOCALITIES_DIR: '/srv/localities',
       CONTRIBUTIONS_PER_HOUR: '3',
       STANDING_CONTRADICTED: '0.4',
     });
     expect(config.civicBriefing).toEqual({ host: 'briefing.test', port: 4028 });
     expect(config.llmTransport).toBe('direct');
     expect(config.promptProxy).toEqual({ host: 'proxy.test', port: 4009 });
-    expect(config.localitiesDir).toBe('/srv/localities');
     expect(config.hourlyLimit).toBe(3);
     expect(config.standing.contradicted).toBe(-0.4);
   });

@@ -1,27 +1,16 @@
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
-import { dirname } from 'node:path';
 import { Logger } from '@nestjs/common';
 import {
   BriefingSchema,
   CivicItemSchema,
   createLlmAttemptRecorder,
   discoverSources,
-  discoveredSourcesPath,
   itemEvidenceLocalDate,
   itemLocalDate,
-  loadLocalityRegistry,
   OfficialDirectories,
   OutboundPolicy,
   runPipeline,
   searchProviderFromEnvironment,
   type Cadence,
-  type DiscoveredSourcesFile,
   type LocalityConfig,
   type LocalityRegistry,
   type PipelineStages,
@@ -45,6 +34,8 @@ import {
 import type { ScheduleConfig } from './schedule.config';
 import type { CivicCoreClient } from '@optimistic-tanuki/civic-adapters';
 import { civicCoreDecisions } from '../civic-core/adoption';
+import { SourcingStore } from './sourcing-store';
+import type { LocalityRegistrySource } from '../registry/locality-registry.source';
 
 /**
  * The daily pipeline: every edition town, every day, without anyone running it.
@@ -63,10 +54,16 @@ import { civicCoreDecisions } from '../civic-core/adoption';
  * A town whose recent record is too light for daily news gets a weekly
  * edition instead, until it picks up (see plan.ts).
  *
- * One town at a time, one tick at a time: the schedule never runs two
- * pipelines at once, and a tick that finds work still running waits for the
- * next. Failures are logged and retried a few times a day, then left for
- * tomorrow rather than hammering a source or a model that is down.
+ * One tick at a time: a tick that finds work still running waits for the
+ * next. Within a tick, with hundreds of towns (D26), the due towns are ordered
+ * least recently published first and the tick takes at most
+ * `maxTownsPerTick` of them, `concurrency` at a time (one by default; each
+ * town has its own run lease, so towns do not contend). Source discovery is
+ * a crawl, so at most `sourcingMaxPerTick` towns start one per tick; a town
+ * that has never run and has to wait for its discovery waits for a later
+ * tick rather than running with no sources. Failures are logged and retried a
+ * few times a day, then left for tomorrow rather than hammering a source or a
+ * model that is down.
  */
 
 /** The longest a model call may take; prompt-proxy's own limit must exceed it. */
@@ -76,13 +73,15 @@ export class DailySchedule {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
   private readonly failures = new Map<string, number>();
-  private registry: LocalityRegistry;
   private readonly search: SearchProvider | null;
+  private readonly store: SourcingStore;
 
   constructor(
-    private readonly config: ScheduleConfig & { localitiesDir: string },
+    private readonly config: ScheduleConfig,
     private readonly dataSource: DataSource,
     private readonly stages: PipelineStages,
+    /** Where the town registry comes from: the database, via sync, render and load. */
+    private readonly registrySource: LocalityRegistrySource,
     /** Set when model calls go through prompt-proxy rather than LLM_BASE_URL. */
     private readonly modelFetch?: FetchImplementation,
     /** The platform's virus-scanning blob store (D22); runs never use another. */
@@ -90,15 +89,23 @@ export class DailySchedule {
     /** Civic Core, when this deployment reads it: a matched tenant is adopted as the town's own source. */
     private readonly civicCore?: CivicCoreClient
   ) {
-    this.registry = this.loadRegistry();
+    this.store = new SourcingStore(dataSource);
     this.search = searchProviderFromEnvironment();
   }
 
   start(): void {
+    if (!this.config.scheduleEnabled) {
+      this.logger.warn(
+        'DAYLIGHT_SCHEDULE_ENABLED is off; no editions will be scheduled'
+      );
+      return;
+    }
     this.logger.log(
-      `daily editions at ${this.config.dailyAt} local time for ${this.editions()
-        .map((town) => town.slug)
-        .join(', ')}; ` +
+      `daily editions at ${this.config.dailyAt} local time for ${
+        this.editions().length
+      } town(s), at most ${this.config.maxTownsPerTick} per tick (${
+        this.config.concurrency
+      } at a time, ${this.config.sourcingMaxPerTick} new source searches); ` +
         `weekly instead below ${
           this.config.dailyMinItems
         } dated local records in ${this.config.densityDays} days; history ${
@@ -117,57 +124,49 @@ export class DailySchedule {
     if (this.timer) clearInterval(this.timer);
   }
 
-  /** One pass over the towns. Returns what it did, for the log and for tests. */
+  /**
+   * One pass over the towns. Returns what it did, for the log and for tests.
+   * Does nothing when the kill switch is off (DAYLIGHT_SCHEDULE_ENABLED).
+   */
   async tick(now = new Date()): Promise<{ town: string; action: string }[]> {
+    if (!this.config.scheduleEnabled) return [];
     if (this.running) return [];
     this.running = true;
     const done: { town: string; action: string }[] = [];
     try {
-      for (const town of this.editions()) {
-        const clock = localClock(now, town.timezone);
-        const failuresToday =
-          this.failures.get(`${town.slug}:${clock.localDate}`) ?? 0;
-        const last = await this.lastEdition(town.slug);
-        if (last?.periodEnd === clock.localDate) continue;
-        const recentItems = last
-          ? await this.recentItems(town, clock.localDate)
-          : undefined;
-        const plan = planFor(
-          {
-            ...clock,
-            lastSuccess: last?.periodEnd ?? null,
-            lastCadence: last?.cadence ?? null,
-            failuresToday,
-            recentItems,
-          },
-          this.config
-        );
-        if (!plan.due) continue;
-        this.logger.log(`${town.slug}: due (${plan.reason})`);
-        if (
-          plan.fresh ||
-          sourcingDue(
-            this.lastSearched(town.slug),
-            clock.localDate,
-            this.config.sourcingIntervalDays
-          )
-        ) {
+      const batch = await this.dueTowns(now);
+      const queue = [...batch];
+      const worker = async () => {
+        for (let next = queue.shift(); next; next = queue.shift()) {
+          const { town, clock, plan, needsSourcing } = next;
+          if (needsSourcing)
+            done.push({
+              town: town.slug,
+              action: await this.source(town, clock.localDate),
+            });
           done.push({
             town: town.slug,
-            action: await this.source(town, clock.localDate),
+            action: await this.run(
+              town,
+              plan.cadence,
+              plan.gatherSince,
+              clock.localDate,
+              now
+            ),
           });
         }
-        done.push({
-          town: town.slug,
-          action: await this.run(
-            town,
-            plan.cadence,
-            plan.gatherSince,
-            clock.localDate,
-            now
-          ),
-        });
-      }
+      };
+      await Promise.all(
+        Array.from(
+          {
+            length: Math.max(
+              1,
+              Math.min(this.config.concurrency, batch.length)
+            ),
+          },
+          worker
+        )
+      );
     } catch (error) {
       this.logger.error(
         `tick failed: ${
@@ -178,6 +177,80 @@ export class DailySchedule {
       this.running = false;
     }
     return done;
+  }
+
+  /**
+   * The towns this tick will work on: the due ones, least recently published
+   * first (towns with no edition at all lead; ties by slug), cut off at
+   * `maxTownsPerTick`. Towns are planned in that order and planning stops
+   * once the batch is full, so a tick does not count records for towns it
+   * will not run. A town that needs source discovery takes one of the tick's
+   * `sourcingMaxPerTick` slots; when none is left, a town with no run yet
+   * waits for a later tick and an established town runs on what it has.
+   */
+  private async dueTowns(now: Date): Promise<TickItem[]> {
+    const candidates: {
+      town: LocalityConfig;
+      clock: ReturnType<typeof localClock>;
+      last: { periodEnd: string; cadence: Cadence } | null;
+    }[] = [];
+    for (const town of this.editions()) {
+      const clock = localClock(now, town.timezone);
+      const last = await this.lastEdition(town.slug);
+      if (last?.periodEnd === clock.localDate) continue;
+      candidates.push({ town, clock, last });
+    }
+    candidates.sort(
+      (a, b) =>
+        (a.last?.periodEnd ?? '').localeCompare(b.last?.periodEnd ?? '') ||
+        a.town.slug.localeCompare(b.town.slug)
+    );
+    const batch: TickItem[] = [];
+    let sourcing = 0;
+    let waiting = 0;
+    for (const { town, clock, last } of candidates) {
+      if (batch.length >= this.config.maxTownsPerTick) break;
+      const failuresToday =
+        this.failures.get(`${town.slug}:${clock.localDate}`) ?? 0;
+      const recentItems = last
+        ? await this.recentItems(town, clock.localDate)
+        : undefined;
+      const plan = planFor(
+        {
+          ...clock,
+          lastSuccess: last?.periodEnd ?? null,
+          lastCadence: last?.cadence ?? null,
+          failuresToday,
+          recentItems,
+        },
+        this.config
+      );
+      if (!plan.due) continue;
+      const needsSourcing =
+        plan.fresh ||
+        sourcingDue(
+          await this.lastSearched(town.slug),
+          clock.localDate,
+          this.config.sourcingIntervalDays
+        );
+      if (needsSourcing && sourcing >= this.config.sourcingMaxPerTick) {
+        if (plan.fresh) {
+          waiting += 1;
+          continue;
+        }
+        this.logger.log(`${town.slug}: due (${plan.reason})`);
+        batch.push({ town, clock, plan, needsSourcing: false });
+        continue;
+      }
+      if (needsSourcing) sourcing += 1;
+      this.logger.log(`${town.slug}: due (${plan.reason})`);
+      batch.push({ town, clock, plan, needsSourcing });
+    }
+    if (waiting)
+      this.logger.log(
+        `${waiting} new town(s) wait for source discovery in a later tick (at most ${this.config.sourcingMaxPerTick} per tick)`
+      );
+    return batch;
   }
 
   /** Searches for sources now, for the named towns or every edition, without running the pipeline. */
@@ -377,19 +450,30 @@ export class DailySchedule {
     );
   }
 
+  /** The current registry: always the latest the source has loaded. A run keeps the one it started with. */
+  private get registry(): LocalityRegistry {
+    return this.registrySource.current();
+  }
+
   private editions(): readonly LocalityConfig[] {
     return this.registry.editions();
   }
 
-  private loadRegistry(): LocalityRegistry {
-    return loadLocalityRegistry(
-      this.config.localitiesDir,
-      this.config.discoveredDir
-    );
+  /**
+   * Makes the schedule see what the database now holds, after sources were
+   * adopted: the registry source renders from the database and reloads, without
+   * another social sync (only our own rows changed).
+   */
+  protected async refreshRegistry(): Promise<void> {
+    await this.registrySource.refresh({ sync: false });
+  }
+
+  protected lastSearched(slug: string): Promise<string | null> {
+    return this.store.lastSearched(slug);
   }
 
   /** A town's latest edition, daily or weekly, or null when it has none. */
-  private async lastEdition(
+  protected async lastEdition(
     slug: string
   ): Promise<{ periodEnd: string; cadence: Cadence } | null> {
     const latest = await this.dataSource.getRepository(BriefingSchema).findOne({
@@ -406,7 +490,7 @@ export class DailySchedule {
    * in the last `densityDays` days before today: how busy its public record
    * is. Regional and state records are left out — every town shares them.
    */
-  private async recentItems(
+  protected async recentItems(
     town: LocalityConfig,
     localDate: string,
     /** Count only what had been published before `localDate` (a backfill, D31). */
@@ -437,7 +521,7 @@ export class DailySchedule {
     }).length;
   }
 
-  private async run(
+  protected async run(
     town: LocalityConfig,
     cadence: Cadence,
     gatherSince: string | undefined,
@@ -560,10 +644,11 @@ export class DailySchedule {
 
   /**
    * Looks for a town's sources and adopts what passes. Adopted sources are
-   * written beside the hand-written ones, per owner, and every decision —
-   * adopted or refused, with its reasons — is appended to the decision log.
+   * written to the database as discovered sources, and every decision —
+   * adopted or refused, with its reasons — is recorded beside a "searched"
+   * record that tells the schedule when the town was last looked at.
    */
-  private async source(
+  protected async source(
     town: LocalityConfig,
     localDate: string
   ): Promise<string> {
@@ -608,38 +693,30 @@ export class DailySchedule {
         decisions.push(...civic.decisions);
       }
       const adopted = decisions.filter((decision) => decision.adopted);
-      for (const decision of adopted) this.adopt(decision);
-      this.log({
-        type: 'search',
-        localitySlug: town.slug,
+      const configured = this.registry.all().flatMap((place) => place.sources);
+      let added = 0;
+      for (const decision of adopted)
+        if (await this.store.adopt(decision, configured)) added++;
+      const at = new Date();
+      await this.store.recordSearch(
+        town.slug,
         localDate,
-        at: new Date().toISOString(),
-        pagesRead,
-        searched,
-        adopted: adopted.length,
-        refused: decisions.length - adopted.length,
-        officialSites: directories.sites.map((site) => ({
-          url: site.url,
-          ownerSlug: site.ownerSlug,
-          via: site.via,
-        })),
-      });
-      for (const decision of decisions) {
-        this.log({
-          type: 'decision',
-          localitySlug: town.slug,
-          at: new Date().toISOString(),
-          adopted: decision.adopted,
-          ownerSlug: decision.ownerSlug,
-          sourceKey: decision.source.sourceKey,
-          adapter: decision.source.adapter,
-          url: decision.source.url,
-          via: decision.via,
-          reasons: decision.reasons,
-          evidence: decision.evidence,
-        });
-      }
-      if (adopted.length) this.registry = this.loadRegistry();
+        {
+          pagesRead,
+          searched,
+          adopted: adopted.length,
+          refused: decisions.length - adopted.length,
+          officialSites: directories.sites.map((site) => ({
+            url: site.url,
+            ownerSlug: site.ownerSlug,
+            via: site.via,
+          })),
+        },
+        at
+      );
+      for (const decision of decisions)
+        await this.store.recordDecision(town.slug, decision, at);
+      if (added) await this.refreshRegistry();
       const seconds = Math.round((Date.now() - started) / 1000);
       const summary = `sourcing started from ${
         directories.sites.length
@@ -665,57 +742,14 @@ export class DailySchedule {
       return 'sourcing failed';
     }
   }
+}
 
-  private adopt(decision: SourcingDecision): void {
-    const path = discoveredSourcesPath(
-      this.config.discoveredDir,
-      decision.ownerSlug
-    );
-    const file: DiscoveredSourcesFile = existsSync(path)
-      ? (JSON.parse(readFileSync(path, 'utf8')) as DiscoveredSourcesFile)
-      : { localitySlug: decision.ownerSlug, sources: [] };
-    if (
-      file.sources.some(
-        (entry) => entry.source.sourceKey === decision.source.sourceKey
-      )
-    )
-      return;
-    const { ownerSlug: _owner, ...source } = decision.source;
-    file.sources.push({
-      source: source as unknown as Record<string, unknown>,
-      discoveredAt: new Date().toISOString(),
-      via: decision.via,
-      evidence: decision.evidence,
-    });
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, `${JSON.stringify(file, null, 2)}\n`);
-  }
-
-  private log(entry: Record<string, unknown>): void {
-    mkdirSync(dirname(this.config.discoveryLog), { recursive: true });
-    appendFileSync(this.config.discoveryLog, `${JSON.stringify(entry)}\n`);
-  }
-
-  /** The local date a town's sources were last searched for, from the decision log. */
-  private lastSearched(slug: string): string | null {
-    if (!existsSync(this.config.discoveryLog)) return null;
-    let last: string | null = null;
-    for (const line of readFileSync(this.config.discoveryLog, 'utf8').split(
-      '\n'
-    )) {
-      if (
-        !line.includes('"type":"search"') ||
-        !line.includes(`"localitySlug":"${slug}"`)
-      )
-        continue;
-      try {
-        last = (JSON.parse(line) as { localDate: string }).localDate;
-      } catch {
-        /* a torn line */
-      }
-    }
-    return last;
-  }
+/** A town the tick has decided to work on. */
+interface TickItem {
+  town: LocalityConfig;
+  clock: ReturnType<typeof localClock>;
+  plan: RunPlan;
+  needsSourcing: boolean;
 }
 
 /** How a run differs from a scheduled one (D31). */

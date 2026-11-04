@@ -888,12 +888,18 @@ services:
       LISTEN_PORT: 3028
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
-      # No CIVIC_LOCALITIES_DIR: the daily schedule stays off, and the
-      # briefings come from civic-briefing-seed.
+      # The daily schedule stays off; the briefings come from
+      # civic-briefing-seed, and the towns from social (default social:3003).
+      DAYLIGHT_SCHEDULE_ENABLED: 'false'
     depends_on:
       db:
         condition: service_healthy
       db-setup:
+        condition: service_completed_successfully
+      social:
+        condition: service_healthy
+      # The boot-time sync must see the towns the social seed creates.
+      social-locality-seed:
         condition: service_completed_successfully
       clamav:
         condition: service_healthy
@@ -924,21 +930,24 @@ services:
 
   civic-briefing-seed:
     # Published briefings for the suites, through civic-briefing's own
-    # entities (D28). The fixtures and the frozen localities are the repo's.
+    # entities (D28). The towns are synced from social, so it runs after
+    # social-locality-seed has created them; only the briefings are fixtures.
     image: cjrutherford/optimistic_tanuki_civic-briefing:${E2E_IMAGE_TAG:-latest}
     environment:
       POSTGRES_HOST: db
       POSTGRES_DB: ot_civic_briefing
-      CIVIC_LOCALITIES_DIR: /e2e/localities
       CIVIC_E2E_BRIEFINGS_DIR: /e2e/briefings
     volumes:
-      - ../libs/civic/core/test/fixtures/localities:/e2e/localities:ro
       - ./fixtures/civic-briefings:/e2e/briefings:ro
     command: ['node', 'seed-e2e.js']
     depends_on:
       db:
         condition: service_healthy
       db-setup:
+        condition: service_completed_successfully
+      social:
+        condition: service_healthy
+      social-locality-seed:
         condition: service_completed_successfully
     restart: 'no'
 
@@ -959,12 +968,9 @@ services:
       VAULT_STORAGE_KEK_ID: e2e-test
       CIVIC_BRIEFING_HOST: civic-briefing
       CIVIC_BRIEFING_PORT: 3028
-      CIVIC_LOCALITIES_DIR: /e2e/localities
       LLM_TRANSPORT: direct
       REVIEW_MODEL_BASE_URL: http://model-stub:3040/v1
       REVIEW_MODEL: e2e-stub
-    volumes:
-      - ../libs/civic/core/test/fixtures/localities:/e2e/localities:ro
     depends_on:
       db:
         condition: service_healthy

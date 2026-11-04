@@ -564,8 +564,10 @@ services:
       LLM_WRITER_MODEL: ${LLM_WRITER_MODEL:-}
       LLM_PRIMARY_MODEL: ${LLM_PRIMARY_MODEL:-}
       LLM_FALLBACK_MODEL: ${LLM_FALLBACK_MODEL:-}
-      # The town registry; without it nothing is scheduled.
-      CIVIC_LOCALITIES_DIR: ${CIVIC_LOCALITIES_DIR:-}
+      # The towns are synced from social's communities (SOCIAL_HOST/PORT
+      # default to social:3003). DAYLIGHT_SCHEDULE_ENABLED=false stops the
+      # daily schedule.
+      DAYLIGHT_SCHEDULE_ENABLED: ${DAYLIGHT_SCHEDULE_ENABLED:-true}
       # Every fetched document is virus-scanned before it is stored (D22).
       CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
       # Agenda packets are large PDFs: give clamd time to scan them.
@@ -589,6 +591,8 @@ services:
         condition: service_completed_successfully
       clamav:
         condition: service_healthy
+      social:
+        condition: service_started
 
   civic-contributions:
     container_name: ot_civic_contributions
@@ -614,7 +618,6 @@ services:
       PROMPT_PROXY_HOST: prompt-proxy
       PROMPT_PROXY_PORT: 3009
       REVIEW_MODEL: ${REVIEW_MODEL:-}
-      CIVIC_LOCALITIES_DIR: ${CIVIC_LOCALITIES_DIR:-}
     volumes:
       # Contributed artifacts, promotions and density reports outlive the container.
       - civic_contributions_data:/usr/src/app/data
