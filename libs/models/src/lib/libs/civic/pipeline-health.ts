@@ -4,6 +4,7 @@ import {
   IsArray,
   IsInt,
   IsOptional,
+  IsString,
   Matches,
   Max,
   Min,
@@ -73,6 +74,14 @@ export class TownPipelineHealth {
   /** Only the sources that need attention. */
   @ApiProperty({ type: [PipelineSourceProblem] })
   problems!: PipelineSourceProblem[];
+
+  /** Discovery has searched this town and adopted nothing, so it is skipped rather than failing (D32). */
+  @ApiPropertyOptional()
+  noSources?: boolean;
+
+  /** How many readers have asked for sources for this town (D32). */
+  @ApiPropertyOptional()
+  requestCount?: number;
 }
 
 export class PipelineHealthReport {
@@ -143,4 +152,80 @@ export class BackfillStatus {
   /** Why a backfill did not start or did not finish. */
   @ApiProperty({ type: String, nullable: true })
   problem!: string | null;
+}
+
+/**
+ * A name Civic Core read from a town's agendas, awaiting an operator's
+ * decision (D33). Accepting it adds it to the town's officials roster with
+ * the source the operator supplies.
+ */
+export class OfficialCandidate {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  slug!: string;
+
+  @ApiProperty()
+  townName!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty()
+  role!: string;
+
+  @ApiPropertyOptional({ nullable: true, type: String })
+  sourceAgendaId!: string | null;
+
+  @ApiProperty()
+  firstSeen!: string;
+
+  @ApiProperty()
+  lastSeen!: string;
+
+  @ApiProperty({ enum: ['pending', 'accepted', 'rejected'] })
+  status!: 'pending' | 'accepted' | 'rejected';
+
+  @ApiPropertyOptional({ nullable: true, type: String })
+  decidedBy!: string | null;
+
+  @ApiPropertyOptional({ nullable: true, type: String })
+  decidedAt!: string | null;
+
+  @ApiProperty({
+    description:
+      'False when the first acceptance must also supply domains and a callback number source.',
+  })
+  townHasOfficials!: boolean;
+}
+
+export class AcceptOfficialCandidateBody {
+  @ApiProperty({ description: 'The office the person holds.' })
+  @IsString()
+  office!: string;
+
+  @ApiProperty({
+    description: 'An https URL where the roster entry is published.',
+  })
+  @IsString()
+  source!: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      'Government email domains; required for a town with no officials yet.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  domains?: string[];
+
+  @ApiPropertyOptional({
+    description: 'An https URL; required for a town with no officials yet.',
+  })
+  @IsOptional()
+  @IsString()
+  callbackNumberSource?: string;
 }

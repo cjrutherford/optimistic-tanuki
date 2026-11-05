@@ -16,6 +16,7 @@ import {
   type BackfillStatus,
   OptomisitcTanukiAPIService as CivicAPIService,
   DENSITY_TARGET,
+  type OfficialCandidate,
   type PipelineHealthReport,
   problem,
   type TakedownNoticeRecord,
@@ -27,6 +28,15 @@ type Loaded<T> =
   | { status: 'loading' }
   | { status: 'ready'; value: T }
   | { status: 'failed'; message: string };
+
+interface CandidateGroup {
+  slug: string;
+  townName: string;
+  townHasOfficials: boolean;
+  candidates: OfficialCandidate[];
+}
+
+const HTTPS_URL = /^https:\/\/[^\s/$.?#][^\s]*$/iu;
 
 type NoticeAction = 'upheld' | 'declined' | 'restored';
 
@@ -95,6 +105,47 @@ export class DaylightOperationsPage {
   protected readonly backfillMessage = signal('');
   private backfillPoll: ReturnType<typeof setTimeout> | null = null;
 
+  // ── Official candidates (D33) ──────────────────────────────────────────
+  protected readonly candidates = signal<Loaded<OfficialCandidate[]>>({
+    status: 'loading',
+  });
+  protected readonly candidateGroups = computed((): CandidateGroup[] => {
+    const state = this.candidates();
+    if (state.status !== 'ready') return [];
+    const groups = new Map<string, CandidateGroup>();
+    for (const candidate of state.value) {
+      const group = groups.get(candidate.slug) ?? {
+        slug: candidate.slug,
+        townName: candidate.townName,
+        townHasOfficials: candidate.townHasOfficials,
+        candidates: [],
+      };
+      group.candidates.push(candidate);
+      groups.set(candidate.slug, group);
+    }
+    return [...groups.values()].sort((a, b) =>
+      a.townName.localeCompare(b.townName)
+    );
+  });
+  protected readonly candidatesError = computed(() => {
+    const state = this.candidates();
+    return state.status === 'failed' ? state.message : '';
+  });
+  /** The candidate whose accept form or reject confirmation is open. */
+  protected readonly accepting = signal<OfficialCandidate | null>(null);
+  protected readonly rejecting = signal<OfficialCandidate | null>(null);
+  protected readonly candidateBusy = signal(false);
+  /** A refusal from the server, shown inside the open form. */
+  protected readonly candidateError = signal('');
+  protected readonly candidateMessage = signal('');
+  protected readonly acceptSubmitted = signal(false);
+  protected readonly acceptForm = this.fb.nonNullable.group({
+    office: ['', Validators.required],
+    source: ['', [Validators.required, Validators.pattern(HTTPS_URL)]],
+    domains: [''],
+    callbackNumberSource: ['', Validators.pattern(HTTPS_URL)],
+  });
+
   // ── Density ────────────────────────────────────────────────────────────
   protected readonly density = signal<Loaded<TownDensity[]>>({
     status: 'loading',
@@ -160,6 +211,7 @@ export class DaylightOperationsPage {
   private loadPanels(): void {
     if (this.canPipeline()) {
       this.loadPipeline();
+      this.loadCandidates();
       this.loadBackfill();
     }
     if (this.canDensity()) this.loadDensity();
@@ -171,6 +223,125 @@ export class DaylightOperationsPage {
       this.civic.pipelineHealth().pipe(map((reply) => reply.data)),
       'Pipeline health could not be loaded.'
     ).subscribe((state) => this.pipeline.set(state));
+  }
+
+  protected loadCandidates(): void {
+    this.track(
+      this.civic.officialCandidates().pipe(map((reply) => reply.data)),
+      'Official candidates could not be loaded.'
+    ).subscribe((state) => this.candidates.set(state));
+  }
+
+  /** The "From agenda" note: the id is Civic Core's, there is no page to link to. */
+  protected agendaNote(candidate: OfficialCandidate): string {
+    return candidate.sourceAgendaId
+      ? `Named in agenda ${candidate.sourceAgendaId.slice(0, 8)}`
+      : '';
+  }
+
+  protected openAccept(candidate: OfficialCandidate): void {
+    this.rejecting.set(null);
+    this.accepting.set(candidate);
+    this.candidateError.set('');
+    this.candidateMessage.set('');
+    this.acceptSubmitted.set(false);
+    this.acceptForm.reset({
+      office: candidate.role,
+      source: '',
+      domains: '',
+      callbackNumberSource: '',
+    });
+    const first = !candidate.townHasOfficials;
+    for (const name of ['domains', 'callbackNumberSource'] as const) {
+      const control = this.acceptForm.controls[name];
+      control.setValidators(
+        name === 'callbackNumberSource'
+          ? first
+            ? [Validators.required, Validators.pattern(HTTPS_URL)]
+            : [Validators.pattern(HTTPS_URL)]
+          : first
+          ? [Validators.required]
+          : []
+      );
+      control.updateValueAndValidity();
+    }
+  }
+
+  protected openReject(candidate: OfficialCandidate): void {
+    this.accepting.set(null);
+    this.rejecting.set(candidate);
+    this.candidateError.set('');
+    this.candidateMessage.set('');
+  }
+
+  protected cancelCandidate(): void {
+    this.accepting.set(null);
+    this.rejecting.set(null);
+    this.candidateError.set('');
+  }
+
+  /** Whether a field of the accept form shows its error: after a try, or once touched. */
+  protected fieldInvalid(name: keyof typeof this.acceptForm.controls): boolean {
+    const control = this.acceptForm.controls[name];
+    return control.invalid && (this.acceptSubmitted() || control.touched);
+  }
+
+  protected acceptCandidate(): void {
+    const candidate = this.accepting();
+    if (!candidate || this.candidateBusy()) return;
+    this.acceptSubmitted.set(true);
+    this.candidateError.set('');
+    if (this.acceptForm.invalid) return;
+    const value = this.acceptForm.getRawValue();
+    const domains = value.domains
+      .split(/[\s,]+/u)
+      .map((domain) => domain.trim().toLowerCase())
+      .filter(Boolean);
+    this.candidateBusy.set(true);
+    this.civic
+      .acceptOfficialCandidate(candidate.id, {
+        office: value.office.trim(),
+        source: value.source.trim(),
+        ...(domains.length ? { domains } : {}),
+        ...(value.callbackNumberSource.trim()
+          ? { callbackNumberSource: value.callbackNumberSource.trim() }
+          : {}),
+      })
+      .subscribe({
+        next: () => {
+          this.candidateBusy.set(false);
+          this.accepting.set(null);
+          this.candidateMessage.set(
+            `${candidate.name} was added to ${candidate.townName}'s roster.`
+          );
+          this.loadCandidates();
+        },
+        error: (error: unknown) => {
+          this.candidateBusy.set(false);
+          this.candidateError.set(problem(error));
+        },
+      });
+  }
+
+  protected confirmReject(): void {
+    const candidate = this.rejecting();
+    if (!candidate || this.candidateBusy()) return;
+    this.candidateBusy.set(true);
+    this.candidateError.set('');
+    this.civic.rejectOfficialCandidate(candidate.id).subscribe({
+      next: () => {
+        this.candidateBusy.set(false);
+        this.rejecting.set(null);
+        this.candidateMessage.set(
+          `${candidate.name} was rejected and will not be suggested again.`
+        );
+        this.loadCandidates();
+      },
+      error: (error: unknown) => {
+        this.candidateBusy.set(false);
+        this.candidateError.set(problem(error));
+      },
+    });
   }
 
   protected setBackfillDays(event: Event): void {

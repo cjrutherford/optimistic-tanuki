@@ -12,6 +12,7 @@ import {
   type SourceRow,
 } from '@optimistic-tanuki/civic-core';
 import type { DataSource } from 'typeorm';
+import type { OfficialCandidatePull } from '../officials/official-candidate-puller';
 import type { LocalitySyncService } from '../locality-sync/locality-sync.service';
 import { LocalityRegistrySource } from './locality-registry.source';
 
@@ -50,7 +51,9 @@ export class DbLocalityRegistrySource extends LocalityRegistrySource {
     private readonly sync: LocalitySyncer,
     /** Where the rendered YAML goes; disposable, rebuilt on every refresh. */
     private readonly generatedDir: string,
-    private readonly retryDelayMs = RENAME_GAP_RETRY_MS
+    private readonly retryDelayMs = RENAME_GAP_RETRY_MS,
+    /** Pulls Civic Core's agenda-extracted names as candidates after a full refresh (D33). */
+    private readonly officialCandidates?: OfficialCandidatePull
   ) {
     super();
   }
@@ -143,6 +146,7 @@ export class DbLocalityRegistrySource extends LocalityRegistrySource {
     writeLocalityRegistry(this.generatedDir, files);
     const registry = await this.load();
     this.registry = registry;
+    if (sync) await this.officialCandidates?.pull(registry);
     this.logger.log(
       `registry loaded: ${files.length} localities, ${
         registry.editions().length

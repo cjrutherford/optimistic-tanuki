@@ -34,6 +34,7 @@ import {
 import type { ScheduleConfig } from './schedule.config';
 import type { CivicCoreClient } from '@optimistic-tanuki/civic-adapters';
 import { civicCoreDecisions } from '../civic-core/adoption';
+import { townSources } from '../registry/town-sources';
 import { SourcingStore } from './sourcing-store';
 import type { LocalityRegistrySource } from '../registry/locality-registry.source';
 
@@ -73,6 +74,8 @@ export class DailySchedule {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
   private readonly failures = new Map<string, number>();
+  /** Towns already logged as having no sources, so each is said once until it gains some. */
+  private readonly noSourcesLogged = new Set<string>();
   private readonly search: SearchProvider | null;
   private readonly store: SourcingStore;
 
@@ -144,6 +147,10 @@ export class DailySchedule {
               town: town.slug,
               action: await this.source(town, clock.localDate),
             });
+          if (await this.hasNoSources(town)) {
+            done.push({ town: town.slug, action: 'no sources' });
+            continue;
+          }
           done.push({
             town: town.slug,
             action: await this.run(
@@ -226,16 +233,28 @@ export class DailySchedule {
         this.config
       );
       if (!plan.due) continue;
+      const searched = await this.lastSearched(town.slug);
+      const sourceless = searched !== null && this.sourceless(town);
+      // A town searched and left with no sources is searched again on the
+      // interval, not on every tick, and has nothing to run in between (D32).
       const needsSourcing =
-        plan.fresh ||
+        (plan.fresh && !sourceless) ||
         sourcingDue(
-          await this.lastSearched(town.slug),
+          searched,
           clock.localDate,
           this.config.sourcingIntervalDays
         );
+      if (sourceless && !needsSourcing) {
+        this.noSources(town);
+        continue;
+      }
       if (needsSourcing && sourcing >= this.config.sourcingMaxPerTick) {
         if (plan.fresh) {
           waiting += 1;
+          continue;
+        }
+        if (sourceless) {
+          this.noSources(town);
           continue;
         }
         this.logger.log(`${town.slug}: due (${plan.reason})`);
@@ -251,6 +270,28 @@ export class DailySchedule {
         `${waiting} new town(s) wait for source discovery in a later tick (at most ${this.config.sourcingMaxPerTick} per tick)`
       );
     return batch;
+  }
+
+  /** Whether the registry holds no enabled source serving the town. */
+  private sourceless(town: LocalityConfig): boolean {
+    const none = townSources(this.registry, town).length === 0;
+    if (!none) this.noSourcesLogged.delete(town.slug);
+    return none;
+  }
+
+  /** After sourcing has run: the town was searched and still has no sources. */
+  private async hasNoSources(town: LocalityConfig): Promise<boolean> {
+    if (!this.sourceless(town) || (await this.lastSearched(town.slug)) === null)
+      return false;
+    this.noSources(town);
+    return true;
+  }
+
+  /** Says once that a town has no sources; it is skipped, not failed (D32). */
+  private noSources(town: LocalityConfig): void {
+    if (this.noSourcesLogged.has(town.slug)) return;
+    this.noSourcesLogged.add(town.slug);
+    this.logger.log(`${town.slug}: no sources`);
   }
 
   /** Searches for sources now, for the named towns or every edition, without running the pipeline. */

@@ -22,6 +22,40 @@ build artifact generated from the database.
 - **D28 No hand-kept locality state on disk.** Discovered sources and the
   discovery decision log live in Postgres. No carry-over of existing files
   (no deployed clients).
+- **D31 Rollout is all 262 editions at the current caps (2026-11-04, PR
+  #286 review).** No enable list. The scheduler works through them oldest
+  first (6 towns per tick, 2 sourcings per tick).
+- **D32 Towns with no sources say so and ask for help.** If discovery adopts
+  nothing, the town's briefing page (`city/:slug/briefing`) shows "no sources
+  yet" in place of an empty feed, with three actions:
+
+  - **Request sources** records a per-town request: the signed-in user and an
+    optional note, kept so operators can see demand.
+  - **Partner with us** opens `/contact` pre-filled with the town.
+  - **Post sources** opens `/contribute`.
+
+  The scheduler records "no sources" and moves on rather than failing.
+
+- **D33 Officials from Civic Core agendas become roster candidates (revised
+  2026-11-04).** `localities.officials` is civic-contributions' verification
+  config: `domains`, `roster` (`{name, office, source}` with an https source)
+  and `callbackNumberSource`. It is not a list of names for disambiguation, and
+  nothing in the pipeline reads it for names. The earlier D30/D33 wording was
+  wrong.
+  - Civic Core extracts names and roles from ingested agendas into
+    `civic_officials` and serves them with `civic.get_officials`.
+  - civic-briefing pulls these into an `official_candidates` table with
+    status pending, accepted or rejected.
+  - Operators review the candidates on the Daylight operations page. Accepting
+    one adds it to the town's `officials.roster` with the https source the
+    operator supplies. The first acceptance for a town also needs its
+    `domains` and `callbackNumberSource`.
+  - Rejected candidates are not suggested again, and unreviewed names never
+    reach verification.
+- **D34 The e2e fixes ship in this PR.** `daylight.spec.ts` sets up its own
+  held state instead of relying on startup order, and
+  `run-ci-e2e-locally.sh` can build `local-hub-e2e` (`client-interface`
+  profile gating).
 - **D30 Disambiguation is kept (2026-11-04).** `localities` gains
   `excludePhrases` and `officials` (generated migration). The sync derives
   exclude phrases for a town whose name is shared by a notable place in
@@ -239,3 +273,9 @@ Existing and unchanged: `PIPELINE_TICK_MS` (10 min), `PIPELINE_ARTIFACTS`.
   end of each phase.
 - 2026-11-04 S7 verification done (not committed): images build (no locality YAML; only assets/config.yaml), isolated stack (db-setup applies both migrations; full 425-community seed) logs 425 created, 443 localities (18 state/country roots), 262 editions, nothing excluded; contributions loads 443 over LIST_LOCALITIES; restart with social stopped warns and serves the registry from the DB; k8s PVC at /usr/src/app/data covers data/generated. CLI one-shot: `run` needs sources, so `source` first (asheville-nc: source 92s, 1 adopted, run 69s, briefing; tifton-ga: source 309s, 3 adopted/11 refused, run 52s, briefing; adel-ga: source 132s, 0 adopted, run fails "no enabled sources"). Recommend PIPELINE_MAX_TOWNS_PER_TICK=6 at the 10-minute tick. local-hub-e2e passes (60). Fixes: seed-e2e.ts exits explicitly (the social TCP client kept the one-shot alive); e2e manifest runs social-locality-seed before the dependencies phase (briefing's boot sync saw no towns); removed the civic-briefing depends_on I had added to e2e civic-contributions (it made the copying corpus available, but daylight.spec.ts expects the held outcome). Pre-existing: run-ci-e2e-locally.sh cannot build local-hub-e2e (client-interface is profile-gated away from the local-hub profile).
 - 2026-11-04 Orchestrator: PIPELINE_MAX_TOWNS_PER_TICK default lowered 12 → 6 from the S7 timings (≈1 min per run + 2–5 min per sourcing, 2 sourcings per tick, 10-minute tick).
+- 2026-11-04 S10 (D34) done, not committed: daylight.spec.ts now reads the copying check from the review trail and asserts the matching state (held when no corpus, accepted when checked), so the start-up race no longer matters; civic-briefing service_healthy restored on e2e civic-contributions; client-interface gains the local-hub profile in e2e compose so run-ci-e2e-locally.sh can build local-hub-e2e; new nashville-ga test for the empty-town note. local-hub-e2e passes 61 (10 skipped) twice via the script. Locally the shared dev redis holds 6379, so run with E2E_REDIS_PORT=6390.
+- 2026-11-04 S8b: city briefing page shows a no-sources / not-sourced-yet note (TownSourcesNoteComponent + TownSourcesService, /api/local-hub/localities/:slug/source-status and source-requests) with Request / Partner (/contact?town=) / Post (/contribute?returnUrl=) actions; contact page reads ?town=; local-hub 447 tests, lint, build, audit pass.
+- 2026-11-04 S8a: backend for towns with no sources (D32). `source_requests` entity + generated migration `1793837771735-SourceRequests` (app-set uuid id, unique slug+userId, slug index); SOURCE_STATUS / REQUEST_SOURCES handlers in civic-briefing `registry/`; gateway `SourcesController` (`:slug/source-status` public, `:slug/source-requests` AuthGuard, replies unwrapped, not `{ data }`); scheduler skips a searched town with no enabled sources (own, descendant and county sources) without a run or a tick slot, logs "no sources" once, re-searches on the interval only; pipeline health adds optional `noSources` / `requestCount` and raises no run-failed alert for such a town. civic-briefing 77 unit + 48 db, gateway 1839, lint and build pass.
+- 2026-11-04 S9 partial (Civic Core half): civic_officials table (generated migration 1793838059951-CivicOfficials), deterministic extraction on agenda ingest, TCP CIVIC_GET_OFFICIALS ({town?}). civic-briefing sync NOT written: `localities.officials` is the verification config (domains + roster + callbackNumberSource, all required, used by civic-contributions OfficialsService), not a names list, so agenda names cannot go there without breaking the YAML load or weakening official verification. Needs a decision (new column, or separate field).
+- 2026-11-04 S11 done: official*candidates table (generated migration 1793843620449-OfficialCandidates); candidates pulled from CIVIC_GET_OFFICIALS after each full registry refresh (tenant->slug via matchTenants), TCP OFFICIAL_CANDIDATES/ACCEPT*/REJECT_OFFICIAL_CANDIDATE, gateway operations/official-candidates routes (town.configure), Daylight operations review panel; Civic Core gives no agenda URL, so the panel names the agenda id instead of linking.
+- 2026-11-04 S12 final verification: lint/test/build (12 projects) pass; test-db briefing 66 pass/5 skipped; migration drift none (civic-briefing, civic); personality audit, prettier (70 files), e2e manifest/CI-contract (42) and validate-e2e-environment pass; local-hub-e2e 61 passed on second run (first run: civic-contributions pnpm install timeout). Fixed civic.client.spec.ts METHODS list (5 new routes). Nothing committed.

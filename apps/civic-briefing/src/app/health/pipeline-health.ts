@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import {
   localityHealth,
   type LocalityConfig,
+  type LocalityRegistry,
   PipelineRunSchema,
   type PipelineRunRow,
 } from '@optimistic-tanuki/civic-core';
@@ -11,6 +12,12 @@ import type {
   PipelineSourceProblem,
 } from '@optimistic-tanuki/models';
 import { IsNull, type DataSource } from 'typeorm';
+import {
+  type SourceRequestRow,
+  SourceRequestSchema,
+} from '../registry/source-request.schema';
+import { townSources } from '../registry/town-sources';
+import { SourcingStore } from '../schedule/sourcing-store';
 import {
   DaylightAlertSchema,
   type DaylightAlertRow,
@@ -26,7 +33,9 @@ const FAILED_RUNS = new Set(['failed', 'blocked']);
 export async function pipelineReport(
   ds: DataSource,
   towns: readonly LocalityConfig[] | null,
-  now = new Date()
+  now = new Date(),
+  /** When given, towns with no sources are reported as such (D32). */
+  registry?: Pick<LocalityRegistry, 'ancestors' | 'descendants'>
 ): Promise<PipelineHealthReport> {
   if (!towns)
     return { configured: false, checkedAt: now.toISOString(), towns: [] };
@@ -36,7 +45,13 @@ export async function pipelineReport(
     checkedAt: now.toISOString(),
     towns: [],
   };
+  const store = new SourcingStore(ds);
+  const requests = ds.getRepository<SourceRequestRow>(SourceRequestSchema);
   for (const town of towns) {
+    const noSources =
+      !!registry &&
+      townSources(registry, town).length === 0 &&
+      (await store.lastSearched(town.slug)) !== null;
     const [lastRun] = await runs.find({
       where: { localitySlug: town.slug },
       order: { startedAt: 'DESC', id: 'DESC' },
@@ -72,6 +87,12 @@ export async function pipelineReport(
           }
         : null,
       problems,
+      ...(noSources
+        ? {
+            noSources: true,
+            requestCount: await requests.countBy({ slug: town.slug }),
+          }
+        : {}),
     });
   }
   return report;
@@ -91,7 +112,8 @@ export function pipelineProblems(
   const problems: PipelineProblem[] = [];
   for (const town of report.towns) {
     const run = town.lastRun;
-    if (run && FAILED_RUNS.has(run.status)) {
+    // A town discovery found nothing for is skipped, not failing (D32).
+    if (run && FAILED_RUNS.has(run.status) && !town.noSources) {
       problems.push({
         key: `run:${run.runId}`,
         kind: 'run-failed',

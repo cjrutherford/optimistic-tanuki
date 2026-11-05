@@ -5,6 +5,9 @@ import {
 import { createTestSchema } from '@optimistic-tanuki/civic-core/testing';
 import type { PipelineHealthReport } from '@optimistic-tanuki/models';
 import { DataSource } from 'typeorm';
+import { randomUUID } from 'node:crypto';
+import { SourceRequestSchema } from '../registry/source-request.schema';
+import { SourcingDecisionSchema } from '../schedule/sourcing-decision.schema';
 import { BRIEFING_SCHEMAS } from '../schemas';
 import { DaylightAlertSchema } from './daylight-alert.schema';
 import {
@@ -122,6 +125,45 @@ describe('pipeline health and alerts (P5.2)', () => {
       ['tifton-ga', null],
     ]);
     expect(report.towns[0]?.lastRun?.error).toBe('model timed out');
+  });
+
+  it('reports a searched town with no sources as no-sources, with its request count, and raises no run alert', async () => {
+    await ds.getRepository(SourcingDecisionSchema).insert({
+      slug: 'adel-ga',
+      decision: 'searched',
+      localDate: '2026-10-04',
+      detail: '{}',
+      decidedAt: new Date(),
+    });
+    await ds.getRepository(SourceRequestSchema).insert([
+      { id: randomUUID(), slug: 'adel-ga', userId: 'u1' },
+      { id: randomUUID(), slug: 'adel-ga', userId: 'u2' },
+    ]);
+    await ds.getRepository(PipelineRunSchema).insert({
+      scopeSlug: 'adel-ga',
+      localitySlug: 'adel-ga',
+      cadence: 'daily',
+      startedAt: '2026-10-04T06:00:00.000Z',
+      completedAt: '2026-10-04T06:00:00.000Z',
+      status: 'failed',
+      ruleVersion: 'v',
+      counts: '{}',
+      coverageGaps: '[]',
+      error: 'no sources',
+      coverageRanges: '{}',
+    } as never);
+    const none = { ancestors: () => [], descendants: () => [] };
+    const report = await pipelineReport(
+      ds,
+      [town('adel-ga', 'Adel'), town('tifton-ga', 'Tifton')],
+      new Date(),
+      none
+    );
+    expect(report.towns[0]).toMatchObject({ noSources: true, requestCount: 2 });
+    expect(report.towns[1]?.noSources).toBeUndefined();
+    expect(pipelineProblems(report)).toEqual([]);
+    await ds.getRepository(SourcingDecisionSchema).clear();
+    await ds.getRepository(SourceRequestSchema).clear();
   });
 
   it('names each problem with a key, so it is told once', () => {

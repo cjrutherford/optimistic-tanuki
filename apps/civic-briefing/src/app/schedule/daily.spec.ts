@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import type {
   Cadence,
   LocalityConfig,
@@ -14,15 +15,33 @@ const TODAY = '2026-11-05';
 
 interface FakeRegistry {
   editions(): LocalityConfig[];
+  ancestors(): LocalityConfig[];
+  descendants(): LocalityConfig[];
 }
 
-function town(slug: string): LocalityConfig {
-  return { slug, timezone: 'UTC' } as unknown as LocalityConfig;
+function town(slug: string, sources = true): LocalityConfig {
+  return {
+    slug,
+    timezone: 'UTC',
+    sources: sources ? [{ sourceKey: `${slug}-feed` }] : [],
+  } as unknown as LocalityConfig;
+}
+
+/** A registry whose towns have a source each, except the named `sourceless` ones. */
+function registryWith(
+  sourceless: string[],
+  ...slugs: string[]
+): LocalityRegistry {
+  const fake: FakeRegistry = {
+    editions: () => slugs.map((slug) => town(slug, !sourceless.includes(slug))),
+    ancestors: () => [],
+    descendants: () => [],
+  };
+  return fake as unknown as LocalityRegistry;
 }
 
 function registryOf(...slugs: string[]): LocalityRegistry {
-  const fake: FakeRegistry = { editions: () => slugs.map(town) };
-  return fake as unknown as LocalityRegistry;
+  return registryWith([], ...slugs);
 }
 
 class FakeSource extends LocalityRegistrySource {
@@ -231,5 +250,77 @@ describe('DailySchedule.tick', () => {
     await schedule.tick(NOW);
     expect(schedule.order.sort()).toEqual(['a', 'b']);
     expect(schedule.townSlugs()).toEqual(['a', 'b']);
+  });
+
+  describe('towns with no sources (D32)', () => {
+    it('skips a searched town without running it and without using a tick slot', async () => {
+      const schedule = new TestSchedule(
+        config({ PIPELINE_MAX_TOWNS_PER_TICK: '1' }),
+        new FakeSource(registryWith(['a'], 'a', 'b'))
+      );
+      established(schedule, ['a', 'b']);
+      schedule.lasts.delete('a');
+
+      const done = await schedule.tick(NOW);
+
+      expect(schedule.order).toEqual(['b']);
+      expect(schedule.sourced).toEqual([]);
+      expect(done.map((step) => step.town)).not.toContain('a');
+    });
+
+    it('does not search it again before the re-search interval', async () => {
+      const schedule = new TestSchedule(
+        config(),
+        new FakeSource(registryWith(['a'], 'a'))
+      );
+      schedule.searched.set('a', '2026-11-03');
+      await schedule.tick(NOW);
+      expect(schedule.sourced).toEqual([]);
+      expect(schedule.order).toEqual([]);
+    });
+
+    it('searches it again when the interval has passed, then skips it if still empty', async () => {
+      const schedule = new TestSchedule(
+        config(),
+        new FakeSource(registryWith(['a'], 'a'))
+      );
+      schedule.searched.set('a', '2026-10-01');
+      const done = await schedule.tick(NOW);
+      expect(schedule.sourced).toEqual(['a']);
+      expect(schedule.order).toEqual([]);
+      expect(done).toContainEqual({ town: 'a', action: 'no sources' });
+    });
+
+    it('does not run a town that discovery has just left with nothing', async () => {
+      const schedule = new TestSchedule(
+        config(),
+        new FakeSource(registryWith(['a'], 'a'))
+      );
+      // Never searched, so discovery runs; the fake records the search.
+      jest
+        .spyOn(schedule as unknown as { source(): Promise<string> }, 'source')
+        .mockImplementation(async () => {
+          schedule.searched.set('a', TODAY);
+          return 'sourced';
+        });
+      await schedule.tick(NOW);
+      expect(schedule.order).toEqual([]);
+    });
+
+    it('logs the skip once', async () => {
+      const schedule = new TestSchedule(
+        config(),
+        new FakeSource(registryWith(['a'], 'a'))
+      );
+      schedule.searched.set('a', '2026-11-03');
+      const log = jest
+        .spyOn(Logger.prototype, 'log')
+        .mockImplementation(() => undefined);
+      await schedule.tick(NOW);
+      await schedule.tick(NOW);
+      const said = log.mock.calls.filter(([line]) => line === 'a: no sources');
+      log.mockRestore();
+      expect(said).toHaveLength(1);
+    });
   });
 });

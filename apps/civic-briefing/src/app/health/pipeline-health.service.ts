@@ -29,7 +29,12 @@ export class PipelineHealthService {
   ) {}
 
   report(): Promise<PipelineHealthReport> {
-    return pipelineReport(this.ds, this.editions());
+    return pipelineReport(
+      this.ds,
+      this.editions(),
+      new Date(),
+      this.registry.current()
+    );
   }
 
   /**

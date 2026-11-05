@@ -4,6 +4,7 @@ import { CivicAgendaItem } from './entities/civic-agenda-item.entity';
 import { TipProject } from './entities/tip-project.entity';
 import { EmergencyBroadcast } from './entities/emergency-broadcast.entity';
 import { CivicTenant } from './entities/civic-tenant.entity';
+import { CivicOfficial } from './entities/civic-official.entity';
 
 export default new DataSource({
   type: 'postgres',
@@ -18,6 +19,7 @@ export default new DataSource({
     TipProject,
     EmergencyBroadcast,
     CivicTenant,
+    CivicOfficial,
   ],
   migrations: ['migrations/*.ts'],
 });

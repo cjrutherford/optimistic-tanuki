@@ -980,6 +980,10 @@ services:
         condition: service_healthy
       model-stub:
         condition: service_healthy
+      # The copying corpus is loaded from civic-briefing at start-up, so wait
+      # for it. daylight.spec.ts no longer depends on the corpus being absent.
+      civic-briefing:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD-SHELL
@@ -994,7 +998,14 @@ services:
   client-interface:
     # The shared OAuth callback proxy is required by each cookie-session
     # client, so include it whenever those app profiles are started.
-    profiles: [client-interface, forgeofwill, fin-commander, digital-homestead]
+    profiles:
+      [
+        client-interface,
+        forgeofwill,
+        fin-commander,
+        digital-homestead,
+        local-hub,
+      ]
     image: cjrutherford/optimistic_tanuki_client-interface:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..

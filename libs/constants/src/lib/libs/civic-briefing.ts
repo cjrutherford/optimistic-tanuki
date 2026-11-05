@@ -25,4 +25,14 @@ export const CivicBriefingCommands = {
   BRIEFING: 'civic-briefing.editions.briefing',
   /** Every locality in the registry, with its sources and officials, for civic-contributions. */
   LIST_LOCALITIES: 'civic-briefing.localities.list',
+  /** Whether a town has sources, and how many readers asked for them (D32). */
+  SOURCE_STATUS: 'civic-briefing.localities.source-status',
+  /** A signed-in reader asks for sources for a town; one request per reader per town (D32). */
+  REQUEST_SOURCES: 'civic-briefing.localities.request-sources',
+  /** Names Civic Core read from agendas, awaiting an operator's decision (D33); `{ slug?, status? }`, pending by default. */
+  OFFICIAL_CANDIDATES: 'civic-briefing.officials.candidates',
+  /** Accept a candidate into the town's officials roster with a source the operator supplies (D33). */
+  ACCEPT_OFFICIAL_CANDIDATE: 'civic-briefing.officials.accept',
+  /** Reject a candidate; it is not suggested again (D33). */
+  REJECT_OFFICIAL_CANDIDATE: 'civic-briefing.officials.reject',
 } as const;

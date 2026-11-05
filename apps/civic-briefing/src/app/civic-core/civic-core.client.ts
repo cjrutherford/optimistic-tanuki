@@ -2,6 +2,7 @@ import type { ClientProxy } from '@nestjs/microservices';
 import {
   CIVIC_GET_AGENDAS,
   CIVIC_GET_BROADCASTS,
+  CIVIC_GET_OFFICIALS,
   CIVIC_GET_TENANTS,
   CIVIC_GET_TIP_PROJECTS,
 } from '@optimistic-tanuki/constants';
@@ -13,6 +14,21 @@ import type {
   CivicTipProjectRecord,
 } from '@optimistic-tanuki/civic-adapters';
 import { firstValueFrom, timeout } from 'rxjs';
+
+/** One town's officials as `civic.get_officials` serves them. */
+export interface CivicTownOfficials {
+  tenantId: string;
+  townName: string;
+  state: string;
+  kind: CivicTenantRecord['kind'];
+  officials: {
+    name: string;
+    role: string;
+    sourceAgendaId: string | null;
+    firstSeen: string;
+    lastSeen: string;
+  }[];
+}
 
 export const DEFAULT_CIVIC_TIMEOUT_MS = 15_000;
 
@@ -58,6 +74,11 @@ export class TcpCivicCoreClient implements CivicCoreClient {
 
   tipProjects(tenantId: string): Promise<CivicTipProjectRecord[]> {
     return this.send(CIVIC_GET_TIP_PROJECTS, { tenantId });
+  }
+
+  /** Officials Civic Core read from agendas, per town (D33). */
+  officials(): Promise<CivicTownOfficials[]> {
+    return this.send(CIVIC_GET_OFFICIALS, {});
   }
 
   private async send<T>(pattern: string, payload: unknown): Promise<T[]> {

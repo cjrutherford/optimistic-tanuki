@@ -1,4 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {
+  provideRouter,
+  ActivatedRoute,
+  convertToParamMap,
+} from '@angular/router';
+import { of } from 'rxjs';
 import { PublicContactPageComponent } from './public-contact-page.component';
 
 describe('PublicContactPageComponent', () => {
@@ -31,5 +37,42 @@ describe('PublicContactPageComponent', () => {
     expect(root.textContent).toContain('The HAI owner monitors this inbox.');
     expect(root.textContent).toContain('We do not promise a response time.');
     expect(root.querySelector('form')).toBeNull();
+  });
+
+  describe('with ?town=', () => {
+    function render(town: string | null): HTMLElement {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [PublicContactPageComponent],
+        providers: [
+          provideRouter([]),
+          {
+            provide: ActivatedRoute,
+            useValue: {
+              queryParamMap: of(convertToParamMap(town ? { town } : {})),
+            },
+          },
+        ],
+      });
+      const page = TestBed.createComponent(PublicContactPageComponent);
+      page.detectChanges();
+      return page.nativeElement as HTMLElement;
+    }
+
+    it('pre-fills the partnership email subject with the town', () => {
+      const root = render('Adel');
+      expect(root.textContent).toContain('Partner with us on Adel');
+      const link = root.querySelector(
+        'a[href*="subject="]'
+      ) as HTMLAnchorElement;
+      expect(link.getAttribute('href')).toBe(
+        'mailto:support@hopefulaspirationsindustries.com?subject=Daylight%20sources%20for%20Adel'
+      );
+    });
+
+    it('shows no town section without the parameter', () => {
+      const root = render(null);
+      expect(root.textContent).not.toContain('Partner with us');
+    });
   });
 });

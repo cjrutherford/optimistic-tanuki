@@ -9,6 +9,8 @@ import { Foundation1790940573082 } from '../../../migrations/1790940573082-found
 import { AddDaylightAlerts1791165718816 } from '../../../migrations/1791165718816-AddDaylightAlerts';
 import { DaylightDbLocalities1793805980810 } from '../../../migrations/1793805980810-DaylightDbLocalities';
 import { DaylightLocalityDisambiguation1793808213553 } from '../../../migrations/1793808213553-DaylightLocalityDisambiguation';
+import { SourceRequests1793837771735 } from '../../../migrations/1793837771735-SourceRequests';
+import { OfficialCandidates1793843620449 } from '../../../migrations/1793843620449-OfficialCandidates';
 import { BRIEFING_SCHEMAS } from '../schemas';
 import {
   type SourcingDecisionRow,
@@ -54,6 +56,8 @@ describe('SourcingStore', () => {
         AddDaylightAlerts1791165718816,
         DaylightDbLocalities1793805980810,
         DaylightLocalityDisambiguation1793808213553,
+        SourceRequests1793837771735,
+        OfficialCandidates1793843620449,
       ],
     });
     await ds.initialize();
