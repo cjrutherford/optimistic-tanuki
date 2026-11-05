@@ -14,6 +14,9 @@ import { ParseModule } from './parse/parse.module';
 import { PlatformModule } from './platform.module';
 import { ProjectionModule } from './projection/projection.module';
 import { QuarantineModule } from './quarantine/quarantine.module';
+import { LocalitiesModule } from './registry/localities.module';
+import { OfficialCandidatesModule } from './officials/official-candidates.module';
+import { RegistryModule } from './registry/registry.module';
 import { StoriesModule } from './stories/stories.module';
 
 @Module({
@@ -23,6 +26,9 @@ import { StoriesModule } from './stories/stories.module';
       load: [loadConfig],
     }),
     CivicDatabaseModule,
+    RegistryModule,
+    LocalitiesModule,
+    OfficialCandidatesModule,
     CorpusModule,
     EditionsModule,
     HealthModule,

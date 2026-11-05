@@ -19,6 +19,21 @@ export interface LocalityRow {
   edition?: boolean | null;
   aliases?: string | null;
   ruleVersion?: string | null;
+  /** Social Community id this town was synced from; null for towns not backed by a community. */
+  communityId?: string | null;
+  /** False once the community is gone; the row is kept, never deleted. */
+  active?: boolean;
+  syncedAt?: Date | null;
+  /** JSON array of topic ids. */
+  topics?: string | null;
+  /** JSON array of cadence entries. */
+  cadence?: string | null;
+  /** JSON array of the place's own website URLs. */
+  websites?: string | null;
+  /** JSON array of phrases that name a different place sharing this locality's name. */
+  excludePhrases?: string | null;
+  /** JSON object: the locality's officials configuration (domains and roster). */
+  officials?: string | null;
 }
 
 export interface SourceRow {
@@ -41,6 +56,8 @@ export interface SourceRow {
   aggregateUrl?: string | null;
   coverageCapabilities?: string | null;
   observedAt?: string | null;
+  /** `discovered` (found by sourcing) or `override` (hand-kept); null for rows mirrored from configuration. */
+  origin?: 'discovered' | 'override' | null;
 }
 
 export interface RawDocumentRow {
@@ -393,6 +410,14 @@ export const LocalitySchema = new EntitySchema<LocalityRow>({
     edition: { type: Boolean, nullable: true },
     aliases: { type: 'text', nullable: true },
     ruleVersion: { type: String, nullable: true },
+    communityId: { type: 'uuid', nullable: true, unique: true },
+    active: { type: Boolean, default: true },
+    syncedAt: { type: 'timestamptz', nullable: true },
+    topics: { type: 'text', nullable: true },
+    cadence: { type: 'text', nullable: true },
+    websites: { type: 'text', nullable: true },
+    excludePhrases: { type: 'text', nullable: true },
+    officials: { type: 'text', nullable: true },
   },
 });
 
@@ -419,6 +444,7 @@ export const SourceSchema = new EntitySchema<SourceRow>({
     aggregateUrl: { type: String, nullable: true },
     coverageCapabilities: { type: 'text', nullable: true },
     observedAt: { type: String, nullable: true },
+    origin: { type: String, nullable: true },
   },
 });
 
@@ -770,6 +796,7 @@ export const FoundationSourceSchema = new EntitySchema<SourceRow>({
     aggregateUrl: { type: String, nullable: true },
     coverageCapabilities: { type: 'text', nullable: true },
     observedAt: { type: String, nullable: true },
+    origin: { type: String, nullable: true },
   },
 });
 

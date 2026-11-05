@@ -11,6 +11,21 @@
   </header>
 
   <div class="public-contact__cards">
+    @if (town(); as town) {
+    <section
+      class="public-contact__card"
+      aria-labelledby="contact-partner-title"
+    >
+      <p class="public-contact__card-label">Daylight</p>
+      <h2 id="contact-partner-title">Partner with us on {{ town }}</h2>
+      <p>
+        If you run or know of public sources for {{ town }}, such as a
+        government calendar, a newsroom or a records portal, tell us what you
+        have. <a [href]="partnerMailto(town)">Email us about {{ town }}</a
+        >.
+      </p>
+    </section>
+    }
     <section
       class="public-contact__card"
       aria-labelledby="contact-requests-title"

@@ -6,6 +6,8 @@ import loadDatabase from './loadDatabase';
 import { CivicController } from './civic/civic.controller';
 import { CivicService } from './civic/civic.service';
 import { CivicTenantsController } from './civic/civic-tenants.controller';
+import { CivicOfficialsController } from './civic/civic-officials.controller';
+import { CivicOfficialsService } from './civic/civic-officials.service';
 import { CivicTenantsService } from './civic/civic-tenants.service';
 
 @Module({
@@ -19,9 +21,18 @@ import { CivicTenantsService } from './civic/civic-tenants.service';
       factory: loadDatabase,
     }),
   ],
-  controllers: [CivicController, CivicTenantsController],
+  controllers: [
+    CivicController,
+    CivicTenantsController,
+    CivicOfficialsController,
+  ],
   providers: [
     CivicTenantsService,
+    {
+      provide: CivicOfficialsService,
+      useFactory: (dataSource) => new CivicOfficialsService(dataSource),
+      inject: ['CIVIC_CONNECTION'],
+    },
     {
       provide: CivicService,
       useFactory: (dataSource, config: ConfigService) =>

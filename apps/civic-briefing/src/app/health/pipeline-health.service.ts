@@ -1,12 +1,9 @@
 import { Logger } from '@nestjs/common';
-import {
-  loadLocalityRegistry,
-  type LocalityConfig,
-} from '@optimistic-tanuki/civic-core';
+import type { LocalityConfig } from '@optimistic-tanuki/civic-core';
 import type { EmailService } from '@optimistic-tanuki/email';
 import type { PipelineHealthReport } from '@optimistic-tanuki/models';
 import type { DataSource } from 'typeorm';
-import { loadScheduleConfig } from '../schedule/schedule.config';
+import type { LocalityRegistrySource } from '../registry/locality-registry.source';
 import {
   alertRecipients,
   PipelineAlerts,
@@ -18,21 +15,26 @@ const DEFAULT_ALERT_MS = 15 * 60 * 1000;
 
 /**
  * Daylight's pipeline health for operators, and the alerts that follow from
- * it (P5.2). The towns are the scheduled editions in CIVIC_LOCALITIES_DIR;
- * without that registry nothing runs, and the report says so.
+ * it (P5.2). The towns are the scheduled editions of the database-built
+ * registry, read fresh each time so a sync's new towns are reported.
  */
 export class PipelineHealthService {
   private readonly logger = new Logger(PipelineHealthService.name);
-  private towns: readonly LocalityConfig[] | null | undefined;
   private timer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private readonly ds: DataSource,
-    private readonly email: EmailService | null
+    private readonly email: EmailService | null,
+    private readonly registry: Pick<LocalityRegistrySource, 'current'>
   ) {}
 
   report(): Promise<PipelineHealthReport> {
-    return pipelineReport(this.ds, this.editions());
+    return pipelineReport(
+      this.ds,
+      this.editions(),
+      new Date(),
+      this.registry.current()
+    );
   }
 
   /**
@@ -40,7 +42,7 @@ export class PipelineHealthService {
    * about problems not reported before. Started with the daily schedule.
    */
   startAlerts(env: NodeJS.ProcessEnv = process.env): void {
-    if (this.timer || !this.editions()) return;
+    if (this.timer) return;
     const recipients = alertRecipients(env['DAYLIGHT_ALERT_EMAIL']);
     if (!recipients.length)
       this.logger.warn(
@@ -72,13 +74,7 @@ export class PipelineHealthService {
     this.timer = null;
   }
 
-  private editions(): readonly LocalityConfig[] | null {
-    if (this.towns === undefined) {
-      const directory = loadScheduleConfig().localitiesDir;
-      this.towns = directory
-        ? loadLocalityRegistry(directory).editions()
-        : null;
-    }
-    return this.towns;
+  private editions(): readonly LocalityConfig[] {
+    return this.registry.current().editions();
   }
 }

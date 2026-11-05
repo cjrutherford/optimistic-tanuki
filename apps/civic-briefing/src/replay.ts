@@ -81,7 +81,7 @@ async function main(): Promise<void> {
   // Without a snapshot directory a replay reads no community material, so it
   // stays a function of its corpus; the parity gate passes none.
   const community = argument('community', '') || undefined;
-  const registry = loadLocalityRegistry(argument('localities'), undefined);
+  const registry = loadLocalityRegistry(argument('localities'));
   const towns = list('towns').length
     ? list('towns')
     : registry.editions().map((locality) => locality.slug);

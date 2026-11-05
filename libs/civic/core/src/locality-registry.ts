@@ -1,11 +1,7 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
+import { readdirSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  loadLocalityConfig,
-  LocalityConfigError,
-  parseDiscoveredSource,
-} from './config.js';
+import { loadLocalityConfig, LocalityConfigError } from './config.js';
 import {
   findRestrictedPublisher,
   restrictedPublishers,
@@ -241,77 +237,15 @@ function localityFiles(directory: string): string[] {
 
 /**
  * Load every locality YAML under a directory, including nested folders (for
- * example, one per state).
- *
- * Sources the sourcing engine adopted are merged in from `discovered` (by
- * default CIVIC_DISCOVERED_SOURCES): one file per locality, each source
- * validated as a hand-written one would be. A hand-written source always
- * wins a clash of keys or addresses, and a discovered source the operator
- * marked `enabled: false` stays off. Without the directory, nothing changes,
- * which is how replays stay a function of their corpus.
+ * example, one per state). Adopted sources live in the database and reach the
+ * registry through the rendered YAML, never by a merge at load time.
  */
-export function loadLocalityRegistry(
-  directory: string,
-  discovered: string | undefined = process.env['CIVIC_DISCOVERED_SOURCES']
-): LocalityRegistry {
+export function loadLocalityRegistry(directory: string): LocalityRegistry {
   const rootDirectory = realpathSync(directory);
   const localities = localityFiles(directory).map((file) =>
     loadLocalityConfig(file)
   );
-  return createLocalityRegistry(
-    discovered ? mergeDiscovered(localities, discovered) : localities,
-    rootDirectory
-  );
-}
-
-/** The sources adopted for one locality, as the sourcing engine writes them. */
-export interface DiscoveredSourcesFile {
-  localitySlug: string;
-  sources: {
-    source: Record<string, unknown>;
-    discoveredAt: string;
-    via: string;
-    evidence: string[];
-  }[];
-}
-
-export function discoveredSourcesPath(
-  directory: string,
-  localitySlug: string
-): string {
-  return join(directory, `${localitySlug}.json`);
-}
-
-function mergeDiscovered(
-  localities: readonly LocalityConfig[],
-  directory: string
-): LocalityConfig[] {
-  if (!existsSync(directory)) return [...localities];
-  const configured = new Set(
-    localities.flatMap((locality) =>
-      locality.sources.flatMap((source) => [
-        source.sourceKey,
-        normalizedAddress(source.url),
-      ])
-    )
-  );
-  return localities.map((locality) => {
-    const path = discoveredSourcesPath(directory, locality.slug);
-    if (!existsSync(path)) return locality;
-    const file = JSON.parse(
-      readFileSync(path, 'utf8')
-    ) as DiscoveredSourcesFile;
-    const adopted = (file.sources ?? [])
-      .map((entry) => parseDiscoveredSource(entry.source, locality.slug))
-      .filter(
-        (source) =>
-          !configured.has(source.sourceKey) &&
-          !configured.has(normalizedAddress(source.url))
-      );
-    return adopted.length
-      ? { ...locality, sources: [...locality.sources, ...adopted] }
-      : locality;
-  });
+  return createLocalityRegistry(localities, rootDirectory);
 }
 
 /** An address as sources are compared: host and path, without scheme, www, query order or trailing slash. */

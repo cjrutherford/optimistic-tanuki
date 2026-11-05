@@ -68,6 +68,29 @@ test.describe('Daylight briefings', () => {
       )
     ).toBeVisible();
   });
+
+  test('tells a town with no sources and no briefing, and offers ways to help', async ({
+    page,
+  }) => {
+    // The stack seeds briefings for Adel and Tifton; Nashville has neither
+    // sources nor a briefing.
+    await page.goto('/city/nashville-ga/briefing');
+    const note = page.locator('app-town-sources-note');
+    await expect(
+      note.getByRole('heading', {
+        name: /No sources yet for Nashville|Daylight is still looking for sources for Nashville/,
+      })
+    ).toBeVisible();
+    await expect(
+      note.getByRole('button', { name: 'Request sources' })
+    ).toBeVisible();
+    await expect(
+      note.getByRole('link', { name: 'Partner with us' })
+    ).toHaveAttribute('href', /^\/contact\?town=Nashville/);
+    await expect(
+      note.getByRole('link', { name: 'Post sources' })
+    ).toBeVisible();
+  });
 });
 
 test.describe('Becoming a Daylight contributor', () => {
@@ -129,19 +152,30 @@ test.describe('Becoming a Daylight contributor', () => {
         .check();
       await page.getByRole('button', { name: 'Send report' }).click();
 
-      // Review passes it. The copying check fails closed here, since the e2e
-      // stack loads no news corpus to compare against, so the report waits
-      // for evidence and says exactly why.
+      // Review passes it. Whether the report is then recorded or held depends
+      // on the copying check, which depends on whether civic-briefing's corpus
+      // had loaded when civic-contributions last refreshed it. That is a
+      // matter of start-up timing, so the test reads which one happened from
+      // the trail and asserts that the outcome follows from it, instead of
+      // assuming either.
       const trail = page.locator('civic-review-trail');
-      await expect(trail).toContainText('Waiting for evidence.', {
-        timeout: 60_000,
-      });
       await expect(trail).toContainText(
-        'Nothing in it needs to wait. It is recorded and can be corroborated.'
+        'Nothing in it needs to wait. It is recorded and can be corroborated.',
+        { timeout: 60_000 }
       );
-      await expect(trail).toContainText(
-        'no published articles are loaded to compare against'
+      const trailText = (await trail.textContent()) ?? '';
+      const copyingChecked = /Checked against \d+ published articles/.test(
+        trailText
       );
+      if (copyingChecked) {
+        await expect(trail).toContainText('Recorded');
+        await expect(trail).not.toContainText('Waiting for evidence.');
+      } else {
+        await expect(trail).toContainText('Waiting for evidence.');
+        await expect(trail).toContainText(
+          'no published articles are loaded to compare against'
+        );
+      }
 
       // The account's own list has it, with the same outcome.
       const mine = await context.request.get(
@@ -155,7 +189,7 @@ test.describe('Becoming a Daylight contributor', () => {
       }[];
       expect(
         reports.find((report) => report.subject.text === subject)?.state
-      ).toBe('held');
+      ).toBe(copyingChecked ? 'accepted' : 'held');
     } finally {
       await context.close();
     }

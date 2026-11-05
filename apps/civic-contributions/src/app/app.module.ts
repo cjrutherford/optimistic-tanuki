@@ -10,7 +10,7 @@ import { CIVIC_BRIEFING_CLIENT, CorpusService } from './corpus.service';
 import { CorroborationService } from './corroboration.service';
 import { DensityService } from './density.service';
 import { IntakeService } from './intake.service';
-import { LOCALITIES, buildLocalities } from './localities';
+import { LOCALITIES, LocalitiesService } from './localities';
 import { OfficialsService } from './officials.service';
 import { OutcomeService } from './outcome.service';
 import { PromotionService } from './promotion.service';
@@ -33,11 +33,13 @@ import { ArtifactStore } from './uploads/artifact-store';
       useFactory: (): CommunityConfig => loadConfig(),
     },
     {
-      provide: LOCALITIES,
-      useFactory: (config: CommunityConfig) =>
-        buildLocalities(config.localitiesDir, new Logger('Localities')),
-      inject: [COMMUNITY_CONFIG],
+      provide: LocalitiesService,
+      useFactory: (
+        briefing: ConstructorParameters<typeof LocalitiesService>[0]
+      ) => new LocalitiesService(briefing, new Logger('Localities')),
+      inject: [CIVIC_BRIEFING_CLIENT],
     },
+    { provide: LOCALITIES, useExisting: LocalitiesService },
     {
       provide: CIVIC_BRIEFING_CLIENT,
       useFactory: (config: CommunityConfig) =>
