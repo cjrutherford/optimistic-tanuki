@@ -14,6 +14,7 @@ import { TurnKeyAppliancesPageComponent } from './pages/turn-key-appliances/turn
 import { SoftwareStacksPageComponent } from './pages/software-stacks/software-stacks-page.component';
 import { CostComparisonPageComponent } from './pages/cost-comparison/cost-comparison-page.component';
 import { AssessmentPageComponent } from './pages/assessment/assessment-page.component';
+import { TechnicalSupportPageComponent } from './pages/technical-support/technical-support-page.component';
 
 /**
  * D017: a "free audit" always opens the contact form; an "assessment" always
@@ -44,6 +45,7 @@ describe('call-to-action conventions', () => {
     SoftwareStacksPageComponent,
     CostComparisonPageComponent,
     AssessmentPageComponent,
+    TechnicalSupportPageComponent,
   ] as Type<unknown>[])(
     '%p routes audits and assessments correctly',
     (page) => {

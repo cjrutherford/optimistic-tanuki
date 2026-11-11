@@ -165,8 +165,8 @@ export const OFFERINGS: Offering[] = [
     headline: "Help that doesn't end at install.",
     summary:
       'Migration, maintenance, security patches, and backups, with direct support from the people who set it up.',
-    route: '/how-we-work',
-    linkLabel: 'See how we work',
+    route: '/technical-support',
+    linkLabel: 'Get technical support',
   },
   {
     name: 'Partners',

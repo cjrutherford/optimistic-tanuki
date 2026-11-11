@@ -90,6 +90,13 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'technical-support',
+    loadComponent: () =>
+      import('./pages/technical-support/technical-support-page.component').then(
+        (m) => m.TechnicalSupportPageComponent
+      ),
+  },
+  {
     path: 'contact',
     loadComponent: () =>
       import('./pages/contact/contact-page.component').then(

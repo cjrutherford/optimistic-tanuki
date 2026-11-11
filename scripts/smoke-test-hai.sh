@@ -71,6 +71,7 @@ routes=(
   "custom-software|Custom Software &amp; Workflow Automation | HAI"
   "partners|White-Label Delivery for Local IT Partners | HAI"
   "how-we-work|How We Work | HAI"
+  "technical-support|Technical Support for Homes &amp; Small Businesses | HAI"
   "contact|Contact | Hopeful Aspirations Industries"
 )
 

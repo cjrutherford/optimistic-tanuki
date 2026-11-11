@@ -26,6 +26,7 @@ export const SITE_NAVIGATION: AppShellNavLink[] = [
     ],
   },
   { label: 'Cost Comparison', route: '/cost-comparison' },
+  { label: 'Technical Support', route: '/technical-support' },
   { label: 'How We Work', route: '/how-we-work' },
   { label: 'Contact', route: '/contact' },
 ];
@@ -33,7 +34,7 @@ export const SITE_NAVIGATION: AppShellNavLink[] = [
 /** The few links that sit directly in the desktop header. */
 export const HEADER_LINKS: AppShellNavLink[] = [
   { label: 'Private Cloud', route: '/private-cloud' },
-  { label: 'Cost Comparison', route: '/cost-comparison' },
+  { label: 'Technical Support', route: '/technical-support' },
   { label: 'How We Work', route: '/how-we-work' },
   { label: 'Contact', route: '/contact' },
 ];

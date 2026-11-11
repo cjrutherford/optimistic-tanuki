@@ -46,4 +46,5 @@ that settle open questions in the handoff are recorded in
 | --------- | ----------- |
 | R0        | Done        |
 | R1        | Done        |
-| R2–R7     | Not started |
+| R2        | Done        |
+| R3–R7     | Not started |
