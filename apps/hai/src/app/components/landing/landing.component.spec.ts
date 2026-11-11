@@ -105,12 +105,14 @@ describe('LandingComponent', () => {
     expect(fixture.nativeElement.textContent).not.toMatch(/church/i);
   });
 
-  it('renders the operational guarantee banner', () => {
+  it('states the service area and makes no 48-hour onboarding claim', () => {
     const text = fixture.nativeElement.textContent as string;
 
     expect(text).toContain(
-      '48-Hour Rapid Onboarding. Local On-Site Support in Savannah and South Georgia.'
+      'On-site in Savannah and South Georgia; remote where the work allows.'
     );
+    expect(text).not.toMatch(/48[-\s]?hour/i);
+    expect(text).not.toMatch(/rapid onboarding/i);
   });
 
   it('sends the hero actions to the audit and the offerings overview', () => {
