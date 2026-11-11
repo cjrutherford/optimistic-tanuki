@@ -80,6 +80,11 @@ export const PAGE_SEO: Record<string, PageSeo> = {
     description:
       'Discovery, architecture, installation, then maintenance, security patches, backups, and direct support from the people who set it up.',
   },
+  training: {
+    title: 'Technology Training & One-on-One Lessons | HAI',
+    description:
+      'Learn technology at your own pace: basic digital skills, tools for your work or community, and more control over your devices and data. Quoted before work begins.',
+  },
   'technical-support': {
     title: 'Technical Support for Homes & Small Businesses | HAI',
     description:

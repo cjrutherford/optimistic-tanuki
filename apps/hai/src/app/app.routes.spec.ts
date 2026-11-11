@@ -38,6 +38,7 @@ describe('hai appRoutes', () => {
         'custom-software',
         'partners',
         'how-we-work',
+        'training',
         'technical-support',
         'contact',
       ])

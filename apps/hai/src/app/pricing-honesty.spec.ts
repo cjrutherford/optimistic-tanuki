@@ -17,6 +17,7 @@ import { HowWeWorkPageComponent } from './pages/how-we-work/how-we-work-page.com
 import { ContactPageComponent } from './pages/contact/contact-page.component';
 import { CostComparisonPageComponent } from './pages/cost-comparison/cost-comparison-page.component';
 import { AssessmentPageComponent } from './pages/assessment/assessment-page.component';
+import { TrainingPageComponent } from './pages/training/training-page.component';
 import { TechnicalSupportPageComponent } from './pages/technical-support/technical-support-page.component';
 import { LABOR_RATE_PER_HOUR } from './content/pricing';
 
@@ -53,6 +54,7 @@ describe('honest pricing', () => {
     CostComparisonPageComponent,
     AssessmentPageComponent,
     TechnicalSupportPageComponent,
+    TrainingPageComponent,
   ] as Type<unknown>[])('%p states no price but the labor rate', (page) => {
     const fixture = TestBed.createComponent(page);
     fixture.detectChanges();
