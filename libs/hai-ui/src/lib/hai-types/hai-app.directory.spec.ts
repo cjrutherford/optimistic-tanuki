@@ -1,4 +1,8 @@
-import { HAI_APP_DIRECTORY, resolveHaiAppLinks } from './hai-app.directory';
+import {
+  HAI_APP_DIRECTORY,
+  HAI_APP_STATUS_LABELS,
+  resolveHaiAppLinks,
+} from './hai-app.directory';
 
 describe('HAI app directory', () => {
   it('lists the curated HAI offerings', () => {
@@ -221,5 +225,24 @@ describe('HAI app directory', () => {
     expect(
       links.find((app) => app.appId === 'towne-square')?.runUrl
     ).toBeUndefined();
+  });
+
+  it('gives every product a lifecycle status with a label', () => {
+    for (const app of HAI_APP_DIRECTORY) {
+      expect(app.status).toBeDefined();
+      expect(HAI_APP_STATUS_LABELS[app.status!]).toBeTruthy();
+    }
+  });
+
+  it('claims no product is generally available without release evidence', () => {
+    expect(HAI_APP_DIRECTORY.map((app) => app.status)).not.toContain(
+      'available'
+    );
+  });
+
+  it('carries the status through to resolved links', () => {
+    const [link] = resolveHaiAppLinks([]);
+
+    expect(link.status).toBe('early-access');
   });
 });

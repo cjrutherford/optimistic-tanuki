@@ -4,8 +4,27 @@ import { HaiAppLink } from './hai-app.config';
 const REPOSITORY_ROOT =
   'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps';
 
+/**
+ * Where a product is in its life. `available` needs release evidence;
+ * `planned` products have nothing to open and must not be linked.
+ */
+export type HaiAppStatus =
+  | 'available'
+  | 'early-access'
+  | 'in-development'
+  | 'planned';
+
+export const HAI_APP_STATUS_LABELS: Record<HaiAppStatus, string> = {
+  available: 'Available',
+  'early-access': 'Early access',
+  'in-development': 'In development',
+  planned: 'Planned',
+};
+
 export interface HaiRegistryApp extends HaiAppLink {
   configName: string;
+  /** Optional so existing consumers keep compiling; unset shows no status. */
+  status?: HaiAppStatus;
   category: string;
   appPath: string;
   portfolioSummary: string;
@@ -31,6 +50,7 @@ export interface HaiResolvedAppLink extends HaiRegistryApp {
 export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   {
     appId: 'optimistic-tanuki',
+    status: 'early-access',
     configName: 'client-interface',
     name: 'Optimistic Tanuki',
     tagline:
@@ -44,6 +64,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'towne-square',
+    status: 'early-access',
     configName: 'local-hub',
     name: 'Towne Square',
     tagline: 'Early-access locality discovery and local community connection.',
@@ -56,6 +77,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'forge-of-will',
+    status: 'in-development',
     configName: 'forgeofwill',
     name: 'Forge of Will',
     tagline: 'Personal project planning for deliberate work.',
@@ -68,6 +90,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'fin-commander',
+    status: 'in-development',
     configName: 'fin-commander',
     name: 'Fin Commander',
     tagline: 'Small personal finance management for everyday clarity.',
@@ -80,6 +103,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'opportunity-compass',
+    status: 'in-development',
     configName: 'opportunity-compass',
     name: 'Opportunity Compass',
     tagline: 'Opportunity discovery from interests, locality, and skills.',
@@ -92,6 +116,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'developer-portal',
+    status: 'in-development',
     configName: 'developer-portal',
     name: 'Developer Portal',
     tagline: 'Docs, onboarding, and developer-facing platform entry.',
@@ -104,6 +129,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'store-client',
+    status: 'in-development',
     configName: 'store',
     name: 'Store',
     tagline: 'Bookings, donations, and storefront flows.',
@@ -116,6 +142,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'video-platform',
+    status: 'in-development',
     configName: 'video-platform',
     name: 'Video Platform',
     tagline: 'Share and discover video content with communities.',

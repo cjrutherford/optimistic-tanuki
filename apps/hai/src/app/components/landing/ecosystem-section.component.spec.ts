@@ -13,6 +13,7 @@ describe('EcosystemSectionComponent', () => {
       href: '/first-app',
       resolvedHref: 'https://example.com/first-app',
       isPublic: true,
+      status: 'early-access',
       category: 'Featured',
       appPath: 'first-app',
       portfolioSummary: 'First summary',
@@ -26,6 +27,7 @@ describe('EcosystemSectionComponent', () => {
       href: '/second-app',
       resolvedHref: 'https://github.com/example/second-app',
       isPublic: false,
+      status: 'in-development',
       category: 'Supporting',
       appPath: 'second-app',
       portfolioSummary: 'Second summary',
@@ -89,5 +91,55 @@ describe('EcosystemSectionComponent', () => {
     expect(anchor?.matches(':focus-visible')).toBe(false);
     expect(anchor?.classList.contains('ecosystem-card')).toBe(true);
     expect(anchor?.getAttribute('href')).toBe(apps[0].resolvedHref);
+  });
+
+  it('labels each product with its lifecycle status', () => {
+    const statuses = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.app-status')
+    ).map((status) => status.textContent?.trim());
+
+    expect(statuses).toEqual(['Early access', 'In development']);
+  });
+
+  it('shows no status label when a product has none', () => {
+    const [first] = apps;
+    fixture.componentRef.setInput('apps', [{ ...first, status: undefined }]);
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.app-status')
+    ).toBeNull();
+  });
+
+  it('shows a planned product without a link', () => {
+    const planned: HaiResolvedAppLink = {
+      ...apps[1],
+      appId: 'planned-app',
+      name: 'Planned App',
+      status: 'planned',
+    };
+    fixture.componentRef.setInput('apps', [apps[0], planned]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const cards = Array.from(element.querySelectorAll('.ecosystem-card'));
+    const card = cards[1];
+
+    expect(cards).toHaveLength(2);
+    expect(card.tagName).toBe('DIV');
+    expect(card.textContent).toContain('Planned App');
+    expect(card.querySelector('.app-status')?.textContent?.trim()).toBe(
+      'Planned'
+    );
+    expect(card.querySelector('a')).toBeNull();
+    expect(card.textContent).not.toContain('View repository');
+    expect(card.textContent).not.toContain('Open app');
+    expect(element.querySelectorAll('a.ecosystem-card')).toHaveLength(1);
+  });
+
+  it('presents the apps as independent products', () => {
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'independent product, not part of the HAI service'
+    );
   });
 });

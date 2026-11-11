@@ -105,4 +105,14 @@ describe('PrivateCloudOrganizationsPageComponent', () => {
       /unhackable|impossible to breach|guarantee[sd]? (savings|uptime)|always cheaper/i
     );
   });
+
+  it('links onward to training and technical support', () => {
+    expect(hrefs('hai-related-links a')).toEqual([
+      '/training',
+      '/technical-support',
+    ]);
+    expect(
+      element.querySelector('hai-related-links .related-prompt')?.textContent
+    ).toBeTruthy();
+  });
 });

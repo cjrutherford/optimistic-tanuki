@@ -100,4 +100,13 @@ describe('TrainingPageComponent', () => {
     expect(text()).not.toMatch(/48-hour|48 hour/i);
     expect(text()).not.toMatch(/certificat|guarantee|testimonial/i);
   });
+
+  it('links to its sibling page from the closing panel', () => {
+    const link = element.querySelector('.cta-panel .secondary a');
+
+    expect(link?.getAttribute('href')).toBe('/technical-support');
+    expect(
+      element.querySelector('.cta-panel .secondary')?.textContent
+    ).toContain('Something not working');
+  });
 });

@@ -18,6 +18,11 @@ import {
 } from '../../content/private-cloud';
 import { prefersReducedMotion } from '../../services/reduced-motion';
 
+import { RelatedLinksComponent } from '../../components/shared/related-links.component';
+import {
+  LEARN_AND_SUPPORT_LINKS,
+  PRIVATE_CLOUD_RELATED_PROMPT,
+} from '../../content/related-links';
 /** The private-cloud landing page and print/QR destination. */
 @Component({
   selector: 'hai-private-cloud-page',
@@ -30,6 +35,7 @@ import { prefersReducedMotion } from '../../services/reduced-motion';
     FreedomTeaserComponent,
     PersonalCloudSectionComponent,
     CtaPanelComponent,
+    RelatedLinksComponent,
   ],
   template: `
     <hai-page-intro
@@ -57,6 +63,10 @@ import { prefersReducedMotion } from '../../services/reduced-motion';
       [ownershipNotes]="ownershipNotes"
       [reducedMotion]="reducedMotion"
     ></hai-personal-cloud-section>
+    <hai-related-links
+      [prompt]="relatedPrompt"
+      [links]="relatedLinks"
+    ></hai-related-links>
     <hai-cta-panel
       title="Find out what you would need."
       text="Answer a few questions about what you store and who uses it, and we will recommend a setup. There is no obligation."
@@ -67,6 +77,8 @@ import { prefersReducedMotion } from '../../services/reduced-motion';
   `,
 })
 export class PrivateCloudPageComponent {
+  readonly relatedPrompt = PRIVATE_CLOUD_RELATED_PROMPT;
+  readonly relatedLinks = LEARN_AND_SUPPORT_LINKS;
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly hero = PRIVATE_CLOUD_HERO;

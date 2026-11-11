@@ -83,4 +83,13 @@ describe('TechnicalSupportPageComponent', () => {
     expect(text()).not.toMatch(/48-hour|48 hour/i);
     expect(text()).not.toMatch(/guaranteed (fix|savings)|unhackable/i);
   });
+
+  it('links to its sibling page from the closing panel', () => {
+    const link = element.querySelector('.cta-panel .secondary a');
+
+    expect(link?.getAttribute('href')).toBe('/training');
+    expect(
+      element.querySelector('.cta-panel .secondary')?.textContent
+    ).toContain('understand it');
+  });
 });

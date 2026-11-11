@@ -6,10 +6,44 @@
       These are our own products, not client case studies. They are here so you
       can see how we structure, ship, and maintain real software over time.
     </p>
+    <p>
+      Each is an independent product, not part of the HAI service, and none
+      needs an HAI account to read about it. The status on each card shows how
+      far along it is.
+    </p>
   </div>
 
+  <ng-template #cardBody let-app>
+    <span class="card-label">{{ app.category }}</span>
+    <span class="app-name">{{ app.name }}</span>
+    <span class="app-tagline">{{ app.tagline }}</span>
+    <span class="app-meta">
+      @if (statusLabel(app); as label) {
+      <span class="app-status">{{ label }}</span>
+      } @if (!isPlanned(app)) {
+      <span class="app-link-state">{{
+        app.isPublic ? 'Open app' : 'View repository'
+      }}</span>
+      }
+    </span>
+  </ng-template>
+
   <div class="ecosystem-grid">
-    @for (app of apps; track app.name; let i = $index) {
+    @for (app of apps; track app.name; let i = $index) { @if (isPlanned(app)) {
+    <div
+      class="ecosystem-card ecosystem-card-planned"
+      [class.ecosystem-card-featured]="i === 0"
+      [attr.data-tone]="i === 0 ? 'brand' : 'neutral'"
+      [attr.data-emphasis]="i === 0 ? 'solid' : 'soft'"
+      [attr.data-size]="i === 0 ? 'lg' : 'md'"
+      data-theme-surface="card"
+    >
+      <ng-container
+        [ngTemplateOutlet]="cardBody"
+        [ngTemplateOutletContext]="{ $implicit: app }"
+      ></ng-container>
+    </div>
+    } @else {
     <a
       class="ecosystem-card"
       [class.ecosystem-card-featured]="i === 0"
@@ -19,13 +53,11 @@
       [attr.data-size]="i === 0 ? 'lg' : 'md'"
       data-theme-surface="card"
     >
-      <span class="card-label">{{ app.category }}</span>
-      <span class="app-name">{{ app.name }}</span>
-      <span class="app-tagline">{{ app.tagline }}</span>
-      <span class="app-link-state">{{
-        app.isPublic ? 'Open app' : 'View repository'
-      }}</span>
+      <ng-container
+        [ngTemplateOutlet]="cardBody"
+        [ngTemplateOutletContext]="{ $implicit: app }"
+      ></ng-container>
     </a>
-    }
+    } }
   </div>
 </section>

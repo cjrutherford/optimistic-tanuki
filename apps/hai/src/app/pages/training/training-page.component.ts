@@ -13,6 +13,10 @@ import {
   TRAINING_PHILOSOPHY_HEADING,
   TRAINING_TOPICS,
 } from '../../content/training';
+import {
+  SUPPORT_LINK,
+  TRAINING_SUPPORT_PROMPT,
+} from '../../content/related-links';
 
 /** Training: who it is for, how people can learn, and what it covers. */
 @Component({
@@ -65,6 +69,8 @@ import {
       [title]="cta.title"
       [text]="cta.text"
       [action]="cta.action"
+      [secondaryPrompt]="supportPrompt"
+      [secondary]="supportLink"
     ></hai-cta-panel>
   `,
 })
@@ -78,4 +84,6 @@ export class TrainingPageComponent {
   readonly areaHeading = TRAINING_AREA_HEADING;
   readonly area = TRAINING_AREA;
   readonly cta = TRAINING_CTA;
+  readonly supportPrompt = TRAINING_SUPPORT_PROMPT;
+  readonly supportLink = SUPPORT_LINK;
 }

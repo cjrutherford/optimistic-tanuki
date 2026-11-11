@@ -16,6 +16,10 @@ import {
   SUPPORT_SERVICES,
   SUPPORT_STEPS,
 } from '../../content/technical-support';
+import {
+  SUPPORT_TRAINING_PROMPT,
+  TRAINING_LINK,
+} from '../../content/related-links';
 
 /** Practical technical support: what it covers, how a request works, and its limits. */
 @Component({
@@ -74,6 +78,8 @@ import {
       [title]="cta.title"
       [text]="cta.text"
       [action]="cta.action"
+      [secondaryPrompt]="trainingPrompt"
+      [secondary]="trainingLink"
     ></hai-cta-panel>
   `,
 })
@@ -89,4 +95,6 @@ export class TechnicalSupportPageComponent {
   readonly areaHeading = SUPPORT_AREA_HEADING;
   readonly area = SUPPORT_AREA;
   readonly cta = SUPPORT_CTA;
+  readonly trainingPrompt = SUPPORT_TRAINING_PROMPT;
+  readonly trainingLink = TRAINING_LINK;
 }

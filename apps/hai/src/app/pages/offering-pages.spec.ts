@@ -51,6 +51,21 @@ describe('offering pages', () => {
     }
   );
 
+  it.each([[CustomSoftwarePageComponent], [HowWeWorkPageComponent]] as const)(
+    '%p links to training and technical support',
+    (component) => {
+      configure();
+      const element = render(component as Type<unknown>)
+        .nativeElement as HTMLElement;
+
+      expect(
+        Array.from(element.querySelectorAll('hai-related-links a')).map(
+          (link) => link.getAttribute('href')
+        )
+      ).toEqual(['/training', '/technical-support']);
+    }
+  );
+
   it('contact page shows a carried-over message and submits from /contact', () => {
     configure();
     const contact = TestBed.inject(ContactRequestService);

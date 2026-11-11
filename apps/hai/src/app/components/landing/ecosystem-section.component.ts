@@ -1,6 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
-import { HaiResolvedAppLink } from '@optimistic-tanuki/hai-ui';
+import {
+  HAI_APP_STATUS_LABELS,
+  HaiResolvedAppLink,
+} from '@optimistic-tanuki/hai-ui';
 
 @Component({
   selector: 'hai-ecosystem-section',
@@ -12,4 +15,13 @@ import { HaiResolvedAppLink } from '@optimistic-tanuki/hai-ui';
 export class EcosystemSectionComponent {
   @Input({ required: true })
   apps: HaiResolvedAppLink[] = [];
+
+  /** Planned products have nothing to open, so they render without a link. */
+  isPlanned(app: HaiResolvedAppLink): boolean {
+    return app.status === 'planned';
+  }
+
+  statusLabel(app: HaiResolvedAppLink): string {
+    return app.status ? HAI_APP_STATUS_LABELS[app.status] : '';
+  }
 }
