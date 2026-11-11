@@ -3,6 +3,8 @@
  * same wherever it is rendered.
  */
 
+import type { AudiencePath } from './private-cloud';
+
 export interface ServicePillar {
   icon: string;
   title: string;
@@ -227,3 +229,48 @@ export const PRIVATE_CLOUD_PATHS: PrivateCloudPath[] = [
     route: '/private-cloud/organizations',
   },
 ];
+
+/** The four homepage entry points, in reading order. */
+export const HOME_PATHWAYS: AudiencePath[] = [
+  {
+    eyebrow: '',
+    title: 'Learn',
+    message:
+      'Build confidence with everyday technology, at your own pace or with personal guidance.',
+    audiences: [],
+    route: '/training',
+    linkLabel: 'Explore training',
+  },
+  {
+    eyebrow: '',
+    title: 'Get Help',
+    message:
+      'Troubleshooting, setup, migrations and ongoing support explained in plain language.',
+    audiences: [],
+    route: '/technical-support',
+    linkLabel: 'Get technical help',
+  },
+  {
+    eyebrow: '',
+    title: 'Get Solutions',
+    message:
+      'Private cloud, hardware planning and custom software that fit your actual needs.',
+    audiences: [],
+    route: '/',
+    fragment: 'offerings',
+    linkLabel: 'Explore solutions',
+  },
+  {
+    eyebrow: '',
+    title: 'Explore Apps',
+    message:
+      'Discover independent tools developed around ownership, connection and useful progress.',
+    audiences: [],
+    route: '/',
+    fragment: 'ecosystem',
+    linkLabel: 'Explore apps',
+  },
+];
+
+export const HOME_PATHWAYS_NOTE =
+  'We explain the choices, document the work, and aim to leave you more capable—even when you decide to manage things yourself.';

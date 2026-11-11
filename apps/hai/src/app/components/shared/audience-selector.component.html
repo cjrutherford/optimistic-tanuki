@@ -16,15 +16,24 @@
       class="path-card"
       [attr.aria-labelledby]="sectionId + '-path-' + $index"
     >
+      @if (path.eyebrow) {
       <p class="eyebrow">{{ path.eyebrow }}</p>
+      }
       <h3 [id]="sectionId + '-path-' + $index">{{ path.title }}</h3>
       <p class="message">{{ path.message }}</p>
+      @if (path.audiences.length) {
       <ul class="audience-list">
         @for (audience of path.audiences; track audience) {
         <li>{{ audience }}</li>
         }
       </ul>
-      <a class="path-link" [routerLink]="path.route">{{ path.linkLabel }}</a>
+      }
+      <a
+        class="path-link"
+        [routerLink]="path.route"
+        [fragment]="path.fragment"
+        >{{ path.linkLabel }}</a
+      >
     </article>
     }
   </div>

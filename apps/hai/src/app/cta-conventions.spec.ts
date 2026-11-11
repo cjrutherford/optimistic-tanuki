@@ -19,7 +19,8 @@ import { TechnicalSupportPageComponent } from './pages/technical-support/technic
 
 /**
  * D017: a "free audit" always opens the contact form; an "assessment" always
- * opens the private-cloud assessment form.
+ * opens the private-cloud assessment form. C010: the homepage hero says "Tell
+ * us what you need" instead, and also opens /contact.
  */
 describe('call-to-action conventions', () => {
   beforeEach(() => {

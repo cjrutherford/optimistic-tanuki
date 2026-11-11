@@ -9,9 +9,12 @@ import {
 } from '@optimistic-tanuki/motion-ui';
 import { EcosystemSectionComponent } from './ecosystem-section.component';
 import { CtaPanelComponent } from '../shared/cta-panel.component';
+import { AudienceSelectorComponent } from '../shared/audience-selector.component';
 import { OfferingsSectionComponent } from './offerings-section.component';
 import { PrivateCloudSectionComponent } from './private-cloud-section.component';
 import {
+  HOME_PATHWAYS,
+  HOME_PATHWAYS_NOTE,
   OFFERINGS,
   PRIVATE_CLOUD_CAPABILITIES,
   PRIVATE_CLOUD_INTRO,
@@ -29,6 +32,7 @@ import { prefersReducedMotion } from '../../services/reduced-motion';
     BadgeComponent,
     PulseRingsComponent,
     TopographicDriftComponent,
+    AudienceSelectorComponent,
     OfferingsSectionComponent,
     PrivateCloudSectionComponent,
     EcosystemSectionComponent,
@@ -42,6 +46,8 @@ export class LandingComponent {
   private readonly appDirectory = inject(HaiAppDirectoryService);
 
   readonly ecosystem$ = this.appDirectory.getResolvedApps('hai');
+  readonly pathways = HOME_PATHWAYS;
+  readonly pathwaysNote = HOME_PATHWAYS_NOTE;
   readonly offerings = OFFERINGS;
   readonly privateCloudIntro = PRIVATE_CLOUD_INTRO;
   readonly privateCloudCapabilities = PRIVATE_CLOUD_CAPABILITIES;
