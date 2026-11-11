@@ -77,6 +77,71 @@ describe('ContactFormComponent', () => {
     expect(select.id).toBe('business-contact-subject-control');
   });
 
+  describe('initialSubject', () => {
+    const subjects = [
+      { value: 'training', label: 'Training or a class' },
+      { value: 'technical-support', label: 'Technical support' },
+    ];
+
+    it('leaves the subject empty by default', () => {
+      fixture.componentRef.setInput('subjects', subjects);
+      fixture.detectChanges();
+
+      expect(component.contactForm.value.subject).toBe('');
+    });
+
+    it('preselects a value that matches a provided subject', async () => {
+      fixture.componentRef.setInput('subjects', subjects);
+      fixture.componentRef.setInput('initialSubject', 'technical-support');
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const select = fixture.nativeElement.querySelector(
+        'select'
+      ) as HTMLSelectElement;
+
+      expect(component.contactForm.value.subject).toBe('technical-support');
+      expect(select.value).toBe('technical-support');
+    });
+
+    it('preselects when the subjects arrive after the initial subject', () => {
+      fixture.componentRef.setInput('initialSubject', 'training');
+      fixture.componentRef.setInput('subjects', subjects);
+      fixture.detectChanges();
+
+      expect(component.contactForm.value.subject).toBe('training');
+    });
+
+    it('ignores a value that matches no provided subject', () => {
+      fixture.componentRef.setInput('subjects', subjects);
+      fixture.componentRef.setInput('initialSubject', 'not-a-subject');
+      fixture.detectChanges();
+
+      expect(component.contactForm.value.subject).toBe('');
+    });
+
+    it('submits the chosen subject, preselected or changed by the visitor', async () => {
+      fixture.componentRef.setInput('subjects', subjects);
+      fixture.componentRef.setInput('initialSubject', 'training');
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const emitted: unknown[] = [];
+      component.formSubmit.subscribe((value) => emitted.push(value));
+      const select = fixture.nativeElement.querySelector(
+        'select'
+      ) as HTMLSelectElement;
+
+      component.onSubscribe();
+      select.value = 'technical-support';
+      select.dispatchEvent(new Event('change'));
+      component.onSubscribe();
+
+      expect(emitted).toEqual([
+        expect.objectContaining({ subject: 'training' }),
+        expect.objectContaining({ subject: 'technical-support' }),
+      ]);
+    });
+  });
+
   it('shows no banner image unless one is supplied', () => {
     expect(component.bannerImage).toBeNull();
     expect(fixture.nativeElement.querySelector('img')).toBeNull();

@@ -99,16 +99,23 @@ export const PARTNER_BENEFITS: string[] = [
 ];
 
 export const CONTACT_LEAD = {
-  title: 'Start a Project',
+  title: "Tell us what you're trying to do.",
   description:
-    'Tell us about a project, an infrastructure need, or a partner delivery conversation.',
+    "You don't need to have the solution figured out. Tell us what you'd like to learn, what's not working, or what you're hoping to build. We'll help identify a sensible next step.",
 } as const;
 
+/** Service-area wording (C003). */
+export const SERVICE_AREA =
+  'On-site in Savannah and South Georgia; remote where the work allows.';
+
 export const CONTACT_SUBJECTS: ContactSubject[] = [
-  { value: 'custom-portal', label: 'Custom Portal & Workflow Automation' },
+  { value: 'training', label: 'Training or a class' },
+  { value: 'technical-support', label: 'Technical support / device help' },
   { value: 'infrastructure', label: 'Independent Infrastructure' },
+  { value: 'custom-portal', label: 'Custom Portal & Workflow Automation' },
   { value: 'tailored-software', label: 'Tailored Software' },
   { value: 'partner-inquiry', label: 'Partner Inquiry' },
+  { value: 'other', label: 'Something else' },
 ];
 
 export interface Offering {

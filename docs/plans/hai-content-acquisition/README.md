@@ -45,5 +45,5 @@ that settle open questions in the handoff are recorded in
 | Milestone | Status      |
 | --------- | ----------- |
 | R0        | Done        |
-| R1        | In progress |
+| R1        | Done        |
 | R2–R7     | Not started |
