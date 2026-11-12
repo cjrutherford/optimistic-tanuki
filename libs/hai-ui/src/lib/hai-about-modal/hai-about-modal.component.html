@@ -89,7 +89,13 @@
               [class.is-live]="app.isPublic"
               [attr.data-state]="app.isPublic ? 'running' : 'repository'"
             >
-              {{ app.isPublic ? 'App link' : 'Repository' }}
+              {{
+                app.isPublic
+                  ? 'App link'
+                  : app.repositoryUrl
+                  ? 'Repository'
+                  : 'No link yet'
+              }}
             </span>
           </header>
 
@@ -112,7 +118,7 @@
               ></otui-icon>
               <span>Open app</span>
             </a>
-            }
+            } @if (app.repositoryUrl) {
             <a
               class="directory-link directory-link-secondary"
               [href]="app.repositoryUrl"
@@ -130,6 +136,7 @@
               ></otui-icon>
               <span>View repository</span>
             </a>
+            }
           </div>
         </article>
         }

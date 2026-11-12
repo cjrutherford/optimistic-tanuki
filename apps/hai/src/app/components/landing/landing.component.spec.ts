@@ -210,6 +210,22 @@ describe('LandingComponent', () => {
     }
   });
 
+  it('offers training and technical support first, and keeps Support & Migration distinct', () => {
+    const cards = Array.from(
+      (
+        fixture.nativeElement as HTMLElement
+      ).querySelectorAll<HTMLAnchorElement>('#offerings a.offering-card')
+    );
+    const routes = cards.map((card) => card.getAttribute('href'));
+
+    expect(routes.slice(0, 2)).toEqual(['/training', '/technical-support']);
+    expect(new Set(routes).size).toBe(routes.length);
+    const migration = OFFERINGS.find(
+      (offering) => offering.name === 'Support & Migration'
+    );
+    expect(migration?.route).toBe('/how-we-work');
+  });
+
   it('still represents appliances, stacks, and custom software', () => {
     const routes = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll(

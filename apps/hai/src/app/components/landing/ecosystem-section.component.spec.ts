@@ -137,6 +137,30 @@ describe('EcosystemSectionComponent', () => {
     expect(element.querySelectorAll('a.ecosystem-card')).toHaveLength(1);
   });
 
+  it('shows a product with no repository or app url without a link', () => {
+    const separate: HaiResolvedAppLink = {
+      ...apps[1],
+      appId: 'separate-app',
+      name: 'Separate App',
+      status: 'in-development',
+      repositoryUrl: undefined,
+      resolvedHref: undefined,
+    };
+    fixture.componentRef.setInput('apps', [apps[0], separate]);
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const card = Array.from(element.querySelectorAll('.ecosystem-card'))[1];
+
+    expect(card.tagName).toBe('DIV');
+    expect(card.querySelector('.app-status')?.textContent?.trim()).toBe(
+      'In development'
+    );
+    expect(card.querySelector('a')).toBeNull();
+    expect(card.textContent).not.toContain('View repository');
+    expect(card.textContent).not.toContain('Open app');
+  });
+
   it('presents the apps as independent products', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
       'independent product, not part of the HAI service'

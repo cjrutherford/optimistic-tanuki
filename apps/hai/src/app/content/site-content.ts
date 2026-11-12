@@ -131,6 +131,22 @@ export interface Offering {
 /** One card per offering on the homepage; the detail lives on each route. */
 export const OFFERINGS: Offering[] = [
   {
+    name: 'Training',
+    headline: 'Learn technology with confidence.',
+    summary:
+      'One-on-one guidance at your pace, from basic digital skills to taking more control of your devices and data. Quoted before work begins.',
+    route: '/training',
+    linkLabel: 'Explore training',
+  },
+  {
+    name: 'Technical Support',
+    headline: 'Technology help without the runaround.',
+    summary:
+      'Troubleshooting, setup and moving your files, for homes, small businesses and nonprofits. Scope and charges are agreed before work starts.',
+    route: '/technical-support',
+    linkLabel: 'Get technical support',
+  },
+  {
     name: 'Private Cloud',
     headline: 'Your files, on your hardware.',
     summary:
@@ -166,9 +182,9 @@ export const OFFERINGS: Offering[] = [
     name: 'Support & Migration',
     headline: "Help that doesn't end at install.",
     summary:
-      'Migration, maintenance, security patches, and backups, with direct support from the people who set it up.',
-    route: '/technical-support',
-    linkLabel: 'Get technical support',
+      'For the infrastructure we set up with you: moving onto it, then maintenance, security patches, and backups from the people who built it.',
+    route: '/how-we-work',
+    linkLabel: 'See how we work',
   },
   {
     name: 'Partners',

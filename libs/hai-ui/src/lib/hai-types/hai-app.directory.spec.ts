@@ -15,7 +15,34 @@ describe('HAI app directory', () => {
       'Developer Portal',
       'Store',
       'Video Platform',
+      'Homestead',
+      'Statocyst',
     ]);
+  });
+
+  it('leaves out products that are in development but paused', () => {
+    const names = HAI_APP_DIRECTORY.map((app) => app.name);
+
+    expect(names).not.toContain('Jellyfin Harbor');
+    expect(names).not.toContain('PXE');
+  });
+
+  it('lists Homestead and Statocyst in development, with no invented link', () => {
+    const separate = HAI_APP_DIRECTORY.filter((app) =>
+      ['Homestead', 'Statocyst'].includes(app.name)
+    );
+
+    expect(separate).toHaveLength(2);
+    for (const app of separate) {
+      expect(app.status).toBe('in-development');
+      expect(app.repositoryUrl).toBeUndefined();
+    }
+    const links = resolveHaiAppLinks([]);
+    expect(
+      links
+        .filter((link) => ['Homestead', 'Statocyst'].includes(link.name))
+        .map((link) => link.resolvedHref)
+    ).toEqual([undefined, undefined]);
   });
 
   it('resolves registered apps as public links with absolute icon urls', () => {

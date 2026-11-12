@@ -61,3 +61,25 @@ closing panel keep "Schedule Free Audit" (D017). Date: 2026-11-11.
 The site is website-first, so no e2e project is added. Evidence is the unit
 specs, `seo-coverage`, `scripts/smoke-test-hai.sh` and manual browser
 screenshots. Revisit later. Date: 2026-11-11.
+
+## C012 — Copy beyond the handoff approved
+
+The owner approved all the copy written in R1–R5 beyond the handoff text:
+support limits, training "Planned" labels, pathway and offerings headings,
+cross-link prompts, and the ecosystem independence sentence. Date: 2026-11-12.
+
+## C013 — Support & Migration stays
+
+The "Support & Migration" offering stays alongside the "Get Help" pathway card.
+The two are not the same thing. Date: 2026-11-12.
+
+## C014 — Ecosystem additions
+
+Homestead and Statocyst are added to the ecosystem. They live in separate
+repositories. Jellyfin Harbor and PXE are not listed; they are in development
+but paused. Date: 2026-11-12.
+
+## C015 — Training and Technical Support in the offerings grid
+
+The homepage offerings grid gets Training and Technical Support blocks.
+Date: 2026-11-12.

@@ -9,7 +9,7 @@ training to the marketing site, sharpens the contact path, and keeps the
 existing private-cloud and professional-services content intact. It is an
 incremental content and journey change in `apps/hai`, not a redesign. Decisions
 that settle open questions in the handoff are recorded in
-`01-DECISION-LOG.md` (C001–C011).
+`01-DECISION-LOG.md` (C001–C015).
 
 ## Background: audit findings
 
@@ -42,12 +42,13 @@ that settle open questions in the handoff are recorded in
 
 ## Status
 
-| Milestone | Status      |
-| --------- | ----------- |
-| R0        | Done        |
-| R1        | Done        |
-| R2        | Done        |
-| R3        | Done        |
-| R4        | R4 done     |
-| R5        | R5 done     |
-| R6–R7     | Not started |
+| Milestone              | Status      |
+| ---------------------- | ----------- |
+| R0                     | Done        |
+| R1                     | Done        |
+| R2                     | Done        |
+| R3                     | Done        |
+| R4                     | R4 done     |
+| R5                     | R5 done     |
+| Follow-ups (C012–C015) | Done        |
+| R6–R7                  | Not started |

@@ -28,16 +28,21 @@ export interface HaiRegistryApp extends HaiAppLink {
   category: string;
   appPath: string;
   portfolioSummary: string;
-  repositoryUrl: string;
+  /**
+   * Absent for products that live in a separate repository we do not link
+   * to; such a card renders without a link.
+   */
+  repositoryUrl?: string;
 }
 
 export interface HaiResolvedAppLink extends HaiRegistryApp {
   /**
    * Primary destination for the card. Resolves to the running application URL
    * when one is published, otherwise falls back to the repository URL.
-   * Retained for backward compatibility with single-link consumers.
+   * Retained for backward compatibility with single-link consumers. Undefined
+   * when the product publishes neither an app nor a repository URL.
    */
-  resolvedHref: string;
+  resolvedHref?: string;
   /** True when the registry supplies a valid public app destination; not a health check. */
   isPublic: boolean;
   /**
@@ -152,6 +157,30 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
     repositoryUrl: `${REPOSITORY_ROOT}/video-client`,
     portfolioSummary:
       'A video platform spanning upload, playback, visibility, and channel workflows, with product concerns across both creator tooling and audience-facing experiences.',
+  },
+  {
+    appId: 'homestead',
+    status: 'in-development',
+    configName: 'homestead',
+    name: 'Homestead',
+    tagline: 'A separate project, still in development.',
+    href: '/homestead',
+    category: 'Separate project',
+    appPath: 'homestead',
+    portfolioSummary:
+      'A separate project kept in its own repository, still in development. It is distinct from the Digital Homestead site in this repository.',
+  },
+  {
+    appId: 'statocyst',
+    status: 'in-development',
+    configName: 'statocyst',
+    name: 'Statocyst',
+    tagline: 'A separate project, still in development.',
+    href: '/statocyst',
+    category: 'Separate project',
+    appPath: 'statocyst',
+    portfolioSummary:
+      'A separate project kept in its own repository, still in development.',
   },
 ];
 

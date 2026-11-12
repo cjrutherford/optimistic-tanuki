@@ -16,9 +16,12 @@ export class EcosystemSectionComponent {
   @Input({ required: true })
   apps: HaiResolvedAppLink[] = [];
 
-  /** Planned products have nothing to open, so they render without a link. */
+  /**
+   * Planned products, and products with no app or repository URL we can point
+   * to, have nothing to open, so they render without a link.
+   */
   isPlanned(app: HaiResolvedAppLink): boolean {
-    return app.status === 'planned';
+    return app.status === 'planned' || !app.resolvedHref;
   }
 
   statusLabel(app: HaiResolvedAppLink): string {
