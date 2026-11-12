@@ -163,24 +163,24 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
     status: 'in-development',
     configName: 'homestead',
     name: 'Homestead',
-    tagline: 'A separate project, still in development.',
+    tagline: 'Private clouds, set up quickly and easily.',
     href: '/homestead',
-    category: 'Separate project',
+    category: 'Infrastructure',
     appPath: 'homestead',
     portfolioSummary:
-      'A separate project kept in its own repository, still in development. It is distinct from the Digital Homestead site in this repository.',
+      'A private cloud management tool we use to set up private clouds for clients quickly and easily. It lives in its own repository and is distinct from the Digital Homestead site.',
   },
   {
     appId: 'statocyst',
     status: 'in-development',
     configName: 'statocyst',
     name: 'Statocyst',
-    tagline: 'A separate project, still in development.',
+    tagline: 'A Jellyfin-powered music player and podcast client.',
     href: '/statocyst',
-    category: 'Separate project',
+    category: 'Media',
     appPath: 'statocyst',
     portfolioSummary:
-      'A separate project kept in its own repository, still in development.',
+      'A Jellyfin-powered music player and podcast client for desktop, Android and iOS, with Android Auto and Apple CarPlay support. It lives in its own repository.',
   },
 ];
 

@@ -79,6 +79,11 @@ Homestead and Statocyst are added to the ecosystem. They live in separate
 repositories. Jellyfin Harbor and PXE are not listed; they are in development
 but paused. Date: 2026-11-12.
 
+Homestead is a private cloud management tool used to set up private clouds for
+clients. Statocyst is a Jellyfin-powered music player and podcast client for
+desktop, Android and iOS, with Android Auto and Apple CarPlay. Neither has a
+public link yet, so the cards stay unlinked.
+
 ## C015 — Training and Technical Support in the offerings grid
 
 The homepage offerings grid gets Training and Technical Support blocks.
