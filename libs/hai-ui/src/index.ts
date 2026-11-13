@@ -6,3 +6,6 @@ export * from './lib/hai-types/hai-app.config';
 export * from './lib/hai-types/hai-app.directory';
 export * from './lib/hai-types/hai-app-directory.service';
 export * from './lib/hai-types/hai-expansions';
+export * from './lib/hai-dock/hai-dock.component';
+export * from './lib/hai-dock/hai-dock-item.component';
+export * from './lib/hai-dock/hai-dock-shortcut.store';

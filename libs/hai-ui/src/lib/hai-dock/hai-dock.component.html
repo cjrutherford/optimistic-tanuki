@@ -1,0 +1,139 @@
+<div
+  class="hai-dock__bar"
+  role="toolbar"
+  aria-orientation="horizontal"
+  [attr.aria-label]="ariaLabel()"
+  data-testid="hai-dock"
+  (keydown)="onToolbarKeydown($event)"
+  (focusin)="onToolbarFocusin($event)"
+>
+  <hai-dock-item
+    #aboutItem
+    label="About HAI"
+    popup="dialog"
+    [expanded]="aboutOpen()"
+    data-testid="hai-dock-about"
+    (activated)="openAbout()"
+  >
+    <hai-logo></hai-logo>
+  </hai-dock-item>
+
+  <ng-content></ng-content>
+
+  @for (app of pinned(); track app.appId) {
+  <hai-dock-item
+    [label]="app.name"
+    [href]="app.resolvedHref ?? null"
+    [external]="true"
+    [removable]="true"
+    data-testid="hai-dock-shortcut"
+    (removeRequested)="unpin(app.appId, app.name)"
+  >
+    @if (app.logoSrc) {
+    <img [src]="app.logoSrc" alt="" />
+    } @else {
+    <otui-icon name="extension" [size]="28" stroke="currentColor"></otui-icon>
+    }
+  </hai-dock-item>
+  } @if (shortcuts()) {
+  <hai-dock-item
+    #addItem
+    class="hai-dock__add"
+    label="Add shortcut"
+    popup="dialog"
+    data-dock-add
+    data-testid="hai-dock-add"
+    [expanded]="pickerOpen()"
+    (activated)="togglePicker()"
+  >
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      aria-hidden="true"
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  </hai-dock-item>
+  }
+</div>
+
+@if (pickerOpen()) {
+<div
+  #picker
+  class="hai-dock__picker"
+  role="dialog"
+  aria-labelledby="hai-dock-picker-title"
+  data-testid="hai-dock-picker"
+  (keydown)="onPickerKeydown($event)"
+  (focusout)="onPickerFocusout($event)"
+>
+  <header class="hai-dock__picker-head">
+    <h2 id="hai-dock-picker-title" class="hai-dock__picker-title">
+      Dock shortcuts
+    </h2>
+    <button
+      type="button"
+      class="hai-dock__picker-close"
+      aria-label="Close dock shortcuts"
+      (click)="closePicker()"
+    >
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </header>
+  @if (pinnable().length) {
+  <ul class="hai-dock__picker-list">
+    @for (app of pinnable(); track app.appId) {
+    <li class="hai-dock__picker-row" data-testid="hai-dock-picker-row">
+      <span class="hai-dock__picker-icon" aria-hidden="true">
+        @if (app.logoSrc) {
+        <img [src]="app.logoSrc" alt="" />
+        } @else {
+        <otui-icon
+          name="extension"
+          [size]="22"
+          stroke="currentColor"
+        ></otui-icon>
+        }
+      </span>
+      <span class="hai-dock__picker-copy">
+        <span class="hai-dock__picker-name">{{ app.name }}</span>
+        <span class="hai-dock__picker-meta">{{
+          app.isPublic ? 'App' : 'Repository'
+        }}</span>
+      </span>
+      <button
+        type="button"
+        class="hai-dock__picker-pin"
+        [class.is-pinned]="isPinned(app)"
+        [attr.aria-label]="
+          (isPinned(app) ? 'Remove ' : 'Add ') +
+          app.name +
+          (isPinned(app) ? ' from the dock' : ' to the dock')
+        "
+        (click)="togglePin(app)"
+      >
+        {{ isPinned(app) ? 'Unpin' : 'Pin' }}
+      </button>
+    </li>
+    }
+  </ul>
+  } @else {
+  <p class="hai-dock__picker-empty">
+    No other HAI apps have a link to pin yet.
+  </p>
+  }
+</div>
+}
+
+<hai-about-modal
+  [config]="config()"
+  [visible]="aboutOpen()"
+  (close)="closeAbout()"
+></hai-about-modal>
+
+<p class="hai-dock__announce" role="status" aria-live="polite">
+  {{ announcement() }}
+</p>
