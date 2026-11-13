@@ -65,11 +65,10 @@ describe('HaiAboutTagComponent', () => {
     );
   });
 
-  it('marks the host so a shell can move the tag into the flow on small screens', () => {
-    component.placement = 'inline-compact';
+  it('marks the host when it is placed in the flow', () => {
+    component.placement = 'inline';
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.classList).toContain('inline-compact');
-    expect(fixture.nativeElement.classList).not.toContain('inline');
+    expect(fixture.nativeElement.classList).toContain('inline');
   });
 });

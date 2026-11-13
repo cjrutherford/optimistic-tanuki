@@ -77,6 +77,9 @@
   // token-exempt: local stacking order inside the app shell
   z-index: 1;
   min-height: 100vh;
+  // Keeps the footer clear of the dock, which floats over the page foot. The
+  // dock publishes the size (zero where there is no dock).
+  padding-block-end: var(--hai-dock-reserved-block-size, 0px);
 }
 
 // Shared by every routed page. The page canvas (background, personality

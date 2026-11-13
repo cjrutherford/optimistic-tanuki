@@ -30,11 +30,28 @@ describe('AppComponent', () => {
     }).compileComponents();
   });
 
-  it('renders the HAI about tag', () => {
+  it('renders the dock with its About item in place of the floating about tag', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
 
-    expect(fixture.nativeElement.querySelector('hai-about-tag')).not.toBeNull();
+    expect(element.querySelector('hai-about-tag')).toBeNull();
+    expect(
+      element.querySelector('hai-dock [data-testid="hai-dock-about"]')
+    ).not.toBeNull();
+  });
+
+  it('ends the page with a footer landmark above the dock', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const footer = element.querySelector('hai-site-footer footer');
+    const dock = element.querySelector('hai-dock');
+
+    expect(footer).not.toBeNull();
+    expect(footer && dock && footer.compareDocumentPosition(dock)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
   });
 
   it('renders the aurora ribbon motion background shell', () => {

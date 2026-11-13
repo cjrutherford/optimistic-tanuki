@@ -195,3 +195,52 @@ tiers carry no `portalUrl` and the "Customize in Appliance Portal" and
 solutions-matrix "Configure" links are not rendered. The shared
 `AppRegistryService` is not used here because it substitutes the bundled
 (localhost) registry when the gateway call fails. Date: 2026-11-13.
+
+## C025 — A shared dock replaces the floating bottom items on the HAI site
+
+`hai-dock` (`libs/hai-ui`) is a Mac-style dock: a bottom-centre pill on wide
+screens with icon buttons, a label on hover and keyboard focus, and a light
+magnify on hover (off under `prefers-reduced-motion` and on touch). At 640px
+and under it is a full-width tab bar, flush with the bottom edge, with labels
+under the icons; it scrolls sideways if the items do not fit and clears
+`env(safe-area-inset-bottom)`. It is always visible. Items come from three
+places: the built-in About item (the `hai-logo`; it opens the existing
+`hai-about-modal`, so the About content is not duplicated), `hai-dock-item`
+children projected by the host app (a future bug-report or chat launcher joins
+with no dock change), and the visitor's pinned shortcuts, followed by "Add
+shortcut". The shell is built shared; this slice wires it into the HAI site
+only, and the other 11 apps keep their floating `hai-about-tag`, bug-report
+bubble and chat windows.
+
+- **Landmark.** `role="toolbar"` with an aria-label, not `nav`: the items mix
+  buttons and links, and a toolbar gives one tab stop with arrow-key roving
+  (Left/Right/Home/End). The site's navigation landmarks stay the header and
+  footer.
+- **Reserved space.** The dock publishes `--hai-dock-reserved-block-size` on
+  `:root` from its own unscoped stylesheet, as plain CSS including the phone
+  safe area. A server-rendered page therefore has the space already and nothing
+  shifts on hydration. The HAI shell applies it as `padding-block-end` on
+  `.app-content`; the footer sits above it.
+- **Shortcuts.** Visitors pin other HAI apps from a non-modal picker (Escape or
+  a press outside closes it; focus returns to Add shortcut). The candidates are
+  `resolveHaiAppLinks` results with a `resolvedHref`, minus the current app, so
+  a pin opens the app (or its repository when no public URL is registered).
+  Icons use the registry `logoSrc`, falling back to the same `extension` glyph
+  as the About modal. A pinned shortcut can be removed with Delete or Backspace
+  while focused, or from the picker; removal is announced in a live region.
+- **Storage.** `HaiDockShortcutStore` is an abstract class (get, set, observe)
+  that is the root default through `LocalStorageHaiDockShortcutStore`. The
+  local implementation keeps an ordered list of app ids under
+  `hai-dock-shortcuts:v1`, never touches `window` or `localStorage` off the
+  browser, survives blocked storage, and follows other tabs. A profile-backed
+  store can replace it by providing the abstract class; the dock does not
+  change. The dock ignores ids it cannot resolve but the store keeps them, so
+  a registry outage does not unpin anything. Pins are read after first render,
+  so server and hydrating client draw the same dock.
+- **About tag.** The `inline-compact` placement existed only for the HAI site
+  and is removed; `fixed` and `inline` and the rest of its API are unchanged for
+  the other apps.
+- **Footer.** The HAI site gains a `<footer>` with the header links, the phone
+  and email from `CONTACT_DETAILS`, and a copyright line.
+
+Date: 2026-11-13.
