@@ -133,3 +133,19 @@ values. Date: 2026-11-13.
 - There is no `<footer>` landmark. The contact strip ends the page content.
   Not an axe violation; noted for a later pass.
   Date: 2026-11-13.
+
+## C021 — The header logo is an inline, theme-aware SVG (stand-in artwork)
+
+`hai-logo` (`components/logo/`) draws the traced logo inline, so theme variables
+reach it. Deep parts fill with `--hai-logo-deep`, then `--primary-text`, then
+`--primary`; bright parts with `--hai-logo-bright`, then `--primary`. No colour
+is hard-coded. `--primary-text` is the theme's readable primary: it darkens in
+light mode and lightens in dark mode until it holds contrast against the page.
+Measured against the header, the deep fill is 5.9:1 or better in all six
+seed/mode combinations. In dark mode the "deep" overlay is therefore lighter
+than the "bright" shape; the two tones stay distinct but the shading inverts.
+Clip ids are unique per instance. The SVG is `aria-hidden` inside the labelled
+home link and takes an optional `label` for standalone use, which also closes
+the C020 `image-redundant-alt` note. Path data lives only in `logo-paths.ts`;
+the designer's SVG replaces those strings. The PNG, WebP, registry `iconUrl`s
+and favicons are untouched. Date: 2026-11-13.

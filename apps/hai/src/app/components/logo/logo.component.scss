@@ -1,0 +1,14 @@
+:host {
+  display: inline-block;
+}
+svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hai-logo-deep {
+  fill: var(--hai-logo-deep, var(--primary-text, var(--primary)));
+}
+.hai-logo-bright {
+  fill: var(--hai-logo-bright, var(--primary));
+}

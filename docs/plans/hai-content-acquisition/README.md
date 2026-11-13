@@ -37,18 +37,19 @@ that settle open questions in the handoff are recorded in
 | R3        | The `/training` page.                                                                                                  | R1         |
 | R4        | Homepage lead, CTAs, pathway cards, banner; Support & Migration links to `/technical-support`.                         | R2, R3     |
 | R5        | Cross-links and ecosystem status wording.                                                                              | R4         |
-| R6        | Theme-aware logo (blocked on the SVG).                                                                                 | none       |
+| R6        | Theme-aware logo (done with the stand-in SVG; the designer's file swaps in).                                           | none       |
 | R7        | Closing review: journeys, accessibility, analytics detail values, smoke run.                                           | R1–R6      |
 
 ## Status
 
-| Milestone              | Status      |
-| ---------------------- | ----------- |
-| R0                     | Done        |
-| R1                     | Done        |
-| R2                     | Done        |
-| R3                     | Done        |
-| R4                     | R4 done     |
-| R5                     | R5 done     |
-| Follow-ups (C012–C015) | Done        |
-| R6–R7                  | Not started |
+| Milestone              | Status                        |
+| ---------------------- | ----------------------------- |
+| R0                     | Done                          |
+| R1                     | Done                          |
+| R2                     | Done                          |
+| R3                     | Done                          |
+| R4                     | R4 done                       |
+| R5                     | R5 done                       |
+| Follow-ups (C012–C015) | Done                          |
+| R6                     | Done (stand-in artwork, C021) |
+| R7                     | Not started                   |
