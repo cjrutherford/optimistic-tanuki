@@ -2,6 +2,7 @@ import {
   HAI_APP_DIRECTORY,
   HAI_APP_STATUS_LABELS,
   resolveHaiAppLinks,
+  resolvePublicAppUrl,
 } from './hai-app.directory';
 
 describe('HAI app directory', () => {
@@ -271,5 +272,34 @@ describe('HAI app directory', () => {
     const [link] = resolveHaiAppLinks([]);
 
     expect(link.status).toBe('early-access');
+  });
+
+  describe('resolvePublicAppUrl', () => {
+    const app = (overrides: Record<string, unknown>) =>
+      ({
+        appId: 'system-configurator',
+        uiBaseUrl: 'https://hardware.example.com/',
+        visibility: 'public',
+        ...overrides,
+      } as never);
+
+    it('returns the URL the registry publishes, route included', () => {
+      expect(resolvePublicAppUrl([app({})], 'system-configurator')).toBe(
+        'https://hardware.example.com/'
+      );
+    });
+
+    it.each([
+      ['the app is absent', [] as never[]],
+      ['the app is internal', [app({ visibility: 'internal' })]],
+      ['the URL is empty', [app({ uiBaseUrl: '' })]],
+      ['the URL is not http(s)', [app({ uiBaseUrl: 'ftp://x.example.com' })]],
+      [
+        'the URL embeds credentials',
+        [app({ uiBaseUrl: 'https://user:pw@x.example.com' })],
+      ],
+    ])('returns undefined when %s', (_name, apps) => {
+      expect(resolvePublicAppUrl(apps, 'system-configurator')).toBeUndefined();
+    });
   });
 });

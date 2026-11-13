@@ -215,6 +215,20 @@ export function resolveHaiAppLinks(
   });
 }
 
+/**
+ * The running URL a registry publishes for one app, or undefined when the app
+ * is missing, not public, or its URL is not a plain HTTP(S) destination. The
+ * registry is the only source: there is no localhost default, so a deployment
+ * that does not publish the app gets no link.
+ */
+export function resolvePublicAppUrl(
+  apps: AppRegistration[],
+  appId: string
+): string | undefined {
+  const app = apps.find((entry) => entry.appId === appId);
+  return app?.visibility === 'public' ? publicAppUrl(app.uiBaseUrl) : undefined;
+}
+
 function isCurrentHaiApp(app: HaiRegistryApp, currentAppId?: string): boolean {
   return (
     !!currentAppId &&

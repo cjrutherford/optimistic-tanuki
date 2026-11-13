@@ -30,7 +30,10 @@ describe('call-to-action conventions', () => {
         provideRouter([]),
         {
           provide: HaiAppDirectoryService,
-          useValue: { getResolvedApps: () => of([]) },
+          useValue: {
+            getResolvedApps: () => of([]),
+            getPublicAppUrl: () => of(undefined),
+          },
         },
       ],
     });

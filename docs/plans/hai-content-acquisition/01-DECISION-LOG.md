@@ -176,3 +176,22 @@ bright ones. Light mode is unchanged. `--hai-logo-deep` and `--hai-logo-bright`
 still win in both modes, and no colour is hard-coded. Measured against the
 rendered header pixels behind the logo (seeds #204434, #1f4e8c, #b4532a), the
 deep fill is 3.1:1 or better in all six seed/mode cases. Date: 2026-11-13.
+
+## C024 — Configurator links come from the app registry, with no localhost default
+
+The hardware catalogue (`HardwareCatalogService`) fell back to
+`http://localhost:8091` when the registry had no URL, in the service and again
+in the template. Both fallbacks are gone. The URL now comes from
+`HaiAppDirectoryService.getPublicAppUrl('system-configurator')`, which reads
+`/api/registry/apps` like the other HAI links and applies the same rule as
+`resolveHaiAppLinks`: the app must be public and its `uiBaseUrl` a plain
+http(s) URL. Which URL that is depends on the registry the gateway serves for
+the environment: the dev registry (`tools/registry/apps.yaml`, generated into
+`default-registry.json`) holds the dev URL, and the production registry
+(`tools/registry/apps.production.sample.yaml`) holds
+`https://hardware.hopefulaspirationsindustries.com`. When the registry is
+unreachable, omits the app, lists it as internal, or gives an invalid URL, the
+tiers carry no `portalUrl` and the "Customize in Appliance Portal" and
+solutions-matrix "Configure" links are not rendered. The shared
+`AppRegistryService` is not used here because it substitutes the bundled
+(localhost) registry when the gateway call fails. Date: 2026-11-13.

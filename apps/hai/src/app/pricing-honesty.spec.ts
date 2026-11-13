@@ -33,7 +33,10 @@ describe('honest pricing', () => {
         provideRouter([]),
         {
           provide: HaiAppDirectoryService,
-          useValue: { getResolvedApps: () => of([]) },
+          useValue: {
+            getResolvedApps: () => of([]),
+            getPublicAppUrl: () => of(undefined),
+          },
         },
       ],
     });

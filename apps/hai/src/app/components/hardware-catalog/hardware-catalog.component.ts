@@ -37,7 +37,7 @@ export class HardwareCatalogComponent implements OnInit {
     }
   }
 
-  getPortalUrl(tier: HardwareTier): Observable<string> {
+  getPortalUrl(tier: HardwareTier): Observable<string | undefined> {
     return this.catalogService.getPortalUrl(tier.configuratorPreset);
   }
 }

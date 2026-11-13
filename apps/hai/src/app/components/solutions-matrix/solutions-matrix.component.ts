@@ -230,7 +230,7 @@ export class SolutionsMatrixComponent implements OnInit {
     label: v.tabLabel,
   }));
 
-  readonly portalUrls: Record<string, Observable<string>> = {
+  readonly portalUrls: Record<string, Observable<string | undefined>> = {
     tier1: this.catalogService.getPortalUrl('tier1'),
     tier2: this.catalogService.getPortalUrl('tier2'),
     tier3: this.catalogService.getPortalUrl('tier3'),
@@ -251,7 +251,7 @@ export class SolutionsMatrixComponent implements OnInit {
     this.activeVerticalId.set(tabId);
   }
 
-  getPortalUrl(preset: string): Observable<string> {
+  getPortalUrl(preset: string): Observable<string | undefined> {
     return this.portalUrls[preset] || this.catalogService.getPortalUrl(preset);
   }
 }

@@ -92,13 +92,10 @@
             </dl>
           </div>
 
-          <div class="card-actions">
+          <div class="card-actions" *ngIf="tier.portalUrl">
             <a
               class="portal-btn"
-              [href]="
-                tier.portalUrl ||
-                'http://localhost:8091?preset=' + tier.configuratorPreset
-              "
+              [href]="tier.portalUrl"
               [attr.data-preset]="tier.configuratorPreset"
               target="_blank"
               rel="noopener noreferrer"
