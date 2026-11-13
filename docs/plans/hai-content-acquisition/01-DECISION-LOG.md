@@ -96,3 +96,40 @@ While the designer works on the new logo, the header uses an SVG traced from
 `--hai-logo-deep` and `--hai-logo-bright`, falling back to the original colours.
 The designer's SVG replaces it in R6. The PNG and WebP files stay for the app
 registry and icons. Date: 2026-11-13.
+
+## C017 — The About tag moves into the page flow on small screens
+
+The floating "HAI · About this app" tag covered body text at 375 px even in its
+collapsed form. `hai-about-tag` gets a third placement, `inline-compact`: it
+floats at the bottom left on wide screens and, at 640 px and below, sits in the
+flow after the page content in its full form, so it reserves its own space and
+covers nothing. HAI uses it. The other apps keep `fixed`. Date: 2026-11-13.
+
+## C018 — Secondary action is an outline in the brand text colour
+
+The hero's "Explore training" button used a near-transparent surface fill and a
+70%-transparent border, which read as a faint white box. The secondary action
+now has a solid surface fill, a 2px solid border and text in `--primary-text`.
+The border style is fixed to `solid` rather than `--personality-border-style`,
+because a personality that draws no borders would leave the button borderless.
+Date: 2026-11-13.
+
+## C019 — Training and Technical Support links count as audience interest
+
+Links to `/training` and `/technical-support` fire `audience_interest` with
+those details, beside `home` and `organization`. Contact links with
+`?subject=` already fired `cta_click: contact`, because the service matches on
+the path. No new event names, and the gateway's detail pattern accepts the
+values. Date: 2026-11-13.
+
+## C020 — Left alone in R7
+
+- The header logo's `alt` repeats the visible brand text at 1440 px (axe
+  `image-redundant-alt`, minor). The logo is in R6's scope, so it waits for the
+  designer's file.
+- The hardware catalogue's configurator links fall back to
+  `http://localhost:8091` when the app registry has no URL. That predates this
+  work and is outside the HAI content scope.
+- There is no `<footer>` landmark. The contact strip ends the page content.
+  Not an axe violation; noted for a later pass.
+  Date: 2026-11-13.
