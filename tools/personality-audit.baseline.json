@@ -466,10 +466,10 @@
     "line-height": 1
   },
   "apps/client-interface/src/app/app.component.scss": {
-    "border-radius": 5,
+    "border-radius": 3,
     "box-shadow": 4,
     "font-size": 5,
-    "letter-spacing": 2,
+    "letter-spacing": 1,
     "line-height": 1
   },
   "apps/client-interface/src/app/components/landing.component.scss": {
