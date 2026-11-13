@@ -51,4 +51,12 @@ describe('HaiAboutTagComponent', () => {
       'Made with Love in Savannah - '
     );
   });
+
+  it('marks the host so a shell can move the tag into the flow on small screens', () => {
+    component.placement = 'inline-compact';
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.classList).toContain('inline-compact');
+    expect(fixture.nativeElement.classList).not.toContain('inline');
+  });
 });

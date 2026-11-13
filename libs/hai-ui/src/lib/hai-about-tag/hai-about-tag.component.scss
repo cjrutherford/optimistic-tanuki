@@ -112,12 +112,12 @@
 // login form it covered the "Email me a magic link" action. Collapse it to the
 // mark alone: still visible and tappable, no longer occluding the page.
 @media (max-width: 640px) {
-  :host {
+  :host:not(.inline-compact) {
     left: max(0.65rem, env(safe-area-inset-left));
     bottom: max(0.65rem, env(safe-area-inset-bottom));
   }
 
-  .hai-tag {
+  :host:not(.inline-compact) .hai-tag {
     grid-template-columns: auto;
     min-width: 0;
     gap: 0;
@@ -126,22 +126,34 @@
 
   // The accessible name lives on the button's aria-label, so hiding the visible
   // copy does not leave the control unlabelled.
-  .tag-copy {
+  :host:not(.inline-compact) .tag-copy {
     display: none;
   }
 
-  .tag-hole {
+  :host:not(.inline-compact) .tag-hole {
     top: 0.4rem;
     left: 0.38rem;
     width: 0.5rem;
     height: 0.5rem;
   }
 
-  .tag-mark {
+  :host:not(.inline-compact) .tag-mark {
     // Keeps the control at a 44px minimum tap target once the copy is gone.
     width: 2.75rem;
     font-size: 1.1rem;
     letter-spacing: 0.16em;
+  }
+
+  // Placed in the flow, the tag keeps its full form: it no longer covers
+  // anything, so there is nothing to collapse for.
+  :host.inline-compact {
+    position: relative;
+    display: block;
+    left: auto;
+    bottom: auto;
+    z-index: auto;
+    padding: 1rem max(1rem, env(safe-area-inset-left))
+      max(1rem, env(safe-area-inset-bottom));
   }
 }
 
