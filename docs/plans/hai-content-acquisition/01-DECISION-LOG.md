@@ -88,3 +88,11 @@ public link yet, so the cards stay unlinked.
 
 The homepage offerings grid gets Training and Technical Support blocks.
 Date: 2026-11-12.
+
+## C016 — Traced logo SVG as a stand-in
+
+While the designer works on the new logo, the header uses an SVG traced from
+`haidev-logo.png` (`assets/haidev-logo.svg`). Its two blues read
+`--hai-logo-deep` and `--hai-logo-bright`, falling back to the original colours.
+The designer's SVG replaces it in R6. The PNG and WebP files stay for the app
+registry and icons. Date: 2026-11-13.
