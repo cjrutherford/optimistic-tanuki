@@ -97,14 +97,20 @@ export class HaiDockComponent {
   private appsRequested = false;
   private tabStop: HTMLElement | null = null;
 
-  /** Apps a visitor can pin: not this app, and with somewhere to go. */
+  /**
+   * Apps a visitor can pin: not this app, and published by the registry with
+   * a running URL. A repository link is not somewhere a shortcut should go.
+   */
   readonly pinnable = computed(() =>
     this.apps().filter(
-      (app) => !!app.resolvedHref && !this.isCurrent(app.appId, app.configName)
+      (app) => !!app.runUrl && !this.isCurrent(app.appId, app.configName)
     )
   );
 
-  /** Pinned apps that still resolve, in pin order. Unknown ids are ignored. */
+  /**
+   * Pinned apps that are still reachable, in pin order. Unknown ids, and apps
+   * the registry no longer publishes, are skipped but stay stored.
+   */
   readonly pinned = computed(() => {
     const pinnable = this.pinnable();
     return this.pinnedIds().flatMap((id) => {
@@ -249,6 +255,11 @@ export class HaiDockComponent {
       this.tabStop = control;
       this.syncTabStops();
     }
+  }
+
+  /** The host a shortcut opens, shown under its name in the picker. */
+  hostOf(url: string | undefined): string {
+    return url ? new URL(url).host : '';
   }
 
   private isCurrent(appId: string, configName: string): boolean {

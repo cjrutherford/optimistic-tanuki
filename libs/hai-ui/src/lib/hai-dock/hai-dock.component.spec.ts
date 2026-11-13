@@ -65,11 +65,17 @@ describe('HaiDockComponent', () => {
   let root: HTMLElement;
 
   function apps(): HaiResolvedAppLink[] {
-    // Fin Commander is resolvable; Statocyst loses its link below.
+    // Every app is online except Forge of Will, which only has a repository
+    // link, and Statocyst, which has no link at all.
     return resolveHaiAppLinks([], 'hai').map((app) =>
-      app.appId === 'statocyst'
-        ? { ...app, resolvedHref: undefined, repositoryUrl: undefined }
-        : app
+      ['forge-of-will', 'statocyst'].includes(app.appId)
+        ? app
+        : {
+            ...app,
+            runUrl: `https://${app.appId}.example.test`,
+            resolvedHref: `https://${app.appId}.example.test`,
+            isPublic: true,
+          }
     );
   }
 
@@ -173,7 +179,7 @@ describe('HaiDockComponent', () => {
     expect(document.activeElement).toBe(about);
   });
 
-  it('lists apps to pin, leaving out the current app and apps with no link', async () => {
+  it('lists only online apps to pin, leaving out the current app and repository-only apps', async () => {
     await setup();
     await openPicker();
     const names = all('.hai-dock__picker-name').map((n) => n.textContent);
@@ -184,6 +190,10 @@ describe('HaiDockComponent', () => {
     expect(names).toContain('Fin Commander');
     expect(names).not.toContain('HAI');
     expect(names).not.toContain('Statocyst');
+    expect(names).not.toContain('Forge of Will');
+    expect(all('.hai-dock__picker-meta').map((n) => n.textContent)).toContain(
+      'fin-commander.example.test'
+    );
     expect(directory.getResolvedApps).toHaveBeenCalledWith('hai');
   });
 
@@ -191,7 +201,7 @@ describe('HaiDockComponent', () => {
     await setup();
     directory.getResolvedApps.mockReturnValue(
       of(
-        resolveHaiAppLinks([]).map((app) =>
+        apps().map((app) =>
           app.appId === 'fin-commander' ? { ...app, configName: 'hai' } : app
         )
       )
@@ -217,7 +227,9 @@ describe('HaiDockComponent', () => {
     expect(shortcut.getAttribute('aria-label')).toBe(
       'Fin Commander (opens in a new tab)'
     );
-    expect(shortcut.getAttribute('href')).toMatch(/^https?:\/\//);
+    expect(shortcut.getAttribute('href')).toBe(
+      'https://fin-commander.example.test'
+    );
     expect(shortcut.getAttribute('rel')).toBe('noopener noreferrer');
     expect(q('[role="status"]')?.textContent).toContain('Fin Commander');
   });
@@ -251,6 +263,27 @@ describe('HaiDockComponent', () => {
     expect(document.activeElement).toBe(
       q('[data-testid="hai-dock-add"] button')
     );
+  });
+
+  it('removes a pinned shortcut with Backspace too', async () => {
+    await setup(['fin-commander', 'towne-square']);
+    const shortcut = q('[data-testid="hai-dock-shortcut"] a') as HTMLElement;
+    shortcut.focus();
+
+    press(shortcut, 'Backspace');
+    fixture.detectChanges();
+
+    expect(store.set).toHaveBeenCalledWith(['towne-square']);
+  });
+
+  it('does not draw a stored pin for an app that is no longer online', async () => {
+    await setup(['forge-of-will', 'fin-commander']);
+
+    expect(
+      all('[data-testid="hai-dock-shortcut"] a').map((a) =>
+        a.getAttribute('aria-label')
+      )
+    ).toEqual(['Fin Commander (opens in a new tab)']);
   });
 
   it('draws stored pins in order and ignores ids that match no app', async () => {

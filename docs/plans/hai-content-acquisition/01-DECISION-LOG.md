@@ -244,3 +244,24 @@ bubble and chat windows.
   and email from `CONTACT_DETAILS`, and a copyright line.
 
 Date: 2026-11-13.
+
+## C026 — Only apps with a running URL can be pinned to the dock
+
+Owner decision, 2026-11-13. The picker lists an app only when the registry
+publishes it as public with an HTTP(S) `uiBaseUrl` (`runUrl`); a repository
+link is not a shortcut target, so repository-only apps are left out. The
+picker shows the app's host under its name instead of "App"/"Repository". A
+stored pin for an app the registry stops publishing is not drawn but stays
+stored, as in C025. This supersedes the repository fallback described in C025.
+
+Confirmed in the same review:
+
+- Production serves `tools/registry/apps.production.sample.yaml` through
+  `APP_REGISTRY_PATH`, so C024's configurator links resolve to
+  `https://hardware.hopefulaspirationsindustries.com` there with no code
+  change.
+- The dock's shape follows the personality (square under foundation); no
+  forced radius.
+- Unpinning stays Delete, Backspace or the picker's Unpin button.
+- The dark-mode logo blend (C023) is deferred until the final logo and
+  palettes land.

@@ -23,7 +23,7 @@
   @for (app of pinned(); track app.appId) {
   <hai-dock-item
     [label]="app.name"
-    [href]="app.resolvedHref ?? null"
+    [href]="app.runUrl ?? null"
     [external]="true"
     [removable]="true"
     data-testid="hai-dock-shortcut"
@@ -100,9 +100,7 @@
       </span>
       <span class="hai-dock__picker-copy">
         <span class="hai-dock__picker-name">{{ app.name }}</span>
-        <span class="hai-dock__picker-meta">{{
-          app.isPublic ? 'App' : 'Repository'
-        }}</span>
+        <span class="hai-dock__picker-meta">{{ hostOf(app.runUrl) }}</span>
       </span>
       <button
         type="button"
@@ -121,9 +119,7 @@
     }
   </ul>
   } @else {
-  <p class="hai-dock__picker-empty">
-    No other HAI apps have a link to pin yet.
-  </p>
+  <p class="hai-dock__picker-empty">No other HAI apps are online to pin yet.</p>
   }
 </div>
 }
