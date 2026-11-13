@@ -81,6 +81,8 @@ const CTA_ROUTES: Record<string, string> = {
 const AUDIENCE_ROUTES: Record<string, string> = {
   '/private-cloud/home': 'home',
   '/private-cloud/organizations': 'organization',
+  '/training': 'training',
+  '/technical-support': 'technical-support',
 };
 
 @Injectable({ providedIn: 'root' })

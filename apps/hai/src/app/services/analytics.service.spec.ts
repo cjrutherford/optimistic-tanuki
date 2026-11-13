@@ -98,8 +98,11 @@ describe('AnalyticsService', () => {
     link('mailto:chris@hopefulaspirationsindustries.com');
     link('/private-cloud/assessment');
     link('/contact');
+    link('/contact?subject=training');
     link('/private-cloud/home');
     link('/private-cloud/organizations');
+    link('/training');
+    link('/technical-support');
     link('/partners');
 
     expect(sent.map((event) => [event.name, event.detail])).toEqual([
@@ -107,8 +110,11 @@ describe('AnalyticsService', () => {
       ['email_click', undefined],
       ['cta_click', 'assessment'],
       ['cta_click', 'contact'],
+      ['cta_click', 'contact'],
       ['audience_interest', 'home'],
       ['audience_interest', 'organization'],
+      ['audience_interest', 'training'],
+      ['audience_interest', 'technical-support'],
     ]);
     expect(JSON.stringify(sent)).not.toMatch(/9125217314|chris@/);
   });
