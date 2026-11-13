@@ -1,5 +1,24 @@
 :host {
   display: inline-block;
+  // In light mode `--primary-text` is the darker, readable primary, so it
+  // shades the deep parts. In dark mode it is the lighter one, so the roles
+  // swap: the bright parts take `--primary-text` and the deep parts take
+  // `--primary`, eased a quarter of the way toward `--primary-text`. A plain
+  // `--primary` is only 2.6:1 on the dark header for a blue seed; the mix
+  // clears 3:1 and still reads darker than the bright parts. The
+  // `--hai-logo-*` overrides win in both modes.
+  --_hai-logo-deep: var(--hai-logo-deep, var(--primary-text, var(--primary)));
+  --_hai-logo-bright: var(--hai-logo-bright, var(--primary));
+}
+:host-context(html[data-theme='dark']) {
+  --_hai-logo-deep: var(
+    --hai-logo-deep,
+    color-mix(in srgb, var(--primary) 75%, var(--primary-text, var(--primary)))
+  );
+  --_hai-logo-bright: var(
+    --hai-logo-bright,
+    var(--primary-text, var(--primary))
+  );
 }
 svg {
   display: block;
@@ -7,8 +26,8 @@ svg {
   height: auto;
 }
 .hai-logo-deep {
-  fill: var(--hai-logo-deep, var(--primary-text, var(--primary)));
+  fill: var(--_hai-logo-deep);
 }
 .hai-logo-bright {
-  fill: var(--hai-logo-bright, var(--primary));
+  fill: var(--_hai-logo-bright);
 }

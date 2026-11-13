@@ -12,6 +12,8 @@ let nextLogoId = 0;
  *
  * Deep parts use `--hai-logo-deep` and bright parts `--hai-logo-bright`;
  * unset, they follow the theme's readable primary text colour and its primary.
+ * In dark mode (`html[data-theme='dark']`) the two swap, because the readable
+ * primary is then the lighter of the pair and the deep parts must stay darker.
  * Decorative by default (it sits inside a labelled link); set `label` when it
  * stands alone.
  */

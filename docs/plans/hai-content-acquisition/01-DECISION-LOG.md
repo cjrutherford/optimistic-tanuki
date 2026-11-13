@@ -161,3 +161,18 @@ colour decision. The tag keeps its `aria-label`; the logo is `aria-hidden`.
 The modal header drops its gradient square for the logo too, and the unused
 `--local-hai-mark-*` variables went with it. Path data is still only in
 `hai-logo-paths.ts`. Date: 2026-11-13.
+
+## C023 — In dark mode the logo's deep and bright shades swap
+
+C021 left the shading inverted in dark mode: `--primary-text` is the lighter
+colour there, so the "deep" overlay came out lighter than the "bright" shape,
+and the bright fill (`--primary`) was only 2.2 to 2.6:1 on the dark header.
+`hai-logo` now keys off `html[data-theme='dark']` (the attribute ThemeService
+sets) with `:host-context`. Dark mode: bright parts take `--primary-text`; deep
+parts take `--primary` eased 25% toward `--primary-text` with `color-mix`. The
+plain swap left the blue seed's deep fill at 2.63:1, under the 3:1 target; the
+mix clears it for all three seeds and the deep parts stay darker than the
+bright ones. Light mode is unchanged. `--hai-logo-deep` and `--hai-logo-bright`
+still win in both modes, and no colour is hard-coded. Measured against the
+rendered header pixels behind the logo (seeds #204434, #1f4e8c, #b4532a), the
+deep fill is 3.1:1 or better in all six seed/mode cases. Date: 2026-11-13.
