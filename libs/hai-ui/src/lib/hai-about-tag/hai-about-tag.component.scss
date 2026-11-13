@@ -70,23 +70,13 @@
     color-mix(in srgb, var(--foreground) 25%, transparent);
 }
 
-.tag-mark {
-  display: grid;
-  place-items: center;
-  width: 2.7rem;
-  aspect-ratio: 1;
-  border-radius: var(--personality-button-radius, 0.9rem);
-  // Text and fill must pair: the on-primary token is chosen against the plain
-  // primary, so the fill stays primary (no darkening gradient).
-  background: var(--primary);
-  color: var(--on-primary, var(--primary-foreground, var(--background)));
-  font-family: var(
-    --font-heading,
-    var(--personality-font-family, Georgia, serif)
-  );
-  font-size: 1.25rem;
-  letter-spacing: 0.22em;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 25%, transparent);
+// The logo sits straight on the tag surface: its own fills follow the theme
+// (`--primary-text` for the deep parts, `--primary` for the bright), so it
+// needs no filled box behind it.
+.tag-logo {
+  display: block;
+  width: 3.2rem;
+  flex-shrink: 0;
 }
 
 .tag-copy {
@@ -137,11 +127,9 @@
     height: 0.5rem;
   }
 
-  :host:not(.inline-compact) .tag-mark {
+  :host:not(.inline-compact) .tag-logo {
     // Keeps the control at a 44px minimum tap target once the copy is gone.
-    width: 2.75rem;
-    font-size: 1.1rem;
-    letter-spacing: 0.16em;
+    width: 2.9rem;
   }
 
   // Placed in the flow, the tag keeps its full form: it no longer covers

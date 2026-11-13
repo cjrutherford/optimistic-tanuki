@@ -25,38 +25,11 @@
   margin-bottom: 1.5rem;
 }
 
+// The logo's fills follow the theme, so it sits on the panel without a box.
 .hai-mark {
-  display: grid;
-  place-items: center;
-  width: 4.5rem;
-  aspect-ratio: 1;
-  border-radius: calc(var(--personality-card-radius, 1rem) * 0.8);
-  background: radial-gradient(
-      circle at top,
-      var(
-        --local-hai-mark-highlight,
-        color-mix(in srgb, white 30%, transparent)
-      ),
-      transparent 55%
-    ),
-    var(--local-hai-mark-gradient, var(--gradient-primary, var(--primary)));
-  box-shadow: var(
-      --local-hai-hero-shadow,
-      var(--personality-card-shadow, var(--shadow-lg))
-    ),
-    inset 0 1px 0
-      color-mix(
-        in srgb,
-        var(--local-hai-mark-foreground, var(--background)) 40%,
-        transparent
-      );
-  color: var(--local-hai-mark-foreground, var(--background));
-  font-family: var(
-    --font-heading,
-    var(--personality-font-family, 'Cormorant Garamond', 'Georgia', serif)
-  );
-  font-size: 1.6rem;
-  letter-spacing: 0.22em;
+  display: block;
+  width: 5.5rem;
+  margin-top: 0.15rem;
 }
 
 .about-intro h3 {
@@ -388,6 +361,6 @@
   }
 
   .hai-mark {
-    width: 3.75rem;
+    width: 4.5rem;
   }
 }

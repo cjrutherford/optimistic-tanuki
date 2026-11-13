@@ -149,3 +149,15 @@ home link and takes an optional `label` for standalone use, which also closes
 the C020 `image-redundant-alt` note. Path data lives only in `logo-paths.ts`;
 the designer's SVG replaces those strings. The PNG, WebP, registry `iconUrl`s
 and favicons are untouched. Date: 2026-11-13.
+
+## C022 — `hai-logo` lives in hai-ui; the About tag and modal use it
+
+The logo component moved from `apps/hai` to `libs/hai-ui` (`hai-logo/`, exported
+from `@optimistic-tanuki/hai-ui`) so the shared "HAI · About this app" tag shows
+the mark in every app. It replaces the tracked-out "HAI" text in a green square,
+which clipped on the right. The logo sits straight on the tag surface with no
+filled box: its fills follow the theme (C021), so a box would only add a second
+colour decision. The tag keeps its `aria-label`; the logo is `aria-hidden`.
+The modal header drops its gradient square for the logo too, and the unused
+`--local-hai-mark-*` variables went with it. Path data is still only in
+`hai-logo-paths.ts`. Date: 2026-11-13.

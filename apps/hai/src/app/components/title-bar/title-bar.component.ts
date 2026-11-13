@@ -13,7 +13,7 @@ import {
   NavSidebarComponent,
 } from '@optimistic-tanuki/navigation-ui';
 import { ThemeToggleComponent } from '@optimistic-tanuki/theme-ui';
-import { HaiLogoComponent } from '../logo/logo.component';
+import { HaiLogoComponent } from '@optimistic-tanuki/hai-ui';
 import { HEADER_LINKS, SITE_NAVIGATION } from '../../content/navigation';
 
 @Component({

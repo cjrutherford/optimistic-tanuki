@@ -3,7 +3,7 @@ import {
   HAI_LOGO_MARKS,
   HAI_LOGO_VIEW_BOX,
   HAI_LOGO_WORDMARK,
-} from './logo-paths';
+} from './hai-logo-paths';
 
 let nextLogoId = 0;
 
@@ -44,7 +44,7 @@ let nextLogoId = 0;
       <path class="hai-logo-deep" [attr.d]="wordmark" />
     </svg>
   `,
-  styleUrl: './logo.component.scss',
+  styleUrl: './hai-logo.component.scss',
 })
 export class HaiLogoComponent {
   /** Accessible name when the logo is not inside a labelled link. */

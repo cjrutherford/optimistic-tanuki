@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { HaiLogoComponent } from './logo.component';
+import { HaiLogoComponent } from './hai-logo.component';
 
 @Component({
   standalone: true,
