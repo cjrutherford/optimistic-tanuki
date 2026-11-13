@@ -42,7 +42,15 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         channel: 'chrome',
         launchOptions: {
-          args: ['--disable-web-security'],
+          args: [
+            '--disable-web-security',
+            // Seeded towns use picsum.photos placeholder images. When that site
+            // stalls, page loads never reach "load" and whole suites time out
+            // (seen 2026-11-13). Failing the lookup at once lets pages finish
+            // loading; no test asserts on those images. Applies to every
+            // context, including ones a spec creates with browser.newContext.
+            '--host-resolver-rules=MAP picsum.photos ~NOTFOUND, MAP *.picsum.photos ~NOTFOUND',
+          ],
         },
       },
     },
