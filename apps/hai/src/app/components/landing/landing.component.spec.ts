@@ -78,16 +78,36 @@ describe('LandingComponent', () => {
     expect(element.querySelector('h1')?.textContent?.trim()).toBe(
       'Technology you own.'
     );
-    for (const offering of [
-      'Private cloud',
-      'turn-key server appliances',
-      'open-source software',
-      'custom tools',
+    expect(lede).toContain(
+      'Technology should help you do what matters—not leave you confused or dependent.'
+    );
+    for (const skill of [
+      'practical digital skills',
+      'fix and maintain everyday technology',
+      'households, businesses and communities',
     ]) {
-      expect(lede).toContain(offering);
+      expect(lede.replace(/\s+/g, ' ')).toContain(skill);
     }
     expect(element.textContent).toContain(
       'You should be able to leave any vendor, including us, with your data intact.'
+    );
+  });
+
+  it('keeps the umbrella phrase and support line as supporting copy', () => {
+    const copy = (fixture.nativeElement as HTMLElement).querySelector(
+      '.hero-copy'
+    );
+    const text = (copy?.textContent ?? '').replace(/\s+/g, ' ');
+
+    expect(copy?.querySelector('h1')?.textContent?.trim()).toBe(
+      'Technology you own.'
+    );
+    expect(copy?.querySelector('.tagline')?.tagName).toBe('P');
+    expect(text).toContain(
+      'Technology that works for you. Knowledge that stays with you.'
+    );
+    expect(text).toContain(
+      'Learn to do it yourself, ask us to help, or let us manage the technical details. You stay in control.'
     );
   });
 
@@ -105,27 +125,69 @@ describe('LandingComponent', () => {
     expect(fixture.nativeElement.textContent).not.toMatch(/church/i);
   });
 
-  it('renders the operational guarantee banner', () => {
+  it('states the service area and makes no 48-hour onboarding claim', () => {
     const text = fixture.nativeElement.textContent as string;
 
     expect(text).toContain(
-      '48-Hour Rapid Onboarding. Local On-Site Support in Savannah and South Georgia.'
+      'On-site in Savannah and South Georgia; remote where the work allows.'
     );
+    expect(text).not.toMatch(/48[-\s]?hour/i);
+    expect(text).not.toMatch(/rapid onboarding/i);
   });
 
-  it('sends the hero actions to the audit and the offerings overview', () => {
+  it('leads the hero with one primary action and a training link', () => {
     const nativeElement = fixture.nativeElement as HTMLElement;
     const buttons = nativeElement.querySelectorAll(
       '.hero-panel .hero-actions a'
     );
 
     expect(buttons).toHaveLength(2);
-    expect(buttons[0].textContent?.trim()).toBe('Schedule Free Audit');
+    expect(buttons[0].textContent?.trim()).toBe('Tell us what you need');
     expect(buttons[0].getAttribute('href')).toBe('/contact');
     expect(buttons[0].classList).toContain('primary');
-    expect(buttons[1].textContent?.trim()).toBe('See What We Offer');
-    expect(buttons[1].getAttribute('href')).toBe('/#offerings');
+    expect(buttons[1].textContent?.trim()).toBe('Explore training');
+    expect(buttons[1].getAttribute('href')).toBe('/training');
     expect(buttons[1].classList).toContain('secondary');
+  });
+
+  it('shows four pathways, in order, each linking to its destination', () => {
+    const cards = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll(
+        '#pathways article.path-card'
+      )
+    );
+
+    expect(
+      cards.map((card) => [
+        card.querySelector('h3')?.textContent?.trim(),
+        card.querySelector('a')?.textContent?.trim(),
+        card.querySelector('a')?.getAttribute('href'),
+      ])
+    ).toEqual([
+      ['Learn', 'Explore training', '/training'],
+      ['Get Help', 'Get technical help', '/technical-support'],
+      ['Get Solutions', 'Explore solutions', '/#offerings'],
+      ['Explore Apps', 'Explore apps', '/#ecosystem'],
+    ]);
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('#pathways h2')
+        ?.textContent
+    ).toBe('What brings you here?');
+  });
+
+  it('points the solutions and apps pathways at sections that exist', () => {
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('#offerings')).not.toBeNull();
+    expect(element.querySelector('#ecosystem')).not.toBeNull();
+  });
+
+  it('puts the pathways right after the hero, before the offerings', () => {
+    const order = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('section[id]')
+    ).map((section) => section.id);
+
+    expect(order.slice(0, 2)).toEqual(['pathways', 'offerings']);
   });
 
   it('gives every offering a headline, one sentence, and a link to its page', () => {
@@ -146,6 +208,22 @@ describe('LandingComponent', () => {
         OFFERINGS[index].summary
       );
     }
+  });
+
+  it('offers training and technical support first, and keeps Support & Migration distinct', () => {
+    const cards = Array.from(
+      (
+        fixture.nativeElement as HTMLElement
+      ).querySelectorAll<HTMLAnchorElement>('#offerings a.offering-card')
+    );
+    const routes = cards.map((card) => card.getAttribute('href'));
+
+    expect(routes.slice(0, 2)).toEqual(['/training', '/technical-support']);
+    expect(new Set(routes).size).toBe(routes.length);
+    const migration = OFFERINGS.find(
+      (offering) => offering.name === 'Support & Migration'
+    );
+    expect(migration?.route).toBe('/how-we-work');
   });
 
   it('still represents appliances, stacks, and custom software', () => {
@@ -192,6 +270,17 @@ describe('LandingComponent', () => {
     ]) {
       expect(nativeElement.querySelector(selector)).toBeNull();
     }
+  });
+
+  it('keeps "Schedule Free Audit" on the closing panel, not the hero', () => {
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('hai-cta-panel a')?.textContent?.trim()).toBe(
+      'Schedule Free Audit'
+    );
+    expect(element.querySelector('.hero-panel')?.textContent).not.toMatch(
+      /audit/i
+    );
   });
 
   it('closes with a single audit action', () => {

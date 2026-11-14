@@ -83,9 +83,6 @@ describe('HaiAboutModalComponent', () => {
 
   it('maps theme and personality values into local CSS variables for the modal body and cards', () => {
     jest
-      .spyOn(themeService, 'getButtonGradient')
-      .mockReturnValue('linear-gradient(rgb(1, 2, 3), rgb(4, 5, 6))');
-    jest
       .spyOn(themeService, 'getCardGradient')
       .mockReturnValue('linear-gradient(rgb(6, 5, 4), rgb(3, 2, 1))');
 
@@ -117,9 +114,6 @@ describe('HaiAboutModalComponent', () => {
     expect(
       host.style.getPropertyValue('--local-hai-link-primary-background')
     ).toBe('#2d7a59');
-    expect(host.style.getPropertyValue('--local-hai-mark-gradient')).toBe(
-      'linear-gradient(rgb(1, 2, 3), rgb(4, 5, 6))'
-    );
     expect(host.style.getPropertyValue('--local-hai-card-gradient')).toBe(
       'linear-gradient(rgb(6, 5, 4), rgb(3, 2, 1))'
     );
@@ -174,6 +168,17 @@ describe('HaiAboutModalComponent', () => {
     expect(
       repositoryOnlyCard.querySelector('[data-testid="hai-app-repo-link"]')
     ).toBeTruthy();
+  });
+
+  it('shows the theme-aware logo in the header, hidden from assistive tech', () => {
+    component.visible = true;
+    fixture.detectChanges();
+    const logo = fixture.nativeElement.querySelector(
+      'hai-logo.hai-mark'
+    ) as HTMLElement;
+    expect(logo).not.toBeNull();
+    expect(logo.getAttribute('aria-hidden')).toBe('true');
+    expect(logo.querySelector('svg')).not.toBeNull();
   });
 
   it('switches to the HAI tab when selected', () => {

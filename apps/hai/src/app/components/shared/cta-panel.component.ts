@@ -4,6 +4,8 @@ import { RouterLink } from '@angular/router';
 export interface CtaLink {
   label: string;
   route: string;
+  /** Query string for `route`, e.g. a contact `subject`. */
+  queryParams?: Record<string, string>;
 }
 
 @Component({

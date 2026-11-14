@@ -134,6 +134,25 @@ h1 {
   );
 }
 
+.tagline {
+  max-width: var(--hai-measure);
+  margin: section.space(0.75) 0 0;
+  @include section.heading-style;
+  font-size: section.text-size('h4');
+  color: color-mix(
+    in srgb,
+    var(--foreground) 92%,
+    var(--primary-text, var(--primary))
+  );
+}
+
+.support-line {
+  max-width: var(--hai-measure);
+  margin: 0;
+  @include section.copy-font;
+  color: color-mix(in srgb, var(--foreground) 88%, transparent);
+}
+
 .lede {
   max-width: var(--hai-measure);
   @include section.copy-font('lede');

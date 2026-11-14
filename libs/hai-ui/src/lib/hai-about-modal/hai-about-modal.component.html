@@ -11,9 +11,7 @@
 >
   <div class="about-shell">
     <header class="about-hero">
-      <div class="hai-mark" aria-hidden="true">
-        <span>HAI</span>
-      </div>
+      <hai-logo class="hai-mark" aria-hidden="true"></hai-logo>
       <div class="about-intro">
         <p class="eyebrow">{{ currentExpansion }}</p>
         <h3>{{ config.appName }}</h3>
@@ -89,7 +87,13 @@
               [class.is-live]="app.isPublic"
               [attr.data-state]="app.isPublic ? 'running' : 'repository'"
             >
-              {{ app.isPublic ? 'App link' : 'Repository' }}
+              {{
+                app.isPublic
+                  ? 'App link'
+                  : app.repositoryUrl
+                  ? 'Repository'
+                  : 'No link yet'
+              }}
             </span>
           </header>
 
@@ -112,7 +116,7 @@
               ></otui-icon>
               <span>Open app</span>
             </a>
-            }
+            } @if (app.repositoryUrl) {
             <a
               class="directory-link directory-link-secondary"
               [href]="app.repositoryUrl"
@@ -130,6 +134,7 @@
               ></otui-icon>
               <span>View repository</span>
             </a>
+            }
           </div>
         </article>
         }

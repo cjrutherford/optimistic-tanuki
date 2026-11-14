@@ -16,13 +16,20 @@ import {
 } from '@optimistic-tanuki/common-ui';
 import { ThemeColors, Themeable } from '@optimistic-tanuki/theme-lib';
 import { HaiAboutConfig } from '../hai-types/hai-app.config';
+import { HaiLogoComponent } from '../hai-logo/hai-logo.component';
 import { HaiAppDirectoryService } from '../hai-types/hai-app-directory.service';
 import { getRandomHaiExpansion } from '../hai-types/hai-expansions';
 
 @Component({
   selector: 'hai-about-modal',
   standalone: true,
-  imports: [CommonModule, ModalComponent, TabsComponent, IconComponent],
+  imports: [
+    CommonModule,
+    ModalComponent,
+    TabsComponent,
+    IconComponent,
+    HaiLogoComponent,
+  ],
   templateUrl: './hai-about-modal.component.html',
   styleUrl: './hai-about-modal.component.scss',
   host: {
@@ -82,7 +89,6 @@ export class HaiAboutModalComponent
     );
     const secondaryHover = this.mix(colors.background, colors.foreground, 0.1);
     const hairline = this.mix(colors.foreground, colors.background, 0.18);
-    const markHighlight = this.alpha(colors.background, 0.3);
 
     this.setLocalCSSVariables({
       'hai-ink': colors.foreground,
@@ -93,9 +99,6 @@ export class HaiAboutModalComponent
       'hai-complement': colors.complementary,
       'hai-surface': bodySurface,
       'hai-hero-panel': heroPanel,
-      'hai-mark-gradient': this.themeService.getButtonGradient('primary'),
-      'hai-mark-foreground': colors.background,
-      'hai-mark-highlight': markHighlight,
       'hai-card-gradient': this.themeService.getCardGradient('glass'),
       'hai-card-border': subtleBorder,
       'hai-card-shadow': 'var(--personality-card-shadow, var(--shadow-lg))',

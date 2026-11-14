@@ -100,4 +100,14 @@ describe('PrivateCloudHomePageComponent', () => {
       /unhackable|impossible to breach|guarantee[sd]? (savings|uptime)|always cheaper|church/i
     );
   });
+
+  it('links onward to training and technical support', () => {
+    expect(hrefs('hai-related-links a')).toEqual([
+      '/training',
+      '/technical-support',
+    ]);
+    expect(
+      element.querySelector('hai-related-links .related-prompt')?.textContent
+    ).toBeTruthy();
+  });
 });

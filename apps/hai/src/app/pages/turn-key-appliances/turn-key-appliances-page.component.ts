@@ -10,6 +10,7 @@ import {
   PRIVATE_CLOUD_APPLIANCE_NOTE,
   PRIVATE_CLOUD_APPLIANCE_TIERS,
 } from '../../content/private-cloud';
+import { APPLIANCES_RELATED_LINKS } from '../../content/related-links';
 
 @Component({
   selector: 'hai-turn-key-appliances-page',
@@ -45,6 +46,9 @@ import {
         The open-source software it runs
       </a>
       <a [routerLink]="assessmentRoute">Start an assessment</a>
+      @for (link of relatedLinks; track link.route) {
+      <a [routerLink]="link.route">{{ link.label }}</a>
+      }
     </p>
   `,
   styleUrl: './turn-key-appliances-page.component.scss',
@@ -54,4 +58,5 @@ export class TurnKeyAppliancesPageComponent {
   readonly tiers = PRIVATE_CLOUD_APPLIANCE_TIERS;
   readonly note = PRIVATE_CLOUD_APPLIANCE_NOTE;
   readonly assessmentRoute = ASSESSMENT_ROUTE;
+  readonly relatedLinks = APPLIANCES_RELATED_LINKS;
 }

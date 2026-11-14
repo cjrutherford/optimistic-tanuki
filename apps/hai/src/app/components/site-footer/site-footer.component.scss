@@ -1,0 +1,37 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.site-footer {
+  display: grid;
+  gap: section.space(0.75);
+  max-width: var(--layout-max-width, none);
+  margin-inline: auto;
+  padding: section.space(1.5) clamp(section.space(1), 3vw, section.space(2.5));
+  border-top: var(--hai-border-width, 1px) var(--hai-border-style, solid)
+    var(--hai-outline);
+}
+
+.links ul,
+.contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: section.space(0.5) section.space(1.5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  @include section.text-link;
+  @include section.copy-font('sm');
+  // The email address is long; it must wrap rather than overflow.
+  overflow-wrap: anywhere;
+}
+
+.copyright {
+  @include section.body-copy('sm');
+  margin: 0;
+}

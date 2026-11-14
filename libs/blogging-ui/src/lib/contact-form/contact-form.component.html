@@ -26,7 +26,7 @@
       <lib-select
         [id]="subjectId"
         [options]="subjects"
-        (valueChange)="onSubjectChange($event)"
+        [formControl]="subjectControl"
       ></lib-select>
       }
       <lib-text-area

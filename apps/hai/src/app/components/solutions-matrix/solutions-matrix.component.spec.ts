@@ -67,6 +67,20 @@ describe('SolutionsMatrixComponent', () => {
     expect(button.getAttribute('href')).toContain('preset=tier1');
   });
 
+  it('shows no configure link when the registry published no URL', () => {
+    catalogServiceMock.getPortalUrl.mockReturnValue(of(undefined));
+    const bare = TestBed.createComponent(SolutionsMatrixComponent);
+    bare.detectChanges();
+
+    const element = bare.nativeElement as HTMLElement;
+    expect(element.querySelector('.vertical-panel')).not.toBeNull();
+    expect(element.querySelector('a.action-btn')).toBeNull();
+    expect(element.innerHTML).not.toContain('localhost');
+    catalogServiceMock.getPortalUrl.mockImplementation((preset) =>
+      of(`http://localhost:8091?preset=${preset}`)
+    );
+  });
+
   it('switches seamlessly to Vertical 2: Regulated CPA and tax practices', () => {
     component.onTabChange('vertical-cpa');
     fixture.detectChanges();

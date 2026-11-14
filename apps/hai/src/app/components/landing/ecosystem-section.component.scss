@@ -93,7 +93,7 @@ h2 {
   min-height: 14rem;
 }
 
-.ecosystem-card:hover,
+a.ecosystem-card:hover,
 .ecosystem-card:focus-visible {
   @include section.hover-lift;
 }
@@ -129,10 +129,17 @@ h2 {
   );
 }
 
+.app-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: section.space(0.5);
+  margin-top: auto;
+}
+
+.app-status,
 .app-link-state {
   display: inline-flex;
   width: fit-content;
-  margin-top: auto;
   padding: section.space(0.34) section.space(0.64);
   border-radius: var(--hai-radius-pill);
   background: color-mix(in srgb, var(--primary) 10%, transparent);
@@ -147,6 +154,13 @@ h2 {
   text-transform: var(--personality-label-text-transform, uppercase);
 }
 
+.app-status {
+  // outlined so status is not carried by colour alone; the strong border
+  // stays visible under personalities that draw no borders
+  border: var(--hai-border-strong) solid currentColor;
+}
+
+.ecosystem-card-featured .app-status,
 .ecosystem-card-featured .app-link-state {
   color: var(--on-primary, var(--primary-foreground));
 }

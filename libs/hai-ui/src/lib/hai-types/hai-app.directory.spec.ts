@@ -1,4 +1,9 @@
-import { HAI_APP_DIRECTORY, resolveHaiAppLinks } from './hai-app.directory';
+import {
+  HAI_APP_DIRECTORY,
+  HAI_APP_STATUS_LABELS,
+  resolveHaiAppLinks,
+  resolvePublicAppUrl,
+} from './hai-app.directory';
 
 describe('HAI app directory', () => {
   it('lists the curated HAI offerings', () => {
@@ -11,7 +16,34 @@ describe('HAI app directory', () => {
       'Developer Portal',
       'Store',
       'Video Platform',
+      'Homestead',
+      'Statocyst',
     ]);
+  });
+
+  it('leaves out products that are in development but paused', () => {
+    const names = HAI_APP_DIRECTORY.map((app) => app.name);
+
+    expect(names).not.toContain('Jellyfin Harbor');
+    expect(names).not.toContain('PXE');
+  });
+
+  it('lists Homestead and Statocyst in development, with no invented link', () => {
+    const separate = HAI_APP_DIRECTORY.filter((app) =>
+      ['Homestead', 'Statocyst'].includes(app.name)
+    );
+
+    expect(separate).toHaveLength(2);
+    for (const app of separate) {
+      expect(app.status).toBe('in-development');
+      expect(app.repositoryUrl).toBeUndefined();
+    }
+    const links = resolveHaiAppLinks([]);
+    expect(
+      links
+        .filter((link) => ['Homestead', 'Statocyst'].includes(link.name))
+        .map((link) => link.resolvedHref)
+    ).toEqual([undefined, undefined]);
   });
 
   it('resolves registered apps as public links with absolute icon urls', () => {
@@ -221,5 +253,53 @@ describe('HAI app directory', () => {
     expect(
       links.find((app) => app.appId === 'towne-square')?.runUrl
     ).toBeUndefined();
+  });
+
+  it('gives every product a lifecycle status with a label', () => {
+    for (const app of HAI_APP_DIRECTORY) {
+      expect(app.status).toBeDefined();
+      expect(HAI_APP_STATUS_LABELS[app.status!]).toBeTruthy();
+    }
+  });
+
+  it('claims no product is generally available without release evidence', () => {
+    expect(HAI_APP_DIRECTORY.map((app) => app.status)).not.toContain(
+      'available'
+    );
+  });
+
+  it('carries the status through to resolved links', () => {
+    const [link] = resolveHaiAppLinks([]);
+
+    expect(link.status).toBe('early-access');
+  });
+
+  describe('resolvePublicAppUrl', () => {
+    const app = (overrides: Record<string, unknown>) =>
+      ({
+        appId: 'system-configurator',
+        uiBaseUrl: 'https://hardware.example.com/',
+        visibility: 'public',
+        ...overrides,
+      } as never);
+
+    it('returns the URL the registry publishes, route included', () => {
+      expect(resolvePublicAppUrl([app({})], 'system-configurator')).toBe(
+        'https://hardware.example.com/'
+      );
+    });
+
+    it.each([
+      ['the app is absent', [] as never[]],
+      ['the app is internal', [app({ visibility: 'internal' })]],
+      ['the URL is empty', [app({ uiBaseUrl: '' })]],
+      ['the URL is not http(s)', [app({ uiBaseUrl: 'ftp://x.example.com' })]],
+      [
+        'the URL embeds credentials',
+        [app({ uiBaseUrl: 'https://user:pw@x.example.com' })],
+      ],
+    ])('returns undefined when %s', (_name, apps) => {
+      expect(resolvePublicAppUrl(apps, 'system-configurator')).toBeUndefined();
+    });
   });
 });
