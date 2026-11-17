@@ -5,12 +5,14 @@ import {
   OnDestroy,
   OnInit,
   signal,
+  ElementRef,
+  PLATFORM_ID,
+  viewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Title } from '@angular/platform-browser';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subject } from 'rxjs';
+import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
+import { combineLatest, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   City,
@@ -19,29 +21,35 @@ import {
   LocalDirectoryListing,
 } from '../../services/community.service';
 import {
-  describeSourceFreshness,
-  LocalDirectorySourceFreshness,
-} from '../../services/source-freshness';
+  DirectoryQuery,
+  DirectoryRequestError,
+  DirectoryService,
+} from '../../services/directory.service';
 import {
-  describeCoverage,
+  DirectoryFilterBarComponent,
+  DirectoryFilters,
+  DirectoryListComponent,
+  DirectoryNearbyTown,
+  DirectoryStatePanelComponent,
+  DirectoryStatus,
+  DIRECTORY_LIMITATION_TEXT,
+  DirectorySourceAttributionComponent,
+  DirectoryNearbyTownsComponent,
   LocalDirectoryCoverage,
-} from '../../services/coverage';
+  LocalDirectorySourceFreshness,
+  nearestTowns,
+} from '@optimistic-tanuki/directory-ui';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MapComponent } from '../../components/map/map.component';
+import { TownLocatorComponent } from '../../components/town-locator/town-locator.component';
 import {
   BadgeComponent,
   ButtonComponent,
-  CardComponent,
-  EmptyStateComponent,
   ErrorStateComponent,
   IconComponent,
   LoadingStateComponent,
-  StateMessageComponent,
 } from '@optimistic-tanuki/common-ui';
-import {
-  CheckboxComponent,
-  TextInputComponent,
-} from '@optimistic-tanuki/form-ui';
+import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 
 interface BusinessPageLink {
   communityId: string;
@@ -68,24 +76,38 @@ interface BusinessPageLinkState {
   requests?: BusinessPageLinkRequest[];
 }
 
+const NEARBY_LIMIT = 6;
+
+/** Reads the directory filters and cursor out of the URL. Anything malformed is treated as absent. */
+export function readDirectoryQuery(params: ParamMap): DirectoryQuery {
+  const category = (params.get('category') ?? '').trim();
+  return {
+    q: (params.get('q') ?? '').trim().slice(0, 100),
+    category: /^[a-z0-9_]{1,100}$/.test(category) ? category : '',
+    adult: params.get('adult') === '1',
+    cursor: params.get('cursor') ?? '',
+  };
+}
+
 @Component({
   selector: 'app-business-directory',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
     RouterLink,
     MapComponent,
     BadgeComponent,
     ButtonComponent,
-    CardComponent,
-    CheckboxComponent,
-    EmptyStateComponent,
     ErrorStateComponent,
     IconComponent,
     LoadingStateComponent,
-    StateMessageComponent,
     TextInputComponent,
+    TownLocatorComponent,
+    DirectoryFilterBarComponent,
+    DirectoryListComponent,
+    DirectoryNearbyTownsComponent,
+    DirectorySourceAttributionComponent,
+    DirectoryStatePanelComponent,
   ],
   templateUrl: './business-directory.component.html',
   styleUrls: ['./business-directory.component.scss'],
@@ -94,40 +116,61 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private communityService = inject(CommunityService);
+  private directoryService = inject(DirectoryService);
   private authState = inject(AuthStateService);
   private title = inject(Title);
+  private platformId = inject(PLATFORM_ID);
   private destroy$ = new Subject<void>();
   private boundaryGeneration = 0;
   private requestGeneration = 0;
-  private activeQuery = '';
-  private failedOffset = 0;
+  private slug = '';
+  private appliedKey: string | null = null;
+  private retryAction: (() => void) | null = null;
   private linkRequests = new Map<string, string>();
+  private pageHeading = viewChild<ElementRef<HTMLElement>>('pageHeading');
 
   city = signal<City | null>(null);
+  towns = signal<City[]>([]);
   directoryBoundary = signal<DirectoryBoundary>({ status: 'pending' });
   listings = signal<LocalDirectoryListing[]>([]);
   hasMore = signal(false);
+  nextCursor = signal<string | null>(null);
   sourceFreshness = signal<LocalDirectorySourceFreshness | null>(null);
-  sourceFreshnessLabel = computed(() =>
-    describeSourceFreshness(this.sourceFreshness())
-  );
   coverage = signal<LocalDirectoryCoverage | null>(null);
-  coverageView = computed(() =>
-    describeCoverage(
-      this.coverage(),
-      this.listings().length,
-      this.activeQueryText().length > 0
-    )
-  );
-  private activeQueryText = signal('');
+  filters = signal<DirectoryFilters>({ q: '', category: '', adult: false });
+  /** True when the URL carried a cursor we could not restore, so earlier results are not on this page. */
+  startedMidway = signal(false);
+  status = signal<DirectoryStatus>('loading');
+  moreLoading = signal(false);
   loading = signal(true);
-  directoryLoading = signal(false);
-  available = signal(false);
-  directoryError = signal(false);
   isAuthenticated = signal(false);
-  search = '';
-  adult = false;
   businessLinks = signal<Record<string, BusinessPageLinkState>>({});
+  readonly limitation = DIRECTORY_LIMITATION_TEXT;
+
+  filtersActive = computed(() => {
+    const f = this.filters();
+    return !!(f.q || f.category || f.adult);
+  });
+  /** Categories seen so far in loaded results; there is no category-list endpoint. */
+  categories = computed(() =>
+    Array.from(new Set(this.listings().map((l) => l.category))).sort()
+  );
+  nearbyTowns = computed<DirectoryNearbyTown[]>(() => {
+    const city = this.city();
+    return city
+      ? nearestTowns(city.coordinates, this.towns(), {
+          excludeSlug: city.slug,
+          limit: NEARBY_LIMIT,
+        })
+      : [];
+  });
+  /** What the state panel should show: loading wins only while there is nothing to read yet. */
+  panelStatus = computed<DirectoryStatus>(() => {
+    const status = this.status();
+    return status === 'loading' && this.listings().length > 0
+      ? 'ready'
+      : status;
+  });
 
   directoryMapLocations = computed(() =>
     this.listings().flatMap((listing) =>
@@ -142,19 +185,35 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
         : []
     )
   );
+  detailState = computed(() => ({
+    directoryMeta: {
+      freshness: this.sourceFreshness(),
+      coverage: this.coverage(),
+    },
+  }));
+  detailQueryParams = computed(() =>
+    this.filters().adult ? { adult: '1' } : undefined
+  );
+
+  detailLinkFor = (listing: LocalDirectoryListing): unknown[] | null => {
+    const slug = this.city()?.slug;
+    return slug && listing.reference
+      ? ['/city', slug, 'businesses', listing.reference]
+      : null;
+  };
+  businessPageFor = (listing: LocalDirectoryListing): boolean =>
+    !!listing.id && this.businessLinks()[listing.id]?.state === 'linked';
 
   ngOnInit(): void {
     this.authState.isAuthenticated$
       .pipe(takeUntil(this.destroy$))
       .subscribe((auth) => this.isAuthenticated.set(auth));
 
-    const slug = this.route.snapshot.paramMap.get('slug') ?? '';
-    if (!slug) {
-      this.loading.set(false);
-      return;
-    }
-
-    void this.loadCity(slug);
+    combineLatest([this.route.paramMap, this.route.queryParamMap])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(([params, query]) => {
+        void this.onRoute(params.get('slug') ?? '', readDirectoryQuery(query));
+      });
   }
 
   ngOnDestroy(): void {
@@ -163,32 +222,46 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  async loadCity(slug: string): Promise<void> {
-    try {
-      const city = await this.communityService.getCityBySlug(slug);
-      if (!city) return;
-
-      this.city.set(city);
-      this.title.setTitle(`Business directory - ${city.name} - Towne Square`);
-
-      this.listings.set([]);
-      this.businessLinks.set({});
-      this.linkRequests.clear();
-      this.hasMore.set(false);
-      this.available.set(false);
-      this.directoryError.set(false);
-      this.search = '';
-      this.activeQuery = '';
-      this.activeQueryText.set('');
-      this.coverage.set(null);
-      this.requestGeneration++;
-      this.directoryLoading.set(false);
-
-      void this.loadBoundary(city.id);
-      await this.loadPage(city.id, 0);
-    } finally {
+  private async onRoute(slug: string, query: DirectoryQuery): Promise<void> {
+    if (!slug) {
       this.loading.set(false);
+      return;
     }
+    if (slug !== this.slug) {
+      this.slug = slug;
+      this.appliedKey = null;
+      this.loading.set(true);
+      this.city.set(null);
+      try {
+        const city = await this.communityService.getCityBySlug(slug);
+        if (slug !== this.slug) return;
+        if (!city) return;
+        this.city.set(city);
+        this.title.setTitle(`Business directory - ${city.name} - Towne Square`);
+        void this.loadBoundary(city.id);
+        void this.loadTowns();
+      } finally {
+        if (slug === this.slug) this.loading.set(false);
+      }
+    }
+    const city = this.city();
+    if (!city) return;
+    await this.applyQuery(city.id, query);
+    this.focusHeading();
+  }
+
+  private async loadTowns(): Promise<void> {
+    try {
+      this.towns.set(await this.communityService.getCities());
+    } catch {
+      this.towns.set([]);
+    }
+  }
+
+  /** Moves focus to the page heading after a route change so screen-reader users hear where they are. */
+  private focusHeading(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    setTimeout(() => this.pageHeading()?.nativeElement.focus(), 0);
   }
 
   async loadBoundary(id: string): Promise<void> {
@@ -205,72 +278,145 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
     }
   }
 
-  async loadPage(id: string, offset: number): Promise<void> {
-    if (this.directoryLoading()) return;
-
+  /** Brings the page in line with the URL: restore a snapshot if we have one, otherwise fetch. */
+  private async applyQuery(
+    townId: string,
+    query: DirectoryQuery
+  ): Promise<void> {
+    const key = this.directoryService.snapshotKey(townId, query);
+    if (key === this.appliedKey) return;
+    this.appliedKey = key;
     const request = ++this.requestGeneration;
-    this.directoryLoading.set(true);
-    this.directoryError.set(false);
+    this.filters.set({
+      q: query.q,
+      category: query.category,
+      adult: query.adult,
+    });
+    this.businessLinks.set({});
+    this.linkRequests.clear();
+    this.moreLoading.set(false);
 
+    const snapshot = this.directoryService.getSnapshot(key);
+    if (snapshot) {
+      this.show(snapshot, false);
+      return;
+    }
+
+    this.listings.set([]);
+    this.hasMore.set(false);
+    this.nextCursor.set(null);
+    this.coverage.set(null);
+    this.sourceFreshness.set(null);
+    this.startedMidway.set(!!query.cursor);
+    this.status.set('loading');
+    this.retryAction = () => {
+      this.appliedKey = null;
+      void this.applyQuery(townId, query);
+    };
     try {
-      const page = await this.communityService.getLocalDirectoryListings(
-        id,
-        offset,
-        this.activeQuery,
-        this.adult
-      );
-      if (request === this.requestGeneration && this.city()?.id === id) {
-        this.available.set(true);
-        this.listings.update((previous) =>
-          offset === 0 ? page.listings : [...previous, ...page.listings]
-        );
-        this.hasMore.set(page.hasMore);
-        if (page.sourceFreshness || offset === 0) {
-          this.sourceFreshness.set(page.sourceFreshness ?? null);
-        }
-        if (page.coverage || offset === 0) {
-          this.coverage.set(page.coverage ?? null);
-        }
+      const page = await this.directoryService.getPage(townId, query);
+      if (request !== this.requestGeneration) return;
+      this.directoryService.saveSnapshot(key, page);
+      this.show(page, true);
+    } catch (error) {
+      if (request !== this.requestGeneration) return;
+      if (query.cursor && this.isBadRequest(error)) {
+        // The cursor expired or was altered: start again from the first page.
+        this.appliedKey = null;
+        void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { cursor: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+        return;
       }
-    } catch {
-      if (request === this.requestGeneration && this.city()?.id === id) {
-        this.failedOffset = offset;
-        this.directoryError.set(true);
-      }
-    } finally {
-      if (request === this.requestGeneration) {
-        this.directoryLoading.set(false);
-      }
+      this.status.set('failed');
     }
   }
 
+  private isBadRequest(error: unknown): boolean {
+    return error instanceof DirectoryRequestError && error.status === 400;
+  }
+
+  private show(
+    page: {
+      listings: LocalDirectoryListing[];
+      hasMore: boolean;
+      nextCursor: string | null;
+      sourceFreshness: LocalDirectorySourceFreshness | null;
+      coverage: LocalDirectoryCoverage | null;
+    },
+    midway: boolean
+  ): void {
+    this.listings.set(page.listings);
+    this.hasMore.set(page.hasMore && page.nextCursor !== null);
+    this.nextCursor.set(page.nextCursor);
+    this.sourceFreshness.set(page.sourceFreshness);
+    this.coverage.set(page.coverage);
+    this.status.set('ready');
+    if (!midway) this.startedMidway.set(false);
+  }
+
   retry(): void {
-    const city = this.city();
-    if (city) void this.loadPage(city.id, this.failedOffset);
+    this.retryAction?.();
   }
 
-  searchDirectory(): void {
-    const city = this.city();
-    if (!city) return;
-
-    this.activeQuery = this.search.trim();
-    this.activeQueryText.set(this.activeQuery);
-    this.requestGeneration++;
-    this.directoryLoading.set(false);
-    this.listings.set([]);
-    this.hasMore.set(false);
-    this.businessLinks.set({});
-    void this.loadPage(city.id, 0);
+  /** Filters live in the URL so links, refresh and Back all restore them. */
+  submitFilters(filters: DirectoryFilters): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        q: filters.q || null,
+        category: filters.category || null,
+        adult: filters.adult ? '1' : null,
+        cursor: null,
+      },
+    });
   }
 
-  setAdult(enabled: boolean): void {
-    this.adult = enabled === true;
-    this.searchDirectory();
+  async loadMore(): Promise<void> {
+    const city = this.city();
+    const cursor = this.nextCursor();
+    if (!city || !cursor || this.moreLoading()) return;
+    const filters = this.filters();
+    const query: DirectoryQuery = { ...filters, cursor };
+    const key = this.directoryService.snapshotKey(city.id, query);
+    const request = ++this.requestGeneration;
+    this.moreLoading.set(true);
+    this.status.set('loading');
+    this.retryAction = () => void this.loadMore();
+    try {
+      const page = await this.directoryService.getPage(city.id, query);
+      if (request !== this.requestGeneration) return;
+      const merged = {
+        ...page,
+        listings: [...this.listings(), ...page.listings],
+      };
+      this.directoryService.saveSnapshot(key, merged);
+      // The URL now names this page; mark it applied first so the navigation does not refetch.
+      this.appliedKey = key;
+      this.show(merged, true);
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { cursor },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    } catch (error) {
+      if (request !== this.requestGeneration) return;
+      this.status.set('failed');
+    } finally {
+      if (request === this.requestGeneration) this.moreLoading.set(false);
+    }
   }
 
-  loadMore(): void {
-    const city = this.city();
-    if (city) void this.loadPage(city.id, this.listings().length);
+  startOver(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { cursor: null },
+      queryParamsHandling: 'merge',
+    });
   }
 
   async checkBusinessPage(listing: LocalDirectoryListing): Promise<void> {
@@ -279,7 +425,7 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
     if (!city || !listingId) return;
 
     const request = this.requestGeneration;
-    const adult = this.adult;
+    const adult = this.filters().adult;
     this.businessLinks.update((all) => ({
       ...all,
       [listingId]: { state: 'loading' },
@@ -370,7 +516,7 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
 
     const key = `${city.id}:${listingId}:${slug}`;
     const request = this.requestGeneration;
-    const adult = this.adult;
+    const adult = this.filters().adult;
     let requestId = this.linkRequests.get(key);
     if (!requestId) {
       if (typeof globalThis.crypto?.randomUUID !== 'function') {

@@ -119,3 +119,28 @@ export function buildAtlasNearbySelection(input: {
     fallbackToNearest: true,
   };
 }
+
+/**
+ * Frames a set of points: the centre of their bounding box and a zoom that fits it. Returns null when
+ * none are renderable, so callers decide the fallback instead of inheriting a fixed region.
+ */
+export function frameCoordinates(
+  points: ReadonlyArray<MapCoordinates | null | undefined>
+): (MapCoordinates & { zoom: number }) | null {
+  const valid = points.filter((point): point is MapCoordinates =>
+    isRenderableCoordinate(point)
+  );
+  if (valid.length === 0) return null;
+  const lats = valid.map((p) => p.lat);
+  const lngs = valid.map((p) => p.lng);
+  const south = Math.min(...lats);
+  const north = Math.max(...lats);
+  const west = Math.min(...lngs);
+  const east = Math.max(...lngs);
+  const span = Math.max(north - south, east - west);
+  const zoom =
+    span < 0.05
+      ? 11
+      : Math.max(2, Math.min(11, Math.floor(Math.log2(360 / span)) - 1));
+  return { lat: (south + north) / 2, lng: (west + east) / 2, zoom };
+}

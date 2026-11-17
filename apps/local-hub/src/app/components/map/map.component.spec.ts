@@ -296,8 +296,8 @@ describe('MapComponent', () => {
     expect(mockLeaflet.map).toHaveBeenCalledWith(
       component.mapContainer.nativeElement,
       expect.objectContaining({
-        center: [31.9, -81.1],
-        zoom: 6,
+        center: [0, 0],
+        zoom: 2,
       })
     );
   });

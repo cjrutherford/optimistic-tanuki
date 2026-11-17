@@ -164,7 +164,6 @@ export class CitiesComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.isAuthenticated.set(this.authState.isAuthenticated);
-    this.loadUserLocation();
 
     try {
       const communitiesData = await this.communityService.getCommunities();
@@ -268,6 +267,11 @@ export class CitiesComponent implements OnInit {
       (sum, city) => sum + city.communities,
       0
     );
+  }
+
+  /** Explicit, user-initiated only: the browser prompt is never raised on page load. */
+  useMyLocation(): void {
+    this.loadUserLocation();
   }
 
   private loadUserLocation(): void {

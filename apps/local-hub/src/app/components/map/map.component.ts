@@ -23,6 +23,7 @@ import {
   MapCoordinates,
   MapMode,
   buildAtlasNearbySelection,
+  frameCoordinates,
   isRenderableCoordinate,
 } from './map.utils';
 
@@ -37,10 +38,10 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef;
   @Input() mode: MapMode = 'single-location';
   @Input() cities: City[] = [];
-  @Input() centerLat = 31.9;
-  @Input() centerLng = -81.1;
+  @Input() centerLat: number | null = null;
+  @Input() centerLng: number | null = null;
   @Input() zoom = 7;
-  @Input() centerLabel = 'Savannah, GA';
+  @Input() centerLabel = '';
   @Input() boundary: DirectoryBoundaryGeometry | null = null;
   @Input() userLocation: MapCoordinates | null = null;
   @Input() directoryLocations: {
@@ -294,7 +295,9 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
     const radiusMiles = 250;
     const radiusKm = radiusMiles * 1.60934;
 
-    const outline = L.circle([this.centerLat, this.centerLng], {
+    const center = this.getFocusCoordinates();
+    if (!center) return;
+    const outline = L.circle([center.lat, center.lng], {
       radius: radiusKm * 1000,
       color: primaryColor,
       weight: 2,
@@ -303,7 +306,7 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
       dashArray: '4, 4',
     }).addTo(this.map);
 
-    const fill = L.circle([this.centerLat, this.centerLng], {
+    const fill = L.circle([center.lat, center.lng], {
       radius: radiusKm * 1000,
       fillColor: primaryColor,
       fillOpacity: 0.15,
@@ -529,7 +532,8 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
           Math.max(this.zoom, 7)
         );
       } else {
-        this.map.setView([this.centerLat, this.centerLng], this.zoom);
+        const fallback = this.getInitialMapView();
+        this.map.setView([fallback.lat, fallback.lng], fallback.zoom);
       }
       this.scheduleInvalidateSize();
       return;
@@ -649,8 +653,11 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private getFocusCoordinates(): MapCoordinates | null {
-    const focusCoordinates = { lat: this.centerLat, lng: this.centerLng };
-    return isRenderableCoordinate(focusCoordinates) ? focusCoordinates : null;
+    if (this.centerLat !== null && this.centerLng !== null) {
+      const focusCoordinates = { lat: this.centerLat, lng: this.centerLng };
+      return isRenderableCoordinate(focusCoordinates) ? focusCoordinates : null;
+    }
+    return null;
   }
 
   private getInitialMapView(): MapCoordinates & { zoom: number } {
@@ -678,12 +685,13 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     const focusCoordinates = this.getFocusCoordinates();
+    if (focusCoordinates) return { ...focusCoordinates, zoom: this.zoom };
 
-    return {
-      lat: focusCoordinates?.lat ?? 31.9,
-      lng: focusCoordinates?.lng ?? -81.1,
-      zoom: this.zoom,
-    };
+    // No explicit focus: frame the towns we were given, never a fixed region.
+    const framed = frameCoordinates(
+      this.cities.map((city) => city.coordinates)
+    );
+    return framed ?? { lat: 0, lng: 0, zoom: 2 };
   }
 
   private createMarker(

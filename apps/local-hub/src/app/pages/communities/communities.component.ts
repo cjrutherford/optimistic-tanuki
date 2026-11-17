@@ -35,7 +35,16 @@ export class CommunitiesComponent implements OnInit {
   private loadGeneration = 0;
   private hasLoadedSuccessfully = false;
 
-  states = ['GA', 'SC', 'FL', 'NC'];
+  /** States come from the towns the API returns, never a fixed region. */
+  get states(): string[] {
+    return Array.from(
+      new Set(
+        this.communities()
+          .map((c) => c.adminArea?.trim())
+          .filter((state): state is string => !!state)
+      )
+    ).sort((a, b) => a.localeCompare(b));
+  }
   localityTypes: { value: LocalityType; label: string }[] = [
     { value: 'all', label: 'All Types' },
     { value: 'city', label: 'Cities' },

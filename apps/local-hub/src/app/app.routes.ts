@@ -54,6 +54,20 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'city/:slug/businesses/:reference',
+    loadComponent: () =>
+      import('./pages/business-detail/business-detail.component').then(
+        (m) => m.BusinessDetailComponent
+      ),
+  },
+  {
+    path: 'city/:slug/businesses/:reference/report',
+    loadComponent: () =>
+      import('./pages/business-report/business-report.component').then(
+        (m) => m.BusinessReportComponent
+      ),
+  },
+  {
     path: 'city/:slug',
     loadComponent: () =>
       import('./pages/city/city.component').then((m) => m.CityComponent),
