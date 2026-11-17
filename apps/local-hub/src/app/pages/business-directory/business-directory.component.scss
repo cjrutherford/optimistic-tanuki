@@ -201,3 +201,12 @@
     animation: none !important;
   }
 }
+
+.directory-page__report-status {
+  margin: 0.75rem 0 0;
+  font-size: var(--type-small, 0.875rem);
+
+  a {
+    color: var(--primary-text, var(--primary));
+  }
+}

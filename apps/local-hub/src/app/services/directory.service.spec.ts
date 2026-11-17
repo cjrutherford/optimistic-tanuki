@@ -110,4 +110,48 @@ describe('DirectoryService', () => {
     expect(service.getSnapshot('k0')).toBeUndefined();
     expect(service.getSnapshot('k24')).toBe(snap);
   });
+
+  it('posts a report to the town and returns the receipt', async () => {
+    const result = service.createReport('t 1', {
+      listingId: 'l1',
+      reasonCode: 'safety',
+      website: '',
+    });
+    const req = http.expectOne('/api/directory/towns/t%201/listing-reports');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      listingId: 'l1',
+      reasonCode: 'safety',
+      website: '',
+    });
+    req.flush({ receipt: 'R-1' }, { status: 201, statusText: 'Created' });
+    await expect(result).resolves.toBe('R-1');
+  });
+
+  it('reports a failed report post by status only', async () => {
+    const result = service.createReport('t', {
+      listingId: 'l',
+      reasonCode: 'other',
+      website: '',
+    });
+    http
+      .expectOne('/api/directory/towns/t/listing-reports')
+      .flush({ message: 'secret detail' }, { status: 429, statusText: 'x' });
+    await expect(result).rejects.toMatchObject({ status: 429 });
+  });
+
+  it('reads a report status, and returns null for an unknown receipt', async () => {
+    const ok = service.getReportStatus('A/B');
+    http.expectOne('/api/directory/listing-reports/A%2FB').flush({
+      status: 'resolved',
+      reasonCode: 'other',
+      createdAt: '2026-11-01T00:00:00Z',
+    });
+    await expect(ok).resolves.toMatchObject({ status: 'resolved' });
+    const missing = service.getReportStatus('X');
+    http
+      .expectOne('/api/directory/listing-reports/X')
+      .flush('', { status: 404, statusText: 'Not Found' });
+    await expect(missing).resolves.toBeNull();
+  });
 });

@@ -11,6 +11,7 @@ const serverRoutes: ServerRoute[] = [
     path: 'city/:slug/businesses/:reference/report',
     renderMode: RenderMode.Client,
   },
+  { path: 'directory/reports/status', renderMode: RenderMode.Client },
   { path: 'city/:slug', renderMode: RenderMode.Client },
   { path: 'city/:slug/report', renderMode: RenderMode.Client },
   { path: 'city/:slug/classifieds', renderMode: RenderMode.Client },
