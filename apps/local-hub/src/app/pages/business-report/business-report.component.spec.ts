@@ -84,7 +84,26 @@ describe('BusinessReportComponent', () => {
     expect(el().textContent).toContain('Pie Shop');
     expect(el().querySelectorAll('fieldset input[type=radio]').length).toBe(6);
     expect(el().querySelector('legend')).toBeTruthy();
-    expect(directory.getListing).toHaveBeenCalledWith('town-1', 'r1', true);
+    expect(directory.getListing).toHaveBeenCalledWith('town-1', 'r1', false);
+    expect(directory.getListing).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to the adult lookup when the default lookup misses', async () => {
+    await setup();
+    directory.getListing
+      .mockReset()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: LISTING_ID, name: 'Late Bar' });
+    fixture = TestBed.createComponent(BusinessReportComponent);
+    fixture.detectChanges();
+    await flush();
+    expect(directory.getListing).toHaveBeenNthCalledWith(
+      2,
+      'town-1',
+      'r1',
+      true
+    );
+    expect(el().textContent).toContain('Late Bar');
   });
 
   it('shows the expired copy when the listing id cannot be resolved', async () => {

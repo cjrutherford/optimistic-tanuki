@@ -99,11 +99,14 @@ export class BusinessReportComponent implements OnInit {
       const city = await this.communityService.getCityBySlug(this.slug);
       if (!city) return this.state.set('expired');
       this.townId.set(city.id);
-      const listing = await this.directoryService.getListing(
-        city.id,
-        this.reference,
-        true
-      );
+      // A reference is bound to the adult setting it was issued under, so try the default first, then adult.
+      const listing =
+        (await this.directoryService.getListing(
+          city.id,
+          this.reference,
+          false
+        )) ??
+        (await this.directoryService.getListing(city.id, this.reference, true));
       if (!listing?.id) return this.state.set('expired');
       this.listingId.set(listing.id);
       this.listingName.set(listing.name);
