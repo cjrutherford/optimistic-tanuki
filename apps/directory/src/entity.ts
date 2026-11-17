@@ -1288,3 +1288,124 @@ export class DirectoryTaxonomyRunBefore {
   @Column({ type: 'boolean' }) hadProjection!: boolean;
   @Column({ type: 'jsonb', nullable: true }) before!: object | null;
 }
+
+/**
+ * Acquisition run ledger (S7e). One row per invocation of a local acquisition stage script (or a historical
+ * import of what earlier scripts already did). The stage writes it; operators read it and request cancel/resume/retry.
+ * No provider call is made from this table: it records, it does not authorise.
+ */
+@Entity({ name: 'directory_acquisition_run' })
+@Index('IDX_directory_acquisition_run_status', ['status', 'createdAt'])
+@Check(
+  'CHK_directory_acquisition_run_status',
+  `"status" IN ('queued','running','succeeded','succeeded_empty','partial','blocked','failed_retryable','failed_permanent','cancel_requested','cancelled')`
+)
+@Check(
+  'CHK_directory_acquisition_run_kind',
+  `"kind" IN ('overture-stage','poc-import','census-stage','historical')`
+)
+export class DirectoryAcquisitionRun {
+  @PrimaryColumn('uuid') id!: string;
+  @Column({ type: 'varchar', length: 32 }) provider!: string;
+  @Column({ type: 'varchar', length: 32, nullable: true }) release!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 24 }) kind!: string;
+  /** Town ids the run is aimed at. */
+  @Column({ type: 'jsonb', default: () => `'[]'` }) townIds!: string[];
+  @Column({ type: 'varchar', length: 24, default: 'queued' }) status!: string;
+  @Column({ type: 'varchar', length: 32, nullable: true }) blockedReason!:
+    | string
+    | null;
+  /** Operator profile that started the run; NULL for a script (`system`) or a historical import. */
+  @Column({ type: 'uuid', nullable: true }) startedById!: string | null;
+  @Column({ type: 'varchar', length: 1024, default: '' }) reason!: string;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+  @Column({ type: 'timestamptz', nullable: true }) startedAt!: Date | null;
+  @Column({ type: 'timestamptz', nullable: true }) heartbeatAt!: Date | null;
+  @Column({ type: 'timestamptz', nullable: true }) finishedAt!: Date | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt!: Date;
+  @Column({ type: 'bigint', default: 0 }) observedCount!: string;
+  @Column({ type: 'bigint', default: 0 }) acceptedCount!: string;
+  @Column({ type: 'bigint', default: 0 }) rejectedCount!: string;
+  @Column({ type: 'integer', default: 0 }) budgetReservedCents!: number;
+  @Column({ type: 'integer', default: 0 }) budgetUsedCents!: number;
+  /** Redacted: a short code or message, never a credential, host or path. */
+  @Column({ type: 'varchar', length: 256, nullable: true }) lastError!:
+    | string
+    | null;
+}
+
+/** One unit of a run: a town, or a source asset aimed at towns. */
+@Entity({ name: 'directory_acquisition_run_job' })
+@Index('IDX_directory_acquisition_run_job_town', ['townId'])
+@Check(
+  'CHK_directory_acquisition_run_job_status',
+  `"status" IN ('queued','running','succeeded','succeeded_empty','partial','blocked','failed_retryable','failed_permanent','cancelled')`
+)
+export class DirectoryAcquisitionRunJob {
+  @PrimaryColumn('uuid') runId!: string;
+  @PrimaryColumn({ type: 'varchar', length: 64 }) unitKey!: string;
+  @Column({ type: 'uuid', nullable: true }) townId!: string | null;
+  /** The scan this job's rows belong to; with `townId` it names a `directory_town_scan_target` row. */
+  @Column({ type: 'varchar', length: 64, nullable: true }) scanId!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 24, default: 'queued' }) status!: string;
+  @Column({ type: 'varchar', length: 32, nullable: true }) blockedReason!:
+    | string
+    | null;
+  /** Opaque resume cursor the stage wrote; the next attempt starts from it. */
+  @Column({ type: 'jsonb', nullable: true }) checkpoint!: object | null;
+  @Column({ type: 'integer', default: 0 }) attempt!: number;
+  @Column({ type: 'bigint', default: 0 }) observedCount!: string;
+  @Column({ type: 'bigint', default: 0 }) acceptedCount!: string;
+  @Column({ type: 'bigint', default: 0 }) rejectedCount!: string;
+  @Column({ type: 'varchar', length: 256, nullable: true }) lastError!:
+    | string
+    | null;
+  @Column({ type: 'timestamptz', nullable: true }) startedAt!: Date | null;
+  @Column({ type: 'timestamptz', nullable: true }) finishedAt!: Date | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt!: Date;
+}
+
+/**
+ * Append-only audit of operator requests against a run. The event id is the client's decisionId, so a replay
+ * finds its own row. A resume or retry stays pending until the stage appends a `consumed` event naming it.
+ */
+@Entity({ name: 'directory_acquisition_run_event' })
+@Index('IDX_directory_acquisition_run_event_run', ['runId', 'createdAt'])
+@Index('UQ_directory_acquisition_run_event_consumed', ['ofEventId'], {
+  unique: true,
+  where: '"ofEventId" IS NOT NULL',
+})
+@Check(
+  'CHK_directory_acquisition_run_event_action',
+  `"action" IN ('cancel','resume','retry','import_history','consumed')`
+)
+export class DirectoryAcquisitionRunEvent {
+  @PrimaryColumn('uuid') id!: string;
+  /** NULL for an `import_history` event, which belongs to no single run. */
+  @Column({ type: 'uuid', nullable: true }) runId!: string | null;
+  @Column({ type: 'varchar', length: 16 }) action!: string;
+  /** Operator profile; NULL for the stage's own `consumed` event or once the profile's account was erased. */
+  @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  @Column({ type: 'varchar', length: 1024 }) reason!: string;
+  /** The job a retry targets. */
+  @Column({ type: 'varchar', length: 64, nullable: true }) unitKey!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 24, nullable: true }) statusBefore!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 24, nullable: true }) statusAfter!:
+    | string
+    | null;
+  /** For `consumed`: the resume or retry request it satisfied. */
+  @Column({ type: 'uuid', nullable: true }) ofEventId!: string | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+}

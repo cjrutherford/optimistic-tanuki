@@ -567,3 +567,137 @@ export interface TaxonomyRunRollbackRequest {
   reason: string;
   confirm: 'ROLLBACK';
 }
+
+/** Acquisition run ledger (S7e). Runs are written by local stage scripts; operators observe and request. */
+export type AcquisitionRunKind =
+  | 'overture-stage'
+  | 'poc-import'
+  | 'census-stage'
+  | 'historical';
+export type AcquisitionRunStatus =
+  | 'queued'
+  | 'running'
+  | 'succeeded'
+  | 'succeeded_empty'
+  | 'partial'
+  | 'blocked'
+  | 'failed_retryable'
+  | 'failed_permanent'
+  | 'cancel_requested'
+  | 'cancelled';
+export type AcquisitionJobStatus = Exclude<
+  AcquisitionRunStatus,
+  'cancel_requested'
+>;
+export type AcquisitionBlockedReason =
+  | 'policy_blocked'
+  | 'unconfigured_provider'
+  | 'budget_exhausted'
+  | 'quota_exhausted'
+  | 'invalid_geometry'
+  | 'acquisition_unauthorized';
+export type AcquisitionRunAction = 'cancel' | 'resume' | 'retry';
+
+export interface AcquisitionRunSummary {
+  id: string;
+  provider: string;
+  release: string | null;
+  kind: AcquisitionRunKind;
+  townIds: string[];
+  status: AcquisitionRunStatus;
+  blockedReason: AcquisitionBlockedReason | null;
+  /** `system` for a script or a historical import; otherwise the operator profile (null once erased). */
+  startedBy: 'system' | 'operator';
+  startedById: string | null;
+  reason: string;
+  createdAt: string;
+  startedAt: string | null;
+  heartbeatAt: string | null;
+  finishedAt: string | null;
+  /** True when a `running` run has not heartbeated within the stale window. */
+  stale: boolean;
+  observed: number;
+  accepted: number;
+  rejected: number;
+  budgetReservedCents: number;
+  budgetUsedCents: number;
+  lastError: string | null;
+}
+export interface AcquisitionJobRecord {
+  unitKey: string;
+  townId: string | null;
+  scanId: string | null;
+  status: AcquisitionJobStatus;
+  blockedReason: AcquisitionBlockedReason | null;
+  checkpoint: object | null;
+  attempt: number;
+  observed: number;
+  accepted: number;
+  rejected: number;
+  lastError: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  updatedAt: string;
+}
+export interface AcquisitionEventRecord {
+  id: string;
+  action: AcquisitionRunAction | 'import_history' | 'consumed';
+  actorId: string | null;
+  reason: string;
+  unitKey: string | null;
+  statusBefore: AcquisitionRunStatus | null;
+  statusAfter: AcquisitionRunStatus | null;
+  ofEventId: string | null;
+  createdAt: string;
+}
+export interface AcquisitionRunDetail extends AcquisitionRunSummary {
+  jobs: AcquisitionJobRecord[];
+  events: AcquisitionEventRecord[];
+  /** Jobs finished (any terminal status) over jobs total. */
+  completeness: { done: number; total: number };
+  /** Opaque token an operator action must echo; a changed run makes it stale (409). */
+  versionToken: string;
+  /** Present while a resume/retry request is pending for the local stage to consume. */
+  pendingRequest: boolean;
+  resumeCommand: string | null;
+}
+export interface AcquisitionRunList {
+  runs: AcquisitionRunSummary[];
+  total: number;
+}
+export interface AcquisitionBudgetPanel {
+  period: string;
+  ceilingCents: number;
+  reservedCents: number;
+  usedCents: number;
+  remainingCents: number;
+  anonymousAttempts: number;
+  /** True once reserved spend reaches the ceiling: no further provider reservation succeeds this period. */
+  hardStop: boolean;
+  /** Real acquisition is not authorised; no worker acquires automatically. */
+  acquisitionAuthorized: boolean;
+}
+export interface AcquisitionRunActionRequest {
+  decisionId: string;
+  reason: string;
+  expectedVersionToken: string;
+  /** retry only: the single job to re-queue. */
+  unitKey?: string;
+  /** cancel/resume/retry carry a deliberate confirmation. */
+  confirm: 'CANCEL' | 'RESUME' | 'RETRY';
+}
+export interface AcquisitionRunActionResult {
+  replayed: boolean;
+  run: AcquisitionRunDetail;
+  /** resume/retry: the command the operator runs locally; the stage consumes the pending request. */
+  resumeCommand: string | null;
+}
+export interface AcquisitionImportHistoryRequest {
+  decisionId: string;
+  reason: string;
+}
+export interface AcquisitionImportHistoryResult {
+  replayed: boolean;
+  created: number;
+  existing: number;
+}

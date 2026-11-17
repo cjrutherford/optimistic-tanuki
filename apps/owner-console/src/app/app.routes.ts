@@ -102,6 +102,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'directory-runs',
+        loadComponent: () =>
+          import('./components/directory-acquisition-runs-page.component').then(
+            (m) => m.DirectoryAcquisitionRunsPageComponent
+          ),
+      },
+      {
         path: 'boundary-review/:communityId',
         loadComponent: () =>
           import('./components/boundary-review-page.component').then(
