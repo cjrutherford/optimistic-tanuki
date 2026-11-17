@@ -338,3 +338,51 @@ test('skips a revoked row while committing the rest of its batch and checkpoint'
     [scanId, 3]
   );
 });
+
+test('records uuid target regions at load and completes them in the completion transaction', async () => {
+  const log = [];
+  const manager = {
+    async query(sql, args) {
+      if (sql.startsWith('SELECT revoked')) return [{ revoked: false }];
+      if (
+        sql.startsWith(
+          'SELECT "policyId" FROM directory_overture_private_membership'
+        )
+      )
+        return [{ policyId: '1'.repeat(64) }];
+      if (sql.startsWith('SELECT')) return [];
+      log.push({ sql, args });
+      return [];
+    },
+  };
+  const sink = new OverturePrivateSink({
+    query: async () => [],
+    transaction: async (f) => f(manager),
+  });
+  const scanId = 'a'.repeat(64),
+    town = '00000000-0000-4000-8000-0000000000A1';
+  await sink.load(scanId, '1'.repeat(64), [town, 'not-a-uuid', town]);
+  const target = log.find((x) =>
+    x.sql.includes('INSERT INTO directory_town_scan_target')
+  );
+  assert.match(target.sql, /ON CONFLICT DO NOTHING/);
+  assert.deepEqual(target.args, [scanId, [town.toLowerCase()]]);
+  log.length = 0;
+  await sink.load(scanId, '1'.repeat(64), ['nope']);
+  assert.equal(
+    log.some((x) => x.sql.includes('directory_town_scan_target')),
+    false
+  );
+  log.length = 0;
+  await sink.complete();
+  const order = log.map((x) => x.sql.slice(0, 40).replace(/\s+/g, ' '));
+  const update = log.findIndex((x) =>
+    x.sql.includes('UPDATE directory_town_scan_target')
+  );
+  const completion = log.findIndex((x) =>
+    x.sql.includes('INSERT INTO directory_overture_private_completion')
+  );
+  assert.ok(update >= 0 && completion >= 0, order.join('|'));
+  assert.match(log[update].sql, /"completedAt" IS NULL/);
+  assert.match(log[update].sql, /count\(\*\)/);
+});

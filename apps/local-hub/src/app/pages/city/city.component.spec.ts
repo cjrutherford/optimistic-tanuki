@@ -244,6 +244,101 @@ describe('CityComponent', () => {
       expect(fixture.nativeElement.querySelector(sel)).toBeNull();
     });
 
+    describe('directory coverage states', () => {
+      const q = (sel: string) =>
+        fixture.nativeElement.querySelector(sel) as HTMLElement | null;
+      const load = async (page: unknown) => {
+        communityServiceMock.getLocalDirectoryListings.mockResolvedValueOnce(
+          page
+        );
+        await fixture.componentInstance.loadCity('savannah-ga');
+        await settle();
+      };
+      const settle = async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        fixture.detectChanges();
+      };
+      const bakery = {
+        name: 'Bakery',
+        category: 'bakery',
+        attribution: ['Source'],
+        notices: [],
+      };
+
+      it('shows an error with retry, not an empty town, when the read fails', async () => {
+        communityServiceMock.getLocalDirectoryListings.mockRejectedValueOnce(
+          new Error('offline')
+        );
+        await fixture.componentInstance.loadCity('savannah-ga');
+        await settle();
+        expect(q('[data-testid="city-directory-error"]')).not.toBeNull();
+        expect(q('[data-testid="city-directory-coverage"]')).toBeNull();
+        expect(fixture.nativeElement.textContent).not.toContain(
+          'No businesses are listed'
+        );
+        communityServiceMock.getLocalDirectoryListings.mockResolvedValueOnce({
+          listings: [],
+          hasMore: false,
+          coverage: { state: 'empty', withheldReviewedDetails: 0 },
+        });
+        (q('[data-testid="city-directory-retry"]') as HTMLElement).click();
+        await settle();
+        expect(q('[data-testid="city-directory-error"]')).toBeNull();
+        expect(
+          q('[data-testid="city-directory-coverage"]')?.textContent
+        ).toContain('No businesses are listed for this town yet.');
+      });
+
+      it('says empty only for proven-empty coverage', async () => {
+        await load({
+          listings: [],
+          hasMore: false,
+          coverage: { state: 'empty', withheldReviewedDetails: 0 },
+        });
+        expect(
+          q('[data-testid="city-directory-coverage"]')?.textContent
+        ).toContain('No businesses are listed for this town yet.');
+      });
+
+      it('renders a blocked town without an error', async () => {
+        await load({
+          listings: [],
+          hasMore: false,
+          coverage: {
+            state: 'blocked',
+            reason: 'town-ineligible',
+            withheldReviewedDetails: 0,
+          },
+        });
+        expect(q('[data-testid="city-directory-error"]')).toBeNull();
+        expect(
+          q('[data-testid="city-directory-coverage"]')?.textContent
+        ).toContain("isn't available for this town");
+      });
+
+      it('does not claim no businesses when coverage is unknown or absent', async () => {
+        await load({ listings: [], hasMore: false });
+        const text = q('[data-testid="city-directory-coverage"]')?.textContent;
+        expect(text).toContain("We can't tell yet");
+        expect(text).not.toMatch(/no businesses/i);
+      });
+
+      it('keeps listings visible with partial and withheld notes', async () => {
+        await load({
+          listings: [bakery],
+          hasMore: false,
+          coverage: { state: 'partial', withheldReviewedDetails: 2 },
+        });
+        expect(q('.city-directory-preview')?.textContent).toContain('Bakery');
+        expect(
+          q('[data-testid="city-directory-coverage"]')?.textContent
+        ).toContain('More listings are still being gathered.');
+        expect(
+          q('[data-testid="city-directory-withheld"]')?.textContent
+        ).toContain('re-checked');
+      });
+    });
+
     it('does not restore listings from a previous town after navigation', async () => {
       await fixture.whenStable();
       const component = fixture.componentInstance;

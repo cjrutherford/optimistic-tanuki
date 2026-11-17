@@ -35,16 +35,14 @@ describe('directory gateway', () => {
       coordinates: [-82.5, 31.5],
       label: 'Approximate town location; verified boundary unavailable.',
     };
-    const fetchMock = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          status: 'pending',
-          approximateLocation: location,
-        }),
-      } as Response);
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: 'pending',
+        approximateLocation: location,
+      }),
+    } as Response);
     expect(await controller.status(id)).toEqual({
       town: { id },
       status: 'pending',
@@ -85,12 +83,10 @@ describe('directory gateway', () => {
     send.mockReturnValue(
       of({ id, name: 'Town', slug: null, adminArea: null, ownerId: 'secret' })
     );
-    jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({ status: 'pending' }),
-      } as Response);
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: 'pending' }),
+    } as Response);
     expect(await controller.validate(id, '1', '2')).toEqual({
       town: { id },
       status: 'pending',
@@ -99,12 +95,10 @@ describe('directory gateway', () => {
   it('canonicalizes uppercase UUIDs for Social, Directory and the public response', async () => {
     const canonicalId = 'abcdef12-abcd-4abc-8abc-abcdef123456';
     send.mockReturnValue(of({ id: canonicalId, name: 'Private name' }));
-    const fetchMock = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({ status: 'pending' }),
-      } as Response);
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: 'pending' }),
+    } as Response);
     expect(await controller.status(canonicalId.toUpperCase())).toEqual({
       town: { id: canonicalId },
       status: 'pending',
@@ -250,24 +244,22 @@ describe('directory gateway', () => {
         countryCode: 'US',
         localityType: 'city',
       };
-      const fetchMock = jest
-        .spyOn(global, 'fetch')
-        .mockResolvedValue({
-          ok: true,
-          json: async () => ({
-            candidate: {
-              communityId: id,
-              geoid: '1323872',
-              layer: 'place',
-              vintage: '2026',
-              stateFips: '13',
-              archiveSha256: 'a'.repeat(64),
-              reviewContext: { ...context, ownerId: 'private' },
-              changeToken: id,
-              geographyHash: 'b'.repeat(64),
-            },
-          }),
-        } as Response);
+      const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          candidate: {
+            communityId: id,
+            geoid: '1323872',
+            layer: 'place',
+            vintage: '2026',
+            stateFips: '13',
+            archiveSha256: 'a'.repeat(64),
+            reviewContext: { ...context, ownerId: 'private' },
+            changeToken: id,
+            geographyHash: 'b'.repeat(64),
+          },
+        }),
+      } as Response);
       expect(await controller.boundaryCandidate(id)).toEqual({
         candidate: {
           communityId: id,
@@ -304,14 +296,12 @@ describe('directory gateway', () => {
       });
       process.env.DIRECTORY_BOUNDARY_REVIEW_SECRET =
         'review-secret-for-boundary-123456789';
-      jest
-        .spyOn(global, 'fetch')
-        .mockResolvedValue({
-          ok: true,
-          json: async () => ({
-            candidate: { communityId: id, geoid: 'not-a-geoid' },
-          }),
-        } as Response);
+      jest.spyOn(global, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          candidate: { communityId: id, geoid: 'not-a-geoid' },
+        }),
+      } as Response);
       await expect(controller.boundaryCandidate(id)).rejects.toMatchObject({
         status: 503,
       });
@@ -501,12 +491,10 @@ describe('local directory evaluation gateway', () => {
       notices: [],
       termsUrls: [],
     };
-    const fetcher = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({ listings: [listing], hasMore: false }),
-      } as Response);
+    const fetcher = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ listings: [listing], hasMore: false }),
+    } as Response);
     await expect(controller.localListings(id)).rejects.toMatchObject({
       status: 503,
     });
@@ -527,12 +515,10 @@ describe('local directory evaluation gateway', () => {
     process.env.DIRECTORY_LOCAL_EVALUATION = 'true';
     process.env.DIRECTORY_LOCAL_EVALUATION_SECRET =
       'local-evaluation-secret-1234567890';
-    const fetcher = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({ listings: [], hasMore: false }),
-      } as Response);
+    const fetcher = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ listings: [], hasMore: false }),
+    } as Response);
     await controller.localListings(id, '0', '', undefined, 'restaurant');
     expect(fetcher).toHaveBeenCalledWith(
       expect.stringContaining('category=restaurant'),
@@ -548,16 +534,14 @@ describe('local directory evaluation gateway', () => {
     process.env.DIRECTORY_LOCAL_EVALUATION = 'true';
     process.env.DIRECTORY_LOCAL_EVALUATION_SECRET =
       'local-evaluation-secret-1234567890';
-    const fetcher = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          listings: [],
-          hasMore: true,
-          nextCursor: 'opaque-token',
-        }),
-      } as Response);
+    const fetcher = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        listings: [],
+        hasMore: true,
+        nextCursor: 'opaque-token',
+      }),
+    } as Response);
     expect(
       await controller.localListings(
         id,
@@ -595,12 +579,10 @@ describe('local directory evaluation gateway', () => {
     process.env.DIRECTORY_LOCAL_EVALUATION = 'true';
     process.env.DIRECTORY_LOCAL_EVALUATION_SECRET =
       'local-evaluation-secret-1234567890';
-    const fetcher = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({ listings: [], hasMore: false }),
-      } as Response);
+    const fetcher = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ listings: [], hasMore: false }),
+    } as Response);
     await controller.localListings(
       id,
       '0',
@@ -694,12 +676,10 @@ describe('local directory evaluation gateway', () => {
       notices: [],
       termsUrls: [],
     };
-    const fetcher = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({ listing }),
-      } as Response);
+    const fetcher = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ listing }),
+    } as Response);
     expect(await controller.localListingDetail(id, 'opaque-token')).toEqual({
       name: 'Cafe',
       category: 'restaurant',
@@ -735,16 +715,14 @@ describe('local directory evaluation gateway', () => {
       reference: 'opaque-reference',
       id: '00000000-0000-4000-8000-000000000101',
     };
-    const fetcher = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          listings: [listing],
-          hasMore: false,
-          nextCursor: null,
-        }),
-      } as Response);
+    const fetcher = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        listings: [listing],
+        hasMore: false,
+        nextCursor: null,
+      }),
+    } as Response);
     const result = await controller.localListings(
       id,
       '0',
@@ -788,13 +766,11 @@ describe('local directory evaluation gateway', () => {
       phone: '+19125550100',
       address: '10 Main St',
     };
-    const fetcher = jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({ listings: [listing], hasMore: false }),
-      } as Response);
+    const fetcher = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ listings: [listing], hasMore: false }),
+    } as Response);
     expect(await controller.localListings(id)).toEqual({
       listings: [
         {
@@ -847,5 +823,116 @@ describe('local directory evaluation gateway', () => {
     expect(guarded.listings[0].phone).toBeUndefined();
     expect(guarded.listings[0].address).toBeUndefined();
     expect(guarded.listings[0].coordinates).toBeUndefined();
+  });
+});
+
+describe('local directory coverage projection', () => {
+  const original = { ...process.env };
+  const setup = (body: unknown, ok = true, status = 200) => {
+    process.env.DIRECTORY_INTERNAL_URL = 'http://directory:3120';
+    process.env.DIRECTORY_LOCAL_EVALUATION = 'true';
+    process.env.DIRECTORY_LOCAL_EVALUATION_SECRET =
+      'local-evaluation-secret-1234567890';
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok,
+      status,
+      json: async () => body,
+    } as Response);
+    return new DirectoryController({ send: jest.fn() } as any);
+  };
+  const page = (coverage: unknown) => ({
+    listings: [],
+    hasMore: false,
+    nextCursor: null,
+    coverage,
+  });
+  afterEach(() => {
+    process.env = original;
+    jest.restoreAllMocks();
+  });
+
+  it.each(['available', 'empty', 'acquiring', 'partial', 'unknown'])(
+    'passes through %s',
+    async (state) => {
+      const c = setup(page({ state, withheldReviewedDetails: 3 }));
+      const coverage = { state, withheldReviewedDetails: 3 };
+      expect((await c.localListings(id)).coverage).toEqual(coverage);
+      expect(
+        (await c.localListings(id, '0', '', undefined, undefined, 'cursor'))
+          .coverage
+      ).toEqual(coverage);
+    }
+  );
+
+  it.each(['town-ineligible', 'policy-withdrawn'])(
+    'passes through blocked with %s and an empty 200 page',
+    async (reason) => {
+      const c = setup(
+        page({ state: 'blocked', reason, withheldReviewedDetails: 0 })
+      );
+      expect(await c.localListings(id)).toEqual({
+        listings: [],
+        hasMore: false,
+        coverage: { state: 'blocked', reason, withheldReviewedDetails: 0 },
+      });
+    }
+  );
+
+  it.each([
+    ['unknown state', { state: 'weird', withheldReviewedDetails: 0 }],
+    [
+      'reason on non-blocked',
+      { state: 'empty', reason: 'town-ineligible', withheldReviewedDetails: 0 },
+    ],
+    [
+      'blocked without reason',
+      { state: 'blocked', withheldReviewedDetails: 0 },
+    ],
+    [
+      'blocked with bad reason',
+      { state: 'blocked', reason: 'x', withheldReviewedDetails: 0 },
+    ],
+    ['negative count', { state: 'empty', withheldReviewedDetails: -1 }],
+    ['float count', { state: 'empty', withheldReviewedDetails: 1.5 }],
+    ['huge count', { state: 'empty', withheldReviewedDetails: 1_000_001 }],
+    ['string count', { state: 'empty', withheldReviewedDetails: '2' }],
+    ['missing count', { state: 'empty' }],
+    ['non-object', 'available'],
+  ])('drops malformed coverage: %s', async (_n, coverage) => {
+    const c = setup(page(coverage));
+    const result = await c.localListings(id);
+    expect(result).toEqual({ listings: [], hasMore: false });
+    expect('coverage' in result).toBe(false);
+  });
+
+  it('strips extra fields', async () => {
+    const c = setup(
+      page({
+        state: 'empty',
+        withheldReviewedDetails: 2,
+        secret: 'x',
+        listingIds: ['a'],
+      })
+    );
+    expect((await c.localListings(id)).coverage).toEqual({
+      state: 'empty',
+      withheldReviewedDetails: 2,
+    });
+  });
+
+  it('keeps global failures as 503', async () => {
+    const c = setup({}, false, 503);
+    await expect(c.localListings(id)).rejects.toMatchObject({ status: 503 });
+  });
+
+  it('marks the listing route no-store', () => {
+    const headers = Reflect.getMetadata(
+      '__headers__',
+      DirectoryController.prototype.localListings
+    );
+    expect(headers).toContainEqual({
+      name: 'Cache-Control',
+      value: 'no-store',
+    });
   });
 });

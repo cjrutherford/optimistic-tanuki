@@ -156,6 +156,96 @@ describe('BusinessDirectoryComponent', () => {
     );
   });
 
+  describe('coverage states', () => {
+    const q = (sel: string) =>
+      fixture.nativeElement.querySelector(sel) as HTMLElement | null;
+    const load = async (page: unknown, search = '') => {
+      await fixture.whenStable();
+      const component = fixture.componentInstance;
+      communityServiceMock.getLocalDirectoryListings.mockResolvedValueOnce(
+        page
+      );
+      component.search = search;
+      component.searchDirectory();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+    const cov = (state: string, extra: object = {}) => ({
+      listings: [],
+      hasMore: false,
+      coverage: { state, withheldReviewedDetails: 0, ...extra },
+    });
+
+    it.each([
+      ['empty', {}, 'No businesses are listed for this town yet.'],
+      ['acquiring', {}, 'Business listings for this town are being gathered.'],
+      [
+        'blocked',
+        { reason: 'town-ineligible' },
+        "The business directory isn't available for this town.",
+      ],
+      [
+        'blocked',
+        { reason: 'policy-withdrawn' },
+        'Business listings for this town have been withdrawn.',
+      ],
+      ['unknown', {}, "We can't tell yet whether this town has listings."],
+    ])('renders %s %j', async (state, extra, text) => {
+      await load(cov(state, extra));
+      expect(q('[data-testid="coverage-state"]')?.textContent).toContain(text);
+      expect(q('[data-testid="directory-retry"]')).toBeNull();
+    });
+
+    it('never says there are no businesses when coverage is absent', async () => {
+      await load({ listings: [], hasMore: false });
+      const text = q('[data-testid="coverage-state"]')?.textContent;
+      expect(text).toContain("We can't tell yet");
+      expect(text).not.toMatch(/no businesses/i);
+    });
+
+    it('uses no-results wording when a search finds nothing in an empty town', async () => {
+      await load(cov('empty'), 'zzz');
+      const text = q('[data-testid="coverage-state"]')?.textContent;
+      expect(text).toContain('No businesses match your search');
+      expect(text).not.toContain('for this town yet');
+    });
+
+    it('keeps listings visible under partial, stale freshness and withheld', async () => {
+      await load({
+        listings: [listingFixture],
+        hasMore: false,
+        sourceFreshness: {
+          state: 'stale',
+          releaseId: '2026-10-21.0',
+          sourcePublishedAt: '2026-10-22T03:00:00Z',
+          acquiredAt: null,
+          thresholds: { freshDays: 90, staleDays: 120 },
+        },
+        coverage: { state: 'partial', withheldReviewedDetails: 2 },
+      });
+      expect(fixture.nativeElement.textContent).toContain('Fixture Bakery');
+      expect(q('[data-testid="coverage-state"]')?.textContent).toContain(
+        'More listings are still being gathered.'
+      );
+      expect(q('[data-testid="withheld-note"]')?.textContent).toContain(
+        "Some business details are hidden until they're re-checked."
+      );
+      expect(q('[data-testid="source-freshness"]')?.textContent).toContain(
+        'may be out of date'
+      );
+    });
+
+    it('shows no coverage message when listings are available', async () => {
+      await load({
+        listings: [listingFixture],
+        hasMore: false,
+        coverage: { state: 'available', withheldReviewedDetails: 0 },
+      });
+      expect(q('[data-testid="coverage-state"]')).toBeNull();
+      expect(q('[data-testid="withheld-note"]')).toBeNull();
+    });
+  });
+
   it('lets a signed-in page owner request review of a matching directory listing', async () => {
     await fixture.whenStable();
     const component = fixture.componentInstance;

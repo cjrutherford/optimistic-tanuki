@@ -159,6 +159,52 @@ describe('CommunityService', () => {
     expect('sourceFreshness' in (await pending)).toBe(false);
   });
 
+  it('passes through valid coverage and drops malformed coverage', async () => {
+    const url =
+      '/api/directory/towns/town-id/local-evaluation-listings?offset=0&identities=1';
+    const cases: Array<[unknown, unknown]> = [
+      [
+        { state: 'empty', withheldReviewedDetails: 0, extra: 'x' },
+        { state: 'empty', withheldReviewedDetails: 0 },
+      ],
+      [
+        {
+          state: 'blocked',
+          reason: 'town-ineligible',
+          withheldReviewedDetails: 0,
+        },
+        {
+          state: 'blocked',
+          reason: 'town-ineligible',
+          withheldReviewedDetails: 0,
+        },
+      ],
+      [{ state: 'bogus', withheldReviewedDetails: 0 }, undefined],
+      [{ state: 'blocked', withheldReviewedDetails: 0 }, undefined],
+      [
+        {
+          state: 'empty',
+          reason: 'town-ineligible',
+          withheldReviewedDetails: 0,
+        },
+        undefined,
+      ],
+      [{ state: 'empty', withheldReviewedDetails: -1 }, undefined],
+      [{ state: 'empty', withheldReviewedDetails: 1.5 }, undefined],
+      [{ state: 'empty', withheldReviewedDetails: 2_000_000 }, undefined],
+      ['empty', undefined],
+    ];
+    for (const [input, expected] of cases) {
+      const pending = service.getLocalDirectoryListings('town-id');
+      httpMock
+        .expectOne(url)
+        .flush({ listings: [], hasMore: false, coverage: input });
+      const page = await pending;
+      if (expected) expect(page.coverage).toEqual(expected);
+      else expect('coverage' in page).toBe(false);
+    }
+  });
+
   it('requests adult listings only when the visitor opts in', async () => {
     const pending = service.getLocalDirectoryListings('town-id', 0, '', true);
     const request = httpMock.expectOne(

@@ -32,11 +32,48 @@ export interface LocalDirectorySourceFreshness {
   thresholds: { freshDays: number; staleDays: number };
 }
 
+/**
+ * What Directory can prove about a town's coverage, from persisted facts only. Independent of `sourceFreshness`
+ * and never used to hide listings. A failed request is not a coverage state: it is an HTTP error.
+ *
+ *  - available: at least one listing is served.
+ *  - empty: a completed, unrevoked, policy-active scan targeted this town and no listing remains.
+ *  - acquiring: a scan targeting this town has started and none targeting it has completed.
+ *  - partial: listings are served from a completed scan while a newer scan targeting the town is still acquiring.
+ *  - blocked: the town is not served by policy (`reason` says which).
+ *  - unknown: Directory has no recorded scan target for this town, so it cannot say whether it was scanned.
+ */
+export type LocalDirectoryCoverageState =
+  | 'available'
+  | 'empty'
+  | 'acquiring'
+  | 'partial'
+  | 'blocked'
+  | 'unknown';
+
+/** `town-ineligible`: the town is not eligible for the directory. `policy-withdrawn`: every scan covering it was withdrawn. */
+export type LocalDirectoryCoverageReason =
+  | 'town-ineligible'
+  | 'policy-withdrawn';
+
+export interface LocalDirectoryCoverage {
+  state: LocalDirectoryCoverageState;
+  /** Present only when state is `blocked`. */
+  reason?: LocalDirectoryCoverageReason;
+  /**
+   * Count of served listings whose reviewed details (address, contact, map point) are withheld until their source
+   * binding is re-verified. The listings themselves are still served. Count only: no ids, no causes.
+   */
+  withheldReviewedDetails: number;
+}
+
 export interface LocalDirectoryPage {
   listings: LocalDirectoryListing[];
   hasMore: boolean;
   /** Optional so older gateway and Local Hub builds ignore it. */
   sourceFreshness?: LocalDirectorySourceFreshness;
+  /** Optional so older gateway and Local Hub builds ignore it. Absent means the same as `unknown`. */
+  coverage?: LocalDirectoryCoverage;
 }
 
 export interface LocalDirectoryCursorPage extends LocalDirectoryPage {

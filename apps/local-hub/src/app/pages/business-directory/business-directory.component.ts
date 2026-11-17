@@ -22,6 +22,10 @@ import {
   describeSourceFreshness,
   LocalDirectorySourceFreshness,
 } from '../../services/source-freshness';
+import {
+  describeCoverage,
+  LocalDirectoryCoverage,
+} from '../../services/coverage';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MapComponent } from '../../components/map/map.component';
 import {
@@ -32,6 +36,7 @@ import {
   ErrorStateComponent,
   IconComponent,
   LoadingStateComponent,
+  StateMessageComponent,
 } from '@optimistic-tanuki/common-ui';
 import {
   CheckboxComponent,
@@ -79,6 +84,7 @@ interface BusinessPageLinkState {
     ErrorStateComponent,
     IconComponent,
     LoadingStateComponent,
+    StateMessageComponent,
     TextInputComponent,
   ],
   templateUrl: './business-directory.component.html',
@@ -105,6 +111,15 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
   sourceFreshnessLabel = computed(() =>
     describeSourceFreshness(this.sourceFreshness())
   );
+  coverage = signal<LocalDirectoryCoverage | null>(null);
+  coverageView = computed(() =>
+    describeCoverage(
+      this.coverage(),
+      this.listings().length,
+      this.activeQueryText().length > 0
+    )
+  );
+  private activeQueryText = signal('');
   loading = signal(true);
   directoryLoading = signal(false);
   available = signal(false);
@@ -164,6 +179,8 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
       this.directoryError.set(false);
       this.search = '';
       this.activeQuery = '';
+      this.activeQueryText.set('');
+      this.coverage.set(null);
       this.requestGeneration++;
       this.directoryLoading.set(false);
 
@@ -211,6 +228,9 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
         if (page.sourceFreshness || offset === 0) {
           this.sourceFreshness.set(page.sourceFreshness ?? null);
         }
+        if (page.coverage || offset === 0) {
+          this.coverage.set(page.coverage ?? null);
+        }
       }
     } catch {
       if (request === this.requestGeneration && this.city()?.id === id) {
@@ -234,6 +254,7 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
     if (!city) return;
 
     this.activeQuery = this.search.trim();
+    this.activeQueryText.set(this.activeQuery);
     this.requestGeneration++;
     this.directoryLoading.set(false);
     this.listings.set([]);

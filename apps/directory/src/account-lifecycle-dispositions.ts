@@ -541,6 +541,19 @@ const inventory: DirectoryLifecycleInventory = {
       'Scan completion marker.'
     ),
     none(
+      'directory_town_scan_target',
+      'DirectoryTownScanTarget',
+      [
+        'communityId',
+        'scanId',
+        'targetedAt',
+        'completedAt',
+        'rowCount',
+        'provenance',
+      ],
+      'Town scan target record.'
+    ),
+    none(
       'directory_overture_source_evidence',
       'DirectoryOvertureSourceEvidence',
       [

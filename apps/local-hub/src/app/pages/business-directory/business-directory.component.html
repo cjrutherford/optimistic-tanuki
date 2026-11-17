@@ -167,11 +167,33 @@
       </otui-error-state>
       } @else if (directoryLoading() && listings().length === 0) {
       <otui-loading-state headline="Loading businesses…"></otui-loading-state>
-      } @else if (available() && listings().length === 0) {
+      } @else if ( available() && coverageView().kind !== 'none' &&
+      coverageView().kind !== 'partial' ) {
       <otui-empty-state
-        headline="No businesses found"
-        body="No businesses found in the available directory data."
+        data-testid="coverage-state"
+        [attr.data-kind]="coverageView().kind"
+        [headline]="coverageView().title"
+        [body]="coverageView().message"
       ></otui-empty-state>
+      } @if (available() && coverageView().kind === 'partial') {
+      <otui-state-message
+        data-testid="coverage-state"
+        data-kind="partial"
+        kind="generic"
+        tone="info"
+        [hideIcon]="true"
+        [headline]="coverageView().title"
+        [body]="coverageView().message"
+      ></otui-state-message>
+      } @if (available() && coverageView().withheldNote; as withheldNote) {
+      <otui-state-message
+        data-testid="withheld-note"
+        kind="generic"
+        tone="neutral"
+        [hideIcon]="true"
+        headline="Some details are hidden"
+        [body]="withheldNote"
+      ></otui-state-message>
       } @if (listings().length > 0) {
       <div class="businesses-grid">
         @for (listing of listings(); track listing.id ?? $index) {

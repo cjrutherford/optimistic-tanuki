@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { API_BASE_URL, CommunityTag } from '@optimistic-tanuki/ui-models';
 import { firstValueFrom } from 'rxjs';
 import { readSourceFreshness } from './source-freshness';
+import { readCoverage } from './coverage';
 import type { LocalDirectoryPage } from '@optimistic-tanuki/social-contracts';
 export type { LocalDirectoryListing } from '@optimistic-tanuki/social-contracts';
 
@@ -202,6 +203,9 @@ export class CommunityService {
       hasMore: result.hasMore,
       ...(readSourceFreshness(result.sourceFreshness)
         ? { sourceFreshness: readSourceFreshness(result.sourceFreshness) }
+        : {}),
+      ...(readCoverage(result.coverage)
+        ? { coverage: readCoverage(result.coverage) }
         : {}),
     };
   }

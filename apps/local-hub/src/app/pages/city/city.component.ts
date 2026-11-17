@@ -29,6 +29,10 @@ import {
   describeSourceFreshness,
   LocalDirectorySourceFreshness,
 } from '../../services/source-freshness';
+import {
+  describeCoverage,
+  LocalDirectoryCoverage,
+} from '../../services/coverage';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { MapComponent } from '../../components/map/map.component';
@@ -38,8 +42,11 @@ import {
   BadgeComponent,
   ButtonComponent,
   CardComponent,
+  EmptyStateComponent,
+  ErrorStateComponent,
   IconComponent,
   ModalComponent,
+  StateMessageComponent,
 } from '@optimistic-tanuki/common-ui';
 import {
   PostComponent,
@@ -87,6 +94,9 @@ interface CommunityTreeNode {
     ButtonComponent,
     CardComponent,
     IconComponent,
+    EmptyStateComponent,
+    ErrorStateComponent,
+    StateMessageComponent,
     ModalComponent,
     PostComponent,
     ReportDialogComponent,
@@ -131,6 +141,15 @@ export class CityComponent implements OnInit, OnDestroy {
     describeSourceFreshness(this.localDirectorySourceFreshness())
   );
   localDirectoryLoading = signal(false);
+  localDirectoryFailed = signal(false);
+  localDirectoryCoverage = signal<LocalDirectoryCoverage | null>(null);
+  coverageView = computed(() =>
+    describeCoverage(
+      this.localDirectoryCoverage(),
+      this.localDirectoryListings().length,
+      false
+    )
+  );
   directoryMapLocations = computed(() =>
     this.localDirectoryListings().flatMap((listing) =>
       listing.coordinates
@@ -279,6 +298,7 @@ export class CityComponent implements OnInit, OnDestroy {
 
     const request = ++this.localDirectoryRequest;
     this.localDirectoryLoading.set(true);
+    this.localDirectoryFailed.set(false);
 
     try {
       const page = await this.communityService.getLocalDirectoryListings(
@@ -293,14 +313,25 @@ export class CityComponent implements OnInit, OnDestroy {
         if (page.sourceFreshness || offset === 0) {
           this.localDirectorySourceFreshness.set(page.sourceFreshness ?? null);
         }
+        if (page.coverage || offset === 0) {
+          this.localDirectoryCoverage.set(page.coverage ?? null);
+        }
       }
     } catch {
-      // Non-fatal: the dedicated directory page owns retry and error states.
+      // A failed read must not look like an empty town: surface it with a retry.
+      if (request === this.localDirectoryRequest && this.city()?.id === id) {
+        this.localDirectoryFailed.set(true);
+      }
     } finally {
       if (request === this.localDirectoryRequest) {
         this.localDirectoryLoading.set(false);
       }
     }
+  }
+
+  retryLocalDirectory(): void {
+    const id = this.city()?.id;
+    if (id) void this.loadLocalDirectoryPage(id, 0);
   }
 
   navigateToBusinessDirectory(): void {
@@ -323,6 +354,8 @@ export class CityComponent implements OnInit, OnDestroy {
       this.localDirectoryListings.set([]);
       this.localDirectoryHasMore.set(false);
       this.localDirectorySourceFreshness.set(null);
+      this.localDirectoryCoverage.set(null);
+      this.localDirectoryFailed.set(false);
       this.localDirectoryRequest++;
       this.localDirectoryLoading.set(false);
       void this.loadLocalDirectoryPage(cityData.id, 0);

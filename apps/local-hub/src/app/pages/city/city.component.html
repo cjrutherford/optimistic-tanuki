@@ -195,9 +195,7 @@
                       ? 'location'
                       : 'locations'
                   }}
-                  {{
-                    directoryMapLocations().length === 1 ? 'is' : 'are'
-                  }}
+                  {{ directoryMapLocations().length === 1 ? 'is' : 'are' }}
                   mapped in the
                   <a [routerLink]="['/city', city()!.slug, 'businesses']"
                     >business directory</a
@@ -292,7 +290,48 @@
                 </otui-button>
               </div>
             </div>
-            @if (directoryPreview().length > 0) {
+            @if (localDirectoryFailed()) {
+            <otui-error-state
+              data-testid="city-directory-error"
+              headline="Business directory is temporarily unavailable"
+              body="Please try again."
+            >
+              <otui-button
+                slot="actions"
+                data-testid="city-directory-retry"
+                tone="brand"
+                emphasis="outline"
+                (click)="retryLocalDirectory()"
+              >
+                <otui-icon
+                  name="refresh"
+                  [size]="16"
+                  stroke="currentColor"
+                ></otui-icon>
+                Try again
+              </otui-button>
+            </otui-error-state>
+            } @else if ( !localDirectoryLoading() && coverageView().kind !==
+            'none' ) {
+            <otui-state-message
+              data-testid="city-directory-coverage"
+              [attr.data-kind]="coverageView().kind"
+              kind="generic"
+              tone="neutral"
+              [hideIcon]="true"
+              [headline]="coverageView().title"
+              [body]="coverageView().message"
+            ></otui-state-message>
+            } @if (!localDirectoryFailed() && coverageView().withheldNote; as
+            note) {
+            <otui-state-message
+              data-testid="city-directory-withheld"
+              kind="generic"
+              tone="neutral"
+              [hideIcon]="true"
+              [body]="note"
+            ></otui-state-message>
+            } @if (directoryPreview().length > 0) {
             <div class="city-directory-preview">
               @for (listing of directoryPreview(); track listing.id ?? $index) {
               <div class="city-directory-preview__item">

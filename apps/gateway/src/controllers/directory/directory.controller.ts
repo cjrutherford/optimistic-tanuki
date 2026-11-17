@@ -22,6 +22,7 @@ import { firstValueFrom, timeout } from 'rxjs';
 import { isIP } from 'node:net';
 import type {
   LocalDirectoryListing,
+  LocalDirectoryCoverage,
   LocalDirectorySourceFreshness,
 } from '@optimistic-tanuki/social-contracts';
 import { Public } from '../../decorators/public.decorator';
@@ -93,6 +94,37 @@ export class DirectoryController {
       if (error instanceof NotFoundException) throw error;
       throw new ServiceUnavailableException('Local directory unavailable');
     }
+  }
+
+  /** Strict allowlist of town coverage; anything malformed is omitted rather than failing the page. */
+  private projectCoverage(value: any): { coverage?: LocalDirectoryCoverage } {
+    if (
+      !value ||
+      typeof value !== 'object' ||
+      ![
+        'available',
+        'empty',
+        'acquiring',
+        'partial',
+        'blocked',
+        'unknown',
+      ].includes(value.state) ||
+      !Number.isSafeInteger(value.withheldReviewedDetails) ||
+      value.withheldReviewedDetails < 0 ||
+      value.withheldReviewedDetails > 1_000_000
+    )
+      return {};
+    if (value.state === 'blocked') {
+      if (!['town-ineligible', 'policy-withdrawn'].includes(value.reason))
+        return {};
+    } else if (value.reason !== undefined) return {};
+    return {
+      coverage: {
+        state: value.state,
+        ...(value.state === 'blocked' ? { reason: value.reason } : {}),
+        withheldReviewedDetails: value.withheldReviewedDetails,
+      },
+    };
   }
 
   /** Label-only pass-through; anything malformed is dropped rather than failing the page. */
@@ -213,6 +245,7 @@ export class DirectoryController {
 
   @Public()
   @Get(':id/local-evaluation-listings')
+  // Invariant: listing responses must never be cached (coverage and freshness change as scans run).
   @Header('Cache-Control', 'no-store')
   async localListings(
     @Param('id') id: string,
@@ -330,12 +363,14 @@ export class DirectoryController {
           hasMore: result.hasMore,
           nextCursor: result.nextCursor,
           ...this.projectSourceFreshness(result.sourceFreshness),
+          ...this.projectCoverage(result.coverage),
         };
       }
       return {
         listings,
         hasMore: result.hasMore,
         ...this.projectSourceFreshness(result.sourceFreshness),
+        ...this.projectCoverage(result.coverage),
       };
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
