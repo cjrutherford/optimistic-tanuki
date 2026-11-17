@@ -127,7 +127,7 @@ describe('AccountExportArtifactBuilderService', () => {
       const manifest = JSON.parse(
         entries.get('manifest.json')!.toString('utf8')
       );
-      expect(manifest.owners).toHaveLength(12);
+      expect(manifest.owners).toHaveLength(ACCOUNT_EXPORT_RELEASE_OWNERS.length);
       expect(manifest.owners[0]).toHaveProperty('captureId');
       expect(entries.get('owners/authentication.ndjson')!.toString()).toContain(
         'preserve <script> literal'

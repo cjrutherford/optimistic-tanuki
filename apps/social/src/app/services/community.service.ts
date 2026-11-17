@@ -1,9 +1,13 @@
+import { scanSourceCommunities, repairSourceCommunityRegister } from './community-directory-census';
+import { lockSocialRuntimeAuthority, trustedDirectoryRuntimeEpochs, SOCIAL_AUTHORITY_COLUMNS } from './social-authority';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Equal, ILike } from 'typeorm';
+import { Repository, EntityManager, Equal, ILike, MoreThan, In } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { randomUUID } from 'node:crypto';
 import { Community } from '../../entities/community.entity';
+import { CommunityDirectoryChange } from '../../entities/community-directory-change.entity';
+import { lockCommunityDirectoryWrite, recordCommunityChange, saveCommunityWithDirectoryChange } from './community-directory-outbox';
 import {
   CommunityMember,
   CommunityMemberRole,
@@ -27,6 +31,7 @@ import {
   CommunityMembershipAuditEvent,
 } from './community-membership-lifecycle';
 import { CommunityMembershipAudit } from '../../entities/community-membership-audit.entity';
+import { scanDirectoryRegister, readDirectoryRegisterSnapshot, scanDirectoryRegisterV2, readDirectoryRegisterSnapshotV2, readCurrentDirectoryRegister, readCurrentDirectoryGeography, SocialCaptureIncarnation } from './community-directory-register-read';
 
 /** Email invitations expire 7 days after creation; tokens are single-use. */
 export const COMMUNITY_INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -52,6 +57,45 @@ function toSlug(name: string): string {
 
 @Injectable()
 export class CommunityService {
+  private withBoundedRegisterRead<T>(read: (manager: EntityManager) => Promise<T>): Promise<T> {
+    return this.communityRepo.manager.transaction(async manager => {
+      await manager.query("SET LOCAL lock_timeout = '2s'");
+      await manager.query("SET LOCAL statement_timeout = '5s'");
+      return read(manager);
+    });
+  }
+
+  async scanSourceCommunities(identity: SocialCaptureIncarnation, afterCommunityId: string | null, limit: number) {
+    return this.withBoundedRegisterRead(manager => scanSourceCommunities(manager, identity, afterCommunityId, limit));
+  }
+
+  async repairSourceCommunityRegister(identity: SocialCaptureIncarnation, communityId: string) {
+    return this.withBoundedRegisterRead(manager => repairSourceCommunityRegister(manager, identity, communityId));
+  }
+
+  async scanDirectoryRegisterV2(identity: SocialCaptureIncarnation, afterCommunityId: string | null, limit: number) {
+    return this.withBoundedRegisterRead(manager => scanDirectoryRegisterV2(manager, identity, afterCommunityId, limit));
+  }
+
+  async readDirectoryRegisterSnapshotV2(identity: SocialCaptureIncarnation, communityId: string, changeToken: string) {
+    return this.withBoundedRegisterRead(manager => readDirectoryRegisterSnapshotV2(manager, identity, communityId, changeToken));
+  }
+
+  async readCurrentDirectoryRegister(identity: SocialCaptureIncarnation, communityId: string) {
+    return this.withBoundedRegisterRead(manager => readCurrentDirectoryRegister(manager, identity, communityId));
+  }
+
+  async readCurrentDirectoryGeography(identity: SocialCaptureIncarnation, communityId: string) {
+    return this.withBoundedRegisterRead(manager => readCurrentDirectoryGeography(manager, identity, communityId));
+  }
+
+  async scanDirectoryRegister(sourceEpoch: string, afterCommunityId: string | null, limit: number) {
+    return this.withBoundedRegisterRead(manager => scanDirectoryRegister(manager, sourceEpoch, afterCommunityId, limit));
+  }
+
+  async readDirectoryRegisterSnapshot(sourceEpoch: string, communityId: string, changeToken: string) {
+    return this.withBoundedRegisterRead(manager => readDirectoryRegisterSnapshot(manager, sourceEpoch, communityId, changeToken));
+  }
   private readonly logger = new Logger('Social Service | Community Service');
   constructor(
     @InjectRepository(Community)
@@ -143,18 +187,18 @@ export class CommunityService {
       timezone: dto.timezone ?? null,
     });
 
-    const saved = await this.communityRepo.save(community);
-
-    const ownerMember = this.memberRepo.create({
-      communityId: saved.id,
-      userId,
-      profileId,
-      role: CommunityMemberRole.OWNER,
-      status: CommunityMembershipStatus.APPROVED,
+    return this.communityRepo.manager.transaction(async (manager) => {
+      await lockCommunityDirectoryWrite(manager);
+      const saved = await manager.save(Community, community);
+      const ownerMember = this.memberRepo.create({
+        communityId: saved.id, userId, profileId,
+        role: CommunityMemberRole.OWNER,
+        status: CommunityMembershipStatus.APPROVED,
+      });
+      await manager.save(CommunityMember, ownerMember);
+      await recordCommunityChange(manager, saved.id, 'changed');
+      return saved;
     });
-    await this.memberRepo.save(ownerMember);
-
-    return saved;
   }
 
   async findBySlug(
@@ -252,6 +296,108 @@ export class CommunityService {
     });
 
     return Promise.all(communities.map((c) => this.addMemberInfo(c)));
+  }
+
+  async assertDirectoryReady(): Promise<void> {
+    // An epoch cannot prove that inactive changes were reconciled across both stores.
+    throw new RpcException('Directory recovery reconciliation is not implemented');
+  }
+
+  private async withDirectoryEpoch<T>(expectedSourceEpoch: string, read: (manager: EntityManager) => Promise<T>, recovery = false): Promise<T> {
+    if (typeof expectedSourceEpoch !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(expectedSourceEpoch)) {
+      throw new RpcException('Invalid expected source epoch');
+    }
+    return this.communityRepo.manager.transaction(async manager => {
+      // Fencing and rotation update this row and therefore wait for this read to finish.
+      if (recovery) {
+        const rows = await manager.query(`SELECT ${SOCIAL_AUTHORITY_COLUMNS} FROM community_directory_epoch WHERE id = 1 FOR SHARE`);
+        if (rows.length !== 1 || rows[0].fenced !== true || rows[0].phase !== 'fenced' || rows[0].sourceEpoch !== expectedSourceEpoch.toLowerCase()) throw new RpcException('Directory source epoch is missing, fenced, or stale');
+      } else {
+        const row = await lockSocialRuntimeAuthority(manager, trustedDirectoryRuntimeEpochs());
+        if (row.sourceEpoch !== expectedSourceEpoch.toLowerCase()) throw new RpcException('Directory source epoch is stale');
+      }
+      return read(manager);
+    });
+  }
+
+  private async withActiveDirectoryAuthority<T>(read: (manager: EntityManager) => Promise<T>): Promise<T> {
+    return this.communityRepo.manager.transaction(async manager => {
+      await lockSocialRuntimeAuthority(manager, trustedDirectoryRuntimeEpochs());
+      return read(manager);
+    });
+  }
+
+  async directorySnapshot(id: string, expectedSourceEpoch: string, recovery = false): Promise<Community | null> {
+    if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) throw new RpcException('Invalid community id');
+    return this.withDirectoryEpoch(expectedSourceEpoch, async manager => {
+      const community = await manager.getRepository(Community).findOne({ where: { id, appScope: 'local-hub', isPrivate: false, localityType: In(['city', 'town']) }, select: { id: true, name: true, slug: true, adminArea: true, appScope: true, isPrivate: true, localityType: true } });
+      return community?.adminArea === 'Development fixture' ? null : community;
+    }, recovery);
+  }
+
+  async directoryMembership(revision: string, communityId: string, expectedSourceEpoch: string, expectedEventNonce: string): Promise<{ status: 'absent' } | { status: 'pending'; eventNonce: string; sourceEpoch: string; snapshot: Community | null }> {
+    if (typeof revision !== 'string' || !/^[1-9][0-9]{0,18}$/.test(revision) || typeof communityId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communityId)) throw new RpcException('Invalid event identity');
+    if (typeof expectedEventNonce !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(expectedEventNonce)) throw new RpcException('Invalid event nonce');
+    return this.withDirectoryEpoch(expectedSourceEpoch, async manager => {
+      const rows = await manager.query(`SELECT e."communityId" AS "eventCommunityId", e."sourceEpoch" AS "eventSourceEpoch", e."eventNonce" AS "eventNonce", c.id, c.name, c.slug, c."adminArea", c."appScope", c."isPrivate", c."localityType"
+        FROM community_directory_change e LEFT JOIN community c ON c.id = e."communityId"
+          AND c."appScope" = 'local-hub' AND c."isPrivate" = false AND c."localityType" IN ('city', 'town') AND c."adminArea" IS DISTINCT FROM 'Development fixture'
+        WHERE e.revision = $1`, [revision]);
+      if (!rows.length) return { status: 'absent' as const };
+      const { eventCommunityId, eventSourceEpoch, eventNonce, ...snapshot } = rows[0];
+      if (eventCommunityId !== communityId.toLowerCase() || eventSourceEpoch !== expectedSourceEpoch.toLowerCase() || eventNonce !== expectedEventNonce.toLowerCase()) throw new RpcException('Event identity collision');
+      return { status: 'pending' as const, eventNonce, sourceEpoch: eventSourceEpoch, snapshot: snapshot.id ? snapshot : null };
+    });
+  }
+
+  async directoryUnread(after?: string): Promise<CommunityDirectoryChange[]> {
+    if (after !== undefined && (typeof after !== 'string' || !/^[1-9][0-9]{0,18}$/.test(after))) throw new RpcException('Invalid scan cursor');
+    return this.withActiveDirectoryAuthority(manager => manager.getRepository(CommunityDirectoryChange).find({
+      select: { revision: true, communityId: true, sourceEpoch: true, eventNonce: true },
+      where: after ? { revision: MoreThan(after) } : {}, order: { revision: 'ASC' }, take: 100,
+    }));
+  }
+
+  /** Live, bounded census page. This is not a consistent snapshot or a change log. */
+  async findDirectoryCensus(expectedSourceEpoch: string, cursor?: string, requestedLimit = 100, recovery = false): Promise<{
+    communities: Pick<Community, 'id'>[];
+    nextCursor: string | null;
+  }> {
+    if (cursor !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cursor)) {
+      throw new RpcException('Invalid census cursor');
+    }
+    if (!Number.isInteger(requestedLimit) || requestedLimit < 1) throw new RpcException('Invalid census limit');
+    const limit = Math.min(requestedLimit, 200);
+    return this.withDirectoryEpoch(expectedSourceEpoch, async manager => {
+    const query = manager.getRepository(Community).createQueryBuilder('community')
+      .select(['community.id'])
+      .where('community."appScope" = :scope AND community."isPrivate" = false', { scope: 'local-hub' })
+      .andWhere('community."localityType" IN (:...types)', { types: ['city', 'town'] })
+      .andWhere('community."adminArea" IS DISTINCT FROM :fixtureArea', { fixtureArea: 'Development fixture' });
+    if (cursor) query.andWhere('community.id > :cursor', { cursor });
+    const rows = await query.orderBy('community.id', 'ASC').take(limit + 1).getMany();
+    const communities = rows.slice(0, limit);
+    return { communities, nextCursor: rows.length > limit ? communities[communities.length - 1].id : null };
+    }, recovery);
+  }
+
+  async recoveryDirectorySnapshot(id: string, expectedSourceEpoch: string): Promise<Community | null> {
+    return this.directorySnapshot(id, expectedSourceEpoch, true);
+  }
+
+  async recoveryDirectoryCensus(expectedSourceEpoch: string, cursor?: string, limit?: number) {
+    return this.findDirectoryCensus(expectedSourceEpoch, cursor, limit, true);
+  }
+
+  async findDirectoryEligible(id: string): Promise<{ id: string } | null> {
+    return this.withActiveDirectoryAuthority(async manager => {
+    const community = await manager.getRepository(Community).findOne({
+      where: { id, appScope: 'local-hub', isPrivate: false },
+      select: { id: true, localityType: true, adminArea: true },
+    });
+    if (!community || community.adminArea === 'Development fixture' || (community.localityType !== 'city' && community.localityType !== 'town')) return null;
+    return { id: community.id };
+    });
   }
 
   async findOne(
@@ -448,7 +594,20 @@ export class CommunityService {
       }));
     }
 
-    return await this.communityRepo.save(community);
+    // Persist only fields supplied by this update. The entity was read before the
+    // transaction, so saving it wholesale can restore stale privacy/locality data.
+    const fields = [
+      'name', 'slug', 'description', 'localityType', 'countryCode', 'adminArea',
+      'city', 'lat', 'lng', 'population', 'highlights', 'imageUrl', 'timezone',
+      'parentId', 'isPrivate', 'joinPolicy', 'tags',
+    ] as const;
+    const patch: Partial<Community> = { id: community.id };
+    for (const field of fields) {
+      if (dto[field] === undefined || ((field === 'name' || field === 'slug' || field === 'joinPolicy') && !dto[field])) continue;
+      (patch as any)[field] = community[field];
+    }
+    const saved = await saveCommunityWithDirectoryChange(this.communityRepo, patch as Community);
+    return Object.assign(community, saved);
   }
 
   async delete(id: string, userId: string): Promise<void> {
@@ -471,7 +630,11 @@ export class CommunityService {
       throw new RpcException('Only the owner can delete the community');
     }
 
-    await this.communityRepo.remove(community);
+    await this.communityRepo.manager.transaction(async (manager) => {
+      await lockCommunityDirectoryWrite(manager);
+      await manager.remove(Community, community);
+      await recordCommunityChange(manager, id, 'deleted');
+    });
   }
 
   async join(
@@ -534,7 +697,7 @@ export class CommunityService {
 
     if (status === CommunityMembershipStatus.APPROVED) {
       community.memberCount += 1;
-      await this.communityRepo.save(community);
+      await this.communityRepo.save({ id: community.id, memberCount: community.memberCount });
     }
 
     return saved;
@@ -557,7 +720,7 @@ export class CommunityService {
     const community = await this.findOne(communityId);
     if (community && community.memberCount > 0) {
       community.memberCount -= 1;
-      await this.communityRepo.save(community);
+      await this.communityRepo.save({ id: community.id, memberCount: community.memberCount });
     }
   }
 
@@ -832,7 +995,7 @@ export class CommunityService {
         existingMember.status = CommunityMembershipStatus.APPROVED;
         await this.memberRepo.save(existingMember);
         community.memberCount += 1;
-        await this.communityRepo.save(community);
+        await this.communityRepo.save({ id: community.id, memberCount: community.memberCount });
       }
     } else {
       const member = this.memberRepo.create({
@@ -844,7 +1007,7 @@ export class CommunityService {
       });
       await this.memberRepo.save(member);
       community.memberCount += 1;
-      await this.communityRepo.save(community);
+      await this.communityRepo.save({ id: community.id, memberCount: community.memberCount });
     }
 
     const { token: _token, ...sanitized } = saved;
@@ -987,7 +1150,7 @@ export class CommunityService {
     const saved = await this.memberRepo.save(member);
 
     community.memberCount += 1;
-    await this.communityRepo.save(community);
+    await this.communityRepo.save({ id: community.id, memberCount: community.memberCount });
 
     return saved;
   }
@@ -1063,7 +1226,7 @@ export class CommunityService {
       await this.memberRepo.remove(member);
       if (community.memberCount > 0) {
         community.memberCount -= 1;
-        await this.communityRepo.save(community);
+        await this.communityRepo.save({ id: community.id, memberCount: community.memberCount });
       }
       return;
     }
@@ -1481,7 +1644,8 @@ export class CommunityService {
 
     community.managerId = userId;
     community.managerProfileId = profileId;
-    return await this.communityRepo.save(community);
+    await this.communityRepo.save({ id: community.id, managerId: community.managerId, managerProfileId: community.managerProfileId });
+    return community;
   }
 
   async revokeManager(communityId: string): Promise<Community> {
@@ -1492,7 +1656,8 @@ export class CommunityService {
 
     community.managerId = null;
     community.managerProfileId = null;
-    return await this.communityRepo.save(community);
+    await this.communityRepo.save({ id: community.id, managerId: community.managerId, managerProfileId: community.managerProfileId });
+    return community;
   }
 
   async withdrawCandidate(

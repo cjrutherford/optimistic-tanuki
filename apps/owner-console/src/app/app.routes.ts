@@ -39,6 +39,21 @@ export const appRoutes: Route[] = [
     canActivate: [authGuard],
     children: [
       {
+        path: 'directory-link-review/:communityId',
+        loadComponent: () => import('./components/directory-link-review-page.component').then((m) => m.DirectoryLinkReviewPageComponent),
+      },
+      {
+        path: 'directory-address-review/:communityId',
+        loadComponent: () =>
+          import('./components/directory-address-review-page.component').then(
+            (m) => m.DirectoryAddressReviewPageComponent
+          ),
+      },
+      {
+        path: 'boundary-review/:communityId',
+        loadComponent: () => import('./components/boundary-review-page.component').then((m) => m.BoundaryReviewPageComponent),
+      },
+      {
         path: 'community-ops',
         loadComponent: () =>
           import('./components/community-ops-workspace.component').then(

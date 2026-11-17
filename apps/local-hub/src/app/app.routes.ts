@@ -47,6 +47,13 @@ export const appRoutes: Route[] = [
       import('./pages/cities/cities.component').then((m) => m.CitiesComponent),
   },
   {
+    path: 'city/:slug/businesses',
+    loadComponent: () =>
+      import('./pages/business-directory/business-directory.component').then(
+        (m) => m.BusinessDirectoryComponent
+      ),
+  },
+  {
     path: 'city/:slug',
     loadComponent: () =>
       import('./pages/city/city.component').then((m) => m.CityComponent),

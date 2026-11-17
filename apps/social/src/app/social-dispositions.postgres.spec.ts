@@ -62,11 +62,20 @@ describePrivate(
       );
       const rows: Array<{ table: string; columns: string[] }> =
         await source.query(`SELECT table_name AS "table", array_agg(column_name::text ORDER BY ordinal_position) AS columns
-      FROM information_schema.columns WHERE table_schema='public' GROUP BY table_name ORDER BY table_name`);
-      expect(rows).toHaveLength(36);
+      FROM information_schema.columns c WHERE table_schema='public'
+        AND NOT EXISTS (
+          SELECT 1 FROM pg_class pc
+          JOIN pg_namespace pn ON pn.oid = pc.relnamespace
+          JOIN pg_depend pd ON pd.classid = 'pg_class'::regclass
+            AND pd.objid = pc.oid AND pd.deptype = 'e'
+          JOIN pg_extension pe ON pe.oid = pd.refobjid
+          WHERE pn.nspname = c.table_schema AND pc.relname = c.table_name
+        )
+      GROUP BY table_name ORDER BY table_name`);
+      expect(rows).toHaveLength(39);
       expect(
         source.entityMetadatas.filter((m) => m.tableType !== 'junction')
-      ).toHaveLength(34);
+      ).toHaveLength(37);
       expect(
         source.entityMetadatas.filter((m) => m.tableType === 'junction')
       ).toHaveLength(1);
@@ -99,7 +108,7 @@ describePrivate(
       const report = {
         result: 'PASS',
         readOnly: true,
-        entities: 34,
+        entities: 37,
         junctions: 1,
         physicalTables: rows.length,
         physicalColumns: rows.reduce((n, r) => n + r.columns.length, 0),

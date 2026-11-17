@@ -1,3 +1,4 @@
+import { saveCommunityWithDirectoryChange } from './app/services/community-directory-outbox';
 import { NestFactory } from '@nestjs/core';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -249,7 +250,7 @@ async function main() {
           : null;
 
       if (existing) {
-        Object.assign(existing, {
+        const updates = {
           name: data.name,
           slug: data.slug,
           description: data.description,
@@ -266,8 +267,9 @@ async function main() {
           tags: data.tags,
           localitySlug: data.localitySlug,
           parentId: parent?.id ?? null,
-        });
-        await communityRepo.save(existing);
+        };
+        Object.assign(existing, updates);
+        await saveCommunityWithDirectoryChange(communityRepo, { id: existing.id, ...updates } as Community);
         if (!SKIP_CHAT_ROOMS)
           await ensureCommunityChatRoom(existing, {
             createCommunityChat: (input) =>
@@ -304,7 +306,7 @@ async function main() {
           memberCount: 0,
           isSystemCommunity: true,
         });
-        await communityRepo.save(community);
+        await saveCommunityWithDirectoryChange(communityRepo, community);
         if (!SKIP_CHAT_ROOMS)
           await ensureCommunityChatRoom(community, {
             createCommunityChat: (input) =>

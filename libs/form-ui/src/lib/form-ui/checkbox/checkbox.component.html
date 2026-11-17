@@ -2,6 +2,7 @@
   <label class="form-check">
     <input
       type="checkbox"
+      [attr.name]="name || null"
       [checked]="value"
       (change)="onCheckboxChange($event)"
       [disabled]="disabled"

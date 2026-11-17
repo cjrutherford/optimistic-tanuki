@@ -68,7 +68,7 @@ describeOptIn('Social PostgreSQL entity and repository parity', () => {
     if (source?.isInitialized) await source.destroy();
   });
 
-  it('resolves all 33 registered repositories against the migrated schema without changing table counts', async () => {
+  it('resolves all 35 registered repositories against the migrated schema without changing table counts', async () => {
     requiredEnv('SOCIAL_PARITY_PG_MARKER', OPT_IN_MARKER);
     requiredEnv('SOCIAL_PARITY_PG_HOST', FIXTURE.host);
     requiredEnv('SOCIAL_PARITY_PG_PORT', String(FIXTURE.port));
@@ -107,8 +107,8 @@ describeOptIn('Social PostgreSQL entity and repository parity', () => {
     const entityNames = (entities: any[]) =>
       entities.map((entity) => entity.name).sort();
 
-    expect(runtimeEntities).toHaveLength(33);
-    expect(migrationEntities).toHaveLength(33);
+    expect(runtimeEntities).toHaveLength(35);
+    expect(migrationEntities).toHaveLength(35);
     expect(entityNames(runtimeEntities)).toEqual(
       entityNames(migrationEntities)
     );
@@ -136,7 +136,7 @@ describeOptIn('Social PostgreSQL entity and repository parity', () => {
     const entityMetadatas = dataSource.entityMetadatas.filter(
       (metadata) => metadata.tableType !== 'junction'
     );
-    expect(entityMetadatas).toHaveLength(33);
+    expect(entityMetadatas).toHaveLength(35);
 
     const providers = (Reflect.getMetadata('providers', AppModule) ||
       []) as Array<{
@@ -149,7 +149,7 @@ describeOptIn('Social PostgreSQL entity and repository parity', () => {
         typeof provider.provide === 'string' &&
         provider.provide.endsWith('Repository')
     );
-    expect(repositoryProviders).toHaveLength(33);
+    expect(repositoryProviders).toHaveLength(35);
 
     const baselinePath = process.env.SOCIAL_PARITY_BASELINE_COUNTS;
     const reportPath = process.env.SOCIAL_PARITY_REPORT_PATH;

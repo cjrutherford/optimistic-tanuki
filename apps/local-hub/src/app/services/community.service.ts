@@ -2,6 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { API_BASE_URL, CommunityTag } from '@optimistic-tanuki/ui-models';
 import { firstValueFrom } from 'rxjs';
+import { readSourceFreshness } from './source-freshness';
+import type { LocalDirectoryPage } from '@optimistic-tanuki/social-contracts';
+export type { LocalDirectoryListing } from '@optimistic-tanuki/social-contracts';
+
+export type DirectoryBoundaryGeometry = {type:'Polygon'|'MultiPolygon';coordinates:unknown[]};
+export type DirectoryBoundary = {status:'pending'|'unavailable'} | {status:'ready';geometry:DirectoryBoundaryGeometry};
 
 export interface CityHighlight {
   headline: string;
@@ -99,7 +105,7 @@ export interface City {
   adminArea: string;
   description: string;
   imageUrl: string;
-  coordinates: {
+  coordinates?: {
     lat: number;
     lng: number;
   };
@@ -136,6 +142,47 @@ export class CommunityService {
   private baseUrl = `${this.apiBaseUrl}/communities`;
   private socialBaseUrl = `${this.apiBaseUrl}/social/community`;
 
+  async getLocalDirectoryListings(communityId:string,offset=0,search='',adult=false):Promise<LocalDirectoryPage> {
+    const result=await firstValueFrom(this.http.get<LocalDirectoryPage>(`${this.apiBaseUrl}/directory/towns/${encodeURIComponent(communityId)}/local-evaluation-listings?offset=${offset}${search ? '&q='+encodeURIComponent(search) : ''}${adult ? '&adult=1' : ''}&identities=1`));
+    if (!result || !Array.isArray(result.listings) || typeof result.hasMore!=='boolean') throw Error('Directory unavailable');
+    return {listings:result.listings.map(({id,name,category,attribution,notices,termsUrls,website,phone,address,coordinates})=>({name,category,attribution,notices,...(id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)?{id}:{}),...(termsUrls?{termsUrls}:{}),...(website?{website}:{}),...(phone?{phone}:{}),...(address?{address}:{}),...(coordinates?{coordinates}:{})})),hasMore:result.hasMore,...(readSourceFreshness(result.sourceFreshness)?{sourceFreshness:readSourceFreshness(result.sourceFreshness)}:{})};
+  }
+
+  async getDirectoryBusinessLink(townId:string,listingId:string,adult=false):Promise<{communityId:string;slug:string;name:string}|null> {
+    const url=`${this.apiBaseUrl}/directory/towns/${encodeURIComponent(townId)}/local-evaluation-listings/${encodeURIComponent(listingId)}/business-link${adult?'?adult=1':''}`;
+    const result=await firstValueFrom(this.http.get<{link:{communityId:string;slug:string;name:string}|null}>(url));
+    if(result?.link===null)return null;
+    const link=result?.link;if(!link||typeof link.communityId!=='string'||typeof link.name!=='string'||!link.name.trim()||typeof link.slug!=='string'||! /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(link.slug))throw Error('Business page unavailable');
+    return {communityId:link.communityId,slug:link.slug,name:link.name};
+  }
+
+  async getMyDirectoryBusinessLinks(townId:string,listingId:string):Promise<Array<{requestId:string;businessCommunityId:string;status:'pending'|'approved'}>> {
+    const url=`${this.apiBaseUrl}/directory/towns/${encodeURIComponent(townId)}/local-evaluation-listings/${encodeURIComponent(listingId)}/business-link/mine`;
+    const result=await firstValueFrom(this.http.get<{requests:Array<{requestId:string;businessCommunityId:string;status:'pending'|'approved'}>}>(url));
+    if(!Array.isArray(result?.requests)||result.requests.length>100||result.requests.some(x=>!x||typeof x.requestId!=='string'||typeof x.businessCommunityId!=='string'||!['pending','approved'].includes(x.status)))throw Error('Business page requests unavailable');
+    return result.requests.map(({requestId,businessCommunityId,status})=>({requestId,businessCommunityId,status}));
+  }
+
+  async revokeDirectoryBusinessLink(townId:string,listingId:string,requestId:string):Promise<void> {
+    const url=`${this.apiBaseUrl}/directory/towns/${encodeURIComponent(townId)}/local-evaluation-listings/${encodeURIComponent(listingId)}/business-link/revoke`;
+    const result=await firstValueFrom(this.http.post<{recorded:boolean}>(url,{requestId}));if(result?.recorded!==true)throw Error('Business page request unavailable');
+  }
+
+  async requestDirectoryBusinessLink(townId:string,listingId:string,businessSlug:string,requestId:string,adult=false):Promise<void> {
+    const url=`${this.apiBaseUrl}/directory/towns/${encodeURIComponent(townId)}/local-evaluation-listings/${encodeURIComponent(listingId)}/business-link/requests`;
+    const result=await firstValueFrom(this.http.post<{recorded:boolean}>(url,{businessSlug,requestId,adult}));if(result?.recorded!==true)throw Error('Business page request unavailable');
+  }
+
+  async getDirectoryBoundary(communityId:string):Promise<DirectoryBoundary> {
+    try {
+      const result=await firstValueFrom(this.http.get<{status?:unknown;geometry?:unknown}>(`${this.apiBaseUrl}/directory/towns/${encodeURIComponent(communityId)}/boundary`));
+      if (result?.status==='pending') return {status:'pending'};
+      const geometry=result?.geometry as DirectoryBoundaryGeometry | undefined;
+      if (result?.status==='ready' && geometry && ['Polygon','MultiPolygon'].includes(geometry.type) && Array.isArray(geometry.coordinates)) return {status:'ready',geometry};
+      return {status:'unavailable'};
+    } catch {return {status:'unavailable'};}
+  }
+
   private isRootLocality(
     community: LocalCommunity | null | undefined
   ): boolean {
@@ -146,15 +193,18 @@ export class CommunityService {
     );
   }
 
-  private normalizeCommunity(community: LocalCommunity): LocalCommunity {
-    return {
-      ...community,
-      coordinates: {
-        lat: Number(community.coordinates?.lat) || Number(community.lat) || 0,
-        lng: Number(community.coordinates?.lng) || Number(community.lng) || 0,
-      },
+  private coordinatesFor(community: LocalCommunity): {lat:number;lng:number}|undefined {
+    const valid=(lat:unknown,lng:unknown) => {
+      const number=(value:unknown)=>typeof value==='number'?value:typeof value==='string' && value.trim()?Number(value):NaN;
+      const a=number(lat),b=number(lng);
+      return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a)<=90 && Math.abs(b)<=180 ? {lat:a,lng:b} : undefined;
     };
+    return valid(community.coordinates?.lat,community.coordinates?.lng) ?? valid(community.lat,community.lng);
   }
+
+  private normalizeCommunity = (community: LocalCommunity): LocalCommunity => {
+    return {...community,coordinates:this.coordinatesFor(community)};
+  };
 
   private toRootLocalityCard(
     community: LocalCommunity,
@@ -168,10 +218,7 @@ export class CommunityService {
       adminArea: community.adminArea || '',
       description: community.description || '',
       imageUrl: community.imageUrl || '',
-      coordinates: {
-        lat: community.coordinates?.lat || community.lat || 0,
-        lng: community.coordinates?.lng || community.lng || 0,
-      },
+      coordinates: this.coordinatesFor(community),
       population: community.population || 0,
       timezone: community.timezone || '',
       highlights: community.highlights || [],

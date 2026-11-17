@@ -1,0 +1,63 @@
+{
+  "name": "directory-worker",
+  "projectType": "application",
+  "sourceRoot": "apps/directory-worker/src",
+  "tags": [
+    "type:app",
+    "platform:server",
+    "visibility:internal"
+  ],
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "options": {
+        "webpackConfig": "apps/directory-worker/webpack.config.js",
+        "outputPath": "dist/apps/directory-worker"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": [
+          "apps/directory-worker/**/*.ts"
+        ]
+      }
+    },
+    "prepare-boundary-candidate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_COMMUNITY_ID\" && TS_NODE_PROJECT=apps/directory-worker/tsconfig.json timeout 90s node -r ts-node/register/transpile-only scripts/census-boundary-prepare.mjs \"$DIRECTORY_COMMUNITY_ID\""
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p apps/directory-worker/tsconfig.json"
+      }
+    },
+    "test-register-loop": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory-worker/tsconfig.json timeout 90s node -r ts-node/register/transpile-only --test apps/directory-worker/test/register-loop.test.js"
+      }
+    },
+    "test-register-delivery": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory-worker/tsconfig.json timeout 90s node -r ts-node/register/transpile-only --test apps/directory-worker/test/register-delivery.test.js"
+      }
+    },
+    "test-register-runtime": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory-worker/tsconfig.json timeout 90s node -r ts-node/register/transpile-only --test apps/directory-worker/test/register-runtime.test.js"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "timeout -k 5s 180s env TS_NODE_PROJECT=apps/directory-worker/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory-worker/test/*.test.js"
+      }
+    }
+  }
+}

@@ -33,6 +33,7 @@ import {
 import { ProfileCommands } from '@optimistic-tanuki/constants';
 import { DeletionOwnerPorts } from './account-deletion-runner.service';
 import { AccountDeletionOwnerService } from './account-deletion-owner.service';
+import { DirectoryOwnerHttpClient } from './directory-owner-http.client';
 const commands = (v: {
   FENCE_ACCOUNT_DELETION: string;
   ERASE_ACCOUNT_DELETION: string;
@@ -79,7 +80,8 @@ export class AccountDeletionRpcOwnersService implements OnModuleDestroy {
   private readonly replicas = new Map<AccountDeletionOwner, Endpoint[]>();
   constructor(
     config: ConfigService,
-    private readonly auth: AccountDeletionOwnerService
+    private readonly auth: AccountDeletionOwnerService,
+    private readonly directory: DirectoryOwnerHttpClient = new DirectoryOwnerHttpClient()
   ) {
     let inventory = config.get<unknown>('deletion.owner_replicas');
     if (
@@ -103,6 +105,8 @@ export class AccountDeletionRpcOwnersService implements OnModuleDestroy {
     for (const [owner, values] of Object.entries(inventory ?? {})) {
       if (
         !(ACCOUNT_DELETION_OWNERS as readonly string[]).includes(owner) ||
+        // Directory is one HTTP origin, not a TCP replica set.
+        owner === 'directory' ||
         !Array.isArray(values) ||
         !values.length ||
         values.length > 8 ||
@@ -171,7 +175,50 @@ export class AccountDeletionRpcOwnersService implements OnModuleDestroy {
         return this.everyReplica(owner, endpoints, command, grant, true);
       });
     }
+    this.replicas.set('directory', []);
+    ports.set('directory', async (grant) => {
+      const action = grant.action;
+      if (action !== 'fence' && action !== 'erase' && action !== 'readback')
+        throw Error('DELETION_OWNER_ACTION_INVALID');
+      this.assertEnvironment(
+        'directory',
+        await this.directory.environment(grant)
+      );
+      // A 409 from Directory throws here, so the runner releases the operation blocked.
+      const reply = await this.directory.deletion(action, grant);
+      if (action === 'fence')
+        this.assertPurged(await this.directory.purgeSnapshots(grant));
+      // The fence stays installed, but nothing is erased anywhere while Directory
+      // holds a row whose identity domain it cannot establish.
+      if (reply.blocked !== 0 || reply.verified !== true)
+        throw Error('DELETION_DIRECTORY_BLOCKED');
+      return { verified: true, remaining: reply.remaining };
+    });
     this.ports = ports;
+  }
+  private assertEnvironment(owner: string, value: unknown): void {
+    const environment = value as
+      | {
+          owner?: unknown;
+          logging?: { policyVersion?: unknown; active?: unknown };
+          databaseLogging?: { policyVersion?: unknown; active?: unknown };
+        }
+      | undefined;
+    if (
+      environment?.owner !== owner ||
+      environment.logging?.policyVersion !== 1 ||
+      environment.logging.active !== true ||
+      environment.databaseLogging?.policyVersion !== 1 ||
+      environment.databaseLogging.active !== true
+    )
+      throw Error('DELETION_ENVIRONMENT_UNVERIFIED');
+  }
+  private assertPurged(value: unknown): void {
+    const purged = value as
+      | { purged?: unknown; remaining?: unknown }
+      | undefined;
+    if (purged?.purged !== true || purged.remaining !== 0)
+      throw Error('DELETION_SNAPSHOT_READBACK');
   }
   private async assertSharedArtifactStore(
     grant: AccountDeletionGrant
@@ -261,25 +308,35 @@ export class AccountDeletionRpcOwnersService implements OnModuleDestroy {
       await this.assertSharedArtifactStore(grant);
     if (grant.owner === 'assets' && endpoints.length > 1)
       await this.assertSharedAssetsStore(endpoints, grant);
-    if (grant.owner !== 'authentication' && !endpoints.length)
+    if (
+      grant.owner !== 'authentication' &&
+      grant.owner !== 'directory' &&
+      !endpoints.length
+    )
       throw Error('DELETION_OWNER_ENDPOINT_REQUIRED');
-    const remote = await Promise.all(
-      endpoints.map(async (endpoint) => {
-        if (grant.owner !== 'authentication') {
-          const purged = await firstValueFrom(
-            this.clientFor(grant.owner, endpoint)
-              .send({ cmd: ACCOUNT_DELETION_SNAPSHOT_PURGE_COMMAND }, grant)
-              .pipe(timeout(60000))
-          );
-          if (purged?.purged !== true || purged.remaining !== 0)
-            throw Error('DELETION_SNAPSHOT_READBACK');
-        }
-        return firstValueFrom(
-          this.clientFor(grant.owner, endpoint)
-            .send({ cmd: ACCOUNT_DELETION_RUNTIME_READBACK_COMMAND }, grant)
-            .pipe(timeout(60000))
-        );
-      })
+    const viaHttp = async () => {
+      this.assertPurged(await this.directory.purgeSnapshots(grant));
+      return this.directory.runtimeReadback(grant);
+    };
+    const remote: any[] = await Promise.all(
+      grant.owner === 'directory'
+        ? [viaHttp()]
+        : endpoints.map(async (endpoint) => {
+            if (grant.owner !== 'authentication') {
+              const purged = await firstValueFrom(
+                this.clientFor(grant.owner, endpoint)
+                  .send({ cmd: ACCOUNT_DELETION_SNAPSHOT_PURGE_COMMAND }, grant)
+                  .pipe(timeout(60000))
+              );
+              if (purged?.purged !== true || purged.remaining !== 0)
+                throw Error('DELETION_SNAPSHOT_READBACK');
+            }
+            return firstValueFrom(
+              this.clientFor(grant.owner, endpoint)
+                .send({ cmd: ACCOUNT_DELETION_RUNTIME_READBACK_COMMAND }, grant)
+                .pipe(timeout(60000))
+            );
+          })
     );
     const local =
       grant.owner === 'authentication'

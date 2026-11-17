@@ -6,6 +6,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ot_local_hub
     ports:
       - '5433:5432'
     healthcheck:
@@ -63,6 +64,8 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=ot_local_hub
       - JWT_SECRET=e2e-test-secret-key-change-in-production
+      - DIRECTORY_ACCOUNT_LIFECYCLE_URL=${DIRECTORY_ACCOUNT_LIFECYCLE_URL:-}
+      - DIRECTORY_ACCOUNT_LIFECYCLE_SECRET=${DIRECTORY_ACCOUNT_DELETION_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -86,6 +89,44 @@ services:
       authentication:
         condition: service_started
 
+  social-directory-migrate:
+    profiles: [directory]
+    build:
+      context: .
+      dockerfile: apps/social/Dockerfile
+      target: builder
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ot_local_hub
+      NX_DAEMON: 'false'
+      NX_ISOLATE_PLUGINS: 'false'
+    command: ['pnpm', 'exec', 'nx', 'run', 'social:typeorm:migration:run']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  directory-migrate:
+    extends:
+      file: apps/directory/compose.yaml
+      service: directory-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+      social-directory-migrate:
+        condition: service_completed_successfully
+  directory:
+    extends:
+      file: apps/directory/compose.yaml
+      service: directory
+  directory-worker:
+    extends:
+      file: apps/directory/compose.yaml
+      service: directory-worker
+
   social:
     build:
       context: .
@@ -94,11 +135,24 @@ services:
     ports:
       - '3003:3003'
     environment:
+      - SOCIAL_DIRECTORY_MODE=${SOCIAL_DIRECTORY_MODE:-inactive}
+      - DIRECTORY_REGISTER_READ_SECRET=${DIRECTORY_REGISTER_READ_SECRET:-}
+      - DIRECTORY_REGISTER_REPAIR_SECRET=${DIRECTORY_REGISTER_REPAIR_SECRET:-}
+      - DIRECTORY_RECOVERY_READ_SECRET=${DIRECTORY_RECOVERY_READ_SECRET:-}
+      - DIRECTORY_SOCIAL_SECRET=${DIRECTORY_SOCIAL_SECRET:-}
+      - DIRECTORY_ELIGIBILITY_SECRET=${DIRECTORY_ELIGIBILITY_SECRET:-}
+      - DIRECTORY_BOUNDARY_REVIEW_SECRET=${DIRECTORY_BOUNDARY_REVIEW_SECRET:-}
+      - DIRECTORY_PENDING_READ_SECRET=${DIRECTORY_PENDING_READ_SECRET:-}
+      - DIRECTORY_RECEIPT_SIGNING_SECRET=${DIRECTORY_RECEIPT_SIGNING_SECRET:-}
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=ot_local_hub
+      - DATABASE_HOST=postgres
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=ot_local_hub
     depends_on:
       postgres:
         condition: service_healthy
@@ -189,6 +243,15 @@ services:
       - '3300:3300'
       - '3301:3301'
     environment:
+      - DIRECTORY_INTERNAL_URL=${DIRECTORY_INTERNAL_URL:-}
+      - DIRECTORY_ELIGIBILITY_SECRET=${DIRECTORY_ELIGIBILITY_SECRET:-}
+      - DIRECTORY_BOUNDARY_REVIEW_SECRET=${DIRECTORY_BOUNDARY_REVIEW_SECRET:-}
+      - DIRECTORY_BOUNDARY_DECISION_SECRET=${DIRECTORY_BOUNDARY_DECISION_SECRET:-}
+      - DIRECTORY_PENDING_READ_SECRET=${DIRECTORY_PENDING_READ_SECRET:-}
+      - DIRECTORY_CONTAINMENT_READ_SECRET=${DIRECTORY_CONTAINMENT_READ_SECRET:-}
+      - DIRECTORY_LOCAL_EVALUATION=${DIRECTORY_LOCAL_EVALUATION:-}
+      - DIRECTORY_LOCAL_EVALUATION_SECRET=${DIRECTORY_LOCAL_EVALUATION_SECRET:-}
+      - DIRECTORY_BUSINESS_LINK_SECRET=${DIRECTORY_BUSINESS_LINK_SECRET:-}
       - NODE_ENV=test
       - THROTTLER_PROFILE=${THROTTLER_PROFILE:-production}
       - THROTTLE_SHORT_LIMIT=${THROTTLE_SHORT_LIMIT:-}

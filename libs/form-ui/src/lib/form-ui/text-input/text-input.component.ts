@@ -37,8 +37,10 @@ export class TextInputComponent
   implements ControlValueAccessor
 {
   @Input() type: 'text' | 'password' | 'obscured' | 'date' = 'text';
+  @Input() name = '';
   @Input() label = '';
   @Input() placeholder = '';
+  @Input() maxlength?: number | string;
   @Input() autocomplete = '';
   @Input() labelPosition: 'top' | 'left' | 'right' | 'bottom' = 'top';
   @Input() disabled = false;

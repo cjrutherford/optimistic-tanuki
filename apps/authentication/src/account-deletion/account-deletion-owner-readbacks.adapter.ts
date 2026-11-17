@@ -147,6 +147,7 @@ export class AccountDeletionOwnerReadbacksAdapter {
               'chat-collector',
               'classifieds',
               'payments',
+              'directory',
             ].includes(owner)
           ? result['verified'] === true && result['remaining'] === 0
           : owner === 'assets'

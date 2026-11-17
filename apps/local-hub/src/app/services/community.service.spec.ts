@@ -25,6 +25,51 @@ describe('CommunityService', () => {
     httpMock.verify();
   });
 
+  it('loads local evaluation directory listings for the requested town', async () => {
+    const pending=service.getLocalDirectoryListings('town-id');
+    const request=httpMock.expectOne('/api/directory/towns/town-id/local-evaluation-listings?offset=0&identities=1');
+    request.flush({listings:[{id:'00000000-0000-4000-8000-000000000101',name:'Bakery',category:'bakery',attribution:['Source'],notices:[]}],hasMore:false});
+    expect(await pending).toEqual({listings:[{id:'00000000-0000-4000-8000-000000000101',name:'Bakery',category:'bakery',attribution:['Source'],notices:[]}],hasMore:false});
+  });
+
+  it('retrieves and requests a business-page link for a listing', async () => {
+    const listing='00000000-0000-4000-8000-000000000101',requestId='00000000-0000-4000-8000-000000000102';
+    const read=service.getDirectoryBusinessLink('town-id',listing,false);
+    httpMock.expectOne(`/api/directory/towns/town-id/local-evaluation-listings/${listing}/business-link`).flush({link:{communityId:'c',slug:'cafe',name:'Cafe',ownerId:'private'}});
+    expect(await read).toEqual({communityId:'c',slug:'cafe',name:'Cafe'});
+    const mine=service.getMyDirectoryBusinessLinks('town-id',listing);
+    httpMock.expectOne(`/api/directory/towns/town-id/local-evaluation-listings/${listing}/business-link/mine`).flush({requests:[{requestId,businessCommunityId:'c',status:'pending'}]});
+    expect(await mine).toEqual([{requestId,businessCommunityId:'c',status:'pending'}]);
+    const revoke=service.revokeDirectoryBusinessLink('town-id',listing,requestId);
+    httpMock.expectOne(`/api/directory/towns/town-id/local-evaluation-listings/${listing}/business-link/revoke`).flush({recorded:true});await revoke;
+    const claim=service.requestDirectoryBusinessLink('town-id',listing,'cafe',requestId,true);
+    const req=httpMock.expectOne(`/api/directory/towns/town-id/local-evaluation-listings/${listing}/business-link/requests`);
+    expect(req.request.body).toEqual({businessSlug:'cafe',requestId,adult:true});req.flush({recorded:true});await claim;
+  });
+
+  it('encodes directory search terms and preserves pagination state', async () => {
+    const pending=service.getLocalDirectoryListings('town-id',25,'Cafe & Tea');
+    const request=httpMock.expectOne('/api/directory/towns/town-id/local-evaluation-listings?offset=25&q=Cafe%20%26%20Tea&identities=1');
+    request.flush({listings:[],hasMore:true});
+    expect(await pending).toEqual({listings:[],hasMore:true});
+  });
+
+  it('passes through page-level sourceFreshness and omits it when absent or malformed', async () => {
+    const sf={state:'stale',releaseId:'2026-10-21.0',sourcePublishedAt:'2026-10-22T03:00:00Z',acquiredAt:'2026-11-01T00:00:00Z',thresholds:{freshDays:90,staleDays:120}};
+    let pending=service.getLocalDirectoryListings('town-id');
+    httpMock.expectOne('/api/directory/towns/town-id/local-evaluation-listings?offset=0&identities=1').flush({listings:[],hasMore:false,sourceFreshness:sf});
+    expect((await pending).sourceFreshness).toEqual(sf);
+    pending=service.getLocalDirectoryListings('town-id');
+    httpMock.expectOne('/api/directory/towns/town-id/local-evaluation-listings?offset=0&identities=1').flush({listings:[],hasMore:false,sourceFreshness:{state:'bogus'}});
+    expect('sourceFreshness' in (await pending)).toBe(false);
+  });
+
+  it('requests adult listings only when the visitor opts in', async () => {
+    const pending=service.getLocalDirectoryListings('town-id',0,'',true);
+    const request=httpMock.expectOne('/api/directory/towns/town-id/local-evaluation-listings?offset=0&adult=1&identities=1');
+    request.flush({listings:[],hasMore:false});await pending;
+  });
+
   it('derives cities from communities in alphabetical order', () => {
     const communities: LocalCommunity[] = [
       {
@@ -303,6 +348,16 @@ describe('CommunityService', () => {
       consoleError.mockRestore();
     });
 
+    it('reads the current verified directory boundary without inventing one', async () => {
+      const promise=service.getDirectoryBoundary('savannah');
+      const geometry={type:'Polygon',coordinates:[[[0,0],[1,0],[1,1],[0,0]]]};
+      httpMock.expectOne('/api/directory/towns/savannah/boundary').flush({status:'ready',geometry});
+      expect(await promise).toEqual({status:'ready',geometry});
+      const pending=service.getDirectoryBoundary('savannah');
+      httpMock.expectOne('/api/directory/towns/savannah/boundary').flush({status:'pending'});
+      expect(await pending).toEqual({status:'pending'});
+    });
+
     it('normalizes flat lat/lng into coordinates when listing communities', async () => {
       const promise = service.getCommunities();
 
@@ -312,6 +367,12 @@ describe('CommunityService', () => {
 
       const communities = await promise;
       expect(communities[0].coordinates).toEqual({ lat: 32.08, lng: -81.09 });
+    });
+
+    it('preserves valid zero latitude instead of inventing or discarding coordinates', async () => {
+      const promise = service.getCommunities();
+      httpMock.expectOne('/api/communities').flush([makeCommunity({coordinates:{lat:0,lng:12},lat:5,lng:6})]);
+      expect((await promise)[0].coordinates).toEqual({lat:0,lng:12});
     });
 
     it('falls back to an empty list when the communities API returns a non-array', async () => {
@@ -326,7 +387,7 @@ describe('CommunityService', () => {
       );
     });
 
-    it('normalizes sub-communities and defaults missing coordinates to zero', async () => {
+    it('leaves missing sub-community coordinates absent', async () => {
       const promise = service.getSubCommunities('savannah');
 
       httpMock
@@ -334,7 +395,7 @@ describe('CommunityService', () => {
         .flush([makeCommunity({ id: 'makers', slug: 'starland-makers' })]);
 
       const subs = await promise;
-      expect(subs[0].coordinates).toEqual({ lat: 0, lng: 0 });
+      expect(subs[0].coordinates).toBeUndefined();
     });
 
     it('falls back to an empty list when the sub-communities API returns a non-array', async () => {

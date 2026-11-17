@@ -87,6 +87,18 @@ describe('CommunityService', () => {
       save: jest.fn(),
     } as any;
 
+    (communityRepo as any).manager = {
+      transaction: async (fn: (manager: unknown) => Promise<unknown>) => fn({
+        queryRunner: { isTransactionActive: true },
+        save: (entity: unknown, value: unknown) => entity === Community
+          ? communityRepo.save(value as Community)
+          : memberRepo.save(value as CommunityMember),
+        remove: (_entity: unknown, value: unknown) => communityRepo.remove(value as Community),
+        query: jest.fn().mockResolvedValue([]),
+        insert: jest.fn().mockResolvedValue(undefined),
+      }),
+    };
+
     memberRepo.find.mockResolvedValue([] as any);
     communityRepo.find.mockResolvedValue([] as any);
 
@@ -342,7 +354,18 @@ describe('CommunityService', () => {
       communityRepo.find
         .mockResolvedValueOnce([directChild] as any)
         .mockResolvedValueOnce([legacyCityLinked, duplicateLocality] as any);
-      memberRepo.find.mockResolvedValue([] as any);
+      (communityRepo as any).manager = {
+      transaction: async (fn: (manager: unknown) => Promise<unknown>) => fn({
+        save: (entity: unknown, value: unknown) => entity === Community
+          ? communityRepo.save(value as Community)
+          : memberRepo.save(value as CommunityMember),
+        remove: (_entity: unknown, value: unknown) => communityRepo.remove(value as Community),
+        query: jest.fn().mockResolvedValue([]),
+        insert: jest.fn().mockResolvedValue(undefined),
+      }),
+    };
+
+    memberRepo.find.mockResolvedValue([] as any);
 
       const result = await service.getSubCommunities('city-1');
 

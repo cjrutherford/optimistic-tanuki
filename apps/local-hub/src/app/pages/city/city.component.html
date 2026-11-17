@@ -134,16 +134,74 @@
       <section class="city-highlights-section">
         <div class="section-container">
           <div class="city-overview-grid">
-            <div class="city-map-card" aria-label="Map for {{ city()!.name }}">
-              <app-map
-                mode="single-location"
-                [cities]="[city()!]"
-                [centerLat]="city()!.coordinates.lat"
-                [centerLng]="city()!.coordinates.lng"
-                [zoom]="10"
-                [centerLabel]="city()!.name"
-                [userLocation]="userLocation()"
-              ></app-map>
+            <div class="city-map-column">
+              <div class="city-map-card" aria-label="Map for {{ city()!.name }}">
+                @if (city()!.coordinates; as coordinates) {
+                <app-map
+                  mode="single-location"
+                  [cities]="[city()!]"
+                  [boundary]="
+                    directoryBoundary().status === 'ready'
+                      ? $any(directoryBoundary()).geometry
+                      : null
+                  "
+                  [centerLat]="coordinates.lat"
+                  [centerLng]="coordinates.lng"
+                  [zoom]="10"
+                  [centerLabel]="city()!.name"
+                  [userLocation]="userLocation()"
+                  [directoryLocations]="directoryMapLocations()"
+                ></app-map>
+                } @else {
+                <p class="city-map-empty">
+                  No approximate town location is available. Boundary-dependent
+                  searches remain pending.
+                </p>
+                }
+              </div>
+              @if (city()!.coordinates) {
+              <div class="city-map-notes">
+                @if (directoryBoundary().status === 'ready') {
+                <p>
+                  Verified Census boundary; the marker shows an approximate town
+                  location.
+                </p>
+                } @else if (directoryBoundary().status === 'unavailable') {
+                <p>
+                  Approximate town location. Boundary verification is currently
+                  unavailable.
+                </p>
+                } @else {
+                <p>
+                  Approximate town location; this point is not a verified
+                  boundary.
+                </p>
+                }
+                @if (sourceFreshnessLabel(); as freshnessLabel) {
+                <p
+                  data-testid="source-freshness"
+                  [attr.data-state]="localDirectorySourceFreshness()?.state"
+                >
+                  {{ freshnessLabel }}
+                </p>
+                }
+                <p>
+                  @if (directoryMapLocations().length > 0) {
+                  {{ directoryMapLocations().length }} reviewed business
+                  {{ directoryMapLocations().length === 1 ? 'location' : 'locations' }}
+                  {{ directoryMapLocations().length === 1 ? 'is' : 'are' }} mapped
+                  in the
+                  <a [routerLink]="['/city', city()!.slug, 'businesses']"
+                    >business directory</a
+                  >. } @else { No reviewed business locations are mapped yet; see
+                  the
+                  <a [routerLink]="['/city', city()!.slug, 'businesses']"
+                    >business directory</a
+                  >
+                  for listings. }
+                </p>
+              </div>
+              }
             </div>
             <div class="city-overview-copy">
               <p class="section-kicker">Local snapshot</p>
@@ -184,15 +242,90 @@
         </div>
       </section>
 
-      <!-- ── Local Businesses ─────────────────────────────────────────────────── -->
+      <!-- ── Business directory ─────────────────────────────────────────────── -->
+      <section class="city-directory-teaser-section">
+        <div class="section-container">
+          <otui-card
+            class="city-directory-teaser"
+            tone="neutral"
+            emphasis="soft"
+          >
+            <div class="city-directory-teaser__inner">
+              <div class="city-directory-teaser__copy">
+                <p class="section-kicker">Local directory</p>
+                <h2 class="section-title">Business directory</h2>
+                <p class="section-subtitle">
+                  @if (localDirectoryListings().length > 0) { Browse {{
+                  localDirectoryListings().length }}{{
+                    localDirectoryHasMore() ? '+' : ''
+                  }}
+                  local businesses in {{ city()!.name }}. Reviewed locations
+                  appear on the map above. } @else { Browse local businesses in
+                  {{ city()!.name }}. Reviewed locations appear on the map above.
+                  }
+                </p>
+                <p class="city-directory-teaser__note">
+                  Town assignments are unverified and directory coverage may be
+                  incomplete. Only businesses with a reviewed address appear as
+                  map pins.
+                </p>
+              </div>
+              <div class="city-directory-teaser__actions">
+                <otui-button
+                  tone="brand"
+                  emphasis="solid"
+                  (click)="navigateToBusinessDirectory()"
+                >
+                  <otui-icon
+                    name="work"
+                    [size]="16"
+                    stroke="currentColor"
+                  ></otui-icon>
+                  View business directory
+                </otui-button>
+              </div>
+            </div>
+            @if (directoryPreview().length > 0) {
+            <div class="city-directory-preview">
+              @for (listing of directoryPreview(); track listing.id ?? $index) {
+              <div class="city-directory-preview__item">
+                <span class="city-directory-preview__name">
+                  {{ listing.name }}
+                </span>
+                <otui-badge tone="brand" size="sm">
+                  {{ listing.category.split('_').join(' ') | titlecase }}
+                </otui-badge>
+                @if (listing.address) {
+                <span class="city-directory-preview__meta">
+                  {{ listing.address }}
+                </span>
+                } @if (listing.coordinates) {
+                <span class="city-directory-preview__mapped">
+                  <otui-icon
+                    name="location"
+                    [size]="14"
+                    stroke="currentColor"
+                  ></otui-icon>
+                  On map
+                </span>
+                }
+              </div>
+              }
+            </div>
+            }
+          </otui-card>
+        </div>
+      </section>
+
+      <!-- ── Business pages ───────────────────────────────────────────────────── -->
       @if (businesses().length > 0) {
       <section class="city-businesses-section">
         <div class="section-container">
           <div class="section-header">
             <div class="section-header-content">
-              <h2 class="section-title">Local Businesses</h2>
+              <h2 class="section-title">Business pages</h2>
               <p class="section-subtitle">
-                Discover businesses in {{ city()!.name }}
+                Owner-managed business pages in {{ city()!.name }}
               </p>
             </div>
             <button class="btn btn-outline" (click)="openCreateBusinessModal()">
@@ -239,9 +372,9 @@
         <div class="section-container">
           <div class="section-header">
             <div class="section-header-content">
-              <h2 class="section-title">Local Businesses</h2>
+              <h2 class="section-title">Business pages</h2>
               <p class="section-subtitle">
-                Be the first to list your business in {{ city()!.name }}
+                Create a business page in {{ city()!.name }}
               </p>
             </div>
             <button class="btn btn-outline" (click)="openCreateBusinessModal()">

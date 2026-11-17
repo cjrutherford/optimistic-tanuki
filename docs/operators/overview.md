@@ -30,6 +30,7 @@ This section is for operators working in either of these environments:
 - [Deployment Environments](./deployment-environments.md) for generated workspaces, validation, and apply flow
 - [Multi-Domain Deployments](./multi-domain-deployments.md) for keeping nginx, ingress, registry, TLS, and websocket routing aligned across public domains
 - [Runbooks](./runbooks.md) for common operator procedures
+- [Directory Address Review](./directory-address-review.md) for working the Town Square address-review queue and publishing approved rows
 - [Troubleshooting](./troubleshooting.md) for failure-mode recovery
 - [Operator Reference](./reference.md) for high-frequency commands and file locations
 - [Manual Docker Stacks](../devops/manual-docker-stacks.md) for the pnpm-driven Compose entrypoints behind the local workflows

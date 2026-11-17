@@ -1,0 +1,251 @@
+<section class="address-review-page" aria-labelledby="address-review-title">
+  <a class="back-link" routerLink="/dashboard/community-ops">
+    <otui-icon name="arrow-back" [size]="18" stroke="currentColor"></otui-icon>
+    Community operations
+  </a>
+
+  <header class="page-header">
+    <p class="page-kicker">Directory</p>
+    <h1 id="address-review-title">Address review queue</h1>
+    <p>
+      Review address candidates that automation could not approve safely.
+      Approving records the human decision; publication is a separate
+      policy-gated step that attaches the reviewed fields only when the
+      official-page evidence and risk checks still pass.
+    </p>
+  </header>
+
+  <div class="status-bar" role="group" aria-label="Review status">
+    @for (option of statuses; track option.value) {
+    <otui-button
+      size="sm"
+      [tone]="status === option.value ? 'brand' : 'neutral'"
+      [emphasis]="status === option.value ? 'soft' : 'ghost'"
+      (click)="setStatus(option.value)"
+    >
+      {{ option.label }}
+    </otui-button>
+    }
+  </div>
+
+  @if (message) {
+  <p class="page-message" role="status">{{ message }}</p>
+  }
+
+  @if (loading && candidates.length === 0) {
+  <otui-loading-state
+    headline="Loading address candidates…"
+  ></otui-loading-state>
+  } @else if (!loading && candidates.length === 0) {
+  <otui-empty-state
+    headline="No candidates in this status"
+    body="There are no address candidates waiting in this queue."
+  ></otui-empty-state>
+  }
+
+  <div class="candidate-list">
+    @for (candidate of candidates; track candidate.id) {
+    <otui-card class="candidate-card" tone="neutral" emphasis="soft">
+      <div class="candidate-header">
+        <div>
+          <h2>{{ candidate.name }}</h2>
+          <p class="candidate-category">
+            {{ candidate.category.split('_').join(' ') | titlecase }}
+          </p>
+        </div>
+        <div class="candidate-badges">
+          <otui-badge [tone]="badgeTone(candidate.status)" size="sm">
+            {{ candidate.status.replace('_', ' ') | titlecase }}
+          </otui-badge>
+          <otui-badge [tone]="badgeTone(candidate.verdict)" size="sm">
+            {{ candidate.verdict.replace('_', ' ') | titlecase }}
+          </otui-badge>
+        </div>
+      </div>
+
+      <div class="candidate-grid">
+        <div class="candidate-column">
+          <h3>Source</h3>
+          <ul>
+            @for (address of candidate.addresses ?? []; track $index) {
+            <li>
+              <otui-icon name="location" [size]="15" stroke="currentColor"></otui-icon>
+              {{ address }}
+            </li>
+            } @if (!candidate.addresses?.length) {
+            <li class="muted">No source address</li>
+            }
+            @if (candidate.point; as point) {
+            <li class="muted">Point: {{ point.lat }}, {{ point.lng }}</li>
+            }
+            @if (candidate.phones?.length) {
+            <li class="muted">
+              Phone: {{ (candidate.phones ?? []).join(' · ') }}
+            </li>
+            }
+            @if (candidate.websites?.length) {
+            <li class="muted">
+              Website: {{ (candidate.websites ?? []).join(' · ') }}
+            </li>
+            }
+            <li class="muted">Source row: {{ candidate.sourceFileRowNumber }}</li>
+          </ul>
+        </div>
+
+        <div class="candidate-column">
+          <h3>Verification</h3>
+          <ul>
+            <li>
+              <otui-badge [tone]="badgeTone(candidate.rights)" size="sm">
+                Rights: {{ candidate.rights }}
+              </otui-badge>
+            </li>
+            @if (candidate.geocode; as geocode) {
+            <li>
+              Geocode: {{ geocode.status }}
+              @if (geocode.precision) { · {{ geocode.precision }} }
+              @if (geocode.distanceMeters !== null && geocode.distanceMeters !== undefined) {
+              · {{ geocode.distanceMeters | number: '1.0-0' }} m
+              }
+            </li>
+            @if (geocode.normalizedAddress) {
+            <li class="muted">{{ geocode.normalizedAddress }}</li>
+            }
+            } @else {
+            <li class="muted">No geocode evidence yet</li>
+            }
+            @if (candidate.officialEvidence; as evidence) {
+            <li>
+              Evidence: {{ evidence.status }}
+              @if (evidence.transport === 'http') {
+              <otui-badge tone="warning" size="sm">HTTP evidence</otui-badge>
+              }
+              @if (evidence.url) {
+              · <a [href]="evidence.url" target="_blank" rel="noopener noreferrer">open</a>
+              }
+            </li>
+            } @else {
+            <li class="muted">No official-page evidence yet</li>
+            }
+          </ul>
+        </div>
+
+        <div class="candidate-column">
+          <h3>Risk</h3>
+          <ul>
+            <li class="muted">
+              Residential:
+              {{ candidate.risk?.residential === undefined ? 'unknown' : candidate.risk?.residential }}
+            </li>
+            <li class="muted">
+              Sensitive:
+              {{ candidate.risk?.sensitive === undefined ? 'unknown' : candidate.risk?.sensitive }}
+            </li>
+            <li class="muted">
+              Adult:
+              {{ candidate.risk?.adult === undefined ? 'unknown' : candidate.risk?.adult }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      @if (candidate.reasons?.length) {
+      <div class="candidate-reasons">
+        <h3>Automated reasons</h3>
+        <ul>
+          @for (reason of candidate.reasons; track reason) {
+          <li>{{ reason.replace('_', ' ') }}</li>
+          }
+        </ul>
+      </div>
+      }
+
+      @if (candidate.checks) {
+      <div class="candidate-checks">
+        <h3>Checks</h3>
+        <ul>
+          @for (check of candidate.checks | keyvalue; track check.key) {
+          <li>
+            <span>{{ check.key }}</span>
+            <otui-badge
+              size="sm"
+              [tone]="check.value === 'pass' ? 'success' : check.value === 'fail' ? 'danger' : 'warning'"
+            >
+              {{ check.value }}
+            </otui-badge>
+          </li>
+          }
+        </ul>
+      </div>
+      }
+
+      <div class="candidate-review">
+        <lib-text-input
+          #evidence
+          label="Evidence URL"
+          placeholder="https://…"
+        ></lib-text-input>
+        <lib-text-input
+          #reason
+          label="Review note (optional)"
+          placeholder="What did you compare?"
+        ></lib-text-input>
+        <lib-checkbox
+          #attested
+          label="I compared the source record, geocode and evidence."
+        ></lib-checkbox>
+        <div class="review-actions">
+          @if (isPending(candidate)) {
+          <otui-button
+            size="sm"
+            tone="success"
+            emphasis="solid"
+            (click)="decide(candidate, 'approve', evidence.value, attested.value, reason.value)"
+          >
+            Approve
+          </otui-button>
+          <otui-button
+            size="sm"
+            tone="danger"
+            emphasis="outline"
+            (click)="decide(candidate, 'reject', evidence.value, attested.value, reason.value)"
+          >
+            Reject
+          </otui-button>
+          <otui-button
+            size="sm"
+            tone="warning"
+            emphasis="outline"
+            (click)="decide(candidate, 'needs_info', evidence.value, attested.value, reason.value)"
+          >
+            Needs info
+          </otui-button>
+          } @if (canRevoke(candidate)) {
+          <otui-button
+            size="sm"
+            tone="danger"
+            emphasis="outline"
+            (click)="decide(candidate, 'revoke', evidence.value, attested.value, reason.value)"
+          >
+            Revoke
+          </otui-button>
+          }
+        </div>
+      </div>
+    </otui-card>
+    }
+  </div>
+
+  @if (showMore()) {
+  <div class="load-more">
+    <otui-button
+      tone="brand"
+      emphasis="outline"
+      [disabled]="loading"
+      (click)="loadMore()"
+    >
+      Load more candidates
+    </otui-button>
+  </div>
+  }
+</section>
