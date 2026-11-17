@@ -36,6 +36,9 @@ import type {
 } from '@optimistic-tanuki/social-contracts';
 import { Public } from '../../decorators/public.decorator';
 import { AuthGuard } from '../../auth/auth.guard';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { DIRECTORY_PERMISSIONS } from '@optimistic-tanuki/social-contracts';
 import { DirectoryOwnerScopeGuard } from './directory.controller';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -348,7 +351,8 @@ export class DirectoryListingReportReviewController {
   }
 
   @Get()
-  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard)
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.review)
   @Header('Cache-Control', 'no-store')
   async list(
     @Param('townId') town: string,
@@ -374,7 +378,8 @@ export class DirectoryListingReportReviewController {
 
   @Post(':reportId/:action')
   @HttpCode(200)
-  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard)
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.review)
   @Header('Cache-Control', 'no-store')
   async transition(
     @Param('townId') town: string,

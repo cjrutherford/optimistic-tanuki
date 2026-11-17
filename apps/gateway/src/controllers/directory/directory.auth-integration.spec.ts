@@ -8,7 +8,12 @@ import {
 } from './directory.controller';
 import { AuthGuard } from '../../auth/auth.guard';
 import { GATEWAY_APP_REGISTRY } from '../registry/registry.tokens';
-import { ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  AppScopeCommands,
+  RoleCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
+import { directoryPermissionTestProviders } from './directory-permission-test-providers';
 
 describe('boundary decision authenticated HTTP boundary', () => {
   it('rejects anonymous, forged and non-owner sessions and records the verified profile', async () => {
@@ -42,18 +47,24 @@ describe('boundary decision authenticated HTTP boundary', () => {
     }`;
     process.env.DIRECTORY_BOUNDARY_DECISION_SECRET = decisionSecret;
     const permissions = {
-      send: (_pattern: any, payload: any) =>
-        of(
+      send: (pattern: any, payload: any) => {
+        if (pattern.cmd === AppScopeCommands.GetByName)
+          return of({ id: 'scope-owner-console' });
+        if (pattern.cmd === RoleCommands.CheckPermission)
+          return of(payload.profileId === owner);
+        return of(
           payload.profileId === owner
             ? [{ role: { name: 'owner_console_owner' } }]
             : []
-        ),
+        );
+      },
     };
     const module = await Test.createTestingModule({
       controllers: [DirectoryController],
       providers: [
         AuthGuard,
         DirectoryOwnerScopeGuard,
+        ...directoryPermissionTestProviders,
         { provide: JwtService, useValue: jwt },
         {
           provide: ServiceTokens.AUTHENTICATION_SERVICE,

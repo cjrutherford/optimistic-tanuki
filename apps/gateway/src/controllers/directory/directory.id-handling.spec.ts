@@ -10,6 +10,7 @@ import {
   DirectoryOwnerScopeGuard,
 } from './directory.controller';
 import { DirectoryBusinessLinkController } from './directory-business-link.controller';
+import { directoryPermissionTestProviders } from './directory-permission-test-providers';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 
 const town = '33333333-3333-4333-8333-333333333333',
@@ -49,6 +50,7 @@ describe('directory public ids never leak internals', () => {
       providers: [
         AuthGuard,
         DirectoryOwnerScopeGuard,
+        ...directoryPermissionTestProviders,
         { provide: JwtService, useValue: new JwtService({ secret: 'x' }) },
         {
           provide: ServiceTokens.AUTHENTICATION_SERVICE,

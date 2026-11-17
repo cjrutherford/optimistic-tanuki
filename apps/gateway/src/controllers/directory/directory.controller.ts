@@ -27,6 +27,9 @@ import type {
 } from '@optimistic-tanuki/social-contracts';
 import { Public } from '../../decorators/public.decorator';
 import { AuthGuard } from '../../auth/auth.guard';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { DIRECTORY_PERMISSIONS } from '@optimistic-tanuki/social-contracts';
 
 export class DirectoryOwnerScopeGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
@@ -395,7 +398,8 @@ export class DirectoryController {
   }
 
   @Get(':id/boundary-candidate')
-  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard)
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.review)
   @Header('Cache-Control', 'no-store')
   async boundaryCandidate(@Param('id') id: string) {
     if (
@@ -486,7 +490,8 @@ export class DirectoryController {
   }
 
   @Post(':id/boundary-decisions')
-  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard)
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.review)
   @Header('Cache-Control', 'no-store')
   async boundaryDecision(
     @Param('id') id: string,

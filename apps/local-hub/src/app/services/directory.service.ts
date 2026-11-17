@@ -42,6 +42,17 @@ export class DirectoryRequestError extends Error {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const MAX_SNAPSHOTS = 20;
+/**
+ * A snapshot only exists so Back and returning from a detail page redraw
+ * without a flash. It must not outlive a suppression or withdrawal for long,
+ * so after this it is dropped and the page is fetched again.
+ */
+export const SNAPSHOT_TTL_MS = 60_000;
+
+interface StoredSnapshot {
+  snapshot: DirectorySnapshot;
+  savedAt: number;
+}
 
 function readListing(raw: unknown): LocalDirectoryListing | null {
   const v = raw as Partial<LocalDirectoryListing> | null;
@@ -77,7 +88,7 @@ function readListing(raw: unknown): LocalDirectoryListing | null {
 export class DirectoryService {
   private http = inject(HttpClient);
   private apiBaseUrl = inject(API_BASE_URL);
-  private snapshots = new Map<string, DirectorySnapshot>();
+  private snapshots = new Map<string, StoredSnapshot>();
 
   private base(townId: string): string {
     return `${this.apiBaseUrl}/directory/towns/${encodeURIComponent(
@@ -142,6 +153,8 @@ export class DirectoryService {
       return listing;
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 404) {
+        // Gone (suppressed, withdrawn or expired): no remembered page may show it again.
+        this.forgetListing(townId, reference, adult);
         return null;
       }
       if (error instanceof DirectoryRequestError) throw error;
@@ -220,14 +233,53 @@ export class DirectoryService {
 
   saveSnapshot(key: string, snapshot: DirectorySnapshot): void {
     this.snapshots.delete(key);
-    this.snapshots.set(key, snapshot);
+    this.snapshots.set(key, { snapshot, savedAt: Date.now() });
     if (this.snapshots.size > MAX_SNAPSHOTS) {
       const oldest = this.snapshots.keys().next().value;
       if (oldest !== undefined) this.snapshots.delete(oldest);
     }
   }
 
+  /** A snapshot older than the TTL is dropped and reads as absent, so the caller refetches. */
   getSnapshot(key: string): DirectorySnapshot | undefined {
-    return this.snapshots.get(key);
+    const stored = this.snapshots.get(key);
+    if (!stored) return undefined;
+    if (Date.now() - stored.savedAt >= SNAPSHOT_TTL_MS) {
+      this.snapshots.delete(key);
+      return undefined;
+    }
+    return stored.snapshot;
+  }
+
+  /**
+   * Removes a listing from every remembered page of the same town and adult
+   * setting (a reference is only valid under the setting it was issued for).
+   */
+  forgetListing(townId: string, reference: string, adult: boolean): void {
+    for (const [key, stored] of this.snapshots) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(key);
+      } catch {
+        continue;
+      }
+      if (
+        !Array.isArray(parsed) ||
+        parsed[0] !== townId ||
+        parsed[3] !== adult
+      ) {
+        continue;
+      }
+      const listings = stored.snapshot.listings;
+      const hit = listings.find((l) => l.reference === reference);
+      if (!hit) continue;
+      const kept = listings.filter(
+        (l) => l !== hit && !(hit.id && l.id === hit.id)
+      );
+      this.snapshots.set(key, {
+        ...stored,
+        snapshot: { ...stored.snapshot, listings: kept },
+      });
+    }
   }
 }
