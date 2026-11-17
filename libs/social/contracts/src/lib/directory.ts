@@ -148,3 +148,16 @@ export interface ListingReportReviewItem {
 }
 
 export type ListingReportReviewAction = 'review' | 'decline' | 'resolve';
+
+/**
+ * Owner Console permissions for Directory operator routes. Granted in the
+ * owner-console app scope to the owner roles; `review` covers identity,
+ * address, link and boundary review, listing reports and suppression.
+ */
+export const DIRECTORY_PERMISSIONS = {
+  review: 'directory.review',
+  rights: 'directory.rights',
+  operate: 'directory.operate',
+} as const;
+export type DirectoryPermission =
+  (typeof DIRECTORY_PERMISSIONS)[keyof typeof DIRECTORY_PERMISSIONS];

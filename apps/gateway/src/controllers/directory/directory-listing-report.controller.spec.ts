@@ -11,6 +11,8 @@ import {
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { IS_PUBLIC_KEY } from '../../decorators/public.decorator';
 import { AuthGuard } from '../../auth/auth.guard';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
 import { DirectoryOwnerScopeGuard } from './directory.controller';
 import {
   CreateListingReportDto,
@@ -314,7 +316,11 @@ describe('listing report gateway routes', () => {
         expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual([
           AuthGuard,
           DirectoryOwnerScopeGuard,
+          PermissionsGuard,
         ]);
+        expect(Reflect.getMetadata(PERMISSIONS_KEY, handler)).toEqual({
+          permissions: ['directory.review'],
+        });
         expect(Reflect.getMetadata(IS_PUBLIC_KEY, handler)).toBeUndefined();
       }
     });

@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
@@ -21,7 +21,14 @@ import {
 import { DirectoryBusinessIdentityReviewController } from './directory-business-identity-review.controller';
 import { AuthGuard } from '../../auth/auth.guard';
 import { GATEWAY_APP_REGISTRY } from '../registry/registry.tokens';
-import { ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  AppScopeCommands,
+  RoleCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
+import { DIRECTORY_PERMISSIONS } from '@optimistic-tanuki/social-contracts';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 
 interface MatrixRoute {
   method: 'GET' | 'POST';
@@ -34,6 +41,7 @@ const town = '33333333-3333-4333-8333-333333333333',
   candidate = '55555555-5555-4555-8555-555555555555',
   owner = '11111111-1111-4111-8111-111111111111',
   member = '22222222-2222-4222-8222-222222222222',
+  unpermitted = '66666666-6666-4666-8666-666666666666',
   secret = 'synthetic-directory-matrix-secret-123456789',
   base = `/directory/towns/${town}`;
 
@@ -139,12 +147,23 @@ describe('directory authentication and Owner Console scope matrix', () => {
     ])
       process.env[name] = secret + name.length;
     const permissions = {
-      send: (_pattern: unknown, payload: { profileId: string }) =>
-        of(
-          payload.profileId === owner
+      send: (
+        pattern: { cmd?: string },
+        payload: { profileId?: string; permission?: string }
+      ) => {
+        if (pattern.cmd === AppScopeCommands.GetByName)
+          return of({ id: 'scope-owner-console' });
+        if (pattern.cmd === RoleCommands.CheckPermission)
+          return of(
+            payload.profileId === owner &&
+              payload.permission === DIRECTORY_PERMISSIONS.review
+          );
+        return of(
+          payload.profileId === owner || payload.profileId === unpermitted
             ? [{ role: { name: 'owner_console_owner' } }]
             : []
-        ),
+        );
+      },
     };
     const module = await Test.createTestingModule({
       controllers: [
@@ -160,6 +179,24 @@ describe('directory authentication and Owner Console scope matrix', () => {
       providers: [
         AuthGuard,
         DirectoryOwnerScopeGuard,
+        PermissionsGuard,
+        { provide: Logger, useValue: new Logger('matrix') },
+        {
+          provide: PermissionsCacheService,
+          useValue: {
+            getOrLoad: (
+              _profile: string,
+              _permission: string,
+              _scope: string,
+              _target: string | null,
+              load: () => Promise<boolean>
+            ) => load(),
+          },
+        },
+        {
+          provide: ServiceTokens.PROFILE_SERVICE,
+          useValue: { send: () => of([]) },
+        },
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: JwtService, useValue: jwt },
         {
@@ -268,6 +305,17 @@ describe('directory authentication and Owner Console scope matrix', () => {
       // The owner with the header passes both guards.
       const ok = await call(route, { token: token(owner), scope: true });
       expect([401, 403]).not.toContain(ok.status);
+    }
+  );
+
+  it.each(reviewRoutes.map((r) => [r.method + ' ' + r.path, r] as const))(
+    'owner-console session without directory.review gets 403 on %s',
+    async (_n, route) => {
+      // Passes AuthGuard and the scope guard (owner role, header) but lacks the permission.
+      const res = await call(route, { token: token(unpermitted), scope: true });
+      expect(res.status).toBe(403);
+      const granted = await call(route, { token: token(owner), scope: true });
+      expect([401, 403]).not.toContain(granted.status);
     }
   );
 

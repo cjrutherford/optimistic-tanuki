@@ -5,6 +5,30 @@ import { SeedData, validateSeedData } from './seed-permissions';
 const seedData = require('../assets/default-permissions.json') as SeedData;
 
 describe('permissions seed integrity', () => {
+  it('seeds the directory operator permissions for the owner-console owner roles', () => {
+    for (const name of [
+      'directory.review',
+      'directory.rights',
+      'directory.operate',
+    ]) {
+      expect(seedData.permissions).toContainEqual(
+        expect.objectContaining({ name, appScope: 'owner-console' })
+      );
+      for (const role of [
+        'owner_console_owner',
+        'owner',
+        'global_admin',
+        'system_admin',
+      ]) {
+        expect(seedData.role_permissions).toContainEqual({
+          role,
+          permission: name,
+          permissionAppScope: 'owner-console',
+        });
+      }
+    }
+  });
+
   it('seeds forum moderation permissions and roles in Client Interface and Local Hub scopes', () => {
     for (const [scope, roleName] of [
       ['client-interface', 'client_interface_forum_moderator'],
