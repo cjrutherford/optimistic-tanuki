@@ -1347,3 +1347,151 @@ test('business-link internal transport requires its own credential and rejects m
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test('business identity review transport is credentialed, validated, and maps refusal to 409', async () => {
+  const localSecret = 'local-evaluation-secret-1234567890123456';
+  const calls = [];
+  let mode = 'ok';
+  const checks = {
+    identityReviewQueue: async (t) => ({
+      health: {
+        unresolved: 0,
+        absent: 0,
+        awaitingOwner: 0,
+        carryIncomplete: 0,
+        carriedUnbound: 0,
+      },
+      queue: { carriedUnbound: [], unresolved: [], awaitingOwner: [], town: t },
+    }),
+    identityReviewDecision: async (t, v) => {
+      calls.push([t, v]);
+      if (mode === 'refuse') throw Error('Invalid business identity decision');
+      if (mode === 'fail') throw Error('boom');
+      return { replayed: false, businesses: 1, restoredLinks: 0 };
+    },
+  };
+  const server = pendingServer(
+    checks,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    localSecret
+  );
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const base = `http://127.0.0.1:${
+        server.address().port
+      }/internal/local-evaluation/towns/${town}/business-identity-review`,
+      headers = {
+        authorization: `Bearer ${localSecret}`,
+        'content-type': 'application/json',
+      };
+    const u = '00000000-0000-4000-8000-0000000000a1',
+      b = '00000000-0000-4000-8000-0000000000b1',
+      o = '00000000-0000-4000-8000-0000000000b2';
+    const ok = {
+      decisionId: u,
+      actorId: u,
+      action: 'confirm',
+      businessId: b,
+      reason: 'looks right',
+    };
+    assert.equal((await fetch(base)).status, 401);
+    assert.equal((await fetch(base, { headers })).status, 200);
+    assert.equal((await fetch(base + '?x=1', { headers })).status, 400);
+    const post = (body) =>
+      fetch(base + '/decisions', {
+        method: 'POST',
+        headers,
+        body: typeof body === 'string' ? body : JSON.stringify(body),
+      });
+    assert.equal(
+      (await fetch(base + '/decisions', { method: 'POST', body: '{}' })).status,
+      401
+    );
+    assert.equal((await post('{')).status, 400);
+    for (const bad of [
+      { ...ok, action: 'x' },
+      { ...ok, reason: '   ' },
+      { ...ok, reason: 'a'.repeat(1025) },
+      { ...ok, actorId: 'nope' },
+      { ...ok, otherBusinessId: o },
+      { ...ok, rows: [] },
+      { ...ok, action: 'merge' },
+      { ...ok, action: 'split' },
+      {
+        ...ok,
+        action: 'split',
+        rows: [{ scanId: 's', sourceFileRowNumber: 'x' }],
+      },
+    ])
+      assert.equal((await post(bad)).status, 400, JSON.stringify(bad));
+    assert.equal(calls.length, 0);
+    const res = await post(ok);
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), {
+      replayed: false,
+      businesses: 1,
+      restoredLinks: 0,
+    });
+    assert.equal(
+      (await post({ ...ok, action: 'merge', otherBusinessId: o })).status,
+      200
+    );
+    assert.equal(
+      (
+        await post({
+          ...ok,
+          action: 'split',
+          rows: [{ scanId: 'scan-1', sourceFileRowNumber: '12' }],
+        })
+      ).status,
+      200
+    );
+    assert.equal(calls.length, 3);
+    mode = 'refuse';
+    assert.equal((await post(ok)).status, 409);
+    mode = 'fail';
+    assert.equal((await post(ok)).status, 503);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('business identity decisions are recorded as a profile actor behind authority checks', async () => {
+  const b = '00000000-0000-4000-8000-0000000000b1',
+    u = '00000000-0000-4000-8000-0000000000a1';
+  let inserted = null;
+  const tx = {
+    query: async (sql, params) => {
+      if (sql.includes('FROM directory_business WHERE id = ANY'))
+        return [{ id: b, state: 'active' }];
+      if (sql.includes('INSERT INTO directory_business_identity_decision'))
+        inserted = params;
+      return [];
+    },
+  };
+  const db = {
+    query: async () => [row()],
+    transaction: async (work) => work(tx),
+  };
+  const checks = pendingChecks(db, source(), id);
+  await assert.rejects(
+    () => checks.identityReviewDecision('bad', {}),
+    /unavailable/
+  );
+  await assert.rejects(
+    () =>
+      checks.identityReviewDecision(town, {
+        decisionId: u,
+        action: 'confirm',
+        businessId: b,
+        actorId: u,
+        reason: 'ok',
+      }),
+    /Invalid business identity decision/
+  );
+  assert.equal(inserted[5], u);
+  assert.equal(inserted[6], 'profile');
+});

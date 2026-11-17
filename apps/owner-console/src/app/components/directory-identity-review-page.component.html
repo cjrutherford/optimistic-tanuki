@@ -1,0 +1,193 @@
+<section class="identity-review-page" aria-labelledby="identity-review-title">
+  <a class="back-link" routerLink="/dashboard/community-ops">
+    <otui-icon name="arrow-back" [size]="18" stroke="currentColor"></otui-icon>
+    Community operations
+  </a>
+
+  <header class="page-header">
+    <p class="page-kicker">Directory</p>
+    <h1 id="identity-review-title">Business identity review</h1>
+    <p>
+      Decide the businesses a data refresh could not settle by itself. Confirm
+      or retire a business, merge it into another, or split rows out of it.
+      Merge and split are refused while an owner link is attached. Business
+      owners have no action here.
+    </p>
+  </header>
+
+  @if (message) {
+  <p class="page-message" role="status">{{ message }}</p>
+  } @if (loading && !data) {
+  <otui-loading-state
+    headline="Loading business identity queue…"
+  ></otui-loading-state>
+  } @if (data; as view) {
+  <dl class="health" aria-label="Identity health">
+    <div>
+      <dt>Unresolved</dt>
+      <dd>{{ view.health.unresolved }}</dd>
+    </div>
+    <div>
+      <dt>Absent</dt>
+      <dd>{{ view.health.absent }}</dd>
+    </div>
+    <div>
+      <dt>Awaiting owner</dt>
+      <dd>{{ view.health.awaitingOwner }}</dd>
+    </div>
+    <div>
+      <dt>Carry incomplete</dt>
+      <dd>{{ view.health.carryIncomplete }}</dd>
+    </div>
+    <div>
+      <dt>Carried, unbound</dt>
+      <dd>{{ view.health.carriedUnbound }}</dd>
+    </div>
+  </dl>
+
+  <h2 class="section-title">Carried, unbound</h2>
+  @if (!view.queue.carriedUnbound.length) {
+  <otui-empty-state
+    headline="None"
+    body="No carried business is waiting for a binding."
+  ></otui-empty-state>
+  } @for (row of view.queue.carriedUnbound; track rowKey(row) + row.businessId)
+  {
+  <p class="row-line">
+    <code>{{ row.businessId }}</code> row {{ row.sourceFileRowNumber }}
+  </p>
+  }
+
+  <h2 class="section-title">Unresolved</h2>
+  @if (!view.queue.unresolved.length) {
+  <otui-empty-state
+    headline="None"
+    body="No row is waiting for a decision."
+  ></otui-empty-state>
+  } @for (row of view.queue.unresolved; track rowKey(row) + row.businessId) {
+  <p class="row-line">
+    <code>{{ row.businessId }}</code> row {{ row.sourceFileRowNumber }}
+    <otui-badge tone="warning" size="sm">{{
+      row.cause.split('_').join(' ')
+    }}</otui-badge>
+  </p>
+  }
+
+  <h2 class="section-title">Awaiting owner</h2>
+  <p class="muted">
+    Read-only. A reviewer confirm of the business restores these owner links.
+  </p>
+  @for (item of view.queue.awaitingOwner; track item.carryId) {
+  <p class="row-line">
+    <code>{{ item.businessId }}</code> request {{ item.requestId }}
+  </p>
+  } @if (!view.queue.awaitingOwner.length) {
+  <p class="muted">None.</p>
+  }
+
+  <h2 class="section-title">Decide</h2>
+  @for (businessId of businesses(); track businessId) {
+  <otui-card class="business-card" tone="neutral" emphasis="soft">
+    <div class="business-header">
+      <h3>
+        <code>{{ businessId }}</code>
+      </h3>
+      <div class="review-actions">
+        @for (action of actions; track action) {
+        <otui-button
+          size="sm"
+          [tone]="isOpen(businessId, action) ? 'brand' : 'neutral'"
+          emphasis="outline"
+          (click)="open(businessId, action)"
+        >
+          {{ action | titlecase }}
+        </otui-button>
+        }
+      </div>
+    </div>
+
+    @if (form && form.businessId === businessId) {
+    <form class="decision-form" (submit)="$event.preventDefault(); submit()">
+      <p class="form-title">{{ form.action | titlecase }} this business</p>
+
+      @if (form.action === 'merge') {
+      <label class="field">
+        <span>Merge with</span>
+        <select class="control" (change)="setOther($any($event.target).value)">
+          <option value="">Choose a business…</option>
+          @for (other of otherCandidates(businessId); track other) {
+          <option [value]="other">{{ other }}</option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span>Or paste a business id</span>
+        <input
+          class="control"
+          type="text"
+          maxlength="36"
+          (input)="setOther($any($event.target).value)"
+        />
+      </label>
+      } @if (form.action === 'split') {
+      <fieldset class="field">
+        <legend>Rows to split out</legend>
+        @for (row of rowsFor(businessId); track rowKey(row)) {
+        <label class="check">
+          <input
+            type="checkbox"
+            (change)="toggleRow(row, $any($event.target).checked)"
+          />
+          Row {{ row.sourceFileRowNumber }}
+          <code>{{ row.scanId.slice(0, 12) }}</code>
+        </label>
+        }
+      </fieldset>
+      }
+
+      <label class="field">
+        <span>Reason (required)</span>
+        <textarea
+          class="control"
+          rows="3"
+          maxlength="1024"
+          (input)="setReason($any($event.target).value)"
+        ></textarea>
+      </label>
+      <label class="check">
+        <input
+          type="checkbox"
+          name="attested"
+          (change)="setAttested($any($event.target).checked)"
+        />
+        I reviewed this business and its source rows.
+      </label>
+      <div class="review-actions">
+        <otui-button
+          size="sm"
+          tone="brand"
+          emphasis="solid"
+          [disabled]="submitting"
+          (click)="submit()"
+        >
+          Record {{ form.action }}
+        </otui-button>
+        <otui-button
+          size="sm"
+          tone="neutral"
+          emphasis="ghost"
+          (click)="cancel()"
+        >
+          Cancel
+        </otui-button>
+      </div>
+    </form>
+    }
+  </otui-card>
+  } @if (!businesses().length) {
+  <otui-empty-state
+    headline="Nothing to review"
+    body="No business in this town needs an identity decision."
+  ></otui-empty-state>
+  } }
+</section>

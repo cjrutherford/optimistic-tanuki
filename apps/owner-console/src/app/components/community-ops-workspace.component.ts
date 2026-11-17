@@ -1086,6 +1086,10 @@ export class CommunityOpsWorkspaceComponent implements OnInit {
                 label: 'Review Addresses',
                 route: ['/dashboard/directory-address-review', entity.id],
               },
+              {
+                label: 'Review Business Identity',
+                route: ['/dashboard/directory-identity-review', entity.id],
+              },
             ]
           : []),
       ];
@@ -1105,6 +1109,10 @@ export class CommunityOpsWorkspaceComponent implements OnInit {
         {
           label: 'Review Addresses',
           route: ['/dashboard/directory-address-review', entity.id],
+        },
+        {
+          label: 'Review Business Identity',
+          route: ['/dashboard/directory-identity-review', entity.id],
         },
         { label: 'Create Community', route: ['/dashboard/communities/new'] },
       ];
