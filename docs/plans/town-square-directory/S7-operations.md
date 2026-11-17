@@ -130,7 +130,7 @@ Not reversed by undo:
 - Re-confirming after an undo can skip a second `confirmed` event (unique key, DO NOTHING); the decision row is still written.
 - Publication is never restored automatically; a human must re-approve.
 
-Migration `1794946949693-DirectoryFoundation` adds the `undoOf` columns, a snapshot column, two partial unique indexes and replacement CHECK constraints (generated, with the CHECK changes added by hand because generate does not diff CHECKs). It must be applied to live databases at deploy.
+Migration `1794946949693-DirectoryFoundation` adds the `undoOf` columns, a snapshot column, two partial unique indexes and replacement CHECK constraints (generated, with the CHECK changes added by hand because generate does not diff CHECKs). It was applied to the local `ot_directory` on 2026-11-17.
 
 ### Tests
 
@@ -175,7 +175,7 @@ Withdrawal is one-way. It deletes the rows and their keys and writes a revocatio
 
 ### 6.6 Deploy
 
-Apply migration `1794949427226-DirectoryFoundation` (three tables) to the live Directory database before deploying this build. It was generated, validated with `pnpm run validate:typeorm-migrations`, and not applied to any live database.
+Apply migration `1794949427226-DirectoryFoundation` (three tables) to the live Directory database before deploying this build. It was generated, validated with `pnpm run validate:typeorm-migrations`. It was applied to the local `ot_directory` on 2026-11-17.
 
 ## 7. Taxonomy
 
@@ -245,9 +245,9 @@ Run routes: `GET/POST /api/directory/taxonomy/runs`, `GET .../runs/:id`, `POST .
 
 ### 7.8 Deploy and live steps
 
-Apply migration `1794950472386-DirectoryFoundation` (eight tables) to the live Directory database before deploying this build. It was generated, validated with `pnpm run validate:typeorm-migrations`, and not applied to any live database. Then, as an operator with `directory.operate`:
+Apply migration `1794950472386-DirectoryFoundation` (eight tables) to the live Directory database before deploying this build. It was generated, validated with `pnpm run validate:typeorm-migrations`. It was applied to the local `ot_directory` on 2026-11-17. Then, as an operator with `directory.operate`:
 
-1. `POST /api/directory/taxonomy/mappings/install` with `{"version":"overture-v3-local-2026-11.1","activate":true}`.
+1. `POST /api/directory/taxonomy/mappings/install` with `{"version":"overture-v3-local-2026-11.1","activate":true}`. Activation is the owner's call: Owner Console has no deactivate control, and once a mapping is active a case undo re-derives the category from it. The local deploy installed the version without activating it.
 2. `POST /api/directory/taxonomy/runs` with `{id, mappingVersion, scope:"town"|"all", townId?, mode:"dry_run", reason}`. Wait for `complete`. Review the transitions and note `planHash`.
 3. `POST /api/directory/taxonomy/runs` with `{id, mappingVersion, scope, townId?, mode:"apply", reason, expectedPlanHash, confirm:"APPLY"}`. Follow `appliedRows` until `complete`.
 4. To undo: `POST /api/directory/taxonomy/runs/:id/rollback` with `{reason, confirm:"ROLLBACK"}`.
@@ -303,7 +303,7 @@ Owner Console: Acquisition Runs at `/dashboard/directory-runs` (status filter, b
 
 ### 8.7 Deploy and live steps
 
-Apply migration `1794951718340-DirectoryFoundation` (three tables) to the live Directory database before deploying this build. It was generated, validated with `pnpm run validate:typeorm-migrations`, and not applied to any live database. Then, as an operator with `directory.operate`:
+Apply migration `1794951718340-DirectoryFoundation` (three tables) to the live Directory database before deploying this build. It was generated, validated with `pnpm run validate:typeorm-migrations`. It was applied to the local `ot_directory` on 2026-11-17. Then, as an operator with `directory.operate`:
 
 1. `POST /api/directory/runs/history/import` with `{decisionId, reason}` to create historical runs from past scans and census progress. It is safe to repeat.
 2. Open Acquisition Runs to follow runs. A stage run made after the deploy records itself; do not run a stage until acquisition is authorized.
@@ -311,4 +311,58 @@ Apply migration `1794951718340-DirectoryFoundation` (three tables) to the live D
 
 ## 9. Evidence
 
-Placeholder. Test counts, live checks and screenshots for each S7 slice.
+### 9.1 Live browser run
+
+`apps/local-hub-e2e/src/s7-operations-evidence.spec.ts` drives the deployed Owner Console (Tailnet origin, owner session) and Local Hub against the local `ot_directory`. It runs only with `S7_EVIDENCE=true`. Run from `apps/local-hub-e2e`:
+
+```
+S7_EVIDENCE=true E2E_DOCKER=true BASE_URL=http://127.0.0.1:8087 pnpm exec playwright test -c playwright.config.ts src/s7-operations-evidence.spec.ts --workers=1
+```
+
+The final run on 2026-11-17 passed 9 of 9 in 1.0 minutes. Every page gets an axe check that fails on serious or critical violations. Artifacts are in [`s7-evidence/`](s7-evidence/): 30 screenshots and six outcome files.
+
+| Test                      | What it shows live                                                                                                                                                                                       | Outcome                                                                                                                                                         |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Permission matrix      | 30 requests across 5 S7 routes: anonymous (console proxy and direct gateway), the Local Hub scope, an owner session with no scope or the wrong scope sent straight to the gateway, and the owner control | All 30 as expected. The 25 denials are 401/403; only the owner-console control is allowed. [`s7-permission-matrix.json`](s7-evidence/s7-permission-matrix.json) |
+| 2. Runs                   | History import, the run list, run progress, the refused resume of a finished run, the budget panel, mobile list and detail                                                                               | Pass                                                                                                                                                            |
+| 3. Correction propagation | Suppress PINEVIEW GROCERY. It is gone from public search, detail (an open detail page expires) and map, and does not come back from browser history. Then lift it, and it is restored                    | Pass. The suppression was lifted, and no suppressions are open                                                                                                  |
+| 4. Identity review        | Queue health and the empty queue                                                                                                                                                                         | The live queue is empty (0 unresolved), so confirm/undo is shown by the Postgres suites in section 5                                                            |
+| 5. Address review         | `needs_info`, undo, history grows by one each time, then a stale token is refused with `409 stale_decision`                                                                                              | Pass. The candidate is back at `needs_human`                                                                                                                    |
+| 6. Rights                 | The queue and its empty state                                                                                                                                                                            | The live queue is empty (see 9.3)                                                                                                                               |
+| 7. Withdrawals            | A one-row withdrawal through form, queue and worker, for a scan bound to no policy                                                                                                                       | The worker fails it permanently with "Scan not bound to policy" after 1 attempt, with no retry, and removes nothing. Shown on the card                          |
+| 8a. Taxonomy runs         | Install the mapping, a town dry run (18 transitions, 1,846 rows, plan hash shown), then apply while the mapping is inactive                                                                              | The server refuses the apply with 409. No apply run is created and the public category does not change                                                          |
+| 8b. Taxonomy case         | Raise a case, assign `stores`, see the public list and detail change, then undo                                                                                                                          | Pass. The public category is restored                                                                                                                           |
+
+### 9.2 Defects the live run found and fixed
+
+- **Owner Console login always failed** with "App context is not authorized". The `/api` proxy rewrote Host to the gateway address, so origin binding never matched. Fixed in `fd5c22f90` by keeping the browser Host, as Local Hub does. `server-proxy.spec.ts` covers it.
+- **The Owner Console Docker build failed** because it pulled Node builtins through the contracts barrel. Fixed in `ff80de7ab` with the browser-safe `@optimistic-tanuki/social-contracts/directory` entry.
+- **Deep links to the S7 pages went to `/login`**: they were rendered on the server, where there is no session. They render on the client since `7052e043e`.
+- **Every incorrect-details suppression answered "Listing suppression is unavailable"**. Directory returns `sentToReview` as a count, and the gateway checked for a boolean. This had been present since S5. Fixed in `ce6c048d0`.
+- **Error text on the run, taxonomy-run and withdrawal cards measured 4.42:1**, under WCAG AA. A failed withdrawal also read "Working". Fixed in `7ec9cef86`.
+
+### 9.3 What the live run does not show
+
+- **Taxonomy apply and rollback.** Activating the shipped mapping is a lasting change to the live directory and is left to the owner (7.8). The spec applies and rolls back by itself once the mapping is active. Until then, apply and rollback are shown by the Postgres suites in section 7.
+- **Rights sync, defer and undo, and the invalid-hash check.** The served private rows were staged before source provenance was kept (`includeSourceProvenance`), so they have no `sources` lineage. No run records a release either. A sync would have nothing real to derive. Syncing against an invented release would leave a permanent case, so the run does not do it. Restaging with provenance needs acquisition, which is paused. The mechanics are covered by `rights-case` and `rights-withdrawal` Postgres suites (section 6).
+- **A completing withdrawal.** Any target that completes writes a revocation that cannot be undone. Completion is shown in `rights-withdrawal.postgres.test.js`.
+- **Identity decisions.** The live identity queue is empty.
+
+### 9.4 Rows the evidence runs left
+
+These are append-only audit records of test actions. None of them change what the public sees.
+
+- Lifted suppressions and their history on PINEVIEW GROCERY.
+- Address-review decisions on "Peach Mart Burton Brooks": `needs_info`, then its undo, for each run.
+- One `operator_raised` taxonomy case on PINEVIEW GROCERY. It is open again after the undo, and later runs reuse it. There is no dismiss action.
+- `failed` withdrawal requests for the inert target `000…001:4000000000`.
+- Completed taxonomy dry runs, and the installed but inactive mapping `overture-v3-local-2026-11.1`.
+
+After the final run: 0 open suppressions, 0 active category overrides, 0 classification rows, 0 apply runs, 0 row revocations, and 0 rights cases.
+
+### 9.5 Suites
+
+- Owner Console: 742 tests.
+- Gateway: 145 suites, 2,257 tests (5 skipped).
+- Directory runtime and Postgres suites ran green on scratch databases for each of S7a to S7e (sections 5 to 8).
+- The personality audit is clean.
