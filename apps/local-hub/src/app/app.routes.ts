@@ -68,6 +68,13 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'directory/reports/status',
+    loadComponent: () =>
+      import('./pages/reports-status/report-status.component').then(
+        (m) => m.ReportStatusComponent
+      ),
+  },
+  {
     path: 'city/:slug',
     loadComponent: () =>
       import('./pages/city/city.component').then((m) => m.CityComponent),

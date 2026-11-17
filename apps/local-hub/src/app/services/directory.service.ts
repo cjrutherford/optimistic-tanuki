@@ -8,6 +8,10 @@ import {
   readCoverage,
   readSourceFreshness,
 } from '@optimistic-tanuki/directory-ui';
+import {
+  CreateListingReportRequest,
+  ListingReportReceiptStatus,
+} from '@optimistic-tanuki/social-contracts';
 import { firstValueFrom } from 'rxjs';
 
 export interface DirectoryQuery {
@@ -136,6 +140,63 @@ export class DirectoryService {
       const listing = readListing(raw);
       if (!listing) throw new DirectoryRequestError(null);
       return listing;
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 404) {
+        return null;
+      }
+      if (error instanceof DirectoryRequestError) throw error;
+      throw new DirectoryRequestError(
+        error instanceof HttpErrorResponse ? error.status : null
+      );
+    }
+  }
+
+  /** Files a public report. Resolves to the receipt code; rejects with a DirectoryRequestError carrying only the HTTP status. */
+  async createReport(
+    townId: string,
+    body: CreateListingReportRequest
+  ): Promise<string> {
+    try {
+      const res = await firstValueFrom(
+        this.http.post<{ receipt?: unknown }>(
+          `${this.apiBaseUrl}/directory/towns/${encodeURIComponent(
+            townId
+          )}/listing-reports`,
+          body
+        )
+      );
+      if (typeof res?.receipt !== 'string' || !res.receipt) {
+        throw new DirectoryRequestError(null);
+      }
+      return res.receipt;
+    } catch (error) {
+      if (error instanceof DirectoryRequestError) throw error;
+      throw new DirectoryRequestError(
+        error instanceof HttpErrorResponse ? error.status : null
+      );
+    }
+  }
+
+  /** `null` means no report has that code (HTTP 404). */
+  async getReportStatus(
+    receipt: string
+  ): Promise<ListingReportReceiptStatus | null> {
+    try {
+      const res = await firstValueFrom(
+        this.http.get<Partial<ListingReportReceiptStatus>>(
+          `${this.apiBaseUrl}/directory/listing-reports/${encodeURIComponent(
+            receipt
+          )}`
+        )
+      );
+      if (
+        !res ||
+        typeof res.status !== 'string' ||
+        typeof res.createdAt !== 'string'
+      ) {
+        throw new DirectoryRequestError(null);
+      }
+      return res as ListingReportReceiptStatus;
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 404) {
         return null;
