@@ -1,14 +1,21 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import type {
+  AddressReviewCandidateDetail,
+  AddressReviewHistoryEntry,
+} from '@optimistic-tanuki/social-contracts';
 import {
   BadgeComponent,
   ButtonComponent,
   CardComponent,
   EmptyStateComponent,
   ErrorStateComponent,
+  DecisionHistoryComponent,
+  type DecisionHistoryEntry,
+  type DecisionUndoRequest,
   IconComponent,
   LoadingStateComponent,
 } from '@optimistic-tanuki/common-ui';
@@ -26,6 +33,8 @@ type ReviewStatus =
   | 'revoked'
   | 'archived';
 type ReviewDecision = 'approve' | 'reject' | 'needs_info' | 'revoke';
+
+export const STALE_MESSAGE = 'This item changed since you opened it';
 
 interface ReviewCandidate {
   id: string;
@@ -67,6 +76,7 @@ interface ReviewCandidate {
   reasons?: string[];
   checks?: Record<string, string>;
   policyVersion: string;
+  versionToken: string;
   status: ReviewStatus;
   createdAt: string;
   updatedAt: string;
@@ -83,6 +93,7 @@ interface ReviewCandidate {
     CardComponent,
     EmptyStateComponent,
     ErrorStateComponent,
+    DecisionHistoryComponent,
     IconComponent,
     LoadingStateComponent,
     CheckboxComponent,
@@ -101,6 +112,9 @@ export class DirectoryAddressReviewPageComponent implements OnInit {
   candidates: ReviewCandidate[] = [];
   loading = false;
   message = '';
+  histories: Record<string, AddressReviewHistoryEntry[]> = {};
+  undoing = false;
+  private readonly decisionIds = new Map<string, string>();
   private offset = 0;
   private readonly limit = 25;
 
@@ -189,10 +203,16 @@ export class DirectoryAddressReviewPageComponent implements OnInit {
     }
     const town = this.town;
     this.message = '';
+    // One id per attempt: a retry after a network error replays instead of duplicating.
+    const key = `${candidate.id}:${decision}`;
+    const decisionId = this.decisionIds.get(key) ?? crypto.randomUUID();
+    this.decisionIds.set(key, decisionId);
     this.http
       .post<{ recorded: boolean; status: string }>(
         `${this.api}/directory/towns/${town}/address-review-candidates/${candidate.id}/decisions`,
         {
+          decisionId,
+          expectedVersionToken: candidate.versionToken,
           decision,
           evidenceUrl: evidenceUrl.trim(),
           reason: reason.trim(),
@@ -203,15 +223,117 @@ export class DirectoryAddressReviewPageComponent implements OnInit {
       .subscribe({
         next: () => {
           if (this.town !== town) return;
+          this.decisionIds.delete(key);
           this.refresh();
           this.message = `Recorded ${decision.replace('_', ' ')} for ${
             candidate.name
           }.`;
         },
-        error: () => {
+        error: (error: HttpErrorResponse) => {
           if (this.town !== town) return;
+          if (error?.status === 409) {
+            this.decisionIds.delete(key);
+            this.stale();
+            return;
+          }
           this.message =
             'The review decision could not be recorded. Check the evidence URL and try again.';
+        },
+      });
+  }
+
+  /** The item moved under the reviewer: say so and show the current state. */
+  private stale(): void {
+    const open = Object.keys(this.histories);
+    this.refresh();
+    this.message = STALE_MESSAGE;
+    // refresh() clears the list but not the open histories; reload those so no stale Undo button stays.
+    for (const id of open) this.loadHistory(id);
+  }
+
+  private loadHistory(candidateId: string): void {
+    const town = this.town;
+    this.http
+      .get<AddressReviewCandidateDetail>(
+        `${this.api}/directory/towns/${town}/address-review-candidates/${candidateId}`
+      )
+      .subscribe({
+        next: (detail) => {
+          if (this.town !== town) return;
+          this.histories = { ...this.histories, [candidateId]: detail.history };
+          this.candidates = this.candidates.map((c) =>
+            c.id === candidateId
+              ? {
+                  ...c,
+                  status: detail.status as ReviewStatus,
+                  versionToken: detail.versionToken,
+                }
+              : c
+          );
+        },
+        error: () => {
+          if (this.town !== town) return;
+          this.message = 'The decision history is unavailable. Try again.';
+        },
+      });
+  }
+
+  toggleHistory(candidate: ReviewCandidate): void {
+    if (this.histories[candidate.id]) {
+      const { [candidate.id]: _closed, ...rest } = this.histories;
+      this.histories = rest;
+      return;
+    }
+    this.histories = { ...this.histories, [candidate.id]: [] };
+    this.loadHistory(candidate.id);
+  }
+
+  historyEntries(candidateId: string): DecisionHistoryEntry[] {
+    return (this.histories[candidateId] ?? []).map((h) => ({
+      id: h.decisionId,
+      label: h.decision.replace('_', ' ').replace(/^./, (c) => c.toUpperCase()),
+      actor: h.actorId,
+      at: h.createdAt,
+      reason: h.reason,
+      undone: !!h.undoneBy,
+      isUndo: !!h.undoOf,
+      reversible: h.reversible,
+    }));
+  }
+
+  /** The reviewer confirmed an undo (with a reason) on the panel; one new decisionId per confirmation. */
+  undo(candidate: ReviewCandidate, request: DecisionUndoRequest): void {
+    if (this.undoing) return;
+    const town = this.town;
+    this.message = '';
+    this.undoing = true;
+    this.http
+      .post<{ recorded: boolean; status: string }>(
+        `${this.api}/directory/towns/${town}/address-review-candidates/${candidate.id}/undo`,
+        {
+          decisionId: crypto.randomUUID(),
+          undoOf: request.entry.id,
+          expectedVersionToken: candidate.versionToken,
+          reason: request.reason,
+        }
+      )
+      .subscribe({
+        next: () => {
+          if (this.town !== town) return;
+          this.undoing = false;
+          const open = Object.keys(this.histories);
+          this.refresh();
+          this.message = `Undid the ${request.entry.label.toLowerCase()} decision.`;
+          for (const id of open) this.loadHistory(id);
+        },
+        error: (error: HttpErrorResponse) => {
+          if (this.town !== town) return;
+          this.undoing = false;
+          if (error?.status === 409) {
+            this.stale();
+            return;
+          }
+          this.message = 'The undo could not be recorded. Try again.';
         },
       });
   }

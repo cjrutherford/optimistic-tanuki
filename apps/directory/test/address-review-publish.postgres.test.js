@@ -18,7 +18,12 @@ const {
   documentHash,
 } = require('../src/reviewed-binding');
 const {
-  recordHumanAddressReviewDecision,
+  recordHuman: recordHumanAddressReviewDecision,
+  undoHuman,
+} = require('./review-test-helpers');
+const {
+  addressVersionTokens,
+  getAddressReviewCandidate,
 } = require('../src/address-review-store');
 
 const url = process.env.DIRECTORY_TEST_DATABASE_URL;
@@ -205,7 +210,7 @@ async function seedVerifiedBoundary(db) {
 
 async function seed(db, status = 'approved') {
   await db.query(
-    'TRUNCATE "directory_reviewed_binding_event", "directory_reviewed_binding", "directory_address_review_decision", "directory_address_review_candidate", "directory_overture_private_row", "directory_overture_private_membership", "directory_overture_private_policy", "directory_overture_private_scan_lock", "directory_overture_private_completion", "directory_overture_private_row_revocation", "directory_overture_private_revocation"'
+    'TRUNCATE "directory_reviewed_spatial", "directory_reviewed_binding_event", "directory_reviewed_binding", "directory_address_review_decision", "directory_address_review_candidate", "directory_overture_private_row", "directory_overture_private_membership", "directory_overture_private_policy", "directory_overture_private_scan_lock", "directory_overture_private_completion", "directory_overture_private_row_revocation", "directory_overture_private_revocation"'
   );
   await seedVerifiedBoundary(db);
   await db.query(
@@ -1618,4 +1623,228 @@ test(
       await db.destroy();
     }
   }
+);
+
+const withDb = (fn) => async () => {
+  const db = new DataSource({ type: 'postgres', url });
+  await db.initialize();
+  try {
+    await fn(db);
+  } finally {
+    await db.destroy();
+  }
+};
+const decide = (db, candidateId, decision, extra = {}) =>
+  recordHumanAddressReviewDecision(db, {
+    candidateId,
+    actorId: reviewerId,
+    decision,
+    reason: `${decision} by hand`,
+    ...(decision === 'approve'
+      ? { evidenceUrl: 'https://official.example.test/listing' }
+      : {}),
+    ...extra,
+  });
+const candidateStatus = async (db, id) =>
+  (
+    await db.query(
+      'SELECT status FROM directory_address_review_candidate WHERE id=$1',
+      [id]
+    )
+  )[0].status;
+const decisionCount = async (db) =>
+  (
+    await db.query(
+      'SELECT count(*)::int n FROM directory_address_review_decision'
+    )
+  )[0].n;
+const rejects409 = (code) => (e) => e && e.code === code;
+
+test(
+  'a stale token is a 409 stale_decision and writes nothing',
+  { skip: !url },
+  withDb(async (db) => {
+    const id = await seed(db, 'needs_human');
+    const seen = (await addressVersionTokens(db, [id])).get(id);
+    await decide(db, id, 'needs_info');
+    const before = await decisionCount(db);
+    await assert.rejects(
+      decide(db, id, 'reject', { expectedVersionToken: seen }),
+      rejects409('stale_decision')
+    );
+    assert.equal(await decisionCount(db), before);
+    assert.equal(await candidateStatus(db, id), 'needs_human');
+  })
+);
+
+test(
+  'an identical replay returns replayed and a changed payload under the same id is refused',
+  { skip: !url },
+  withDb(async (db) => {
+    const id = await seed(db, 'needs_human');
+    const decisionId = crypto.randomUUID();
+    const first = await decide(db, id, 'reject', { decisionId });
+    assert.equal(first.replayed, false);
+    const again = await decide(db, id, 'reject', {
+      decisionId,
+      expectedVersionToken: 'a'.repeat(64),
+    });
+    assert.equal(again.replayed, true);
+    await assert.rejects(
+      decide(db, id, 'reject', { decisionId, reason: 'something else' }),
+      rejects409('decision_conflict')
+    );
+    assert.equal(await decisionCount(db), 1);
+  })
+);
+
+test(
+  'approve, publish then undo removes the reviewed fields, the binding and the spatial row',
+  { skip: !url },
+  withDb(async (db) => {
+    const id = await seed(db, 'needs_human');
+    const approve = crypto.randomUUID();
+    await decide(db, id, 'approve', { decisionId: approve });
+    const published = await publishAddressReviewCandidate(db, {
+      candidateId: id,
+      source,
+      policy,
+      actorId: reviewerId,
+    });
+    await db.query(
+      `INSERT INTO directory_reviewed_spatial ("scanId","sourceFileRowNumber","bindingId","communityId","listingDigest","validatorVersion")
+       SELECT "scanId","sourceFileRowNumber",$1,"communityId",'digest',1 FROM directory_reviewed_binding WHERE id=$1 ON CONFLICT DO NOTHING`,
+      [published.bindingId]
+    );
+    const read = () =>
+      db.query(
+        'SELECT listing FROM directory_overture_private_row WHERE "scanId"=$1',
+        [scanId]
+      );
+    assert.ok((await read())[0].listing.reviewed);
+    const item = await getAddressReviewCandidate(db, town, id);
+    // Publication records its own approve decision; that is the latest and the one an undo targets.
+    assert.equal(item.history.length, 2);
+    assert.equal(item.history[0].decisionId, approve);
+    assert.equal(item.history[0].reversible, false);
+    const publishedDecision = item.history.at(-1).decisionId;
+    assert.equal(item.history.at(-1).reversible, true);
+
+    const undoId = crypto.randomUUID();
+    const done = await undoHuman(db, {
+      candidateId: id,
+      actorId: reviewerId,
+      undoOf: publishedDecision,
+      decisionId: undoId,
+      reason: 'wrong shop',
+    });
+    assert.equal(done.replayed, false);
+    assert.equal((await read())[0].listing.reviewed, undefined);
+    const [binding] = await bindingRows(db, id);
+    assert.deepEqual(
+      [binding.state, binding.stateCause],
+      ['retired', 'human_undo']
+    );
+    assert.equal(
+      (
+        await db.query(
+          'SELECT 1 FROM directory_reviewed_spatial WHERE "bindingId"=$1',
+          [published.bindingId]
+        )
+      ).length,
+      0
+    );
+    assert.equal(await candidateStatus(db, id), 'revoked');
+    const after = await getAddressReviewCandidate(db, town, id);
+    assert.equal(after.history[1].undoneBy, undoId);
+    assert.ok(after.history.every((h) => !h.reversible));
+    assert.equal(after.history.length, 3);
+    // Replaying the undo is idempotent; the original row is not deleted.
+    const replay = await undoHuman(db, {
+      candidateId: id,
+      actorId: reviewerId,
+      undoOf: publishedDecision,
+      decisionId: undoId,
+      reason: 'wrong shop',
+      expectedVersionToken: 'c'.repeat(64),
+    });
+    assert.equal(replay.replayed, true);
+    assert.equal(await decisionCount(db), 3);
+  })
+);
+
+test(
+  'undo of reject, needs_info and revoke returns the candidate to needs_human without publishing',
+  { skip: !url },
+  withDb(async (db) => {
+    for (const action of ['reject', 'needs_info']) {
+      const id = await seed(db, 'needs_human');
+      const d = crypto.randomUUID();
+      await decide(db, id, action, { decisionId: d });
+      await undoHuman(db, {
+        candidateId: id,
+        actorId: reviewerId,
+        undoOf: d,
+      });
+      assert.equal(await candidateStatus(db, id), 'needs_human');
+    }
+    const id = await seed(db, 'needs_human');
+    await decide(db, id, 'approve');
+    const published = await publishAddressReviewCandidate(db, {
+      candidateId: id,
+      source,
+      policy,
+      actorId: reviewerId,
+    });
+    const revoke = crypto.randomUUID();
+    await decide(db, id, 'revoke', { decisionId: revoke });
+    assert.equal((await bindingRows(db, id))[0].stateCause, 'human_revoke');
+    await undoHuman(db, {
+      candidateId: id,
+      actorId: reviewerId,
+      undoOf: revoke,
+    });
+    assert.equal(await candidateStatus(db, id), 'needs_human');
+    assert.equal((await bindingRows(db, id)).length, 1);
+    assert.equal((await bindingRows(db, id))[0].id, published.bindingId);
+    assert.equal((await bindingRows(db, id))[0].state, 'retired');
+    const [row] = await db.query(
+      'SELECT listing FROM directory_overture_private_row WHERE "scanId"=$1',
+      [scanId]
+    );
+    assert.equal(row.listing.reviewed, undefined);
+  })
+);
+
+test(
+  'only the latest non-undone decision is undoable (not_latest)',
+  { skip: !url },
+  withDb(async (db) => {
+    const id = await seed(db, 'needs_human');
+    const first = crypto.randomUUID();
+    await decide(db, id, 'needs_info', { decisionId: first });
+    await decide(db, id, 'reject');
+    await assert.rejects(
+      undoHuman(db, { candidateId: id, actorId: reviewerId, undoOf: first }),
+      rejects409('not_latest')
+    );
+  })
+);
+
+test(
+  'two concurrent decisions on one token: exactly one wins',
+  { skip: !url },
+  withDb(async (db) => {
+    const id = await seed(db, 'needs_human');
+    const seen = (await addressVersionTokens(db, [id])).get(id);
+    const results = await Promise.allSettled([
+      decide(db, id, 'approve', { expectedVersionToken: seen }),
+      decide(db, id, 'reject', { expectedVersionToken: seen }),
+      decide(db, id, 'needs_info', { expectedVersionToken: seen }),
+    ]);
+    assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
+    for (const r of results.filter((r) => r.status === 'rejected'))
+      assert.equal(r.reason.code, 'stale_decision');
+    assert.equal(await decisionCount(db), 1);
+  })
 );

@@ -3,6 +3,8 @@ import {
   assertDirectoryIdentitiesUnfenced,
 } from './account-lifecycle-fence';
 import { reconcileLinkCarries } from './business-link-carry';
+import { identityVersionTokens } from './business-identity-undo';
+import { assertFreshToken } from './review-version';
 
 /**
  * Reviewer/operator identity decisions (S5-item1-business-identity-design.md, 2.5): confirm, retire, merge and
@@ -43,6 +45,8 @@ export interface DecisionInput {
   readonly rows?: readonly DecisionRow[];
   readonly actor: DecisionActor;
   readonly reason: string;
+  /** The item's version token as the reviewer saw it; a mismatch under the locks is a `stale_decision`. */
+  readonly expectedVersionToken: string;
 }
 export interface DecisionResult {
   readonly replayed: boolean;
@@ -145,9 +149,14 @@ export async function decideBusinessIdentity(
           throw Error(INVALID);
         return { replayed: true, businessIds: ids, restoredLinks: 0 };
       }
+      const current = (
+        await identityVersionTokens(tx, input.townId, [input.businessId])
+      ).get(input.businessId);
+      assertFreshToken(input.expectedVersionToken, current as string);
       if (locked.some((b: any) => b.state !== 'active')) throw Error(INVALID);
+      let snapshot: unknown = null;
       await tx.query(
-        `INSERT INTO directory_business_identity_decision (id,"communityId",action,"businessId","otherBusinessId","actorId","actorDomain",reason) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        `INSERT INTO directory_business_identity_decision (id,"communityId",action,"businessId","otherBusinessId","actorId","actorDomain",reason,"createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,clock_timestamp())`,
         [
           input.decisionId,
           input.townId,
@@ -187,11 +196,16 @@ export async function decideBusinessIdentity(
 
       if (input.action === 'confirm') {
         const rows = await tx.query(
-          `SELECT a.id,a."scanId",a."sourceFileRowNumber" FROM directory_business_assertion a JOIN directory_overture_private_policy p ON p."policyId"=a."policyId" AND p.revoked=false
+          `SELECT a.id,a."scanId",a."sourceFileRowNumber",a.confidence,a.evidence FROM directory_business_assertion a JOIN directory_overture_private_policy p ON p."policyId"=a."policyId" AND p.revoked=false
             WHERE a."businessId"=$1 AND a.state='current' ORDER BY a.id`,
           [input.businessId]
         );
         if (!rows.length) throw Error(INVALID);
+        snapshot = rows.map((r: any) => ({
+          id: r.id,
+          confidence: r.confidence,
+          evidence: r.evidence,
+        }));
         for (const row of rows) {
           await tx.query(
             `UPDATE directory_business_assertion SET confidence='confirmed',evidence='reviewer_confirmed' WHERE id=$1`,
@@ -250,11 +264,13 @@ export async function decideBusinessIdentity(
         if (current.some((c: any) => !namedKeys.has(key(c))))
           throw Error(INVALID);
         let primary: string | null = null;
+        const moved: unknown[] = [];
+        snapshot = moved;
         for (const row of [...named].sort((a, b) =>
           key(a).localeCompare(key(b))
         )) {
           const owned = await tx.query(
-            `SELECT id,"policyId" FROM directory_business_assertion WHERE "businessId"=$1 AND "scanId"=$2 AND "sourceFileRowNumber"=$3 AND state IN ('current','superseded') FOR UPDATE`,
+            `SELECT id,"policyId",confidence,evidence FROM directory_business_assertion WHERE "businessId"=$1 AND "scanId"=$2 AND "sourceFileRowNumber"=$3 AND state IN ('current','superseded') FOR UPDATE`,
             [input.businessId, row.scanId, row.sourceFileRowNumber]
           );
           if (owned.length !== 1) throw Error(INVALID);
@@ -266,6 +282,12 @@ export async function decideBusinessIdentity(
             `UPDATE directory_business_assertion SET "businessId"=$2,confidence='confirmed',evidence='reviewer_confirmed' WHERE id=$1`,
             [owned[0].id, fresh.id]
           );
+          moved.push({
+            id: owned[0].id,
+            businessId: fresh.id,
+            confidence: owned[0].confidence,
+            evidence: owned[0].evidence,
+          });
           await event(
             fresh.id,
             'created',
@@ -289,6 +311,11 @@ export async function decideBusinessIdentity(
         );
         await closeCarries(input.businessId);
       }
+      if (snapshot)
+        await tx.query(
+          'UPDATE directory_business_identity_decision SET snapshot=$2::jsonb WHERE id=$1',
+          [input.decisionId, JSON.stringify(snapshot)]
+        );
       return { replayed: false, businessIds: touched, restoredLinks: 0 };
     });
   } catch (error) {

@@ -360,6 +360,10 @@ export class DirectoryAddressReviewCandidate {
 /** Append-only address-review decision, including automated decisions. */
 @Entity({ name: 'directory_address_review_decision' })
 @Index('IDX_directory_address_review_decision_candidate', ['candidateId'])
+@Index('UQ_directory_address_review_decision_undo', ['undoOf'], {
+  unique: true,
+  where: '"undoOf" IS NOT NULL',
+})
 export class DirectoryAddressReviewDecision {
   @PrimaryColumn('uuid', { default: () => 'gen_random_uuid()' }) id!: string;
   @Column('uuid') candidateId!: string;
@@ -378,6 +382,8 @@ export class DirectoryAddressReviewDecision {
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
   @Column({ type: 'timestamptz', nullable: true }) appliedAt!: Date | null;
+  /** A reviewer undo names the human decision it reverses; at most one undo exists per decision. */
+  @Column({ type: 'uuid', nullable: true }) undoOf!: string | null;
 }
 
 /** A page owner requests a match; approval is a separate reviewer decision. */
@@ -692,7 +698,7 @@ export class DirectoryBusinessAssertion {
 )
 @Check(
   'CHK_directory_business_event_kind',
-  `"kind" IN ('created','carried','corroborated','confirmed','unresolved','retired','merged','split')`
+  `"kind" IN ('created','carried','corroborated','confirmed','unresolved','retired','merged','split','undone')`
 )
 export class DirectoryBusinessEvent {
   @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
@@ -769,9 +775,13 @@ export class DirectoryBusinessLinkCarry {
  */
 @Entity({ name: 'directory_business_identity_decision' })
 @Index('IDX_directory_business_identity_decision_business', ['businessId'])
+@Index('UQ_directory_business_identity_decision_undo', ['undoOf'], {
+  unique: true,
+  where: '"undoOf" IS NOT NULL',
+})
 @Check(
   'CHK_directory_business_identity_decision_action',
-  `"action" IN ('confirm','merge','split','retire')`
+  `"action" IN ('confirm','merge','split','retire','undo')`
 )
 export class DirectoryBusinessIdentityDecision {
   @PrimaryColumn('uuid') id!: string;
@@ -784,6 +794,10 @@ export class DirectoryBusinessIdentityDecision {
     | string
     | null;
   @Column({ type: 'varchar', length: 1024 }) reason!: string;
+  /** An `undo` decision names the decision it reverses; at most one undo exists per decision. */
+  @Column({ type: 'uuid', nullable: true }) undoOf!: string | null;
+  /** What the decision overwrote, so an undo can put it back (confirm: prior confidence; split: moved rows). */
+  @Column({ type: 'jsonb', nullable: true }) snapshot!: object | null;
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
 }

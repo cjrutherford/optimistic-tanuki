@@ -279,6 +279,24 @@
           }
         </div>
       </div>
+
+      <div class="candidate-history">
+        <otui-button
+          size="sm"
+          tone="neutral"
+          emphasis="ghost"
+          (click)="toggleHistory(candidate)"
+        >
+          {{ histories[candidate.id] ? 'Hide history' : 'History' }}
+        </otui-button>
+        @if (histories[candidate.id]) {
+        <otui-decision-history
+          [entries]="historyEntries(candidate.id)"
+          [busy]="undoing"
+          (undoConfirmed)="undo(candidate, $event)"
+        ></otui-decision-history>
+        }
+      </div>
     </otui-card>
     }
   </div>

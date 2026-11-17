@@ -5,6 +5,8 @@ const {
   pendingChecks,
   pendingServer,
 } = require('../src/register-pending-runtime');
+const { identityVersionTokens } = require('../src/business-identity-undo');
+const { ReviewConflictError } = require('../src/review-version');
 const id = {
   sourceEpoch: '00000000-0000-4000-8000-000000000001',
   recoveryEpoch: '00000000-0000-4000-8000-000000000002',
@@ -1411,6 +1413,7 @@ test('business identity review transport is credentialed, validated, and maps re
       action: 'confirm',
       businessId: b,
       reason: 'looks right',
+      expectedVersionToken: 'a'.repeat(64),
     };
     assert.equal((await fetch(base)).status, 401);
     assert.equal((await fetch(base, { headers })).status, 200);
@@ -1431,6 +1434,8 @@ test('business identity review transport is credentialed, validated, and maps re
       { ...ok, reason: '   ' },
       { ...ok, reason: 'a'.repeat(1025) },
       { ...ok, actorId: 'nope' },
+      { ...ok, expectedVersionToken: undefined },
+      { ...ok, expectedVersionToken: 'short' },
       { ...ok, otherBusinessId: o },
       { ...ok, rows: [] },
       { ...ok, action: 'merge' },
@@ -1482,6 +1487,19 @@ test('business identity decisions are recorded as a profile actor behind authori
     query: async (sql, params) => {
       if (sql.includes('FROM directory_business WHERE id = ANY'))
         return [{ id: b, state: 'active' }];
+      if (sql.includes('FROM directory_business b WHERE b.id=ANY'))
+        return [
+          {
+            id: b,
+            state: 'active',
+            successorId: null,
+            stateCause: null,
+            retiredAt: null,
+            latest: null,
+            decisions: 0,
+            assertions: '',
+          },
+        ];
       if (sql.includes('INSERT INTO directory_business_identity_decision'))
         inserted = params;
       return [];
@@ -1496,6 +1514,9 @@ test('business identity decisions are recorded as a profile actor behind authori
     () => checks.identityReviewDecision('bad', {}),
     /unavailable/
   );
+  const expectedVersionToken = (await identityVersionTokens(tx, town, [b])).get(
+    b
+  );
   await assert.rejects(
     () =>
       checks.identityReviewDecision(town, {
@@ -1504,11 +1525,104 @@ test('business identity decisions are recorded as a profile actor behind authori
         businessId: b,
         actorId: u,
         reason: 'ok',
+        expectedVersionToken,
       }),
     /Invalid business identity decision/
   );
   assert.equal(inserted[5], u);
   assert.equal(inserted[6], 'profile');
+});
+test('review detail and undo routes are credentialed, validated, and map conflicts to 409 with a code', async () => {
+  const localSecret = 'local-evaluation-secret-1234567890123456';
+  const calls = [];
+  let mode = 'ok';
+  const detail = (kind) => async (t, id) => {
+    calls.push([kind, t, id]);
+    return mode === 'missing' ? null : { id, versionToken: 'a'.repeat(64) };
+  };
+  const undo = (kind) => async (t, id, v) => {
+    calls.push([kind, t, id, v]);
+    if (mode === 'stale') throw new ReviewConflictError('stale_decision');
+    if (mode === 'late') throw new ReviewConflictError('not_latest');
+    if (mode === 'fail') throw Error('boom');
+    return { replayed: false };
+  };
+  const checks = {
+    addressReviewDetail: detail('address'),
+    identityReviewDetail: detail('identity'),
+    addressReviewUndo: undo('address'),
+    identityReviewUndo: undo('identity'),
+  };
+  const server = pendingServer(
+    checks,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    localSecret
+  );
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const root = `http://127.0.0.1:${
+      server.address().port
+    }/internal/local-evaluation/towns/${town}`;
+    const headers = {
+      authorization: `Bearer ${localSecret}`,
+      'content-type': 'application/json',
+    };
+    const item = '00000000-0000-4000-8000-0000000000b1';
+    const u = '00000000-0000-4000-8000-0000000000a1';
+    const body = {
+      decisionId: u,
+      undoOf: u,
+      actorId: u,
+      reason: 'wrong call',
+      expectedVersionToken: 'a'.repeat(64),
+    };
+    for (const kind of [
+      'address-review-candidates',
+      'business-identity-review',
+    ]) {
+      const url = `${root}/${kind}/${item}`;
+      assert.equal((await fetch(url)).status, 401);
+      mode = 'ok';
+      const got = await fetch(url, { headers });
+      assert.equal(got.status, 200);
+      assert.equal((await got.json()).versionToken, 'a'.repeat(64));
+      mode = 'missing';
+      assert.equal((await fetch(url, { headers })).status, 404);
+      const post = (b) =>
+        fetch(`${url}/undo`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(b),
+        });
+      assert.equal(
+        (await fetch(`${url}/undo`, { method: 'POST', body: '{}' })).status,
+        401
+      );
+      for (const bad of [
+        { ...body, expectedVersionToken: undefined },
+        { ...body, undoOf: 'nope' },
+        { ...body, decisionId: undefined },
+        { ...body, reason: ' ' },
+        { ...body, actorId: 'x' },
+      ])
+        assert.equal((await post(bad)).status, 400, JSON.stringify(bad));
+      mode = 'ok';
+      assert.equal((await post(body)).status, 200);
+      mode = 'stale';
+      const stale = await post(body);
+      assert.equal(stale.status, 409);
+      assert.deepEqual(await stale.json(), { code: 'stale_decision' });
+      mode = 'late';
+      assert.deepEqual(await (await post(body)).json(), { code: 'not_latest' });
+      mode = 'fail';
+      assert.equal((await post(body)).status, 503);
+    }
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 const S = {
   review: 'review-secret-0123456789012345678901',
@@ -1530,6 +1644,10 @@ const routes = [
   ['GET', `${L}/listings/${ref}`, 'local'],
   ['GET', `${L}/address-review-candidates`, 'local'],
   ['POST', `${L}/address-review-candidates/${ref}/decisions`, 'local'],
+  ['GET', `${L}/address-review-candidates/${ref}`, 'local'],
+  ['POST', `${L}/address-review-candidates/${ref}/undo`, 'local'],
+  ['GET', `${L}/business-identity-review/${ref}`, 'local'],
+  ['POST', `${L}/business-identity-review/${ref}/undo`, 'local'],
   ['GET', `${L}/business-identity-review`, 'local'],
   ['POST', `${L}/business-identity-review/decisions`, 'local'],
   ['GET', `${L}/listing-suppressions`, 'local'],

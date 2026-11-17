@@ -11,11 +11,13 @@ const {
 } = require('../src/address-review');
 const {
   listAddressReviewCandidates,
-  recordHumanAddressReviewDecision,
   storeAddressReviewCandidate,
   updateAddressReviewEvidence,
   archiveUnanchoredAddressReviewCandidate,
 } = require('../src/address-review-store');
+const {
+  recordHuman: recordHumanAddressReviewDecision,
+} = require('./review-test-helpers');
 
 const url = process.env.DIRECTORY_TEST_DATABASE_URL;
 const communityId = '00000000-0000-4000-8000-000000000001';

@@ -1,10 +1,12 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   ForbiddenException,
   Get,
   Header,
+  NotFoundException,
   Param,
   Post,
   Query,
@@ -19,6 +21,13 @@ import { DIRECTORY_PERMISSIONS } from '@optimistic-tanuki/social-contracts';
 import { DirectoryOwnerScopeGuard } from './directory.controller';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const hex64 = /^[0-9a-f]{64}$/;
+const conflictCodes = new Set([
+  'stale_decision',
+  'not_latest',
+  'decision_conflict',
+  'invalid_state',
+]);
 const statuses = new Set([
   'needs_human',
   'auto_approved',
@@ -92,7 +101,53 @@ export class DirectoryAddressReviewController {
       status: row.status,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      versionToken: this.token(row.versionToken),
     };
+  }
+
+  private token(value: unknown): string {
+    if (typeof value !== 'string' || !hex64.test(value)) {
+      throw new ServiceUnavailableException('Address review unavailable');
+    }
+    return value;
+  }
+
+  /** A 409 from the Directory carries a machine code the Owner Console reacts to; nothing else crosses. */
+  private async conflict(response: Response): Promise<never> {
+    let code = 'invalid_state';
+    try {
+      const body = await response.json();
+      if (typeof body?.code === 'string' && conflictCodes.has(body.code))
+        code = body.code;
+    } catch {
+      // keep the generic code
+    }
+    throw new ConflictException({ code, message: 'Decision refused' });
+  }
+
+  private history(rows: unknown): Array<Record<string, unknown>> {
+    if (!Array.isArray(rows) || rows.length > 500) {
+      throw new ServiceUnavailableException('Address review unavailable');
+    }
+    return rows.map((d: any) => {
+      if (
+        !d ||
+        !uuid.test(d.decisionId || '') ||
+        typeof d.decision !== 'string'
+      )
+        throw new ServiceUnavailableException('Address review unavailable');
+      return {
+        decisionId: d.decisionId,
+        actorKind: d.actorKind,
+        actorId: d.actorId,
+        decision: d.decision,
+        reason: d.reason ?? null,
+        createdAt: d.createdAt,
+        undoOf: d.undoOf ?? null,
+        undoneBy: d.undoneBy ?? null,
+        reversible: d.reversible === true,
+      };
+    });
   }
 
   @Get()
@@ -158,7 +213,7 @@ export class DirectoryAddressReviewController {
     @Param('candidateId') candidateId: string,
     @Body() body: any,
     @Req() req: RequestUser
-  ): Promise<{ recorded: true; status: string }> {
+  ): Promise<{ recorded: true; status: string; replayed: boolean }> {
     this.town(town);
     if (!uuid.test(candidateId)) {
       throw new BadRequestException('Invalid candidate');
@@ -174,6 +229,9 @@ export class DirectoryAddressReviewController {
         body.evidenceUrl !== '' &&
         (typeof body.evidenceUrl !== 'string' ||
           body.evidenceUrl.length > 2048)) ||
+      !uuid.test(body.decisionId ?? '') ||
+      typeof body.expectedVersionToken !== 'string' ||
+      !hex64.test(body.expectedVersionToken) ||
       (body.decision === 'approve' &&
         (typeof body.evidenceUrl !== 'string' || !body.evidenceUrl.trim())) ||
       (body.evidenceHash !== undefined &&
@@ -203,6 +261,8 @@ export class DirectoryAddressReviewController {
           },
           body: JSON.stringify({
             actorId: reviewerId,
+            decisionId: body.decisionId,
+            expectedVersionToken: body.expectedVersionToken,
             decision: body.decision,
             evidenceUrl: body.evidenceUrl,
             evidenceHash: body.evidenceHash,
@@ -214,11 +274,124 @@ export class DirectoryAddressReviewController {
           redirect: 'error',
         }
       );
+      if (response.status === 409) return await this.conflict(response);
       if (!response.ok) throw Error();
       const result = await response.json();
       if (typeof result?.status !== 'string') throw Error();
-      return { recorded: true, status: result.status };
+      return {
+        recorded: true,
+        status: result.status,
+        replayed: result.replayed === true,
+      };
+    } catch (error) {
+      if (error instanceof ConflictException) throw error;
+      throw new ServiceUnavailableException('Address review unavailable');
+    }
+  }
+
+  @Get(':candidateId')
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.review)
+  @Header('Cache-Control', 'no-store')
+  async detail(
+    @Param('townId') town: string,
+    @Param('candidateId') candidateId: string,
+    @Req() req: RequestUser
+  ): Promise<Record<string, unknown>> {
+    this.town(town);
+    if (!uuid.test(candidateId)) {
+      throw new BadRequestException('Invalid candidate');
+    }
+    this.reviewer(req);
+    const { base, secret } = this.config();
+    let response: Response;
+    try {
+      response = await fetch(
+        `${base}/internal/local-evaluation/towns/${town}/address-review-candidates/${candidateId}`,
+        {
+          headers: { authorization: `Bearer ${secret}` },
+          signal: AbortSignal.timeout(5000),
+          redirect: 'error',
+        }
+      );
     } catch {
+      throw new ServiceUnavailableException('Address review unavailable');
+    }
+    if (response.status === 404)
+      throw new NotFoundException('Candidate not found');
+    try {
+      if (!response.ok) throw Error();
+      const row = await response.json();
+      return {
+        ...this.candidate(row, town),
+        history: this.history(row.history),
+      };
+    } catch {
+      throw new ServiceUnavailableException('Address review unavailable');
+    }
+  }
+
+  @Post(':candidateId/undo')
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.review)
+  @Header('Cache-Control', 'no-store')
+  async undo(
+    @Param('townId') town: string,
+    @Param('candidateId') candidateId: string,
+    @Body() body: any,
+    @Req() req: RequestUser
+  ): Promise<{ recorded: true; status: string; replayed: boolean }> {
+    this.town(town);
+    if (!uuid.test(candidateId)) {
+      throw new BadRequestException('Invalid candidate');
+    }
+    const reviewerId = this.reviewer(req);
+    if (
+      !body ||
+      typeof body !== 'object' ||
+      Array.isArray(body) ||
+      !uuid.test(body.decisionId ?? '') ||
+      !uuid.test(body.undoOf ?? '') ||
+      typeof body.expectedVersionToken !== 'string' ||
+      !hex64.test(body.expectedVersionToken) ||
+      typeof body.reason !== 'string' ||
+      !body.reason.trim() ||
+      body.reason.length > 1024
+    ) {
+      throw new BadRequestException('Invalid address review undo');
+    }
+    const { base, secret } = this.config();
+    try {
+      const response = await fetch(
+        `${base}/internal/local-evaluation/towns/${town}/address-review-candidates/${candidateId}/undo`,
+        {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${secret}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            actorId: reviewerId,
+            decisionId: body.decisionId,
+            undoOf: body.undoOf,
+            expectedVersionToken: body.expectedVersionToken,
+            reason: body.reason,
+          }),
+          signal: AbortSignal.timeout(5000),
+          redirect: 'error',
+        }
+      );
+      if (response.status === 409) return await this.conflict(response);
+      if (!response.ok) throw Error();
+      const result = await response.json();
+      if (typeof result?.status !== 'string') throw Error();
+      return {
+        recorded: true,
+        status: result.status,
+        replayed: result.replayed === true,
+      };
+    } catch (error) {
+      if (error instanceof ConflictException) throw error;
       throw new ServiceUnavailableException('Address review unavailable');
     }
   }

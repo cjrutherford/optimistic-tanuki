@@ -10,6 +10,7 @@ const {
 } = require('../src/listing-business-link');
 const { stageLinkCarries } = require('../src/business-link-carry');
 const { decideBusinessIdentity } = require('../src/business-identity-decision');
+const { identityVersionTokens } = require('../src/business-identity-undo');
 const {
   deletionIdentityKey,
 } = require('../../../libs/storage/src/lib/account-deletion-write-fence');
@@ -30,12 +31,16 @@ const scanA = f.hex('c'),
 const rows = (...ids) =>
   ids.map((id, i) => ({ n: i + 1, id, name: `Biz ${id}` }));
 const actor = { id: reviewer, domain: 'profile' };
-const decide = (db, o) =>
+const decide = async (db, o) =>
   decideBusinessIdentity(db, {
     decisionId: randomUUID(),
     townId: town,
     actor,
     reason: 'reviewed by hand',
+    expectedVersionToken:
+      (await identityVersionTokens(db, o.townId ?? town, [o.businessId])).get(
+        o.businessId
+      ) ?? 'f'.repeat(64),
     ...o,
   });
 const biz = async (db, scan, n) =>

@@ -88,7 +88,56 @@ Back and forward inside the 60 second window still restore instantly. Past it, t
 
 ## 5. Review
 
-Placeholder. S7b: reviewer queue summary, assignment, and the review workflow across identity, address, link and boundary.
+S7b makes every review decision version-checked, idempotent, recorded in a history, and reversible where that is safe.
+
+### POC to target mapping
+
+| POC (`directory-api/review`)                     | Target (gateway, then internal)                                                                                                                          |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /review` (list)                             | `GET business-identity-review`, `GET address-review-candidates`; each row carries `versionToken`                                                         |
+| `GET /review/:id` (detail)                       | `GET business-identity-review/:businessId`, `GET address-review-candidates/:candidateId`; detail plus `history`                                          |
+| `POST /review/:id/decisions` (202, 409 on stale) | `POST .../decisions`; body carries `expectedVersionToken` and `decisionId`; 409 `stale_decision` or `decision_conflict`; replay returns `replayed: true` |
+| `POST /review/:id/undo` (merge event only)       | `POST .../:id/undo` with `{ undoOf, expectedVersionToken, decisionId, reason }`; identity and address                                                    |
+| POC `versionToken` on a task row                 | `versionToken`: sha256 hex of the item state, opaque to clients                                                                                          |
+| POC `eventId` idempotency                        | client `decisionId` (primary key of the decision row)                                                                                                    |
+
+All gateway routes use AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard and `RequirePermissions(DIRECTORY_PERMISSIONS.review)`, and are listed in `reviewRoutes` in `directory.scope-matrix.spec.ts`.
+
+### Rules
+
+- A decision or undo without a well-formed `expectedVersionToken` is a 400. A token that no longer matches is a 409 `stale_decision` with no write. The check runs under the locks (fence, then town advisory lock, then business rows), so it cannot race a concurrent write.
+- `decisionId` is idempotent. The same id with the same payload replays the recorded result (`replayed: true`). The same id with a different payload is 409 `decision_conflict`.
+- Only the latest non-undone decision is undoable; anything else is 409 `not_latest`. A decision whose resulting state no longer matches (for example a later publish) is also `not_latest`.
+- An undo appends an inverse audit event and marks the original decision undone (`undoOf` with a partial unique index, so at most one undo per decision). Nothing is deleted.
+- Of concurrent decisions on one token exactly one wins; the rest get `stale_decision`.
+- Owner Console sends the token, shows "This item changed since you opened it" and reloads on a stale 409, and shows a per-item history panel (shared `otui-decision-history` in common-ui) with an Undo button and a required reason on the latest reversible decision.
+
+### Reversibility
+
+| Decision                   | Undo result                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| Identity merge             | merged business restored (public detail of both businesses returns to pre-merge)     |
+| Identity retire            | business reactivated                                                                 |
+| Identity confirm           | returns to review                                                                    |
+| Address reject, needs_info | returns to `needs_human`                                                             |
+| Address approve, publish   | equals revoke: pin and reviewed fields removed, binding retired (cause `human_undo`) |
+| Address revoke             | returns to `needs_human`; never republishes                                          |
+
+Not reversed by undo:
+
+- Link carries closed by a merge or retire stay closed.
+- Owner links restored by a confirm persist.
+- Re-confirming after an undo can skip a second `confirmed` event (unique key, DO NOTHING); the decision row is still written.
+- Publication is never restored automatically; a human must re-approve.
+
+Migration `1794946949693-DirectoryFoundation` adds the `undoOf` columns, a snapshot column, two partial unique indexes and replacement CHECK constraints (generated, with the CHECK changes added by hand because generate does not diff CHECKs). It must be applied to live databases at deploy.
+
+### Tests
+
+- `apps/directory/test/identity-review-undo.postgres.test.js`: stale token, replay and conflict, merge-then-undo public detail, retire/confirm undo, `not_latest`, concurrent single winner, queue token equals detail token.
+- `apps/directory/test/address-review-publish.postgres.test.js`: stale token, replay and conflict, approve-publish-then-undo removes pin and fields, reject/needs_info/revoke undo with no republish, `not_latest`, concurrency.
+- `apps/directory/test/reviewed-binding-race.postgres.test.js`, `register-pending-runtime.test.js`, `account-lifecycle.test.js`: updated for tokens.
+- Gateway controller specs and scope matrix; Owner Console page specs; `decision-history.component.spec.ts`.
 
 ## 6. Rights
 

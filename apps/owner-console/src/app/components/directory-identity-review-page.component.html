@@ -183,6 +183,24 @@
       </div>
     </form>
     }
+
+    <div class="history-section">
+      <otui-button
+        size="sm"
+        tone="neutral"
+        emphasis="ghost"
+        (click)="toggleHistory(businessId)"
+      >
+        {{ histories[businessId] ? 'Hide history' : 'History' }}
+      </otui-button>
+      @if (histories[businessId]) {
+      <otui-decision-history
+        [entries]="historyEntries(businessId)"
+        [busy]="undoing"
+        (undoConfirmed)="undo(businessId, $event)"
+      ></otui-decision-history>
+      }
+    </div>
   </otui-card>
   } @if (!businesses().length) {
   <otui-empty-state

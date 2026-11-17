@@ -6,6 +6,7 @@ import {
   ForbiddenException,
   Get,
   Header,
+  NotFoundException,
   Param,
   Post,
   Req,
@@ -29,6 +30,12 @@ const healthKeys = [
   'carryIncomplete',
   'carriedUnbound',
 ] as const;
+const conflictCodes = new Set([
+  'stale_decision',
+  'not_latest',
+  'decision_conflict',
+  'invalid_state',
+]);
 const actions = ['confirm', 'retire', 'merge', 'split'];
 type RequestUser = { user?: { profileId?: string } };
 type Unavailable = ServiceUnavailableException;
@@ -81,6 +88,71 @@ export class DirectoryBusinessIdentityReviewController {
     return typeof value === 'string' && rowNumber.test(value);
   }
 
+  private versionToken(value: unknown): string {
+    if (typeof value !== 'string' || !hex64.test(value)) {
+      throw this.unavailable();
+    }
+    return value;
+  }
+
+  /** A 409 from the Directory carries a machine code the Owner Console reacts to; nothing else crosses. */
+  private async conflict(response: Response): Promise<never> {
+    let code = 'invalid_state';
+    try {
+      const body = await response.json();
+      if (typeof body?.code === 'string' && conflictCodes.has(body.code))
+        code = body.code;
+    } catch {
+      // keep the generic code
+    }
+    throw new ConflictException({ code, message: 'Decision refused' });
+  }
+
+  private item(r: any, id: string): Record<string, unknown> {
+    if (
+      !r ||
+      r.businessId !== id ||
+      typeof r.state !== 'string' ||
+      !Array.isArray(r.history) ||
+      r.history.length > 500 ||
+      !Array.isArray(r.assertions) ||
+      r.assertions.length > 500
+    ) {
+      throw this.unavailable();
+    }
+    return {
+      businessId: r.businessId,
+      state: r.state,
+      successorId: r.successorId ?? null,
+      stateCause: r.stateCause ?? null,
+      versionToken: this.versionToken(r.versionToken),
+      assertions: r.assertions.map((a: any) => ({
+        id: a?.id,
+        scanId: a?.scanId,
+        sourceFileRowNumber: a?.sourceFileRowNumber,
+        confidence: a?.confidence,
+        state: a?.state,
+      })),
+      history: r.history.map((d: any) => {
+        if (!d || !this.isUuid(d.decisionId) || typeof d.action !== 'string')
+          throw this.unavailable();
+        return {
+          decisionId: d.decisionId,
+          action: d.action,
+          businessId: d.businessId,
+          otherBusinessId: d.otherBusinessId ?? null,
+          actorId: d.actorId,
+          actorDomain: d.actorDomain,
+          reason: d.reason ?? null,
+          createdAt: d.createdAt,
+          undoOf: d.undoOf ?? null,
+          undoneBy: d.undoneBy ?? null,
+          reversible: d.reversible === true,
+        };
+      }),
+    };
+  }
+
   private list<T>(value: unknown, map: (row: any) => T): T[] {
     if (!Array.isArray(value) || value.length > 100) throw this.unavailable();
     return value.map(map);
@@ -110,6 +182,7 @@ export class DirectoryBusinessIdentityReviewController {
         businessId: r.businessId,
         scanId: r.scanId,
         sourceFileRowNumber: r.sourceFileRowNumber,
+        versionToken: this.versionToken(r.versionToken),
       };
     };
     return {
@@ -135,6 +208,7 @@ export class DirectoryBusinessIdentityReviewController {
             carryId: r.carryId,
             requestId: r.requestId,
             businessId: r.businessId,
+            versionToken: this.versionToken(r.versionToken),
           };
         }),
       },
@@ -191,6 +265,8 @@ export class DirectoryBusinessIdentityReviewController {
       Array.isArray(body) ||
       body.attested !== true ||
       !this.isUuid(body.decisionId) ||
+      typeof body.expectedVersionToken !== 'string' ||
+      !hex64.test(body.expectedVersionToken) ||
       !actions.includes(body.action) ||
       !this.isUuid(body.businessId) ||
       typeof body.reason !== 'string' ||
@@ -232,6 +308,7 @@ export class DirectoryBusinessIdentityReviewController {
           body: JSON.stringify({
             actorId: reviewerId,
             decisionId: body.decisionId,
+            expectedVersionToken: body.expectedVersionToken,
             action: body.action,
             businessId: body.businessId,
             otherBusinessId: body.otherBusinessId,
@@ -248,8 +325,7 @@ export class DirectoryBusinessIdentityReviewController {
     } catch {
       throw this.unavailable();
     }
-    if (response.status === 409)
-      throw new ConflictException('Decision refused');
+    if (response.status === 409) return this.conflict(response);
     try {
       if (!response.ok) throw Error();
       const result = await response.json();
@@ -266,6 +342,107 @@ export class DirectoryBusinessIdentityReviewController {
         businesses: result.businesses,
         restoredLinks: result.restoredLinks,
       };
+    } catch {
+      throw this.unavailable();
+    }
+  }
+
+  @Get(':businessId')
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.review)
+  @Header('Cache-Control', 'no-store')
+  async detail(
+    @Param('townId') town: string,
+    @Param('businessId') businessId: string,
+    @Req() req: RequestUser
+  ): Promise<Record<string, unknown>> {
+    this.town(town);
+    if (!this.isUuid(businessId))
+      throw new BadRequestException('Invalid business');
+    this.reviewer(req);
+    const { base, secret } = this.config();
+    let response: Response;
+    try {
+      response = await fetch(
+        `${base}/internal/local-evaluation/towns/${town}/business-identity-review/${businessId}`,
+        {
+          headers: { authorization: `Bearer ${secret}` },
+          signal: AbortSignal.timeout(5000),
+          redirect: 'error',
+        }
+      );
+    } catch {
+      throw this.unavailable();
+    }
+    if (response.status === 404)
+      throw new NotFoundException('Business not found');
+    try {
+      if (!response.ok) throw Error();
+      return this.item(await response.json(), businessId);
+    } catch {
+      throw this.unavailable();
+    }
+  }
+
+  @Post(':businessId/undo')
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.review)
+  @Header('Cache-Control', 'no-store')
+  async undo(
+    @Param('townId') town: string,
+    @Param('businessId') businessId: string,
+    @Body() body: any,
+    @Req() req: RequestUser
+  ): Promise<{ recorded: true; replayed: boolean }> {
+    this.town(town);
+    if (!this.isUuid(businessId))
+      throw new BadRequestException('Invalid business');
+    const reviewerId = this.reviewer(req);
+    if (
+      !body ||
+      typeof body !== 'object' ||
+      Array.isArray(body) ||
+      !this.isUuid(body.decisionId) ||
+      !this.isUuid(body.undoOf) ||
+      typeof body.expectedVersionToken !== 'string' ||
+      !hex64.test(body.expectedVersionToken) ||
+      typeof body.reason !== 'string' ||
+      !body.reason.trim() ||
+      body.reason.length > 1024
+    ) {
+      throw new BadRequestException('Invalid business identity undo');
+    }
+    const { base, secret } = this.config();
+    let response: Response;
+    try {
+      response = await fetch(
+        `${base}/internal/local-evaluation/towns/${town}/business-identity-review/${businessId}/undo`,
+        {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${secret}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            actorId: reviewerId,
+            decisionId: body.decisionId,
+            undoOf: body.undoOf,
+            expectedVersionToken: body.expectedVersionToken,
+            reason: body.reason,
+          }),
+          signal: AbortSignal.timeout(5000),
+          redirect: 'error',
+        }
+      );
+    } catch {
+      throw this.unavailable();
+    }
+    if (response.status === 409) return this.conflict(response);
+    try {
+      if (!response.ok) throw Error();
+      const result = await response.json();
+      if (typeof result?.replayed !== 'boolean') throw Error();
+      return { recorded: true, replayed: result.replayed };
     } catch {
       throw this.unavailable();
     }

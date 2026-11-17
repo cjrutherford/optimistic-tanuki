@@ -3,6 +3,8 @@
  * queue for carries that need a person. Health is counts only (no ids, no keys, no names) and is a label: it never
  * changes readiness. The queue returns business ids and row coordinates for an operator; it is not a public route.
  */
+import { identityVersionTokens } from './business-identity-undo';
+
 type Q = { query(sql: string, params?: unknown[]): Promise<any[]> };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -62,17 +64,20 @@ export interface IdentityReviewQueue {
     businessId: string;
     scanId: string;
     sourceFileRowNumber: string;
+    versionToken: string | null;
   }>;
   readonly unresolved: ReadonlyArray<{
     businessId: string;
     scanId: string;
     sourceFileRowNumber: string;
     cause: string;
+    versionToken: string | null;
   }>;
   readonly awaitingOwner: ReadonlyArray<{
     carryId: string;
     requestId: string;
     businessId: string;
+    versionToken: string | null;
   }>;
 }
 
@@ -95,5 +100,16 @@ export async function listIdentityReviewQueue(
       WHERE r."townId"=$1 AND c.state='awaiting_confirmation' ORDER BY c.id LIMIT 100`,
     [townId]
   );
-  return { carriedUnbound, unresolved, awaitingOwner };
+  const tokens = await identityVersionTokens(db, townId, [
+    ...carriedUnbound.map((r) => r.businessId),
+    ...unresolved.map((r) => r.businessId),
+    ...awaitingOwner.map((r) => r.businessId),
+  ]);
+  const withToken = <T extends { businessId: string }>(rows: T[]) =>
+    rows.map((r) => ({ ...r, versionToken: tokens.get(r.businessId) ?? null }));
+  return {
+    carriedUnbound: withToken(carriedUnbound),
+    unresolved: withToken(unresolved),
+    awaitingOwner: withToken(awaitingOwner),
+  };
 }

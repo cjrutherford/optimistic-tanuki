@@ -161,3 +161,105 @@ export const DIRECTORY_PERMISSIONS = {
 } as const;
 export type DirectoryPermission =
   (typeof DIRECTORY_PERMISSIONS)[keyof typeof DIRECTORY_PERMISSIONS];
+
+/** Machine codes a review decision or undo can be refused with (HTTP 409). */
+export type DirectoryReviewConflictCode =
+  | 'stale_decision'
+  | 'not_latest'
+  | 'decision_conflict'
+  | 'invalid_state';
+
+/** The body of a 409 from a review decision or undo route. */
+export interface DirectoryReviewConflict {
+  code: DirectoryReviewConflictCode;
+  message: string;
+}
+
+/** An undo names the decision it reverses; only the latest non-undone decision is reversible. */
+export interface DirectoryReviewUndoRequest {
+  /** New client-generated id; a retry with the same id and payload replays. */
+  decisionId: string;
+  undoOf: string;
+  /** The item's `versionToken` as the reviewer last saw it. */
+  expectedVersionToken: string;
+  reason: string;
+}
+
+export interface DirectoryReviewHistoryEntry {
+  decisionId: string;
+  actorId: string;
+  reason: string | null;
+  createdAt: string;
+  /** Set on an undo entry: the decision it reverses. */
+  undoOf: string | null;
+  /** Set on a reversed decision: the undo that reversed it. */
+  undoneBy: string | null;
+  /** True only on the latest non-undone decision. */
+  reversible: boolean;
+}
+
+export type BusinessIdentityReviewAction =
+  | 'confirm'
+  | 'retire'
+  | 'merge'
+  | 'split'
+  | 'undo';
+
+export interface BusinessIdentityHistoryEntry
+  extends DirectoryReviewHistoryEntry {
+  action: BusinessIdentityReviewAction;
+  businessId: string;
+  otherBusinessId: string | null;
+  actorDomain: string;
+}
+
+export interface BusinessIdentityReviewDetail {
+  businessId: string;
+  state: 'active' | 'retired' | 'merged' | 'split';
+  successorId: string | null;
+  stateCause: string | null;
+  versionToken: string;
+  history: BusinessIdentityHistoryEntry[];
+}
+
+/** Every identity decision carries the version token of the business it decides. */
+export interface BusinessIdentityDecisionRequest {
+  decisionId: string;
+  expectedVersionToken: string;
+  action: Exclude<BusinessIdentityReviewAction, 'undo'>;
+  businessId: string;
+  otherBusinessId?: string;
+  rows?: Array<{ scanId: string; sourceFileRowNumber: string }>;
+  reason: string;
+  attested: true;
+}
+
+export type AddressReviewDecision =
+  | 'approve'
+  | 'reject'
+  | 'needs_info'
+  | 'revoke'
+  | 'undo';
+
+export interface AddressReviewHistoryEntry extends DirectoryReviewHistoryEntry {
+  actorKind: string;
+  decision: AddressReviewDecision;
+}
+
+export interface AddressReviewCandidateDetail {
+  id: string;
+  status: string;
+  versionToken: string;
+  history: AddressReviewHistoryEntry[];
+}
+
+/** Every address decision has a client id (idempotent) and the candidate's version token. */
+export interface AddressReviewDecisionRequest {
+  decisionId: string;
+  expectedVersionToken: string;
+  decision: Exclude<AddressReviewDecision, 'undo'>;
+  evidenceUrl?: string;
+  evidenceHash?: string;
+  reason?: string;
+  attested: true;
+}

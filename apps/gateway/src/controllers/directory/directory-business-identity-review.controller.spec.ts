@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { DirectoryBusinessIdentityReviewController } from './directory-business-identity-review.controller';
@@ -12,6 +13,7 @@ const other = 'c52cfef1-9180-46ba-96d8-cca7149f9bdf';
 const decisionId = 'd52cfef1-9180-46ba-96d8-cca7149f9bdf';
 const reviewerId = '11111111-1111-4111-8111-111111111111';
 const secret = 'x'.repeat(32);
+const vt = 'a'.repeat(64);
 const req = { user: { profileId: reviewerId } };
 const health = {
   unresolved: 1,
@@ -53,6 +55,7 @@ describe('DirectoryBusinessIdentityReviewController', () => {
           businessId: business,
           scanId: 'a'.repeat(64),
           sourceFileRowNumber: '4',
+          versionToken: vt,
           secret: 'no',
         },
       ],
@@ -61,11 +64,17 @@ describe('DirectoryBusinessIdentityReviewController', () => {
           businessId: business,
           scanId: 'scan-1',
           sourceFileRowNumber: '5',
+          versionToken: vt,
           cause: 'duplicate_key',
         },
       ],
       awaitingOwner: [
-        { carryId: other, requestId: decisionId, businessId: business },
+        {
+          carryId: other,
+          requestId: decisionId,
+          businessId: business,
+          versionToken: vt,
+        },
       ],
     },
   });
@@ -84,6 +93,7 @@ describe('DirectoryBusinessIdentityReviewController', () => {
         businessId: business,
         scanId: 'a'.repeat(64),
         sourceFileRowNumber: '4',
+        versionToken: vt,
       },
     ]);
     expect(result.queue.unresolved[0].cause).toBe('duplicate_key');
@@ -148,6 +158,7 @@ describe('DirectoryBusinessIdentityReviewController', () => {
       town,
       {
         decisionId,
+        expectedVersionToken: vt,
         action: 'merge',
         businessId: business,
         otherBusinessId: other,
@@ -168,6 +179,7 @@ describe('DirectoryBusinessIdentityReviewController', () => {
     expect(sent).toEqual({
       actorId: reviewerId,
       decisionId,
+      expectedVersionToken: vt,
       action: 'merge',
       businessId: business,
       otherBusinessId: other,
@@ -189,6 +201,7 @@ describe('DirectoryBusinessIdentityReviewController', () => {
       town,
       {
         decisionId,
+        expectedVersionToken: vt,
         action: 'split',
         businessId: business,
         rows,
@@ -207,6 +220,7 @@ describe('DirectoryBusinessIdentityReviewController', () => {
     const controller = new DirectoryBusinessIdentityReviewController();
     const ok = {
       decisionId,
+      expectedVersionToken: vt,
       action: 'confirm',
       businessId: business,
       reason: 'ok',
@@ -228,6 +242,8 @@ describe('DirectoryBusinessIdentityReviewController', () => {
         rows: [{ scanId: 's', sourceFileRowNumber: 'x' }],
       },
       { ...ok, decisionId: 'nope' },
+      { ...ok, expectedVersionToken: undefined },
+      { ...ok, expectedVersionToken: 'short' },
     ];
     for (const bad of bads) {
       await expect(controller.decide(town, bad, req)).rejects.toBeInstanceOf(
@@ -241,11 +257,20 @@ describe('DirectoryBusinessIdentityReviewController', () => {
     const controller = new DirectoryBusinessIdentityReviewController();
     const input = {
       decisionId,
+      expectedVersionToken: vt,
       action: 'retire',
       businessId: business,
       reason: 'closed',
       attested: true,
     };
+    jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ code: 'stale_decision' }), {
+        status: 409,
+      })
+    );
+    await expect(controller.decide(town, input, req)).rejects.toMatchObject({
+      response: { code: 'stale_decision' },
+    });
     jest
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response('', { status: 409 }));
@@ -262,5 +287,131 @@ describe('DirectoryBusinessIdentityReviewController', () => {
     await expect(controller.decide(town, input, req)).rejects.toBeInstanceOf(
       ServiceUnavailableException
     );
+  });
+
+  describe('detail and undo', () => {
+    const detail = () => ({
+      businessId: business,
+      state: 'active',
+      successorId: null,
+      stateCause: null,
+      versionToken: vt,
+      secret: 'no',
+      assertions: [
+        {
+          id: other,
+          scanId: 's',
+          sourceFileRowNumber: '1',
+          confidence: 'probable',
+          state: 'current',
+          raw: 'no',
+        },
+      ],
+      history: [
+        {
+          decisionId,
+          action: 'retire',
+          businessId: business,
+          otherBusinessId: null,
+          actorId: reviewerId,
+          actorDomain: 'profile',
+          reason: 'closed',
+          createdAt: '2026-11-17T00:00:00Z',
+          undoOf: null,
+          undoneBy: null,
+          reversible: true,
+          internal: 'no',
+        },
+      ],
+    });
+    const undoBody = {
+      decisionId: other,
+      undoOf: decisionId,
+      expectedVersionToken: vt,
+      reason: 'wrong shop',
+    };
+
+    it('returns the item with its history and strips undocumented fields', async () => {
+      const fetcher = jest
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(
+          new Response(JSON.stringify(detail()), { status: 200 })
+        );
+      const result: any =
+        await new DirectoryBusinessIdentityReviewController().detail(
+          town,
+          business,
+          req
+        );
+      expect(fetcher.mock.calls[0][0]).toBe(
+        `http://directory:3120/internal/local-evaluation/towns/${town}/business-identity-review/${business}`
+      );
+      expect(result.versionToken).toBe(vt);
+      expect(result.history[0]).not.toHaveProperty('internal');
+      expect(result.history[0].reversible).toBe(true);
+      expect(result.assertions[0]).not.toHaveProperty('raw');
+      expect(result).not.toHaveProperty('secret');
+    });
+
+    it('maps a missing item to 404 and a bad id to 400', async () => {
+      const controller = new DirectoryBusinessIdentityReviewController();
+      jest
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(new Response('', { status: 404 }));
+      await expect(
+        controller.detail(town, business, req)
+      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(controller.detail(town, 'nope', req)).rejects.toBeInstanceOf(
+        BadRequestException
+      );
+    });
+
+    it('forwards an undo with the reviewer id and passes a 409 code through', async () => {
+      const controller = new DirectoryBusinessIdentityReviewController();
+      const fetcher = jest
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(
+          new Response(JSON.stringify({ replayed: false }), { status: 200 })
+        );
+      expect(await controller.undo(town, business, undoBody, req)).toEqual({
+        recorded: true,
+        replayed: false,
+      });
+      const sent = JSON.parse(
+        (fetcher.mock.calls[0][1] as RequestInit).body as string
+      );
+      expect(sent).toEqual({ actorId: reviewerId, ...undoBody });
+      expect(fetcher.mock.calls[0][0]).toBe(
+        `http://directory:3120/internal/local-evaluation/towns/${town}/business-identity-review/${business}/undo`
+      );
+      jest
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(
+          new Response(JSON.stringify({ code: 'not_latest' }), { status: 409 })
+        );
+      await expect(
+        controller.undo(town, business, undoBody, req)
+      ).rejects.toMatchObject({ response: { code: 'not_latest' } });
+    });
+
+    it('rejects a malformed undo without calling the directory', async () => {
+      const fetcher = jest.spyOn(globalThis, 'fetch');
+      const controller = new DirectoryBusinessIdentityReviewController();
+      for (const bad of [
+        { ...undoBody, reason: ' ' },
+        { ...undoBody, undoOf: 'x' },
+        { ...undoBody, decisionId: undefined },
+        { ...undoBody, expectedVersionToken: 'x' },
+        null,
+      ]) {
+        await expect(
+          controller.undo(town, business, bad, req)
+        ).rejects.toBeInstanceOf(BadRequestException);
+      }
+      await expect(
+        controller.undo(town, business, undoBody, { user: {} })
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(fetcher).not.toHaveBeenCalled();
+    });
   });
 });
