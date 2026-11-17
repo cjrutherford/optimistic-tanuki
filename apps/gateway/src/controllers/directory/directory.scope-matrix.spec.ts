@@ -88,10 +88,22 @@ const reviewRoutes: MatrixRoute[] = [
     path: `${base}/address-review-candidates/${candidate}/decisions`,
     body: {},
   },
+  { method: 'GET', path: `${base}/address-review-candidates/${candidate}` },
+  {
+    method: 'POST',
+    path: `${base}/address-review-candidates/${candidate}/undo`,
+    body: {},
+  },
   { method: 'GET', path: `${base}/business-identity-review` },
   {
     method: 'POST',
     path: `${base}/business-identity-review/decisions`,
+    body: {},
+  },
+  { method: 'GET', path: `${base}/business-identity-review/${candidate}` },
+  {
+    method: 'POST',
+    path: `${base}/business-identity-review/${candidate}/undo`,
     body: {},
   },
   { method: 'GET', path: `${base}/listing-suppressions` },

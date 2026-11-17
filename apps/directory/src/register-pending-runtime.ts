@@ -99,9 +99,38 @@ import { geographyHash, readCurrentBoundaryCandidate } from './boundary-review';
 import { BoundaryDecision, recordBoundaryDecision } from './boundary-decision';
 import {
   type AddressReviewHumanDecision,
+  getAddressReviewCandidate,
   listAddressReviewCandidates,
   recordHumanAddressReviewDecision,
+  undoAddressReviewDecision,
 } from './address-review-store';
+import {
+  getBusinessIdentityReviewItem,
+  undoBusinessIdentityDecision,
+} from './business-identity-undo';
+import { ReviewConflictError, VERSION_TOKEN } from './review-version';
+
+/** Review conflicts (stale token, not latest, idempotency reuse, invalid state) are 409 with a stable code. */
+function reviewFailure(res: ServerResponse, error: unknown): void {
+  if (error instanceof ReviewConflictError) {
+    res
+      .writeHead(409, {
+        'content-type': 'application/json',
+        'cache-control': 'no-store',
+      })
+      .end(JSON.stringify({ code: error.code }));
+    return;
+  }
+  const invalid =
+    error instanceof Error &&
+    error.message === 'Invalid business identity decision';
+  res
+    .writeHead(invalid ? 409 : 503, {
+      ...(invalid ? { 'content-type': 'application/json' } : {}),
+      'cache-control': 'no-store',
+    })
+    .end(invalid ? JSON.stringify({ code: 'invalid_state' }) : undefined);
+}
 
 const fields = [
   'sourceEpoch',
@@ -1162,6 +1191,78 @@ export function pendingChecks(
     await authority(town);
     return result;
   }
+  async function addressReviewDetail(town: string, candidateId: string) {
+    if (!uuid.test(town) || !uuid.test(candidateId) || !db.transaction)
+      throw Error('Address review unavailable');
+    await authority(town);
+    const item = await getAddressReviewCandidate(db, town, candidateId);
+    await authority(town);
+    return item;
+  }
+  async function addressReviewUndo(
+    town: string,
+    candidateId: string,
+    value: {
+      decisionId: string;
+      undoOf: string;
+      expectedVersionToken: string;
+      actorId: string;
+      reason: string;
+    }
+  ) {
+    if (!uuid.test(town) || !uuid.test(candidateId) || !db.transaction)
+      throw Error('Address review unavailable');
+    await authority(town);
+    const rows = await db.query(
+      'SELECT "communityId" FROM "directory_address_review_candidate" WHERE "id"=$1',
+      [candidateId]
+    );
+    if (rows.length !== 1 || rows[0].communityId !== town)
+      throw Error('Candidate unavailable');
+    const result = await undoAddressReviewDecision(db as DataSource, {
+      ...value,
+      candidateId,
+    });
+    await authority(town);
+    return result;
+  }
+  async function identityReviewDetail(town: string, businessId: string) {
+    if (!uuid.test(town) || !uuid.test(businessId) || !db.transaction)
+      throw Error('Identity review unavailable');
+    await authority(town);
+    const item = await getBusinessIdentityReviewItem(db, town, businessId);
+    await authority(town);
+    return item;
+  }
+  async function identityReviewUndo(
+    town: string,
+    businessId: string,
+    value: {
+      decisionId: string;
+      undoOf: string;
+      expectedVersionToken: string;
+      actorId: string;
+      reason: string;
+    }
+  ) {
+    if (!uuid.test(town) || !uuid.test(businessId) || !db.transaction)
+      throw Error('Identity review unavailable');
+    await authority(town);
+    const { replayed, businessIds } = await undoBusinessIdentityDecision(
+      db as DataSource,
+      {
+        decisionId: value.decisionId,
+        townId: town,
+        businessId,
+        undoOf: value.undoOf,
+        expectedVersionToken: value.expectedVersionToken,
+        actor: { id: value.actorId, domain: 'profile' },
+        reason: value.reason,
+      }
+    );
+    await authority(town);
+    return { replayed, businesses: businessIds.length };
+  }
   async function identityReviewQueue(town: string) {
     if (!uuid.test(town) || !db.transaction)
       throw Error('Identity review unavailable');
@@ -1183,6 +1284,7 @@ export function pendingChecks(
       rows?: DecisionRow[];
       actorId: string;
       reason: string;
+      expectedVersionToken: string;
     }
   ) {
     if (!uuid.test(town) || !db.transaction)
@@ -1196,6 +1298,7 @@ export function pendingChecks(
       rows,
       actorId,
       reason,
+      expectedVersionToken,
     } = value;
     const { replayed, businessIds, restoredLinks } =
       await decideBusinessIdentity(db as DataSource, {
@@ -1207,6 +1310,7 @@ export function pendingChecks(
         rows,
         actor: { id: actorId, domain: 'profile' },
         reason,
+        expectedVersionToken,
       });
     await authority(town);
     return { replayed, businesses: businessIds.length, restoredLinks };
@@ -1338,8 +1442,12 @@ export function pendingChecks(
     localOwnerLinks,
     addressReviewList,
     addressReviewDecision,
+    addressReviewDetail,
+    addressReviewUndo,
     identityReviewQueue,
     identityReviewDecision,
+    identityReviewDetail,
+    identityReviewUndo,
   };
 }
 
@@ -1801,6 +1909,9 @@ export function pendingServer(
           typeof value !== 'object' ||
           Array.isArray(value) ||
           !uuid.test(actorId || '') ||
+          !uuid.test(value?.decisionId || '') ||
+          typeof value?.expectedVersionToken !== 'string' ||
+          !VERSION_TOKEN.test(value.expectedVersionToken) ||
           !['approve', 'reject', 'needs_info', 'revoke'].includes(decision) ||
           (evidenceUrl !== undefined &&
             evidenceUrl !== '' &&
@@ -1825,6 +1936,8 @@ export function pendingServer(
           addressReviewDecisionMatch[1],
           addressReviewDecisionMatch[2],
           {
+            decisionId: value.decisionId,
+            expectedVersionToken: value.expectedVersionToken,
             actorId,
             decision,
             evidenceUrl,
@@ -1840,8 +1953,115 @@ export function pendingServer(
             'cache-control': 'no-store',
           })
           .end(JSON.stringify(result));
-      } catch {
+      } catch (error) {
+        reviewFailure(res, error);
+      } finally {
+        active--;
+      }
+      return;
+    }
+    const reviewItemMatch = localUrl?.pathname.match(
+      /^\/internal\/local-evaluation\/towns\/([0-9a-f-]{36})\/(address-review-candidates|business-identity-review)\/([0-9a-f-]{36})(\/undo)?$/
+    );
+    if (
+      reviewItemMatch &&
+      req.method === (reviewItemMatch[4] ? 'POST' : 'GET')
+    ) {
+      const expected = Buffer.from(localSecret || ''),
+        provided = Buffer.from(
+          req.headers.authorization?.startsWith('Bearer ')
+            ? req.headers.authorization.slice(7)
+            : ''
+        );
+      if (expected.length < 32) {
         res.writeHead(503, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (
+        provided.length !== expected.length ||
+        !timingSafeEqual(provided, expected)
+      ) {
+        res.writeHead(401, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (localUrl!.search) {
+        res.writeHead(400, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (active >= 32) {
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      active++;
+      req.setTimeout(5000, () => req.destroy());
+      try {
+        const [, town, kind, itemId, undoSuffix] = reviewItemMatch;
+        const address = kind === 'address-review-candidates';
+        if (!undoSuffix) {
+          const item = address
+            ? await checks.addressReviewDetail(town, itemId)
+            : await checks.identityReviewDetail(town, itemId);
+          if (!item) {
+            res.writeHead(404, { 'cache-control': 'no-store' }).end();
+            return;
+          }
+          res
+            .writeHead(200, {
+              'content-type': 'application/json',
+              'cache-control': 'no-store',
+            })
+            .end(JSON.stringify(item));
+          return;
+        }
+        let body = Buffer.alloc(0);
+        for await (const chunk of req) {
+          body = Buffer.concat([body, Buffer.from(chunk)]);
+          if (body.length > 16384) {
+            res.writeHead(413, { 'cache-control': 'no-store' }).end();
+            return;
+          }
+        }
+        let value: any;
+        try {
+          value = JSON.parse(body.toString('utf8'));
+        } catch {
+          res.writeHead(400, { 'cache-control': 'no-store' }).end();
+          return;
+        }
+        if (
+          !value ||
+          typeof value !== 'object' ||
+          Array.isArray(value) ||
+          !uuid.test(value.actorId || '') ||
+          !uuid.test(value.decisionId || '') ||
+          !uuid.test(value.undoOf || '') ||
+          typeof value.expectedVersionToken !== 'string' ||
+          !VERSION_TOKEN.test(value.expectedVersionToken) ||
+          typeof value.reason !== 'string' ||
+          !value.reason.trim() ||
+          value.reason.length > 1024
+        ) {
+          res.writeHead(400, { 'cache-control': 'no-store' }).end();
+          return;
+        }
+        const undo = {
+          decisionId: value.decisionId,
+          undoOf: value.undoOf,
+          expectedVersionToken: value.expectedVersionToken,
+          actorId: value.actorId,
+          reason: value.reason,
+        };
+        const result = address
+          ? await checks.addressReviewUndo(town, itemId, undo)
+          : await checks.identityReviewUndo(town, itemId, undo);
+        res
+          .writeHead(200, {
+            'content-type': 'application/json',
+            'cache-control': 'no-store',
+          })
+          .end(JSON.stringify(result));
+      } catch (error) {
+        reviewFailure(res, error);
       } finally {
         active--;
       }
@@ -1975,6 +2195,8 @@ export function pendingServer(
           Array.isArray(value) ||
           !uuid.test(actorId || '') ||
           !uuid.test(decisionId || '') ||
+          typeof value?.expectedVersionToken !== 'string' ||
+          !VERSION_TOKEN.test(value.expectedVersionToken) ||
           !uuid.test(businessId || '') ||
           !['confirm', 'retire', 'merge', 'split'].includes(action) ||
           typeof reason !== 'string' ||
@@ -1998,6 +2220,7 @@ export function pendingServer(
             rows,
             actorId,
             reason,
+            expectedVersionToken: value.expectedVersionToken,
           }
         );
         res
@@ -2007,15 +2230,7 @@ export function pendingServer(
           })
           .end(JSON.stringify(result));
       } catch (error) {
-        res
-          .writeHead(
-            error instanceof Error &&
-              error.message === 'Invalid business identity decision'
-              ? 409
-              : 503,
-            { 'cache-control': 'no-store' }
-          )
-          .end();
+        reviewFailure(res, error);
       } finally {
         active--;
       }

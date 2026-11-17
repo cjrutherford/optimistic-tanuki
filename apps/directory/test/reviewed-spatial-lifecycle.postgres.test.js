@@ -16,8 +16,8 @@ const {
 } = require('../src/reviewed-spatial');
 const { OverturePrivateSink } = require('../src/overture-private-sink');
 const {
-  recordHumanAddressReviewDecision,
-} = require('../src/address-review-store');
+  recordHuman: recordHumanAddressReviewDecision,
+} = require('./review-test-helpers');
 
 const liveUrl = process.env.S5_SPATIAL_TEST_DATABASE_URL;
 const stageUrl = process.env.S5_SPATIAL_STAGE_TEST_DATABASE_URL;

@@ -8,8 +8,8 @@ const {
   confirmBinding,
 } = require('../src/reviewed-binding-revalidate');
 const {
-  recordHumanAddressReviewDecision,
-} = require('../src/address-review-store');
+  recordHuman: recordHumanAddressReviewDecision,
+} = require('./review-test-helpers');
 
 const enabled = Boolean(f.connectionUrls());
 const opts = { apply: true, stageInstallationId: 'stage-a', runId: 'race-run' };
@@ -179,7 +179,7 @@ test(
         );
         assert.match(
           revokeResult,
-          /^(revoked|rejected:Invalid decision for current candidate status)$/
+          /^(revoked|rejected:Invalid decision for current candidate status|rejected:stale_decision)$/
         );
         assert.match(sweepResult, /^(retired|skipped|unchanged)$/);
         // A sweep that skipped a locked candidate leaves it to the revoke; nothing may be left active.

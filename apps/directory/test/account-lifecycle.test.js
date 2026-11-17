@@ -750,6 +750,8 @@ test('reviewer write paths check the fence first, inside their transaction', asy
   };
   const human = {
     candidateId: randomUUID(),
+    decisionId: randomUUID(),
+    expectedVersionToken: 'a'.repeat(64),
     actorId: reviewer,
     decision: 'reject',
   };

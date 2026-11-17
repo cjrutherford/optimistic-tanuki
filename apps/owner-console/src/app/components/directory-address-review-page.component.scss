@@ -203,3 +203,16 @@
     width: auto;
   }
 }
+
+.candidate-history {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+
+  otui-button {
+    width: auto;
+    justify-self: start;
+  }
+}

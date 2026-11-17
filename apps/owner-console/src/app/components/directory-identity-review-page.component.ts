@@ -3,10 +3,17 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import type {
+  BusinessIdentityHistoryEntry,
+  BusinessIdentityReviewDetail,
+} from '@optimistic-tanuki/social-contracts';
 import {
   BadgeComponent,
   ButtonComponent,
   CardComponent,
+  DecisionHistoryComponent,
+  type DecisionHistoryEntry,
+  type DecisionUndoRequest,
   EmptyStateComponent,
   IconComponent,
   LoadingStateComponent,
@@ -25,6 +32,7 @@ interface IdentityRow {
   businessId: string;
   scanId: string;
   sourceFileRowNumber: string;
+  versionToken: string;
 }
 interface UnresolvedRow extends IdentityRow {
   cause: string;
@@ -33,6 +41,7 @@ interface AwaitingOwner {
   carryId: string;
   requestId: string;
   businessId: string;
+  versionToken: string;
 }
 interface IdentityQueue {
   health: IdentityHealth;
@@ -53,6 +62,7 @@ interface ActionForm {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+export const STALE_MESSAGE = 'This item changed since you opened it';
 export const REFUSED_MESSAGE =
   'Refused — an owner link may be attached or the business is no longer active.';
 
@@ -65,6 +75,7 @@ export const REFUSED_MESSAGE =
     BadgeComponent,
     ButtonComponent,
     CardComponent,
+    DecisionHistoryComponent,
     EmptyStateComponent,
     IconComponent,
     LoadingStateComponent,
@@ -84,6 +95,12 @@ export class DirectoryIdentityReviewPageComponent implements OnInit {
   submitting = false;
   message = '';
   form: ActionForm | null = null;
+  /** Opened histories by business id, with the version token the detail returned. */
+  histories: Record<
+    string,
+    { versionToken: string; history: BusinessIdentityHistoryEntry[] }
+  > = {};
+  undoing = false;
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
@@ -136,6 +153,15 @@ export class DirectoryIdentityReviewPageComponent implements OnInit {
     if (!queue) return [];
     return [...queue.carriedUnbound, ...queue.unresolved].filter(
       (r) => r.businessId === businessId
+    );
+  }
+
+  /** The token the reviewer last saw for this business (queue row, or the opened detail). */
+  tokenFor(businessId: string): string {
+    return (
+      this.histories[businessId]?.versionToken ??
+      this.rowsFor(businessId)[0]?.versionToken ??
+      ''
     );
   }
 
@@ -197,6 +223,7 @@ export class DirectoryIdentityReviewPageComponent implements OnInit {
     }
     const body: Record<string, unknown> = {
       decisionId: form.decisionId,
+      expectedVersionToken: this.tokenFor(form.businessId),
       action: form.action,
       businessId: form.businessId,
       reason,
@@ -255,11 +282,107 @@ export class DirectoryIdentityReviewPageComponent implements OnInit {
         error: (error: HttpErrorResponse) => {
           if (this.town !== town) return;
           this.submitting = false;
+          if (error?.status === 409 && error.error?.code === 'stale_decision') {
+            this.stale();
+            return;
+          }
           // The form, and its decisionId, stay open so a retry replays.
           this.message =
             error?.status === 409
               ? REFUSED_MESSAGE
               : 'Business identity review is unavailable. Try again.';
+        },
+      });
+  }
+
+  /** The business moved under the reviewer: say so and show its current state. */
+  private stale(): void {
+    this.form = null;
+    this.load();
+    for (const id of Object.keys(this.histories)) this.loadHistory(id);
+    this.message = STALE_MESSAGE;
+  }
+
+  private loadHistory(businessId: string): void {
+    const town = this.town;
+    this.http
+      .get<BusinessIdentityReviewDetail>(`${this.url}/${businessId}`)
+      .subscribe({
+        next: (detail) => {
+          if (this.town !== town) return;
+          this.histories = {
+            ...this.histories,
+            [businessId]: {
+              versionToken: detail.versionToken,
+              history: detail.history,
+            },
+          };
+        },
+        error: () => {
+          if (this.town !== town) return;
+          this.message = 'The decision history is unavailable. Try again.';
+        },
+      });
+  }
+
+  toggleHistory(businessId: string): void {
+    if (this.histories[businessId]) {
+      const { [businessId]: _closed, ...rest } = this.histories;
+      this.histories = rest;
+      return;
+    }
+    this.histories = {
+      ...this.histories,
+      [businessId]: { versionToken: '', history: [] },
+    };
+    this.loadHistory(businessId);
+  }
+
+  historyEntries(businessId: string): DecisionHistoryEntry[] {
+    return (this.histories[businessId]?.history ?? []).map((h) => ({
+      id: h.decisionId,
+      label: h.action.replace(/^./, (c) => c.toUpperCase()),
+      actor: h.actorId,
+      at: h.createdAt,
+      reason: h.reason,
+      undone: !!h.undoneBy,
+      isUndo: !!h.undoOf,
+      reversible: h.reversible,
+    }));
+  }
+
+  /** The reviewer confirmed an undo (with a reason) on the panel; one new decisionId per confirmation. */
+  undo(businessId: string, request: DecisionUndoRequest): void {
+    if (this.undoing) return;
+    const town = this.town;
+    this.message = '';
+    this.undoing = true;
+    this.http
+      .post<{ recorded: boolean; replayed: boolean }>(
+        `${this.url}/${businessId}/undo`,
+        {
+          decisionId: crypto.randomUUID(),
+          undoOf: request.entry.id,
+          expectedVersionToken: this.tokenFor(businessId),
+          reason: request.reason,
+        }
+      )
+      .subscribe({
+        next: () => {
+          if (this.town !== town) return;
+          this.undoing = false;
+          this.load();
+          for (const id of Object.keys(this.histories)) this.loadHistory(id);
+          this.message = `Undid the ${request.entry.label.toLowerCase()} decision.`;
+        },
+        error: (error: HttpErrorResponse) => {
+          if (this.town !== town) return;
+          this.undoing = false;
+          if (error?.status === 409) {
+            this.stale();
+            return;
+          }
+          this.message = 'The undo could not be recorded. Try again.';
         },
       });
   }
