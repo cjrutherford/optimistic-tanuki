@@ -114,7 +114,10 @@
 
 .run-error {
   margin: 0;
-  color: var(--danger, var(--foreground));
+  // Body text keeps full contrast on soft cards; the rule carries the danger colour.
+  color: var(--foreground);
+  border-inline-start: 3px solid var(--danger, var(--foreground));
+  padding-inline-start: 0.5rem;
   font-size: var(--type-small);
 }
 

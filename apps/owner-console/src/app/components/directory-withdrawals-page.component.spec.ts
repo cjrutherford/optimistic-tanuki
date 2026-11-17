@@ -128,4 +128,23 @@ describe('DirectoryWithdrawalsPageComponent', () => {
     jest.advanceTimersByTime(POLL_MS * 3);
     http.expectNone(`${url}?limit=50`);
   });
+  it('shows a failed request as stopped with its reason, not as working', () => {
+    http.expectOne(`${url}?limit=50`).flush({
+      requests: [
+        record({
+          status: 'failed',
+          progress: {},
+          lastError: 'Scan not bound to policy',
+        }),
+      ],
+    });
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Stopped');
+    expect(text).not.toContain('Working');
+    expect(
+      fixture.nativeElement.querySelector('.withdrawal-error[role="alert"]')
+        .textContent
+    ).toContain('Scan not bound to policy');
+  });
 });

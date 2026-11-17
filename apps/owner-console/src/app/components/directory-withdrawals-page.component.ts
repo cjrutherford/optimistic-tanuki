@@ -181,6 +181,8 @@ export class DirectoryWithdrawalsPageComponent implements OnInit, OnDestroy {
   progressText(r: WithdrawalRecord): string {
     const rows = r.progress['rowsRemaining'];
     if (r.status === 'complete') return 'All data removed.';
+    // A failed request is not working; the card's alert carries the reason.
+    if (r.status === 'failed') return 'Stopped';
     if (typeof rows === 'number') return `${rows} rows remaining`;
     return r.status === 'pending' ? 'Waiting to start' : 'Working';
   }
