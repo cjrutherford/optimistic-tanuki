@@ -5,6 +5,7 @@ import {
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import { createApiProxyOptions } from './server-proxy';
 import express from 'express';
 import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import { dirname, resolve } from 'node:path';
@@ -67,16 +68,7 @@ app.use(
   })
 );
 
-app.use(
-  '/api',
-  createProxyMiddleware({
-    target: `${gatewayUrl}/api`,
-    changeOrigin: true,
-    headers: {
-      'x-ot-appscope': 'owner-console',
-    },
-  })
-);
+app.use('/api', createProxyMiddleware(createApiProxyOptions(gatewayUrl)));
 
 // Bootstrap operations must never be exposed through the public Owner Console
 // proxy. They are reached only from the deployment host over Admin API loopback.
