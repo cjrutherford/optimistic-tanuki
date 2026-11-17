@@ -121,10 +121,12 @@ export class CityComponent implements OnInit, OnDestroy {
   private apiBaseUrl = inject(API_BASE_URL);
 
   city = signal<City | null>(null);
-  directoryBoundary = signal<DirectoryBoundary>({status:'pending'});
+  directoryBoundary = signal<DirectoryBoundary>({ status: 'pending' });
   localDirectoryListings = signal<LocalDirectoryListing[]>([]);
   localDirectoryHasMore = signal(false);
-  localDirectorySourceFreshness = signal<LocalDirectorySourceFreshness | null>(null);
+  localDirectorySourceFreshness = signal<LocalDirectorySourceFreshness | null>(
+    null
+  );
   sourceFreshnessLabel = computed(() =>
     describeSourceFreshness(this.localDirectorySourceFreshness())
   );
@@ -236,9 +238,17 @@ export class CityComponent implements OnInit, OnDestroy {
         this.isAuthenticated.set(auth);
       });
 
-    if (isPlatformBrowser(this.platformId)) this.zone.runOutsideAngular(()=>{
-      this.boundaryTimer=setInterval(()=>this.zone.run(()=>{const id=this.city()?.id;if(id) void this.refreshDirectoryBoundary(id);}),60000);
-    });
+    if (isPlatformBrowser(this.platformId))
+      this.zone.runOutsideAngular(() => {
+        this.boundaryTimer = setInterval(
+          () =>
+            this.zone.run(() => {
+              const id = this.city()?.id;
+              if (id) void this.refreshDirectoryBoundary(id);
+            }),
+          60000
+        );
+      });
     const slug = this.route.snapshot.paramMap.get('slug') ?? '';
     this.loadUserLocation();
     await this.loadCity(slug);
@@ -251,12 +261,17 @@ export class CityComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  async refreshDirectoryBoundary(id:string):Promise<void> {
-    const generation=++this.boundaryRequest;
-    this.directoryBoundary.set({status:'unavailable'});
-    let result:DirectoryBoundary;
-    try {result=await this.communityService.getDirectoryBoundary(id);} catch {result={status:'unavailable'};}
-    if (generation===this.boundaryRequest && this.city()?.id===id) this.directoryBoundary.set(result);
+  async refreshDirectoryBoundary(id: string): Promise<void> {
+    const generation = ++this.boundaryRequest;
+    this.directoryBoundary.set({ status: 'unavailable' });
+    let result: DirectoryBoundary;
+    try {
+      result = await this.communityService.getDirectoryBoundary(id);
+    } catch {
+      result = { status: 'unavailable' };
+    }
+    if (generation === this.boundaryRequest && this.city()?.id === id)
+      this.directoryBoundary.set(result);
   }
 
   async loadLocalDirectoryPage(id: string, offset: number): Promise<void> {
@@ -361,10 +376,10 @@ export class CityComponent implements OnInit, OnDestroy {
         if (rootLocality) {
           this.classifiedsLoading.set(true);
           try {
-            const classifiedsData = await this.classifiedService.findByCommunity(
-              rootLocality.id,
-              { pageSize: 12 }
-            );
+            const classifiedsData =
+              await this.classifiedService.findByCommunity(rootLocality.id, {
+                pageSize: 12,
+              });
             this.classifieds.set(
               await this.enrichClassifiedSellerProfiles(
                 classifiedsData.data ?? []

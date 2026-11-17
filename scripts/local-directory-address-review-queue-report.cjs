@@ -25,9 +25,7 @@ if (!databaseUrl) {
 }
 if (
   town &&
-  !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    town
-  )
+  !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(town)
 ) {
   console.error('--town must be a UUID');
   process.exit(1);
@@ -60,7 +58,9 @@ const params = town ? [town] : [];
           `SELECT reason, count(*)::int AS count
            FROM "directory_address_review_candidate" c,
                 jsonb_array_elements_text(c."reasons") reason
-           WHERE c."status"='needs_human' ${town ? 'AND c."communityId"=$1' : ''}
+           WHERE c."status"='needs_human' ${
+             town ? 'AND c."communityId"=$1' : ''
+           }
            GROUP BY reason ORDER BY count DESC`,
           params
         ),
@@ -101,7 +101,9 @@ const params = town ? [town] : [];
           `SELECT t.name, t.slug, c."communityId", count(*)::int AS count
            FROM "directory_address_review_candidate" c
            LEFT JOIN "directory_town" t ON t."communityId"=c."communityId"
-           WHERE c."status"='needs_human' ${town ? 'AND c."communityId"=$1' : ''}
+           WHERE c."status"='needs_human' ${
+             town ? 'AND c."communityId"=$1' : ''
+           }
            GROUP BY t.name, t.slug, c."communityId"
            ORDER BY count DESC LIMIT 20`,
           params

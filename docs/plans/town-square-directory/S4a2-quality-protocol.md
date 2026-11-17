@@ -22,13 +22,13 @@ Two independent reviewers classify records against a prewritten rubric, compare 
 
 The user approved the 1% duplicate, 5% junk, 10% missing-required-fields and 5% wrong-town and 2% incorrect-merge maxima; the complete acceptance standard is not yet approved. They must be fixed before the acceptance review begins. Define junk as a record that cannot reasonably represent a distinct business in the selected town, duplicate as a record representing the same business location as another record in the frame under the approved matching rubric, and missing required fields as missing or unpublishable name, business location, category, or required attribution. For record measures, report the observed counts and rates for the entire frozen eligible frame and separately by town and contributor. Sampling confidence intervals do not apply to a complete census of that frozen frame; incomplete reviews are inconclusive and the findings do not automatically generalize to other releases or future records. The complete proposed-merge frame is likewise a census; its findings do not automatically generalize to future merge decisions.
 
-| Measure | Proposed maximum observed rate for complete frame (complete proposed-merge frame for merge rate) |
-| --- | ---: |
-| Duplicate rate | 1% (user decision) |
-| Junk rate | 5% (user decision) |
-| Missing required fields | 10% (user decision) |
-| Wrong-town or outside-boundary rate | 5% (user decision) |
-| Incorrectly merged distinct locations | 2% (user decision; denominator is proposed merges checked) |
+| Measure                               | Proposed maximum observed rate for complete frame (complete proposed-merge frame for merge rate) |
+| ------------------------------------- | -----------------------------------------------------------------------------------------------: |
+| Duplicate rate                        |                                                                               1% (user decision) |
+| Junk rate                             |                                                                               5% (user decision) |
+| Missing required fields               |                                                                              10% (user decision) |
+| Wrong-town or outside-boundary rate   |                                                                               5% (user decision) |
+| Incorrectly merged distinct locations |                                       2% (user decision; denominator is proposed merges checked) |
 
 Classify geographic mismatches against the approved town-assignment rubric, and false merges against independently reviewed pairs where the pilot has proposed a merge. Report suspected closures and independently verified closure errors as separate counts and rates with denominators and uncertainty; if the source or review process cannot establish closure reliably, do not present a closure status or claim closure accuracy. Freeze and account for every proposed merge and have both reviewers independently assess each one; missing evidence or unresolved disagreement makes the affected assessment inconclusive. If there are no proposed merges, report that check as not applicable without claiming the merge process has been validated.
 

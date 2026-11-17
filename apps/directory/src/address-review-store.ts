@@ -8,16 +8,10 @@ import type {
   OfficialEvidence,
 } from './address-review';
 
-const UUID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SCAN = /^[a-f0-9]{64}$/;
 const HASH = /^[a-f0-9]{64}$/;
-const HUMAN_DECISIONS = new Set([
-  'approve',
-  'reject',
-  'needs_info',
-  'revoke',
-]);
+const HUMAN_DECISIONS = new Set(['approve', 'reject', 'needs_info', 'revoke']);
 const STATUSES = new Set([
   'needs_human',
   'auto_approved',
@@ -198,9 +192,15 @@ function decisionFor(verdict: AddressReviewDecision['verdict']): string {
 
 // The classifier may still score evidence for analysis, but approval stays
 // manual until the documented precision and town-containment gates are met.
-function pauseAutomaticApproval(decision: AddressReviewDecision): AddressReviewDecision {
+function pauseAutomaticApproval(
+  decision: AddressReviewDecision
+): AddressReviewDecision {
   return decision.verdict === 'auto_approve'
-    ? { ...decision, verdict: 'needs_human', reasons: [...decision.reasons, 'auto_approval_paused'] }
+    ? {
+        ...decision,
+        verdict: 'needs_human',
+        reasons: [...decision.reasons, 'auto_approval_paused'],
+      }
     : decision;
 }
 
@@ -353,7 +353,10 @@ export async function updateAddressReviewEvidence(
         input.rights ?? current.rights,
       ]
     );
-    if (current.verdict !== input.decision.verdict || current.status !== status) {
+    if (
+      current.verdict !== input.decision.verdict ||
+      current.status !== status
+    ) {
       await manager.query(
         `INSERT INTO "directory_address_review_decision"
           ("candidateId","actorKind","actorId","decision","evidenceUrl","evidenceHash","reason","checks","policyVersion","appliedAt")
@@ -417,18 +420,41 @@ export async function archiveUnanchoredAddressReviewCandidate(
 ): Promise<{ candidateId: string; status: 'archived' }> {
   if (!UUID.test(candidateId)) throw Error('Invalid candidate');
   const archive = async (manager: EntityManager) => {
-    const rows = await manager.query('SELECT "id","status","scanId","sourceFileRowNumber" FROM "directory_address_review_candidate" WHERE "id"=$1 FOR UPDATE', [candidateId]);
+    const rows = await manager.query(
+      'SELECT "id","status","scanId","sourceFileRowNumber" FROM "directory_address_review_candidate" WHERE "id"=$1 FOR UPDATE',
+      [candidateId]
+    );
     if (rows.length !== 1) throw Error('Candidate not found');
     const candidate = rows[0];
-    if (candidate.status === 'archived') return { candidateId, status: 'archived' as const };
-    if (!['needs_human', 'rejected'].includes(candidate.status)) throw Error('Only unresolved candidates can be archived');
-    const source = await manager.query('SELECT 1 FROM "directory_overture_private_row" WHERE "scanId"=$1 AND "sourceFileRowNumber"=$2', [candidate.scanId, candidate.sourceFileRowNumber]);
+    if (candidate.status === 'archived')
+      return { candidateId, status: 'archived' as const };
+    if (!['needs_human', 'rejected'].includes(candidate.status))
+      throw Error('Only unresolved candidates can be archived');
+    const source = await manager.query(
+      'SELECT 1 FROM "directory_overture_private_row" WHERE "scanId"=$1 AND "sourceFileRowNumber"=$2',
+      [candidate.scanId, candidate.sourceFileRowNumber]
+    );
     if (source.length) throw Error('Candidate has an anchored source row');
-    await manager.query('UPDATE "directory_address_review_candidate" SET "status"=\'archived\',"updatedAt"=CURRENT_TIMESTAMP WHERE "id"=$1', [candidateId]);
-    await manager.query(`INSERT INTO "directory_address_review_decision" ("candidateId","actorKind","decision","reason","checks","policyVersion","appliedAt") VALUES ($1,'system','archive','User-authorized archival of unresolved source identity',$2::jsonb,'local-unresolved-archive-v1',CURRENT_TIMESTAMP)`, [candidateId, JSON.stringify({ previousStatus: candidate.status, scanId: candidate.scanId, sourceFileRowNumber: candidate.sourceFileRowNumber })]);
+    await manager.query(
+      'UPDATE "directory_address_review_candidate" SET "status"=\'archived\',"updatedAt"=CURRENT_TIMESTAMP WHERE "id"=$1',
+      [candidateId]
+    );
+    await manager.query(
+      `INSERT INTO "directory_address_review_decision" ("candidateId","actorKind","decision","reason","checks","policyVersion","appliedAt") VALUES ($1,'system','archive','User-authorized archival of unresolved source identity',$2::jsonb,'local-unresolved-archive-v1',CURRENT_TIMESTAMP)`,
+      [
+        candidateId,
+        JSON.stringify({
+          previousStatus: candidate.status,
+          scanId: candidate.scanId,
+          sourceFileRowNumber: candidate.sourceFileRowNumber,
+        }),
+      ]
+    );
     return { candidateId, status: 'archived' as const };
   };
-  return transactionManager ? archive(transactionManager) : db.transaction(archive);
+  return transactionManager
+    ? archive(transactionManager)
+    : db.transaction(archive);
 }
 
 export async function recordHumanAddressReviewDecision(
@@ -441,10 +467,7 @@ export async function recordHumanAddressReviewDecision(
   if (input.evidenceHash && !HASH.test(input.evidenceHash)) {
     throw Error('Invalid evidence hash');
   }
-  if (
-    input.decision === 'approve' &&
-    !validEvidenceUrl(input.evidenceUrl)
-  ) {
+  if (input.decision === 'approve' && !validEvidenceUrl(input.evidenceUrl)) {
     throw Error('Approval requires an HTTPS evidence URL');
   }
   if (
@@ -477,7 +500,9 @@ export async function recordHumanAddressReviewDecision(
     const current = candidate[0].status as string;
     const allowed =
       input.decision === 'revoke'
-        ? current === 'approved' || current === 'auto_approved' || current === 'published'
+        ? current === 'approved' ||
+          current === 'auto_approved' ||
+          current === 'published'
         : current === 'needs_human';
     if (!allowed) {
       throw Error('Invalid decision for current candidate status');
@@ -489,9 +514,19 @@ export async function recordHumanAddressReviewDecision(
         `SELECT "id" FROM "directory_reviewed_binding" WHERE "scanId"=$1 AND "sourceFileRowNumber"=$2 AND "state"<>'retired' FOR UPDATE`,
         [row.scanId, row.sourceFileRowNumber]
       );
-      const [membership] = await manager.query('SELECT "policyId" FROM "directory_overture_private_membership" WHERE "scanId"=$1', [row.scanId]);
-      if (membership) await manager.query('SELECT 1 FROM "directory_overture_private_policy" WHERE "policyId"=$1 FOR UPDATE', [membership.policyId]);
-      await manager.query('SELECT 1 FROM "directory_overture_private_scan_lock" WHERE "scanId"=$1 FOR UPDATE', [row.scanId]);
+      const [membership] = await manager.query(
+        'SELECT "policyId" FROM "directory_overture_private_membership" WHERE "scanId"=$1',
+        [row.scanId]
+      );
+      if (membership)
+        await manager.query(
+          'SELECT 1 FROM "directory_overture_private_policy" WHERE "policyId"=$1 FOR UPDATE',
+          [membership.policyId]
+        );
+      await manager.query(
+        'SELECT 1 FROM "directory_overture_private_scan_lock" WHERE "scanId"=$1 FOR UPDATE',
+        [row.scanId]
+      );
       const removed = await manager.query(
         `WITH removed AS (UPDATE "directory_overture_private_row" SET listing=listing-'reviewed'
          WHERE "scanId"=$1 AND "sourceFileRowNumber"=$2 AND "regionId"=$3
@@ -499,9 +534,20 @@ export async function recordHumanAddressReviewDecision(
            AND abs((listing->'location'->'coordinates'->>0)::float8-$6)<0.000001
            AND abs((listing->'location'->'coordinates'->>1)::float8-$7)<0.000001
            AND listing ? 'reviewed' RETURNING 1) SELECT count(*)::int AS count FROM removed`,
-        [row.scanId, row.sourceFileRowNumber, row.communityId, row.name, row.category, row.point?.lng, row.point?.lat]
+        [
+          row.scanId,
+          row.sourceFileRowNumber,
+          row.communityId,
+          row.name,
+          row.category,
+          row.point?.lng,
+          row.point?.lat,
+        ]
       );
-      if (removed[0]?.count !== 1) throw Error('Published candidate does not match its reviewed source row');
+      if (removed[0]?.count !== 1)
+        throw Error(
+          'Published candidate does not match its reviewed source row'
+        );
     }
     const [recorded] = await manager.query(
       `INSERT INTO "directory_address_review_decision"

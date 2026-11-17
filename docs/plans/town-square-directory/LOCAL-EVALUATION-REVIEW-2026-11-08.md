@@ -2,12 +2,12 @@
 
 These four records were checked individually for the local development stack. They are not public-release approval or a substitute for the full directory. The source file was the existing POC's `four-seat-places.jsonl`, release `2026-09-23.0`, SHA-256 `72355d674966b9f84d4293be9420f6ced0d454247d005e739bac014de728237c`. The source's town assignments are unverified and the town page says so. At the time of the initial review, Social ran from an isolated snapshot; the later cutover below switched to the original source.
 
-| POC row | Town | Record | Root source / license | Independent business evidence |
-| ---: | --- | --- | --- | --- |
-| 3723943 | Valdosta | Walmart Garden Center | Meta / CDLA Permissive 2.0 | [Walmart store 899](https://www.walmart.com/store/899-valdosta-ga) |
-| 3752791 | Waycross | Walmart Supercenter | Meta / CDLA Permissive 2.0 | [Walmart store 556](https://www.walmart.com/store/556-waycross-ga) |
-| 3770829 | Tifton | Walmart Supercenter | Meta / CDLA Permissive 2.0 | [Walmart store 1072](https://www.walmart.com/store/1072-tifton-ga) |
-| 3773386 | Douglas | Walmart Garden Center | BrightQuery / CDLA Permissive 2.0 | [Walmart store 593](https://www.walmart.com/store/593-douglas-ga) |
+| POC row | Town     | Record                | Root source / license             | Independent business evidence                                      |
+| ------: | -------- | --------------------- | --------------------------------- | ------------------------------------------------------------------ |
+| 3723943 | Valdosta | Walmart Garden Center | Meta / CDLA Permissive 2.0        | [Walmart store 899](https://www.walmart.com/store/899-valdosta-ga) |
+| 3752791 | Waycross | Walmart Supercenter   | Meta / CDLA Permissive 2.0        | [Walmart store 556](https://www.walmart.com/store/556-waycross-ga) |
+| 3770829 | Tifton   | Walmart Supercenter   | Meta / CDLA Permissive 2.0        | [Walmart store 1072](https://www.walmart.com/store/1072-tifton-ga) |
+| 3773386 | Douglas  | Walmart Garden Center | BrightQuery / CDLA Permissive 2.0 | [Walmart store 593](https://www.walmart.com/store/593-douglas-ga)  |
 
 The source row's address and identity were matched against the linked store page. These are publicly listed commercial retail locations, not adult-oriented or known sensitive locations. The four reviewed listings can show their verified website and business address, and three can show a verified business phone number; the gateway strips coordinates. Each source passed the private-display field-rights evaluator. These four September records remain visible after the October cutover; independent source-policy and classification authority, verified town boundaries, and complete listing coverage remain open. No paid provider request was used to import these already-staged records.
 

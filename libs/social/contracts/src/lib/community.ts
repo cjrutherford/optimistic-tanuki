@@ -193,22 +193,76 @@ export class CommunityChatMembershipsQueryDto {
 }
 
 /** Internal, authenticated recovery reads are bound to the caller's observed source epoch. */
-export interface DirectoryEpochRead { expectedSourceEpoch: string; secret?: string }
-export interface DirectoryCensusRead extends DirectoryEpochRead { cursor?: string; limit?: number }
-export interface DirectorySnapshotRead extends DirectoryEpochRead { id: string }
-export interface DirectoryMembershipRead extends DirectoryEpochRead { revision: string; communityId: string; expectedEventNonce: string }
-export interface DirectoryEventIdentity { revision: string; communityId: string; eventNonce: string; sourceEpoch: string | null }
-export interface DirectoryRegisterScanRead { sourceEpoch: string; afterCommunityId: string | null; limit: number; secret?: string }
-export interface DirectoryRegisterExactRead { sourceEpoch: string; communityId: string; changeToken: string; secret?: string }
+export interface DirectoryEpochRead {
+  expectedSourceEpoch: string;
+  secret?: string;
+}
+export interface DirectoryCensusRead extends DirectoryEpochRead {
+  cursor?: string;
+  limit?: number;
+}
+export interface DirectorySnapshotRead extends DirectoryEpochRead {
+  id: string;
+}
+export interface DirectoryMembershipRead extends DirectoryEpochRead {
+  revision: string;
+  communityId: string;
+  expectedEventNonce: string;
+}
+export interface DirectoryEventIdentity {
+  revision: string;
+  communityId: string;
+  eventNonce: string;
+  sourceEpoch: string | null;
+}
+export interface DirectoryRegisterScanRead {
+  sourceEpoch: string;
+  afterCommunityId: string | null;
+  limit: number;
+  secret?: string;
+}
+export interface DirectoryRegisterExactRead {
+  sourceEpoch: string;
+  communityId: string;
+  changeToken: string;
+  secret?: string;
+}
 
 /** Private source-incarnation identity; not proof of Directory authority. */
-export interface DirectoryRegisterSourceIdentity { sourceEpoch: string; activationId: string; socialGeneration: string }
-export interface DirectoryRegisterScanV2 { identity: DirectoryRegisterSourceIdentity; afterCommunityId: string | null; limit: number; secret?: string }
-export interface DirectoryRegisterReadV2 { identity: DirectoryRegisterSourceIdentity; communityId: string; changeToken: string; secret?: string }
-export interface DirectoryRegisterCurrentV2 { identity: DirectoryRegisterSourceIdentity; communityId: string; secret?: string }
+export interface DirectoryRegisterSourceIdentity {
+  sourceEpoch: string;
+  activationId: string;
+  socialGeneration: string;
+}
+export interface DirectoryRegisterScanV2 {
+  identity: DirectoryRegisterSourceIdentity;
+  afterCommunityId: string | null;
+  limit: number;
+  secret?: string;
+}
+export interface DirectoryRegisterReadV2 {
+  identity: DirectoryRegisterSourceIdentity;
+  communityId: string;
+  changeToken: string;
+  secret?: string;
+}
+export interface DirectoryRegisterCurrentV2 {
+  identity: DirectoryRegisterSourceIdentity;
+  communityId: string;
+  secret?: string;
+}
 
-export interface DirectorySourceCensusV2 { identity: DirectoryRegisterSourceIdentity; afterCommunityId: string | null; limit: number; secret?: string }
-export interface DirectorySourceRepairV2 { identity: DirectoryRegisterSourceIdentity; communityId: string; secret?: string }
+export interface DirectorySourceCensusV2 {
+  identity: DirectoryRegisterSourceIdentity;
+  afterCommunityId: string | null;
+  limit: number;
+  secret?: string;
+}
+export interface DirectorySourceRepairV2 {
+  identity: DirectoryRegisterSourceIdentity;
+  communityId: string;
+  secret?: string;
+}
 
 /** Internal, incarnation-bound geography input; this is not a verified boundary. */
 export interface DirectoryGeographySnapshot {
@@ -220,4 +274,10 @@ export interface DirectoryGeographySnapshot {
   localityType: 'city' | 'town';
   referencePoint: [number, number] | null;
 }
-export type DirectoryGeographyCurrent = {status:'absent'} | {status:'current'; changeToken:string; geography:DirectoryGeographySnapshot | null};
+export type DirectoryGeographyCurrent =
+  | { status: 'absent' }
+  | {
+      status: 'current';
+      changeToken: string;
+      geography: DirectoryGeographySnapshot | null;
+    };

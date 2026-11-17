@@ -15,8 +15,7 @@ import {
 import { AuthGuard } from '../../auth/auth.guard';
 import { DirectoryOwnerScopeGuard } from './directory.controller';
 
-const uuid =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const statuses = new Set([
   'needs_human',
   'auto_approved',
@@ -111,10 +110,7 @@ export class DirectoryAddressReviewController {
     if (limit !== undefined && !/^(?:[1-9]|[1-9][0-9]|100)$/.test(limit)) {
       throw new BadRequestException('Invalid limit');
     }
-    if (
-      offset !== undefined &&
-      !/^(0|[1-9][0-9]{0,6})$/.test(offset)
-    ) {
+    if (offset !== undefined && !/^(0|[1-9][0-9]{0,6})$/.test(offset)) {
       throw new BadRequestException('Invalid offset');
     }
     const { base, secret } = this.config();
@@ -133,7 +129,10 @@ export class DirectoryAddressReviewController {
       );
       if (!response.ok) throw Error();
       const result = await response.json();
-      if (!Array.isArray(result?.candidates) || result.candidates.length > 100) {
+      if (
+        !Array.isArray(result?.candidates) ||
+        result.candidates.length > 100
+      ) {
         throw Error();
       }
       return {

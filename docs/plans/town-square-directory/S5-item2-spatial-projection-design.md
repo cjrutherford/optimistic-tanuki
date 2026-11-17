@@ -13,7 +13,7 @@ Builds on [item 4](S5-item4-source-binding-design.md) and the
   (`apps/directory/src/register-pending-runtime.ts:182-196`, `:216-217`).
 - Three earlier attempts failed because they tried to make the index itself the
   authority (HANDOFF-2026-11-15-S5-PROGRESS.md:40). **This design does not.**
-  The projection is a *candidate index only*. Every authorising check (binding
+  The projection is a _candidate index only_. Every authorising check (binding
   state, lease, policy, scan and row withdrawal, completion, assignment token,
   adult choice, town) is still evaluated against the live tables in the same
   statement. Consequences:
@@ -39,16 +39,16 @@ Builds on [item 4](S5-item4-source-binding-design.md) and the
 
 ### 1.1 `directory_reviewed_spatial` (new entity `DirectoryReviewedSpatial`)
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `scanId` | varchar(64), PK | live row key |
-| `sourceFileRowNumber` | bigint, PK | live row key; keyset order |
-| `bindingId` | uuid, unique | the active binding this row was derived from |
-| `communityId` | uuid | copy of `binding.communityId` |
-| `point` | `geometry(Point,4326)`, **nullable** | the reviewed row's map point; `NULL` when the reviewed fields have no valid address |
-| `listingDigest` | varchar(32) | `md5(listing::text)` computed in SQL in the inserting statement |
-| `validatorVersion` | integer | `REVIEWED_SPATIAL_VALIDATOR_VERSION` at write time |
-| `createdAt` | timestamptz | default `CURRENT_TIMESTAMP` |
+| Column                | Type                                 | Notes                                                                               |
+| --------------------- | ------------------------------------ | ----------------------------------------------------------------------------------- |
+| `scanId`              | varchar(64), PK                      | live row key                                                                        |
+| `sourceFileRowNumber` | bigint, PK                           | live row key; keyset order                                                          |
+| `bindingId`           | uuid, unique                         | the active binding this row was derived from                                        |
+| `communityId`         | uuid                                 | copy of `binding.communityId`                                                       |
+| `point`               | `geometry(Point,4326)`, **nullable** | the reviewed row's map point; `NULL` when the reviewed fields have no valid address |
+| `listingDigest`       | varchar(32)                          | `md5(listing::text)` computed in SQL in the inserting statement                     |
+| `validatorVersion`    | integer                              | `REVIEWED_SPATIAL_VALIDATOR_VERSION` at write time                                  |
+| `createdAt`           | timestamptz                          | default `CURRENT_TIMESTAMP`                                                         |
 
 Indexes:
 
@@ -77,12 +77,12 @@ the confirm transition, by code that has just re-read the row. `pending`,
 row (the last two can never be `active`: `entity.ts:322`, revalidate `:330`).
 
 `point` is non-null only when the shared validator accepts the row's `reviewed`
-object *and* its address (same rules as `register-pending-runtime.ts:206-212`).
+object _and_ its address (same rules as `register-pending-runtime.ts:206-212`).
 An active binding with only a website or phone gets a row with `point IS NULL`.
 This keeps "expected rows" computable in pure SQL (one per active binding) so
 drift never depends on re-running JS.
 
-A row is *served* by bounds search only when all of these hold at query time:
+A row is _served_ by bounds search only when all of these hold at query time:
 
 1. `p.point` intersects the envelope, `p.validatorVersion` = current,
    `p.communityId` = town.
@@ -119,17 +119,17 @@ New module `apps/directory/src/reviewed-spatial.ts`:
 
 ### 2.1 Writers (all in the caller's existing transaction)
 
-| # | Writer | File:line | Projection action |
-| --- | --- | --- | --- |
-| W1 | confirm (pending→active, and every lease extension) | `reviewed-binding-revalidate.ts:218-235` | `projectBinding` after the binding CAS succeeds. Idempotent, so each sweep also repairs a missing or stale row. |
-| W2 | suspend | `reviewed-binding-revalidate.ts:236-250` | `unprojectBinding` |
-| W3 | retire (sweep, suspension timeout, stage invalidation) | `reviewed-binding-revalidate.ts:251-267` | `unprojectBinding`, before the `reviewed` strip |
-| W4 | human revoke | `address-review-store.ts:484-530` | `unprojectBinding` beside the retire at `:524` |
-| W5 | re-publication replaces a binding | `address-review-publish.ts:352-361` | `unprojectBinding(old.id)`; the new binding is `pending` and gets no row until W1 |
-| W6 | scan withdrawal | `overture-private-sink.ts:140-141` | `unprojectScan` before the row delete |
-| W7 | policy withdrawal cleanup batch | `overture-private-sink.ts:~176` | delete projection rows for the batch keys in the same CTE transaction |
-| W8 | wrong-town withdrawal script | `scripts/local-directory-withdraw-wrong-town.cjs:25-30` | `unprojectBinding` for each withdrawn row |
-| W9 | legacy binding script | `scripts/local-directory-reviewed-binding-legacy.cjs` | none: `unknown_legacy` is never active; add an assertion that no projection row exists for them |
+| #   | Writer                                                 | File:line                                               | Projection action                                                                                               |
+| --- | ------------------------------------------------------ | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| W1  | confirm (pending→active, and every lease extension)    | `reviewed-binding-revalidate.ts:218-235`                | `projectBinding` after the binding CAS succeeds. Idempotent, so each sweep also repairs a missing or stale row. |
+| W2  | suspend                                                | `reviewed-binding-revalidate.ts:236-250`                | `unprojectBinding`                                                                                              |
+| W3  | retire (sweep, suspension timeout, stage invalidation) | `reviewed-binding-revalidate.ts:251-267`                | `unprojectBinding`, before the `reviewed` strip                                                                 |
+| W4  | human revoke                                           | `address-review-store.ts:484-530`                       | `unprojectBinding` beside the retire at `:524`                                                                  |
+| W5  | re-publication replaces a binding                      | `address-review-publish.ts:352-361`                     | `unprojectBinding(old.id)`; the new binding is `pending` and gets no row until W1                               |
+| W6  | scan withdrawal                                        | `overture-private-sink.ts:140-141`                      | `unprojectScan` before the row delete                                                                           |
+| W7  | policy withdrawal cleanup batch                        | `overture-private-sink.ts:~176`                         | delete projection rows for the batch keys in the same CTE transaction                                           |
+| W8  | wrong-town withdrawal script                           | `scripts/local-directory-withdraw-wrong-town.cjs:25-30` | `unprojectBinding` for each withdrawn row                                                                       |
+| W9  | legacy binding script                                  | `scripts/local-directory-reviewed-binding-legacy.cjs`   | none: `unknown_legacy` is never active; add an assertion that no projection row exists for them                 |
 
 Not writers, by design (query-time only, section 1.3):
 
@@ -305,7 +305,8 @@ export class DirectoryReviewedSpatial {
   @Column('uuid') bindingId!: string;
   @Column('uuid') communityId!: string;
   @Index('IDX_directory_reviewed_spatial_point', { spatial: true })
-  @Column({ type: 'geometry', spatialFeatureType: 'Point', srid: 4326, nullable: true }) point!: object | null;
+  @Column({ type: 'geometry', spatialFeatureType: 'Point', srid: 4326, nullable: true })
+  point!: object | null;
   @Column({ type: 'varchar', length: 32 }) listingDigest!: string;
   @Column('integer') validatorVersion!: number;
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' }) createdAt!: Date;

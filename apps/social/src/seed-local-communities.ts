@@ -269,7 +269,10 @@ async function main() {
           parentId: parent?.id ?? null,
         };
         Object.assign(existing, updates);
-        await saveCommunityWithDirectoryChange(communityRepo, { id: existing.id, ...updates } as Community);
+        await saveCommunityWithDirectoryChange(communityRepo, {
+          id: existing.id,
+          ...updates,
+        } as Community);
         if (!SKIP_CHAT_ROOMS)
           await ensureCommunityChatRoom(existing, {
             createCommunityChat: (input) =>

@@ -10,15 +10,15 @@ The gateway joined a disposable private service network and a separate disposabl
 
 Unauthenticated HTTP requests through the gateway yielded:
 
-| Case | Observed result |
-| --- | --- |
-| Seeded Atlanta UUID | 200, UUID-only town and `pending` |
-| Synthetic nonseed public town | 200, UUID-only town and `pending` |
-| Private, wrong scope, missing UUID | 404 each |
-| Malformed UUID; longitude 181 | 400 each |
-| Valid point for seeded town | 200, `pending` |
-| Social stopped | 503 `Social unavailable`; after restart, 200 recovered |
-| Directory stopped | 503 `Directory unavailable` |
+| Case                               | Observed result                                        |
+| ---------------------------------- | ------------------------------------------------------ |
+| Seeded Atlanta UUID                | 200, UUID-only town and `pending`                      |
+| Synthetic nonseed public town      | 200, UUID-only town and `pending`                      |
+| Private, wrong scope, missing UUID | 404 each                                               |
+| Malformed UUID; longitude 181      | 400 each                                               |
+| Valid point for seeded town        | 200, `pending`                                         |
+| Social stopped                     | 503 `Social unavailable`; after restart, 200 recovered |
+| Directory stopped                  | 503 `Directory unavailable`                            |
 
 Both public towns had no directory mapping inserted. Thus these results show the current missing-mapping path returns pending; they do not prove reconciliation, geometry validation, or readiness for actual boundaries. Current directory server intentionally returns pending after a successful database query and does not expose stored invalid geometry through this endpoint. **An invalid stored geometry state was not exercised**; invalid point input above is a separate test. No production seed data, provider acquisition calls, POC imports, or paid operations were used.
 

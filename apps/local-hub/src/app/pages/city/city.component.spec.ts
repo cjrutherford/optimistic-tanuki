@@ -55,8 +55,10 @@ const rootCommunityFixture: LocalCommunity = {
 
 const communityServiceMock = {
   getCityBySlug: jest.fn().mockResolvedValue(cityFixture),
-  getDirectoryBoundary: jest.fn().mockResolvedValue({status:'pending'}),
-  getLocalDirectoryListings: jest.fn().mockResolvedValue({listings:[],hasMore:false}),
+  getDirectoryBoundary: jest.fn().mockResolvedValue({ status: 'pending' }),
+  getLocalDirectoryListings: jest
+    .fn()
+    .mockResolvedValue({ listings: [], hasMore: false }),
   getDirectoryBusinessLink: jest.fn().mockResolvedValue(null),
   requestDirectoryBusinessLink: jest.fn().mockResolvedValue(undefined),
   getMyDirectoryBusinessLinks: jest.fn().mockResolvedValue([]),
@@ -152,7 +154,12 @@ describe('CityComponent', () => {
       await fixture.whenStable();
       const component = fixture.componentInstance;
       component.localDirectoryListings.set([
-        { name: 'One', category: 'bakery', attribution: ['Source'], notices: [] },
+        {
+          name: 'One',
+          category: 'bakery',
+          attribution: ['Source'],
+          notices: [],
+        },
         { name: 'Two', category: 'shop', attribution: ['Source'], notices: [] },
         {
           name: 'Three',
@@ -180,22 +187,58 @@ describe('CityComponent', () => {
     });
 
     it('maps only listings with reviewed coordinates', async () => {
-      await fixture.whenStable();const component=fixture.componentInstance;
-      component.localDirectoryListings.set([{name:'Reviewed',category:'restaurant',attribution:['Source'],notices:[],coordinates:{lat:31,lng:-83}},{name:'Unreviewed',category:'shop',attribution:['Source'],notices:[]}]);
-      expect(component.directoryMapLocations()).toEqual([{name:'Reviewed',category:'restaurant',coordinates:{lat:31,lng:-83}}]);
+      await fixture.whenStable();
+      const component = fixture.componentInstance;
+      component.localDirectoryListings.set([
+        {
+          name: 'Reviewed',
+          category: 'restaurant',
+          attribution: ['Source'],
+          notices: [],
+          coordinates: { lat: 31, lng: -83 },
+        },
+        {
+          name: 'Unreviewed',
+          category: 'shop',
+          attribution: ['Source'],
+          notices: [],
+        },
+      ]);
+      expect(component.directoryMapLocations()).toEqual([
+        {
+          name: 'Reviewed',
+          category: 'restaurant',
+          coordinates: { lat: 31, lng: -83 },
+        },
+      ]);
     });
 
     it('labels source freshness near the map notes and omits it when absent', async () => {
       await fixture.whenStable();
       const component = fixture.componentInstance;
       const sel = '[data-testid="source-freshness"]';
-      const sf = { state: 'stale', releaseId: '2026-10-21.0', sourcePublishedAt: '2026-10-22T03:00:00Z', acquiredAt: null, thresholds: { freshDays: 90, staleDays: 120 } };
+      const sf = {
+        state: 'stale',
+        releaseId: '2026-10-21.0',
+        sourcePublishedAt: '2026-10-22T03:00:00Z',
+        acquiredAt: null,
+        thresholds: { freshDays: 90, staleDays: 120 },
+      };
       component.localDirectorySourceFreshness.set(sf as never);
       fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector(sel)?.textContent).toContain('2026-10-22 (release 2026-10-21.0), may be out of date');
-      component.localDirectorySourceFreshness.set({ ...sf, state: 'unknown', releaseId: null, sourcePublishedAt: null } as never);
+      expect(fixture.nativeElement.querySelector(sel)?.textContent).toContain(
+        '2026-10-22 (release 2026-10-21.0), may be out of date'
+      );
+      component.localDirectorySourceFreshness.set({
+        ...sf,
+        state: 'unknown',
+        releaseId: null,
+        sourcePublishedAt: null,
+      } as never);
       fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector(sel)?.textContent).toContain('Source date unknown');
+      expect(fixture.nativeElement.querySelector(sel)?.textContent).toContain(
+        'Source date unknown'
+      );
       component.localDirectorySourceFreshness.set(null);
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector(sel)).toBeNull();
@@ -203,47 +246,114 @@ describe('CityComponent', () => {
 
     it('does not restore listings from a previous town after navigation', async () => {
       await fixture.whenStable();
-      const component=fixture.componentInstance;
-      let release!:(value:any)=>void;
-      communityServiceMock.getLocalDirectoryListings.mockImplementationOnce(()=>new Promise(resolve=>{release=resolve;}));
+      const component = fixture.componentInstance;
+      let release!: (value: any) => void;
+      communityServiceMock.getLocalDirectoryListings.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            release = resolve;
+          })
+      );
       component.city.set(cityFixture);
-      const old=component.loadLocalDirectoryPage(cityFixture.id,0);
+      const old = component.loadLocalDirectoryPage(cityFixture.id, 0);
       await component.loadCity('savannah-ga');
-      component.city.set({...cityFixture,id:'other-town'});
-      release({listings:[{name:'Old business',category:'shop',attribution:['Source'],notices:[]}],hasMore:false});
+      component.city.set({ ...cityFixture, id: 'other-town' });
+      release({
+        listings: [
+          {
+            name: 'Old business',
+            category: 'shop',
+            attribution: ['Source'],
+            notices: [],
+          },
+        ],
+        hasMore: false,
+      });
       await old;
-      expect(component.localDirectoryListings().some(row=>row.name==='Old business')).toBe(false);
+      expect(
+        component
+          .localDirectoryListings()
+          .some((row) => row.name === 'Old business')
+      ).toBe(false);
     });
 
     it('labels the mapped point as approximate and does not invent a map when coordinates are absent', async () => {
-      await fixture.whenStable();fixture.detectChanges();
-      expect(fixture.nativeElement.textContent).toContain('Approximate town location');
-      fixture.componentInstance.city.set({...cityFixture,coordinates:undefined});fixture.detectChanges();
-      expect(fixture.nativeElement.textContent).toContain('No approximate town location is available');
-      expect(fixture.nativeElement.querySelector('.city-map-card app-map')).toBeNull();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain(
+        'Approximate town location'
+      );
+      fixture.componentInstance.city.set({
+        ...cityFixture,
+        coordinates: undefined,
+      });
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain(
+        'No approximate town location is available'
+      );
+      expect(
+        fixture.nativeElement.querySelector('.city-map-card app-map')
+      ).toBeNull();
     });
 
     it('labels a reviewed boundary and passes it to the map', async () => {
-      await fixture.whenStable();fixture.detectChanges();
-      const geometry={type:'Polygon' as const,coordinates:[[[0,0],[1,0],[1,1],[0,0]]]};
-      const map=fixture.debugElement.query(By.directive(MapComponent)).componentInstance as MapComponent;
-      const leafletMap=(map as any).map;(map as any).map=undefined;
-      fixture.componentInstance.directoryBoundary.set({status:'ready',geometry});fixture.detectChanges();
-      expect(fixture.nativeElement.textContent).toContain('Verified Census boundary');
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const geometry = {
+        type: 'Polygon' as const,
+        coordinates: [
+          [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 0],
+          ],
+        ],
+      };
+      const map = fixture.debugElement.query(By.directive(MapComponent))
+        .componentInstance as MapComponent;
+      const leafletMap = (map as any).map;
+      (map as any).map = undefined;
+      fixture.componentInstance.directoryBoundary.set({
+        status: 'ready',
+        geometry,
+      });
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain(
+        'Verified Census boundary'
+      );
       expect(map.boundary).toEqual(geometry);
-      fixture.componentInstance.directoryBoundary.set({status:'pending'});fixture.detectChanges();
-      (map as any).map=leafletMap;
+      fixture.componentInstance.directoryBoundary.set({ status: 'pending' });
+      fixture.detectChanges();
+      (map as any).map = leafletMap;
     });
 
     it('does not restore an old boundary when a newer privacy check finishes first', async () => {
       await fixture.whenStable();
-      let finishOld!:(value:any)=>void, finishNew!:(value:any)=>void;
-      communityServiceMock.getDirectoryBoundary.mockImplementationOnce(()=>new Promise(resolve=>finishOld=resolve)).mockImplementationOnce(()=>new Promise(resolve=>finishNew=resolve));
-      const old=fixture.componentInstance.refreshDirectoryBoundary(cityFixture.id);
-      const latest=fixture.componentInstance.refreshDirectoryBoundary(cityFixture.id);
-      finishNew({status:'pending'});await latest;
-      finishOld({status:'ready',geometry:{type:'Polygon',coordinates:[]}});await old;
-      expect(fixture.componentInstance.directoryBoundary()).toEqual({status:'pending'});
+      let finishOld!: (value: any) => void, finishNew!: (value: any) => void;
+      communityServiceMock.getDirectoryBoundary
+        .mockImplementationOnce(
+          () => new Promise((resolve) => (finishOld = resolve))
+        )
+        .mockImplementationOnce(
+          () => new Promise((resolve) => (finishNew = resolve))
+        );
+      const old = fixture.componentInstance.refreshDirectoryBoundary(
+        cityFixture.id
+      );
+      const latest = fixture.componentInstance.refreshDirectoryBoundary(
+        cityFixture.id
+      );
+      finishNew({ status: 'pending' });
+      await latest;
+      finishOld({
+        status: 'ready',
+        geometry: { type: 'Polygon', coordinates: [] },
+      });
+      await old;
+      expect(fixture.componentInstance.directoryBoundary()).toEqual({
+        status: 'pending',
+      });
     });
 
     it('uses single-location mode for the city detail map', async () => {
@@ -379,8 +489,12 @@ describe('CityComponent', () => {
       messages = { addMessage: jest.fn() };
       community = {
         getCityBySlug: jest.fn().mockResolvedValue(cityFixture),
-  getDirectoryBoundary: jest.fn().mockResolvedValue({status:'pending'}),
-  getLocalDirectoryListings: jest.fn().mockResolvedValue({listings:[],hasMore:false}),
+        getDirectoryBoundary: jest
+          .fn()
+          .mockResolvedValue({ status: 'pending' }),
+        getLocalDirectoryListings: jest
+          .fn()
+          .mockResolvedValue({ listings: [], hasMore: false }),
         getCommunitiesForCity: jest
           .fn()
           .mockResolvedValue([rootCommunityFixture]),
@@ -603,7 +717,7 @@ describe('CityComponent', () => {
       });
 
       it('does not wait for optional business and classified services during server rendering', async () => {
-        (component as any).platformId='server';
+        (component as any).platformId = 'server';
         await component.loadCity('savannah-ga');
         expect(component.city()).toEqual(cityFixture);
         expect(payments['getCityBusinesses']).not.toHaveBeenCalled();

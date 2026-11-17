@@ -14,33 +14,56 @@
  */
 const path = require('node:path');
 const { DataSource } = require('typeorm');
-const { businessIdentityKeyFromEnv } = require('../apps/directory/src/business-identity');
-const { rereadAnchors } = require('../apps/directory/src/business-identity-reread');
+const {
+  businessIdentityKeyFromEnv,
+} = require('../apps/directory/src/business-identity');
+const {
+  rereadAnchors,
+} = require('../apps/directory/src/business-identity-reread');
 
-const databaseName = (url) => decodeURIComponent(new URL(url).pathname.replace(/^\//, ''));
-const option = (argv, name) => { const at = argv.indexOf(name); return at >= 0 ? argv[at + 1] : undefined; };
+const databaseName = (url) =>
+  decodeURIComponent(new URL(url).pathname.replace(/^\//, ''));
+const option = (argv, name) => {
+  const at = argv.indexOf(name);
+  return at >= 0 ? argv[at + 1] : undefined;
+};
 
 /** Counts only: no id, key, hash or row is printed. */
 async function run(db, { fetcher, key, apply = false }) {
-  return { mode: apply ? 'apply' : 'check', counts: await rereadAnchors(db, { key, fetcher, apply }) };
+  return {
+    mode: apply ? 'apply' : 'check',
+    counts: await rereadAnchors(db, { key, fetcher, apply }),
+  };
 }
 
 async function main(argv) {
   const url = process.env.DIRECTORY_DATABASE_URL;
   if (!url) throw Error('DIRECTORY_DATABASE_URL is required');
-  if (!argv.includes('--allow-network')) throw Error('The re-read reads the network and needs --allow-network');
-  if (!option(argv, '--confirm-database')) throw Error('The re-read needs --confirm-database <name>');
-  if (option(argv, '--confirm-database') !== databaseName(url)) throw Error('--confirm-database does not match the target database');
+  if (!argv.includes('--allow-network'))
+    throw Error('The re-read reads the network and needs --allow-network');
+  if (!option(argv, '--confirm-database'))
+    throw Error('The re-read needs --confirm-database <name>');
+  if (option(argv, '--confirm-database') !== databaseName(url))
+    throw Error('--confirm-database does not match the target database');
   const fetcherPath = option(argv, '--fetcher');
-  if (!fetcherPath) throw Error('--fetcher <module> is required; no network fetcher ships with this script');
+  if (!fetcherPath)
+    throw Error(
+      '--fetcher <module> is required; no network fetcher ships with this script'
+    );
   const fetcher = require(path.resolve(fetcherPath));
-  if (typeof fetcher !== 'function') throw Error('The fetcher module must export a function');
+  if (typeof fetcher !== 'function')
+    throw Error('The fetcher module must export a function');
   const key = businessIdentityKeyFromEnv();
   if (!key) throw Error('DIRECTORY_BUSINESS_IDENTITY_HMAC_KEY is required');
   const db = new DataSource({ type: 'postgres', url });
   await db.initialize();
   try {
-    console.log(JSON.stringify({ database: databaseName(url), ...(await run(db, { fetcher, key, apply: argv.includes('--apply') })) }));
+    console.log(
+      JSON.stringify({
+        database: databaseName(url),
+        ...(await run(db, { fetcher, key, apply: argv.includes('--apply') })),
+      })
+    );
   } finally {
     await db.destroy();
   }
@@ -50,7 +73,11 @@ module.exports = { run, main };
 
 if (require.main === module) {
   main(process.argv.slice(2)).catch((error) => {
-    console.error(error instanceof Error ? error.message : 'business identity re-read failed');
+    console.error(
+      error instanceof Error
+        ? error.message
+        : 'business identity re-read failed'
+    );
     process.exit(1);
   });
 }

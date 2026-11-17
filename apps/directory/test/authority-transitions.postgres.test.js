@@ -5,48 +5,171 @@ const db = require('../src/data-source').default;
 const { beginRecovery } = require('../src/recovery-authority');
 const { recoveryPage } = require('../src/recovery-traversal');
 const url = process.env.DIRECTORY_TEST_DATABASE_URL;
-const request = generation => ({sourceEpoch: randomUUID(), activationId: randomUUID(), owner: randomUUID(), socialGeneration: String(generation)});
-test('six-field authority rotates atomically, rejects stale identities and preserves receipts', {skip: !url}, async () => {
- db.setOptions({url}); await db.initialize();
- try {
-  const town = randomUUID();
-  await db.query(`INSERT INTO directory_town ("communityId",name,eligible,"geometryStatus") VALUES ($1,'Town',true,'approved')`, [town]);
-  await db.query(`INSERT INTO directory_provider_work ("communityId",status) VALUES ($1,'ready')`, [town]);
-  await db.query('INSERT INTO directory_receipt_slot (id) VALUES (1)');
-  await db.query(`INSERT INTO directory_reconciliation_receipt ("eventId","communityId","slotId") VALUES (1,$1,1)`, [town]);
-  const firstRequest = request(1), first = await beginRecovery(db, firstRequest);
-  assert.equal(first.directoryGeneration, '1');
-  assert.equal((await db.query('SELECT status FROM directory_provider_work WHERE "communityId"=$1',[town]))[0].status,'blocked');
-  assert.deepEqual(await beginRecovery(db, firstRequest), first);
-  await assert.rejects(beginRecovery(db, {...firstRequest, owner:randomUUID()}), /stale|owner/i);
-  await assert.rejects(beginRecovery(db, {...request(2), sourceEpoch:first.sourceEpoch}), /stale/i);
-  await assert.rejects(beginRecovery(db, {...request(2), activationId:first.activationId}), /stale/i);
-  const source = {census:async()=>({communities:[],nextCursor:null}), snapshot:async()=>null};
-  await assert.rejects(recoveryPage(db, source, {sourceEpoch:first.sourceEpoch,recoveryEpoch:first.recoveryEpoch,owner:first.owner}), /identity/i);
-  assert.equal(await recoveryPage(db, source, first), 'more');
-  assert.equal(await recoveryPage(db, source, first), 'traversed');
-  assert.equal((await beginRecovery(db, firstRequest)).phase, 'traversed');
-  const secondRequest = request(2);
-  await db.query(`UPDATE directory_town SET "geometryStatus"='ready' WHERE "communityId"=$1`, [town]);
-  await db.query(`INSERT INTO directory_provider_work ("communityId",status) VALUES ($1,'ready')`, [town]);
-  const crash = {transaction: fn => db.transaction(async manager => { await fn(manager); throw Error('crash'); })};
-  await assert.rejects(beginRecovery(crash, secondRequest), /crash/);
-  assert.equal((await db.query(`SELECT "recoveryEpoch" FROM directory_installation WHERE id='recovery-authority'`))[0].recoveryEpoch, first.recoveryEpoch);
-  assert.equal((await db.query('SELECT "geometryStatus" FROM directory_town WHERE "communityId"=$1',[town]))[0].geometryStatus,'ready');
-  assert.equal((await db.query('SELECT status FROM directory_provider_work WHERE "communityId"=$1',[town]))[0].status,'ready');
-  const holder = db.createQueryRunner(); await holder.connect(); await holder.startTransaction();
-  await holder.query("SELECT pg_advisory_xact_lock(hashtextextended('directory-recovery-authority-v1', 0))");
-  let settled = false; const waiting = beginRecovery(db, secondRequest).finally(() => { settled = true; });
-  await new Promise(resolve => setTimeout(resolve,100)); assert.equal(settled,false);
-  await holder.commitTransaction(); await holder.release();
-  const [second, retry] = await Promise.all([waiting, beginRecovery(db, secondRequest)]);
-  assert.deepEqual(second,retry); assert.equal(second.directoryGeneration,'2'); assert.notEqual(second.recoveryEpoch,first.recoveryEpoch);
-  await assert.rejects(beginRecovery(db, firstRequest), /stale/i);
-  await assert.rejects(recoveryPage(db, source, first), /epoch|identity/i);
-  assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_reconciliation_receipt'))[0].n,1);
-  assert.equal((await db.query('SELECT "geometryStatus" FROM directory_town WHERE "communityId"=$1',[town]))[0].geometryStatus,'pending');
-  assert.equal((await db.query('SELECT eligible FROM directory_town WHERE "communityId"=$1',[town]))[0].eligible,false);
-  await db.query("UPDATE directory_census_progress SET \"activationId\"=NULL WHERE id='recovery'");
-  await assert.rejects(beginRecovery(db, request(3)), /legacy/i);
- } finally { await db.destroy(); }
+const request = (generation) => ({
+  sourceEpoch: randomUUID(),
+  activationId: randomUUID(),
+  owner: randomUUID(),
+  socialGeneration: String(generation),
 });
+test(
+  'six-field authority rotates atomically, rejects stale identities and preserves receipts',
+  { skip: !url },
+  async () => {
+    db.setOptions({ url });
+    await db.initialize();
+    try {
+      const town = randomUUID();
+      await db.query(
+        `INSERT INTO directory_town ("communityId",name,eligible,"geometryStatus") VALUES ($1,'Town',true,'approved')`,
+        [town]
+      );
+      await db.query(
+        `INSERT INTO directory_provider_work ("communityId",status) VALUES ($1,'ready')`,
+        [town]
+      );
+      await db.query('INSERT INTO directory_receipt_slot (id) VALUES (1)');
+      await db.query(
+        `INSERT INTO directory_reconciliation_receipt ("eventId","communityId","slotId") VALUES (1,$1,1)`,
+        [town]
+      );
+      const firstRequest = request(1),
+        first = await beginRecovery(db, firstRequest);
+      assert.equal(first.directoryGeneration, '1');
+      assert.equal(
+        (
+          await db.query(
+            'SELECT status FROM directory_provider_work WHERE "communityId"=$1',
+            [town]
+          )
+        )[0].status,
+        'blocked'
+      );
+      assert.deepEqual(await beginRecovery(db, firstRequest), first);
+      await assert.rejects(
+        beginRecovery(db, { ...firstRequest, owner: randomUUID() }),
+        /stale|owner/i
+      );
+      await assert.rejects(
+        beginRecovery(db, { ...request(2), sourceEpoch: first.sourceEpoch }),
+        /stale/i
+      );
+      await assert.rejects(
+        beginRecovery(db, { ...request(2), activationId: first.activationId }),
+        /stale/i
+      );
+      const source = {
+        census: async () => ({ communities: [], nextCursor: null }),
+        snapshot: async () => null,
+      };
+      await assert.rejects(
+        recoveryPage(db, source, {
+          sourceEpoch: first.sourceEpoch,
+          recoveryEpoch: first.recoveryEpoch,
+          owner: first.owner,
+        }),
+        /identity/i
+      );
+      assert.equal(await recoveryPage(db, source, first), 'more');
+      assert.equal(await recoveryPage(db, source, first), 'traversed');
+      assert.equal((await beginRecovery(db, firstRequest)).phase, 'traversed');
+      const secondRequest = request(2);
+      await db.query(
+        `UPDATE directory_town SET "geometryStatus"='ready' WHERE "communityId"=$1`,
+        [town]
+      );
+      await db.query(
+        `INSERT INTO directory_provider_work ("communityId",status) VALUES ($1,'ready')`,
+        [town]
+      );
+      const crash = {
+        transaction: (fn) =>
+          db.transaction(async (manager) => {
+            await fn(manager);
+            throw Error('crash');
+          }),
+      };
+      await assert.rejects(beginRecovery(crash, secondRequest), /crash/);
+      assert.equal(
+        (
+          await db.query(
+            `SELECT "recoveryEpoch" FROM directory_installation WHERE id='recovery-authority'`
+          )
+        )[0].recoveryEpoch,
+        first.recoveryEpoch
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT "geometryStatus" FROM directory_town WHERE "communityId"=$1',
+            [town]
+          )
+        )[0].geometryStatus,
+        'ready'
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT status FROM directory_provider_work WHERE "communityId"=$1',
+            [town]
+          )
+        )[0].status,
+        'ready'
+      );
+      const holder = db.createQueryRunner();
+      await holder.connect();
+      await holder.startTransaction();
+      await holder.query(
+        "SELECT pg_advisory_xact_lock(hashtextextended('directory-recovery-authority-v1', 0))"
+      );
+      let settled = false;
+      const waiting = beginRecovery(db, secondRequest).finally(() => {
+        settled = true;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      assert.equal(settled, false);
+      await holder.commitTransaction();
+      await holder.release();
+      const [second, retry] = await Promise.all([
+        waiting,
+        beginRecovery(db, secondRequest),
+      ]);
+      assert.deepEqual(second, retry);
+      assert.equal(second.directoryGeneration, '2');
+      assert.notEqual(second.recoveryEpoch, first.recoveryEpoch);
+      await assert.rejects(beginRecovery(db, firstRequest), /stale/i);
+      await assert.rejects(recoveryPage(db, source, first), /epoch|identity/i);
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_reconciliation_receipt'
+          )
+        )[0].n,
+        1
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT "geometryStatus" FROM directory_town WHERE "communityId"=$1',
+            [town]
+          )
+        )[0].geometryStatus,
+        'pending'
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT eligible FROM directory_town WHERE "communityId"=$1',
+            [town]
+          )
+        )[0].eligible,
+        false
+      );
+      await db.query(
+        'UPDATE directory_census_progress SET "activationId"=NULL WHERE id=\'recovery\''
+      );
+      await assert.rejects(beginRecovery(db, request(3)), /legacy/i);
+    } finally {
+      await db.destroy();
+    }
+  }
+);

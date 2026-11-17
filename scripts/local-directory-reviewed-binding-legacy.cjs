@@ -26,11 +26,15 @@ const WITHOUT_BINDING = `
 
 /** Counts, and with apply inserts, the legacy bindings. Safe to repeat. */
 async function accountLegacy(db, { apply = false } = {}) {
-  const [{ pending }] = await db.query(`SELECT count(*)::int AS pending ${WITHOUT_BINDING}`);
+  const [{ pending }] = await db.query(
+    `SELECT count(*)::int AS pending ${WITHOUT_BINDING}`
+  );
   if (!apply) return { apply, publishedWithoutBinding: pending, inserted: 0 };
   const inserted = await db.transaction(async (manager) => {
     // Serialize concurrent runs; the unique (scan, row) index would otherwise reject the second.
-    await manager.query(`SELECT pg_advisory_xact_lock(hashtext('directory_reviewed_binding_legacy'))`);
+    await manager.query(
+      `SELECT pg_advisory_xact_lock(hashtext('directory_reviewed_binding_legacy'))`
+    );
     const rows = await manager.query(
       `WITH legacy AS (
          INSERT INTO "directory_reviewed_binding"
@@ -63,13 +67,17 @@ function databaseName(url) {
 }
 
 async function main(argv) {
-  const url = process.env.DIRECTORY_DATABASE_URL || process.env.DIRECTORY_REVIEW_DATABASE_URL;
+  const url =
+    process.env.DIRECTORY_DATABASE_URL ||
+    process.env.DIRECTORY_REVIEW_DATABASE_URL;
   if (!url) throw Error('DIRECTORY_DATABASE_URL is required');
   const apply = argv.includes('--apply');
   const at = argv.indexOf('--confirm-database');
   const confirmed = at >= 0 ? argv[at + 1] : undefined;
   if (apply && confirmed !== databaseName(url)) {
-    throw Error('--apply requires --confirm-database <name> matching the target database');
+    throw Error(
+      '--apply requires --confirm-database <name> matching the target database'
+    );
   }
   const db = new DataSource({ type: 'postgres', url });
   await db.initialize();
@@ -80,7 +88,9 @@ async function main(argv) {
               count(*) FILTER (WHERE provenance='unknown_legacy' AND state='active')::int AS "legacyActive"
        FROM "directory_reviewed_binding"`
     );
-    console.log(JSON.stringify({ database: databaseName(url), ...result, ...health }));
+    console.log(
+      JSON.stringify({ database: databaseName(url), ...result, ...health })
+    );
   } finally {
     await db.destroy();
   }
@@ -90,7 +100,9 @@ module.exports = { accountLegacy };
 
 if (require.main === module) {
   main(process.argv.slice(2)).catch((error) => {
-    console.error(error instanceof Error ? error.message : 'legacy accounting failed');
+    console.error(
+      error instanceof Error ? error.message : 'legacy accounting failed'
+    );
     process.exit(1);
   });
 }

@@ -96,7 +96,10 @@ import { VideosController } from '../controllers/videos/videos.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
 import { CommunityController } from '../controllers/social/community/community.controller';
 import { DirectoryController } from '../controllers/directory/directory.controller';
-import { DirectoryBusinessLinkController, DirectoryBusinessLinkQueueController } from '../controllers/directory/directory-business-link.controller';
+import {
+  DirectoryBusinessLinkController,
+  DirectoryBusinessLinkQueueController,
+} from '../controllers/directory/directory-business-link.controller';
 import { DirectoryAddressReviewController } from '../controllers/directory/directory-address-review.controller';
 import { WellnessController } from '../controllers/wellness/wellness.controller';
 import { ClassifiedsController } from '../controllers/classifieds/classifieds.controller';
@@ -210,10 +213,31 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         value: ProfileController,
       },
       { id: 'social', requiredServices: ['social'], value: SocialController },
-      { id: 'directory', requiredServices: ['social'], value: DirectoryController },
-      { id: 'directory-business-link', requiredServices: ['social', 'payments', 'authentication', 'permissions'], value: DirectoryBusinessLinkController },
-      { id: 'directory-business-link-queue', requiredServices: ['social', 'authentication', 'permissions'], value: DirectoryBusinessLinkQueueController },
-      { id: 'directory-address-review', requiredServices: ['social', 'authentication', 'permissions'], value: DirectoryAddressReviewController },
+      {
+        id: 'directory',
+        requiredServices: ['social'],
+        value: DirectoryController,
+      },
+      {
+        id: 'directory-business-link',
+        requiredServices: [
+          'social',
+          'payments',
+          'authentication',
+          'permissions',
+        ],
+        value: DirectoryBusinessLinkController,
+      },
+      {
+        id: 'directory-business-link-queue',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryBusinessLinkQueueController,
+      },
+      {
+        id: 'directory-address-review',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryAddressReviewController,
+      },
       {
         id: 'social-components',
         requiredServices: ['social', 'profile'],

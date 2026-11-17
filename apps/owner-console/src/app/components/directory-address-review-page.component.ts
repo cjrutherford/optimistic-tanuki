@@ -204,7 +204,9 @@ export class DirectoryAddressReviewPageComponent implements OnInit {
         next: () => {
           if (this.town !== town) return;
           this.refresh();
-          this.message = `Recorded ${decision.replace('_', ' ')} for ${candidate.name}.`;
+          this.message = `Recorded ${decision.replace('_', ' ')} for ${
+            candidate.name
+          }.`;
         },
         error: () => {
           if (this.town !== town) return;
@@ -214,10 +216,12 @@ export class DirectoryAddressReviewPageComponent implements OnInit {
       });
   }
 
-  badgeTone(
-    value: string
-  ): 'success' | 'warning' | 'danger' | 'neutral' {
-    if (value === 'approved' || value === 'auto_approved' || value === 'eligible') {
+  badgeTone(value: string): 'success' | 'warning' | 'danger' | 'neutral' {
+    if (
+      value === 'approved' ||
+      value === 'auto_approved' ||
+      value === 'eligible'
+    ) {
       return 'success';
     }
     if (value === 'needs_human' || value === 'review') return 'warning';
@@ -233,11 +237,15 @@ export class DirectoryAddressReviewPageComponent implements OnInit {
 
   canRevoke(candidate: ReviewCandidate): boolean {
     return (
-      candidate.status === 'approved' || candidate.status === 'auto_approved' || candidate.status === 'published'
+      candidate.status === 'approved' ||
+      candidate.status === 'auto_approved' ||
+      candidate.status === 'published'
     );
   }
 
   showMore(): boolean {
-    return this.candidates.length > 0 && this.candidates.length % this.limit === 0;
+    return (
+      this.candidates.length > 0 && this.candidates.length % this.limit === 0
+    );
   }
 }

@@ -18,27 +18,27 @@ Compared candidate slugs to the `localities[].slug` values in both `apps/social/
 
 ## Findings
 
-| Check | Result |
-|---|---:|
-| Community rows | 629 |
-| App scope totals | `client-interface`: 84; `local-hub`: 431; `social`: 114 |
-| Private / public rows | 157 / 472 |
-| System-community rows | 424 |
-| Public `local-hub` city/town candidates | 262 total: 180 city, 82 town |
-| Candidate system / non-system split | 261 / 1 |
-| Candidate slug overlap with each seed file | 261 of 262 |
-| Candidate rows outside each seed slug set | 1 |
-| Candidate missing slug | 0 |
-| Candidate missing city, admin area, or country code | 0 |
-| Candidate missing coordinate pair | 1 |
-| Candidate slug duplicates | 0 |
-| Candidate normalized city/admin-area/country duplicate groups | 1 group, 1 excess row |
-| Whole-table missing slug | 0 |
-| Whole-table missing one or more city/admin-area/country fields | 194 |
-| Whole-table missing coordinate pair | 205 |
-| Whole-table invalid latitude/longitude bounds | 0 |
-| Whole-table duplicate normalized names / slugs | 0 / 0 |
-| Whole-table normalized city/admin-area/country duplicate groups among city/town rows | 2 groups, 10 excess rows |
+| Check                                                                                |                                                  Result |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------: |
+| Community rows                                                                       |                                                     629 |
+| App scope totals                                                                     | `client-interface`: 84; `local-hub`: 431; `social`: 114 |
+| Private / public rows                                                                |                                               157 / 472 |
+| System-community rows                                                                |                                                     424 |
+| Public `local-hub` city/town candidates                                              |                            262 total: 180 city, 82 town |
+| Candidate system / non-system split                                                  |                                                 261 / 1 |
+| Candidate slug overlap with each seed file                                           |                                              261 of 262 |
+| Candidate rows outside each seed slug set                                            |                                                       1 |
+| Candidate missing slug                                                               |                                                       0 |
+| Candidate missing city, admin area, or country code                                  |                                                       0 |
+| Candidate missing coordinate pair                                                    |                                                       1 |
+| Candidate slug duplicates                                                            |                                                       0 |
+| Candidate normalized city/admin-area/country duplicate groups                        |                                   1 group, 1 excess row |
+| Whole-table missing slug                                                             |                                                       0 |
+| Whole-table missing one or more city/admin-area/country fields                       |                                                     194 |
+| Whole-table missing coordinate pair                                                  |                                                     205 |
+| Whole-table invalid latitude/longitude bounds                                        |                                                       0 |
+| Whole-table duplicate normalized names / slugs                                       |                                                   0 / 0 |
+| Whole-table normalized city/admin-area/country duplicate groups among city/town rows |                                2 groups, 10 excess rows |
 
 The public local-hub town/city candidate predicate includes a single non-system Community as well as system Communities; callers should not assume `isSystemCommunity` alone captures all eligible public local-hub localities. The candidate-level duplicate locality key may represent separate Community records for the same normalized geography; identity resolution and lifecycle policy remain undecided.
 

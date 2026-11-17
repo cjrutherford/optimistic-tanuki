@@ -34,7 +34,9 @@ const {
   updateAddressReviewEvidence,
 } = require('../apps/directory/src/address-review-store');
 const { classifyAddressRisk } = require('../apps/directory/src/address-risk');
-const { evaluateOvertureFieldRights } = require('../apps/directory/src/overture-rights');
+const {
+  evaluateOvertureFieldRights,
+} = require('../apps/directory/src/overture-rights');
 
 const defaultSource =
   '/home/cjrutherford/workspace/business-directory-poc/data/providers/overture/2026-09-23.0/four-seat-places.jsonl';
@@ -55,11 +57,16 @@ const pageDelay = Number(value('--page-delay', '1500'));
 const refresh = flag('--refresh');
 const dryRun = flag('--dry-run');
 const skipOfficial = flag('--no-official');
-const policyPath = value('--policy', process.env.DIRECTORY_PUBLIC_DISPLAY_POLICY || '');
+const policyPath = value(
+  '--policy',
+  process.env.DIRECTORY_PUBLIC_DISPLAY_POLICY || ''
+);
 const databaseUrl = process.env.DIRECTORY_REVIEW_DATABASE_URL;
 
 if (!dryRun) {
-  console.error('Address evidence writes are paused pending the auto-approval precision gate; use --dry-run.');
+  console.error(
+    'Address evidence writes are paused pending the auto-approval precision gate; use --dry-run.'
+  );
   process.exit(1);
 }
 if (!databaseUrl) {
@@ -68,11 +75,20 @@ if (!databaseUrl) {
   );
   process.exit(1);
 }
-if (candidateId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidateId)) {
+if (
+  candidateId &&
+  !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    candidateId
+  )
+) {
   console.error('--id must be a UUID');
   process.exit(1);
 }
-if (!Number.isSafeInteger(limit) || limit < 1 || limit > (perTown ? 5000 : 100)) {
+if (
+  !Number.isSafeInteger(limit) ||
+  limit < 1 ||
+  limit > (perTown ? 5000 : 100)
+) {
   console.error(`--limit must be between 1 and ${perTown ? 5000 : 100}`);
   process.exit(1);
 }
@@ -80,7 +96,16 @@ if (!Number.isSafeInteger(perTown) || perTown < 0 || perTown > 100) {
   console.error('--per-town must be between 0 and 100');
   process.exit(1);
 }
-if (!['needs_human', 'auto_approved', 'approved', 'published', 'rejected', 'revoked'].includes(status)) {
+if (
+  ![
+    'needs_human',
+    'auto_approved',
+    'approved',
+    'published',
+    'rejected',
+    'revoked',
+  ].includes(status)
+) {
   console.error('--status is invalid');
   process.exit(1);
 }
@@ -101,7 +126,9 @@ if (policyPath) {
     policy.operations.publicDisplay !== true ||
     !Array.isArray(policy.terms)
   ) {
-    console.error('Policy must be a runtime OvertureRightsPolicy with publicDisplay enabled');
+    console.error(
+      'Policy must be a runtime OvertureRightsPolicy with publicDisplay enabled'
+    );
     process.exit(1);
   }
 }
@@ -182,7 +209,9 @@ async function readSourceRows(path, rowNumbers) {
           [candidateId || null, status, refresh, limit]
         );
     if (!candidates.length) {
-      console.log(JSON.stringify({ processed: 0, message: 'No candidates matched' }));
+      console.log(
+        JSON.stringify({ processed: 0, message: 'No candidates matched' })
+      );
       return;
     }
 
@@ -319,8 +348,16 @@ async function readSourceRows(path, rowNumbers) {
         name: sourceName,
         category: candidate.category,
         point: candidate.point,
-        addresses: addresses.length ? addresses : officialSourceInput.address ? [officialSourceInput.address] : [],
-        websites: websites.length ? websites : sourceWebsite ? [sourceWebsite] : [],
+        addresses: addresses.length
+          ? addresses
+          : officialSourceInput.address
+          ? [officialSourceInput.address]
+          : [],
+        websites: websites.length
+          ? websites
+          : sourceWebsite
+          ? [sourceWebsite]
+          : [],
         phones: phones.length ? phones : sourcePhone ? [sourcePhone] : [],
         rights: rightsValue,
         residential: riskClassification.residential,

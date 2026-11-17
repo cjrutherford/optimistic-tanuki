@@ -43,8 +43,13 @@ import { ElectionVote } from '../entities/election-vote.entity';
 // TypeORM runs this file from src/app, while the bundled operator runs from
 // the service output root beside assets/.
 const bundledConfig = path.resolve(__dirname, 'assets/config.yaml');
-const configPath = fs.existsSync(bundledConfig) ? bundledConfig : path.resolve(__dirname, '../assets/config.yaml');
-const config = yaml.load(fs.readFileSync(configPath, 'utf8')) as Record<string, any>;
+const configPath = fs.existsSync(bundledConfig)
+  ? bundledConfig
+  : path.resolve(__dirname, '../assets/config.yaml');
+const config = yaml.load(fs.readFileSync(configPath, 'utf8')) as Record<
+  string,
+  any
+>;
 const {
   database: {
     host: configHost, // Renamed to avoid conflict

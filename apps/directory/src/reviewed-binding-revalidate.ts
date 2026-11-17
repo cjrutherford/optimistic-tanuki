@@ -1,7 +1,15 @@
-import { projectBinding, unprojectBinding, SpatialProjectionConflict } from './reviewed-spatial';
+import {
+  projectBinding,
+  unprojectBinding,
+  SpatialProjectionConflict,
+} from './reviewed-spatial';
 import { createHash } from 'node:crypto';
 import { DataSource, EntityManager } from 'typeorm';
-import { type BindingKey, reviewedHash, stageContentHash } from './reviewed-binding';
+import {
+  type BindingKey,
+  reviewedHash,
+  stageContentHash,
+} from './reviewed-binding';
 
 /**
  * Revalidation of reviewed-field bindings against their source
@@ -55,7 +63,12 @@ export type StageState =
 
 export type Plan =
   | { action: 'none' }
-  | { action: 'confirm'; observedHash: string; verifiedAt: Date; verifiedUntil: Date }
+  | {
+      action: 'confirm';
+      observedHash: string;
+      verifiedAt: Date;
+      verifiedUntil: Date;
+    }
   | { action: 'suspend'; cause: SuspendCause; observedHash?: string }
   | { action: 'retire'; cause: RetireCause; observedHash?: string };
 
@@ -92,11 +105,20 @@ export const DEFAULT_SUSPENSION_TIMEOUT_MS = 30 * 86_400_000;
 /** One read of the bound stage row. Throws when the stage cannot be read. */
 export async function readStageState(
   stage: StageQueryable,
-  binding: Pick<BindingRow, 'communityId' | 'stageScanId' | 'stageSourceFileRowNumber' | 'stagePolicyId'>,
+  binding: Pick<
+    BindingRow,
+    'communityId' | 'stageScanId' | 'stageSourceFileRowNumber' | 'stagePolicyId'
+  >,
   key: BindingKey
 ): Promise<StageState> {
-  const { stageScanId, stageSourceFileRowNumber: row, stagePolicyId, communityId } = binding;
-  if (!stageScanId || row === null || !stagePolicyId) throw Error('Binding has no stage identity');
+  const {
+    stageScanId,
+    stageSourceFileRowNumber: row,
+    stagePolicyId,
+    communityId,
+  } = binding;
+  if (!stageScanId || row === null || !stagePolicyId)
+    throw Error('Binding has no stage identity');
   const [flags] = await stage.query(
     `SELECT
        EXISTS (SELECT 1 FROM "directory_overture_private_revocation" WHERE "scanId"=$1) AS "scanRevoked",
@@ -108,7 +130,8 @@ export async function readStageState(
   if (!flags) throw Error('Stage read returned nothing');
   if (flags.scanRevoked) return { kind: 'retire', cause: 'stage_scan_revoked' };
   if (flags.rowRevoked) return { kind: 'retire', cause: 'stage_row_revoked' };
-  if (flags.policyRevoked) return { kind: 'retire', cause: 'stage_policy_revoked' };
+  if (flags.policyRevoked)
+    return { kind: 'retire', cause: 'stage_policy_revoked' };
 
   const exact = await stage.query(
     `SELECT listing FROM "directory_overture_private_row" WHERE "scanId"=$1 AND "sourceFileRowNumber"=$2 AND "regionId"=$3 AND listing IS NOT NULL`,
@@ -130,20 +153,32 @@ export async function readStageState(
        AND NOT EXISTS (SELECT 1 FROM "directory_overture_private_row_revocation" x WHERE x."scanId"=r."scanId" AND x."sourceFileRowNumber"=r."sourceFileRowNumber")`,
     [communityId, row, stageScanId, stagePolicyId]
   );
-  if (newer.length === 0) return { kind: 'suspend', cause: 'stage_row_missing' };
+  if (newer.length === 0)
+    return { kind: 'suspend', cause: 'stage_row_missing' };
   const hashes = newer.map((entry) => expected(entry.listing));
-  return { kind: 'suspend', cause: 'stage_superseded', observedHash: hashes[0] };
+  return {
+    kind: 'suspend',
+    cause: 'stage_superseded',
+    observedHash: hashes[0],
+  };
 }
 
 /**
  * Compares a stage read with what was bound. Kept separate from the read so the
  * decision table is plain data in, plan out.
  */
-export function stageVerdict(read: StageState, bound: string | null): StageState {
+export function stageVerdict(
+  read: StageState,
+  bound: string | null
+): StageState {
   if (read.kind !== 'ok') return read;
   return read.contentHash === bound
     ? read
-    : { kind: 'suspend', cause: 'stage_content_changed', observedHash: read.contentHash };
+    : {
+        kind: 'suspend',
+        cause: 'stage_content_changed',
+        observedHash: read.contentHash,
+      };
 }
 
 function sha(value: string): string {
@@ -161,12 +196,17 @@ export async function readBoundStageState(
   if (read.kind === 'suspend' && read.cause === 'stage_superseded') {
     // readStageState reports the first newer hash; recheck all of them for an identical one.
     const identical = await hasIdenticalNewerScan(stage, binding, key);
-    if (identical) return { kind: 'ok', contentHash: binding.stageContentHash as string };
+    if (identical)
+      return { kind: 'ok', contentHash: binding.stageContentHash as string };
   }
   return read;
 }
 
-async function hasIdenticalNewerScan(stage: StageQueryable, binding: BindingRow, key: BindingKey): Promise<boolean> {
+async function hasIdenticalNewerScan(
+  stage: StageQueryable,
+  binding: BindingRow,
+  key: BindingKey
+): Promise<boolean> {
   const newer = await stage.query(
     `SELECT r.listing FROM "directory_overture_private_row" r
      JOIN "directory_overture_private_membership" m ON m."scanId"=r."scanId" AND m."policyId"=$4
@@ -175,9 +215,16 @@ async function hasIdenticalNewerScan(stage: StageQueryable, binding: BindingRow,
      WHERE r."regionId"=$1 AND r."sourceFileRowNumber"=$2 AND r."scanId"<>$3 AND r.listing IS NOT NULL
        AND NOT EXISTS (SELECT 1 FROM "directory_overture_private_revocation" x WHERE x."scanId"=r."scanId")
        AND NOT EXISTS (SELECT 1 FROM "directory_overture_private_row_revocation" x WHERE x."scanId"=r."scanId" AND x."sourceFileRowNumber"=r."sourceFileRowNumber")`,
-    [binding.communityId, binding.stageSourceFileRowNumber, binding.stageScanId, binding.stagePolicyId]
+    [
+      binding.communityId,
+      binding.stageSourceFileRowNumber,
+      binding.stageScanId,
+      binding.stagePolicyId,
+    ]
   );
-  return newer.some((entry) => stageContentHash(key, entry.listing) === binding.stageContentHash);
+  return newer.some(
+    (entry) => stageContentHash(key, entry.listing) === binding.stageContentHash
+  );
 }
 
 /** Live-side signals: the served row must still carry exactly the reviewed fields. */
@@ -185,7 +232,11 @@ async function readLiveSignal(
   manager: EntityManager,
   binding: BindingRow,
   key: BindingKey
-): Promise<{ kind: 'ok' } | { kind: 'retire'; cause: RetireCause } | { kind: 'suspend'; cause: SuspendCause }> {
+): Promise<
+  | { kind: 'ok' }
+  | { kind: 'retire'; cause: RetireCause }
+  | { kind: 'suspend'; cause: SuspendCause }
+> {
   const [row] = await manager.query(
     `SELECT r.listing->'reviewed' AS reviewed,
        EXISTS (SELECT 1 FROM "directory_overture_private_revocation" x WHERE x."scanId"=r."scanId") AS "scanRevoked",
@@ -195,10 +246,19 @@ async function readLiveSignal(
      WHERE r."scanId"=$1 AND r."sourceFileRowNumber"=$2 AND r."regionId"=$3`,
     [binding.scanId, binding.sourceFileRowNumber, binding.communityId]
   );
-  if (!row || row.scanRevoked || row.rowRevoked || row.policyRevoked || !row.reviewed) {
+  if (
+    !row ||
+    row.scanRevoked ||
+    row.rowRevoked ||
+    row.policyRevoked ||
+    !row.reviewed
+  ) {
     return { kind: 'retire', cause: 'live_row_withdrawn' };
   }
-  if (binding.reviewedHash && reviewedHash(key, row.reviewed) !== binding.reviewedHash) {
+  if (
+    binding.reviewedHash &&
+    reviewedHash(key, row.reviewed) !== binding.reviewedHash
+  ) {
     return { kind: 'suspend', cause: 'live_reviewed_drift' };
   }
   return { kind: 'ok' };
@@ -253,9 +313,19 @@ export async function transitionBinding(
     return true;
   }
   // retire: lock order is candidate -> binding (held) -> policy -> scan lock -> row.
-  const [membership] = await manager.query('SELECT "policyId" FROM "directory_overture_private_membership" WHERE "scanId"=$1', [binding.scanId]);
-  if (membership) await manager.query('SELECT 1 FROM "directory_overture_private_policy" WHERE "policyId"=$1 FOR UPDATE', [membership.policyId]);
-  await manager.query('SELECT 1 FROM "directory_overture_private_scan_lock" WHERE "scanId"=$1 FOR UPDATE', [binding.scanId]);
+  const [membership] = await manager.query(
+    'SELECT "policyId" FROM "directory_overture_private_membership" WHERE "scanId"=$1',
+    [binding.scanId]
+  );
+  if (membership)
+    await manager.query(
+      'SELECT 1 FROM "directory_overture_private_policy" WHERE "policyId"=$1 FOR UPDATE',
+      [membership.policyId]
+    );
+  await manager.query(
+    'SELECT 1 FROM "directory_overture_private_scan_lock" WHERE "scanId"=$1 FOR UPDATE',
+    [binding.scanId]
+  );
   const changed = await manager.query(
     `WITH t AS (UPDATE "directory_reviewed_binding"
        SET "state"='retired',"stateCause"=$2,"retiredAt"=CURRENT_TIMESTAMP
@@ -271,13 +341,20 @@ export async function transitionBinding(
     [binding.scanId, binding.sourceFileRowNumber, binding.communityId]
   );
   let decisionId: string | null = null;
-  const [candidate] = await manager.query('SELECT "status" FROM "directory_address_review_candidate" WHERE "id"=$1', [binding.candidateId]);
+  const [candidate] = await manager.query(
+    'SELECT "status" FROM "directory_address_review_candidate" WHERE "id"=$1',
+    [binding.candidateId]
+  );
   if (candidate?.status === 'published') {
     const [decision] = await manager.query(
       `INSERT INTO "directory_address_review_decision"
          ("candidateId","actorKind","actorId","decision","evidenceUrl","evidenceHash","reason","checks","policyVersion","appliedAt")
        VALUES ($1,'auto',NULL,'revoke',NULL,NULL,$2,$3::jsonb,'reviewed-binding-v1',CURRENT_TIMESTAMP) RETURNING "id"`,
-      [binding.candidateId, plan.cause, JSON.stringify({ bindingId: binding.id, cause: plan.cause, runId })]
+      [
+        binding.candidateId,
+        plan.cause,
+        JSON.stringify({ bindingId: binding.id, cause: plan.cause, runId }),
+      ]
     );
     decisionId = decision.id;
     await manager.query(
@@ -298,7 +375,9 @@ async function plan(
   stage: StageQueryable,
   key: BindingKey,
   binding: BindingRow,
-  options: Required<Pick<RevalidateOptions, 'leaseMs' | 'suspensionTimeoutMs'>> & { now: () => Date; stageInstallationId?: string }
+  options: Required<
+    Pick<RevalidateOptions, 'leaseMs' | 'suspensionTimeoutMs'>
+  > & { now: () => Date; stageInstallationId?: string }
 ): Promise<Plan | 'unreachable'> {
   const live = await readLiveSignal(manager, binding, key);
   if (live.kind === 'retire') return { action: 'retire', cause: live.cause };
@@ -306,7 +385,9 @@ async function plan(
   let stageRead: StageState | undefined;
   let unreachable = false;
   if (binding.provenance === 'contact_stage') {
-    const wrongStage = options.stageInstallationId !== undefined && binding.stageInstallationId !== options.stageInstallationId;
+    const wrongStage =
+      options.stageInstallationId !== undefined &&
+      binding.stageInstallationId !== options.stageInstallationId;
     if (wrongStage) {
       unreachable = true;
     } else {
@@ -317,23 +398,41 @@ async function plan(
       }
     }
   }
-  if (stageRead?.kind === 'retire') return { action: 'retire', cause: stageRead.cause };
+  if (stageRead?.kind === 'retire')
+    return { action: 'retire', cause: stageRead.cause };
 
   if (binding.state !== 'suspended') {
-    if (live.kind === 'suspend') return { action: 'suspend', cause: live.cause };
-    if (stageRead?.kind === 'suspend') return { action: 'suspend', cause: stageRead.cause, observedHash: stageRead.observedHash };
+    if (live.kind === 'suspend')
+      return { action: 'suspend', cause: live.cause };
+    if (stageRead?.kind === 'suspend')
+      return {
+        action: 'suspend',
+        cause: stageRead.cause,
+        observedHash: stageRead.observedHash,
+      };
   }
   if (binding.state === 'suspended') {
-    const since = binding.suspendedAt ? new Date(binding.suspendedAt).getTime() : NaN;
-    if (Number.isFinite(since) && options.now().getTime() - since >= options.suspensionTimeoutMs) {
+    const since = binding.suspendedAt
+      ? new Date(binding.suspendedAt).getTime()
+      : NaN;
+    if (
+      Number.isFinite(since) &&
+      options.now().getTime() - since >= options.suspensionTimeoutMs
+    ) {
       return { action: 'retire', cause: 'suspension_expired' };
     }
     return { action: 'none' };
   }
   if (unreachable) return 'unreachable';
   // source_file bindings have no revalidation source and never become active (decision 12).
-  if (binding.provenance !== 'contact_stage' || stageRead?.kind !== 'ok') return { action: 'none' };
-  return { action: 'confirm', observedHash: stageRead.contentHash, verifiedAt: options.now(), verifiedUntil: new Date(options.now().getTime() + options.leaseMs) };
+  if (binding.provenance !== 'contact_stage' || stageRead?.kind !== 'ok')
+    return { action: 'none' };
+  return {
+    action: 'confirm',
+    observedHash: stageRead.contentHash,
+    verifiedAt: options.now(),
+    verifiedUntil: new Date(options.now().getTime() + options.leaseMs),
+  };
 }
 
 /**
@@ -350,36 +449,63 @@ export async function revalidateBinding(
 ): Promise<BindingResult> {
   const settings = {
     leaseMs: options.leaseMs ?? DEFAULT_LEASE_MS,
-    suspensionTimeoutMs: options.suspensionTimeoutMs ?? DEFAULT_SUSPENSION_TIMEOUT_MS,
+    suspensionTimeoutMs:
+      options.suspensionTimeoutMs ?? DEFAULT_SUSPENSION_TIMEOUT_MS,
     now: options.now ?? (() => new Date()),
     stageInstallationId: options.stageInstallationId,
   };
   try {
     return await live.transaction(async (manager): Promise<BindingResult> => {
-      const [pre] = await manager.query('SELECT "candidateId" FROM "directory_reviewed_binding" WHERE "id"=$1', [bindingId]);
+      const [pre] = await manager.query(
+        'SELECT "candidateId" FROM "directory_reviewed_binding" WHERE "id"=$1',
+        [bindingId]
+      );
       if (!pre) return { bindingId, outcome: 'gone' };
-      const exists = await manager.query('SELECT 1 FROM "directory_address_review_candidate" WHERE "id"=$1', [pre.candidateId]);
+      const exists = await manager.query(
+        'SELECT 1 FROM "directory_address_review_candidate" WHERE "id"=$1',
+        [pre.candidateId]
+      );
       if (exists.length === 1) {
-        const locked = await manager.query('SELECT 1 FROM "directory_address_review_candidate" WHERE "id"=$1 FOR UPDATE SKIP LOCKED', [pre.candidateId]);
+        const locked = await manager.query(
+          'SELECT 1 FROM "directory_address_review_candidate" WHERE "id"=$1 FOR UPDATE SKIP LOCKED',
+          [pre.candidateId]
+        );
         if (locked.length !== 1) return { bindingId, outcome: 'skipped' };
       }
-      const [binding] = (await manager.query('SELECT * FROM "directory_reviewed_binding" WHERE "id"=$1 FOR UPDATE SKIP LOCKED', [bindingId])) as BindingRow[];
+      const [binding] = (await manager.query(
+        'SELECT * FROM "directory_reviewed_binding" WHERE "id"=$1 FOR UPDATE SKIP LOCKED',
+        [bindingId]
+      )) as BindingRow[];
       if (!binding) return { bindingId, outcome: 'skipped' };
-      if (binding.state === 'retired') return { bindingId, outcome: 'unchanged' };
+      if (binding.state === 'retired')
+        return { bindingId, outcome: 'unchanged' };
       const decided = await plan(manager, stage, key, binding, settings);
-      if (decided === 'unreachable') return { bindingId, outcome: 'unreachable' };
+      if (decided === 'unreachable')
+        return { bindingId, outcome: 'unreachable' };
       if (decided.action === 'none') return { bindingId, outcome: 'unchanged' };
       const cause = decided.action === 'confirm' ? 'confirmed' : decided.cause;
       const outcome: Outcome =
-        decided.action === 'confirm' ? (binding.state === 'pending' ? 'confirmed' : 'extended') : decided.action === 'suspend' ? 'suspended' : 'retired';
+        decided.action === 'confirm'
+          ? binding.state === 'pending'
+            ? 'confirmed'
+            : 'extended'
+          : decided.action === 'suspend'
+          ? 'suspended'
+          : 'retired';
       if (options.apply) {
-        await transitionBinding(manager, binding, decided, options.runId ?? null);
+        await transitionBinding(
+          manager,
+          binding,
+          decided,
+          options.runId ?? null
+        );
       }
       return { bindingId, outcome, cause };
     });
   } catch (error) {
     // The row changed between the read and the projection write; the transaction rolled back and the next sweep retries.
-    if (error instanceof SpatialProjectionConflict) return { bindingId, outcome: 'skipped' };
+    if (error instanceof SpatialProjectionConflict)
+      return { bindingId, outcome: 'skipped' };
     throw error;
   }
 }
@@ -392,7 +518,10 @@ export function confirmBinding(
   bindingId: string,
   options: RevalidateOptions = {}
 ): Promise<BindingResult> {
-  return revalidateBinding(live, stage, key, bindingId, { ...options, apply: options.apply ?? true });
+  return revalidateBinding(live, stage, key, bindingId, {
+    ...options,
+    apply: options.apply ?? true,
+  });
 }
 
 export interface SweepSummary {
@@ -402,7 +531,16 @@ export interface SweepSummary {
 }
 
 function emptyCounts(): Record<Outcome, number> {
-  return { confirmed: 0, extended: 0, suspended: 0, retired: 0, unchanged: 0, unreachable: 0, skipped: 0, gone: 0 };
+  return {
+    confirmed: 0,
+    extended: 0,
+    suspended: 0,
+    retired: 0,
+    unchanged: 0,
+    unreachable: 0,
+    skipped: 0,
+    gone: 0,
+  };
 }
 
 async function runBatch(
@@ -412,7 +550,11 @@ async function runBatch(
   ids: string[],
   options: RevalidateOptions
 ): Promise<SweepSummary> {
-  const summary: SweepSummary = { examined: ids.length, counts: emptyCounts(), results: [] };
+  const summary: SweepSummary = {
+    examined: ids.length,
+    counts: emptyCounts(),
+    results: [],
+  };
   for (const id of ids) {
     const result = await revalidateBinding(live, stage, key, id, options);
     summary.counts[result.outcome] += 1;
@@ -434,7 +576,13 @@ export async function sweepBindings(
      ORDER BY "verifiedUntil" ASC NULLS FIRST,"createdAt" ASC LIMIT $1`,
     [limit]
   );
-  return runBatch(live, stage, key, rows.map((row: { id: string }) => row.id), { ...options, runId: options.runId ?? sha(String(Date.now())).slice(0, 16) });
+  return runBatch(
+    live,
+    stage,
+    key,
+    rows.map((row: { id: string }) => row.id),
+    { ...options, runId: options.runId ?? sha(String(Date.now())).slice(0, 16) }
+  );
 }
 
 /**
@@ -448,12 +596,23 @@ export async function invalidateForStage(
   target: { scanId?: string; policyId?: string; sourceFileRowNumber?: string },
   options: RevalidateOptions = {}
 ): Promise<SweepSummary> {
-  if (!target.scanId && !target.policyId) throw Error('A stage scan or policy is required');
+  if (!target.scanId && !target.policyId)
+    throw Error('A stage scan or policy is required');
   const rows = await live.query(
     `SELECT "id" FROM "directory_reviewed_binding" WHERE "state"<>'retired'
        AND ($1::text IS NULL OR "stageScanId"=$1) AND ($2::text IS NULL OR "stagePolicyId"=$2)
        AND ($3::bigint IS NULL OR "stageSourceFileRowNumber"=$3)`,
-    [target.scanId ?? null, target.policyId ?? null, target.sourceFileRowNumber ?? null]
+    [
+      target.scanId ?? null,
+      target.policyId ?? null,
+      target.sourceFileRowNumber ?? null,
+    ]
   );
-  return runBatch(live, stage, key, rows.map((row: { id: string }) => row.id), { ...options, apply: options.apply ?? true });
+  return runBatch(
+    live,
+    stage,
+    key,
+    rows.map((row: { id: string }) => row.id),
+    { ...options, apply: options.apply ?? true }
+  );
 }

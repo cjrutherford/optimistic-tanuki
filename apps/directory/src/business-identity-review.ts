@@ -37,7 +37,9 @@ const UNRESOLVED_FROM = `
    AND EXISTS (SELECT 1 FROM directory_overture_private_membership m JOIN directory_overture_private_policy p ON p."policyId"=m."policyId" AND p.revoked=false WHERE m."scanId"=e."scanId")
    AND NOT EXISTS (SELECT 1 FROM directory_overture_private_row_revocation y WHERE y."scanId"=e."scanId" AND y."sourceFileRowNumber"=e."sourceFileRowNumber")`;
 
-export async function businessIdentityHealth(db: Q): Promise<BusinessIdentityHealth> {
+export async function businessIdentityHealth(
+  db: Q
+): Promise<BusinessIdentityHealth> {
   const [row] = await db.query(
     `SELECT
        (SELECT count(*) ${UNRESOLVED_FROM})::int AS unresolved,
@@ -46,17 +48,39 @@ export async function businessIdentityHealth(db: Q): Promise<BusinessIdentityHea
        (SELECT count(*) FROM directory_business_carry_state s WHERE s.state<>'complete' AND NOT EXISTS (SELECT 1 FROM directory_overture_private_policy p WHERE p."policyId"=s."toPolicyId" AND p.revoked=true))::int AS "carryIncomplete",
        (SELECT count(*) ${UNBOUND_FROM})::int AS "carriedUnbound"`
   );
-  return { unresolved: row.unresolved, absent: row.absent, awaitingOwner: row.awaitingOwner, carryIncomplete: row.carryIncomplete, carriedUnbound: row.carriedUnbound };
+  return {
+    unresolved: row.unresolved,
+    absent: row.absent,
+    awaitingOwner: row.awaitingOwner,
+    carryIncomplete: row.carryIncomplete,
+    carriedUnbound: row.carriedUnbound,
+  };
 }
 
 export interface IdentityReviewQueue {
-  readonly carriedUnbound: ReadonlyArray<{ businessId: string; scanId: string; sourceFileRowNumber: string }>;
-  readonly unresolved: ReadonlyArray<{ businessId: string; scanId: string; sourceFileRowNumber: string; cause: string }>;
-  readonly awaitingOwner: ReadonlyArray<{ carryId: string; requestId: string; businessId: string }>;
+  readonly carriedUnbound: ReadonlyArray<{
+    businessId: string;
+    scanId: string;
+    sourceFileRowNumber: string;
+  }>;
+  readonly unresolved: ReadonlyArray<{
+    businessId: string;
+    scanId: string;
+    sourceFileRowNumber: string;
+    cause: string;
+  }>;
+  readonly awaitingOwner: ReadonlyArray<{
+    carryId: string;
+    requestId: string;
+    businessId: string;
+  }>;
 }
 
 /** Operator queue for one town. Each list is capped at 100 and ordered by id so repeated reads are stable. */
-export async function listIdentityReviewQueue(db: Q, townId: string): Promise<IdentityReviewQueue> {
+export async function listIdentityReviewQueue(
+  db: Q,
+  townId: string
+): Promise<IdentityReviewQueue> {
   if (!UUID.test(townId)) throw Error('Invalid business identity review');
   const carriedUnbound = await db.query(
     `SELECT b.id AS "businessId", a."scanId", a."sourceFileRowNumber"::text AS "sourceFileRowNumber" ${UNBOUND_FROM} AND b."communityId"=$1 ORDER BY b.id LIMIT 100`,

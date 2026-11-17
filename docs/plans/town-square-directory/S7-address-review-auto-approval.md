@@ -125,14 +125,14 @@ All of the following must be true:
 
 These are proposed and require approval before any auto-approval runs.
 
-| Check | Auto limit | Human limit |
-| --- | ---: | ---: |
-| Rooftop geocode distance | 150 m | 2,000 m |
-| Street/range geocode distance | 1,000 m | 2,000 m |
-| Locality-only geocode | not eligible | human |
-| Name similarity | 0.8 | below 0.8 → human |
-| Official evidence age | 30 days | older → human |
-| Re-verification interval | 90 days | stale → human |
+| Check                         |   Auto limit |       Human limit |
+| ----------------------------- | -----------: | ----------------: |
+| Rooftop geocode distance      |        150 m |           2,000 m |
+| Street/range geocode distance |      1,000 m |           2,000 m |
+| Locality-only geocode         | not eligible |             human |
+| Name similarity               |          0.8 | below 0.8 → human |
+| Official evidence age         |      30 days |     older → human |
+| Re-verification interval      |      90 days |     stale → human |
 
 The Census Geocoder is address-range, not rooftop. A street/range match can legitimately be hundreds of metres from the source point. The auto limit must therefore depend on precision, not a single global distance.
 
@@ -364,8 +364,8 @@ The active 133-town cohort has **182,277** private rows across **133 towns**, bu
 
 Four of the sixteen October assets cover every town in the cohort:
 
-| Asset | Size |
-| --- | ---: |
+| Asset   |   Size |
+| ------- | -----: |
 | `00000` | 696 MB |
 | `00001` | 773 MB |
 | `00003` | 788 MB |
@@ -425,17 +425,17 @@ Human approval can publish without automated official-page evidence: `publishAdd
 
 #### Capture and seed results (2026-11-11)
 
-| Step | Result |
-| --- | ---: |
-| Active private rows | 182,277 |
-| Contact rows with an address | 179,394 |
+| Step                                                     |  Result |
+| -------------------------------------------------------- | ------: |
+| Active private rows                                      | 182,277 |
+| Contact rows with an address                             | 179,394 |
 | Active rows matched by `(regionId, sourceFileRowNumber)` | 181,475 |
-| New review candidates | 179,125 |
-| Towns seeded | 133 |
-| Active rows with no contact record | 802 |
-| Active rows with contacts but no address | 2,346 |
-| Duplicate business identities skipped | 4 |
-| Total queue after seeding | 179,247 |
+| New review candidates                                    | 179,125 |
+| Towns seeded                                             |     133 |
+| Active rows with no contact record                       |     802 |
+| Active rows with contacts but no address                 |   2,346 |
+| Duplicate business identities skipped                    |       4 |
+| Total queue after seeding                                | 179,247 |
 
 The 802 no-contact rows and 2,346 no-address rows are the residual mismatch between the original eligible capture and the contact-retaining pass. They stay out of the queue rather than being guessed.
 
@@ -443,32 +443,32 @@ The 802 no-contact rows and 2,346 no-address rows are the residual mismatch betw
 
 The evidence worker ran with `--per-town 5`, which selects at most five candidates per town instead of the first N overall. The processed cohort is **785** candidates (663 from this pass plus the earlier pilot rows).
 
-| Outcome | Count |
-| --- | ---: |
-| Published (auto-approved) | 53 |
-| Rejected | 172 |
-| Needs human | 560 |
+| Outcome                   | Count |
+| ------------------------- | ----: |
+| Published (auto-approved) |    53 |
+| Rejected                  |   172 |
+| Needs human               |   560 |
 
-| Evidence step | Count |
-| --- | ---: |
-| Geocode match | 637 |
-| Official page fetched | 217 |
-| Official page blocked | 276 |
-| Official page unavailable | 292 |
+| Evidence step             | Count |
+| ------------------------- | ----: |
+| Geocode match             |   637 |
+| Official page fetched     |   217 |
+| Official page blocked     |   276 |
+| Official page unavailable |   292 |
 
 Blocked reasons across the 560 processed human-review candidates:
 
-| Reason | Count |
-| --- | ---: |
-| `official_evidence_unavailable` | 442 |
-| `official_address_mismatch` | 107 |
-| `official_phone_mismatch` | 103 |
-| `official_name_mismatch` | 36 |
-| `point_distance_requires_review` | 20 |
-| `residential_classification_unknown` | 19 |
-| `geocode_ambiguous` | 7 |
-| `official_website_mismatch` | 3 |
-| `geocode_error` | 1 |
+| Reason                               | Count |
+| ------------------------------------ | ----: |
+| `official_evidence_unavailable`      |   442 |
+| `official_address_mismatch`          |   107 |
+| `official_phone_mismatch`            |   103 |
+| `official_name_mismatch`             |    36 |
+| `point_distance_requires_review`     |    20 |
+| `residential_classification_unknown` |    19 |
+| `geocode_ambiguous`                  |     7 |
+| `official_website_mismatch`          |     3 |
+| `geocode_error`                      |     1 |
 
 Geocoding is not the bottleneck: 637 of 785 processed candidates matched, and 491 of the 499 sampled human-review rows had a geocode match. The bottleneck is the official page. **442** human-review rows had a blocked or unavailable page, and of the 101 fetched pages only 8 carried both a matching name and address. Most fetched URLs were generic site roots that do not publish the location address.
 
@@ -478,17 +478,17 @@ The remaining **178,462** `needs_human` rows have not been through the evidence 
 
 `needs_human` is not one failure. The decision engine records every failed or unknown check as a reason:
 
-| Reason | Meaning | What unblocks it |
-| --- | --- | --- |
-| `official_evidence_unavailable` | The official page was blocked, unavailable or absent. | A human supplies an HTTPS record, or the site becomes fetchable. |
-| `official_name_mismatch` / `official_address_mismatch` / `official_phone_mismatch` / `official_website_mismatch` | The page was fetched but a compared field did not appear. | Human review; a better canonical page. |
-| `multiple_addresses` | The source row has more than one address, so `singleAddress` is unknown. | A human picks the primary address. |
-| `residential_classification_unknown` | The category is not in the low-risk commercial allowlist. | Human classification. |
-| `sensitive_classification_unknown` / `adult_classification_unknown` | The rule classifier could not clear the item. | Human classification; these never auto-approve. |
-| `geocode_no_match` / `geocode_ambiguous` / `geocode_error` | Census could not return exactly one match. | A corrected address or a human check. |
-| `point_distance_requires_review` / `point_too_far` | The geocode is plausible but exceeds the distance threshold. | Human check of the map point. |
-| `rights_review_required` / `rights_denied` | The public-display policy does not cover the source terms. | A rights decision; not a reviewer task. |
-| `geocode_missing` / `official_evidence_missing` | The candidate has not been through the evidence worker yet. | Run the evidence worker. |
+| Reason                                                                                                           | Meaning                                                                  | What unblocks it                                                 |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `official_evidence_unavailable`                                                                                  | The official page was blocked, unavailable or absent.                    | A human supplies an HTTPS record, or the site becomes fetchable. |
+| `official_name_mismatch` / `official_address_mismatch` / `official_phone_mismatch` / `official_website_mismatch` | The page was fetched but a compared field did not appear.                | Human review; a better canonical page.                           |
+| `multiple_addresses`                                                                                             | The source row has more than one address, so `singleAddress` is unknown. | A human picks the primary address.                               |
+| `residential_classification_unknown`                                                                             | The category is not in the low-risk commercial allowlist.                | Human classification.                                            |
+| `sensitive_classification_unknown` / `adult_classification_unknown`                                              | The rule classifier could not clear the item.                            | Human classification; these never auto-approve.                  |
+| `geocode_no_match` / `geocode_ambiguous` / `geocode_error`                                                       | Census could not return exactly one match.                               | A corrected address or a human check.                            |
+| `point_distance_requires_review` / `point_too_far`                                                               | The geocode is plausible but exceeds the distance threshold.             | Human check of the map point.                                    |
+| `rights_review_required` / `rights_denied`                                                                       | The public-display policy does not cover the source terms.               | A rights decision; not a reviewer task.                          |
+| `geocode_missing` / `official_evidence_missing`                                                                  | The candidate has not been through the evidence worker yet.              | Run the evidence worker.                                         |
 
 `rejected` means a hard failure (no geocode match, invalid address, adult/sensitive/residential true, rights denied), not a parked item.
 
@@ -500,16 +500,16 @@ assignments, October staging and local display exception were already approved.
 The contact re-capture is slice 6 of this plan. The findings below are about the
 publication and audit gates that the thread ran ahead of.
 
-| Severity | Finding | Evidence | Status |
-| --- | --- | --- | --- |
-| P0 | 120 pilot/import candidates are not bound to an active private row. The September import uses a synthetic scan ID; the artifact-mode seed stores the artifact row number with an active scan ID. | `scripts/local-directory-address-review-import.cjs`; `scripts/local-directory-address-review-active-seed.cjs`; 120 candidates fail the `(scanId, sourceFileRowNumber)` join | Open |
-| P0 | Publication resolves the active row by name/category/point and does not require the candidate's source key to match. This masks the P0 above and lets a candidate publish a different row than its audit record. | `apps/directory/src/address-review-publish.ts` | Open |
-| P0 | No town-containment gate. The engine compares the geocode to the source point, not the assigned town boundary. Published examples: Valdosta → Quitman (3), Greer → Taylors, Kill Devil Hills → Nags Head. | Published rows; `DEFAULT_ADDRESS_REVIEW_POLICY` | Open |
-| P1 | Auto-approval was enabled at 133-town scale before the four-town precision measurement required by slice 5. | §9 item 5; 663-row sample | Open; local display exception applies, precision unmeasured |
-| P1 | Published rows cannot be retracted from the owner console. `revoke` only works from `approved`/`auto_approved`. | `directory-address-review-page.component.ts` | Open |
-| P1 | The 2026-11-10/11 decisions (all-town public display, bounded HTTP evidence, human-evidence publication, contact retention) are not in `DECISIONS-2026-11-07.md` or an ADR. | `DECISIONS-2026-11-07.md`; policy `approvedBy: chat approval` | Open |
-| P2 | The public-display policy grants all nine fields, while the approval notes name address, website and phone. `primary`/`hierarchy` are required by the projection but are not served; `alternate` is optional. | `policies/overture-public-display-*.json` | Open |
-| P2 | Contact and provenance retention was added to the shared private sink as an opt-in. The default still drops them, but the documented "never arbitrary source data" guarantee now depends on the caller. | `overture-private-sink.ts` | Open |
+| Severity | Finding                                                                                                                                                                                                          | Evidence                                                                                                                                                                    | Status                                                      |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| P0       | 120 pilot/import candidates are not bound to an active private row. The September import uses a synthetic scan ID; the artifact-mode seed stores the artifact row number with an active scan ID.                 | `scripts/local-directory-address-review-import.cjs`; `scripts/local-directory-address-review-active-seed.cjs`; 120 candidates fail the `(scanId, sourceFileRowNumber)` join | Open                                                        |
+| P0       | Publication resolves the active row by name/category/point and does not require the candidate's source key to match. This masks the P0 above and lets a candidate publish a different row than its audit record. | `apps/directory/src/address-review-publish.ts`                                                                                                                              | Open                                                        |
+| P0       | No town-containment gate. The engine compares the geocode to the source point, not the assigned town boundary. Published examples: Valdosta → Quitman (3), Greer → Taylors, Kill Devil Hills → Nags Head.        | Published rows; `DEFAULT_ADDRESS_REVIEW_POLICY`                                                                                                                             | Open                                                        |
+| P1       | Auto-approval was enabled at 133-town scale before the four-town precision measurement required by slice 5.                                                                                                      | §9 item 5; 663-row sample                                                                                                                                                   | Open; local display exception applies, precision unmeasured |
+| P1       | Published rows cannot be retracted from the owner console. `revoke` only works from `approved`/`auto_approved`.                                                                                                  | `directory-address-review-page.component.ts`                                                                                                                                | Open                                                        |
+| P1       | The 2026-11-10/11 decisions (all-town public display, bounded HTTP evidence, human-evidence publication, contact retention) are not in `DECISIONS-2026-11-07.md` or an ADR.                                      | `DECISIONS-2026-11-07.md`; policy `approvedBy: chat approval`                                                                                                               | Open                                                        |
+| P2       | The public-display policy grants all nine fields, while the approval notes name address, website and phone. `primary`/`hierarchy` are required by the projection but are not served; `alternate` is optional.    | `policies/overture-public-display-*.json`                                                                                                                                   | Open                                                        |
+| P2       | Contact and provenance retention was added to the shared private sink as an opt-in. The default still drops them, but the documented "never arbitrary source data" guarantee now depends on the caller.          | `overture-private-sink.ts`                                                                                                                                                  | Open                                                        |
 
 The wrong-town examples are a product defect even under the unverified-assignment
 exception: the address itself is visible and contradicts the town page. Do not
@@ -521,7 +521,6 @@ above in place, preserving the existing queue and publications. This section is
 the audit record, not a claim that the findings were fixed.
 
 ## 12. Open decisions
-
 
 - Approve the auto-approval policy and thresholds.
 - Approve the evidence sources and their terms of use.

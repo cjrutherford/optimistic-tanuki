@@ -206,7 +206,9 @@ describe('DirectoryOwnerHttpClient', () => {
       '/internal/account-export/read',
       '/internal/account-export/release',
     ]);
-    expect(seen.every((request) => request.authorization === `Bearer ${SECRET}`)).toBe(true);
+    expect(
+      seen.every((request) => request.authorization === `Bearer ${SECRET}`)
+    ).toBe(true);
     expect(() => c.exportCapture('delete' as never, {}, 1)).toThrow(
       'DIRECTORY_EXPORT_OPERATION_INVALID'
     );

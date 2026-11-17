@@ -74,7 +74,11 @@ describe('MapComponent', () => {
       .spyOn(component as any, 'attachTileLayerWhenReady')
       .mockImplementation(() => undefined);
     component.directoryLocations = [
-      { name: '<Fixture>', category: 'food_store', coordinates: { lat: 31, lng: -83 } },
+      {
+        name: '<Fixture>',
+        category: 'food_store',
+        coordinates: { lat: 31, lng: -83 },
+      },
     ];
     (component as any).refreshMapContent();
     expect(leaflet.marker).toHaveBeenCalledWith(

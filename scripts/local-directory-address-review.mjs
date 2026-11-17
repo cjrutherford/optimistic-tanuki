@@ -71,10 +71,7 @@ for await (const line of reader) {
     ? row.phones.map(text).filter(Boolean)
     : [];
   const category = text(row.basic_category) || 'unknown';
-  summary.categories.set(
-    category,
-    (summary.categories.get(category) || 0) + 1
-  );
+  summary.categories.set(category, (summary.categories.get(category) || 0) + 1);
 
   if (addresses.length > 0) summary.withAddress += 1;
   if (addresses.length === 1) summary.singleAddress += 1;

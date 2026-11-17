@@ -23,10 +23,7 @@ test('builds a US Census query and refuses non-US addresses', () => {
     }),
     '340 Norman Dr, Valdosta, GA 31601'
   );
-  assert.equal(
-    censusQuery({ freeform: '1 Main St', country: 'CA' }),
-    null
-  );
+  assert.equal(censusQuery({ freeform: '1 Main St', country: 'CA' }), null);
 });
 
 test('parses unique, missing and ambiguous Census responses', () => {

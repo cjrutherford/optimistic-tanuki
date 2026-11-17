@@ -5,12 +5,14 @@
 Finish the remaining hard-stop items from [HANDOFF-2026-11-15-HARDSTOP.md](HANDOFF-2026-11-15-HARDSTOP.md), in this order:
 
 1. **Item 2: production spatial index.** Bounds search currently caps the reviewed candidates it examines at 5,000 and validates them in JS before pagination. Build a reviewed-address-only indexed projection with:
+
    - reliable lifecycle updates
    - historical reconciliation and readiness
    - current policy, withdrawal and assignment checks
    - validation before `hasMore`
 
    Never index or disclose unreviewed coordinates or counts, and never guess historical assignment identity. Keep the S5 non-snapshot cursor semantics.
+
 2. **Item 3: source freshness provenance.** `directory_overture_private_completion` holds only a scan ID. Persist the real upstream release/publication evidence and a trusted acquisition timestamp, with provenance. Historical scans without evidence stay `unknown`. The targets are a refresh at least every 90 days and stale after 120 days, and inferred dates never count as proof.
 
 ## Current state (all in the local stack)

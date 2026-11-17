@@ -2,11 +2,7 @@
   "name": "directory-worker",
   "projectType": "application",
   "sourceRoot": "apps/directory-worker/src",
-  "tags": [
-    "type:app",
-    "platform:server",
-    "visibility:internal"
-  ],
+  "tags": ["type:app", "platform:server", "visibility:internal"],
   "targets": {
     "build": {
       "executor": "@nx/webpack:webpack",
@@ -18,9 +14,7 @@
     "lint": {
       "executor": "@nx/eslint:lint",
       "options": {
-        "lintFilePatterns": [
-          "apps/directory-worker/**/*.ts"
-        ]
+        "lintFilePatterns": ["apps/directory-worker/**/*.ts"]
       }
     },
     "prepare-boundary-candidate": {

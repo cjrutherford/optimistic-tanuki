@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { DirectoryAddressReviewController } from './directory-address-review.controller';
 
 const town = '615482e8-d72b-4500-989f-5b79ceb32781';
@@ -21,11 +25,13 @@ describe('DirectoryAddressReviewController', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
-    if (original.mode === undefined) delete process.env.DIRECTORY_LOCAL_EVALUATION;
+    if (original.mode === undefined)
+      delete process.env.DIRECTORY_LOCAL_EVALUATION;
     else process.env.DIRECTORY_LOCAL_EVALUATION = original.mode;
     if (original.base === undefined) delete process.env.DIRECTORY_INTERNAL_URL;
     else process.env.DIRECTORY_INTERNAL_URL = original.base;
-    if (original.secret === undefined) delete process.env.DIRECTORY_LOCAL_EVALUATION_SECRET;
+    if (original.secret === undefined)
+      delete process.env.DIRECTORY_LOCAL_EVALUATION_SECRET;
     else process.env.DIRECTORY_LOCAL_EVALUATION_SECRET = original.secret;
   });
 
@@ -53,13 +59,9 @@ describe('DirectoryAddressReviewController', () => {
     );
 
     const controller = new DirectoryAddressReviewController();
-    const result = await controller.list(
-      town,
-      'needs_human',
-      '25',
-      '0',
-      { user: { profileId: reviewerId } }
-    );
+    const result = await controller.list(town, 'needs_human', '25', '0', {
+      user: { profileId: reviewerId },
+    });
 
     expect(result.candidates).toHaveLength(1);
     expect(result.candidates[0].name).toBe('Fixture Bakery');
@@ -73,16 +75,27 @@ describe('DirectoryAddressReviewController', () => {
   });
 
   it('allows a reviewer to list archived candidates', async () => {
-    const fetcher = jest.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ candidates: [] }), { status: 200 }));
+    const fetcher = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ candidates: [] }), { status: 200 })
+      );
     const controller = new DirectoryAddressReviewController();
-    await controller.list(town, 'archived', '25', '0', { user: { profileId: reviewerId } });
-    expect(fetcher).toHaveBeenCalledWith(expect.stringContaining('status=archived'), expect.anything());
+    await controller.list(town, 'archived', '25', '0', {
+      user: { profileId: reviewerId },
+    });
+    expect(fetcher).toHaveBeenCalledWith(
+      expect.stringContaining('status=archived'),
+      expect.anything()
+    );
   });
 
   it('forwards a human decision with the authenticated reviewer', async () => {
-    const fetch = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ status: 'approved' }), { status: 200 })
-    );
+    const fetch = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ status: 'approved' }), { status: 200 })
+      );
 
     const controller = new DirectoryAddressReviewController();
     const result = await controller.decide(
@@ -127,9 +140,7 @@ describe('DirectoryAddressReviewController', () => {
   });
 
   it('fails closed when the Directory endpoint is unavailable', async () => {
-    jest
-      .spyOn(globalThis, 'fetch')
-      .mockRejectedValue(new Error('offline'));
+    jest.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
     const controller = new DirectoryAddressReviewController();
     await expect(
       controller.list(town, undefined, undefined, undefined, {

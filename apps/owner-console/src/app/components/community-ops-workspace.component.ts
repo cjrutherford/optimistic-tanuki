@@ -1072,16 +1072,40 @@ export class CommunityOpsWorkspaceComponent implements OnInit {
           label: 'Manage Members',
           route: ['/dashboard/communities', entity.id, 'members'],
         },
-        ...(['city','town'].includes(entity.localityType ?? '') ? [{label:'Review Boundary',route:['/dashboard/boundary-review',entity.id]},{label:'Review Business Links',route:['/dashboard/directory-link-review',entity.id]},{label:'Review Addresses',route:['/dashboard/directory-address-review',entity.id]}] : []),
+        ...(['city', 'town'].includes(entity.localityType ?? '')
+          ? [
+              {
+                label: 'Review Boundary',
+                route: ['/dashboard/boundary-review', entity.id],
+              },
+              {
+                label: 'Review Business Links',
+                route: ['/dashboard/directory-link-review', entity.id],
+              },
+              {
+                label: 'Review Addresses',
+                route: ['/dashboard/directory-address-review', entity.id],
+              },
+            ]
+          : []),
       ];
     }
 
     if (entity.entityType === 'city') {
       return [
         { label: 'Edit City', route: ['/dashboard/cities', entity.id] },
-        { label: 'Review Boundary', route: ['/dashboard/boundary-review', entity.id] },
-        { label: 'Review Business Links', route: ['/dashboard/directory-link-review', entity.id] },
-        { label: 'Review Addresses', route: ['/dashboard/directory-address-review', entity.id] },
+        {
+          label: 'Review Boundary',
+          route: ['/dashboard/boundary-review', entity.id],
+        },
+        {
+          label: 'Review Business Links',
+          route: ['/dashboard/directory-link-review', entity.id],
+        },
+        {
+          label: 'Review Addresses',
+          route: ['/dashboard/directory-address-review', entity.id],
+        },
         { label: 'Create Community', route: ['/dashboard/communities/new'] },
       ];
     }

@@ -1,176 +1,1010 @@
-const test=require('node:test');
-const assert=require('node:assert/strict');
-const {randomUUID}=require('node:crypto');
-const {DataSource}=require('typeorm');
-const {deletionIdentityKey}=require('../../../libs/storage/src/lib/account-deletion-write-fence');
-const {beginRegisterRecovery,advanceRegisterRecovery}=require('../src/register-recovery-authority');
-const {reconcileRegisterV2}=require('../src/register-reconciliation-v2');
-const {storeBoundaryCandidate,readCurrentBoundaryCandidate}=require('../src/boundary-review');
-const {TownGeometryService}=require('../src/town-geometry');
-const {storeDiscoveredBoundaryCandidate}=require('../../directory-worker/src/boundary-review');
-const url=process.env.S2_REVIEW_DATABASE_URL;
-test('private candidate is cleared by source withdrawal and recovery', {skip:!url},async()=>{
-  const u=new URL(url);assert.equal(u.hostname,'127.0.0.1');assert.equal(u.pathname,'/directory_review');
-  const db=new DataSource({type:'postgres',url});await db.initialize();let duck,spatial;
-  try {
-    const id=randomUUID(),sourceEpoch=randomUUID(),activationId=randomUUID(),owner=randomUUID(),token=randomUUID();
-    const auth=await beginRegisterRecovery(db,{sourceEpoch,activationId,socialGeneration:'1',owner,expectedPrevious:null,externalFence:true});
-    await advanceRegisterRecovery(db,auth,{phase:'blocked',cursor:null},{phase:'reg-source',cursor:null});
-    const candidate={communityId:id,changeToken:token,geoid:'1323872',layer:'place',vintage:'2026',stateFips:'13',archiveSha256:'1325e424664f8c0f517c0aa155e3806ca299785ccca4e1badc9fe4f3f4173e09'};
-    const geography={communityId:id,name:'Douglas Community',city:'Douglas',adminArea:'GA',countryCode:'US',localityType:'city',referencePoint:[-82.854335,31.506114]};
-    const read=async()=>({status:'current',changeToken:token,geography});
-    await reconcileRegisterV2(db,auth,id,token,async()=>({status:'current',snapshot:{id,name:'Town',slug:null,adminArea:'GA',appScope:'local-hub',isPrivate:false,localityType:'city'}}));
-    await assert.rejects(storeBoundaryCandidate(db,auth,{...candidate,geoid:'9923872'},read),/Invalid boundary/);
-    await assert.rejects(storeBoundaryCandidate(db,auth,candidate,async()=>({status:'current',changeToken:token,geography:{communityId:randomUUID()}})),/Stale/);
-    const discovery={status:'candidate',sourceIdentity:{sourceEpoch,activationId,socialGeneration:'1'},changeToken:token,reviewContext:{communityId:id,name:geography.name,city:geography.city,adminArea:geography.adminArea,countryCode:geography.countryCode,localityType:geography.localityType},approximateLocation:{coordinates:geography.referencePoint},candidates:[{geoid:candidate.geoid,layer:candidate.layer,vintage:candidate.vintage,stateFips:candidate.stateFips,sourceSha256:candidate.archiveSha256}]};
-    await assert.rejects(storeDiscoveredBoundaryCandidate(db,auth,{...discovery,sourceIdentity:{...discovery.sourceIdentity,sourceEpoch:randomUUID()}},{geography:read}),/identity/i);
-    await assert.rejects(storeDiscoveredBoundaryCandidate(db,auth,discovery,{geography:async()=>({status:'current',changeToken:token,geography:{...geography,city:'Other'}})}),/geography/i);
-    await storeDiscoveredBoundaryCandidate(db,auth,discovery,{geography:read});
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',[id]))[0].n,1);
-    const reviewedCandidate=await readCurrentBoundaryCandidate(db,auth,id,read);
-    assert.equal(reviewedCandidate.geoid,'1323872');assert.equal(reviewedCandidate.reviewContext.name,'Douglas Community');
-    const {recordBoundaryDecision}=require('../src/boundary-decision');
-    const decision={requestId:randomUUID(),reviewerId:randomUUID(),decision:'verified',attested:true,sourceUrl:'https://www.census.gov/geographies/reference-files.html',candidate:{...candidate,geographyHash:reviewedCandidate.geographyHash}};
-    await assert.rejects(recordBoundaryDecision(db,auth,{...decision,candidate:{...decision.candidate,geographyHash:'f'.repeat(64)}},read),/candidate/i);
-    await assert.rejects(recordBoundaryDecision(db,auth,{...decision,attested:false},read),/decision/i);
-    await assert.rejects(recordBoundaryDecision(db,auth,{...decision,sourceUrl:'https://census.gov.example.com/'},read),/source/i);
-    await assert.rejects(recordBoundaryDecision(db,auth,{...decision,candidate:{...decision.candidate,geoid:'1323873'}},read),/candidate/i);
-    const fenceKey=deletionIdentityKey('profile',decision.reviewerId);
-    await db.query('INSERT INTO account_deletion_write_fence ("key",kind,"operationId") VALUES ($1,\'profile\',$2)',[fenceKey,randomUUID()]);
-    try{await assert.rejects(recordBoundaryDecision(db,auth,decision,read),/ACCOUNT_DELETION_FENCED/);}finally{await db.query('DELETE FROM account_deletion_write_fence WHERE "key"=$1',[fenceKey]);}
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_decision WHERE "requestId"=$1',[decision.requestId]))[0].n,0);
-    await recordBoundaryDecision(db,auth,decision,read);
-    await recordBoundaryDecision(db,auth,decision,read);
-    let records=await db.query('SELECT * FROM directory_boundary_decision WHERE "requestId"=$1',[decision.requestId]);
-    assert.equal(records.length,1);assert.equal(records[0].reviewerId,decision.reviewerId);assert.equal(records[0].geographyHash.length,64);assert.equal(records[0].recoveryEpoch,auth.recoveryEpoch);assert.equal(records[0].directoryGeneration,auth.directoryGeneration);
-    await assert.rejects(recordBoundaryDecision(db,auth,{...decision,sourceUrl:'https://www.census.gov/other'},read),/request/i);
-    await assert.rejects(recordBoundaryDecision(db,auth,{...decision,requestId:randomUUID()},async()=>({status:'current',changeToken:token,geography:{...geography,city:'Changed'}})),/stale/i);
-    const {pendingChecks,pendingServer}=require('../src/register-pending-runtime');
-    const writeSecret='review-decision-secret-12345678901234567890', readSecret='review-read-secret-12345678901234567890';
-    await db.query(`UPDATE directory_census_progress SET phase='reg-running', "registerRequest"="registerRequest" || $1::jsonb WHERE id='recovery'`,[JSON.stringify({sweep:{generation:'1'},lastCompletedSweep:{generation:'1',completedAt:new Date().toISOString()}})]);
-    const server=pendingServer(pendingChecks(db,{geography:async()=>read()},auth),readSecret,undefined,writeSecret);
-    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { randomUUID } = require('node:crypto');
+const { DataSource } = require('typeorm');
+const {
+  deletionIdentityKey,
+} = require('../../../libs/storage/src/lib/account-deletion-write-fence');
+const {
+  beginRegisterRecovery,
+  advanceRegisterRecovery,
+} = require('../src/register-recovery-authority');
+const { reconcileRegisterV2 } = require('../src/register-reconciliation-v2');
+const {
+  storeBoundaryCandidate,
+  readCurrentBoundaryCandidate,
+} = require('../src/boundary-review');
+const { TownGeometryService } = require('../src/town-geometry');
+const {
+  storeDiscoveredBoundaryCandidate,
+} = require('../../directory-worker/src/boundary-review');
+const url = process.env.S2_REVIEW_DATABASE_URL;
+test(
+  'private candidate is cleared by source withdrawal and recovery',
+  { skip: !url },
+  async () => {
+    const u = new URL(url);
+    assert.equal(u.hostname, '127.0.0.1');
+    assert.equal(u.pathname, '/directory_review');
+    const db = new DataSource({ type: 'postgres', url });
+    await db.initialize();
+    let duck, spatial;
     try {
-      const url=`http://127.0.0.1:${server.address().port}/internal/towns/${id}/boundary-decisions`;
-      const wireDecision={...decision,requestId:randomUUID()};
-      const send=secret=>fetch(url,{method:'POST',headers:{authorization:`Bearer ${secret}`,'content-type':'application/json'},body:JSON.stringify(wireDecision)});
-      assert.equal((await send(readSecret)).status,401);
-      assert.equal((await send(writeSecret)).status,204);
-      assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_decision WHERE "requestId"=$1',[wireDecision.requestId]))[0].n,1);
-    } finally {await new Promise(resolve=>server.close(resolve));}
-    await db.query(`UPDATE directory_census_progress SET phase='reg-source' WHERE id='recovery'`);
-    const {installReviewedBoundary}=require('../src/reviewed-boundary-install');
-    const polygon={type:'Polygon',coordinates:[[[-83,31],[-82,31],[-82,32],[-83,32],[-83,31]]]};
-    const extracted={status:'candidate',geoid:candidate.geoid,stateFips:candidate.stateFips,layer:candidate.layer,vintage:candidate.vintage,sourceSha256:candidate.archiveSha256,geometry:polygon};
-    let load=async()=>extracted;
-    if (process.env.S2_CENSUS_ARCHIVE) {
-      const {DuckDBInstance}=require('@duckdb/node-api');const {stat}=require('node:fs/promises');
-      const {readCensusBoundaryCandidate}=await import('../../../scripts/census-boundary-reader.mjs');
-      duck=await DuckDBInstance.create(':memory:');spatial=await duck.connect();
-      await spatial.run('SET autoinstall_known_extensions=false');await spatial.run('SET autoload_known_extensions=false');await spatial.run('LOAD spatial');
-      load=async()=>readCensusBoundaryCandidate({connection:spatial,archivePath:process.env.S2_CENSUS_ARCHIVE,archiveBytes:(await stat(process.env.S2_CENSUS_ARCHIVE)).size,archiveSha256:candidate.archiveSha256,vintage:candidate.vintage,stateFips:candidate.stateFips,layer:candidate.layer,geoid:candidate.geoid,referencePoint:geography.referencePoint});
+      const id = randomUUID(),
+        sourceEpoch = randomUUID(),
+        activationId = randomUUID(),
+        owner = randomUUID(),
+        token = randomUUID();
+      const auth = await beginRegisterRecovery(db, {
+        sourceEpoch,
+        activationId,
+        socialGeneration: '1',
+        owner,
+        expectedPrevious: null,
+        externalFence: true,
+      });
+      await advanceRegisterRecovery(
+        db,
+        auth,
+        { phase: 'blocked', cursor: null },
+        { phase: 'reg-source', cursor: null }
+      );
+      const candidate = {
+        communityId: id,
+        changeToken: token,
+        geoid: '1323872',
+        layer: 'place',
+        vintage: '2026',
+        stateFips: '13',
+        archiveSha256:
+          '1325e424664f8c0f517c0aa155e3806ca299785ccca4e1badc9fe4f3f4173e09',
+      };
+      const geography = {
+        communityId: id,
+        name: 'Douglas Community',
+        city: 'Douglas',
+        adminArea: 'GA',
+        countryCode: 'US',
+        localityType: 'city',
+        referencePoint: [-82.854335, 31.506114],
+      };
+      const read = async () => ({
+        status: 'current',
+        changeToken: token,
+        geography,
+      });
+      await reconcileRegisterV2(db, auth, id, token, async () => ({
+        status: 'current',
+        snapshot: {
+          id,
+          name: 'Town',
+          slug: null,
+          adminArea: 'GA',
+          appScope: 'local-hub',
+          isPrivate: false,
+          localityType: 'city',
+        },
+      }));
+      await assert.rejects(
+        storeBoundaryCandidate(
+          db,
+          auth,
+          { ...candidate, geoid: '9923872' },
+          read
+        ),
+        /Invalid boundary/
+      );
+      await assert.rejects(
+        storeBoundaryCandidate(db, auth, candidate, async () => ({
+          status: 'current',
+          changeToken: token,
+          geography: { communityId: randomUUID() },
+        })),
+        /Stale/
+      );
+      const discovery = {
+        status: 'candidate',
+        sourceIdentity: { sourceEpoch, activationId, socialGeneration: '1' },
+        changeToken: token,
+        reviewContext: {
+          communityId: id,
+          name: geography.name,
+          city: geography.city,
+          adminArea: geography.adminArea,
+          countryCode: geography.countryCode,
+          localityType: geography.localityType,
+        },
+        approximateLocation: { coordinates: geography.referencePoint },
+        candidates: [
+          {
+            geoid: candidate.geoid,
+            layer: candidate.layer,
+            vintage: candidate.vintage,
+            stateFips: candidate.stateFips,
+            sourceSha256: candidate.archiveSha256,
+          },
+        ],
+      };
+      await assert.rejects(
+        storeDiscoveredBoundaryCandidate(
+          db,
+          auth,
+          {
+            ...discovery,
+            sourceIdentity: {
+              ...discovery.sourceIdentity,
+              sourceEpoch: randomUUID(),
+            },
+          },
+          { geography: read }
+        ),
+        /identity/i
+      );
+      await assert.rejects(
+        storeDiscoveredBoundaryCandidate(db, auth, discovery, {
+          geography: async () => ({
+            status: 'current',
+            changeToken: token,
+            geography: { ...geography, city: 'Other' },
+          }),
+        }),
+        /geography/i
+      );
+      await storeDiscoveredBoundaryCandidate(db, auth, discovery, {
+        geography: read,
+      });
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        1
+      );
+      const reviewedCandidate = await readCurrentBoundaryCandidate(
+        db,
+        auth,
+        id,
+        read
+      );
+      assert.equal(reviewedCandidate.geoid, '1323872');
+      assert.equal(reviewedCandidate.reviewContext.name, 'Douglas Community');
+      const { recordBoundaryDecision } = require('../src/boundary-decision');
+      const decision = {
+        requestId: randomUUID(),
+        reviewerId: randomUUID(),
+        decision: 'verified',
+        attested: true,
+        sourceUrl: 'https://www.census.gov/geographies/reference-files.html',
+        candidate: {
+          ...candidate,
+          geographyHash: reviewedCandidate.geographyHash,
+        },
+      };
+      await assert.rejects(
+        recordBoundaryDecision(
+          db,
+          auth,
+          {
+            ...decision,
+            candidate: { ...decision.candidate, geographyHash: 'f'.repeat(64) },
+          },
+          read
+        ),
+        /candidate/i
+      );
+      await assert.rejects(
+        recordBoundaryDecision(
+          db,
+          auth,
+          { ...decision, attested: false },
+          read
+        ),
+        /decision/i
+      );
+      await assert.rejects(
+        recordBoundaryDecision(
+          db,
+          auth,
+          { ...decision, sourceUrl: 'https://census.gov.example.com/' },
+          read
+        ),
+        /source/i
+      );
+      await assert.rejects(
+        recordBoundaryDecision(
+          db,
+          auth,
+          {
+            ...decision,
+            candidate: { ...decision.candidate, geoid: '1323873' },
+          },
+          read
+        ),
+        /candidate/i
+      );
+      const fenceKey = deletionIdentityKey('profile', decision.reviewerId);
+      await db.query(
+        'INSERT INTO account_deletion_write_fence ("key",kind,"operationId") VALUES ($1,\'profile\',$2)',
+        [fenceKey, randomUUID()]
+      );
+      try {
+        await assert.rejects(
+          recordBoundaryDecision(db, auth, decision, read),
+          /ACCOUNT_DELETION_FENCED/
+        );
+      } finally {
+        await db.query(
+          'DELETE FROM account_deletion_write_fence WHERE "key"=$1',
+          [fenceKey]
+        );
+      }
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_boundary_decision WHERE "requestId"=$1',
+            [decision.requestId]
+          )
+        )[0].n,
+        0
+      );
+      await recordBoundaryDecision(db, auth, decision, read);
+      await recordBoundaryDecision(db, auth, decision, read);
+      let records = await db.query(
+        'SELECT * FROM directory_boundary_decision WHERE "requestId"=$1',
+        [decision.requestId]
+      );
+      assert.equal(records.length, 1);
+      assert.equal(records[0].reviewerId, decision.reviewerId);
+      assert.equal(records[0].geographyHash.length, 64);
+      assert.equal(records[0].recoveryEpoch, auth.recoveryEpoch);
+      assert.equal(records[0].directoryGeneration, auth.directoryGeneration);
+      await assert.rejects(
+        recordBoundaryDecision(
+          db,
+          auth,
+          { ...decision, sourceUrl: 'https://www.census.gov/other' },
+          read
+        ),
+        /request/i
+      );
+      await assert.rejects(
+        recordBoundaryDecision(
+          db,
+          auth,
+          { ...decision, requestId: randomUUID() },
+          async () => ({
+            status: 'current',
+            changeToken: token,
+            geography: { ...geography, city: 'Changed' },
+          })
+        ),
+        /stale/i
+      );
+      const {
+        pendingChecks,
+        pendingServer,
+      } = require('../src/register-pending-runtime');
+      const writeSecret = 'review-decision-secret-12345678901234567890',
+        readSecret = 'review-read-secret-12345678901234567890';
+      await db.query(
+        `UPDATE directory_census_progress SET phase='reg-running', "registerRequest"="registerRequest" || $1::jsonb WHERE id='recovery'`,
+        [
+          JSON.stringify({
+            sweep: { generation: '1' },
+            lastCompletedSweep: {
+              generation: '1',
+              completedAt: new Date().toISOString(),
+            },
+          }),
+        ]
+      );
+      const server = pendingServer(
+        pendingChecks(db, { geography: async () => read() }, auth),
+        readSecret,
+        undefined,
+        writeSecret
+      );
+      await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+      try {
+        const url = `http://127.0.0.1:${
+          server.address().port
+        }/internal/towns/${id}/boundary-decisions`;
+        const wireDecision = { ...decision, requestId: randomUUID() };
+        const send = (secret) =>
+          fetch(url, {
+            method: 'POST',
+            headers: {
+              authorization: `Bearer ${secret}`,
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify(wireDecision),
+          });
+        assert.equal((await send(readSecret)).status, 401);
+        assert.equal((await send(writeSecret)).status, 204);
+        assert.equal(
+          (
+            await db.query(
+              'SELECT count(*)::int AS n FROM directory_boundary_decision WHERE "requestId"=$1',
+              [wireDecision.requestId]
+            )
+          )[0].n,
+          1
+        );
+      } finally {
+        await new Promise((resolve) => server.close(resolve));
+      }
+      await db.query(
+        `UPDATE directory_census_progress SET phase='reg-source' WHERE id='recovery'`
+      );
+      const {
+        installReviewedBoundary,
+      } = require('../src/reviewed-boundary-install');
+      const polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-83, 31],
+            [-82, 31],
+            [-82, 32],
+            [-83, 32],
+            [-83, 31],
+          ],
+        ],
+      };
+      const extracted = {
+        status: 'candidate',
+        geoid: candidate.geoid,
+        stateFips: candidate.stateFips,
+        layer: candidate.layer,
+        vintage: candidate.vintage,
+        sourceSha256: candidate.archiveSha256,
+        geometry: polygon,
+      };
+      let load = async () => extracted;
+      if (process.env.S2_CENSUS_ARCHIVE) {
+        const { DuckDBInstance } = require('@duckdb/node-api');
+        const { stat } = require('node:fs/promises');
+        const { readCensusBoundaryCandidate } = await import(
+          '../../../scripts/census-boundary-reader.mjs'
+        );
+        duck = await DuckDBInstance.create(':memory:');
+        spatial = await duck.connect();
+        await spatial.run('SET autoinstall_known_extensions=false');
+        await spatial.run('SET autoload_known_extensions=false');
+        await spatial.run('LOAD spatial');
+        load = async () =>
+          readCensusBoundaryCandidate({
+            connection: spatial,
+            archivePath: process.env.S2_CENSUS_ARCHIVE,
+            archiveBytes: (await stat(process.env.S2_CENSUS_ARCHIVE)).size,
+            archiveSha256: candidate.archiveSha256,
+            vintage: candidate.vintage,
+            stateFips: candidate.stateFips,
+            layer: candidate.layer,
+            geoid: candidate.geoid,
+            referencePoint: geography.referencePoint,
+          });
+      }
+
+      await assert.rejects(
+        installReviewedBoundary(
+          db,
+          auth,
+          { communityId: id, requestId: randomUUID() },
+          read,
+          load
+        ),
+        /decision/i
+      );
+      await assert.rejects(
+        installReviewedBoundary(
+          db,
+          auth,
+          { communityId: id, requestId: decision.requestId },
+          read,
+          async () => ({ ...extracted, sourceSha256: 'f'.repeat(64) })
+        ),
+        /source/i
+      );
+      assert.equal(
+        await installReviewedBoundary(
+          db,
+          auth,
+          { communityId: id, requestId: decision.requestId },
+          read,
+          load
+        ),
+        1
+      );
+      assert.equal(
+        await installReviewedBoundary(
+          db,
+          auth,
+          { communityId: id, requestId: decision.requestId },
+          read,
+          load
+        ),
+        1,
+        'retry must not create another version'
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT "geometryStatus" FROM directory_town WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].geometryStatus,
+        'pending',
+        'private installation is not public readiness'
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int n FROM directory_reviewed_geometry WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        1
+      );
+      await db.query(
+        `UPDATE directory_census_progress SET phase='reg-running', "registerRequest"="registerRequest" || $1::jsonb WHERE id='recovery'`,
+        [
+          JSON.stringify({
+            sweep: { generation: '1' },
+            lastCompletedSweep: {
+              generation: '1',
+              completedAt: new Date().toISOString(),
+            },
+          }),
+        ]
+      );
+      const containment = pendingChecks(
+        db,
+        { geography: async () => read() },
+        auth
+      );
+      assert.deepEqual(
+        await containment.containment(
+          id,
+          geography.referencePoint[0],
+          geography.referencePoint[1]
+        ),
+        { status: 'ready', covers: true }
+      );
+      assert.deepEqual(await containment.containment(id, -84, 31), {
+        status: 'ready',
+        covers: false,
+      });
+      const displayed = await containment.boundary(id);
+      assert.equal(displayed.status, 'ready');
+      assert.ok(['Polygon', 'MultiPolygon'].includes(displayed.geometry.type));
+      await db.query(
+        `UPDATE directory_census_progress SET phase='reg-source' WHERE id='recovery'`
+      );
+      await reconcileRegisterV2(db, auth, id, token, async () => ({
+        status: 'current',
+        snapshot: {
+          id,
+          name: 'Town',
+          slug: null,
+          adminArea: 'GA',
+          appScope: 'local-hub',
+          isPrivate: false,
+          localityType: 'city',
+        },
+      }));
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int n FROM directory_reviewed_geometry WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        1,
+        'unchanged source retains the private binding'
+      );
+      let reads = 0;
+      await assert.rejects(
+        installReviewedBoundary(
+          db,
+          auth,
+          { communityId: id, requestId: decision.requestId },
+          async () =>
+            ++reads === 1
+              ? read()
+              : {
+                  status: 'current',
+                  changeToken: token,
+                  geography: { ...geography, city: 'Changed' },
+                },
+          load
+        ),
+        /stale/i
+      );
+      assert.equal(
+        await readCurrentBoundaryCandidate(db, auth, id, async () => ({
+          status: 'current',
+          changeToken: token,
+          geography: { ...geography, city: 'Changed directly' },
+        })),
+        null
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int n FROM directory_reviewed_geometry WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        0,
+        'stale geography deactivates the private binding'
+      );
+      await storeBoundaryCandidate(db, auth, candidate, read);
+      await assert.rejects(
+        installReviewedBoundary(
+          db,
+          auth,
+          { communityId: id, requestId: decision.requestId },
+          read,
+          load
+        ),
+        /decision/i
+      );
+      const replacementDecision = { ...decision, requestId: randomUUID() };
+      await recordBoundaryDecision(db, auth, replacementDecision, read);
+      assert.equal(
+        await installReviewedBoundary(
+          db,
+          auth,
+          { communityId: id, requestId: replacementDecision.requestId },
+          read,
+          load
+        ),
+        2
+      );
+      let decisionStarted, releaseDecision;
+      const startedDecision = new Promise((resolve) => {
+          decisionStarted = resolve;
+        }),
+        decisionGate = new Promise((resolve) => {
+          releaseDecision = resolve;
+        });
+      const concurrentDecision = { ...decision, requestId: randomUUID() };
+      const decisionWrite = recordBoundaryDecision(
+        db,
+        auth,
+        concurrentDecision,
+        async () => {
+          decisionStarted();
+          await decisionGate;
+          return read();
+        }
+      );
+      await startedDecision;
+      const withdrawal = reconcileRegisterV2(db, auth, id, token, async () => ({
+        status: 'current',
+        snapshot: null,
+      }));
+      releaseDecision();
+      await Promise.all([decisionWrite, withdrawal]);
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        0
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_reviewed_geometry WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        0,
+        'withdrawal must deactivate the installed geometry'
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_boundary_decision WHERE "requestId"=$1',
+            [concurrentDecision.requestId]
+          )
+        )[0].n,
+        1,
+        'withdrawal preserves audit evidence without retaining an active candidate'
+      );
+      await reconcileRegisterV2(db, auth, id, token, async () => ({
+        status: 'current',
+        snapshot: {
+          id,
+          name: 'Town',
+          slug: null,
+          adminArea: 'GA',
+          appScope: 'local-hub',
+          isPrivate: false,
+          localityType: 'city',
+        },
+      }));
+      await storeBoundaryCandidate(db, auth, candidate, read);
+      await db.query(
+        'UPDATE directory_boundary_candidate SET "geographyHash"=\'\' WHERE "communityId"=$1',
+        [id]
+      );
+      assert.equal(
+        await readCurrentBoundaryCandidate(db, auth, id, read),
+        null,
+        'pre-fingerprint candidate must not be trusted'
+      );
+      await storeDiscoveredBoundaryCandidate(db, auth, discovery, {
+        geography: read,
+      });
+      await assert.rejects(
+        readCurrentBoundaryCandidate(db, auth, id, async () => {
+          throw Error('Social unavailable');
+        }),
+        /Social unavailable/
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        1,
+        'unavailable Social must fail closed without erasing evidence'
+      );
+      assert.equal(
+        await readCurrentBoundaryCandidate(db, auth, id, async () => ({
+          status: 'current',
+          changeToken: token,
+          geography: { ...geography, city: 'Changed directly' },
+        })),
+        null
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        0
+      );
+      await storeDiscoveredBoundaryCandidate(db, auth, discovery, {
+        geography: read,
+      });
+      await reconcileRegisterV2(db, auth, id, token, async () => ({
+        status: 'current',
+        snapshot: {
+          id,
+          name: 'Town',
+          slug: null,
+          adminArea: 'GA',
+          appScope: 'local-hub',
+          isPrivate: false,
+          localityType: 'city',
+        },
+      }));
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        1,
+        'unchanged source must retain review candidate'
+      );
+      await reconcileRegisterV2(db, auth, id, randomUUID(), async () => ({
+        status: 'current',
+        snapshot: {
+          id,
+          name: 'Town',
+          slug: null,
+          adminArea: 'GA',
+          appScope: 'local-hub',
+          isPrivate: false,
+          localityType: 'city',
+        },
+      }));
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        0,
+        'changed source must clear review candidate'
+      );
+      await storeBoundaryCandidate(db, auth, candidate, read);
+      await new TownGeometryService(db).withdrawTown(id);
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        0
+      );
+      await reconcileRegisterV2(db, auth, id, token, async () => ({
+        status: 'current',
+        snapshot: {
+          id,
+          name: 'Town',
+          slug: null,
+          adminArea: 'GA',
+          appScope: 'local-hub',
+          isPrivate: false,
+          localityType: 'city',
+        },
+      }));
+      await storeBoundaryCandidate(db, auth, candidate, read);
+      let release, started;
+      const startedRead = new Promise((resolve) => {
+          started = resolve;
+        }),
+        gate = new Promise((resolve) => {
+          release = resolve;
+        });
+      const writing = storeBoundaryCandidate(db, auth, candidate, async () => {
+        started();
+        await gate;
+        return read();
+      });
+      await startedRead;
+      const withdrawing = reconcileRegisterV2(
+        db,
+        auth,
+        id,
+        token,
+        async () => ({ status: 'current', snapshot: null })
+      );
+      release();
+      await Promise.all([writing, withdrawing]);
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        0
+      );
+      await reconcileRegisterV2(db, auth, id, token, async () => ({
+        status: 'current',
+        snapshot: {
+          id,
+          name: 'Town',
+          slug: null,
+          adminArea: 'GA',
+          appScope: 'local-hub',
+          isPrivate: false,
+          localityType: 'city',
+        },
+      }));
+      await storeBoundaryCandidate(db, auth, candidate, read);
+      await reconcileRegisterV2(db, auth, id, token, async () => ({
+        status: 'current',
+        snapshot: null,
+      }));
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        0
+      );
+      await assert.rejects(
+        storeBoundaryCandidate(db, auth, candidate, read),
+        /Eligible town/
+      );
+      await reconcileRegisterV2(db, auth, id, token, async () => ({
+        status: 'current',
+        snapshot: {
+          id,
+          name: 'Town',
+          slug: null,
+          adminArea: 'GA',
+          appScope: 'local-hub',
+          isPrivate: false,
+          localityType: 'city',
+        },
+      }));
+      await assert.rejects(
+        storeBoundaryCandidate(db, auth, candidate, async () => ({
+          status: 'current',
+          changeToken: randomUUID(),
+          geography: {},
+        })),
+        /Stale/
+      );
+      await storeBoundaryCandidate(db, auth, candidate, read);
+      let recoveryDecision = { ...decision, requestId: randomUUID() };
+      await recordBoundaryDecision(db, auth, recoveryDecision, read);
+      await installReviewedBoundary(
+        db,
+        auth,
+        { communityId: id, requestId: recoveryDecision.requestId },
+        read,
+        load
+      );
+      await db.query(
+        `UPDATE directory_census_progress SET phase='reg-running', "registerRequest"="registerRequest" || $1::jsonb WHERE id='recovery'`,
+        [
+          JSON.stringify({
+            sweep: { generation: '1' },
+            lastCompletedSweep: {
+              generation: '1',
+              completedAt: new Date().toISOString(),
+            },
+          }),
+        ]
+      );
+      let replaced = false;
+      const racingDb = {
+        transaction: db.transaction.bind(db),
+        query: async (sql, params) => {
+          const rows = await db.query(sql, params);
+          if (!replaced && sql.includes('ST_Covers')) {
+            replaced = true;
+            await storeBoundaryCandidate(db, auth, candidate, read);
+          }
+          return rows;
+        },
+      };
+      const racingCheck = pendingChecks(
+        racingDb,
+        { geography: async () => read() },
+        auth
+      );
+      assert.deepEqual(
+        await racingCheck.containment(
+          id,
+          geography.referencePoint[0],
+          geography.referencePoint[1]
+        ),
+        { status: 'pending' },
+        'candidate replacement during the request must not return the old boundary'
+      );
+      recoveryDecision = { ...decision, requestId: randomUUID() };
+      await recordBoundaryDecision(db, auth, recoveryDecision, read);
+      await installReviewedBoundary(
+        db,
+        auth,
+        { communityId: id, requestId: recoveryDecision.requestId },
+        read,
+        load
+      );
+      await db.query(
+        `UPDATE directory_town_geometry SET boundary=ST_Translate(boundary,0.01,0) WHERE "communityId"=$1 AND version=(SELECT version FROM directory_reviewed_geometry WHERE "communityId"=$1)`,
+        [id]
+      );
+      assert.deepEqual(
+        await containment.containment(
+          id,
+          geography.referencePoint[0],
+          geography.referencePoint[1]
+        ),
+        { status: 'pending' },
+        'modified geometry must not remain authorized'
+      );
+      assert.notEqual(
+        (
+          await db.query(
+            'SELECT "invalidatedAt" FROM directory_boundary_decision WHERE "requestId"=$1',
+            [recoveryDecision.requestId]
+          )
+        )[0].invalidatedAt,
+        null
+      );
+      await storeBoundaryCandidate(db, auth, candidate, read);
+      recoveryDecision = { ...decision, requestId: randomUUID() };
+      await recordBoundaryDecision(db, auth, recoveryDecision, read);
+      await installReviewedBoundary(
+        db,
+        auth,
+        { communityId: id, requestId: recoveryDecision.requestId },
+        read,
+        load
+      );
+      let privacyReads = 0;
+      const privacyCheck = pendingChecks(
+        db,
+        {
+          geography: async () =>
+            ++privacyReads === 1
+              ? read()
+              : { status: 'current', changeToken: token, geography: null },
+        },
+        auth
+      );
+      await assert.rejects(
+        privacyCheck.containment(
+          id,
+          geography.referencePoint[0],
+          geography.referencePoint[1]
+        ),
+        /Town unavailable/
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int n FROM directory_reviewed_geometry WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        0
+      );
+      assert.notEqual(
+        (
+          await db.query(
+            'SELECT "invalidatedAt" FROM directory_boundary_decision WHERE "requestId"=$1',
+            [recoveryDecision.requestId]
+          )
+        )[0].invalidatedAt,
+        null
+      );
+      await db.query(
+        `UPDATE directory_census_progress SET phase='reg-source' WHERE id='recovery'`
+      );
+      await storeBoundaryCandidate(db, auth, candidate, read);
+      recoveryDecision = { ...decision, requestId: randomUUID() };
+      await recordBoundaryDecision(db, auth, recoveryDecision, read);
+      await installReviewedBoundary(
+        db,
+        auth,
+        { communityId: id, requestId: recoveryDecision.requestId },
+        read,
+        load
+      );
+      await beginRegisterRecovery(db, {
+        sourceEpoch,
+        activationId,
+        socialGeneration: '1',
+        owner: randomUUID(),
+        expectedPrevious: auth,
+        externalFence: true,
+      });
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int AS n FROM directory_boundary_candidate'
+          )
+        )[0].n,
+        0
+      );
+      assert.equal(
+        (
+          await db.query(
+            'SELECT count(*)::int n FROM directory_reviewed_geometry WHERE "communityId"=$1',
+            [id]
+          )
+        )[0].n,
+        0
+      );
+      assert.notEqual(
+        (
+          await db.query(
+            'SELECT "invalidatedAt" FROM directory_boundary_decision WHERE "requestId"=$1',
+            [recoveryDecision.requestId]
+          )
+        )[0].invalidatedAt,
+        null
+      );
+    } finally {
+      spatial?.closeSync();
+      duck?.closeSync();
+      await db.destroy();
     }
-
-    await assert.rejects(installReviewedBoundary(db,auth,{communityId:id,requestId:randomUUID()},read,load),/decision/i);
-    await assert.rejects(installReviewedBoundary(db,auth,{communityId:id,requestId:decision.requestId},read,async()=>({...extracted,sourceSha256:'f'.repeat(64)})),/source/i);
-    assert.equal(await installReviewedBoundary(db,auth,{communityId:id,requestId:decision.requestId},read,load),1);
-    assert.equal(await installReviewedBoundary(db,auth,{communityId:id,requestId:decision.requestId},read,load),1,'retry must not create another version');
-    assert.equal((await db.query('SELECT "geometryStatus" FROM directory_town WHERE "communityId"=$1',[id]))[0].geometryStatus,'pending','private installation is not public readiness');
-    assert.equal((await db.query('SELECT count(*)::int n FROM directory_reviewed_geometry WHERE "communityId"=$1',[id]))[0].n,1);
-    await db.query(`UPDATE directory_census_progress SET phase='reg-running', "registerRequest"="registerRequest" || $1::jsonb WHERE id='recovery'`,[JSON.stringify({sweep:{generation:'1'},lastCompletedSweep:{generation:'1',completedAt:new Date().toISOString()}})]);
-    const containment=pendingChecks(db,{geography:async()=>read()},auth);
-    assert.deepEqual(await containment.containment(id,geography.referencePoint[0],geography.referencePoint[1]),{status:'ready',covers:true});
-    assert.deepEqual(await containment.containment(id,-84,31),{status:'ready',covers:false});
-    const displayed=await containment.boundary(id);
-    assert.equal(displayed.status,'ready');assert.ok(['Polygon','MultiPolygon'].includes(displayed.geometry.type));
-    await db.query(`UPDATE directory_census_progress SET phase='reg-source' WHERE id='recovery'`);
-    await reconcileRegisterV2(db,auth,id,token,async()=>({status:'current',snapshot:{id,name:'Town',slug:null,adminArea:'GA',appScope:'local-hub',isPrivate:false,localityType:'city'}}));
-    assert.equal((await db.query('SELECT count(*)::int n FROM directory_reviewed_geometry WHERE "communityId"=$1',[id]))[0].n,1,'unchanged source retains the private binding');
-    let reads=0;
-    await assert.rejects(installReviewedBoundary(db,auth,{communityId:id,requestId:decision.requestId},async()=>++reads===1?read():{status:'current',changeToken:token,geography:{...geography,city:'Changed'}},load),/stale/i);
-    assert.equal(await readCurrentBoundaryCandidate(db,auth,id,async()=>({status:'current',changeToken:token,geography:{...geography,city:'Changed directly'}})),null);
-    assert.equal((await db.query('SELECT count(*)::int n FROM directory_reviewed_geometry WHERE "communityId"=$1',[id]))[0].n,0,'stale geography deactivates the private binding');
-    await storeBoundaryCandidate(db,auth,candidate,read);
-    await assert.rejects(installReviewedBoundary(db,auth,{communityId:id,requestId:decision.requestId},read,load),/decision/i);
-    const replacementDecision={...decision,requestId:randomUUID()};
-    await recordBoundaryDecision(db,auth,replacementDecision,read);
-    assert.equal(await installReviewedBoundary(db,auth,{communityId:id,requestId:replacementDecision.requestId},read,load),2);
-    let decisionStarted,releaseDecision;
-    const startedDecision=new Promise(resolve=>{decisionStarted=resolve;}), decisionGate=new Promise(resolve=>{releaseDecision=resolve;});
-    const concurrentDecision={...decision,requestId:randomUUID()};
-    const decisionWrite=recordBoundaryDecision(db,auth,concurrentDecision,async()=>{decisionStarted();await decisionGate;return read();});
-    await startedDecision;
-    const withdrawal=reconcileRegisterV2(db,auth,id,token,async()=>({status:'current',snapshot:null}));
-    releaseDecision();await Promise.all([decisionWrite,withdrawal]);
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',[id]))[0].n,0);
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_reviewed_geometry WHERE "communityId"=$1',[id]))[0].n,0,'withdrawal must deactivate the installed geometry');
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_decision WHERE "requestId"=$1',[concurrentDecision.requestId]))[0].n,1,'withdrawal preserves audit evidence without retaining an active candidate');
-    await reconcileRegisterV2(db,auth,id,token,async()=>({status:'current',snapshot:{id,name:'Town',slug:null,adminArea:'GA',appScope:'local-hub',isPrivate:false,localityType:'city'}}));
-    await storeBoundaryCandidate(db,auth,candidate,read);
-    await db.query('UPDATE directory_boundary_candidate SET "geographyHash"=\'\' WHERE "communityId"=$1',[id]);
-    assert.equal(await readCurrentBoundaryCandidate(db,auth,id,read),null,'pre-fingerprint candidate must not be trusted');
-    await storeDiscoveredBoundaryCandidate(db,auth,discovery,{geography:read});
-    await assert.rejects(readCurrentBoundaryCandidate(db,auth,id,async()=>{throw Error('Social unavailable');}),/Social unavailable/);
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',[id]))[0].n,1,'unavailable Social must fail closed without erasing evidence');
-    assert.equal(await readCurrentBoundaryCandidate(db,auth,id,async()=>({status:'current',changeToken:token,geography:{...geography,city:'Changed directly'}})),null);
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',[id]))[0].n,0);
-    await storeDiscoveredBoundaryCandidate(db,auth,discovery,{geography:read});
-    await reconcileRegisterV2(db,auth,id,token,async()=>({status:'current',snapshot:{id,name:'Town',slug:null,adminArea:'GA',appScope:'local-hub',isPrivate:false,localityType:'city'}}));
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',[id]))[0].n,1,'unchanged source must retain review candidate');
-    await reconcileRegisterV2(db,auth,id,randomUUID(),async()=>({status:'current',snapshot:{id,name:'Town',slug:null,adminArea:'GA',appScope:'local-hub',isPrivate:false,localityType:'city'}}));
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',[id]))[0].n,0,'changed source must clear review candidate');
-    await storeBoundaryCandidate(db,auth,candidate,read);
-    await new TownGeometryService(db).withdrawTown(id);
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',[id]))[0].n,0);
-    await reconcileRegisterV2(db,auth,id,token,async()=>({status:'current',snapshot:{id,name:'Town',slug:null,adminArea:'GA',appScope:'local-hub',isPrivate:false,localityType:'city'}}));
-    await storeBoundaryCandidate(db,auth,candidate,read);
-    let release,started;
-    const startedRead=new Promise(resolve=>{started=resolve;}), gate=new Promise(resolve=>{release=resolve;});
-    const writing=storeBoundaryCandidate(db,auth,candidate,async()=>{started();await gate;return read();});
-    await startedRead;
-    const withdrawing=reconcileRegisterV2(db,auth,id,token,async()=>({status:'current',snapshot:null}));
-    release();await Promise.all([writing,withdrawing]);
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',[id]))[0].n,0);
-    await reconcileRegisterV2(db,auth,id,token,async()=>({status:'current',snapshot:{id,name:'Town',slug:null,adminArea:'GA',appScope:'local-hub',isPrivate:false,localityType:'city'}}));
-    await storeBoundaryCandidate(db,auth,candidate,read);
-    await reconcileRegisterV2(db,auth,id,token,async()=>({status:'current',snapshot:null}));
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_candidate WHERE "communityId"=$1',[id]))[0].n,0);
-    await assert.rejects(storeBoundaryCandidate(db,auth,candidate,read),/Eligible town/);
-    await reconcileRegisterV2(db,auth,id,token,async()=>({status:'current',snapshot:{id,name:'Town',slug:null,adminArea:'GA',appScope:'local-hub',isPrivate:false,localityType:'city'}}));
-    await assert.rejects(storeBoundaryCandidate(db,auth,candidate,async()=>({status:'current',changeToken:randomUUID(),geography:{}})),/Stale/);
-    await storeBoundaryCandidate(db,auth,candidate,read);
-    let recoveryDecision={...decision,requestId:randomUUID()};
-    await recordBoundaryDecision(db,auth,recoveryDecision,read);
-    await installReviewedBoundary(db,auth,{communityId:id,requestId:recoveryDecision.requestId},read,load);
-    await db.query(`UPDATE directory_census_progress SET phase='reg-running', "registerRequest"="registerRequest" || $1::jsonb WHERE id='recovery'`,[JSON.stringify({sweep:{generation:'1'},lastCompletedSweep:{generation:'1',completedAt:new Date().toISOString()}})]);
-    let replaced=false;
-    const racingDb={transaction:db.transaction.bind(db),query:async(sql,params)=>{const rows=await db.query(sql,params);if(!replaced && sql.includes('ST_Covers')){replaced=true;await storeBoundaryCandidate(db,auth,candidate,read);}return rows;}};
-    const racingCheck=pendingChecks(racingDb,{geography:async()=>read()},auth);
-    assert.deepEqual(await racingCheck.containment(id,geography.referencePoint[0],geography.referencePoint[1]),{status:'pending'},'candidate replacement during the request must not return the old boundary');
-    recoveryDecision={...decision,requestId:randomUUID()};
-    await recordBoundaryDecision(db,auth,recoveryDecision,read);
-    await installReviewedBoundary(db,auth,{communityId:id,requestId:recoveryDecision.requestId},read,load);
-    await db.query(`UPDATE directory_town_geometry SET boundary=ST_Translate(boundary,0.01,0) WHERE "communityId"=$1 AND version=(SELECT version FROM directory_reviewed_geometry WHERE "communityId"=$1)`,[id]);
-    assert.deepEqual(await containment.containment(id,geography.referencePoint[0],geography.referencePoint[1]),{status:'pending'},'modified geometry must not remain authorized');
-    assert.notEqual((await db.query('SELECT "invalidatedAt" FROM directory_boundary_decision WHERE "requestId"=$1',[recoveryDecision.requestId]))[0].invalidatedAt,null);
-    await storeBoundaryCandidate(db,auth,candidate,read);
-    recoveryDecision={...decision,requestId:randomUUID()};
-    await recordBoundaryDecision(db,auth,recoveryDecision,read);
-    await installReviewedBoundary(db,auth,{communityId:id,requestId:recoveryDecision.requestId},read,load);
-    let privacyReads=0;
-    const privacyCheck=pendingChecks(db,{geography:async()=>++privacyReads===1?read():{status:'current',changeToken:token,geography:null}},auth);
-    await assert.rejects(privacyCheck.containment(id,geography.referencePoint[0],geography.referencePoint[1]),/Town unavailable/);
-    assert.equal((await db.query('SELECT count(*)::int n FROM directory_reviewed_geometry WHERE "communityId"=$1',[id]))[0].n,0);
-    assert.notEqual((await db.query('SELECT "invalidatedAt" FROM directory_boundary_decision WHERE "requestId"=$1',[recoveryDecision.requestId]))[0].invalidatedAt,null);
-    await db.query(`UPDATE directory_census_progress SET phase='reg-source' WHERE id='recovery'`);
-    await storeBoundaryCandidate(db,auth,candidate,read);
-    recoveryDecision={...decision,requestId:randomUUID()};
-    await recordBoundaryDecision(db,auth,recoveryDecision,read);
-    await installReviewedBoundary(db,auth,{communityId:id,requestId:recoveryDecision.requestId},read,load);
-    await beginRegisterRecovery(db,{sourceEpoch,activationId,socialGeneration:'1',owner:randomUUID(),expectedPrevious:auth,externalFence:true});
-    assert.equal((await db.query('SELECT count(*)::int AS n FROM directory_boundary_candidate'))[0].n,0);
-    assert.equal((await db.query('SELECT count(*)::int n FROM directory_reviewed_geometry WHERE "communityId"=$1',[id]))[0].n,0);
-    assert.notEqual((await db.query('SELECT "invalidatedAt" FROM directory_boundary_decision WHERE "requestId"=$1',[recoveryDecision.requestId]))[0].invalidatedAt,null);
-
-  } finally {spatial?.closeSync();duck?.closeSync();await db.destroy();}
-});
+  }
+);

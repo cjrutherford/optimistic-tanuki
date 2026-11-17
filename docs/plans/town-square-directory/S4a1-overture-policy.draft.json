@@ -7,50 +7,277 @@
   "unknownEnforcement": "deny",
   "evidenceObservedDateUtc": "2026-11-06",
   "currentSourceFingerprints": [
-    {"url": "https://docs.overturemaps.org/attribution/", "sha256": "95dafe36193495560ee775eddaff69aa263b37087c19beb3caad0bedc540eef6"},
-    {"url": "https://docs.overturemaps.org/release-calendar/", "sha256": "7497785ab0ee60e479ca1fa64ee74abfea167751c1a16c93bc42526d7b0e8ca3"},
-    {"url": "https://docs.overturemaps.org/blog/2026/09/23/release-notes/", "sha256": "061b1b6c10032b5e4560eb1fa164aeb2e3714adf4e6dc345e903de543009e479"},
-    {"url": "https://cdla.dev/permissive-2-0/", "sha256": "6485ebb99d0ce73026b57f46cd7f34282797d069044d37889782de57167df968"},
-    {"url": "https://www.apache.org/licenses/LICENSE-2.0.txt", "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"},
-    {"url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en", "sha256": "b43732f4c1463b087cf10d4daf8d8766514b2bf8f21bc5ef50905f95be227726"},
-    {"url": "https://opensource.foursquare.com/places-notice-txt/", "sha256": "0200dc7ff5fab86b03c23ab6cb1aae220222550300004425494e580b653360d3"},
-    {"url": "https://operations.osmfoundation.org/policies/tiles/", "sha256": "04908a9e2faf70ad3090b3b2db43de100f3ad61243c578413b67fb57ba6b6912"}
+    {
+      "url": "https://docs.overturemaps.org/attribution/",
+      "sha256": "95dafe36193495560ee775eddaff69aa263b37087c19beb3caad0bedc540eef6"
+    },
+    {
+      "url": "https://docs.overturemaps.org/release-calendar/",
+      "sha256": "7497785ab0ee60e479ca1fa64ee74abfea167751c1a16c93bc42526d7b0e8ca3"
+    },
+    {
+      "url": "https://docs.overturemaps.org/blog/2026/09/23/release-notes/",
+      "sha256": "061b1b6c10032b5e4560eb1fa164aeb2e3714adf4e6dc345e903de543009e479"
+    },
+    {
+      "url": "https://cdla.dev/permissive-2-0/",
+      "sha256": "6485ebb99d0ce73026b57f46cd7f34282797d069044d37889782de57167df968"
+    },
+    {
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en",
+      "sha256": "b43732f4c1463b087cf10d4daf8d8766514b2bf8f21bc5ef50905f95be227726"
+    },
+    {
+      "url": "https://opensource.foursquare.com/places-notice-txt/",
+      "sha256": "0200dc7ff5fab86b03c23ab6cb1aae220222550300004425494e580b653360d3"
+    },
+    {
+      "url": "https://operations.osmfoundation.org/policies/tiles/",
+      "sha256": "04908a9e2faf70ad3090b3b2db43de100f3ad61243c578413b67fb57ba6b6912"
+    }
   ],
-  "release": {"provider": "Overture Maps Foundation", "theme": "places", "type": "place", "dataVersion": "2026-09-23.0", "schemaVersion": "v2.0.0", "compatibleReleaseRange": null},
-  "authority": {"reviewer": {"designation": "user", "name": null, "designatedAt": "2026-11-06", "decision": "pending"}, "decisionDate": null, "expiresAt": null, "rereviewTriggers": ["release-or-source-change", "terms-or-notice-change", "field-or-transform-change", "rights-withdrawal", "approval-expiry"]},
-  "scope": {"historicalPrivateCohort": ["douglas", "tifton", "valdosta", "waycross"], "geography": "historical four-seat staged cohort only", "privateDisplay": "private Tailnet POC only", "adult": "explicit operator opt-in", "newTargetImportAuthorized": false, "publicReleaseAuthorized": false},
+  "release": {
+    "provider": "Overture Maps Foundation",
+    "theme": "places",
+    "type": "place",
+    "dataVersion": "2026-09-23.0",
+    "schemaVersion": "v2.0.0",
+    "compatibleReleaseRange": null
+  },
+  "authority": {
+    "reviewer": {
+      "designation": "user",
+      "name": null,
+      "designatedAt": "2026-11-06",
+      "decision": "pending"
+    },
+    "decisionDate": null,
+    "expiresAt": null,
+    "rereviewTriggers": [
+      "release-or-source-change",
+      "terms-or-notice-change",
+      "field-or-transform-change",
+      "rights-withdrawal",
+      "approval-expiry"
+    ]
+  },
+  "scope": {
+    "historicalPrivateCohort": ["douglas", "tifton", "valdosta", "waycross"],
+    "geography": "historical four-seat staged cohort only",
+    "privateDisplay": "private Tailnet POC only",
+    "adult": "explicit operator opt-in",
+    "newTargetImportAuthorized": false,
+    "publicReleaseAuthorized": false
+  },
   "artifacts": [
-    {"id": "four-seat-v2", "rows": 20811, "sha256": "72355d674966b9f84d4293be9420f6ced0d454247d005e739bac014de728237c", "manifestSha256": "7f43ebf8b964d69cdbc843d61e0c305316e3ce206237e37f67d6803d8c7d8422", "parser": "overture-official-row-v2", "taxonomy": "overture-v2-taxonomy-roots-2026-09-24.2", "taxonomySha256": "b2f3612caaaa344328ee12b09436f69d7d9cd7b52d30d7bc78f1ea0bd53bc36e"},
-    {"id": "four-seat-v3", "rows": 20811, "sha256": "bdf016ac9e755e2222220173636a70adfd735a87933fa69cea7de40188846488", "manifestSha256": "edf67913b52fc16dc71c6b735758e4627431a87eb3d805292507a35f5a754d02", "parentSha256": "72355d674966b9f84d4293be9420f6ced0d454247d005e739bac014de728237c", "parser": "overture-official-row-v2", "taxonomy": "overture-v3-taxonomy-roots-2026-09-25.1", "taxonomySha256": "20c6726cff66a18da12924fd3d274573460561c0a896091f713e47b6414e2d21"},
-    {"id": "waycross-sample", "rows": 100, "sha256": "fc056e6eb056c9ca8fa64c3917485c16c4032ce25ee0a3fc5e84836607b4c9c0", "manifestSha256": "88c8cec77601b5d4ae22190f84a332f9e3f4020272dd27f125f41742f4cc3b4b", "manifestSchema": "v1.18.0", "releaseSchema": "v2.0.0", "parser": "overture-official-row-v1", "decision": "unknown", "reason": "manifest-schema-conflicts-with-release-evidence"}
+    {
+      "id": "four-seat-v2",
+      "rows": 20811,
+      "sha256": "72355d674966b9f84d4293be9420f6ced0d454247d005e739bac014de728237c",
+      "manifestSha256": "7f43ebf8b964d69cdbc843d61e0c305316e3ce206237e37f67d6803d8c7d8422",
+      "parser": "overture-official-row-v2",
+      "taxonomy": "overture-v2-taxonomy-roots-2026-09-24.2",
+      "taxonomySha256": "b2f3612caaaa344328ee12b09436f69d7d9cd7b52d30d7bc78f1ea0bd53bc36e"
+    },
+    {
+      "id": "four-seat-v3",
+      "rows": 20811,
+      "sha256": "bdf016ac9e755e2222220173636a70adfd735a87933fa69cea7de40188846488",
+      "manifestSha256": "edf67913b52fc16dc71c6b735758e4627431a87eb3d805292507a35f5a754d02",
+      "parentSha256": "72355d674966b9f84d4293be9420f6ced0d454247d005e739bac014de728237c",
+      "parser": "overture-official-row-v2",
+      "taxonomy": "overture-v3-taxonomy-roots-2026-09-25.1",
+      "taxonomySha256": "20c6726cff66a18da12924fd3d274573460561c0a896091f713e47b6414e2d21"
+    },
+    {
+      "id": "waycross-sample",
+      "rows": 100,
+      "sha256": "fc056e6eb056c9ca8fa64c3917485c16c4032ce25ee0a3fc5e84836607b4c9c0",
+      "manifestSha256": "88c8cec77601b5d4ae22190f84a332f9e3f4020272dd27f125f41742f4cc3b4b",
+      "manifestSchema": "v1.18.0",
+      "releaseSchema": "v2.0.0",
+      "parser": "overture-official-row-v1",
+      "decision": "unknown",
+      "reason": "manifest-schema-conflicts-with-release-evidence"
+    }
   ],
-  "historicalPocPolicy": {"version": "overture-rights-2026-09-v2", "privateMappedFieldDecision": "allow", "conditions": ["existing-historical-poc-cohort-only", "all-applicable-sources-mapped", "required-field-provenance-present", "unknown-optional-fields-omitted", "adult-opt-in-if-applicable"], "publicDisplayDecision": "unknown", "exportDecision": "deny", "note": "Historical private decision only; not an approval for a new target import or a legal conclusion."},
-  "currentTargetOperations": {"ingest": "unknown", "retain": "unknown", "privateDisplay": "unknown", "publicDisplay": "unknown", "export": "unknown", "enrich": "unknown"},
+  "historicalPocPolicy": {
+    "version": "overture-rights-2026-09-v2",
+    "privateMappedFieldDecision": "allow",
+    "conditions": [
+      "existing-historical-poc-cohort-only",
+      "all-applicable-sources-mapped",
+      "required-field-provenance-present",
+      "unknown-optional-fields-omitted",
+      "adult-opt-in-if-applicable"
+    ],
+    "publicDisplayDecision": "unknown",
+    "exportDecision": "deny",
+    "note": "Historical private decision only; not an approval for a new target import or a legal conclusion."
+  },
+  "currentTargetOperations": {
+    "ingest": "unknown",
+    "retain": "unknown",
+    "privateDisplay": "unknown",
+    "publicDisplay": "unknown",
+    "export": "unknown",
+    "enrich": "unknown"
+  },
   "observedContributors": [
-    {"dataset": "meta", "license": "CDLA-Permissive-2.0", "rootOccurrences": 13602, "historicalPocMapping": "mapped"},
-    {"dataset": "BrightQuery", "license": "CDLA-Permissive-2.0", "rootOccurrences": 3137, "historicalPocMapping": "mapped"},
-    {"dataset": "Microsoft", "license": "CDLA-Permissive-2.0", "rootOccurrences": 2597, "historicalPocMapping": "mapped"},
-    {"dataset": "Foursquare", "license": "Apache-2.0", "rootOccurrences": 1021, "historicalPocMapping": "mapped", "noticeRequiredForReview": true, "historicalTermsUrlStatus": "http-404-2026-11-06", "reviewRequired": true},
-    {"dataset": "AllThePlaces", "license": "CC0-1.0", "rootOccurrences": 326, "historicalPocMapping": "mapped"},
-    {"dataset": "DAC", "license": "CDLA-Permissive-2.0", "rootOccurrences": 122, "historicalPocMapping": "mapped"},
-    {"dataset": "PinMeTo", "license": "CDLA-Permissive-2.0", "rootOccurrences": 1, "historicalPocMapping": "unmapped", "privateDecision": "unknown"},
-    {"dataset": "RenderSEO", "license": "CDLA-Permissive-2.0", "rootOccurrences": 5, "historicalPocMapping": "unmapped", "privateDecision": "unknown"},
-    {"dataset": "Overture", "license": "CDLA-Permissive-2.0", "sourceOccurrences": 20811, "historicalPocMapping": "mapped", "usage": "confidence metadata; not a root contributor"},
-    {"dataset": "Overture-signals", "license": "CDLA-Permissive-2.0", "sourceOccurrences": 13122, "historicalPocMapping": "mapped", "usage": "operating-status metadata; not a root contributor"}
+    {
+      "dataset": "meta",
+      "license": "CDLA-Permissive-2.0",
+      "rootOccurrences": 13602,
+      "historicalPocMapping": "mapped"
+    },
+    {
+      "dataset": "BrightQuery",
+      "license": "CDLA-Permissive-2.0",
+      "rootOccurrences": 3137,
+      "historicalPocMapping": "mapped"
+    },
+    {
+      "dataset": "Microsoft",
+      "license": "CDLA-Permissive-2.0",
+      "rootOccurrences": 2597,
+      "historicalPocMapping": "mapped"
+    },
+    {
+      "dataset": "Foursquare",
+      "license": "Apache-2.0",
+      "rootOccurrences": 1021,
+      "historicalPocMapping": "mapped",
+      "noticeRequiredForReview": true,
+      "historicalTermsUrlStatus": "http-404-2026-11-06",
+      "reviewRequired": true
+    },
+    {
+      "dataset": "AllThePlaces",
+      "license": "CC0-1.0",
+      "rootOccurrences": 326,
+      "historicalPocMapping": "mapped"
+    },
+    {
+      "dataset": "DAC",
+      "license": "CDLA-Permissive-2.0",
+      "rootOccurrences": 122,
+      "historicalPocMapping": "mapped"
+    },
+    {
+      "dataset": "PinMeTo",
+      "license": "CDLA-Permissive-2.0",
+      "rootOccurrences": 1,
+      "historicalPocMapping": "unmapped",
+      "privateDecision": "unknown"
+    },
+    {
+      "dataset": "RenderSEO",
+      "license": "CDLA-Permissive-2.0",
+      "rootOccurrences": 5,
+      "historicalPocMapping": "unmapped",
+      "privateDecision": "unknown"
+    },
+    {
+      "dataset": "Overture",
+      "license": "CDLA-Permissive-2.0",
+      "sourceOccurrences": 20811,
+      "historicalPocMapping": "mapped",
+      "usage": "confidence metadata; not a root contributor"
+    },
+    {
+      "dataset": "Overture-signals",
+      "license": "CDLA-Permissive-2.0",
+      "sourceOccurrences": 13122,
+      "historicalPocMapping": "mapped",
+      "usage": "operating-status metadata; not a root contributor"
+    }
   ],
   "fieldGroups": {
-    "requiredPocRightsPointers": ["/properties/names/primary", "/basic_category", "/taxonomy/primary", "/taxonomy/hierarchy", "/geometry"],
-    "optionalPocRightsPointers": ["/taxonomy/alternates", "/properties/addresses", "/properties/phones", "/properties/websites"],
-    "separatelyRestricted": ["id", "sourceFileRowNumber", "assignedSeatId", "confidence", "operating_status", "assignedCategoryIds", "assignedPlaceTypeId", "approximateLocality", "boundaries", "mapTiles"],
-    "publicCandidate": ["name", "businessLocation", "category", "provenance", "freshness"],
-    "publicWithheld": ["phone", "email", "personalOrResidentialDetails", "unreviewedEnrichment"]
+    "requiredPocRightsPointers": [
+      "/properties/names/primary",
+      "/basic_category",
+      "/taxonomy/primary",
+      "/taxonomy/hierarchy",
+      "/geometry"
+    ],
+    "optionalPocRightsPointers": [
+      "/taxonomy/alternates",
+      "/properties/addresses",
+      "/properties/phones",
+      "/properties/websites"
+    ],
+    "separatelyRestricted": [
+      "id",
+      "sourceFileRowNumber",
+      "assignedSeatId",
+      "confidence",
+      "operating_status",
+      "assignedCategoryIds",
+      "assignedPlaceTypeId",
+      "approximateLocality",
+      "boundaries",
+      "mapTiles"
+    ],
+    "publicCandidate": [
+      "name",
+      "businessLocation",
+      "category",
+      "provenance",
+      "freshness"
+    ],
+    "publicWithheld": [
+      "phone",
+      "email",
+      "personalOrResidentialDetails",
+      "unreviewedEnrichment"
+    ]
   },
   "derivedLineage": [
-    {"field": "assignedSeatId", "nonNullRowsPerArtifact": 20811, "decision": "unknown", "inputs": ["source geometry", "four seat geometries", "seat priority"], "seatPriority": ["douglas", "tifton", "valdosta", "waycross"], "seatGeometrySha256": {"douglas": "eff0af2eb6ce36fa389842de6d5d679c0253d073a5af44c02d6402ee6d600c99", "tifton": "ed9c1b4f11db4d9d8c65d36a785dbeb1d161f82208660e771283c6918513aa6d", "valdosta": "3dc105a4006ad14b146db2122d65fe8e464388b07850be586a2f24a6708fa88e", "waycross": "21646e863343da4c07f6d8e372bb7f85f88b866a359a07fd6b7e3bf71c74e588"}, "manifestQueryVersion": "overture-four-seat-envelope-intersection-v1", "currentFetcherDefaultQueryVersion": "overture-four-seat-rowgroup-stream-ordered-v3", "currentFetcherSha256": "b4d42b75ce91417bb726ab6c26794fe76f529f83f5b277de469cca17b2575e74", "historicalTransformIdentity": "unresolved"},
-    {"field": "sourceFileRowNumber", "nonNullRowsPerArtifact": 20811, "decision": "unknown", "usage": "internal provenance; not approved for public display"},
-    {"field": "assignedCategoryIds", "nonNullRowsPerArtifact": 20811, "decision": "unknown", "inputs": ["source taxonomy", "pinned taxonomy mapping"]},
-    {"field": "assignedPlaceTypeId", "nonNullRowsV2": 0, "nonNullRowsV3": 311, "decision": "unknown", "inputs": ["v3 taxonomy mapping", "v2 parent artifact"]}
+    {
+      "field": "assignedSeatId",
+      "nonNullRowsPerArtifact": 20811,
+      "decision": "unknown",
+      "inputs": ["source geometry", "four seat geometries", "seat priority"],
+      "seatPriority": ["douglas", "tifton", "valdosta", "waycross"],
+      "seatGeometrySha256": {
+        "douglas": "eff0af2eb6ce36fa389842de6d5d679c0253d073a5af44c02d6402ee6d600c99",
+        "tifton": "ed9c1b4f11db4d9d8c65d36a785dbeb1d161f82208660e771283c6918513aa6d",
+        "valdosta": "3dc105a4006ad14b146db2122d65fe8e464388b07850be586a2f24a6708fa88e",
+        "waycross": "21646e863343da4c07f6d8e372bb7f85f88b866a359a07fd6b7e3bf71c74e588"
+      },
+      "manifestQueryVersion": "overture-four-seat-envelope-intersection-v1",
+      "currentFetcherDefaultQueryVersion": "overture-four-seat-rowgroup-stream-ordered-v3",
+      "currentFetcherSha256": "b4d42b75ce91417bb726ab6c26794fe76f529f83f5b277de469cca17b2575e74",
+      "historicalTransformIdentity": "unresolved"
+    },
+    {
+      "field": "sourceFileRowNumber",
+      "nonNullRowsPerArtifact": 20811,
+      "decision": "unknown",
+      "usage": "internal provenance; not approved for public display"
+    },
+    {
+      "field": "assignedCategoryIds",
+      "nonNullRowsPerArtifact": 20811,
+      "decision": "unknown",
+      "inputs": ["source taxonomy", "pinned taxonomy mapping"]
+    },
+    {
+      "field": "assignedPlaceTypeId",
+      "nonNullRowsV2": 0,
+      "nonNullRowsV3": 311,
+      "decision": "unknown",
+      "inputs": ["v3 taxonomy mapping", "v2 parent artifact"]
+    }
   ],
-  "retention": {"newTargetRetention": "unknown", "historicalPoc": "preserve privately under existing approval; reviewed schedule required", "withdrawal": "public/index/cache/export invalidation must be implemented and tested before public enablement"},
+  "retention": {
+    "newTargetRetention": "unknown",
+    "historicalPoc": "preserve privately under existing approval; reviewed schedule required",
+    "withdrawal": "public/index/cache/export invalidation must be implemented and tested before public enablement"
+  },
   "evidenceDocument": "S4-provider-readiness.md"
 }

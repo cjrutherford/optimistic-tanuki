@@ -1,6 +1,10 @@
 import 'reflect-metadata';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import type { DataSource } from 'typeorm';
 import { DIRECTORY_ACCOUNT_EXPORT_CAPTURE_SOURCES } from '@optimistic-tanuki/constants';
 import { installPayloadFreeLogging } from '@optimistic-tanuki/logger';
@@ -39,9 +43,15 @@ export function createDirectoryLifecycleHandler(
 ): DirectoryLifecycleHandler {
   installPayloadFreeLogging();
   const proxy = (host: string, port: number) =>
-    ClientProxyFactory.create({ transport: Transport.TCP, options: { host, port } });
-  const auth = proxies?.auth ?? proxy(config.authenticationHost, config.authenticationPort);
-  const profile = proxies?.profile ?? proxy(config.profileHost, config.profilePort);
+    ClientProxyFactory.create({
+      transport: Transport.TCP,
+      options: { host, port },
+    });
+  const auth =
+    proxies?.auth ??
+    proxy(config.authenticationHost, config.authenticationPort);
+  const profile =
+    proxies?.profile ?? proxy(config.profileHost, config.profilePort);
   const authority = new AccountDeletionAuthorityClient(auth);
   const spool = new AccountExportOwnerSpoolService();
   const owner = new AccountExportPostgresOwnerService(

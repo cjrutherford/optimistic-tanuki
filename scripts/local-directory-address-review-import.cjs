@@ -14,15 +14,17 @@
 const fs = require('node:fs');
 const readline = require('node:readline');
 const { DataSource } = require('typeorm');
-const {
-  decideAddressReview,
-} = require('../apps/directory/src/address-review');
+const { decideAddressReview } = require('../apps/directory/src/address-review');
 const {
   storeAddressReviewCandidate,
 } = require('../apps/directory/src/address-review-store');
 const { classifyAddressRisk } = require('../apps/directory/src/address-risk');
-const { evaluateOvertureFieldRights } = require('../apps/directory/src/overture-rights');
-const { findActivePrivateRow } = require('../apps/directory/src/address-review-publish');
+const {
+  evaluateOvertureFieldRights,
+} = require('../apps/directory/src/overture-rights');
+const {
+  findActivePrivateRow,
+} = require('../apps/directory/src/address-review-publish');
 
 const defaultSource =
   '/home/cjrutherford/workspace/business-directory-poc/data/providers/overture/2026-09-23.0/four-seat-places.jsonl';
@@ -35,7 +37,10 @@ const value = (name, fallback) => {
 const source = value('--source', defaultSource);
 const limit = Number(value('--limit', '100'));
 const rights = value('--rights', 'review');
-const policyPath = value('--policy', process.env.DIRECTORY_PUBLIC_DISPLAY_POLICY || '');
+const policyPath = value(
+  '--policy',
+  process.env.DIRECTORY_PUBLIC_DISPLAY_POLICY || ''
+);
 const databaseUrl = process.env.DIRECTORY_REVIEW_DATABASE_URL;
 
 if (!databaseUrl) {
@@ -69,7 +74,9 @@ if (policyPath) {
     policy.operations.publicDisplay !== true ||
     !Array.isArray(policy.terms)
   ) {
-    console.error('Policy must be a runtime OvertureRightsPolicy with publicDisplay enabled');
+    console.error(
+      'Policy must be a runtime OvertureRightsPolicy with publicDisplay enabled'
+    );
     process.exit(1);
   }
 }
@@ -83,9 +90,7 @@ const text = (value) =>
 const array = (value) =>
   Array.isArray(value)
     ? value
-        .map((entry) =>
-          typeof entry === 'string' ? entry : entry?.freeform
-        )
+        .map((entry) => (typeof entry === 'string' ? entry : entry?.freeform))
         .map(text)
         .filter(Boolean)
     : [];
@@ -207,7 +212,13 @@ const array = (value) =>
           point: candidate.point,
         });
       } catch (error) {
-        if (!['No active private row matches this candidate', 'Multiple active private rows match this candidate'].includes(error.message)) throw error;
+        if (
+          ![
+            'No active private row matches this candidate',
+            'Multiple active private rows match this candidate',
+          ].includes(error.message)
+        )
+          throw error;
         summary.skippedUnanchored += 1;
         continue;
       }

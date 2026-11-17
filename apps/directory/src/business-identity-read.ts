@@ -6,7 +6,10 @@ import { createHmac } from 'node:crypto';
  * here exposes confidence, evidence or a carry hint, and nothing returns a reason for a miss.
  */
 type Q = { query(sql: string, params?: unknown[]): Promise<any[]> };
-export interface SourceRowRef { readonly scanId: string; readonly row: string }
+export interface SourceRowRef {
+  readonly scanId: string;
+  readonly row: string;
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const MAX_SUCCESSOR_HOPS = 5;
@@ -24,7 +27,11 @@ export const supersededByLiveCohort = (row: string): string =>
       WHERE oa."scanId"=${row}."scanId" AND oa."sourceFileRowNumber"=${row}."sourceFileRowNumber" AND oa.state<>'current')`;
 
 /** Business ids for served rows: only a current assertion to an active business in this town counts. */
-export async function businessIdsForRows(q: Q, town: string, rows: readonly SourceRowRef[]): Promise<Map<string, string>> {
+export async function businessIdsForRows(
+  q: Q,
+  town: string,
+  rows: readonly SourceRowRef[]
+): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   if (!UUID.test(town) || !rows.length) return out;
   const found = await q.query(
@@ -34,25 +41,40 @@ export async function businessIdsForRows(q: Q, town: string, rows: readonly Sour
        JOIN directory_business b ON b.id=a."businessId" AND b."communityId"=$1 AND b.state='active'`,
     [town, rows.map((r) => r.scanId), rows.map((r) => r.row)]
   );
-  for (const r of found) out.set(`${r.scanId}:${String(r.sourceFileRowNumber)}`, r.businessId);
+  for (const r of found)
+    out.set(`${r.scanId}:${String(r.sourceFileRowNumber)}`, r.businessId);
   return out;
 }
 
-export type Resolution = { readonly kind: 'none' } | { readonly kind: 'dead' } | { readonly kind: 'row'; readonly position: SourceRowRef; readonly businessId: string };
+export type Resolution =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'dead' }
+  | {
+      readonly kind: 'row';
+      readonly position: SourceRowRef;
+      readonly businessId: string;
+    };
 
 /**
  * Resolves a business id. `none` means the id is not a business of this town (the caller may try a listing
  * identity); `dead` is every other miss: retired, absent, unresolved, split without a successor, an
  * over-long or cyclic successor chain. Callers must answer both misses identically.
  */
-export async function resolveBusinessId(q: Q, town: string, id: string): Promise<Resolution> {
+export async function resolveBusinessId(
+  q: Q,
+  town: string,
+  id: string
+): Promise<Resolution> {
   if (!UUID.test(town) || !UUID.test(id)) return { kind: 'none' };
   const seen = new Set<string>();
   let current = id;
   for (let hop = 0; hop <= MAX_SUCCESSOR_HOPS; hop += 1) {
     if (seen.has(current)) return { kind: 'dead' };
     seen.add(current);
-    const found = await q.query('SELECT state, "successorId" FROM directory_business WHERE id=$1 AND "communityId"=$2', [current, town]);
+    const found = await q.query(
+      'SELECT state, "successorId" FROM directory_business WHERE id=$1 AND "communityId"=$2',
+      [current, town]
+    );
     if (!found.length) return hop === 0 ? { kind: 'none' } : { kind: 'dead' };
     const { state, successorId } = found[0];
     if (state === 'active') {
@@ -64,18 +86,39 @@ export async function resolveBusinessId(q: Q, town: string, id: string): Promise
       );
       // More than one live current assertion is an overlap this resolver will not break by choosing one.
       if (rows.length !== 1) return { kind: 'dead' };
-      return { kind: 'row', position: { scanId: rows[0].scanId, row: String(rows[0].sourceFileRowNumber) }, businessId: current };
+      return {
+        kind: 'row',
+        position: {
+          scanId: rows[0].scanId,
+          row: String(rows[0].sourceFileRowNumber),
+        },
+        businessId: current,
+      };
     }
-    if ((state === 'merged' || state === 'split') && typeof successorId === 'string' && UUID.test(successorId)) { current = successorId; continue; }
+    if (
+      (state === 'merged' || state === 'split') &&
+      typeof successorId === 'string' &&
+      UUID.test(successorId)
+    ) {
+      current = successorId;
+      continue;
+    }
     return { kind: 'dead' };
   }
   return { kind: 'dead' };
 }
 
 /** The business, if any, a historical source row was ever asserted to be (alias for an old listing id). */
-export async function businessOfSourceRow(q: Q, town: string, position: SourceRowRef): Promise<string | null> {
+export async function businessOfSourceRow(
+  q: Q,
+  town: string,
+  position: SourceRowRef
+): Promise<string | null> {
   if (!UUID.test(town)) return null;
-  const rows = await q.query('SELECT "businessId" FROM directory_business_assertion WHERE "scanId"=$1 AND "sourceFileRowNumber"=$2 AND "communityId"=$3', [position.scanId, position.row, town]);
+  const rows = await q.query(
+    'SELECT "businessId" FROM directory_business_assertion WHERE "scanId"=$1 AND "sourceFileRowNumber"=$2 AND "communityId"=$3',
+    [position.scanId, position.row, town]
+  );
   return rows.length === 1 ? rows[0].businessId : null;
 }
 
@@ -85,12 +128,16 @@ export async function businessOfSourceRow(q: Q, town: string, position: SourceRo
  * before it is rejected like a change-token mismatch and the client restarts.
  */
 export async function servingGeneration(q: Q, secret: string): Promise<string> {
-  if (typeof secret !== 'string' || Buffer.byteLength(secret) < 32) throw Error('Invalid generation secret');
+  if (typeof secret !== 'string' || Buffer.byteLength(secret) < 32)
+    throw Error('Invalid generation secret');
   const rows = await q.query(
     `SELECT p."policyId" FROM directory_overture_private_policy p
       WHERE p.revoked=false AND EXISTS (SELECT 1 FROM directory_business_assertion a WHERE a."policyId"=p."policyId")
         AND EXISTS (SELECT 1 FROM directory_overture_private_membership m JOIN directory_overture_private_completion c ON c."scanId"=m."scanId" WHERE m."policyId"=p."policyId")
       ORDER BY p."policyId"`
   );
-  return createHmac('sha256', secret).update('serving-generation-v1\0').update(rows.map((r) => r.policyId).join(',')).digest('hex');
+  return createHmac('sha256', secret)
+    .update('serving-generation-v1\0')
+    .update(rows.map((r) => r.policyId).join(','))
+    .digest('hex');
 }

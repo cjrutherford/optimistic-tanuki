@@ -21,8 +21,12 @@ const {
   findActivePrivateRow,
   publishAddressReviewCandidate,
 } = require('../apps/directory/src/address-review-publish');
-const { reviewedBindingKeyFromEnv } = require('../apps/directory/src/reviewed-binding');
-const { projectPublicOverture } = require('../apps/directory/src/overture-public-projection');
+const {
+  reviewedBindingKeyFromEnv,
+} = require('../apps/directory/src/reviewed-binding');
+const {
+  projectPublicOverture,
+} = require('../apps/directory/src/overture-public-projection');
 const {
   buildUniqueContactStageMap,
   contactListingKey,
@@ -58,7 +62,9 @@ const apply = flag('--apply');
 const databaseUrl = process.env.DIRECTORY_REVIEW_DATABASE_URL;
 
 if (apply) {
-  console.error('Address publication is paused pending source identity, town containment, withdrawal and quality-gate repairs.');
+  console.error(
+    'Address publication is paused pending source identity, town containment, withdrawal and quality-gate repairs.'
+  );
   process.exit(1);
 }
 if (!databaseUrl) {
@@ -92,11 +98,18 @@ if (policyPath) {
     policy.operations.publicDisplay !== true ||
     !Array.isArray(policy.terms)
   ) {
-    console.error('Policy must be a runtime OvertureRightsPolicy with publicDisplay enabled');
+    console.error(
+      'Policy must be a runtime OvertureRightsPolicy with publicDisplay enabled'
+    );
     process.exit(1);
   }
 }
-if (reviewer && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reviewer)) {
+if (
+  reviewer &&
+  !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    reviewer
+  )
+) {
   console.error('--reviewer must be a UUID');
   process.exit(1);
 }
@@ -139,7 +152,9 @@ async function latestApprover(db, candidateId) {
 /** The stage's own installation id, or an operator label; a stage with neither is refused at apply. */
 async function readStageInstallationId(stage) {
   try {
-    const rows = await stage.query('SELECT "id" FROM "directory_installation" ORDER BY "createdAt" LIMIT 2');
+    const rows = await stage.query(
+      'SELECT "id" FROM "directory_installation" ORDER BY "createdAt" LIMIT 2'
+    );
     if (rows.length === 1 && rows[0].id) return String(rows[0].id);
   } catch {
     // A stage without the table falls back to the operator label.
@@ -185,9 +200,7 @@ function sourceFromContact(candidate, listing) {
         ? [candidate.websites[0]]
         : [],
     phones:
-      candidate.phones && candidate.phones.length
-        ? [candidate.phones[0]]
-        : [],
+      candidate.phones && candidate.phones.length ? [candidate.phones[0]] : [],
   };
 }
 
@@ -224,7 +237,9 @@ function sourceFromContact(candidate, listing) {
     if (apply) {
       bindingKey = reviewedBindingKeyFromEnv();
       if (contactMode && !contact.installationId) {
-        throw Error('The contact stage has no installation id; set DIRECTORY_CONTACT_STAGE_LABEL to identify it');
+        throw Error(
+          'The contact stage has no installation id; set DIRECTORY_CONTACT_STAGE_LABEL to identify it'
+        );
       }
     }
     const summary = {
@@ -246,7 +261,10 @@ function sourceFromContact(candidate, listing) {
       let stageRow = null;
       if (contactMode) {
         stageRow = contactListings.get(
-          contactListingKey(candidate.communityId, candidate.sourceFileRowNumber)
+          contactListingKey(
+            candidate.communityId,
+            candidate.sourceFileRowNumber
+          )
         );
         if (!stageRow) {
           summary.missingSourceRow += 1;
@@ -338,7 +356,11 @@ function sourceFromContact(candidate, listing) {
                 stageInstallationId: contact.installationId,
                 stage: stageRow,
               }
-            : { provenance: 'source_file', key: bindingKey, fileRow: sourceRow },
+            : {
+                provenance: 'source_file',
+                key: bindingKey,
+                fileRow: sourceRow,
+              },
         });
         summary.published += 1;
       } catch {

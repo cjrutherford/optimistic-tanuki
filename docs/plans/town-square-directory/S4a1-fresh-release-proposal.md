@@ -39,7 +39,6 @@ The [Overture Places guide](https://docs.overturemaps.org/guides/places/) descri
 
 No fresh-release record-level contributor inventory, row-group or transfer estimate, data-quality measurement, or authorization decision was produced here. The old four-town artifacts and six historically unmapped records remain untouched; their historical counts do not describe this fresh release. If the selected release is no longer available, prepare a new release-specific proposal rather than silently changing the input.
 
-
 ## Retention decision
 
 The user chose to keep the private pilot's business records until explicitly deleted. A shorter source restriction or withdrawal still controls where applicable. Authenticated deletion, durable cleanup and verification remain prerequisites for real-data operation; this choice does not approve indefinite retention contrary to a source's terms.

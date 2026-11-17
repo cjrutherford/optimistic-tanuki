@@ -6,7 +6,14 @@ import { readFileSync, statSync } from 'node:fs';
 import { OverturePrivateSink } from './overture-private-sink';
 import type { OvertureRightsPolicy } from './overture-rights';
 import { DEFAULT_ADDRESS_REVIEW_POLICY } from './address-review';
-import { type BindingKey, documentHash, fieldHashes, keyedHash, reviewedHash, stageContentHash } from './reviewed-binding';
+import {
+  type BindingKey,
+  documentHash,
+  fieldHashes,
+  keyedHash,
+  reviewedHash,
+  stageContentHash,
+} from './reviewed-binding';
 
 const HEX64 = /^[a-f0-9]{64}$/;
 
@@ -21,14 +28,23 @@ export interface ReviewedSourceBinding {
   /** contact_stage: which stage database (its installation id, or an operator label). */
   stageInstallationId?: string;
   /** contact_stage: the exact stage row that supplied the contact fields. */
-  stage?: { scanId: string; sourceFileRowNumber: string | number; policyId: string; listing: unknown };
+  stage?: {
+    scanId: string;
+    sourceFileRowNumber: string | number;
+    policyId: string;
+    listing: unknown;
+  };
   /** source_file: the source row as read. */
   fileRow?: unknown;
 }
 
-function validateSourceBinding(binding: ReviewedSourceBinding | undefined): ReviewedSourceBinding {
-  if (!binding || typeof binding !== 'object') throw Error('Source binding is required');
-  if (typeof binding.key !== 'string' && !Buffer.isBuffer(binding.key)) throw Error('Source binding key is required');
+function validateSourceBinding(
+  binding: ReviewedSourceBinding | undefined
+): ReviewedSourceBinding {
+  if (!binding || typeof binding !== 'object')
+    throw Error('Source binding is required');
+  if (typeof binding.key !== 'string' && !Buffer.isBuffer(binding.key))
+    throw Error('Source binding key is required');
   if (binding.provenance === 'contact_stage') {
     const stage = binding.stage;
     if (
@@ -44,15 +60,15 @@ function validateSourceBinding(binding: ReviewedSourceBinding | undefined): Revi
       throw Error('Contact-stage source binding is incomplete');
     }
   } else if (binding.provenance === 'source_file') {
-    if (binding.fileRow === undefined || binding.fileRow === null) throw Error('Source-file binding is incomplete');
+    if (binding.fileRow === undefined || binding.fileRow === null)
+      throw Error('Source-file binding is incomplete');
   } else {
     throw Error('Unknown source binding provenance');
   }
   return binding;
 }
 
-const UUID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface ActivePrivateRow {
   scanId: string;
@@ -74,68 +90,168 @@ function samePoint(left: unknown, right: unknown): boolean {
 }
 
 /** Verified boundaries take precedence; a pinned Census place is local-only. */
-export async function requireTownContainment(candidate: any, manager: EntityManager): Promise<{ basis: string; changeToken: string; manifestHash?: string }> {
+export async function requireTownContainment(
+  candidate: any,
+  manager: EntityManager
+): Promise<{ basis: string; changeToken: string; manifestHash?: string }> {
   const raw = process.env.DIRECTORY_CONTAINMENT_GATEWAY_URL;
   let gateway: URL;
-  try { gateway = new URL(raw || ''); } catch { throw Error('Town containment is unavailable'); }
-  if (!['http:', 'https:'].includes(gateway.protocol) || !['127.0.0.1', 'localhost', '::1', '[::1]'].includes(gateway.hostname) || gateway.username || gateway.password || gateway.search || gateway.hash || gateway.pathname !== '/') {
+  try {
+    gateway = new URL(raw || '');
+  } catch {
+    throw Error('Town containment is unavailable');
+  }
+  if (
+    !['http:', 'https:'].includes(gateway.protocol) ||
+    !['127.0.0.1', 'localhost', '::1', '[::1]'].includes(gateway.hostname) ||
+    gateway.username ||
+    gateway.password ||
+    gateway.search ||
+    gateway.hash ||
+    gateway.pathname !== '/'
+  ) {
     throw Error('Town containment is unavailable');
   }
   const geocode = candidate.geocode;
   const points = [geocode?.coordinates, candidate.point];
-  if (geocode?.status !== 'match' || points.some(point => !point || !Number.isFinite(point.lng) || !Number.isFinite(point.lat) || Math.abs(point.lng) > 180 || Math.abs(point.lat) > 90)) {
+  if (
+    geocode?.status !== 'match' ||
+    points.some(
+      (point) =>
+        !point ||
+        !Number.isFinite(point.lng) ||
+        !Number.isFinite(point.lat) ||
+        Math.abs(point.lng) > 180 ||
+        Math.abs(point.lat) > 90
+    )
+  ) {
     throw Error('Verified geocode is required for town containment');
   }
   let boundaryStatus: string | undefined;
   for (const point of points) {
-    const url = new URL(`/api/directory/towns/${candidate.communityId}/validate`, gateway);
-    url.search = new URLSearchParams({ longitude: String(point.lng), latitude: String(point.lat) }).toString();
-    const response = await fetch(url, { signal: AbortSignal.timeout(5000), redirect: 'error' });
+    const url = new URL(
+      `/api/directory/towns/${candidate.communityId}/validate`,
+      gateway
+    );
+    url.search = new URLSearchParams({
+      longitude: String(point.lng),
+      latitude: String(point.lat),
+    }).toString();
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(5000),
+      redirect: 'error',
+    });
     if (!response.ok) throw Error('Town containment is unavailable');
-    const result = await response.json() as any;
-    if (result?.town?.id !== candidate.communityId || !['pending', 'ready'].includes(result.status) || (result.status === 'ready' && typeof result.covers !== 'boolean') || (boundaryStatus && boundaryStatus !== result.status)) throw Error('Verified town boundary is unavailable');
+    const result = (await response.json()) as any;
+    if (
+      result?.town?.id !== candidate.communityId ||
+      !['pending', 'ready'].includes(result.status) ||
+      (result.status === 'ready' && typeof result.covers !== 'boolean') ||
+      (boundaryStatus && boundaryStatus !== result.status)
+    )
+      throw Error('Verified town boundary is unavailable');
     boundaryStatus = result.status;
-    if (result.status === 'ready' && !result.covers) throw Error('Address or map point is outside the assigned town');
+    if (result.status === 'ready' && !result.covers)
+      throw Error('Address or map point is outside the assigned town');
   }
   if (boundaryStatus === 'ready') {
-    const [result] = await manager.query(`SELECT b."geometryHash",b."changeToken",encode(ST_AsEWKB(g.boundary,'XDR'),'hex') AS geometry, ST_Covers(g.boundary,ST_SetSRID(ST_MakePoint($2,$3),4326)) AS geocode_inside, ST_Covers(g.boundary,ST_SetSRID(ST_MakePoint($4,$5),4326)) AS source_inside
+    const [result] = await manager.query(
+      `SELECT b."geometryHash",b."changeToken",encode(ST_AsEWKB(g.boundary,'XDR'),'hex') AS geometry, ST_Covers(g.boundary,ST_SetSRID(ST_MakePoint($2,$3),4326)) AS geocode_inside, ST_Covers(g.boundary,ST_SetSRID(ST_MakePoint($4,$5),4326)) AS source_inside
       FROM directory_reviewed_geometry b
       JOIN directory_town t ON t."communityId"=b."communityId" AND t.eligible IS TRUE AND t."geometryStatus"='ready' AND t."geometryVersion"=b.version
       JOIN directory_town_geometry g ON g."communityId"=b."communityId" AND g.version=b.version
       JOIN directory_boundary_decision d ON d."requestId"=b."requestId" AND d."communityId"=b."communityId" AND d.decision='verified' AND d."invalidatedAt" IS NULL
       JOIN directory_boundary_candidate c ON c."communityId"=b."communityId" AND c."changeToken"=b."changeToken" AND c."geographyHash"=b."geographyHash" AND c."sourceEpoch"=d."sourceEpoch" AND c."activationId"=d."activationId" AND c."socialGeneration"=d."socialGeneration"
       WHERE b."communityId"=$1 AND d."changeToken"=b."changeToken" AND d."geographyHash"=b."geographyHash" AND d."recoveryEpoch"=b."recoveryEpoch" AND d."directoryGeneration"=b."directoryGeneration"
-      FOR SHARE OF b,t,g,d,c`, [candidate.communityId, points[0].lng, points[0].lat, points[1].lng, points[1].lat]);
-    if (!result || createHash('sha256').update(Buffer.from(result.geometry, 'hex')).digest('hex') !== result.geometryHash) throw Error('Verified town boundary changed or is unavailable');
-    if (!result.geocode_inside || !result.source_inside) throw Error('Address or map point is outside the assigned town');
+      FOR SHARE OF b,t,g,d,c`,
+      [
+        candidate.communityId,
+        points[0].lng,
+        points[0].lat,
+        points[1].lng,
+        points[1].lat,
+      ]
+    );
+    if (
+      !result ||
+      createHash('sha256')
+        .update(Buffer.from(result.geometry, 'hex'))
+        .digest('hex') !== result.geometryHash
+    )
+      throw Error('Verified town boundary changed or is unavailable');
+    if (!result.geocode_inside || !result.source_inside)
+      throw Error('Address or map point is outside the assigned town');
     return { basis: 'verified_boundary', changeToken: result.changeToken };
   }
   const options = manager.connection.options as { url?: string; host?: string };
   let databaseHost = options.host || '';
-  try { if (options.url) databaseHost = new URL(options.url).hostname; } catch { throw Error('Census fallback requires local evaluation'); }
-  if (process.env.DIRECTORY_LOCAL_EVALUATION !== 'true' || !['localhost', '127.0.0.1', '::1', '[::1]'].includes(databaseHost)) throw Error('Census fallback requires local evaluation');
+  try {
+    if (options.url) databaseHost = new URL(options.url).hostname;
+  } catch {
+    throw Error('Census fallback requires local evaluation');
+  }
+  if (
+    process.env.DIRECTORY_LOCAL_EVALUATION !== 'true' ||
+    !['localhost', '127.0.0.1', '::1', '[::1]'].includes(databaseHost)
+  )
+    throw Error('Census fallback requires local evaluation');
   const file = process.env.DIRECTORY_LOCAL_CENSUS_REGIONS_PATH;
   const pinned = process.env.DIRECTORY_LOCAL_CENSUS_REGIONS_SHA256;
-  if (!file || !pinned || !/^[a-f0-9]{64}$/.test(pinned)) throw Error('Verified town boundary is unavailable');
+  if (!file || !pinned || !/^[a-f0-9]{64}$/.test(pinned))
+    throw Error('Verified town boundary is unavailable');
   let manifest: any;
   try {
     if (statSync(file).size > 50_000_000) throw Error();
     manifest = JSON.parse(readFileSync(file, 'utf8'));
-  } catch { throw Error('Census place candidate is unavailable'); }
+  } catch {
+    throw Error('Census place candidate is unavailable');
+  }
   const { sha256, ...payload } = manifest ?? {};
-  if (payload.version !== 1 || sha256 !== pinned || createHash('sha256').update(JSON.stringify(payload)).digest('hex') !== pinned || !Array.isArray(payload.regions)) throw Error('Census place manifest is invalid');
-  const matches = payload.regions.filter((region: any) => region?.id === candidate.communityId);
-  if (matches.length !== 1 || !matches[0].geometry || !UUID.test(matches[0].assignmentChangeToken || '')) throw Error('Census place candidate is unavailable');
+  if (
+    payload.version !== 1 ||
+    sha256 !== pinned ||
+    createHash('sha256').update(JSON.stringify(payload)).digest('hex') !==
+      pinned ||
+    !Array.isArray(payload.regions)
+  )
+    throw Error('Census place manifest is invalid');
+  const matches = payload.regions.filter(
+    (region: any) => region?.id === candidate.communityId
+  );
+  if (
+    matches.length !== 1 ||
+    !matches[0].geometry ||
+    !UUID.test(matches[0].assignmentChangeToken || '')
+  )
+    throw Error('Census place candidate is unavailable');
   const region = matches[0];
-  const current = await manager.query(`SELECT 1 FROM directory_boundary_candidate WHERE "communityId"=$1 AND "sourceEpoch"=$2 AND "activationId"=$3 AND "socialGeneration"=$4 AND "changeToken"=$5 AND layer='place' FOR SHARE`, [candidate.communityId, payload.sourceEpoch, payload.activationId, String(payload.socialGeneration), region.assignmentChangeToken]);
-  if (current.length !== 1) throw Error('Census place candidate is stale or unavailable');
+  const current = await manager.query(
+    `SELECT 1 FROM directory_boundary_candidate WHERE "communityId"=$1 AND "sourceEpoch"=$2 AND "activationId"=$3 AND "socialGeneration"=$4 AND "changeToken"=$5 AND layer='place' FOR SHARE`,
+    [
+      candidate.communityId,
+      payload.sourceEpoch,
+      payload.activationId,
+      String(payload.socialGeneration),
+      region.assignmentChangeToken,
+    ]
+  );
+  if (current.length !== 1)
+    throw Error('Census place candidate is stale or unavailable');
   const geo = JSON.stringify(region.geometry);
   for (const point of points) {
-    const [result] = await manager.query(`SELECT ST_IsValid(g) AND NOT ST_IsEmpty(g) AND GeometryType(g) IN ('POLYGON','MULTIPOLYGON') AS valid, ST_Covers(g,ST_SetSRID(ST_MakePoint($2,$3),4326)) AS covers FROM (SELECT ST_SetSRID(ST_GeomFromGeoJSON($1),4326) g) x`, [geo, point.lng, point.lat]);
+    const [result] = await manager.query(
+      `SELECT ST_IsValid(g) AND NOT ST_IsEmpty(g) AND GeometryType(g) IN ('POLYGON','MULTIPOLYGON') AS valid, ST_Covers(g,ST_SetSRID(ST_MakePoint($2,$3),4326)) AS covers FROM (SELECT ST_SetSRID(ST_GeomFromGeoJSON($1),4326) g) x`,
+      [geo, point.lng, point.lat]
+    );
     if (!result?.valid) throw Error('Census place geometry is invalid');
-    if (!result.covers) throw Error('Address or map point is outside the assigned town');
+    if (!result.covers)
+      throw Error('Address or map point is outside the assigned town');
   }
-  return { basis: 'census_place_candidate_local', changeToken: region.assignmentChangeToken, manifestHash: pinned };
+  return {
+    basis: 'census_place_candidate_local',
+    changeToken: region.assignmentChangeToken,
+    manifestHash: pinned,
+  };
 }
 
 export async function findActivePrivateRow(
@@ -193,16 +309,20 @@ export async function publishAddressReviewCandidate(
     /** Durable binding of the published fields to the source that supplied them. */
     sourceBinding: ReviewedSourceBinding;
   }
-): Promise<{ candidateId: string; status: string; scanId: string; row: string; bindingId: string; decisionId: string }> {
+): Promise<{
+  candidateId: string;
+  status: string;
+  scanId: string;
+  row: string;
+  bindingId: string;
+  decisionId: string;
+}> {
   if (!UUID.test(input.candidateId)) throw Error('Invalid candidate');
   const binding = validateSourceBinding(input.sourceBinding);
   if (!input.policy || typeof input.policy !== 'object') {
     throw Error('Public-display policy is required');
   }
-  if (
-    !input.actorId ||
-    !UUID.test(input.actorId)
-  ) {
+  if (!input.actorId || !UUID.test(input.actorId)) {
     throw Error('Verified publisher is required');
   }
   const rows = await db.query(
@@ -225,8 +345,16 @@ export async function publishAddressReviewCandidate(
     evidence.addressMatch === true;
   let evidenceUrl: string;
   if (automatedEvidence) {
-    const fetchedAt = typeof evidence.fetchedAt === 'string' ? Date.parse(evidence.fetchedAt) : NaN;
-    if (!Number.isFinite(fetchedAt) || fetchedAt > Date.now() || Date.now() - fetchedAt > DEFAULT_ADDRESS_REVIEW_POLICY.maxEvidenceAgeDays * 86_400_000) {
+    const fetchedAt =
+      typeof evidence.fetchedAt === 'string'
+        ? Date.parse(evidence.fetchedAt)
+        : NaN;
+    if (
+      !Number.isFinite(fetchedAt) ||
+      fetchedAt > Date.now() ||
+      Date.now() - fetchedAt >
+        DEFAULT_ADDRESS_REVIEW_POLICY.maxEvidenceAgeDays * 86_400_000
+    ) {
       throw Error('Official-page evidence is stale or unavailable');
     }
     evidenceUrl = evidence.url;
@@ -278,10 +406,28 @@ export async function publishAddressReviewCandidate(
     throw Error('Candidate location is incomplete');
   }
   const source = input.source as any;
-  const sameSingle = (left: unknown, right: unknown) => Array.isArray(left) && left.length === 1 && Array.isArray(right) && right.length === 1 && typeof left[0] === 'string' && typeof right[0] === 'string' && left[0].trim() === right[0].trim();
-  const hasValues = (value: unknown) => Array.isArray(value) && value.length > 0;
-  const sourceAddresses = Array.isArray(source.addresses) ? source.addresses.map((value: any) => value?.freeform) : [];
-  if (!sameSingle(candidate.addresses, sourceAddresses) || (evidence?.websiteMatch === true && (hasValues(candidate.websites) || hasValues(source.websites)) && !sameSingle(candidate.websites, source.websites)) || (evidence?.phoneMatch === true && (hasValues(candidate.phones) || hasValues(source.phones)) && !sameSingle(candidate.phones, source.phones))) {
+  const sameSingle = (left: unknown, right: unknown) =>
+    Array.isArray(left) &&
+    left.length === 1 &&
+    Array.isArray(right) &&
+    right.length === 1 &&
+    typeof left[0] === 'string' &&
+    typeof right[0] === 'string' &&
+    left[0].trim() === right[0].trim();
+  const hasValues = (value: unknown) =>
+    Array.isArray(value) && value.length > 0;
+  const sourceAddresses = Array.isArray(source.addresses)
+    ? source.addresses.map((value: any) => value?.freeform)
+    : [];
+  if (
+    !sameSingle(candidate.addresses, sourceAddresses) ||
+    (evidence?.websiteMatch === true &&
+      (hasValues(candidate.websites) || hasValues(source.websites)) &&
+      !sameSingle(candidate.websites, source.websites)) ||
+    (evidence?.phoneMatch === true &&
+      (hasValues(candidate.phones) || hasValues(source.phones)) &&
+      !sameSingle(candidate.phones, source.phones))
+  ) {
     throw Error('Source does not match the reviewed contact fields');
   }
 
@@ -310,9 +456,36 @@ export async function publishAddressReviewCandidate(
   };
   const written = await db.transaction(async (manager) => {
     await assertDirectoryIdentitiesUnfenced(manager, [input.actorId]);
-    const locked = await manager.query('SELECT * FROM "directory_address_review_candidate" WHERE "id"=$1 FOR UPDATE', [input.candidateId]);
-    const relevant = ['status', 'scanId', 'sourceFileRowNumber', 'communityId', 'name', 'category', 'point', 'risk', 'officialEvidence', 'geocode', 'addresses', 'websites', 'phones', 'rights', 'policyVersion'];
-    if (locked.length !== 1 || relevant.some(key => JSON.stringify(locked[0][key]) !== JSON.stringify(candidate[key])) || new Date(locked[0].updatedAt).getTime() !== new Date(candidate.updatedAt).getTime()) {
+    const locked = await manager.query(
+      'SELECT * FROM "directory_address_review_candidate" WHERE "id"=$1 FOR UPDATE',
+      [input.candidateId]
+    );
+    const relevant = [
+      'status',
+      'scanId',
+      'sourceFileRowNumber',
+      'communityId',
+      'name',
+      'category',
+      'point',
+      'risk',
+      'officialEvidence',
+      'geocode',
+      'addresses',
+      'websites',
+      'phones',
+      'rights',
+      'policyVersion',
+    ];
+    if (
+      locked.length !== 1 ||
+      relevant.some(
+        (key) =>
+          JSON.stringify(locked[0][key]) !== JSON.stringify(candidate[key])
+      ) ||
+      new Date(locked[0].updatedAt).getTime() !==
+        new Date(candidate.updatedAt).getTime()
+    ) {
       throw Error('Candidate changed before publication');
     }
     // Lock order: fence -> candidate -> binding -> policy -> scan -> row.
@@ -348,7 +521,14 @@ export async function publishAddressReviewCandidate(
         input.actorId,
         evidenceUrl,
         evidence?.evidenceHash ?? null,
-        JSON.stringify({ publication: 'reviewed_fields_attached', containment: containment.basis, assignmentChangeToken: containment.changeToken, ...(containment.manifestHash ? { manifestHash: containment.manifestHash } : {}) }),
+        JSON.stringify({
+          publication: 'reviewed_fields_attached',
+          containment: containment.basis,
+          assignmentChangeToken: containment.changeToken,
+          ...(containment.manifestHash
+            ? { manifestHash: containment.manifestHash }
+            : {}),
+        }),
         input.policy.releaseId,
       ]
     );
@@ -387,13 +567,17 @@ export async function publishAddressReviewCandidate(
         active.sourceFileRowNumber,
         active.policyId,
         binding.provenance,
-        binding.provenance === 'contact_stage' ? binding.stageInstallationId!.trim() : null,
+        binding.provenance === 'contact_stage'
+          ? binding.stageInstallationId!.trim()
+          : null,
         stage ? stage.scanId : null,
         stage ? String(stage.sourceFileRowNumber) : null,
         stage ? stage.policyId : null,
         input.policy.releaseId ?? null,
         documentHash(input.policy),
-        binding.provenance === 'contact_stage' ? stageContentHash(binding.key, stage!.listing) : keyedHash(binding.key, binding.fileRow),
+        binding.provenance === 'contact_stage'
+          ? stageContentHash(binding.key, stage!.listing)
+          : keyedHash(binding.key, binding.fileRow),
         reviewedHash(binding.key, reviewed),
         JSON.stringify(
           fieldHashes(binding.key, {
@@ -415,7 +599,10 @@ export async function publishAddressReviewCandidate(
       `INSERT INTO "directory_reviewed_binding_event" ("bindingId","kind","cause","decisionId") VALUES ($1,'published','publication',$2)`,
       [created.id, decision.id]
     );
-    return { bindingId: created.id as string, decisionId: decision.id as string };
+    return {
+      bindingId: created.id as string,
+      decisionId: decision.id as string,
+    };
   });
   return {
     candidateId: input.candidateId,

@@ -63,11 +63,11 @@ export LIVE="postgres://postgres:${PW}@127.0.0.1:32768/ot_directory"
 
 The current 133-town cohort uses these constants:
 
-| Constant | Value |
-| --- | --- |
+| Constant               | Value                                                              |
+| ---------------------- | ------------------------------------------------------------------ |
 | Contact-capture policy | `7dd1e46f51d7812c3abefcbee6cc57d2eefa7d77c4349b364d10c6464fca7983` |
-| Active private policy | `66372b1d63cc9db88f91733a9d593cbfc3f60a0b4a38d1655e0deecf1df7f78b` |
-| Public-display policy | `overture-public-display-2026-10-21.json` |
+| Active private policy  | `66372b1d63cc9db88f91733a9d593cbfc3f60a0b4a38d1655e0deecf1df7f78b` |
+| Public-display policy  | `overture-public-display-2026-10-21.json`                          |
 
 Re-derive the capture and active policy IDs if the release, region manifest or
 projection changes. Do not carry them across releases.
@@ -89,14 +89,14 @@ http://127.0.0.1:8084/dashboard/directory-address-review/6ea6c977-0e6c-4f9a-ab17
 
 The queue is per town and paginated at 25 candidates. The status bar filters:
 
-| Filter | Meaning |
-| --- | --- |
-| Needs review | Unresolved candidates waiting for a human or for evidence |
-| Auto-approved | Passed every automated check, waiting for publication |
-| Approved | A human approved it, waiting for publication |
-| Published | Reviewed fields are attached to the active row |
-| Rejected | A human or the engine rejected it |
-| Revoked | A human withdrew an approved candidate |
+| Filter        | Meaning                                                   |
+| ------------- | --------------------------------------------------------- |
+| Needs review  | Unresolved candidates waiting for a human or for evidence |
+| Auto-approved | Passed every automated check, waiting for publication     |
+| Approved      | A human approved it, waiting for publication              |
+| Published     | Reviewed fields are attached to the active row            |
+| Rejected      | A human or the engine rejected it                         |
+| Revoked       | A human withdrew an approved candidate                    |
 
 A fresh town usually has hundreds or thousands of **Needs review** rows. Start
 with towns where the directory page is visible, or work the sample towns first.
@@ -122,23 +122,23 @@ page. Do not approve from the business name alone.
 The pure decision engine is `apps/directory/src/address-review.ts`. It records
 every check as `pass`, `fail` or `unknown`, then applies:
 
-| Result | Rule |
-| --- | --- |
-| `auto_approve` | Every check passes |
-| `reject` | Any check fails |
-| `needs_human` | No check fails, but at least one is unknown |
+| Result         | Rule                                        |
+| -------------- | ------------------------------------------- |
+| `auto_approve` | Every check passes                          |
+| `reject`       | Any check fails                             |
+| `needs_human`  | No check fails, but at least one is unknown |
 
 The gates that matter in practice:
 
-| Gate | Pass condition |
-| --- | --- |
-| Rights | `publicDisplay` covers every relevant source field |
-| Risk | Residential, sensitive and adult are explicitly `false` |
-| Address shape | At least one valid address; a single address is required for auto-approval |
-| Geocode | Census returns exactly one match within the precision threshold |
-| Geocode distance | ≤ 1,000 m for range/street, ≤ 150 m for rooftop, ≤ 2,000 m hard maximum |
-| Official evidence | Page fetched within 30 days, name and address match, phone and website match when present |
-| Evidence transport | HTTP and HTTPS are both accepted; HTTP rows are labelled |
+| Gate               | Pass condition                                                                            |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| Rights             | `publicDisplay` covers every relevant source field                                        |
+| Risk               | Residential, sensitive and adult are explicitly `false`                                   |
+| Address shape      | At least one valid address; a single address is required for auto-approval                |
+| Geocode            | Census returns exactly one match within the precision threshold                           |
+| Geocode distance   | ≤ 1,000 m for range/street, ≤ 150 m for rooftop, ≤ 2,000 m hard maximum                   |
+| Official evidence  | Page fetched within 30 days, name and address match, phone and website match when present |
+| Evidence transport | HTTP and HTTPS are both accepted; HTTP rows are labelled                                  |
 
 Anything unknown becomes a human decision. The engine never treats a missing
 page, a missing phone or an unclassified category as approval.
@@ -148,12 +148,12 @@ resolves the evidence and classification questions that automation could not.
 
 ## Decisions
 
-| Action | Allowed from | Result |
-| --- | --- | --- |
-| Approve | `needs_human` | Candidate becomes `approved`; an HTTPS evidence URL and the attestation checkbox are required |
-| Reject | `needs_human` | Candidate becomes `rejected` |
-| Needs info | `needs_human` | Candidate stays `needs_human`; the note is recorded |
-| Revoke | `approved` or `auto_approved` | Candidate becomes `revoked` |
+| Action     | Allowed from                  | Result                                                                                        |
+| ---------- | ----------------------------- | --------------------------------------------------------------------------------------------- |
+| Approve    | `needs_human`                 | Candidate becomes `approved`; an HTTPS evidence URL and the attestation checkbox are required |
+| Reject     | `needs_human`                 | Candidate becomes `rejected`                                                                  |
+| Needs info | `needs_human`                 | Candidate stays `needs_human`; the note is recorded                                           |
+| Revoke     | `approved` or `auto_approved` | Candidate becomes `revoked`                                                                   |
 
 Every action inserts a row in `directory_address_review_decision` with the
 reviewer's profile ID, the decision, the evidence URL, the note, the checks and
@@ -338,34 +338,34 @@ token, and never creates rows for non-active bindings. `--apply` refuses to run 
 
 ## Blocked Queue Meanings
 
-| Reason | What it means | How to unblock |
-| --- | --- | --- |
-| `official_evidence_unavailable` | The page was blocked, unavailable or absent | Supply an HTTPS location page and approve |
-| `official_address_mismatch` | The page was fetched but did not contain the address | Find the location page or confirm the source address |
-| `official_phone_mismatch` | The page did not contain the source phone | Confirm the phone on the page or reject the phone |
-| `official_name_mismatch` | The page did not contain the business name | Check for a rebrand or a wrong website |
-| `multiple_addresses` | More than one source address | Choose the primary address |
-| `point_distance_requires_review` | Geocode is plausible but too far from the source point | Check the map |
-| `residential_classification_unknown` | Category outside the safe commercial list | Classify as non-residential or reject |
-| `sensitive_classification_unknown` / `adult_classification_unknown` | The classifier could not clear the item | Review manually; these never auto-approve |
-| `geocode_no_match` / `geocode_ambiguous` / `geocode_error` | Census could not return exactly one match | Correct the address or reject |
-| `rights_review_required` / `rights_denied` | The policy does not cover the source terms | Rights decision; not a reviewer task |
-| `geocode_missing` / `official_evidence_missing` | The evidence worker has not run | Run the evidence worker |
+| Reason                                                              | What it means                                          | How to unblock                                       |
+| ------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------- |
+| `official_evidence_unavailable`                                     | The page was blocked, unavailable or absent            | Supply an HTTPS location page and approve            |
+| `official_address_mismatch`                                         | The page was fetched but did not contain the address   | Find the location page or confirm the source address |
+| `official_phone_mismatch`                                           | The page did not contain the source phone              | Confirm the phone on the page or reject the phone    |
+| `official_name_mismatch`                                            | The page did not contain the business name             | Check for a rebrand or a wrong website               |
+| `multiple_addresses`                                                | More than one source address                           | Choose the primary address                           |
+| `point_distance_requires_review`                                    | Geocode is plausible but too far from the source point | Check the map                                        |
+| `residential_classification_unknown`                                | Category outside the safe commercial list              | Classify as non-residential or reject                |
+| `sensitive_classification_unknown` / `adult_classification_unknown` | The classifier could not clear the item                | Review manually; these never auto-approve            |
+| `geocode_no_match` / `geocode_ambiguous` / `geocode_error`          | Census could not return exactly one match              | Correct the address or reject                        |
+| `rights_review_required` / `rights_denied`                          | The policy does not cover the source terms             | Rights decision; not a reviewer task                 |
+| `geocode_missing` / `official_evidence_missing`                     | The evidence worker has not run                        | Run the evidence worker                              |
 
 ## Troubleshooting
 
-| Symptom | Check |
-| --- | --- |
-| `403 Owner Console scope required` | Request came from outside the Owner Console |
-| `403 Verified reviewer required` | The session has no valid profile UUID |
-| `503 Address review unavailable` | Gateway or Directory is missing `DIRECTORY_LOCAL_EVALUATION`, the internal URL or the local secret |
-| `Candidate unavailable` | The candidate UUID does not belong to the town in the URL |
-| `Invalid decision for current candidate status` | Approve/reject/needs-info only from `needs_human`; revoke only from `approved` or `auto_approved` |
-| `Approval requires an HTTPS evidence URL` | Enter a public HTTPS page, not an HTTP URL or a local address |
-| `Matching official-page evidence is required` | Automated evidence is missing and there is no human approval to fall back on |
-| `Human approval evidence is required` | The publishing actor is not the approver, or the evidence URL differs from the recorded approval |
-| `No active private row matches this candidate` | Name, category or point changed; check the source row and whitespace |
-| Published but no address on the public page | Check `listing.reviewed` on the active row and that the evidence URL scheme is accepted |
+| Symptom                                         | Check                                                                                              |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `403 Owner Console scope required`              | Request came from outside the Owner Console                                                        |
+| `403 Verified reviewer required`                | The session has no valid profile UUID                                                              |
+| `503 Address review unavailable`                | Gateway or Directory is missing `DIRECTORY_LOCAL_EVALUATION`, the internal URL or the local secret |
+| `Candidate unavailable`                         | The candidate UUID does not belong to the town in the URL                                          |
+| `Invalid decision for current candidate status` | Approve/reject/needs-info only from `needs_human`; revoke only from `approved` or `auto_approved`  |
+| `Approval requires an HTTPS evidence URL`       | Enter a public HTTPS page, not an HTTP URL or a local address                                      |
+| `Matching official-page evidence is required`   | Automated evidence is missing and there is no human approval to fall back on                       |
+| `Human approval evidence is required`           | The publishing actor is not the approver, or the evidence URL differs from the recorded approval   |
+| `No active private row matches this candidate`  | Name, category or point changed; check the source row and whitespace                               |
+| Published but no address on the public page     | Check `listing.reviewed` on the active row and that the evidence URL scheme is accepted            |
 
 ## Safety Rules
 

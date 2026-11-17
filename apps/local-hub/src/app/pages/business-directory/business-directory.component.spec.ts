@@ -84,9 +84,8 @@ describe('BusinessDirectoryComponent', () => {
     component.listings.set([listingFixture]);
     fixture.detectChanges();
 
-    const map = fixture.debugElement.query(
-      By.directive(MapComponent)
-    )?.componentInstance as MapComponent | undefined;
+    const map = fixture.debugElement.query(By.directive(MapComponent))
+      ?.componentInstance as MapComponent | undefined;
 
     expect(map).toBeDefined();
     expect(map?.mode).toBe('directory');
@@ -138,8 +137,12 @@ describe('BusinessDirectoryComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain(
       'No businesses found.'
     );
-    expect(fixture.nativeElement.textContent).toContain('Business locations are temporarily unavailable.');
-    expect(fixture.nativeElement.textContent).not.toContain('No reviewed locations are in the currently loaded results.');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Business locations are temporarily unavailable.'
+    );
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'No reviewed locations are in the currently loaded results.'
+    );
     const retry = fixture.nativeElement.querySelector(
       '[data-testid="directory-retry"]'
     ) as HTMLButtonElement;
@@ -182,7 +185,9 @@ describe('BusinessDirectoryComponent', () => {
       `${globalThis.location.origin}/c/cafe`
     );
     fixture.detectChanges();
-    expect(communityServiceMock.requestDirectoryBusinessLink).toHaveBeenCalledWith(
+    expect(
+      communityServiceMock.requestDirectoryBusinessLink
+    ).toHaveBeenCalledWith(
       cityFixture.id,
       listing.id,
       'cafe',
@@ -196,7 +201,9 @@ describe('BusinessDirectoryComponent', () => {
       listing,
       '00000000-0000-4000-8000-000000000102'
     );
-    expect(communityServiceMock.revokeDirectoryBusinessLink).toHaveBeenCalledWith(
+    expect(
+      communityServiceMock.revokeDirectoryBusinessLink
+    ).toHaveBeenCalledWith(
       cityFixture.id,
       listing.id,
       '00000000-0000-4000-8000-000000000102'
