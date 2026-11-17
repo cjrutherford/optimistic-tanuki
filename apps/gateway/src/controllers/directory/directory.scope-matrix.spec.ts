@@ -13,6 +13,7 @@ import {
   DirectoryBusinessLinkQueueController,
 } from './directory-business-link.controller';
 import { DirectoryAddressReviewController } from './directory-address-review.controller';
+import { DirectoryListingSuppressionController } from './directory-listing-suppression.controller';
 import { DirectoryBusinessIdentityReviewController } from './directory-business-identity-review.controller';
 import { AuthGuard } from '../../auth/auth.guard';
 import { GATEWAY_APP_REGISTRY } from '../registry/registry.tokens';
@@ -81,6 +82,13 @@ const reviewRoutes: MatrixRoute[] = [
     path: `${base}/business-identity-review/decisions`,
     body: {},
   },
+  { method: 'GET', path: `${base}/listing-suppressions` },
+  { method: 'POST', path: `${base}/listing-suppressions`, body: {} },
+  {
+    method: 'POST',
+    path: `${base}/listing-suppressions/${candidate}/lift`,
+    body: {},
+  },
   { method: 'GET', path: `${base}/boundary-candidate` },
   { method: 'POST', path: `${base}/boundary-decisions`, body: {} },
 ];
@@ -135,6 +143,7 @@ describe('directory authentication and Owner Console scope matrix', () => {
         DirectoryBusinessLinkQueueController,
         DirectoryAddressReviewController,
         DirectoryBusinessIdentityReviewController,
+        DirectoryListingSuppressionController,
       ],
       providers: [
         AuthGuard,

@@ -60,6 +60,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'directory-listing-suppressions/:communityId',
+        loadComponent: () =>
+          import(
+            './components/directory-listing-suppression-page.component'
+          ).then((m) => m.DirectoryListingSuppressionPageComponent),
+      },
+      {
         path: 'boundary-review/:communityId',
         loadComponent: () =>
           import('./components/boundary-review-page.component').then(

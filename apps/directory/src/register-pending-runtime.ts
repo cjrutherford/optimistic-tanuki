@@ -62,8 +62,20 @@ import {
   BLOCKED_TOWN_INELIGIBLE,
   SERVED_ROW_FROM,
   servedRowWhere,
+  notSuppressedSql,
   townCoverage,
 } from './town-coverage';
+import {
+  LIFT_REASONS,
+  SUPPRESSION_CONFLICT,
+  SUPPRESSION_NOT_FOUND,
+  SUPPRESSION_REASONS,
+  listSuppressions,
+  liftSuppression,
+  suppressListing,
+  type LiftReason,
+  type SuppressionReason,
+} from './listing-suppression';
 import { currentPolicyVersion } from './policy-version';
 import { lockAuthority } from './register-reconciliation-v2';
 import { isEligibleCommunity } from './social-eligibility';
@@ -709,6 +721,7 @@ export function pendingChecks(
         AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=r."scanId")
         AND NOT EXISTS (SELECT 1 FROM directory_overture_private_row_revocation x WHERE x."scanId"=r."scanId" AND x."sourceFileRowNumber"=r."sourceFileRowNumber")
         ${supersededByLiveCohort('r')}
+        ${notSuppressedSql('r')}
         AND (NOT (r.listing ? 'adult') OR r.listing->'adult'='false'::jsonb OR ($7::boolean AND r.listing->'adult'='true'::jsonb))
         AND r.listing->>'assignmentChangeToken'=$8
         AND ($9='' OR r.listing->>'category'=$9)
@@ -1181,7 +1194,54 @@ export function pendingChecks(
     await authority(town);
     return { replayed, businesses: businessIds.length, restoredLinks };
   }
+  async function suppressionList(town: string) {
+    if (!uuid.test(town) || !db.transaction)
+      throw Error('Listing suppression unavailable');
+    await authority(town);
+    const result = await listSuppressions(db, town);
+    await authority(town);
+    return result;
+  }
+  async function suppressionCreate(
+    town: string,
+    value: {
+      suppressionId: string;
+      listingId: string;
+      reasonCode: SuppressionReason;
+      note?: string;
+      actorId: string;
+    }
+  ) {
+    if (!uuid.test(town) || !db.transaction)
+      throw Error('Listing suppression unavailable');
+    await authority(town);
+    const result = await suppressListing(db as DataSource, {
+      ...value,
+      townId: town,
+    });
+    await authority(town);
+    return result;
+  }
+  async function suppressionLift(
+    town: string,
+    suppressionId: string,
+    value: { reasonCode: LiftReason; actorId: string }
+  ) {
+    if (!uuid.test(town) || !db.transaction)
+      throw Error('Listing suppression unavailable');
+    await authority(town);
+    const result = await liftSuppression(db as DataSource, {
+      ...value,
+      suppressionId,
+      townId: town,
+    });
+    await authority(town);
+    return result;
+  }
   return {
+    suppressionList,
+    suppressionCreate,
+    suppressionLift,
     ready,
     bindingHealth,
     spatialHealth,
@@ -1876,6 +1936,138 @@ export function pendingServer(
             error instanceof Error &&
               error.message === 'Invalid business identity decision'
               ? 409
+              : 503,
+            { 'cache-control': 'no-store' }
+          )
+          .end();
+      } finally {
+        active--;
+      }
+      return;
+    }
+    const suppressionMatch = localUrl?.pathname.match(
+      /^\/internal\/local-evaluation\/towns\/([0-9a-f-]{36})\/listing-suppressions(?:\/([0-9a-f-]{36})\/(lift))?$/
+    );
+    if (
+      suppressionMatch &&
+      (suppressionMatch[3]
+        ? req.method === 'POST'
+        : req.method === 'GET' || req.method === 'POST')
+    ) {
+      const isList = req.method === 'GET';
+      const expected = Buffer.from(localSecret || ''),
+        provided = Buffer.from(
+          req.headers.authorization?.startsWith('Bearer ')
+            ? req.headers.authorization.slice(7)
+            : ''
+        );
+      if (expected.length < 32) {
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (
+        provided.length !== expected.length ||
+        !timingSafeEqual(provided, expected)
+      ) {
+        res.writeHead(401, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (localUrl!.search || !uuid.test(suppressionMatch[1])) {
+        res.writeHead(400, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (active >= 32) {
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      active++;
+      if (!isList) req.setTimeout(5000, () => req.destroy());
+      try {
+        let result: unknown;
+        if (isList) {
+          result = await checks.suppressionList(suppressionMatch[1]);
+        } else {
+          let body = Buffer.alloc(0);
+          for await (const chunk of req) {
+            body = Buffer.concat([body, Buffer.from(chunk)]);
+            if (body.length > 16384) {
+              res.writeHead(413, { 'cache-control': 'no-store' }).end();
+              return;
+            }
+          }
+          let value: any;
+          try {
+            value = JSON.parse(body.toString('utf8'));
+          } catch {
+            res.writeHead(400, { 'cache-control': 'no-store' }).end();
+            return;
+          }
+          const shape = (allowed: string[]) =>
+            value &&
+            typeof value === 'object' &&
+            !Array.isArray(value) &&
+            Object.keys(value).every((k) => allowed.includes(k));
+          if (suppressionMatch[3]) {
+            if (
+              !shape(['reasonCode', 'actorId']) ||
+              !uuid.test(value.actorId || '') ||
+              !(LIFT_REASONS as readonly string[]).includes(value.reasonCode)
+            ) {
+              res.writeHead(400, { 'cache-control': 'no-store' }).end();
+              return;
+            }
+            result = await checks.suppressionLift(
+              suppressionMatch[1],
+              suppressionMatch[2],
+              { reasonCode: value.reasonCode, actorId: value.actorId }
+            );
+          } else {
+            if (
+              !shape([
+                'suppressionId',
+                'listingId',
+                'reasonCode',
+                'note',
+                'actorId',
+              ]) ||
+              !uuid.test(value.actorId || '') ||
+              !uuid.test(value.suppressionId || '') ||
+              !uuid.test(value.listingId || '') ||
+              !(SUPPRESSION_REASONS as readonly string[]).includes(
+                value.reasonCode
+              ) ||
+              (value.note !== undefined &&
+                (typeof value.note !== 'string' ||
+                  !value.note.trim() ||
+                  value.note.length > 1024))
+            ) {
+              res.writeHead(400, { 'cache-control': 'no-store' }).end();
+              return;
+            }
+            result = await checks.suppressionCreate(suppressionMatch[1], {
+              suppressionId: value.suppressionId,
+              listingId: value.listingId,
+              reasonCode: value.reasonCode,
+              ...(value.note === undefined ? {} : { note: value.note }),
+              actorId: value.actorId,
+            });
+          }
+        }
+        res
+          .writeHead(200, {
+            'content-type': 'application/json',
+            'cache-control': 'no-store',
+          })
+          .end(JSON.stringify(result));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '';
+        res
+          .writeHead(
+            message === SUPPRESSION_CONFLICT ||
+              message === 'ACCOUNT_DELETION_FENCED'
+              ? 409
+              : message === SUPPRESSION_NOT_FOUND
+              ? 404
               : 503,
             { 'cache-control': 'no-store' }
           )

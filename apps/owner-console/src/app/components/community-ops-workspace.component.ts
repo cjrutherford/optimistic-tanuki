@@ -1090,6 +1090,10 @@ export class CommunityOpsWorkspaceComponent implements OnInit {
                 label: 'Review Business Identity',
                 route: ['/dashboard/directory-identity-review', entity.id],
               },
+              {
+                label: 'Suppress Listings',
+                route: ['/dashboard/directory-listing-suppressions', entity.id],
+              },
             ]
           : []),
       ];
@@ -1113,6 +1117,10 @@ export class CommunityOpsWorkspaceComponent implements OnInit {
         {
           label: 'Review Business Identity',
           route: ['/dashboard/directory-identity-review', entity.id],
+        },
+        {
+          label: 'Suppress Listings',
+          route: ['/dashboard/directory-listing-suppressions', entity.id],
         },
         { label: 'Create Community', route: ['/dashboard/communities/new'] },
       ];

@@ -78,6 +78,10 @@ export const DIRECTORY_DELETION_IDENTITIES = Object.freeze({
   directory_business_identity_decision: [['actorId', 'tagged:actorDomain']],
   directory_boundary_decision: [['reviewerId', 'profile']],
   directory_address_review_decision: [['actorId', 'profile']],
+  directory_listing_suppression: [
+    ['actorId', 'profile'],
+    ['liftedById', 'profile'],
+  ],
 } as const);
 
 function count(rows: unknown): number {
@@ -154,6 +158,10 @@ async function inspect(
       `directory_business_identity_decision WHERE ("actorDomain"='account' AND "actorId"=$1::uuid) OR ("actorDomain"='profile' AND "actorId"=ANY($2::uuid[]))`,
       [s.account, s.profiles]
     ),
+    await one(
+      'directory_listing_suppression WHERE "actorId"=ANY($1::uuid[]) OR "liftedById"=ANY($1::uuid[])',
+      [s.profiles]
+    ),
   ];
   // Every match of a scope identifier that the exact-domain rules above do not cover.
   // A legacy NULL domain makes the comparison NULL, so the test is IS NOT TRUE rather than NOT.
@@ -176,6 +184,10 @@ async function inspect(
     ),
     await one(
       'directory_address_review_decision WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_listing_suppression WHERE ("actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))) OR ("liftedById"=ANY($1::uuid[]) AND NOT ("liftedById"=ANY($2::uuid[])))',
       [s.all, s.profiles]
     ),
   ];
@@ -230,6 +242,10 @@ async function erase(manager: Manager, s: Canonical): Promise<void> {
   await manager.query(
     `UPDATE directory_business_identity_decision SET "actorId"=NULL,reason='' WHERE ("actorDomain"='account' AND "actorId"=$1::uuid) OR ("actorDomain"='profile' AND "actorId"=ANY($2::uuid[]))`,
     [s.account, s.profiles]
+  );
+  await manager.query(
+    `UPDATE directory_listing_suppression SET note=CASE WHEN "actorId"=ANY($1::uuid[]) THEN NULL ELSE note END,"actorId"=CASE WHEN "actorId"=ANY($1::uuid[]) THEN NULL ELSE "actorId" END,"liftedById"=CASE WHEN "liftedById"=ANY($1::uuid[]) THEN NULL ELSE "liftedById" END WHERE "actorId"=ANY($1::uuid[]) OR "liftedById"=ANY($1::uuid[])`,
+    [s.profiles]
   );
   await manager.query(
     'UPDATE directory_boundary_decision SET "reviewerId"=NULL WHERE "reviewerId"=ANY($1::uuid[])',

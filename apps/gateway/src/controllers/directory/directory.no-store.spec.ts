@@ -46,6 +46,7 @@ describe('directory controllers never allow caching', () => {
         'DirectoryBusinessLinkController',
         'DirectoryBusinessLinkQueueController',
         'DirectoryController',
+        'DirectoryListingSuppressionController',
       ])
     );
   });
