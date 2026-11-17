@@ -58,6 +58,7 @@
 
 .directory-page__content {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2rem;
   padding-top: 2rem;
 }
@@ -70,6 +71,8 @@
 .directory-page__map-section,
 .directory-page__listings {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 1rem;
 }
 
