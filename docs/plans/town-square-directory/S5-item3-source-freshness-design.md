@@ -17,21 +17,21 @@ Consequence: a date can only be trusted if it is captured at the proxy, from a r
 
 One new immutable table, `directory_overture_source_evidence` (entity `DirectoryOvertureSourceEvidence`, `entity.ts`), one row per scan, in **both** the stage DB and the live DB (same migration, same schema; verify in slice 1 that the stage DB is migrated from the Directory migrations, since `OverturePrivateSink` runs against it).
 
-| column | type | meaning |
-|---|---|---|
-| `scanId` | varchar(64) PK | same id in stage and live (cutover keeps the id). No FK: stage completion may be rolled back, evidence follows it (see below). |
-| `evidenceVersion` | int | 1 |
-| `kind` | varchar(24) | `captured` (recorded by the extractor) or `attached_verified` (section 4) |
-| `releaseId` | varchar(32) | `YYYY-MM-DD.N`, parsed from the object key of the verified asset. Label only. |
-| `artifactUrl` | text | exact object URL the proxy fetched |
-| `artifactEtag` | varchar(100) | ETag from the response, equal to the pinned etag |
-| `artifactBytes` | bigint null | total from `Content-Range` |
-| `upstreamLastModified` | timestamptz null | `Last-Modified` header of the verified response. Null if absent or unparseable. **The only age clock.** |
-| `observedAt` | timestamptz null | extractor host clock at the first verified response; null for `attached_verified` |
-| `recordedAt` | timestamptz | DB `now()` in the recording transaction (the trusted clock) |
-| `recorder` | varchar(160) | e.g. `extractor:overture-private-extractor.mjs@<sha256-12>` or `attach:local-directory-source-freshness-attach.cjs@<sha256-12>` |
-| `inventorySha256` | varchar(64) | pins which inventory listed this asset |
-| `evidenceSha256` | varchar(64) | sha256 of the canonical JSON of every column above except itself and `recordedAt` |
+| column                 | type             | meaning                                                                                                                         |
+| ---------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `scanId`               | varchar(64) PK   | same id in stage and live (cutover keeps the id). No FK: stage completion may be rolled back, evidence follows it (see below).  |
+| `evidenceVersion`      | int              | 1                                                                                                                               |
+| `kind`                 | varchar(24)      | `captured` (recorded by the extractor) or `attached_verified` (section 4)                                                       |
+| `releaseId`            | varchar(32)      | `YYYY-MM-DD.N`, parsed from the object key of the verified asset. Label only.                                                   |
+| `artifactUrl`          | text             | exact object URL the proxy fetched                                                                                              |
+| `artifactEtag`         | varchar(100)     | ETag from the response, equal to the pinned etag                                                                                |
+| `artifactBytes`        | bigint null      | total from `Content-Range`                                                                                                      |
+| `upstreamLastModified` | timestamptz null | `Last-Modified` header of the verified response. Null if absent or unparseable. **The only age clock.**                         |
+| `observedAt`           | timestamptz null | extractor host clock at the first verified response; null for `attached_verified`                                               |
+| `recordedAt`           | timestamptz      | DB `now()` in the recording transaction (the trusted clock)                                                                     |
+| `recorder`             | varchar(160)     | e.g. `extractor:overture-private-extractor.mjs@<sha256-12>` or `attach:local-directory-source-freshness-attach.cjs@<sha256-12>` |
+| `inventorySha256`      | varchar(64)      | pins which inventory listed this asset                                                                                          |
+| `evidenceSha256`       | varchar(64)      | sha256 of the canonical JSON of every column above except itself and `recordedAt`                                               |
 
 Constraints (entity `@Check`, so the generated migration carries them): `kind IN ('captured','attached_verified')`; `releaseId ~ '^\d{4}-\d{2}-\d{2}\.\d+$'`; `upstreamLastModified <= recordedAt`; `observedAt IS NULL OR observedAt <= recordedAt + interval '5 minutes'`; `kind='captured' OR observedAt IS NULL`.
 
@@ -57,18 +57,19 @@ Stage scripts (`local-directory-overture-stage.cjs`, `...-census-stage.cjs`) cal
 
 Inputs per scan: `upstreamLastModified` (U), `recordedAt` (R), now (N). Computed at read time, **never stored**, so no sweep or migration is needed as time passes.
 
-| state | rule |
-|---|---|
+| state     | rule                                                                           |
+| --------- | ------------------------------------------------------------------------------ |
 | `unknown` | no evidence row, hash mismatch, `U` null, or `U` in the future relative to `N` |
-| `fresh` | `N - U < 90 days` |
-| `due` | `90 days <= N - U <= 120 days` |
-| `stale` | `N - U > 120 days` |
+| `fresh`   | `N - U < 90 days`                                                              |
+| `due`     | `90 days <= N - U <= 120 days`                                                 |
+| `stale`   | `N - U > 120 days`                                                             |
 
 Why `U` and not `R`: acquisition time says when we copied, not how old the data is. Pulling a year-old release today would read `fresh`. The upstream timestamp is the only date the upstream itself asserted over the verified channel. `R` and `releaseId` are shown (acquired-at, release label) but never decide the state. The 90/120 targets are constants in one module; boundaries are exact (day 90 is `due`, day 120 is `due`, day 120 + 1 ms is `stale`).
 
 Aggregation. Scan state to cohort state is worst-wins in the order `unknown` > `stale` > `due` > `fresh`: unknown dominates because an unproven scan must not be reported as fresh. Town state aggregates the completed, non-revoked live scans that have at least one non-withdrawn row in that town (cached 60 s).
 
 Exposure (all additive, label-only):
+
 - Readiness `/health/ready` (`register-pending-runtime.ts:524-536`): `sourceFreshness {fresh, due, stale, unknown, oldestPublishedAt, evaluatedAt}` counted over completed live scans with active policy. Best-effort like `reviewedBindings`; never changes `ok` or the 200/503.
 - Local-evaluation listing and bounds pages: top-level `sourceFreshness {state, releaseId, sourcePublishedAt, acquiredAt, thresholds}` for the town, beside `hasMore`/`nextCursor` (`register-pending-runtime.ts:278-279`). `releaseId`/dates are the worst scan's; null when `unknown`. Optional field in the shared `social-contracts` type, so older gateway/Local Hub builds ignore it. Local Hub shows a label ("Data from release 2026-10-21, due for refresh" / "freshness unknown"); no page is hidden or emptied.
 - Operator report `scripts/local-directory-source-freshness-report.cjs` (read-only; same style as `local-directory-address-review-queue-report.cjs`): per scan release, `U`, `R`, age days, state, evidence hash match, stage/live hash match, bindings per state; `--fail-on due|stale|unknown` for a non-zero exit.
@@ -82,11 +83,12 @@ Interaction with item 4: the binding lease (`verifiedUntil`) and sweep are untou
 The 16 October scans, the revoked September cohort and every scan from before this change have no evidence row and stay `unknown`. No backfill job, no inference from scan id, inventory JSON or file times.
 
 Later attachment is allowed only from a verifiable artifact, via a manual script `scripts/local-directory-source-freshness-attach.cjs` (`--check` default; `--apply --confirm-database <db>`):
+
 1. Recompute the scan id from inventory + policy exactly as `overture-private-extractor.mjs:87` does; refuse unless it matches an existing completed scan.
 2. Issue one anonymous `HEAD` with `If-Match` on the pinned ETag, through the same budget reservation the stage scripts use (`reserveAttempt`, `provider-budget`). The response must be 200 with the same ETag; take `Last-Modified` from that live response. A 412 means the object was replaced: attach nothing.
 3. Insert `kind='attached_verified'`, `observedAt = NULL`, `recordedAt = now()`, recorder = the attach script. Acquisition time stays unknown, honestly.
 4. Compare to the checked-in inventory `lastModified`; a mismatch is reported and nothing is written.
-This is a network action, run only by the owner at a time of their choosing (decision 4). Without it, history stays `unknown` forever, which is acceptable.
+   This is a network action, run only by the owner at a time of their choosing (decision 4). Without it, history stays `unknown` forever, which is acceptable.
 
 ## 5. Slices (each independently testable, disposable DBs only)
 

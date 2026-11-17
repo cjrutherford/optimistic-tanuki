@@ -59,11 +59,9 @@ For the proposed 400-record quality review, the user chose to review every eligi
 
 For quality-review disagreements, the user chose independent initial reviews followed by comparison of evidence. Any unresolved disagreement makes the affected part of the pilot inconclusive. This does not require a third adjudicator and does not approve other sampling or quality thresholds.
 
-
 ## 2026-11-08 — complete quality review frame
 
 The user clarified “don't limit”: both reviewers should independently review **every eligible record** across Douglas, Tifton, Valdosta and Waycross, even if the frame contains tens of thousands of records. This supersedes the earlier 400-record random sample and smaller-frame rule. The full frame, thresholds, review evidence, any separate merge-pair method, source acquisition and spending remain subject to their own decisions.
-
 
 ## Quality thresholds — complete eligible frame
 
@@ -85,18 +83,15 @@ A pilot town with no eligible records remains **inconclusive** for listing quali
 
 If a town fails an applicable quality limit, correct the data and conduct a fresh review before calling that town passed; do not change limits after seeing results. The new review must use a frozen, documented frame and the agreed full review process.
 
-
 ## Private use of October 2026 Overture Places
 
 The user approved private use of Overture Places release **2026-10-21.0** for the four-town quality review, provided exact field licenses and required notices are checked and unknown or conflicting rights are quarantined. This is private-use approval; it does not authorize paid requests, public display, export or launch, nor does it approve unresolved retention rules or establish an enforceable spending cap. The specific acquisition procedure and operational safeguards remain to be completed.
-
 
 The user chose to retain the private pilot's copy of business records **until explicitly deleted**, rather than deleting automatically when the review ends or after 90 days. This does not override a source's shorter retention restriction, a rights withdrawal, the user's previously approved withdrawal target, or a future deletion request. Actual deletion authority and verification must be implemented before real data use.
 
 ## Revised objective — live Town Square directory
 
 The user directed that the goal is to build the directory into Town Square and get it live and running, rather than treating a private pilot as the destination. Proceed through the public integration and launch work, including the previously sequenced API, UI and essential operational controls. Earlier field-rights, notice, sensitive-location, visitor opt-in, quality, budget and deletion decisions remain applicable unless changed. The user was asked which running environment is the launch target. The existing $25 shared ceiling is not by itself a reliable upper bound on unpriced requests; determine actual costs and enforceable controls before incurring charges.
-
 
 The user clarified the immediate launch target: the existing **local development Docker stack**. The user will decide about public deployment after evaluating it. Build and operate the local Town Square experience; do not treat this as permission to deploy to a public environment.
 

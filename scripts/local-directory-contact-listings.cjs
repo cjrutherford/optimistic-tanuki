@@ -25,12 +25,44 @@ const contactListingKey = (regionId, sourceFileRowNumber) =>
 
 /** A unique key is not enough: its retained identity and reviewed fields must agree. */
 function contactMatchesCandidate(candidate, listing) {
-  const clean = value => typeof value === 'string' ? value.trim() : '';
-  const containsSingle = (reviewed, retained) => Array.isArray(reviewed) && reviewed.length === 1 && clean(reviewed[0]) && Array.isArray(retained) && retained.some(value => clean(value) === clean(reviewed[0]));
+  const clean = (value) => (typeof value === 'string' ? value.trim() : '');
+  const containsSingle = (reviewed, retained) =>
+    Array.isArray(reviewed) &&
+    reviewed.length === 1 &&
+    clean(reviewed[0]) &&
+    Array.isArray(retained) &&
+    retained.some((value) => clean(value) === clean(reviewed[0]));
   const coords = listing?.location?.coordinates;
-  if (!clean(candidate?.name) || clean(candidate.name) !== clean(listing?.name) || !clean(candidate?.category) || clean(candidate.category) !== clean(listing?.category) || listing?.location?.type !== 'Point' || !Array.isArray(coords) || coords.length !== 2 || !coords.every(Number.isFinite) || !Number.isFinite(candidate?.point?.lng) || !Number.isFinite(candidate?.point?.lat) || Math.abs(coords[0] - candidate.point.lng) >= 1e-6 || Math.abs(coords[1] - candidate.point.lat) >= 1e-6 || !containsSingle(candidate.addresses, listing.addresses)) return false;
-  if (candidate.officialEvidence?.websiteMatch === true && Array.isArray(candidate.websites) && candidate.websites.length > 0 && !containsSingle(candidate.websites, listing.websites)) return false;
-  if (candidate.officialEvidence?.phoneMatch === true && Array.isArray(candidate.phones) && candidate.phones.length > 0 && !containsSingle(candidate.phones, listing.phones)) return false;
+  if (
+    !clean(candidate?.name) ||
+    clean(candidate.name) !== clean(listing?.name) ||
+    !clean(candidate?.category) ||
+    clean(candidate.category) !== clean(listing?.category) ||
+    listing?.location?.type !== 'Point' ||
+    !Array.isArray(coords) ||
+    coords.length !== 2 ||
+    !coords.every(Number.isFinite) ||
+    !Number.isFinite(candidate?.point?.lng) ||
+    !Number.isFinite(candidate?.point?.lat) ||
+    Math.abs(coords[0] - candidate.point.lng) >= 1e-6 ||
+    Math.abs(coords[1] - candidate.point.lat) >= 1e-6 ||
+    !containsSingle(candidate.addresses, listing.addresses)
+  )
+    return false;
+  if (
+    candidate.officialEvidence?.websiteMatch === true &&
+    Array.isArray(candidate.websites) &&
+    candidate.websites.length > 0 &&
+    !containsSingle(candidate.websites, listing.websites)
+  )
+    return false;
+  if (
+    candidate.officialEvidence?.phoneMatch === true &&
+    Array.isArray(candidate.phones) &&
+    candidate.phones.length > 0 &&
+    !containsSingle(candidate.phones, listing.phones)
+  )
+    return false;
   return true;
 }
 
@@ -44,8 +76,13 @@ function uniqueUnrevokedContactRows(rows) {
   const kept = new Map();
   for (const row of rows) {
     const key = contactListingKey(row.regionId, row.sourceFileRowNumber);
-    if (counts.get(key) !== 1 || row.policyRevoked !== false ||
-        row.scanRevoked !== false || row.rowRevoked !== false) continue;
+    if (
+      counts.get(key) !== 1 ||
+      row.policyRevoked !== false ||
+      row.scanRevoked !== false ||
+      row.rowRevoked !== false
+    )
+      continue;
     kept.set(key, row);
   }
   return kept;
@@ -54,7 +91,8 @@ function uniqueUnrevokedContactRows(rows) {
 /** Keep only source-row keys with exactly one contact-stage record. */
 function buildUniqueContactListingMap(rows) {
   const listings = new Map();
-  for (const [key, row] of uniqueUnrevokedContactRows(rows)) listings.set(key, row.listing);
+  for (const [key, row] of uniqueUnrevokedContactRows(rows))
+    listings.set(key, row.listing);
   return listings;
 }
 

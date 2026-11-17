@@ -66,11 +66,11 @@ Key files:
 
 The engine compares the geocode to the **source point**, not the assigned town boundary. At least five published rows are in a different town than the listing:
 
-| Listed under | Actual address locality |
-| --- | --- |
-| Valdosta, GA | Quitman, GA — Advance Auto Parts, Food Lion, Western Motel of Quitman |
-| Greer, SC | Taylors, SC — Pizza Hut Express |
-| Kill Devil Hills, NC | Nags Head, NC — Nags Head Florist |
+| Listed under         | Actual address locality                                               |
+| -------------------- | --------------------------------------------------------------------- |
+| Valdosta, GA         | Quitman, GA — Advance Auto Parts, Food Lion, Western Motel of Quitman |
+| Greer, SC            | Taylors, SC — Pizza Hut Express                                       |
+| Kill Devil Hills, NC | Nags Head, NC — Nags Head Florist                                     |
 
 The Kill Devil Hills case conflicts with the explicit decision to keep Outer Banks and Kill Devil Hills separate. The published subset is **5/53 = 9.4% wrong-town**, above the approved 5% limit. The full-frame measure has not been run.
 
@@ -177,14 +177,14 @@ Databases:
 
 Current cohort constants:
 
-| Constant | Value |
-| --- | --- |
-| Contact-capture policy | `7dd1e46f51d7812c3abefcbee6cc57d2eefa7d77c4349b364d10c6464fca7983` |
-| Active private policy | `66372b1d63cc9db88f91733a9d593cbfc3f60a0b4a38d1655e0deecf1df7f78b` |
-| October public-display policy | `docs/plans/town-square-directory/policies/overture-public-display-2026-10-21.json` |
+| Constant                        | Value                                                                               |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| Contact-capture policy          | `7dd1e46f51d7812c3abefcbee6cc57d2eefa7d77c4349b364d10c6464fca7983`                  |
+| Active private policy           | `66372b1d63cc9db88f91733a9d593cbfc3f60a0b4a38d1655e0deecf1df7f78b`                  |
+| October public-display policy   | `docs/plans/town-square-directory/policies/overture-public-display-2026-10-21.json` |
 | September public-display policy | `docs/plans/town-square-directory/policies/overture-public-display-2026-09-23.json` |
-| Contact assets | `00000`, `00001`, `00003`, `00006` |
-| Active October scans | `d5b4d4de…`, `de7d0807…`, `e902857a…`, `beab6953…` |
+| Contact assets                  | `00000`, `00001`, `00003`, `00006`                                                  |
+| Active October scans            | `d5b4d4de…`, `de7d0807…`, `e902857a…`, `beab6953…`                                  |
 
 Operator entry points:
 

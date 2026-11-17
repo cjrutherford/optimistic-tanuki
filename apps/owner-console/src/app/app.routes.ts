@@ -40,7 +40,10 @@ export const appRoutes: Route[] = [
     children: [
       {
         path: 'directory-link-review/:communityId',
-        loadComponent: () => import('./components/directory-link-review-page.component').then((m) => m.DirectoryLinkReviewPageComponent),
+        loadComponent: () =>
+          import('./components/directory-link-review-page.component').then(
+            (m) => m.DirectoryLinkReviewPageComponent
+          ),
       },
       {
         path: 'directory-address-review/:communityId',
@@ -51,7 +54,10 @@ export const appRoutes: Route[] = [
       },
       {
         path: 'boundary-review/:communityId',
-        loadComponent: () => import('./components/boundary-review-page.component').then((m) => m.BoundaryReviewPageComponent),
+        loadComponent: () =>
+          import('./components/boundary-review-page.component').then(
+            (m) => m.BoundaryReviewPageComponent
+          ),
       },
       {
         path: 'community-ops',

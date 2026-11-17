@@ -8,13 +8,13 @@ HEAD was `6a472b41f957500ccbd987457818ffdc85b1663f` with pre-existing uncommitte
 
 Relevant file SHA-256 values in the snapshot and checkout both before and after:
 
-| File | SHA-256 |
-| --- | --- |
-| `apps/social/src/app/app.controller.ts` | `81a61f4c3842c7f12c8b4a007684d2d56a5a3fae1bf80f12a8eae6186f17b75a` |
-| `apps/social/src/app/services/community.service.ts` | `94791142aaad4ecf14b9948aee30e0e8d95777a1693a84a016b96c7c7404c063` |
+| File                                                             | SHA-256                                                            |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `apps/social/src/app/app.controller.ts`                          | `81a61f4c3842c7f12c8b4a007684d2d56a5a3fae1bf80f12a8eae6186f17b75a` |
+| `apps/social/src/app/services/community.service.ts`              | `94791142aaad4ecf14b9948aee30e0e8d95777a1693a84a016b96c7c7404c063` |
 | `apps/gateway/src/controllers/directory/directory.controller.ts` | `6dbb53db0a58b65db7fcd45875eae1d852d3c1e9e8f6e3bc7b0ec66f46e8103a` |
-| `apps/directory/src/server.ts` | `08c7ab1e95b83984939f78f83bd5be103fbb6dc2608c69f8b03c2a499a3126cb` |
-| `apps/directory/src/town-geometry.ts` | `99dfebf51d8ae52a5f8a4763f3815045b389b0e7e9e1f208f7e2663699141ad0` |
+| `apps/directory/src/server.ts`                                   | `08c7ab1e95b83984939f78f83bd5be103fbb6dc2608c69f8b03c2a499a3126cb` |
+| `apps/directory/src/town-geometry.ts`                            | `99dfebf51d8ae52a5f8a4763f3815045b389b0e7e9e1f208f7e2663699141ad0` |
 
 Runtime image IDs: Social `sha256:625c7187a9535e8e147dc9e851960d091749be1c304fbb5ca6306ac6187700a4`; gateway `sha256:a53c5879e13e2e305b36829b0afac907dff1ec1fbc6c06c40fd0a5a9ffb0ab57`; directory `sha256:c4f1f03cd7c5c2829b1f5f641f24cb512685eb7ad35974b97995f4cc16608c80`. Images were built with each app's Dockerfile against the frozen context. Docker cache and external base/package dependencies were used; these hashes establish the tested image identities, not a reproducible dependency supply chain.
 
@@ -22,16 +22,16 @@ Runtime image IDs: Social `sha256:625c7187a9535e8e147dc9e851960d091749be1c304fbb
 
 A disposable PostGIS database ran the Social and directory Nx migration targets; the checked-in Social seed created Atlanta (`edb420ee-ab56-4058-9463-69f82ec4f63d`). Synthetic rows supplied a public nonseed town, private town, wrong-scope town, and public town with alphabetic UUID; another UUID was absent. No provider acquisition, POC data, or paid operation was used. Requests were unauthenticated through the gateway.
 
-| Probe | Observed |
-| --- | --- |
-| Seeded Atlanta and public nonseed | 200, `pending`, only `town.id` and `status` |
-| Private, wrong-scope, absent | 404 each |
-| Uppercase `ABCDEF12-ABCD-4ABC-8ABC-ABCDEF123456` | 200, canonical lowercase ID and `pending` |
-| Malformed UUID; longitude 181 | 400 each |
-| Valid coordinates | 200, `pending` |
-| Social stopped | 503 `Social unavailable`; 200 after restart |
+| Probe                                            | Observed                                       |
+| ------------------------------------------------ | ---------------------------------------------- |
+| Seeded Atlanta and public nonseed                | 200, `pending`, only `town.id` and `status`    |
+| Private, wrong-scope, absent                     | 404 each                                       |
+| Uppercase `ABCDEF12-ABCD-4ABC-8ABC-ABCDEF123456` | 200, canonical lowercase ID and `pending`      |
+| Malformed UUID; longitude 181                    | 400 each                                       |
+| Valid coordinates                                | 200, `pending`                                 |
+| Social stopped                                   | 503 `Social unavailable`; 200 after restart    |
 | Directory stopped while Social and Redis were up | 503 `Directory unavailable`; 200 after restart |
-| Redis stopped after Directory recovery | 503 `Directory unavailable` |
+| Redis stopped after Directory recovery           | 503 `Directory unavailable`                    |
 
 For the stored-invalid case, a synthetic self-intersecting polygon was inserted into `directory_town_geometry`, with the town marked `invalid`; PostGIS returned `ST_IsValid=false` and a self-intersection notice. Both status and point validation returned 200 `pending`, without exposing geometry. This exercises a persisted invalid state, not the geometry ingestion/validation service itself, and does not establish ready-geometry behavior.
 
@@ -51,18 +51,18 @@ The three Dockerfiles were rebuilt from that snapshot, using Docker cache where 
 
 The inspected `/tmp/s2isolated-roundtrip.sh` and its stronger prior derivative were used to prepare a separate script with unique image tags and log paths. `timeout --signal=TERM --kill-after=15s 300s bash /tmp/s2verify-1793819947-548530/roundtrip.sh` exited 0. Its unauthenticated gateway probes observed:
 
-| Probe | Result |
-| --- | --- |
-| Seeded Atlanta; synthetic public nonseed | 200, `pending` |
-| Private, wrong-scope, missing | 404 each |
-| Uppercase UUID | 200, canonical lowercase ID and `pending` |
-| Malformed UUID; longitude 181 | 400 each |
-| Valid point | 200, `pending` |
-| Persisted self-intersecting polygon marked invalid | PostGIS `ST_IsValid=false`; status and point validation both 200 `pending`, no geometry returned |
-| Social stopped, then restarted | 503 `Social unavailable`, then 200 |
-| Directory stopped, then restarted | 503 `Directory unavailable`, then 200 |
-| Redis stopped after directory recovery | 503 `Directory unavailable` |
-| Ingress-only client to directory name and actual IP `172.18.0.5:3120` | Both timed out; Social and directory had no published ports |
+| Probe                                                                 | Result                                                                                           |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Seeded Atlanta; synthetic public nonseed                              | 200, `pending`                                                                                   |
+| Private, wrong-scope, missing                                         | 404 each                                                                                         |
+| Uppercase UUID                                                        | 200, canonical lowercase ID and `pending`                                                        |
+| Malformed UUID; longitude 181                                         | 400 each                                                                                         |
+| Valid point                                                           | 200, `pending`                                                                                   |
+| Persisted self-intersecting polygon marked invalid                    | PostGIS `ST_IsValid=false`; status and point validation both 200 `pending`, no geometry returned |
+| Social stopped, then restarted                                        | 503 `Social unavailable`, then 200                                                               |
+| Directory stopped, then restarted                                     | 503 `Directory unavailable`, then 200                                                            |
+| Redis stopped after directory recovery                                | 503 `Directory unavailable`                                                                      |
+| Ingress-only client to directory name and actual IP `172.18.0.5:3120` | Both timed out; Social and directory had no published ports                                      |
 
 The gateway was published only at loopback port `32774`; the disposable internal and ingress networks and containers named `s2verify-1793820037-557553-*` were absent after the exit trap. Temporary snapshot, manifests, script, and logs remain under `/tmp/s2verify-1793819947-548530/`; uniquely tagged test images and Docker build cache remain. No shared services were stopped, and no source acquisition, provider calls, paid operation, or publication was performed.
 

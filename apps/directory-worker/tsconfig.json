@@ -7,16 +7,10 @@
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "paths": {
-      "@directory/foundation": [
-        "apps/directory/src/server.ts"
-      ]
+      "@directory/foundation": ["apps/directory/src/server.ts"]
     }
   },
-  "include": [
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts"]
 }

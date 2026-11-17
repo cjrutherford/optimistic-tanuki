@@ -1,9 +1,6 @@
 import { createHash } from 'node:crypto';
 import { isIP } from 'node:net';
-import type {
-  GeocodeEvidence,
-  OfficialEvidence,
-} from './address-review';
+import type { GeocodeEvidence, OfficialEvidence } from './address-review';
 
 export interface SourceAddress {
   freeform?: string;
@@ -64,9 +61,7 @@ export function normalizeText(value: unknown): string {
 }
 
 export function phoneDigits(value: unknown): string {
-  return typeof value === 'string'
-    ? value.replace(/\D/g, '').slice(-10)
-    : '';
+  return typeof value === 'string' ? value.replace(/\D/g, '').slice(-10) : '';
 }
 
 export function evidenceHash(value: string | Uint8Array): string {
@@ -195,7 +190,9 @@ export function parseRobots(value: string): RobotsRules {
 export function robotsAllowsPath(path: string, rules: RobotsRules): boolean {
   const matches = (rule: string) =>
     rule === '/' || path === rule || path.startsWith(rule);
-  const allow = rules.allow.filter(matches).sort((a, b) => b.length - a.length)[0];
+  const allow = rules.allow
+    .filter(matches)
+    .sort((a, b) => b.length - a.length)[0];
   const disallow = rules.disallow
     .filter(matches)
     .sort((a, b) => b.length - a.length)[0];
@@ -261,7 +258,12 @@ function flattenJsonLd(value: unknown): any[] {
   if (!value || typeof value !== 'object') return [];
   if (Array.isArray(value)) return value.flatMap(flattenJsonLd);
   const object = value as any;
-  return [object, ...(Array.isArray(object['@graph']) ? object['@graph'].flatMap(flattenJsonLd) : [])];
+  return [
+    object,
+    ...(Array.isArray(object['@graph'])
+      ? object['@graph'].flatMap(flattenJsonLd)
+      : []),
+  ];
 }
 
 function jsonLdText(value: unknown): string {
@@ -303,9 +305,7 @@ export function pageText(html: string): string {
 export function nameTokens(name: string): string[] {
   return normalizeText(name)
     .split(' ')
-    .filter(
-      (token) => token.length > 2 && !NAME_STOPWORDS.has(token)
-    );
+    .filter((token) => token.length > 2 && !NAME_STOPWORDS.has(token));
 }
 
 export function evaluateOfficialPage(input: {
@@ -357,8 +357,7 @@ export function evaluateOfficialPage(input: {
     try {
       const source = new URL(input.source.website);
       const finalUrl = new URL(input.finalUrl || input.url);
-      const host = (value: string) =>
-        value.toLowerCase().replace(/^www\./, '');
+      const host = (value: string) => value.toLowerCase().replace(/^www\./, '');
       websiteMatch = host(source.hostname) === host(finalUrl.hostname);
     } catch {
       websiteMatch = false;
@@ -399,9 +398,7 @@ export async function fetchOfficialPage(input: {
     parsed.username ||
     parsed.password ||
     isIP(parsed.hostname.replace(/^\[|\]$/g, '')) ||
-    /(?:^|\.)(localhost|local|internal)$/.test(
-      parsed.hostname.toLowerCase()
-    )
+    /(?:^|\.)(localhost|local|internal)$/.test(parsed.hostname.toLowerCase())
   ) {
     return { url: input.url, status: 'invalid' };
   }
@@ -467,7 +464,9 @@ export async function fetchOfficialPage(input: {
         chunks.push(part.value);
       }
     }
-    const body = Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString('utf8');
+    const body = Buffer.concat(
+      chunks.map((chunk) => Buffer.from(chunk))
+    ).toString('utf8');
     const lower = body.toLowerCase();
     if (BOT_PATTERNS.some((pattern) => lower.includes(pattern))) {
       return {

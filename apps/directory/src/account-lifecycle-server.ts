@@ -85,7 +85,10 @@ export function createAccountLifecycleHandler(
         ? header.slice(7)
         : ''
     );
-    if (provided.length !== expected.length || !timingSafeEqual(provided, expected))
+    if (
+      provided.length !== expected.length ||
+      !timingSafeEqual(provided, expected)
+    )
       return send(401);
     if (req.method !== 'POST') return send(405);
     if (active >= 4) return send(503);
@@ -107,10 +110,7 @@ export function createAccountLifecycleHandler(
           const reply = await operation(payload);
           return send(200, reply && typeof reply === 'object' ? reply : {});
         }
-        const result = await execute(
-          payload,
-          route as DirectoryDeletionAction
-        );
+        const result = await execute(payload, route as DirectoryDeletionAction);
         return send(200, {
           owner: 'directory',
           verified: result.verified,
@@ -174,7 +174,8 @@ export function accountLifecycleConfig(
   };
   return {
     secret,
-    authenticationHost: env['DIRECTORY_AUTHENTICATION_HOST'] || 'authentication',
+    authenticationHost:
+      env['DIRECTORY_AUTHENTICATION_HOST'] || 'authentication',
     authenticationPort: port('DIRECTORY_AUTHENTICATION_PORT', 3001),
     profileHost: env['DIRECTORY_PROFILE_HOST'] || 'profile',
     profilePort: port('DIRECTORY_PROFILE_PORT', 3002),

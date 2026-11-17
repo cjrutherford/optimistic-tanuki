@@ -304,7 +304,8 @@ import {
     },
     {
       provide: getRepositoryToken(CommunityDirectoryRegister),
-      useFactory: (ds: DataSource) => ds.getRepository(CommunityDirectoryRegister),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(CommunityDirectoryRegister),
       inject: ['SOCIAL_CONNECTION'],
     },
     {
@@ -314,7 +315,8 @@ import {
     },
     {
       provide: getRepositoryToken(CommunityDirectoryChange),
-      useFactory: (ds: DataSource) => ds.getRepository(CommunityDirectoryChange),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(CommunityDirectoryChange),
       inject: ['SOCIAL_CONNECTION'],
     },
     {

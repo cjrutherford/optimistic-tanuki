@@ -18,7 +18,6 @@ On a disposable `postgis/postgis:17-3.5` database, the directory Nx migration ta
 
 S2 is partial: there is no connected Social eligibility transport or actual database-town route/public region validation, business association model, authenticated gateway, or live Community service round trip. This internal service is not yet wired into the server bundle. S3 reconciliation and later public routes must integrate it; public empty results must be gated on the per-town status. No source POC was modified or imported, and no provider was called.
 
-
 ## Review follow-up evidence (2026-11-04)
 
 The two generated `DirectoryFoundation` migrations do not duplicate SQL: `1793810630534` creates only `directory_installation`, while `1793815352610` creates `directory_town` and `directory_town_geometry`. On disposable PostGIS 17-3.5, the Nx migration target applied both to a fresh database. A separate upgrade database with the exact first table and migration history applied only the second successfully. No deployed migration was renamed or removed; the migration validator passed.

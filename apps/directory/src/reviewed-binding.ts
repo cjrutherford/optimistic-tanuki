@@ -23,8 +23,12 @@ export const BINDING_FIELD_ORIGINS = {
 } as const;
 
 export type BindingFieldName = keyof typeof BINDING_FIELD_ORIGINS;
-export type BindingFieldOrigin = (typeof BINDING_FIELD_ORIGINS)[BindingFieldName];
-export type BindingFieldHashes = Record<BindingFieldName, { hash: string; origin: BindingFieldOrigin }>;
+export type BindingFieldOrigin =
+  (typeof BINDING_FIELD_ORIGINS)[BindingFieldName];
+export type BindingFieldHashes = Record<
+  BindingFieldName,
+  { hash: string; origin: BindingFieldOrigin }
+>;
 
 const normalize = (value: unknown): unknown => {
   if (value === undefined || value === null) return null;
@@ -58,9 +62,14 @@ function requireKey(key: BindingKey): void {
 }
 
 /** Reads the Directory-held key from the environment; never logs it. */
-export function reviewedBindingKeyFromEnv(env: NodeJS.ProcessEnv = process.env): string {
+export function reviewedBindingKeyFromEnv(
+  env: NodeJS.ProcessEnv = process.env
+): string {
   const key = env.DIRECTORY_REVIEWED_BINDING_HMAC_KEY;
-  if (!key || key.length < 32) throw Error('DIRECTORY_REVIEWED_BINDING_HMAC_KEY (32+ characters) is required');
+  if (!key || key.length < 32)
+    throw Error(
+      'DIRECTORY_REVIEWED_BINDING_HMAC_KEY (32+ characters) is required'
+    );
   return key;
 }
 
@@ -93,7 +102,8 @@ export function stageContentHash(key: BindingKey, listing: unknown): string {
 }
 
 export function reviewedHash(key: BindingKey, reviewed: unknown): string {
-  if (!reviewed || typeof reviewed !== 'object') throw Error('Reviewed object is required');
+  if (!reviewed || typeof reviewed !== 'object')
+    throw Error('Reviewed object is required');
   return keyedHash(key, reviewed);
 }
 
@@ -104,7 +114,10 @@ export function fieldHashes(
 ): BindingFieldHashes {
   const out = {} as BindingFieldHashes;
   for (const name of Object.keys(BINDING_FIELD_ORIGINS) as BindingFieldName[]) {
-    out[name] = { hash: keyedHash(key, values[name]), origin: BINDING_FIELD_ORIGINS[name] };
+    out[name] = {
+      hash: keyedHash(key, values[name]),
+      origin: BINDING_FIELD_ORIGINS[name],
+    };
   }
   return out;
 }

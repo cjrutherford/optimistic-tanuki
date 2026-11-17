@@ -8,11 +8,11 @@
 
 The POC's selected four-seat artifacts use data release `2026-09-23.0`, schema `v2.0.0`, parser `overture-official-row-v2`, query `overture-four-seat-envelope-intersection-v1`, and a 16-item source-inventory identity `35c72b40ae302e8e102a9cbfc92f2abf30de37a76b4a116b6f7c75029d728d74`. This inventory identifies selected object metadata; it is **not** a full upstream-release checksum. Historical geometries and taxonomy hashes remain in the manifests and [source-use record](/home/cjrutherford/workspace/business-directory-poc/docs/source-use/overture-2026-09-23-waycross.md).
 
-| Artifact | Rows | Artifact SHA-256 | Manifest SHA-256 | Decision |
-| --- | ---: | --- | --- | --- |
-| Four-seat v2 | 20,811 | `72355d674966b9f84d4293be9420f6ced0d454247d005e739bac014de728237c` | `7f43ebf8b964d69cdbc843d61e0c305316e3ce206237e37f67d6803d8c7d8422` | Historical private POC use only, subject to the conditions below. |
-| Four-seat v3 | 20,811 | `bdf016ac9e755e2222220173636a70adfd735a87933fa69cea7de40188846488` | `edf67913b52fc16dc71c6b735758e4627431a87eb3d805292507a35f5a754d02` | Derived from v2; same limited private scope. |
-| Waycross sample | 100 | `fc056e6eb056c9ca8fa64c3917485c16c4032ce25ee0a3fc5e84836607b4c9c0` | `88c8cec77601b5d4ae22190f84a332f9e3f4020272dd27f125f41742f4cc3b4b` | **Unknown:** manifest says schema `v1.18.0`, conflicting with the release evidence. Do not use it as clearance for either four-seat artifact. |
+| Artifact        |   Rows | Artifact SHA-256                                                   | Manifest SHA-256                                                   | Decision                                                                                                                                      |
+| --------------- | -----: | ------------------------------------------------------------------ | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Four-seat v2    | 20,811 | `72355d674966b9f84d4293be9420f6ced0d454247d005e739bac014de728237c` | `7f43ebf8b964d69cdbc843d61e0c305316e3ce206237e37f67d6803d8c7d8422` | Historical private POC use only, subject to the conditions below.                                                                             |
+| Four-seat v3    | 20,811 | `bdf016ac9e755e2222220173636a70adfd735a87933fa69cea7de40188846488` | `edf67913b52fc16dc71c6b735758e4627431a87eb3d805292507a35f5a754d02` | Derived from v2; same limited private scope.                                                                                                  |
+| Waycross sample |    100 | `fc056e6eb056c9ca8fa64c3917485c16c4032ce25ee0a3fc5e84836607b4c9c0` | `88c8cec77601b5d4ae22190f84a332f9e3f4020272dd27f125f41742f4cc3b4b` | **Unknown:** manifest says schema `v1.18.0`, conflicting with the release evidence. Do not use it as clearance for either four-seat artifact. |
 
 Hashes and line counts were recomputed read-only on 2026-11-06; no records were copied into the target. The POC checkout was branch `feat/directory-poc-slice-1`, HEAD `9948a2371fee6051c49932bfae7dcf6e732efc0a`, with 166 status entries. This identifies the observation, not a clean or reconstructible snapshot. Recheck hashes and review changed inputs immediately before any later authorized import.
 
@@ -24,13 +24,13 @@ The [September release notes](https://docs.overturemaps.org/blog/2026/09/23/rele
 
 The POC's dated source-use record approves rights-classified private persistence and private Tailnet display for the exact historical four-seat cohort, including adult only with explicit opt-in. It excludes public display, export and redistribution. That is evidence of a historical POC decision, not a new grant for the target, a legal conclusion, or a blanket approval of all contributors and fields.
 
-| Operation | Historical POC cohort | New target or public operation |
-| --- | --- | --- |
-| Retain and display privately | Conditional historical approval for mapped fields and sources; unknown required fields quarantine the record, unknown optional fields are omitted. | **Unknown; deny enforcement** until separately approved. |
-| Ingest a new source or target copy | Existing staged data only; this packet authorizes no new acquisition or import. | **Unknown; deny enforcement.** |
-| Public display | Not approved. | **Unknown; deny enforcement.** |
-| Export / redistribution | **Denied by the historical POC decision.** | **Unknown; deny enforcement.** This is an internal clearance decision, not a claim that all upstream licenses prohibit export. |
-| Enrichment or derived data | Retain distinct lineage and existing restrictions; no blanket inheritance. | **Unknown; deny enforcement.** Geoapify reverse-locality and standalone AllThePlaces require separate product/source decisions. |
+| Operation                          | Historical POC cohort                                                                                                                              | New target or public operation                                                                                                  |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Retain and display privately       | Conditional historical approval for mapped fields and sources; unknown required fields quarantine the record, unknown optional fields are omitted. | **Unknown; deny enforcement** until separately approved.                                                                        |
+| Ingest a new source or target copy | Existing staged data only; this packet authorizes no new acquisition or import.                                                                    | **Unknown; deny enforcement.**                                                                                                  |
+| Public display                     | Not approved.                                                                                                                                      | **Unknown; deny enforcement.**                                                                                                  |
+| Export / redistribution            | **Denied by the historical POC decision.**                                                                                                         | **Unknown; deny enforcement.** This is an internal clearance decision, not a claim that all upstream licenses prohibit export.  |
+| Enrichment or derived data         | Retain distinct lineage and existing restrictions; no blanket inheritance.                                                                         | **Unknown; deny enforcement.** Geoapify reverse-locality and standalone AllThePlaces require separate product/source decisions. |
 
 The JSON draft is a normalized matrix: contributor/license rows, field groups, operation decisions and scope conditions combine; no row is an unconditional public allow. A missing field, contributor, transform, release, license, geography or applicable notice remains unknown and must fail closed. The POC `eligible` evaluator status below concerns provenance mapping, **not** public permission, content completeness, accuracy, or reviewer approval.
 
@@ -38,16 +38,16 @@ The JSON draft is a normalized matrix: contributor/license rows, field groups, o
 
 Both four-seat files were streamed read-only with [the aggregate inventory tool](../../../scripts/overture-rights-inventory.mjs); no record values or IDs were emitted. Each contained 20,811 valid JSON records, 54,744 source entries, no record with missing/empty `sources`, and no source entry missing dataset or license. Each had 20,811 root pointers, 20,811 confidence pointers, 13,122 operating-status pointers and no other/malformed pointers. These are source occurrences, not unique businesses or proof of legal lineage.
 
-| Root contributor | License recorded in staged rows | Root occurrences | POC mapping |
-| --- | --- | ---: | --- |
-| meta | CDLA-Permissive-2.0 | 13,602 | Mapped |
-| BrightQuery | CDLA-Permissive-2.0 | 3,137 | Mapped |
-| Microsoft | CDLA-Permissive-2.0 | 2,597 | Mapped |
-| Foursquare | Apache-2.0 | 1,021 | Mapped; NOTICE requires separate review |
-| AllThePlaces | CC0-1.0 | 326 | Mapped for its Overture contribution, not standalone archives |
-| DAC | CDLA-Permissive-2.0 | 122 | Mapped |
-| PinMeTo | CDLA-Permissive-2.0 | 1 | **Unmapped in POC** |
-| RenderSEO | CDLA-Permissive-2.0 | 5 | **Unmapped in POC** |
+| Root contributor | License recorded in staged rows | Root occurrences | POC mapping                                                   |
+| ---------------- | ------------------------------- | ---------------: | ------------------------------------------------------------- |
+| meta             | CDLA-Permissive-2.0             |           13,602 | Mapped                                                        |
+| BrightQuery      | CDLA-Permissive-2.0             |            3,137 | Mapped                                                        |
+| Microsoft        | CDLA-Permissive-2.0             |            2,597 | Mapped                                                        |
+| Foursquare       | Apache-2.0                      |            1,021 | Mapped; NOTICE requires separate review                       |
+| AllThePlaces     | CC0-1.0                         |              326 | Mapped for its Overture contribution, not standalone archives |
+| DAC              | CDLA-Permissive-2.0             |              122 | Mapped                                                        |
+| PinMeTo          | CDLA-Permissive-2.0             |                1 | **Unmapped in POC**                                           |
+| RenderSEO        | CDLA-Permissive-2.0             |                5 | **Unmapped in POC**                                           |
 
 Overture/CDLA appeared in 20,811 confidence entries and Overture-signals/CDLA in 13,122 operating-status entries; neither was an additional root contributor in this cohort. Those signals are not currently cleared for public projection. Current [Overture attribution](https://docs.overturemaps.org/attribution/) lists PinMeTo and RenderSEO under CDLA, but a current page and staged license label do not by themselves approve the September cohort or its transformations. The six unmapped records remain review/quarantine candidates, not silently eligible.
 
@@ -59,11 +59,11 @@ The POC evaluator's configured retained pointers cover name, basic category, tax
 
 The focused POC policy suite passed **17/17** tests. The new aggregate-tool and draft-safety tests passed **4/4**. The direct evaluator returned these exact summarized fixture outcomes:
 
-| Case | Record eligible | Name status | Review | Impact / reason |
-| --- | --- | --- | --- | --- |
-| Known mapped Meta/CDLA root | `true` | `eligible` | `false` | `none` / `[]` |
-| Unmapped PinMeTo/CDLA root | `false` | `review` | `true` | `quarantine_record` / `unmapped_source_terms` |
-| Mapped Meta root with explicit excluded-name overlay | `false` | `excluded` | `false` | `quarantine_record` / `[]` |
+| Case                                                 | Record eligible | Name status | Review  | Impact / reason                               |
+| ---------------------------------------------------- | --------------- | ----------- | ------- | --------------------------------------------- |
+| Known mapped Meta/CDLA root                          | `true`          | `eligible`  | `false` | `none` / `[]`                                 |
+| Unmapped PinMeTo/CDLA root                           | `false`         | `review`    | `true`  | `quarantine_record` / `unmapped_source_terms` |
+| Mapped Meta root with explicit excluded-name overlay | `false`         | `excluded`  | `false` | `quarantine_record` / `[]`                    |
 
 These are examples of the POC's provenance classifier, not operation-specific legal decisions or evidence of target enforcement. The target has no approved public projection in this slice; an actual withdrawal test covering indexed/cached public fields remains required before public enablement. No such test has been established here.
 
@@ -71,16 +71,16 @@ These are examples of the POC's provenance classifier, not operation-specific le
 
 The following SHA-256 values identify the exact public HTTP response bytes retrieved on 2026-11-06 around 19:00 UTC. They are fingerprints of **current** material, not proof of the terms in force at the September acquisition; HTML may change. No legal conclusion or historical approval follows from a matching source name alone.
 
-| Source | SHA-256 |
-| --- | --- |
-| [Overture attribution and licensing](https://docs.overturemaps.org/attribution/) | `95dafe36193495560ee775eddaff69aa263b37087c19beb3caad0bedc540eef6` |
-| [Overture release calendar](https://docs.overturemaps.org/release-calendar/) | `7497785ab0ee60e479ca1fa64ee74abfea167751c1a16c93bc42526d7b0e8ca3` |
+| Source                                                                                  | SHA-256                                                            |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [Overture attribution and licensing](https://docs.overturemaps.org/attribution/)        | `95dafe36193495560ee775eddaff69aa263b37087c19beb3caad0bedc540eef6` |
+| [Overture release calendar](https://docs.overturemaps.org/release-calendar/)            | `7497785ab0ee60e479ca1fa64ee74abfea167751c1a16c93bc42526d7b0e8ca3` |
 | [September release notes](https://docs.overturemaps.org/blog/2026/09/23/release-notes/) | `061b1b6c10032b5e4560eb1fa164aeb2e3714adf4e6dc345e903de543009e479` |
-| [CDLA Permissive 2.0](https://cdla.dev/permissive-2-0/) | `6485ebb99d0ce73026b57f46cd7f34282797d069044d37889782de57167df968` |
-| [Apache License 2.0 text](https://www.apache.org/licenses/LICENSE-2.0.txt) | `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30` |
-| [CC0 1.0 legal code](https://creativecommons.org/publicdomain/zero/1.0/legalcode.en) | `b43732f4c1463b087cf10d4daf8d8766514b2bf8f21bc5ef50905f95be227726` |
-| [Foursquare notice](https://opensource.foursquare.com/places-notice-txt/) | `0200dc7ff5fab86b03c23ab6cb1aae220222550300004425494e580b653360d3` |
-| [OSM tile usage policy](https://operations.osmfoundation.org/policies/tiles/) | `04908a9e2faf70ad3090b3b2db43de100f3ad61243c578413b67fb57ba6b6912` |
+| [CDLA Permissive 2.0](https://cdla.dev/permissive-2-0/)                                 | `6485ebb99d0ce73026b57f46cd7f34282797d069044d37889782de57167df968` |
+| [Apache License 2.0 text](https://www.apache.org/licenses/LICENSE-2.0.txt)              | `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30` |
+| [CC0 1.0 legal code](https://creativecommons.org/publicdomain/zero/1.0/legalcode.en)    | `b43732f4c1463b087cf10d4daf8d8766514b2bf8f21bc5ef50905f95be227726` |
+| [Foursquare notice](https://opensource.foursquare.com/places-notice-txt/)               | `0200dc7ff5fab86b03c23ab6cb1aae220222550300004425494e580b653360d3` |
+| [OSM tile usage policy](https://operations.osmfoundation.org/policies/tiles/)           | `04908a9e2faf70ad3090b3b2db43de100f3ad61243c578413b67fb57ba6b6912` |
 
 CDLA 2.0's text requires the agreement to be made available when sharing data. Overture lists Foursquare under Apache 2.0 with its notice, and Foursquare's current notice describes license, change-notice and attribution requirements. The specific handling, historic evidence, exact notice contents and applicability to each operation require reviewer confirmation; this packet does not clear a public notice implementation.
 

@@ -20,15 +20,15 @@ Pick one slice per session:
 
 ## Owner decisions recorded
 
-| Item | Decision |
-|---|---|
-| Item 1, decision 1 | The upstream id is kept only as a keyed hash. |
-| Item 1, decision 8 | The public id is the business id. Old ids alias forward, and cursors are invalidated at cutover. |
-| Existing policy ids | Option A: `OVERTURE_RIGHTS_FIELDS_LEGACY_V1` is frozen for existing cohorts. |
-| A, export | Reviewer decisions are not exported. |
-| A, deletion | The record is kept and the actor is removed. This was already implemented. |
-| B, screens | Owner Console, reviewer-only. Not built. |
-| C, re-read | Off. It runs only if the owner asks for a specific run. No existing scan has evidence anyway. |
+| Item                | Decision                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------ |
+| Item 1, decision 1  | The upstream id is kept only as a keyed hash.                                                    |
+| Item 1, decision 8  | The public id is the business id. Old ids alias forward, and cursors are invalidated at cutover. |
+| Existing policy ids | Option A: `OVERTURE_RIGHTS_FIELDS_LEGACY_V1` is frozen for existing cohorts.                     |
+| A, export           | Reviewer decisions are not exported.                                                             |
+| A, deletion         | The record is kept and the actor is removed. This was already implemented.                       |
+| B, screens          | Owner Console, reviewer-only. Not built.                                                         |
+| C, re-read          | Off. It runs only if the owner asks for a specific run. No existing scan has evidence anyway.    |
 
 ## Open question for the B slice design
 

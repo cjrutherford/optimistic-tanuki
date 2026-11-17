@@ -87,7 +87,10 @@ const names = (entities: unknown[]) =>
 
 describe('Social TypeORM entity registration parity', () => {
   it('resolves the epoch repository through the registered Social connection', async () => {
-    const source = new DataSource({ type: 'postgres', entities: [CommunityDirectoryEpoch] });
+    const source = new DataSource({
+      type: 'postgres',
+      entities: [CommunityDirectoryEpoch],
+    });
     const providers = Reflect.getMetadata('providers', AppModule) as any[];
     const provider = providers.find(
       (entry) => entry?.provide === getRepositoryToken(CommunityDirectoryEpoch)

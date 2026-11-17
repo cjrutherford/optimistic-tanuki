@@ -2,7 +2,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const { DataSource } = require('typeorm');
-const { deletionIdentityKey } = require('../../../libs/storage/src/lib/account-deletion-write-fence');
+const {
+  deletionIdentityKey,
+} = require('../../../libs/storage/src/lib/account-deletion-write-fence');
 const {
   DEFAULT_ADDRESS_REVIEW_POLICY,
   decideAddressReview,
@@ -47,31 +49,77 @@ const needsHumanDecision = () =>
     now,
   });
 
-test('archives an unanchored candidate without losing prior review history', { skip: !url }, async () => {
-  await withDatabase(async (db) => {
-    const stored = await storeAddressReviewCandidate(db, { ...baseCandidate(), decision: needsHumanDecision() });
-    const result = await archiveUnanchoredAddressReviewCandidate(db, stored.id);
-    assert.equal(result.status, 'archived');
-    const rows = await listAddressReviewCandidates(db, { status: 'archived' });
-    assert.equal(rows.length, 1);
-    const decisions = await db.query('SELECT decision,checks FROM "directory_address_review_decision" WHERE "candidateId"=$1 ORDER BY "createdAt"', [stored.id]);
-    assert.equal(decisions.length, 2);
-    assert.equal(decisions[1].decision, 'archive');
-    assert.equal(decisions[1].checks.previousStatus, 'needs_human');
-    await assert.rejects(updateAddressReviewEvidence(db, { candidateId: stored.id, decision: needsHumanDecision() }), /archived/i);
-  });
-});
+test(
+  'archives an unanchored candidate without losing prior review history',
+  { skip: !url },
+  async () => {
+    await withDatabase(async (db) => {
+      const stored = await storeAddressReviewCandidate(db, {
+        ...baseCandidate(),
+        decision: needsHumanDecision(),
+      });
+      const result = await archiveUnanchoredAddressReviewCandidate(
+        db,
+        stored.id
+      );
+      assert.equal(result.status, 'archived');
+      const rows = await listAddressReviewCandidates(db, {
+        status: 'archived',
+      });
+      assert.equal(rows.length, 1);
+      const decisions = await db.query(
+        'SELECT decision,checks FROM "directory_address_review_decision" WHERE "candidateId"=$1 ORDER BY "createdAt"',
+        [stored.id]
+      );
+      assert.equal(decisions.length, 2);
+      assert.equal(decisions[1].decision, 'archive');
+      assert.equal(decisions[1].checks.previousStatus, 'needs_human');
+      await assert.rejects(
+        updateAddressReviewEvidence(db, {
+          candidateId: stored.id,
+          decision: needsHumanDecision(),
+        }),
+        /archived/i
+      );
+    });
+  }
+);
 
-test('evidence refresh cannot alter a published candidate', { skip: !url }, async () => {
-  await withDatabase(async (db) => {
-    const stored = await storeAddressReviewCandidate(db, { ...baseCandidate(), decision: needsHumanDecision() });
-    await db.query('UPDATE "directory_address_review_candidate" SET status=\'published\' WHERE id=$1', [stored.id]);
-    await assert.rejects(updateAddressReviewEvidence(db, { candidateId: stored.id, decision: needsHumanDecision() }), /published/i);
-    await assert.rejects(storeAddressReviewCandidate(db, { ...baseCandidate(), decision: needsHumanDecision() }), /reviewed candidate/i);
-    const [row] = await db.query('SELECT status FROM "directory_address_review_candidate" WHERE id=$1', [stored.id]);
-    assert.equal(row.status, 'published');
-  });
-});
+test(
+  'evidence refresh cannot alter a published candidate',
+  { skip: !url },
+  async () => {
+    await withDatabase(async (db) => {
+      const stored = await storeAddressReviewCandidate(db, {
+        ...baseCandidate(),
+        decision: needsHumanDecision(),
+      });
+      await db.query(
+        'UPDATE "directory_address_review_candidate" SET status=\'published\' WHERE id=$1',
+        [stored.id]
+      );
+      await assert.rejects(
+        updateAddressReviewEvidence(db, {
+          candidateId: stored.id,
+          decision: needsHumanDecision(),
+        }),
+        /published/i
+      );
+      await assert.rejects(
+        storeAddressReviewCandidate(db, {
+          ...baseCandidate(),
+          decision: needsHumanDecision(),
+        }),
+        /reviewed candidate/i
+      );
+      const [row] = await db.query(
+        'SELECT status FROM "directory_address_review_candidate" WHERE id=$1',
+        [stored.id]
+      );
+      assert.equal(row.status, 'published');
+    });
+  }
+);
 
 async function withDatabase(run) {
   const db = new DataSource({ type: 'postgres', url });
@@ -268,11 +316,16 @@ test(
 
 async function withFence(db, id, run) {
   const key = deletionIdentityKey('profile', id);
-  await db.query('INSERT INTO account_deletion_write_fence ("key", kind, "operationId") VALUES ($1, \'profile\', $2)', [key, crypto.randomUUID()]);
+  await db.query(
+    'INSERT INTO account_deletion_write_fence ("key", kind, "operationId") VALUES ($1, \'profile\', $2)',
+    [key, crypto.randomUUID()]
+  );
   try {
     return await run();
   } finally {
-    await db.query('DELETE FROM account_deletion_write_fence WHERE "key"=$1', [key]);
+    await db.query('DELETE FROM account_deletion_write_fence WHERE "key"=$1', [
+      key,
+    ]);
   }
 }
 
@@ -292,12 +345,21 @@ test(
         evidenceUrl: 'https://fixture.example.test/locations/main-st',
       };
       await withFence(db, reviewerId, () =>
-        assert.rejects(recordHumanAddressReviewDecision(db, input), /ACCOUNT_DELETION_FENCED/)
+        assert.rejects(
+          recordHumanAddressReviewDecision(db, input),
+          /ACCOUNT_DELETION_FENCED/
+        )
       );
       const humanRows = () =>
-        db.query('SELECT 1 FROM "directory_address_review_decision" WHERE "candidateId"=$1 AND "actorKind"=\'human\'', [stored.id]);
+        db.query(
+          'SELECT 1 FROM "directory_address_review_decision" WHERE "candidateId"=$1 AND "actorKind"=\'human\'',
+          [stored.id]
+        );
       assert.equal((await humanRows()).length, 0);
-      assert.equal((await recordHumanAddressReviewDecision(db, input)).status, 'approved');
+      assert.equal(
+        (await recordHumanAddressReviewDecision(db, input)).status,
+        'approved'
+      );
       assert.equal((await humanRows()).length, 1);
     });
   }
@@ -329,49 +391,41 @@ test(
   }
 );
 
-test(
-  'rejects an invalid status transition',
-  { skip: !url },
-  async () => {
-    await withDatabase(async (db) => {
-      const stored = await storeAddressReviewCandidate(db, {
-        ...baseCandidate(),
-        decision: needsHumanDecision(),
-      });
-      await recordHumanAddressReviewDecision(db, {
+test('rejects an invalid status transition', { skip: !url }, async () => {
+  await withDatabase(async (db) => {
+    const stored = await storeAddressReviewCandidate(db, {
+      ...baseCandidate(),
+      decision: needsHumanDecision(),
+    });
+    await recordHumanAddressReviewDecision(db, {
+      candidateId: stored.id,
+      actorId: reviewerId,
+      decision: 'approve',
+      evidenceUrl: 'https://fixture.example.test/locations/main-st',
+      attested: true,
+    });
+    await assert.rejects(
+      recordHumanAddressReviewDecision(db, {
         candidateId: stored.id,
         actorId: reviewerId,
         decision: 'approve',
         evidenceUrl: 'https://fixture.example.test/locations/main-st',
         attested: true,
-      });
-      await assert.rejects(
-        recordHumanAddressReviewDecision(db, {
-          candidateId: stored.id,
-          actorId: reviewerId,
-          decision: 'approve',
-          evidenceUrl: 'https://fixture.example.test/locations/main-st',
-          attested: true,
-        }),
-        /Invalid decision/
-      );
-    });
-  }
-);
+      }),
+      /Invalid decision/
+    );
+  });
+});
 
-test(
-  'rejects invalid candidate input',
-  { skip: !url },
-  async () => {
-    await withDatabase(async (db) => {
-      await assert.rejects(
-        storeAddressReviewCandidate(db, {
-          ...baseCandidate(),
-          addresses: [],
-          decision: needsHumanDecision(),
-        }),
-        /Invalid addresses/
-      );
-    });
-  }
-);
+test('rejects invalid candidate input', { skip: !url }, async () => {
+  await withDatabase(async (db) => {
+    await assert.rejects(
+      storeAddressReviewCandidate(db, {
+        ...baseCandidate(),
+        addresses: [],
+        decision: needsHumanDecision(),
+      }),
+      /Invalid addresses/
+    );
+  });
+});

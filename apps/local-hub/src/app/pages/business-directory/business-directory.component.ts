@@ -154,9 +154,7 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
       if (!city) return;
 
       this.city.set(city);
-      this.title.setTitle(
-        `Business directory - ${city.name} - Towne Square`
-      );
+      this.title.setTitle(`Business directory - ${city.name} - Towne Square`);
 
       this.listings.set([]);
       this.businessLinks.set({});

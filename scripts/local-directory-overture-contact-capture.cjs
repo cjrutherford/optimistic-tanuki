@@ -26,11 +26,14 @@ const {
 const {
   projectLocalEvaluation,
 } = require('../apps/directory/src/overture-local-evaluation');
-const { OVERTURE_RIGHTS_FIELDS_LEGACY_V1 } = require('../apps/directory/src/overture-rights');
+const {
+  OVERTURE_RIGHTS_FIELDS_LEGACY_V1,
+} = require('../apps/directory/src/overture-rights');
 const {
   authorizeAnonymousOvertureAttempt,
 } = require('../apps/directory/src/provider-budget');
-const digest = (value) => crypto.createHash('sha256').update(value).digest('hex');
+const digest = (value) =>
+  crypto.createHash('sha256').update(value).digest('hex');
 
 const CONTACT_ASSETS = ['00000', '00001', '00003', '00006'];
 const SCOPE = 'local-evaluation-census-october-contact-v1';
@@ -69,7 +72,10 @@ async function main() {
   const assetIds =
     assetArg === 'all'
       ? CONTACT_ASSETS
-      : assetArg.split(',').map((value) => value.trim()).filter(Boolean);
+      : assetArg
+          .split(',')
+          .map((value) => value.trim())
+          .filter(Boolean);
   if (
     !assetIds.length ||
     assetIds.some((id) => !/^\d{5}$/.test(id)) ||
@@ -271,9 +277,7 @@ async function main() {
             Array.isArray(source[key])
               ? source[key]
                   .map((value) =>
-                    typeof value === 'string'
-                      ? value
-                      : composeAddress(value)
+                    typeof value === 'string' ? value : composeAddress(value)
                   )
                   .filter(
                     (value) =>

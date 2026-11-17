@@ -30,9 +30,7 @@
 
   @if (message) {
   <p class="page-message" role="status">{{ message }}</p>
-  }
-
-  @if (loading && candidates.length === 0) {
+  } @if (loading && candidates.length === 0) {
   <otui-loading-state
     headline="Loading address candidates…"
   ></otui-loading-state>
@@ -69,26 +67,29 @@
           <ul>
             @for (address of candidate.addresses ?? []; track $index) {
             <li>
-              <otui-icon name="location" [size]="15" stroke="currentColor"></otui-icon>
+              <otui-icon
+                name="location"
+                [size]="15"
+                stroke="currentColor"
+              ></otui-icon>
               {{ address }}
             </li>
             } @if (!candidate.addresses?.length) {
             <li class="muted">No source address</li>
-            }
-            @if (candidate.point; as point) {
+            } @if (candidate.point; as point) {
             <li class="muted">Point: {{ point.lat }}, {{ point.lng }}</li>
-            }
-            @if (candidate.phones?.length) {
+            } @if (candidate.phones?.length) {
             <li class="muted">
               Phone: {{ (candidate.phones ?? []).join(' · ') }}
             </li>
-            }
-            @if (candidate.websites?.length) {
+            } @if (candidate.websites?.length) {
             <li class="muted">
               Website: {{ (candidate.websites ?? []).join(' · ') }}
             </li>
             }
-            <li class="muted">Source row: {{ candidate.sourceFileRowNumber }}</li>
+            <li class="muted">
+              Source row: {{ candidate.sourceFileRowNumber }}
+            </li>
           </ul>
         </div>
 
@@ -102,26 +103,24 @@
             </li>
             @if (candidate.geocode; as geocode) {
             <li>
-              Geocode: {{ geocode.status }}
-              @if (geocode.precision) { · {{ geocode.precision }} }
-              @if (geocode.distanceMeters !== null && geocode.distanceMeters !== undefined) {
-              · {{ geocode.distanceMeters | number: '1.0-0' }} m
-              }
+              Geocode: {{ geocode.status }} @if (geocode.precision) { ·
+              {{ geocode.precision }} } @if (geocode.distanceMeters !== null &&
+              geocode.distanceMeters !== undefined) { ·
+              {{ geocode.distanceMeters | number : '1.0-0' }} m }
             </li>
             @if (geocode.normalizedAddress) {
             <li class="muted">{{ geocode.normalizedAddress }}</li>
-            }
-            } @else {
+            } } @else {
             <li class="muted">No geocode evidence yet</li>
-            }
-            @if (candidate.officialEvidence; as evidence) {
+            } @if (candidate.officialEvidence; as evidence) {
             <li>
               Evidence: {{ evidence.status }}
               @if (evidence.transport === 'http') {
               <otui-badge tone="warning" size="sm">HTTP evidence</otui-badge>
-              }
-              @if (evidence.url) {
-              · <a [href]="evidence.url" target="_blank" rel="noopener noreferrer">open</a>
+              } @if (evidence.url) { ·
+              <a [href]="evidence.url" target="_blank" rel="noopener noreferrer"
+                >open</a
+              >
               }
             </li>
             } @else {
@@ -135,15 +134,27 @@
           <ul>
             <li class="muted">
               Residential:
-              {{ candidate.risk?.residential === undefined ? 'unknown' : candidate.risk?.residential }}
+              {{
+                candidate.risk?.residential === undefined
+                  ? 'unknown'
+                  : candidate.risk?.residential
+              }}
             </li>
             <li class="muted">
               Sensitive:
-              {{ candidate.risk?.sensitive === undefined ? 'unknown' : candidate.risk?.sensitive }}
+              {{
+                candidate.risk?.sensitive === undefined
+                  ? 'unknown'
+                  : candidate.risk?.sensitive
+              }}
             </li>
             <li class="muted">
               Adult:
-              {{ candidate.risk?.adult === undefined ? 'unknown' : candidate.risk?.adult }}
+              {{
+                candidate.risk?.adult === undefined
+                  ? 'unknown'
+                  : candidate.risk?.adult
+              }}
             </li>
           </ul>
         </div>
@@ -158,9 +169,7 @@
           }
         </ul>
       </div>
-      }
-
-      @if (candidate.checks) {
+      } @if (candidate.checks) {
       <div class="candidate-checks">
         <h3>Checks</h3>
         <ul>
@@ -169,7 +178,13 @@
             <span>{{ check.key }}</span>
             <otui-badge
               size="sm"
-              [tone]="check.value === 'pass' ? 'success' : check.value === 'fail' ? 'danger' : 'warning'"
+              [tone]="
+                check.value === 'pass'
+                  ? 'success'
+                  : check.value === 'fail'
+                  ? 'danger'
+                  : 'warning'
+              "
             >
               {{ check.value }}
             </otui-badge>
@@ -200,7 +215,15 @@
             size="sm"
             tone="success"
             emphasis="solid"
-            (click)="decide(candidate, 'approve', evidence.value, attested.value, reason.value)"
+            (click)="
+              decide(
+                candidate,
+                'approve',
+                evidence.value,
+                attested.value,
+                reason.value
+              )
+            "
           >
             Approve
           </otui-button>
@@ -208,7 +231,15 @@
             size="sm"
             tone="danger"
             emphasis="outline"
-            (click)="decide(candidate, 'reject', evidence.value, attested.value, reason.value)"
+            (click)="
+              decide(
+                candidate,
+                'reject',
+                evidence.value,
+                attested.value,
+                reason.value
+              )
+            "
           >
             Reject
           </otui-button>
@@ -216,7 +247,15 @@
             size="sm"
             tone="warning"
             emphasis="outline"
-            (click)="decide(candidate, 'needs_info', evidence.value, attested.value, reason.value)"
+            (click)="
+              decide(
+                candidate,
+                'needs_info',
+                evidence.value,
+                attested.value,
+                reason.value
+              )
+            "
           >
             Needs info
           </otui-button>
@@ -225,7 +264,15 @@
             size="sm"
             tone="danger"
             emphasis="outline"
-            (click)="decide(candidate, 'revoke', evidence.value, attested.value, reason.value)"
+            (click)="
+              decide(
+                candidate,
+                'revoke',
+                evidence.value,
+                attested.value,
+                reason.value
+              )
+            "
           >
             Revoke
           </otui-button>

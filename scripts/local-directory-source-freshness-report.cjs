@@ -13,7 +13,11 @@
  * --fail-on severity (unknown > stale > due). Never writes.
  */
 const { DataSource } = require('typeorm');
-const { scanFreshness, evidenceHashMatches, freshnessCounts } = require('../apps/directory/src/source-freshness');
+const {
+  scanFreshness,
+  evidenceHashMatches,
+  freshnessCounts,
+} = require('../apps/directory/src/source-freshness');
 
 const args = process.argv.slice(2);
 const flag = args.indexOf('--fail-on');
@@ -34,7 +38,8 @@ const DAY = 86400000;
   const db = new DataSource({ type: 'postgres', url: databaseUrl });
   await db.initialize();
   try {
-    const rows = await db.query(`SELECT c."scanId" AS "completedScanId", e."scanId", e."evidenceVersion", e.kind, e."releaseId", e."artifactUrl", e."artifactEtag", e."artifactBytes", e."upstreamLastModified", e."observedAt", e."recordedAt", e.recorder, e."inventorySha256", e."evidenceSha256",
+    const rows =
+      await db.query(`SELECT c."scanId" AS "completedScanId", e."scanId", e."evidenceVersion", e.kind, e."releaseId", e."artifactUrl", e."artifactEtag", e."artifactBytes", e."upstreamLastModified", e."observedAt", e."recordedAt", e.recorder, e."inventorySha256", e."evidenceSha256",
         (SELECT count(*)::int FROM directory_reviewed_binding b WHERE b."scanId"=c."scanId" AND b.state='active') AS "activeBindings",
         (SELECT count(*)::int FROM directory_reviewed_binding b WHERE b."scanId"=c."scanId" AND b.state<>'active') AS "inactiveBindings",
         EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=c."scanId") AS revoked
@@ -45,15 +50,21 @@ const DAY = 86400000;
     const scans = rows.map((row) => {
       const evidence = row.scanId ? row : null;
       const state = scanFreshness(evidence, now);
-      const modified = evidence?.upstreamLastModified ? new Date(evidence.upstreamLastModified) : null;
+      const modified = evidence?.upstreamLastModified
+        ? new Date(evidence.upstreamLastModified)
+        : null;
       return {
         scanId: row.completedScanId,
         revoked: row.revoked,
         releaseId: evidence?.releaseId ?? null,
         kind: evidence?.kind ?? null,
         upstreamLastModified: modified ? modified.toISOString() : null,
-        recordedAt: evidence?.recordedAt ? new Date(evidence.recordedAt).toISOString() : null,
-        ageDays: modified ? Math.floor((now.getTime() - modified.getTime()) / DAY) : null,
+        recordedAt: evidence?.recordedAt
+          ? new Date(evidence.recordedAt).toISOString()
+          : null,
+        ageDays: modified
+          ? Math.floor((now.getTime() - modified.getTime()) / DAY)
+          : null,
         evidenceHashVerified: evidence ? evidenceHashMatches(evidence) : null,
         state,
         activeBindings: row.activeBindings,
@@ -61,9 +72,26 @@ const DAY = 86400000;
       };
     });
     const live = scans.filter((scan) => !scan.revoked);
-    const counts = freshnessCounts(rows.filter((row) => !row.revoked).map((row) => (row.scanId ? row : null)), now);
-    console.log(JSON.stringify({ evaluatedAt: now.toISOString(), thresholds: { freshDays: 90, staleDays: 120 }, counts, scans }, null, 2));
-    if (failOn && live.some((scan) => rank[scan.state] >= rank[failOn])) process.exitCode = 2;
+    const counts = freshnessCounts(
+      rows
+        .filter((row) => !row.revoked)
+        .map((row) => (row.scanId ? row : null)),
+      now
+    );
+    console.log(
+      JSON.stringify(
+        {
+          evaluatedAt: now.toISOString(),
+          thresholds: { freshDays: 90, staleDays: 120 },
+          counts,
+          scans,
+        },
+        null,
+        2
+      )
+    );
+    if (failOn && live.some((scan) => rank[scan.state] >= rank[failOn]))
+      process.exitCode = 2;
   } finally {
     await db.destroy();
   }

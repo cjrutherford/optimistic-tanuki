@@ -34,19 +34,35 @@ describe('DirectoryAddressReviewPageComponent', () => {
   let http: HttpTestingController;
 
   it('offers revocation for published candidates', () => {
-    http.expectOne(`http://localhost:3000/api/directory/towns/${town}/address-review-candidates?status=needs_human&limit=25&offset=0`)
+    http
+      .expectOne(
+        `http://localhost:3000/api/directory/towns/${town}/address-review-candidates?status=needs_human&limit=25&offset=0`
+      )
       .flush({ candidates: [{ ...candidate, status: 'published' }] });
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Revoke');
   });
 
   it('loads archived candidates when the reviewer selects Archived', () => {
-    http.expectOne(`http://localhost:3000/api/directory/towns/${town}/address-review-candidates?status=needs_human&limit=25&offset=0`).flush({ candidates: [] });
+    http
+      .expectOne(
+        `http://localhost:3000/api/directory/towns/${town}/address-review-candidates?status=needs_human&limit=25&offset=0`
+      )
+      .flush({ candidates: [] });
     fixture.componentInstance.setStatus('archived');
-    http.expectOne(`http://localhost:3000/api/directory/towns/${town}/address-review-candidates?status=archived&limit=25&offset=0`).flush({ candidates: [{ ...candidate, status: 'archived' }] });
+    http
+      .expectOne(
+        `http://localhost:3000/api/directory/towns/${town}/address-review-candidates?status=archived&limit=25&offset=0`
+      )
+      .flush({ candidates: [{ ...candidate, status: 'archived' }] });
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Fixture Bakery');
-    expect(fixture.componentInstance.canRevoke({ ...candidate, status: 'archived' } as never)).toBe(false);
+    expect(
+      fixture.componentInstance.canRevoke({
+        ...candidate,
+        status: 'archived',
+      } as never)
+    ).toBe(false);
   });
 
   beforeEach(async () => {

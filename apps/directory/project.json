@@ -2,11 +2,7 @@
   "name": "directory",
   "projectType": "application",
   "sourceRoot": "apps/directory/src",
-  "tags": [
-    "type:app",
-    "platform:server",
-    "visibility:internal"
-  ],
+  "tags": ["type:app", "platform:server", "visibility:internal"],
   "targets": {
     "build": {
       "executor": "@nx/webpack:webpack",
@@ -18,9 +14,7 @@
     "lint": {
       "executor": "@nx/eslint:lint",
       "options": {
-        "lintFilePatterns": [
-          "apps/directory/**/*.ts"
-        ]
+        "lintFilePatterns": ["apps/directory/**/*.ts"]
       }
     },
     "test": {

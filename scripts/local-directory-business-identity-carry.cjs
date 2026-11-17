@@ -17,17 +17,35 @@
  *     --from-policy <id> --to-policy <id> [--check | --apply --confirm-database <name> --plan-digest <digest>]
  */
 const { DataSource } = require('typeorm');
-const { businessIdentityKeyFromEnv } = require('../apps/directory/src/business-identity');
-const { applyCarry, planCarry } = require('../apps/directory/src/business-identity-carry');
+const {
+  businessIdentityKeyFromEnv,
+} = require('../apps/directory/src/business-identity');
+const {
+  applyCarry,
+  planCarry,
+} = require('../apps/directory/src/business-identity-carry');
 
-const databaseName = (url) => decodeURIComponent(new URL(url).pathname.replace(/^\//, ''));
-const option = (argv, name) => { const at = argv.indexOf(name); return at >= 0 ? argv[at + 1] : undefined; };
+const databaseName = (url) =>
+  decodeURIComponent(new URL(url).pathname.replace(/^\//, ''));
+const option = (argv, name) => {
+  const at = argv.indexOf(name);
+  return at >= 0 ? argv[at + 1] : undefined;
+};
 
 /** Report shape shared by --check and --apply. Counts only: no row, name, key or hash is printed. */
-async function run(db, { fromPolicyId, toPolicyId, key, apply = false, planDigest, hooks }) {
+async function run(
+  db,
+  { fromPolicyId, toPolicyId, key, apply = false, planDigest, hooks }
+) {
   const opts = { fromPolicyId, toPolicyId, key };
   const plan = await planCarry(db, opts);
-  const summary = { mode: apply ? 'apply' : 'check', keyed: plan.keyed, towns: plan.towns.length, planDigest: plan.digest, counts: plan.counts };
+  const summary = {
+    mode: apply ? 'apply' : 'check',
+    keyed: plan.keyed,
+    towns: plan.towns.length,
+    planDigest: plan.digest,
+    counts: plan.counts,
+  };
   if (!apply) return summary;
   const result = await applyCarry(db, { ...opts, planDigest }, hooks);
   return { ...summary, applied: result.applied, complete: result.complete };
@@ -37,18 +55,36 @@ async function main(argv) {
   const url = process.env.DIRECTORY_DATABASE_URL;
   if (!url) throw Error('DIRECTORY_DATABASE_URL is required');
   const apply = argv.includes('--apply');
-  if (apply && argv.includes('--check')) throw Error('--check and --apply are exclusive');
-  if (apply && option(argv, '--confirm-database') !== databaseName(url)) throw Error('--apply requires --confirm-database <name> matching the target database');
+  if (apply && argv.includes('--check'))
+    throw Error('--check and --apply are exclusive');
+  if (apply && option(argv, '--confirm-database') !== databaseName(url))
+    throw Error(
+      '--apply requires --confirm-database <name> matching the target database'
+    );
   const planDigest = option(argv, '--plan-digest');
-  if (apply && !/^[a-f0-9]{64}$/.test(planDigest || '')) throw Error('--apply requires --plan-digest <digest> from --check');
+  if (apply && !/^[a-f0-9]{64}$/.test(planDigest || ''))
+    throw Error('--apply requires --plan-digest <digest> from --check');
   const key = businessIdentityKeyFromEnv();
   if (!key) throw Error('DIRECTORY_BUSINESS_IDENTITY_HMAC_KEY is required');
-  const fromPolicyId = option(argv, '--from-policy'), toPolicyId = option(argv, '--to-policy');
-  if (!fromPolicyId || !toPolicyId) throw Error('--from-policy and --to-policy are required');
+  const fromPolicyId = option(argv, '--from-policy'),
+    toPolicyId = option(argv, '--to-policy');
+  if (!fromPolicyId || !toPolicyId)
+    throw Error('--from-policy and --to-policy are required');
   const db = new DataSource({ type: 'postgres', url });
   await db.initialize();
   try {
-    console.log(JSON.stringify({ database: databaseName(url), ...(await run(db, { fromPolicyId, toPolicyId, key, apply, planDigest })) }));
+    console.log(
+      JSON.stringify({
+        database: databaseName(url),
+        ...(await run(db, {
+          fromPolicyId,
+          toPolicyId,
+          key,
+          apply,
+          planDigest,
+        })),
+      })
+    );
   } finally {
     await db.destroy();
   }
@@ -58,7 +94,9 @@ module.exports = { run };
 
 if (require.main === module) {
   main(process.argv.slice(2)).catch((error) => {
-    console.error(error instanceof Error ? error.message : 'business identity carry failed');
+    console.error(
+      error instanceof Error ? error.message : 'business identity carry failed'
+    );
     process.exit(1);
   });
 }

@@ -13,13 +13,40 @@ const townA = '00000000-0000-4000-8000-000000000001';
 const townB = '00000000-0000-4000-8000-000000000002';
 
 test('contact-stage identity and published fields must match the reviewed candidate', () => {
-  const candidate = { name: 'Fixture Bakery', category: 'bakery', point: { lng: -83, lat: 31 }, addresses: ['10 Main St'], websites: ['https://shop.example'], phones: ['+19125550100'], officialEvidence: { websiteMatch: true, phoneMatch: true } };
-  const listing = { name: 'Fixture Bakery', category: 'bakery', location: { type: 'Point', coordinates: [-83, 31] }, addresses: ['10 Main St'], websites: ['https://shop.example'], phones: ['+19125550100'] };
+  const candidate = {
+    name: 'Fixture Bakery',
+    category: 'bakery',
+    point: { lng: -83, lat: 31 },
+    addresses: ['10 Main St'],
+    websites: ['https://shop.example'],
+    phones: ['+19125550100'],
+    officialEvidence: { websiteMatch: true, phoneMatch: true },
+  };
+  const listing = {
+    name: 'Fixture Bakery',
+    category: 'bakery',
+    location: { type: 'Point', coordinates: [-83, 31] },
+    addresses: ['10 Main St'],
+    websites: ['https://shop.example'],
+    phones: ['+19125550100'],
+  };
   assert.equal(contactMatchesCandidate(candidate, listing), true);
-  for (const changed of [{ ...listing, name: 'Other Bakery' }, { ...listing, location: { type: 'Point', coordinates: [-82, 31] } }, { ...listing, addresses: ['99 Other St'] }, { ...listing, websites: ['https://other.example'] }, { ...listing, phones: ['+19125550101'] }]) {
+  for (const changed of [
+    { ...listing, name: 'Other Bakery' },
+    { ...listing, location: { type: 'Point', coordinates: [-82, 31] } },
+    { ...listing, addresses: ['99 Other St'] },
+    { ...listing, websites: ['https://other.example'] },
+    { ...listing, phones: ['+19125550101'] },
+  ]) {
     assert.equal(contactMatchesCandidate(candidate, changed), false);
   }
-  assert.equal(contactMatchesCandidate({ ...candidate, phones: [] }, { ...listing, phones: [] }), true);
+  assert.equal(
+    contactMatchesCandidate(
+      { ...candidate, phones: [] },
+      { ...listing, phones: [] }
+    ),
+    true
+  );
 });
 const eligible = (regionId, sourceFileRowNumber, listing) => ({
   regionId,
@@ -60,7 +87,10 @@ test('a unique row is unavailable when its policy, scan or row is revoked', () =
   for (const field of ['policyRevoked', 'scanRevoked', 'rowRevoked']) {
     const row = eligible(townA, 9, { address: `Revoked by ${field}` });
     row[field] = true;
-    assert.equal(buildUniqueContactListingMap([row]).has(contactListingKey(townA, 9)), false);
+    assert.equal(
+      buildUniqueContactListingMap([row]).has(contactListingKey(townA, 9)),
+      false
+    );
   }
 });
 
@@ -69,15 +99,26 @@ test('contact query returns physical duplicates with revocation eligibility fiel
   assert.match(CONTACT_LISTING_SQL, /r\."scanId" AS "stageScanId"/);
   assert.match(CONTACT_LISTING_SQL, /m\."policyId" AS "stagePolicyId"/);
   assert.match(CONTACT_LISTING_SQL, /directory_overture_private_revocation/);
-  assert.match(CONTACT_LISTING_SQL, /directory_overture_private_row_revocation/);
-  assert.doesNotMatch(CONTACT_LISTING_SQL, /WHERE m\."policyId"=\$1 AND p\.revoked=false/);
+  assert.match(
+    CONTACT_LISTING_SQL,
+    /directory_overture_private_row_revocation/
+  );
+  assert.doesNotMatch(
+    CONTACT_LISTING_SQL,
+    /WHERE m\."policyId"=\$1 AND p\.revoked=false/
+  );
 
   let actual;
   const rows = [{ regionId: townA, sourceFileRowNumber: '1', listing: {} }];
   const result = await readContactListingRows(
-    { query: async (sql, params) => { actual = { sql, params }; return rows; } },
+    {
+      query: async (sql, params) => {
+        actual = { sql, params };
+        return rows;
+      },
+    },
     'f'.repeat(64),
-    [{ communityId: townA, sourceFileRowNumber: 1 }],
+    [{ communityId: townA, sourceFileRowNumber: 1 }]
   );
   assert.equal(result, rows);
   assert.match(actual.sql, /AS "scanRevoked"/);
@@ -86,11 +127,33 @@ test('contact query returns physical duplicates with revocation eligibility fiel
 });
 
 test('stage map keeps the stage row identity and applies the same exclusions', () => {
-  const a = { ...eligible(townA, '4', { name: 'A' }), stageScanId: 's'.repeat(64), stagePolicyId: 'p'.repeat(64) };
-  const dup1 = { ...eligible(townA, '5', { name: 'D1' }), stageScanId: '1'.repeat(64), stagePolicyId: 'p'.repeat(64) };
-  const dup2 = { ...eligible(townA, '5', { name: 'D2' }), stageScanId: '2'.repeat(64), stagePolicyId: 'p'.repeat(64) };
-  const revoked = { ...eligible(townA, '6', { name: 'R' }), stageScanId: '3'.repeat(64), stagePolicyId: 'p'.repeat(64), scanRevoked: true };
+  const a = {
+    ...eligible(townA, '4', { name: 'A' }),
+    stageScanId: 's'.repeat(64),
+    stagePolicyId: 'p'.repeat(64),
+  };
+  const dup1 = {
+    ...eligible(townA, '5', { name: 'D1' }),
+    stageScanId: '1'.repeat(64),
+    stagePolicyId: 'p'.repeat(64),
+  };
+  const dup2 = {
+    ...eligible(townA, '5', { name: 'D2' }),
+    stageScanId: '2'.repeat(64),
+    stagePolicyId: 'p'.repeat(64),
+  };
+  const revoked = {
+    ...eligible(townA, '6', { name: 'R' }),
+    stageScanId: '3'.repeat(64),
+    stagePolicyId: 'p'.repeat(64),
+    scanRevoked: true,
+  };
   const map = buildUniqueContactStageMap([a, dup1, dup2, revoked]);
   assert.deepEqual([...map.keys()], [contactListingKey(townA, 4)]);
-  assert.deepEqual(map.get(contactListingKey(townA, 4)), { listing: { name: 'A' }, scanId: 's'.repeat(64), sourceFileRowNumber: '4', policyId: 'p'.repeat(64) });
+  assert.deepEqual(map.get(contactListingKey(townA, 4)), {
+    listing: { name: 'A' },
+    scanId: 's'.repeat(64),
+    sourceFileRowNumber: '4',
+    policyId: 'p'.repeat(64),
+  });
 });

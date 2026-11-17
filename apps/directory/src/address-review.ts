@@ -260,10 +260,7 @@ export function decideAddressReview(input: {
   } else {
     add(checks, reasons, 'geocode', 'pass');
     effectivePrecision = geocode.precision ?? 'unknown';
-    if (
-      effectivePrecision === 'unknown' ||
-      effectivePrecision === 'locality'
-    ) {
+    if (effectivePrecision === 'unknown' || effectivePrecision === 'locality') {
       add(
         checks,
         reasons,
@@ -290,8 +287,7 @@ export function decideAddressReview(input: {
       } else if (effectiveDistance > policy.hardMaxDistanceMeters) {
         add(checks, reasons, 'geocodeDistance', 'fail', 'point_too_far');
       } else if (
-        effectiveDistance >
-        policy.maxDistanceMeters[effectivePrecision]
+        effectiveDistance > policy.maxDistanceMeters[effectivePrecision]
       ) {
         add(
           checks,

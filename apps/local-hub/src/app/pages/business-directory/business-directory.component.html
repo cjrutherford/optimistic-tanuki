@@ -75,8 +75,7 @@
       >
         {{ freshnessLabel }}
       </p>
-      }
-      @if (directoryMapLocations().length > 0) {
+      } @if (directoryMapLocations().length > 0) {
       <p class="directory-page__map-note">
         @if (directoryBoundary().status === 'ready') { Verified Census boundary.
         } @else if (directoryBoundary().status === 'unavailable') { Approximate
@@ -105,7 +104,10 @@
     ></otui-error-state>
     }
 
-    <section class="directory-page__listings" aria-labelledby="directory-results-title">
+    <section
+      class="directory-page__listings"
+      aria-labelledby="directory-results-title"
+    >
       <div class="directory-page__map-heading">
         <h2 class="directory-page__section-title" id="directory-results-title">
           Search the directory
@@ -134,7 +136,11 @@
           tone="brand"
           emphasis="outline"
         >
-          <otui-icon name="search" [size]="16" stroke="currentColor"></otui-icon>
+          <otui-icon
+            name="search"
+            [size]="16"
+            stroke="currentColor"
+          ></otui-icon>
           Search
         </otui-button>
       </form>
@@ -151,22 +157,22 @@
           emphasis="outline"
           (click)="retry()"
         >
-          <otui-icon name="refresh" [size]="16" stroke="currentColor"></otui-icon>
+          <otui-icon
+            name="refresh"
+            [size]="16"
+            stroke="currentColor"
+          ></otui-icon>
           Try again
         </otui-button>
       </otui-error-state>
       } @else if (directoryLoading() && listings().length === 0) {
-      <otui-loading-state
-        headline="Loading businesses…"
-      ></otui-loading-state>
+      <otui-loading-state headline="Loading businesses…"></otui-loading-state>
       } @else if (available() && listings().length === 0) {
       <otui-empty-state
         headline="No businesses found"
         body="No businesses found in the available directory data."
       ></otui-empty-state>
-      }
-
-      @if (listings().length > 0) {
+      } @if (listings().length > 0) {
       <div class="businesses-grid">
         @for (listing of listings(); track listing.id ?? $index) {
         <otui-card class="directory-card" tone="neutral" emphasis="soft">
@@ -216,20 +222,16 @@
             </a>
             } @if (listing.id; as listingId) {
             <div class="directory-link">
-              @if (businessLinks()[listingId]; as businessLink) {
-              @switch (businessLink.state) {
-              @case ('loading') {
+              @if (businessLinks()[listingId]; as businessLink) { @switch
+              (businessLink.state) { @case ('loading') {
               <p class="directory-link__status" role="status">
                 Checking business page…
               </p>
-              }
-              @case ('requesting') {
+              } @case ('requesting') {
               <p class="directory-link__status" role="status">
                 Checking business page…
               </p>
-              }
-              @case ('linked') {
-              @if (businessLink.link; as page) {
+              } @case ('linked') { @if (businessLink.link; as page) {
               <a class="business-link" [routerLink]="['/c', page.slug]">
                 <otui-icon
                   name="link"
@@ -238,14 +240,11 @@
                 ></otui-icon>
                 View {{ page.name }}
               </a>
-              }
-              }
-              @case ('requested') {
+              } } @case ('requested') {
               <p class="directory-link__status" role="status">
                 Request sent for review.
               </p>
-              }
-              @case ('error') {
+              } @case ('error') {
               <otui-error-state
                 headline="Business page information is unavailable"
                 [body]="businessLink.message ?? 'Please try again.'"
@@ -260,8 +259,7 @@
                   Try again
                 </otui-button>
               </otui-error-state>
-              }
-              @case ('unlinked') {
+              } @case ('unlinked') {
               <p class="directory-link__status">
                 No business page is linked yet.
               </p>
@@ -269,8 +267,7 @@
               <p class="directory-link__message">
                 {{ businessLink.message }}
               </p>
-              }
-              @if (isAuthenticated() && !(businessLink.requests?.length)) {
+              } @if (isAuthenticated() && !(businessLink.requests?.length)) {
               <lib-text-input
                 #businessPageAddress
                 class="directory-link__input"
@@ -282,22 +279,14 @@
                 emphasis="outline"
                 size="sm"
                 (click)="
-                  requestBusinessPageLink(
-                    listing,
-                    businessPageAddress.value
-                  )
+                  requestBusinessPageLink(listing, businessPageAddress.value)
                 "
               >
                 Request a link
               </otui-button>
-              }
-              }
-              }
-
-              @if (businessLink.state !== 'loading' &&
-              businessLink.state !== 'requesting') {
-              @for (request of businessLink.requests ?? []; track
-              request.requestId) {
+              } } } @if (businessLink.state !== 'loading' && businessLink.state
+              !== 'requesting') { @for (request of businessLink.requests ?? [];
+              track request.requestId) {
               <div class="directory-link__request">
                 <span>{{
                   request.status === 'pending'
@@ -317,9 +306,7 @@
                   }}
                 </otui-button>
               </div>
-              }
-              }
-              } @else {
+              } } } @else {
               <otui-button
                 tone="brand"
                 emphasis="outline"

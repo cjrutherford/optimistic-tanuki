@@ -16,15 +16,11 @@
 const fs = require('node:fs');
 const readline = require('node:readline');
 const { DataSource } = require('typeorm');
-const {
-  decideAddressReview,
-} = require('../apps/directory/src/address-review');
+const { decideAddressReview } = require('../apps/directory/src/address-review');
 const {
   storeAddressReviewCandidate,
 } = require('../apps/directory/src/address-review-store');
-const {
-  classifyAddressRisk,
-} = require('../apps/directory/src/address-risk');
+const { classifyAddressRisk } = require('../apps/directory/src/address-risk');
 const {
   evaluateOvertureFieldRights,
 } = require('../apps/directory/src/overture-rights');
@@ -115,9 +111,9 @@ const cleanStrings = (value) =>
     : [];
 const rowNumberKey = (regionId, row) => `${regionId}|${String(row)}`;
 const identityKey = (regionId, name, category, point) =>
-  `${regionId}|${normalize(name)}|${normalize(category)}|${Number(point.lat).toFixed(
-    5
-  )}|${Number(point.lng).toFixed(5)}`;
+  `${regionId}|${normalize(name)}|${normalize(category)}|${Number(
+    point.lat
+  ).toFixed(5)}|${Number(point.lng).toFixed(5)}`;
 
 async function readArtifact(path) {
   const rows = new Map();
@@ -143,9 +139,9 @@ async function readArtifact(path) {
     ) {
       continue;
     }
-    const key = `${seat}|${normalize(row.names?.primary)}|${coordinates[1].toFixed(
-      5
-    )}|${coordinates[0].toFixed(5)}`;
+    const key = `${seat}|${normalize(
+      row.names?.primary
+    )}|${coordinates[1].toFixed(5)}|${coordinates[0].toFixed(5)}`;
     if (!rows.has(key)) rows.set(key, row);
   }
   return rows;
@@ -218,11 +214,7 @@ async function existingCandidates(db) {
   for (const row of rows) {
     scanKeys.add(rowNumberKey(row.scanId, row.sourceFileRowNumber));
     const point = row.point;
-    if (
-      point &&
-      Number.isFinite(point.lat) &&
-      Number.isFinite(point.lng)
-    ) {
+    if (point && Number.isFinite(point.lat) && Number.isFinite(point.lng)) {
       identityKeys.add(
         identityKey(row.communityId, row.name, row.category, point)
       );
@@ -259,7 +251,9 @@ async function seedContactCohort(db, summary) {
     if (summary.imported >= limit) break;
     const key = rowNumberKey(row.regionId, row.sourceFileRowNumber);
     const listing = row.listing;
-    if (existing.scanKeys.has(rowNumberKey(row.scanId, row.sourceFileRowNumber))) {
+    if (
+      existing.scanKeys.has(rowNumberKey(row.scanId, row.sourceFileRowNumber))
+    ) {
       summary.skippedExisting += 1;
       continue;
     }
@@ -311,12 +305,7 @@ async function seedContactCohort(db, summary) {
       sensitive: risk.sensitive,
       adult: risk.adult,
     };
-    const identity = identityKey(
-      row.regionId,
-      name,
-      category,
-      candidate.point
-    );
+    const identity = identityKey(row.regionId, name, category, candidate.point);
     if (existing.identityKeys.has(identity)) {
       summary.skippedDuplicateIdentity += 1;
       continue;

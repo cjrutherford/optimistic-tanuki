@@ -5,13 +5,30 @@ const { consumeOnce } = require('../src/worker');
 
 const url = process.env.DIRECTORY_TEST_REDIS_URL;
 const urlB = process.env.DIRECTORY_TEST_REDIS_URL_B;
-const required = ['DIRECTORY_TEST_REDIS_URL', 'DIRECTORY_TEST_REDIS_URL_B', 'DIRECTORY_TEST_REDIS_ADMIN_URL'];
-const missing = required.filter(name => !process.env[name]);
-if (missing.length) throw new Error(`Disposable Redis test configuration required: ${missing.join(', ')}`);
-for (const command of ['eval', 'hget', 'hlen', 'hexists', 'hgetall', 'hset', 'hdel']) {
+const required = [
+  'DIRECTORY_TEST_REDIS_URL',
+  'DIRECTORY_TEST_REDIS_URL_B',
+  'DIRECTORY_TEST_REDIS_ADMIN_URL',
+];
+const missing = required.filter((name) => !process.env[name]);
+if (missing.length)
+  throw new Error(
+    `Disposable Redis test configuration required: ${missing.join(', ')}`
+  );
+for (const command of [
+  'eval',
+  'hget',
+  'hlen',
+  'hexists',
+  'hgetall',
+  'hset',
+  'hdel',
+]) {
   test(`readiness detects denied ${command} and recovers without changing jobs`, async () => {
     const { createClient } = require('redis');
-    const admin = createClient({ url: process.env.DIRECTORY_TEST_REDIS_ADMIN_URL });
+    const admin = createClient({
+      url: process.env.DIRECTORY_TEST_REDIS_ADMIN_URL,
+    });
     await admin.connect();
     const suffix = `${process.pid}-${Date.now()}-${command}`;
     const prefix = `s1-acl-${suffix}`;
@@ -22,7 +39,21 @@ for (const command of ['eval', 'hget', 'hlen', 'hexists', 'hgetall', 'hset', 'hd
     userUrl.password = 'isolated-test-password';
     let q;
     try {
-      await admin.sendCommand(['ACL', 'SETUSER', user, 'on', '>isolated-test-password', `~${key}`, '+eval', '+hget', '+hlen', '+hexists', '+hgetall', '+hset', '+hdel']);
+      await admin.sendCommand([
+        'ACL',
+        'SETUSER',
+        user,
+        'on',
+        '>isolated-test-password',
+        `~${key}`,
+        '+eval',
+        '+hget',
+        '+hlen',
+        '+hexists',
+        '+hgetall',
+        '+hset',
+        '+hdel',
+      ]);
       q = await DirectoryQueue.connect(userUrl.toString(), prefix);
       await q.enqueue('preserved', 's1.check', { marker: command });
       assert.equal(await q.ready(), true);
@@ -68,7 +99,7 @@ test('Redis queue consumes once per identity, retries failures, recovers leases 
     assert.equal(await a.claim(1000), null);
     await a.enqueue('lease', 's1.check', {}, 2);
     const stale = await a.claim(20);
-    await new Promise(resolve => setTimeout(resolve, 40));
+    await new Promise((resolve) => setTimeout(resolve, 40));
     const recovered = await a.claim(1000);
     assert.equal(recovered.attempt, 2);
     assert.equal(await a.complete(stale), false);
@@ -79,20 +110,30 @@ test('Redis queue consumes once per identity, retries failures, recovers leases 
     await b.enqueue('unsupported', 'unknown', {}, 1);
     assert.equal(await consumeOnce(b), true);
     assert.equal((await b.get('unsupported')).status, 'failed');
-  } finally { await a.close(); await b.close(); await denied.close(); }
+  } finally {
+    await a.close();
+    await b.close();
+    await denied.close();
+  }
 });
 
 test('queue writes fail safely and readiness recovers when Redis permissions or key type recover', async () => {
   const { createClient } = require('redis');
-  assert.ok(process.env.DIRECTORY_TEST_REDIS_ADMIN_URL, 'Disposable test Redis admin URL is required');
-  const admin = createClient({ url: process.env.DIRECTORY_TEST_REDIS_ADMIN_URL });
+  assert.ok(
+    process.env.DIRECTORY_TEST_REDIS_ADMIN_URL,
+    'Disposable test Redis admin URL is required'
+  );
+  const admin = createClient({
+    url: process.env.DIRECTORY_TEST_REDIS_ADMIN_URL,
+  });
   await admin.connect();
   const prefix = `s1test-a-fault-${process.pid}-${Date.now()}`;
   const key = `${prefix}:jobs-v3`;
   const q = await DirectoryQueue.connect(url, prefix);
   const user = decodeURIComponent(new URL(url).username);
   assert.ok(user, 'A named disposable Redis ACL user is required');
-  const permissions = (...args) => admin.sendCommand(['ACL', 'SETUSER', user, ...args]);
+  const permissions = (...args) =>
+    admin.sendCommand(['ACL', 'SETUSER', user, ...args]);
   try {
     assert.equal(await q.ready(), true);
     await permissions('-hdel');
@@ -100,7 +141,10 @@ test('queue writes fail safely and readiness recovers when Redis permissions or 
     await permissions('+hdel');
     await permissions('-hset');
     assert.equal(await q.ready(), false);
-    await assert.rejects(q.enqueue('job', 's1.check', {}), /ACL failure|NOPERM/);
+    await assert.rejects(
+      q.enqueue('job', 's1.check', {}),
+      /ACL failure|NOPERM/
+    );
     await permissions('+hset');
     assert.equal(await q.ready(), true);
     assert.equal(await q.get('job'), null);
@@ -132,11 +176,20 @@ test('queue writes fail safely and readiness recovers when Redis permissions or 
 
 test('bounded queue applies backpressure and only removes expired terminal jobs', async () => {
   const prefix = `s1test-a-bound-${process.pid}-${Date.now()}`;
-  const q = await DirectoryQueue.connect(url, prefix, { maxJobs: 2, retentionMs: 40 });
-  const mismatch = await DirectoryQueue.connect(url, prefix, { maxJobs: 3, retentionMs: 40 });
+  const q = await DirectoryQueue.connect(url, prefix, {
+    maxJobs: 2,
+    retentionMs: 40,
+  });
+  const mismatch = await DirectoryQueue.connect(url, prefix, {
+    maxJobs: 3,
+    retentionMs: 40,
+  });
   try {
     assert.equal(await q.enqueue('active', 's1.check', {}), true);
-    await assert.rejects(mismatch.enqueue('other', 's1.check', {}), /configuration mismatch/i);
+    await assert.rejects(
+      mismatch.enqueue('other', 's1.check', {}),
+      /configuration mismatch/i
+    );
     assert.equal(await mismatch.ready(), false);
     const active = await q.claim(1000);
     assert.equal(await q.enqueue('terminal', 's1.check', {}), true);
@@ -144,12 +197,18 @@ test('bounded queue applies backpressure and only removes expired terminal jobs'
     assert.equal(await q.complete(terminal), true);
     assert.equal(await q.enqueue('terminal', 's1.check', {}), false);
     await assert.rejects(q.enqueue('overflow', 's1.check', {}), /queue.*full/i);
-    await new Promise(resolve => setTimeout(resolve, 60));
+    await new Promise((resolve) => setTimeout(resolve, 60));
     await q.claim(1000); // bounded cleanup of one expired terminal record
     assert.equal(await q.get('terminal'), null);
     assert.equal((await q.get('active')).status, 'active');
     assert.equal(await q.enqueue('terminal', 's1.check', {}), true);
-    await assert.rejects(q.enqueue('large', 's1.check', { value: 'x'.repeat(17000) }), /large/i);
+    await assert.rejects(
+      q.enqueue('large', 's1.check', { value: 'x'.repeat(17000) }),
+      /large/i
+    );
     assert.equal(await q.complete(active), true);
-  } finally { await q.close(); await mismatch.close(); }
+  } finally {
+    await q.close();
+    await mismatch.close();
+  }
 });

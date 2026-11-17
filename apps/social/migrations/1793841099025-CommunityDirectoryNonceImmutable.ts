@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CommunityDirectoryNonceImmutable1793841099025 implements MigrationInterface {
+export class CommunityDirectoryNonceImmutable1793841099025
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE FUNCTION community_directory_nonce_immutable() RETURNS trigger
       LANGUAGE plpgsql AS $$
@@ -17,7 +19,11 @@ export class CommunityDirectoryNonceImmutable1793841099025 implements MigrationI
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query('DROP TRIGGER IF EXISTS community_directory_nonce_immutable ON community_directory_change');
-    await queryRunner.query('DROP FUNCTION IF EXISTS community_directory_nonce_immutable()');
+    await queryRunner.query(
+      'DROP TRIGGER IF EXISTS community_directory_nonce_immutable ON community_directory_change'
+    );
+    await queryRunner.query(
+      'DROP FUNCTION IF EXISTS community_directory_nonce_immutable()'
+    );
   }
 }

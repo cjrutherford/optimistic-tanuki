@@ -23,11 +23,11 @@ The Bureau's [2026 legal and citation notes](https://www2.census.gov/geo/pdfs/ma
 On 2026-11-07, downloaded the official [2026 Georgia Places archive](https://www2.census.gov/geo/tiger/TIGER2026/PLACE/tl_2026_13_place.zip) once into a private temporary directory. It was 5,267,929 bytes with SHA-256 `1325e424664f8c0f517c0aa155e3806ca299785ccca4e1badc9fe4f3f4173e09`. Census documentation describes the download as free. No business-provider records were acquired and no paid request was made. DuckDB's spatial reader examined the archive without importing it into either application database. A read-only query selected only city names and coordinates for the four public Georgia POC communities from the intended `ot_social` source; no community identifiers, owner data or source business records were used. Each had coordinates. Temporary source and coordinate files were removed after this check.
 
 | POC town | Census GEOID | Exact-name matches in Georgia Places | Geometry valid | Covers the Social reference point |
-| --- | --- | ---: | --- | --- |
-| Douglas | `1323872` | 1 | yes | yes |
-| Tifton | `1376476` | 1 | yes | yes |
-| Valdosta | `1378800` | 1 | yes | yes |
-| Waycross | `1380956` | 1 | yes | yes |
+| -------- | ------------ | -----------------------------------: | -------------- | --------------------------------- |
+| Douglas  | `1323872`    |                                    1 | yes            | yes                               |
+| Tifton   | `1376476`    |                                    1 | yes            | yes                               |
+| Valdosta | `1378800`    |                                    1 | yes            | yes                               |
+| Waycross | `1380956`    |                                    1 | yes            | yes                               |
 
 This is source-file and local-point corroboration for four candidate geometries, not a completed identity mapping, independent legal boundary validation, a general name-matching rule or application integration. The dataset is a January 2026 statistical vintage and has the limitations described above. It does not resolve Connecticut and other minor-civil-division cases, the remaining eligible communities, fallback presentation, lifecycle or privacy races. Matching by name alone must not silently select an ambiguous locality.
 

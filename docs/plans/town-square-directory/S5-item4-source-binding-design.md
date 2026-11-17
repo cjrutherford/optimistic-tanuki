@@ -29,7 +29,7 @@ Publish flow:
    (`local-directory-contact-listings.cjs:37-51`); the survivor must match the
    candidate (`:27-34`, call at publish script `:231`).
 3. `sourceFromContact` (publish script `:149-176`) builds the source object from
-   the *candidate's* name, category, point, address, website and phone, plus the
+   the _candidate's_ name, category, point, address, website and phone, plus the
    stage row's `sources`.
 4. `publishAddressReviewCandidate` resolves the live row
    (`address-review-publish.ts:96-136`, `:239-250`) and, in one live transaction
@@ -37,7 +37,7 @@ Publish flow:
    containment, and calls `attachLocalReviewedFields`
    (`overture-private-sink.ts:54-76`), which locks live policy, scan and row and
    writes `listing.reviewed = {website?, phone?, address?, attribution, notices,
-   termsUrls, evidenceUrl}` (`:71-72`).
+termsUrls, evidenceUrl}` (`:71-72`).
 5. The decision row records only `publication`, containment basis, assignment
    token and the display policy `releaseId` (`address-review-publish.ts:286-299`).
 
@@ -50,7 +50,7 @@ What is and is not covered afterwards:
   scan, row or policy supplied `sources` and confirmed the contact fields, which
   display policy document was applied (only its `releaseId`), or what the copied
   values were. A stage withdrawal or correction after step 1 has no path to the
-  live `reviewed` object. The window opens *before* the live transaction, so a
+  live `reviewed` object. The window opens _before_ the live transaction, so a
   withdrawal between step 1 and step 4 is also missed.
 - The read path treats `listing ? 'reviewed'` as sufficient
   (`register-pending-runtime.ts:188,200-206`).
@@ -70,26 +70,26 @@ transaction. Per publication, with per-field hashes inside it; a per-field table
 would multiply rows without adding proof, because all fields of one publication
 share one stage row, one policy and one decision.
 
-| Column | Type | Meaning |
-| --- | --- | --- |
-| `id` | uuid PK | binding identity; referenced by events and, later, item 2's projection |
-| `candidateId` | uuid | reviewed candidate (`entity.ts:222-248`) |
-| `decisionId` | uuid null | the publication decision row (`entity.ts:250-265`); null only for legacy |
-| `communityId`, `scanId`, `sourceFileRowNumber` | uuid, varchar(64), bigint | the **live** served row |
-| `livePolicyId` | varchar(64) null | live membership policy at publish (`address-review-publish.ts:134`) |
-| `provenance` | varchar(24) | `contact_stage`, `source_file`, or `unknown_legacy` |
-| `stageInstallationId` | varchar(64) null | which stage database (see decision 2) |
-| `stageScanId`, `stageSourceFileRowNumber`, `stagePolicyId` | varchar(64), bigint, varchar(64), all null | exact stage row and its membership policy |
-| `displayPolicyReleaseId` | varchar(64) null | `policy.releaseId` as supplied |
-| `displayPolicyHash` | varchar(64) null | sha256 of the canonical JSON of the runtime `OvertureRightsPolicy` document actually applied |
-| `stageContentHash` | varchar(64) null | keyed hash of the canonical stage `listing` subset that fed publication: name, category, location, addresses, websites, phones, sources |
-| `reviewedHash` | varchar(64) null | keyed hash of the canonical `reviewed` object as written |
-| `fieldHashes` | jsonb null | `{field: {hash, origin}}` for name, category, point, address, website, phone, attribution, notices, termsUrls; `origin` is `live_row`, `candidate` or `stage` |
-| `assignmentChangeToken` | uuid null | containment token written with the row |
-| `state` | varchar(16) | `pending`, `active`, `suspended`, `retired` |
-| `stateCause` | varchar(40) null | last transition cause (section 2.2) |
-| `verifiedAt`, `verifiedUntil` | timestamptz null | last successful stage revalidation and the lease expiry |
-| `suspendedAt`, `retiredAt`, `createdAt` | timestamptz | |
+| Column                                                     | Type                                       | Meaning                                                                                                                                                       |
+| ---------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                                       | uuid PK                                    | binding identity; referenced by events and, later, item 2's projection                                                                                        |
+| `candidateId`                                              | uuid                                       | reviewed candidate (`entity.ts:222-248`)                                                                                                                      |
+| `decisionId`                                               | uuid null                                  | the publication decision row (`entity.ts:250-265`); null only for legacy                                                                                      |
+| `communityId`, `scanId`, `sourceFileRowNumber`             | uuid, varchar(64), bigint                  | the **live** served row                                                                                                                                       |
+| `livePolicyId`                                             | varchar(64) null                           | live membership policy at publish (`address-review-publish.ts:134`)                                                                                           |
+| `provenance`                                               | varchar(24)                                | `contact_stage`, `source_file`, or `unknown_legacy`                                                                                                           |
+| `stageInstallationId`                                      | varchar(64) null                           | which stage database (see decision 2)                                                                                                                         |
+| `stageScanId`, `stageSourceFileRowNumber`, `stagePolicyId` | varchar(64), bigint, varchar(64), all null | exact stage row and its membership policy                                                                                                                     |
+| `displayPolicyReleaseId`                                   | varchar(64) null                           | `policy.releaseId` as supplied                                                                                                                                |
+| `displayPolicyHash`                                        | varchar(64) null                           | sha256 of the canonical JSON of the runtime `OvertureRightsPolicy` document actually applied                                                                  |
+| `stageContentHash`                                         | varchar(64) null                           | keyed hash of the canonical stage `listing` subset that fed publication: name, category, location, addresses, websites, phones, sources                       |
+| `reviewedHash`                                             | varchar(64) null                           | keyed hash of the canonical `reviewed` object as written                                                                                                      |
+| `fieldHashes`                                              | jsonb null                                 | `{field: {hash, origin}}` for name, category, point, address, website, phone, attribution, notices, termsUrls; `origin` is `live_row`, `candidate` or `stage` |
+| `assignmentChangeToken`                                    | uuid null                                  | containment token written with the row                                                                                                                        |
+| `state`                                                    | varchar(16)                                | `pending`, `active`, `suspended`, `retired`                                                                                                                   |
+| `stateCause`                                               | varchar(40) null                           | last transition cause (section 2.2)                                                                                                                           |
+| `verifiedAt`, `verifiedUntil`                              | timestamptz null                           | last successful stage revalidation and the lease expiry                                                                                                       |
+| `suspendedAt`, `retiredAt`, `createdAt`                    | timestamptz                                |                                                                                                                                                               |
 
 Constraints, all expressed on the entity so the migration is generated:
 
@@ -99,8 +99,8 @@ Constraints, all expressed on the entity so the migration is generated:
   the lookups used by revalidation and by the push accelerator.
 - `@Index` on `(state, verifiedUntil)`: sweep scheduling.
 - `@Check`: `provenance = 'unknown_legacy' OR ("stageScanId" IS NOT NULL AND
-  "stagePolicyId" IS NOT NULL AND "stageContentHash" IS NOT NULL AND
-  "reviewedHash" IS NOT NULL AND "decisionId" IS NOT NULL)` for `contact_stage`
+"stagePolicyId" IS NOT NULL AND "stageContentHash" IS NOT NULL AND
+"reviewedHash" IS NOT NULL AND "decisionId" IS NOT NULL)` for `contact_stage`
   (the `source_file` variant requires the hashes and decision but not stage ids).
 - `@Check`: `provenance <> 'unknown_legacy' OR state IN ('suspended','retired')`.
   The database itself refuses to make a legacy row visible.
@@ -164,7 +164,7 @@ Chosen: **pull with a lease, plus best-effort push.**
 - The Directory owns a sweeper that reads the stage read-only and transitions
   bindings in live transactions.
 - Reviewed fields are served only under a current lease (`verifiedUntil >
-  now()`). Missing revalidation therefore hides data by itself; no message has
+now()`). Missing revalidation therefore hides data by itself; no message has
   to arrive for the system to fail closed.
 - Stage withdrawal operators additionally call the same invalidation function
   directly after the stage commit. That shortens the window from one lease to
@@ -177,28 +177,28 @@ is what makes retiring on a single observation safe.
 
 ### 2.2 States
 
-| State | Entered when | Public read shows | Live `listing.reviewed` |
-| --- | --- | --- | --- |
-| `pending` | publish transaction commits | row as an unreviewed listing: no address, phone, website, no reviewed coordinates, not in bounds results | present |
-| `active` | post-commit confirmation or sweep re-read of the stage succeeds; lease set | reviewed fields, while `verifiedUntil > now()`; otherwise as `pending` | present |
-| `suspended` | uncertain signal (below), or legacy | as unreviewed | present, retained for re-review |
-| `retired` | definite withdrawal, human revoke, suspension timeout, or replaced | as unreviewed | removed in the same transaction |
+| State       | Entered when                                                               | Public read shows                                                                                        | Live `listing.reviewed`         |
+| ----------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `pending`   | publish transaction commits                                                | row as an unreviewed listing: no address, phone, website, no reviewed coordinates, not in bounds results | present                         |
+| `active`    | post-commit confirmation or sweep re-read of the stage succeeds; lease set | reviewed fields, while `verifiedUntil > now()`; otherwise as `pending`                                   | present                         |
+| `suspended` | uncertain signal (below), or legacy                                        | as unreviewed                                                                                            | present, retained for re-review |
+| `retired`   | definite withdrawal, human revoke, suspension timeout, or replaced         | as unreviewed                                                                                            | removed in the same transaction |
 
 Signals from one stage read of the bound `(stageScanId, stageRow)`:
 
-| Observation | Transition | Cause |
-| --- | --- | --- |
-| stage scan revocation row exists | → `retired` | `stage_scan_revoked` |
-| stage row revocation row exists | → `retired` | `stage_row_revoked` |
-| stage policy `revoked = true` | → `retired` | `stage_policy_revoked` |
-| row absent, no completion, and no revocation record | → `suspended` | `stage_row_missing` |
-| row present, hash differs from `stageContentHash` | → `suspended` | `stage_content_changed` |
-| a different completed, unrevoked stage scan under the same policy holds the same `(regionId, row)` with different content | → `suspended` | `stage_superseded` |
-| same, identical content | stay `active` | none (decision 6) |
-| current `listing.reviewed` hash differs from `reviewedHash` | → `suspended` | `live_reviewed_drift` |
-| live row gone (live withdrawal) | → `retired` | `live_row_withdrawn` |
-| all checks pass | `pending`/`active` → `active`, extend lease | `confirmed` |
-| stage unreachable or query error | no transition; lease not extended | none |
+| Observation                                                                                                               | Transition                                  | Cause                   |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ----------------------- |
+| stage scan revocation row exists                                                                                          | → `retired`                                 | `stage_scan_revoked`    |
+| stage row revocation row exists                                                                                           | → `retired`                                 | `stage_row_revoked`     |
+| stage policy `revoked = true`                                                                                             | → `retired`                                 | `stage_policy_revoked`  |
+| row absent, no completion, and no revocation record                                                                       | → `suspended`                               | `stage_row_missing`     |
+| row present, hash differs from `stageContentHash`                                                                         | → `suspended`                               | `stage_content_changed` |
+| a different completed, unrevoked stage scan under the same policy holds the same `(regionId, row)` with different content | → `suspended`                               | `stage_superseded`      |
+| same, identical content                                                                                                   | stay `active`                               | none (decision 6)       |
+| current `listing.reviewed` hash differs from `reviewedHash`                                                               | → `suspended`                               | `live_reviewed_drift`   |
+| live row gone (live withdrawal)                                                                                           | → `retired`                                 | `live_row_withdrawn`    |
+| all checks pass                                                                                                           | `pending`/`active` → `active`, extend lease | `confirmed`             |
+| stage unreachable or query error                                                                                          | no transition; lease not extended           | none                    |
 
 Rights withdrawal retires and strips because retaining withdrawn content in a
 hidden column is itself non-compliance. Corrections and missing rows suspend

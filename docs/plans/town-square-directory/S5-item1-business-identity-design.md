@@ -48,28 +48,28 @@ Paths below are relative to `apps/directory/src/` unless they start with `script
 
 **`directory_business`** (`DirectoryBusiness`): the canonical entity. It holds no listing content.
 
-| column | notes |
-| --- | --- |
-| `id` uuid PK | the stable public identifier |
-| `communityId` uuid | identity is town-scoped, like `directory_listing_identity` |
-| `state` | `active`, `retired`, `merged`, `split` (check constraint) |
-| `successorId` uuid null | set only for `merged`, or for `split` when a reviewer names a primary successor |
-| `stateCause` varchar(40) null, `createdAt`, `retiredAt` | |
+| column                                                  | notes                                                                           |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `id` uuid PK                                            | the stable public identifier                                                    |
+| `communityId` uuid                                      | identity is town-scoped, like `directory_listing_identity`                      |
+| `state`                                                 | `active`, `retired`, `merged`, `split` (check constraint)                       |
+| `successorId` uuid null                                 | set only for `merged`, or for `split` when a reviewer names a primary successor |
+| `stateCause` varchar(40) null, `createdAt`, `retiredAt` |                                                                                 |
 
 **`directory_business_assertion`** (`DirectoryBusinessAssertion`): "this row of this scan is this business".
 The name avoids `membership`, which already means scan-to-policy (`entity.ts:232-236`).
 
-| column | notes |
-| --- | --- |
-| `id` uuid PK, `businessId`, `communityId` | |
-| `scanId` varchar(64), `sourceFileRowNumber` bigint | unique together: a row asserts at most one business |
-| `policyId` varchar(64) | the cohort; unique `(businessId, policyId)` where `state='current'` |
-| `evidence` | `origin`, `upstream_id`, `owner_confirmed`, `reviewer_confirmed`, `artifact_reread` |
-| `confidence` | `origin`, `carried`, `corroborated`, `confirmed` |
-| `upstreamKeyHash` varchar(64) null | keyed hash of the upstream id (see 1.2) |
-| `nameHash` varchar(64) null | keyed hash of the normalised name, for the drift guard only |
-| `state` | `current`, `superseded`, `withdrawn` |
-| `predecessorAssertionId` uuid null, `createdAt` | |
+| column                                             | notes                                                                               |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `id` uuid PK, `businessId`, `communityId`          |                                                                                     |
+| `scanId` varchar(64), `sourceFileRowNumber` bigint | unique together: a row asserts at most one business                                 |
+| `policyId` varchar(64)                             | the cohort; unique `(businessId, policyId)` where `state='current'`                 |
+| `evidence`                                         | `origin`, `upstream_id`, `owner_confirmed`, `reviewer_confirmed`, `artifact_reread` |
+| `confidence`                                       | `origin`, `carried`, `corroborated`, `confirmed`                                    |
+| `upstreamKeyHash` varchar(64) null                 | keyed hash of the upstream id (see 1.2)                                             |
+| `nameHash` varchar(64) null                        | keyed hash of the normalised name, for the drift guard only                         |
+| `state`                                            | `current`, `superseded`, `withdrawn`                                                |
+| `predecessorAssertionId` uuid null, `createdAt`    |                                                                                     |
 
 **`directory_overture_source_key`** (`DirectoryOvertureSourceKey`): `(scanId, sourceFileRowNumber)` PK,
 `upstreamKeyHash`, `keyVersion`. Written by the sink in the batch-commit transaction; kept out of the
@@ -94,14 +94,14 @@ non-string or over-long upstream id gets no source-key row and can never be carr
 
 ### 1.3 Evidence and confidence
 
-| confidence | created by | what it unlocks |
-| --- | --- | --- |
-| `origin` | first sighting of a row that needed durable identity | a stable id for exactly that row |
-| `carried` | automatic: upstream key equality passing every rule in 2.2 | the stable public id resolves to the new row; reviewer queue priority |
-| `corroborated` | automatic derivation: `carried` **and** equal `nameHash` **and** the new row has since earned its own active binding through item 4 whose address field hash equals the predecessor's last active binding's (`fieldHashes`, `entity.ts:333-378`) | owner link restore (decision 4) |
-| `confirmed` | a human: the owner re-confirming their own link, or a reviewer decision | everything, including merge and split |
+| confidence     | created by                                                                                                                                                                                                                                       | what it unlocks                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| `origin`       | first sighting of a row that needed durable identity                                                                                                                                                                                             | a stable id for exactly that row                                      |
+| `carried`      | automatic: upstream key equality passing every rule in 2.2                                                                                                                                                                                       | the stable public id resolves to the new row; reviewer queue priority |
+| `corroborated` | automatic derivation: `carried` **and** equal `nameHash` **and** the new row has since earned its own active binding through item 4 whose address field hash equals the predecessor's last active binding's (`fieldHashes`, `entity.ts:333-378`) | owner link restore (decision 4)                                       |
+| `confirmed`    | a human: the owner re-confirming their own link, or a reviewer decision                                                                                                                                                                          | everything, including merge and split                                 |
 
-"Reviewed-address match" is therefore never a way to *find* a successor. It only corroborates a pair that
+"Reviewed-address match" is therefore never a way to _find_ a successor. It only corroborates a pair that
 upstream-key equality already proposed, and only after the new row has been independently reviewed.
 
 ### 1.4 Never automatic
@@ -159,7 +159,7 @@ A singleton-per-pair row in `directory_business_carry_state` (`communityId`, `fr
    `current`; set the predecessor `superseded`; write the event; advance the cursor.
 4. **Drift guard.** A `carry` whose `nameHash` differs from the predecessor's stays `carried` but is flagged
    `name_changed` in the event and can never reach `corroborated`.
-5. **Finish.** Mark the pair `complete`. Businesses with no assertion in the new cohort are *absent*, not
+5. **Finish.** Mark the pair `complete`. Businesses with no assertion in the new cohort are _absent_, not
    retired (2.5).
 
 **Determinism.** Verdicts depend only on two sets: hashes in the cohort and hashes on businesses in the
@@ -186,19 +186,19 @@ target policy `FOR SHARE` → business rows `FOR UPDATE` in id order → asserti
   store `businessId`, so carry-forward cannot make it drift.
 - A row withdrawn or a policy revoked mid-run leaves a harmless assertion: every read still rechecks row,
   scan and policy (`register-pending-runtime.ts:267-271`).
-- `corroborated` is derived by a read of bindings *outside* any identity lock, then written under the town
+- `corroborated` is derived by a read of bindings _outside_ any identity lock, then written under the town
   lock with compare-and-set; the read path re-checks the binding predicate at use (3.2), so a binding
   suspended in between simply removes the benefit.
 
 ### 2.4 What migrates and what is re-confirmed
 
-| object | on carry |
-| --- | --- |
-| Reviewed binding | **Never carried.** The new row shows no reviewed fields until it gets its own candidate, decision, `pending` binding and `confirmBinding` (`reviewed-binding-revalidate.ts:388`) against the new stage scan. Carry only raises its priority in the review queue. |
-| Address-review candidate and decisions | Stay on their own `(scanId, row)`. History is reachable through business → assertions. No copying, so item 5 dispositions are unchanged. |
-| Spatial projection | Nothing. The new row is projected when its own binding goes active. |
-| Owner link | `carried`: link enters `awaiting_confirmation`, hidden. `corroborated` or `confirmed`: restored atomically (decision 4). A new `directory_business_link_carry` row (`requestId`, `businessId`, `fromListingId`, `toListingId`, `state`) records it; restore moves the `directory_business_link_active` row to the new listing identity and appends a link event in one transaction. `directory_business_link_request` gains nullable `businessId`; revoke (`listing-business-link.ts:52-61`) must accept the active listing as well as the original. |
-| Listing identity rows | Kept as aliases (3.1). |
+| object                                 | on carry                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reviewed binding                       | **Never carried.** The new row shows no reviewed fields until it gets its own candidate, decision, `pending` binding and `confirmBinding` (`reviewed-binding-revalidate.ts:388`) against the new stage scan. Carry only raises its priority in the review queue.                                                                                                                                                                                                                                                                                     |
+| Address-review candidate and decisions | Stay on their own `(scanId, row)`. History is reachable through business → assertions. No copying, so item 5 dispositions are unchanged.                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Spatial projection                     | Nothing. The new row is projected when its own binding goes active.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Owner link                             | `carried`: link enters `awaiting_confirmation`, hidden. `corroborated` or `confirmed`: restored atomically (decision 4). A new `directory_business_link_carry` row (`requestId`, `businessId`, `fromListingId`, `toListingId`, `state`) records it; restore moves the `directory_business_link_active` row to the new listing identity and appends a link event in one transaction. `directory_business_link_request` gains nullable `businessId`; revoke (`listing-business-link.ts:52-61`) must accept the active listing as well as the original. |
+| Listing identity rows                  | Kept as aliases (3.1).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 A reviewer may see "stage content unchanged since the last approved review" (equal `stageContentHash`,
 `reviewed-binding.ts:91`) as a hint. It never approves by itself (decision 5).
@@ -235,8 +235,7 @@ Both are random UUIDs and indistinguishable to a client. No confidence level, ev
    assignment token, adult choice, binding predicate for reviewed fields.
 4. Return the canonical `id` in the body so clients can update.
 
-Unknown, retired, absent, unresolved, split-without-successor, wrong-town and withdrawn all return the same
-404. There is no redirect status and no existence oracle. Reviewed fields are served only through the
+Unknown, retired, absent, unresolved, split-without-successor, wrong-town and withdrawn all return the same 404. There is no redirect status and no existence oracle. Reviewed fields are served only through the
 resolved row's own active binding, so an id can never surface fields reviewed for a previous release.
 
 This changes the sentence at `S5-public-contract.md:15`; slice 4 updates the contract.
@@ -262,8 +261,8 @@ assertions are unaffected. The cutover remains the supported path; this is a gua
   a link request, a row with a non-retired binding, or a row with a published candidate. Each gets one
   assertion with `upstreamKeyHash` null. These cannot carry automatically.
 - **Verified re-read (optional, decision 6).** `scanId` commits to the artifact etag
-  (`scripts/overture-private-extractor.mjs:98`). Re-reading the *same* object (etag or SHA-256 equal to the
-  scan's evidence, `entity.ts:212-213`) at the *same* `file_row_number` yields that row's upstream id as a
+  (`scripts/overture-private-extractor.mjs:98`). Re-reading the _same_ object (etag or SHA-256 equal to the
+  scan's evidence, `entity.ts:212-213`) at the _same_ `file_row_number` yields that row's upstream id as a
   fact, not a match. The backfill additionally requires the re-read name, category and point to equal the
   stored listing, records `evidence='artifact_reread'`, and skips any row where the object is gone or
   differs. It needs network access and so needs owner approval. Scans without item-3 evidence are excluded.
@@ -274,11 +273,11 @@ assertions are unaffected. The cutover remains the supported path; this is a gua
 Every new table and column must be classified or the catalogue drift check fails
 (`account-lifecycle-dispositions.ts:8`, `:538-544`, `:576`, `:625`).
 
-| table | disposition |
-| --- | --- |
+| table                                                                                                                                            | disposition                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `directory_business`, `_assertion`, `_event`, `directory_overture_source_key`, `directory_business_carry_state`, `directory_business_link_carry` | `none(..., 'source-data')`, like `directory_listing_identity` (`account-lifecycle-dispositions.ts:277-282`): keyed hashes and identifiers, no account or profile id |
-| `directory_business_identity_decision` | same treatment as `directory_business_link_event` (`:123`): `actorId` nulled, `actorDomain` kept; export source added in `account-export-sources.ts` |
-| `directory_business_link_request.businessId` | added to the existing request entry (`:72`) |
+| `directory_business_identity_decision`                                                                                                           | same treatment as `directory_business_link_event` (`:123`): `actorId` nulled, `actorDomain` kept; export source added in `account-export-sources.ts`                |
+| `directory_business_link_request.businessId`                                                                                                     | added to the existing request entry (`:72`)                                                                                                                         |
 
 Deleting an owner already removes their active link (`:108`). The same transaction must set that owner's
 `directory_business_link_carry` rows to `closed`, so a deleted owner's link cannot be restored by a later
@@ -300,6 +299,7 @@ state, candidates by status. No schema. Test: runs against a seeded disposable D
 (return the id beside the listing), `overture-private-sink.ts` (write `directory_overture_source_key` in the
 commit transaction, `:284-298`; delete in the scan purge, `:182-184`), `entity.ts`, `data-source.ts`,
 `account-lifecycle-dispositions.ts`. Tests (`test-overture-private-sink`, extended):
+
 1. a committed batch writes one key row per eligible row and none for a quarantined row;
 2. `listing` JSON never contains the id or the hash;
 3. missing, empty, non-string and 300-character ids write no key row and do not fail the batch;
@@ -315,6 +315,7 @@ unresolved; name change → carry with flag; no key → new; input order does no
 **Slice 3 — carry-forward engine and script.** Files: new `business-identity-carry.ts`,
 `scripts/local-directory-business-identity-carry.cjs`, `scripts/local-directory-overture-cutover.cjs`
 (precondition). Tests (`test-business-identity-carry`, PostgreSQL):
+
 1. happy path: 3 businesses carried, predecessors superseded, events written;
 2. **duplicate:** two rows share a hash in different scans of the cohort → neither carried, business absent;
 3. **duplicate then withdrawal:** one of the two is withdrawn between `--check` and `--apply` → still
@@ -334,6 +335,7 @@ unresolved; name change → carry with flag; no key → new; input order does no
 **Slice 4 — read path, resolver, serving generation.** Files: `register-pending-runtime.ts`,
 `listing-identity.ts`, `local-listing-cursor.ts`, `local-listing-reference.ts`, `S5-public-contract.md`.
 Tests (`test-business-identity-read`, PostgreSQL, plus the cursor unit tests):
+
 1. the same `id` resolves before and after a cutover, to the new row, with **no** reviewed fields until the
    new binding is active;
 2. an old listing-identity id resolves through the alias and returns the canonical id;

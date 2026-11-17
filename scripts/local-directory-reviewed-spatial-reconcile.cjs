@@ -47,7 +47,17 @@ const NIL = '00000000-0000-0000-0000-000000000000';
 async function reconcile(db, { apply = false, hooks = {} } = {}) {
   const version = REVIEWED_SPATIAL_VALIDATOR_VERSION;
   const before = await measureSpatialDrift(db, version);
-  if (!apply) return { apply, version, ...before, projected: 0, deleted: 0, locked: 0, conflicts: 0, completed: false };
+  if (!apply)
+    return {
+      apply,
+      version,
+      ...before,
+      projected: 0,
+      deleted: 0,
+      locked: 0,
+      conflicts: 0,
+      completed: false,
+    };
 
   await db.query(
     `INSERT INTO "directory_reviewed_spatial_state" ("id","validatorVersion","rebuildStartedAt","rebuildCompletedAt")
@@ -56,12 +66,18 @@ async function reconcile(db, { apply = false, hooks = {} } = {}) {
     [version]
   );
 
-  let projected = 0, deleted = 0, locked = 0, conflicts = 0;
+  let projected = 0,
+    deleted = 0,
+    locked = 0,
+    conflicts = 0;
   for (let pass = 0; pass < PASSES; pass += 1) {
-    locked = 0; conflicts = 0;
+    locked = 0;
+    conflicts = 0;
     let last = NIL;
     for (;;) {
-      const ids = (await db.query(NEEDS_WORK, [last, version])).map((row) => row.id);
+      const ids = (await db.query(NEEDS_WORK, [last, version])).map(
+        (row) => row.id
+      );
       if (!ids.length) break;
       last = ids[ids.length - 1];
       await db.transaction(async (manager) => {
@@ -118,7 +134,17 @@ async function reconcile(db, { apply = false, hooks = {} } = {}) {
      WHERE "id"='current'`,
     [version, after.missing, after.stale, after.orphaned, completed]
   );
-  return { apply, version, ...after, before, projected, deleted, locked, conflicts, completed };
+  return {
+    apply,
+    version,
+    ...after,
+    before,
+    projected,
+    deleted,
+    locked,
+    conflicts,
+    completed,
+  };
 }
 
 function databaseName(url) {
@@ -126,21 +152,28 @@ function databaseName(url) {
 }
 
 async function main(argv) {
-  const url = process.env.DIRECTORY_DATABASE_URL || process.env.DIRECTORY_REVIEW_DATABASE_URL;
+  const url =
+    process.env.DIRECTORY_DATABASE_URL ||
+    process.env.DIRECTORY_REVIEW_DATABASE_URL;
   if (!url) throw Error('DIRECTORY_DATABASE_URL is required');
   const apply = argv.includes('--apply');
-  if (apply && argv.includes('--check')) throw Error('--check and --apply are exclusive');
+  if (apply && argv.includes('--check'))
+    throw Error('--check and --apply are exclusive');
   const at = argv.indexOf('--confirm-database');
   const confirmed = at >= 0 ? argv[at + 1] : undefined;
   if (apply && confirmed !== databaseName(url)) {
-    throw Error('--apply requires --confirm-database <name> matching the target database');
+    throw Error(
+      '--apply requires --confirm-database <name> matching the target database'
+    );
   }
   const db = new DataSource({ type: 'postgres', url });
   await db.initialize();
   try {
     const result = await reconcile(db, { apply });
     const state = await readSpatialState(db);
-    console.log(JSON.stringify({ database: databaseName(url), ...result, state }));
+    console.log(
+      JSON.stringify({ database: databaseName(url), ...result, state })
+    );
     if (apply && !result.completed) process.exitCode = 2;
   } finally {
     await db.destroy();
@@ -151,7 +184,9 @@ module.exports = { reconcile };
 
 if (require.main === module) {
   main(process.argv.slice(2)).catch((error) => {
-    console.error(error instanceof Error ? error.message : 'spatial reconcile failed');
+    console.error(
+      error instanceof Error ? error.message : 'spatial reconcile failed'
+    );
     process.exit(1);
   });
 }

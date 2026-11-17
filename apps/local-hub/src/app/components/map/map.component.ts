@@ -15,7 +15,10 @@ import {
   NgZone,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser, DOCUMENT } from '@angular/common';
-import { City, DirectoryBoundaryGeometry } from '../../services/community.service';
+import {
+  City,
+  DirectoryBoundaryGeometry,
+} from '../../services/community.service';
 import {
   MapCoordinates,
   MapMode,
@@ -40,7 +43,11 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() centerLabel = 'Savannah, GA';
   @Input() boundary: DirectoryBoundaryGeometry | null = null;
   @Input() userLocation: MapCoordinates | null = null;
-  @Input() directoryLocations: {name:string;category:string;coordinates:MapCoordinates}[] = [];
+  @Input() directoryLocations: {
+    name: string;
+    category: string;
+    coordinates: MapCoordinates;
+  }[] = [];
   @Output() citySelected = new EventEmitter<City>();
 
   private platformId = inject(PLATFORM_ID);
@@ -338,7 +345,9 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private addLocalityMarkers(L: any, cities: City[]): void {
     cities
-      .filter((city): city is City & {coordinates:MapCoordinates} => isRenderableCoordinate(city.coordinates))
+      .filter((city): city is City & { coordinates: MapCoordinates } =>
+        isRenderableCoordinate(city.coordinates)
+      )
       .forEach((city) => {
         const marker = this.createMarker(L, {
           className: 'locality-marker map-marker map-marker--locality',
@@ -421,19 +430,32 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private renderSingleLocationMode(L: any): void {
-    let boundaryBounds:any;
+    let boundaryBounds: any;
     if (this.boundary) {
-      const layer=L.geoJSON({type:'Feature',geometry:this.boundary,properties:{}},{style:{color:this.getCssVariable('--primary','#3b82f6'),weight:3,fillOpacity:0.12}}).addTo(this.map);
+      const layer = L.geoJSON(
+        { type: 'Feature', geometry: this.boundary, properties: {} },
+        {
+          style: {
+            color: this.getCssVariable('--primary', '#3b82f6'),
+            weight: 3,
+            fillOpacity: 0.12,
+          },
+        }
+      ).addTo(this.map);
       this.centerOverlays.push(layer);
-      boundaryBounds=layer.getBounds();
+      boundaryBounds = layer.getBounds();
     }
     this.addFocusMarker(L);
     this.addUserMarker(L);
     if (boundaryBounds?.isValid()) {
-      this.map.fitBounds(boundaryBounds,{padding:[18,18],maxZoom:12});
+      this.map.fitBounds(boundaryBounds, { padding: [18, 18], maxZoom: 12 });
     } else {
       const focusCoordinates = this.getFocusCoordinates();
-      if (focusCoordinates) this.map.setView([focusCoordinates.lat,focusCoordinates.lng],Math.max(this.zoom,9));
+      if (focusCoordinates)
+        this.map.setView(
+          [focusCoordinates.lat, focusCoordinates.lng],
+          Math.max(this.zoom, 9)
+        );
     }
     this.scheduleInvalidateSize();
   }

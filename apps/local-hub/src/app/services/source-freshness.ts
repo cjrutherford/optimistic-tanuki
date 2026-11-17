@@ -34,8 +34,12 @@ export function describeSourceFreshness(
   const ms = freshness.sourcePublishedAt
     ? Date.parse(freshness.sourcePublishedAt)
     : NaN;
-  const date = Number.isNaN(ms) ? null : new Date(ms).toISOString().slice(0, 10);
-  const release = freshness.releaseId ? ` (release ${freshness.releaseId})` : '';
+  const date = Number.isNaN(ms)
+    ? null
+    : new Date(ms).toISOString().slice(0, 10);
+  const release = freshness.releaseId
+    ? ` (release ${freshness.releaseId})`
+    : '';
   if (freshness.state === 'unknown' || !date) {
     return 'Source date unknown';
   }
