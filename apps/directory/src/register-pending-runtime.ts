@@ -1055,7 +1055,8 @@ export function pendingChecks(
         '',
         { ...position, changeToken: current.changeToken },
         '',
-        uuid.test(reference)
+        // Always attach the stable id, as cursor pages do, so a detail opened by reference can be reported or linked.
+        true
       );
       return result.listings[0] || null;
     };
