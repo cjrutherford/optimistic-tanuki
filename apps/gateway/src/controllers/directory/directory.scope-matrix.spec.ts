@@ -18,6 +18,7 @@ import {
   DirectoryRightsCasesController,
   DirectoryWithdrawalsController,
 } from './directory-rights.controller';
+import { DirectoryTaxonomyController } from './directory-taxonomy.controller';
 import {
   DirectoryListingReportController,
   DirectoryListingReportReviewController,
@@ -95,8 +96,39 @@ const rightsRoutes: MatrixRoute[] = [
   { method: 'POST', path: '/directory/withdrawals', body: {} },
   { method: 'GET', path: `/directory/withdrawals/${rightsId}` },
 ];
+const taxonomyRoutes: MatrixRoute[] = [
+  { method: 'GET', path: '/directory/taxonomy/mappings' },
+  { method: 'POST', path: '/directory/taxonomy/mappings/install', body: {} },
+  { method: 'GET', path: '/directory/taxonomy/cases' },
+  { method: 'POST', path: '/directory/taxonomy/cases', body: {} },
+  { method: 'GET', path: `/directory/taxonomy/cases/${rightsId}` },
+  {
+    method: 'POST',
+    path: `/directory/taxonomy/cases/${rightsId}/decisions`,
+    body: {},
+  },
+  {
+    method: 'POST',
+    path: `/directory/taxonomy/cases/${rightsId}/undo`,
+    body: {},
+  },
+  { method: 'GET', path: '/directory/taxonomy/runs' },
+  { method: 'POST', path: '/directory/taxonomy/runs', body: {} },
+  { method: 'GET', path: `/directory/taxonomy/runs/${rightsId}` },
+  {
+    method: 'POST',
+    path: `/directory/taxonomy/runs/${rightsId}/cancel`,
+    body: {},
+  },
+  {
+    method: 'POST',
+    path: `/directory/taxonomy/runs/${rightsId}/rollback`,
+    body: {},
+  },
+];
 const reviewRoutes: MatrixRoute[] = [
   ...rightsRoutes,
+  ...taxonomyRoutes,
   {
     method: 'GET',
     path: `${base}/local-evaluation-listings/${listing}/business-link/requests`,
@@ -194,7 +226,8 @@ describe('directory authentication and Owner Console scope matrix', () => {
           return of(
             (payload.profileId === owner &&
               (payload.permission === DIRECTORY_PERMISSIONS.review ||
-                payload.permission === DIRECTORY_PERMISSIONS.rights)) ||
+                payload.permission === DIRECTORY_PERMISSIONS.rights ||
+                payload.permission === DIRECTORY_PERMISSIONS.operate)) ||
               (payload.profileId === reviewOnly &&
                 payload.permission === DIRECTORY_PERMISSIONS.review)
           );
@@ -217,6 +250,7 @@ describe('directory authentication and Owner Console scope matrix', () => {
         DirectoryListingSuppressionController,
         DirectoryRightsCasesController,
         DirectoryWithdrawalsController,
+        DirectoryTaxonomyController,
         DirectoryListingReportController,
         DirectoryListingReportReviewController,
       ],
@@ -365,6 +399,16 @@ describe('directory authentication and Owner Console scope matrix', () => {
 
   it.each(rightsRoutes.map((r) => [r.method + ' ' + r.path, r] as const))(
     'a review-only owner-console session gets 403 on rights route %s',
+    async (_n, route) => {
+      const res = await call(route, { token: token(reviewOnly), scope: true });
+      expect(res.status).toBe(403);
+      const granted = await call(route, { token: token(owner), scope: true });
+      expect([401, 403]).not.toContain(granted.status);
+    }
+  );
+
+  it.each(taxonomyRoutes.map((r) => [r.method + ' ' + r.path, r] as const))(
+    'a review-only owner-console session gets 403 on taxonomy route %s',
     async (_n, route) => {
       const res = await call(route, { token: token(reviewOnly), scope: true });
       expect(res.status).toBe(403);

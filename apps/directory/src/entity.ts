@@ -1029,3 +1029,262 @@ export class DirectoryWithdrawalRequest {
   updatedAt!: Date;
   @Column({ type: 'timestamptz', nullable: true }) completedAt!: Date | null;
 }
+
+/**
+ * A checked-in taxonomy mapping, installed by an operator (S7d). `sourceHash` is the SHA-256 of the mapping's
+ * canonical JSON, so installing the same version twice is a no-op and a changed file under an old version id is
+ * refused. At most one version is active.
+ */
+@Entity({ name: 'directory_taxonomy_mapping_version' })
+@Index('UQ_directory_taxonomy_mapping_active', ['active'], {
+  unique: true,
+  where: '"active" = true',
+})
+@Check(
+  'CHK_directory_taxonomy_mapping_unmapped',
+  `"unmappedPolicy" IN ('keep_legacy','exclude')`
+)
+export class DirectoryTaxonomyMappingVersion {
+  @PrimaryColumn({ type: 'varchar', length: 100 }) id!: string;
+  @Column({ type: 'char', length: 64 }) sourceHash!: string;
+  @Column({ type: 'varchar', length: 16, default: 'keep_legacy' })
+  unmappedPolicy!: string;
+  @Column({ type: 'boolean', default: false }) active!: boolean;
+  /** Operator profile that installed the version; NULL once that profile's account has been erased. */
+  @Column({ type: 'uuid', nullable: true }) installedById!: string | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+  @Column({ type: 'timestamptz', nullable: true }) activatedAt!: Date | null;
+}
+
+/** One Overture category or taxonomy node of a mapping version and where it goes (or why it is excluded). */
+@Entity({ name: 'directory_taxonomy_mapping_row' })
+@Index(
+  'UQ_directory_taxonomy_mapping_row_key',
+  ['versionId', 'kind', 'overtureKey'],
+  { unique: true }
+)
+@Check(
+  'CHK_directory_taxonomy_mapping_row_kind',
+  `"kind" IN ('basic_category','taxonomy_node')`
+)
+@Check(
+  'CHK_directory_taxonomy_mapping_row_target',
+  `("excluded" = true AND "categoryId" IS NULL AND "placeTypeId" IS NULL AND "exclusionReason" IS NOT NULL) OR ("excluded" = false AND "categoryId" IS NOT NULL AND "exclusionReason" IS NULL)`
+)
+export class DirectoryTaxonomyMappingRow {
+  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  id!: string;
+  @Column({ type: 'varchar', length: 100 }) versionId!: string;
+  @Column({ type: 'varchar', length: 16 }) kind!: string;
+  @Column({ type: 'varchar', length: 200 }) overtureKey!: string;
+  @Column({ type: 'varchar', length: 100, nullable: true }) categoryId!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 100, nullable: true }) placeTypeId!:
+    | string
+    | null;
+  @Column({ type: 'boolean', default: false }) excluded!: boolean;
+  @Column({ type: 'varchar', length: 40, nullable: true }) exclusionReason!:
+    | string
+    | null;
+}
+
+/**
+ * The computed classification of one served source row. Public reads label and filter by it; a row with no
+ * projection keeps its stored category, so nothing disappears before a reclassification run has covered it.
+ */
+@Entity({ name: 'directory_listing_classification' })
+@Index('IDX_directory_listing_classification_run', ['runId'])
+@Check(
+  'CHK_directory_listing_classification_basis',
+  `"basis" IN ('override','mapping','legacy')`
+)
+export class DirectoryListingClassification {
+  @PrimaryColumn({ type: 'varchar', length: 64 }) scanId!: string;
+  @PrimaryColumn('bigint') sourceFileRowNumber!: string;
+  @Column({ type: 'varchar', length: 100 }) mappingVersion!: string;
+  @Column({ type: 'varchar', length: 200, nullable: true }) categoryId!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 100, nullable: true }) placeTypeId!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 16 }) basis!: string;
+  @Column({ type: 'boolean', default: false }) excluded!: boolean;
+  @Column({ type: 'varchar', length: 40, nullable: true }) exclusionReason!:
+    | string
+    | null;
+  @Column({ type: 'uuid', nullable: true }) runId!: string | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt!: Date;
+}
+
+/**
+ * An operator's per-listing category. It is keyed by the stable listing identity (the business id once the row has
+ * one, else the row-scoped listing id), never by scan row, so a rescan or re-import of the same listing keeps it.
+ */
+@Entity({ name: 'directory_listing_category_override' })
+@Index(
+  'UQ_directory_listing_category_override_key',
+  ['communityId', 'listingKey'],
+  {
+    unique: true,
+  }
+)
+export class DirectoryListingCategoryOverride {
+  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  id!: string;
+  @Column('uuid') communityId!: string;
+  @Column('uuid') listingKey!: string;
+  @Column({ type: 'varchar', length: 100 }) categoryId!: string;
+  @Column({ type: 'varchar', length: 100, nullable: true }) placeTypeId!:
+    | string
+    | null;
+  @Column({ type: 'boolean', default: true }) active!: boolean;
+  /** The classification case and event that last set this override. */
+  @Column({ type: 'uuid', nullable: true }) caseId!: string | null;
+  @Column({ type: 'uuid', nullable: true }) eventId!: string | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt!: Date;
+}
+
+/** A classification case: a listing whose category an operator must decide (ambiguous, unmapped or operator-raised). */
+@Entity({ name: 'directory_taxonomy_case' })
+@Index('IDX_directory_taxonomy_case_status', ['status', 'updatedAt'])
+@Index('UQ_directory_taxonomy_case_open', ['communityId', 'listingKey'], {
+  unique: true,
+  where: `"status" IN ('open','deferred')`,
+})
+@Check(
+  'CHK_directory_taxonomy_case_status',
+  `"status" IN ('open','assigned','rejected','deferred')`
+)
+@Check(
+  'CHK_directory_taxonomy_case_reason',
+  `"reason" IN ('operator_raised','unmapped_taxonomy','ambiguous_taxonomy')`
+)
+export class DirectoryTaxonomyCase {
+  @PrimaryColumn('uuid') id!: string;
+  @Column('uuid') communityId!: string;
+  @Column('uuid') listingKey!: string;
+  @Column({ type: 'varchar', length: 64 }) scanId!: string;
+  @Column('bigint') sourceFileRowNumber!: string;
+  @Column({ type: 'varchar', length: 24 }) reason!: string;
+  @Column({ type: 'varchar', length: 2000 }) name!: string;
+  @Column({ type: 'varchar', length: 200 }) observedCategory!: string;
+  @Column({ type: 'varchar', length: 16, default: 'open' }) status!: string;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt!: Date;
+}
+
+/** Append-only case event. `id` is the client decision id, so a retry replays instead of repeating. */
+@Entity({ name: 'directory_taxonomy_event' })
+@Index('IDX_directory_taxonomy_event_case', ['caseId', 'createdAt'])
+@Index('UQ_directory_taxonomy_event_undo', ['undoOf'], {
+  unique: true,
+  where: '"undoOf" IS NOT NULL',
+})
+@Check(
+  'CHK_directory_taxonomy_event_action',
+  `"action" IN ('open','assign','reject','defer','reopen','undo')`
+)
+export class DirectoryTaxonomyEvent {
+  @PrimaryColumn('uuid') id!: string;
+  @Column('uuid') caseId!: string;
+  @Column({ type: 'varchar', length: 16 }) action!: string;
+  /** Reviewer profile id; NULL once that profile's account has been erased. */
+  @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  @Column({ type: 'varchar', length: 1024 }) reason!: string;
+  @Column({ type: 'varchar', length: 100, nullable: true }) categoryId!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 100, nullable: true }) placeTypeId!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 16 }) statusBefore!: string;
+  @Column({ type: 'varchar', length: 16 }) statusAfter!: string;
+  /** The listing's override as it stood before this decision (`null` = none), so an undo can restore it. */
+  @Column({ type: 'jsonb', nullable: true }) overrideBefore!: object | null;
+  @Column({ type: 'uuid', nullable: true }) undoOf!: string | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+}
+
+/** A reclassification run: dry run or apply of a mapping version over a scope, resumable by its durable cursor. */
+@Entity({ name: 'directory_taxonomy_run' })
+@Index('IDX_directory_taxonomy_run_status', ['status', 'updatedAt'])
+@Check('CHK_directory_taxonomy_run_scope', `"scope" IN ('town','all')`)
+@Check('CHK_directory_taxonomy_run_mode', `"mode" IN ('dry_run','apply')`)
+@Check(
+  'CHK_directory_taxonomy_run_phase',
+  `"phase" IN ('plan','apply','rollback')`
+)
+@Check(
+  'CHK_directory_taxonomy_run_status',
+  `"status" IN ('pending','running','complete','canceled','failed','rolling_back','rolled_back')`
+)
+@Check(
+  'CHK_directory_taxonomy_run_town',
+  `("scope" = 'town') = ("communityId" IS NOT NULL)`
+)
+export class DirectoryTaxonomyRun {
+  @PrimaryColumn('uuid') id!: string;
+  @Column({ type: 'varchar', length: 100 }) mappingVersion!: string;
+  @Column({ type: 'varchar', length: 8 }) scope!: string;
+  @Column({ type: 'uuid', nullable: true }) communityId!: string | null;
+  @Column({ type: 'varchar', length: 8 }) mode!: string;
+  @Column({ type: 'varchar', length: 12, default: 'plan' }) phase!: string;
+  @Column({ type: 'varchar', length: 16, default: 'pending' }) status!: string;
+  /** Operator profile that created the run; NULL once that profile's account has been erased. */
+  @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  @Column({ type: 'varchar', length: 1024 }) reason!: string;
+  /** For an apply run: the plan hash the operator saw in a dry run and confirmed. */
+  @Column({ type: 'char', length: 64, nullable: true }) expectedPlanHash!:
+    | string
+    | null;
+  @Column({ type: 'char', length: 64, nullable: true }) planHash!:
+    | string
+    | null;
+  /** Running digest chain of the plan pass; the hash once that pass completes. */
+  @Column({ type: 'char', length: 64, nullable: true }) planAccumulator!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 64, nullable: true }) cursorScanId!:
+    | string
+    | null;
+  @Column({ type: 'bigint', nullable: true }) cursorRow!: string | null;
+  @Column({ type: 'integer', default: 0 }) scannedRows!: number;
+  @Column({ type: 'integer', default: 0 }) changedRows!: number;
+  @Column({ type: 'integer', default: 0 }) appliedRows!: number;
+  @Column({ type: 'integer', default: 0 }) restoredRows!: number;
+  @Column({ type: 'integer', default: 0 }) attempts!: number;
+  @Column({ type: 'jsonb', default: () => `'{}'` }) summary!: object;
+  @Column({ type: 'varchar', length: 512, nullable: true }) lastError!:
+    | string
+    | null;
+  @Column({ type: 'boolean', default: false }) cancelRequested!: boolean;
+  @Column({ type: 'uuid', nullable: true }) canceledById!: string | null;
+  @Column({ type: 'varchar', length: 1024, nullable: true })
+  cancelReason!: string | null;
+  @Column({ type: 'uuid', nullable: true }) rollbackById!: string | null;
+  @Column({ type: 'varchar', length: 1024, nullable: true })
+  rollbackReason!: string | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt!: Date;
+  @Column({ type: 'timestamptz', nullable: true }) completedAt!: Date | null;
+}
+
+/** The projection row as it stood before a run changed it, so a rollback restores exactly that. */
+@Entity({ name: 'directory_taxonomy_run_before' })
+export class DirectoryTaxonomyRunBefore {
+  @PrimaryColumn('uuid') runId!: string;
+  @PrimaryColumn({ type: 'varchar', length: 64 }) scanId!: string;
+  @PrimaryColumn('bigint') sourceFileRowNumber!: string;
+  @Column({ type: 'boolean' }) hadProjection!: boolean;
+  @Column({ type: 'jsonb', nullable: true }) before!: object | null;
+}

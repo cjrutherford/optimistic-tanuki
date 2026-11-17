@@ -1,0 +1,202 @@
+<section class="taxonomy-page" aria-labelledby="taxonomy-cases-title">
+  <a class="back-link" routerLink="/dashboard/community-ops">
+    <otui-icon name="arrow-back" [size]="18" stroke="currentColor"></otui-icon>
+    Community operations
+  </a>
+
+  <header class="page-header">
+    <p class="page-kicker">Directory</p>
+    <h1 id="taxonomy-cases-title">Taxonomy cases</h1>
+    <p>
+      A case corrects the category of one listing. An assignment is an override:
+      it outranks the mapping and stays in place when the same business is
+      rescanned. Every decision is audited and can be undone. The adult category
+      cannot be assigned here.
+    </p>
+    <p>
+      <a routerLink="/dashboard/directory-taxonomy-runs"
+        >Reclassification runs</a
+      >
+    </p>
+  </header>
+
+  <otui-card class="raise-form" tone="neutral" emphasis="soft">
+    <h2>Raise a case</h2>
+    <lib-text-input #town label="Town id"></lib-text-input>
+    <lib-text-input
+      #listing
+      label="Listing id"
+      placeholder="A business id or a listing id"
+    ></lib-text-input>
+    <lib-text-input
+      #why
+      label="Reason (required)"
+      placeholder="What looks wrong?"
+    ></lib-text-input>
+    <div class="decision-actions">
+      <otui-button
+        tone="brand"
+        emphasis="outline"
+        [disabled]="raising"
+        (click)="raise(town.value, listing.value, why.value)"
+      >
+        Raise case
+      </otui-button>
+    </div>
+  </otui-card>
+
+  <div class="status-bar" role="group" aria-label="Case status">
+    @for (option of statuses; track option.value) {
+    <otui-button
+      size="sm"
+      [tone]="status === option.value ? 'brand' : 'neutral'"
+      [emphasis]="status === option.value ? 'soft' : 'ghost'"
+      (click)="setStatus(option.value)"
+    >
+      {{ option.label }}
+    </otui-button>
+    }
+  </div>
+
+  @if (message) {
+  <p class="page-message" role="status">{{ message }}</p>
+  } @if (loading && cases.length === 0) {
+  <otui-loading-state headline="Loading taxonomy cases…"></otui-loading-state>
+  } @else if (!loading && cases.length === 0) {
+  <otui-empty-state
+    headline="No cases in this status"
+    body="There are no taxonomy cases waiting in this queue."
+  ></otui-empty-state>
+  }
+
+  <div class="case-list">
+    @for (c of cases; track c.id) {
+    <otui-card class="case-card" tone="neutral" emphasis="soft">
+      <div class="case-header">
+        <div>
+          <h2>{{ c.name }}</h2>
+          <p class="case-meta">
+            Stored category <code>{{ c.observedCategory }}</code>
+            @if (c.assignedCategoryId) { · assigned
+            {{ categoryLabel(c.assignedCategoryId) }} }
+          </p>
+        </div>
+        <otui-badge [tone]="badgeTone(c.status)" size="sm">
+          {{ c.status | titlecase }}
+        </otui-badge>
+      </div>
+
+      <otui-button
+        size="sm"
+        tone="neutral"
+        emphasis="ghost"
+        (click)="toggle(c)"
+      >
+        {{ details[c.id] ? 'Close' : 'Open' }}
+      </otui-button>
+
+      @if (details[c.id]) {
+      <div class="case-decision">
+        <lib-text-input
+          #reason
+          label="Reason (required)"
+          placeholder="Why is this the right category?"
+        ></lib-text-input>
+        @if (canAssign(c)) {
+        <label class="select-field">
+          <span>Category</span>
+          <select
+            [value]="choice(c.id).category"
+            (change)="setCategory(c.id, $event)"
+          >
+            <option value="">Choose a category</option>
+            @for (option of categories; track option.id) {
+            <option [value]="option.id">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+        @if (placeTypesFor(choice(c.id).category).length) {
+        <label class="select-field">
+          <span>Place type (optional)</span>
+          <select
+            [value]="choice(c.id).place"
+            (change)="setPlace(c.id, $event)"
+          >
+            <option value="">No place type</option>
+            @for (type of placeTypesFor(choice(c.id).category); track type.id) {
+            <option [value]="type.id">{{ type.label }}</option>
+            }
+          </select>
+        </label>
+        } }
+        <div class="decision-actions">
+          @if (canAssign(c)) {
+          <otui-button
+            size="sm"
+            tone="success"
+            emphasis="outline"
+            (click)="
+              decide(
+                c,
+                'assign',
+                reason.value,
+                choice(c.id).category,
+                choice(c.id).place
+              )
+            "
+          >
+            Assign category
+          </otui-button>
+          } @if (canReject(c)) {
+          <otui-button
+            size="sm"
+            tone="danger"
+            emphasis="outline"
+            (click)="decide(c, 'reject', reason.value)"
+          >
+            Reject
+          </otui-button>
+          } @if (canDefer(c)) {
+          <otui-button
+            size="sm"
+            tone="warning"
+            emphasis="outline"
+            (click)="decide(c, 'defer', reason.value)"
+          >
+            Defer
+          </otui-button>
+          } @if (canReopen(c)) {
+          <otui-button
+            size="sm"
+            tone="neutral"
+            emphasis="outline"
+            (click)="decide(c, 'reopen', reason.value)"
+          >
+            Reopen
+          </otui-button>
+          }
+        </div>
+        <otui-decision-history
+          [entries]="historyEntries(c.id)"
+          [busy]="undoing"
+          (undoConfirmed)="undo(c, $event)"
+        ></otui-decision-history>
+      </div>
+      }
+    </otui-card>
+    }
+  </div>
+
+  @if (showMore()) {
+  <div class="load-more">
+    <otui-button
+      tone="brand"
+      emphasis="outline"
+      [disabled]="loading"
+      (click)="loadMore()"
+    >
+      Load more cases
+    </otui-button>
+  </div>
+  }
+</section>

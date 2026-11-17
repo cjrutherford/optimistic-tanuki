@@ -60,6 +60,11 @@ import { DataSource } from 'typeorm';
 import { RegisterDeliveryV2 } from '../../directory-worker/src/register-delivery';
 import { DirectoryRecoveryIdentity } from './register-recovery-authority';
 import {
+  CLASSIFICATION_EXCLUDED_SQL,
+  CLASSIFICATION_JOINS,
+  EFFECTIVE_CATEGORY_SQL,
+} from './taxonomy-served';
+import {
   BLOCKED_TOWN_INELIGIBLE,
   SERVED_ROW_FROM,
   servedRowWhere,
@@ -124,6 +129,26 @@ import {
   startWithdrawalWorker,
 } from './withdrawal-request';
 import { handleRightsRoute } from './rights-routes';
+import { handleTaxonomyRoute } from './taxonomy-routes';
+import {
+  decideTaxonomyCase,
+  getTaxonomyCase,
+  listTaxonomyCases,
+  raiseTaxonomyCase,
+  undoTaxonomyDecision,
+} from './taxonomy-case';
+import {
+  cancelTaxonomyRun,
+  createTaxonomyRun,
+  getTaxonomyRun,
+  listTaxonomyRuns,
+  rollbackTaxonomyRun,
+  startTaxonomyWorker,
+} from './taxonomy-reclassification';
+import {
+  installTaxonomyMapping,
+  listTaxonomyMappings,
+} from './taxonomy-mapping';
 
 /** Review conflicts (stale token, not latest, idempotency reuse, invalid state) are 409 with a stable code. */
 function reviewFailure(res: ServerResponse, error: unknown): void {
@@ -789,12 +814,12 @@ export function pendingChecks(
   ): Promise<any[]> {
     // The projection leads and each candidate is checked by a LATERAL lookup (LIMIT 1 keeps it a nested loop),
     // so the work is bounded by the town's projected rows in the box, never by the scan's other bindings.
-    const sql = `SELECT x.listing,sp."scanId",sp."sourceFileRowNumber",true AS "reviewedActive" FROM directory_reviewed_spatial sp
-      CROSS JOIN LATERAL (SELECT r.listing FROM directory_reviewed_binding b
+    const sql = `SELECT x.listing,x."effectiveCategory",sp."scanId",sp."sourceFileRowNumber",true AS "reviewedActive" FROM directory_reviewed_spatial sp
+      CROSS JOIN LATERAL (SELECT r.listing,${EFFECTIVE_CATEGORY_SQL} AS "effectiveCategory" FROM directory_reviewed_binding b
         JOIN directory_overture_private_row r ON r."scanId"=sp."scanId" AND r."sourceFileRowNumber"=sp."sourceFileRowNumber" AND r."regionId"=$1
         JOIN directory_overture_private_membership m ON m."scanId"=r."scanId"
         JOIN directory_overture_private_policy p ON p."policyId"=m."policyId" AND p.revoked=false
-        JOIN directory_overture_private_completion c ON c."scanId"=r."scanId"
+        JOIN directory_overture_private_completion c ON c."scanId"=r."scanId"${CLASSIFICATION_JOINS}
         WHERE b.id=sp."bindingId" AND b.state='active' AND b."verifiedUntil">now() AND b."scanId"=sp."scanId" AND b."sourceFileRowNumber"=sp."sourceFileRowNumber" AND b."communityId"=sp."communityId"
         AND sp."listingDigest"=md5(r.listing::text)
         AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=r."scanId")
@@ -803,8 +828,9 @@ export function pendingChecks(
         ${notSuppressedSql('r')}
         AND (NOT (r.listing ? 'adult') OR r.listing->'adult'='false'::jsonb OR ($7::boolean AND r.listing->'adult'='true'::jsonb))
         AND r.listing->>'assignmentChangeToken'=$8
-        AND ($9='' OR r.listing->>'category'=$9)
-        AND ($12='' OR position(lower($12) in lower(r.listing->>'name'))>0 OR position(lower($12) in lower(r.listing->>'category'))>0)
+        AND NOT ${CLASSIFICATION_EXCLUDED_SQL}
+        AND ($9='' OR ${EFFECTIVE_CATEGORY_SQL}=$9)
+        AND ($12='' OR position(lower($12) in lower(r.listing->>'name'))>0 OR position(lower($12) in lower(${EFFECTIVE_CATEGORY_SQL}))>0)
         LIMIT 1) x
       WHERE sp."communityId"=$1::uuid AND sp."validatorVersion"=$2
       AND sp.point && ST_MakeEnvelope($3::float8,$4::float8,$5::float8,$6::float8,4326)
@@ -927,13 +953,13 @@ export function pendingChecks(
           position?.row || '0'
         )
       : await db.query(
-          `SELECT r.listing,r."scanId",r."sourceFileRowNumber",EXISTS (SELECT 1 FROM directory_reviewed_binding b WHERE b."scanId"=r."scanId" AND b."sourceFileRowNumber"=r."sourceFileRowNumber" AND b.state='active' AND b."verifiedUntil">now()) AS "reviewedActive" FROM ${SERVED_ROW_FROM}
+          `SELECT r.listing,${EFFECTIVE_CATEGORY_SQL} AS "effectiveCategory",r."scanId",r."sourceFileRowNumber",EXISTS (SELECT 1 FROM directory_reviewed_binding b WHERE b."scanId"=r."scanId" AND b."sourceFileRowNumber"=r."sourceFileRowNumber" AND b.state='active' AND b."verifiedUntil">now()) AS "reviewedActive" FROM ${SERVED_ROW_FROM}
       WHERE ${servedRowWhere('$1', '$5')}
       AND (NOT (r.listing ? 'adult') OR r.listing->'adult'='false'::jsonb OR ($4::boolean AND r.listing->'adult'='true'::jsonb))
-      AND ($6='' OR r.listing->>'category'=$6)
+      AND ($6='' OR ${EFFECTIVE_CATEGORY_SQL}=$6)
       AND ($7='' OR (r."scanId",r."sourceFileRowNumber")>($7,$8::bigint))
       AND ($10='' OR (r."scanId"=$10 AND r."sourceFileRowNumber"=$11::bigint))
-      AND ($3='' OR position(lower($3) in lower(r.listing->>'name'))>0 OR position(lower($3) in lower(r.listing->>'category'))>0)
+      AND ($3='' OR position(lower($3) in lower(r.listing->>'name'))>0 OR position(lower($3) in lower(${EFFECTIVE_CATEGORY_SQL}))>0)
       ORDER BY (CASE WHEN $9::boolean THEN false ELSE EXISTS (SELECT 1 FROM directory_reviewed_binding b WHERE b."scanId"=r."scanId" AND b."sourceFileRowNumber"=r."sourceFileRowNumber" AND b.state='active' AND b."verifiedUntil">now()) END) DESC,r."scanId",r."sourceFileRowNumber" LIMIT 26 OFFSET $2`,
           [
             town,
@@ -953,12 +979,21 @@ export function pendingChecks(
     if (!Array.isArray(rows) || rows.length > 26)
       throw Error('Invalid listings');
     const projected = rows.map(
-      ({ listing, scanId, sourceFileRowNumber, reviewedActive }: any) => {
+      ({
+        listing,
+        effectiveCategory,
+        scanId,
+        sourceFileRowNumber,
+        reviewedActive,
+      }: any) => {
         const c = listing?.location?.coordinates;
         if (!validBaseListing(listing)) throw Error('Invalid listing');
         const output: any = {
           name: listing.name,
-          category: listing.category,
+          category:
+            typeof effectiveCategory === 'string' && effectiveCategory
+              ? effectiveCategory
+              : listing.category,
           location: { type: 'Point', coordinates: c },
           attribution: listing.attribution,
           notices: listing.notices,
@@ -1474,8 +1509,39 @@ export function pendingChecks(
       listWithdrawals(db, o),
     withdrawalGet: (id: string) => getWithdrawal(db, id),
   };
+  // Taxonomy classification is likewise a global operator record (S7d).
+  const taxonomyDb = db as unknown as Parameters<typeof raiseTaxonomyCase>[0];
+  const taxonomy = {
+    taxonomyMappings: () => listTaxonomyMappings(db),
+    taxonomyInstall: (v: {
+      version: string;
+      activate: boolean;
+      actorId: string;
+    }) => installTaxonomyMapping(taxonomyDb, v),
+    taxonomyCases: (o: Parameters<typeof listTaxonomyCases>[1]) =>
+      listTaxonomyCases(db, o),
+    taxonomyRaise: (v: any) => raiseTaxonomyCase(taxonomyDb, v),
+    taxonomyCase: (id: string) => getTaxonomyCase(db, id),
+    taxonomyDecide: (caseId: string, v: any) =>
+      decideTaxonomyCase(taxonomyDb, { ...v, caseId }),
+    taxonomyUndo: (caseId: string, v: any) =>
+      undoTaxonomyDecision(taxonomyDb, { ...v, caseId }),
+    taxonomyRuns: (o: Parameters<typeof listTaxonomyRuns>[1]) =>
+      listTaxonomyRuns(db, o),
+    taxonomyRunCreate: (v: any) => createTaxonomyRun(taxonomyDb, v),
+    taxonomyRun: (id: string) => getTaxonomyRun(db, id),
+    taxonomyRunCancel: (id: string, v: any) =>
+      cancelTaxonomyRun(taxonomyDb, { ...v, id }),
+    taxonomyRunRollback: (id: string, v: any) =>
+      rollbackTaxonomyRun(taxonomyDb, {
+        id,
+        actorId: v.actorId,
+        reason: v.reason,
+      }),
+  };
   return {
     ...rights,
+    ...taxonomy,
     reportCreate,
     reportLookup,
     reportList,
@@ -1525,6 +1591,7 @@ export function pendingServer(
   let active = 0;
   return createServer(async (req, res) => {
     if (await handleRightsRoute(req, res, checks, localSecret)) return;
+    if (await handleTaxonomyRoute(req, res, checks, localSecret)) return;
     if (
       lifecycle &&
       req.url?.startsWith('/internal/account-') &&
@@ -3142,6 +3209,7 @@ export async function runPendingRuntime(): Promise<void> {
   );
   let server: Server | undefined;
   let stopWithdrawals: (() => void) | undefined;
+  let stopTaxonomy: (() => void) | undefined;
   let stopping = false;
   const stop = () => {
     stopping = true;
@@ -3174,9 +3242,14 @@ export async function runPendingRuntime(): Promise<void> {
       onError: () =>
         console.error('Directory withdrawal pass failed; retrying'),
     });
+    // Durable reclassification runs resume the same way.
+    stopTaxonomy = startTaxonomyWorker(db as never, {
+      onError: () => console.error('Directory taxonomy pass failed; retrying'),
+    });
     await new Promise<void>((resolve) => server!.once('close', resolve));
   } finally {
     stopWithdrawals?.();
+    stopTaxonomy?.();
     process.removeListener('SIGINT', stop);
     process.removeListener('SIGTERM', stop);
     source.close();

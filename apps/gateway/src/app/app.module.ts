@@ -107,6 +107,7 @@ import {
   DirectoryRightsCasesController,
   DirectoryWithdrawalsController,
 } from '../controllers/directory/directory-rights.controller';
+import { DirectoryTaxonomyController } from '../controllers/directory/directory-taxonomy.controller';
 import {
   DirectoryListingReportController,
   DirectoryListingReportReviewController,
@@ -267,6 +268,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'directory-withdrawals',
         requiredServices: ['social', 'authentication', 'permissions'],
         value: DirectoryWithdrawalsController,
+      },
+      {
+        id: 'directory-taxonomy',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryTaxonomyController,
       },
       {
         id: 'directory-listing-report',

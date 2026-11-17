@@ -1,4 +1,8 @@
 import { supersededByLiveCohort } from './business-identity-read';
+import {
+  CLASSIFICATION_EXCLUDED_SQL,
+  CLASSIFICATION_JOINS,
+} from './taxonomy-served';
 import type {
   LocalDirectoryCoverage,
   LocalDirectoryCoverageState,
@@ -15,7 +19,7 @@ export const WITHHELD_CAP = 1_000_000;
 export const SERVED_ROW_FROM = `directory_overture_private_row r
       JOIN directory_overture_private_membership m ON m."scanId"=r."scanId"
       JOIN directory_overture_private_policy p ON p."policyId"=m."policyId" AND p.revoked=false
-      JOIN directory_overture_private_completion c ON c."scanId"=r."scanId"`;
+      JOIN directory_overture_private_completion c ON c."scanId"=r."scanId"${CLASSIFICATION_JOINS}`;
 
 /**
  * A reviewer's open suppression hides the row it names and, once the row is a business, every row currently
@@ -36,6 +40,7 @@ export const servedRowWhere = (town: string, changeToken: string): string =>
       AND NOT EXISTS (SELECT 1 FROM directory_overture_private_row_revocation x WHERE x."scanId"=r."scanId" AND x."sourceFileRowNumber"=r."sourceFileRowNumber")
       ${supersededByLiveCohort('r')}
       ${notSuppressedSql('r')}
+      AND NOT ${CLASSIFICATION_EXCLUDED_SQL}
       AND (NOT (r.listing ? 'assignmentChangeToken') OR r.listing->>'assignmentChangeToken'=${changeToken})`;
 
 /** The active, unexpired binding that lets a reviewed row show its reviewed fields. */

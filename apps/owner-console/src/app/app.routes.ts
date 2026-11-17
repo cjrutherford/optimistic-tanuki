@@ -88,6 +88,20 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'directory-taxonomy',
+        loadComponent: () =>
+          import('./components/directory-taxonomy-cases-page.component').then(
+            (m) => m.DirectoryTaxonomyCasesPageComponent
+          ),
+      },
+      {
+        path: 'directory-taxonomy-runs',
+        loadComponent: () =>
+          import('./components/directory-taxonomy-runs-page.component').then(
+            (m) => m.DirectoryTaxonomyRunsPageComponent
+          ),
+      },
+      {
         path: 'boundary-review/:communityId',
         loadComponent: () =>
           import('./components/boundary-review-page.component').then(
