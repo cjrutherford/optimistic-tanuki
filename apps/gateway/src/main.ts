@@ -8,6 +8,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app/app.module';
+import { applyDirectoryNoStore } from './bootstrap/directory-no-store';
 import { SwaggerModule } from '@nestjs/swagger';
 import { buildSwaggerDocument } from './swagger-document';
 import { json, urlencoded } from 'express';
@@ -59,6 +60,7 @@ async function bootstrap() {
 
   app.getHttpAdapter().getInstance().disable('x-powered-by');
   app.use(applyGatewaySecurityHeaders);
+  app.use(applyDirectoryNoStore);
   app.use((request, response, next) =>
     enforceTrustedBrowserOrigins(request, response, next, trustedOrigins)
   );
