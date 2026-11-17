@@ -222,7 +222,9 @@ export class DirectoryListingSuppressionController {
     );
     if (
       typeof result?.replayed !== 'boolean' ||
-      typeof result.sentToReview !== 'boolean' ||
+      // The directory reports how many reviewed bindings went back to review.
+      !Number.isInteger(result.sentToReview) ||
+      result.sentToReview < 0 ||
       !this.isUuid(result.suppressionId) ||
       !suppressionReasons.includes(result.reasonCode)
     ) {
@@ -233,7 +235,7 @@ export class DirectoryListingSuppressionController {
       replayed: result.replayed,
       suppressionId: result.suppressionId,
       reasonCode: result.reasonCode,
-      sentToReview: result.sentToReview,
+      sentToReview: result.sentToReview > 0,
     };
   }
 
