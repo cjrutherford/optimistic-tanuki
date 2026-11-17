@@ -238,6 +238,20 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
         route: '/dashboard/forum-governance',
         highlight: 'Forum moderation',
       },
+      {
+        title: 'Directory Rights',
+        description:
+          'Work through data-source rights cases and record audited, reversible decisions.',
+        route: '/dashboard/directory-rights',
+        highlight: 'Source terms',
+      },
+      {
+        title: 'Directory Withdrawals',
+        description:
+          'Permanently remove withdrawn data and follow the removal to completion.',
+        route: '/dashboard/directory-withdrawals',
+        highlight: 'Permanent removal',
+      },
     ],
   },
 ];

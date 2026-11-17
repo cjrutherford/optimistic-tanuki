@@ -43,6 +43,9 @@ import {
   DirectoryBusinessCarryState,
   DirectoryBusinessLinkCarry,
   DirectoryBusinessIdentityDecision,
+  DirectoryRightsCase,
+  DirectoryRightsEvent,
+  DirectoryWithdrawalRequest,
 } from './entity';
 import { AccountDeletionWriteFenceEntity } from '../../../libs/storage/src/lib/account-deletion-write-fence';
 
@@ -91,6 +94,9 @@ const dataSource = new DataSource({
     DirectoryBusinessCarryState,
     DirectoryBusinessLinkCarry,
     DirectoryBusinessIdentityDecision,
+    DirectoryRightsCase,
+    DirectoryRightsEvent,
+    DirectoryWithdrawalRequest,
     AccountDeletionWriteFenceEntity,
   ],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import {
   createServer,
   IncomingMessage,
@@ -109,6 +110,20 @@ import {
   undoBusinessIdentityDecision,
 } from './business-identity-undo';
 import { ReviewConflictError, VERSION_TOKEN } from './review-version';
+import {
+  decideRightsCase,
+  getRightsCase,
+  listRightsCases,
+  syncRightsCases,
+  undoRightsDecision,
+} from './rights-case';
+import {
+  createWithdrawal,
+  getWithdrawal,
+  listWithdrawals,
+  startWithdrawalWorker,
+} from './withdrawal-request';
+import { handleRightsRoute } from './rights-routes';
 
 /** Review conflicts (stale token, not latest, idempotency reuse, invalid state) are 409 with a stable code. */
 function reviewFailure(res: ServerResponse, error: unknown): void {
@@ -291,6 +306,25 @@ type Database = Pick<DataSource, 'query'> &
   Partial<Pick<DataSource, 'transaction'>>;
 type Source = Pick<RegisterDeliveryV2, 'scan' | 'current'> &
   Partial<Pick<RegisterDeliveryV2, 'geography'>>;
+/**
+ * The operator-approved rights policy for a release, read from the file DIRECTORY_RIGHTS_POLICY_FILE names (JSON,
+ * one policy or an array). Absent or unreadable means no approval: every observed lineage then needs review.
+ * Nothing here establishes approval; the file is the same trusted artifact the scripts load.
+ */
+function loadRightsPolicy(
+  releaseId: string
+): Parameters<typeof syncRightsCases>[1]['policy'] {
+  const file = process.env.DIRECTORY_RIGHTS_POLICY_FILE;
+  if (!file) return undefined;
+  try {
+    const parsed = JSON.parse(readFileSync(file, 'utf8'));
+    const all = Array.isArray(parsed) ? parsed : [parsed];
+    return all.find((p) => p?.releaseId === releaseId);
+  } catch {
+    return undefined;
+  }
+}
+
 export function pendingChecks(
   db: Database,
   source: Source,
@@ -1414,7 +1448,34 @@ export function pendingChecks(
     await authority(town);
     return result;
   }
+  // Rights cases and withdrawals are global operator records, not town facts, so no town authority applies.
+  const rightsDb = db as unknown as Parameters<typeof syncRightsCases>[0];
+  const rights = {
+    rightsList: (o: Parameters<typeof listRightsCases>[1]) =>
+      listRightsCases(db, o),
+    rightsDetail: (id: string) => getRightsCase(db, id),
+    rightsSync: (v: {
+      syncId: string;
+      actorId: string;
+      releaseId: string;
+      operation?: string;
+    }) =>
+      syncRightsCases(rightsDb, {
+        ...v,
+        operation: v.operation as never,
+        policy: loadRightsPolicy(v.releaseId),
+      }),
+    rightsDecide: (caseId: string, v: any) =>
+      decideRightsCase(rightsDb, { ...v, caseId }),
+    rightsUndo: (caseId: string, v: any) =>
+      undoRightsDecision(rightsDb, { ...v, caseId }),
+    withdrawalCreate: (v: any) => createWithdrawal(rightsDb, v),
+    withdrawalList: (o: Parameters<typeof listWithdrawals>[1]) =>
+      listWithdrawals(db, o),
+    withdrawalGet: (id: string) => getWithdrawal(db, id),
+  };
   return {
+    ...rights,
     reportCreate,
     reportLookup,
     reportList,
@@ -1463,6 +1524,7 @@ export function pendingServer(
 ): Server {
   let active = 0;
   return createServer(async (req, res) => {
+    if (await handleRightsRoute(req, res, checks, localSecret)) return;
     if (
       lifecycle &&
       req.url?.startsWith('/internal/account-') &&
@@ -3079,6 +3141,7 @@ export async function runPendingRuntime(): Promise<void> {
     config.secret
   );
   let server: Server | undefined;
+  let stopWithdrawals: (() => void) | undefined;
   let stopping = false;
   const stop = () => {
     stopping = true;
@@ -3106,8 +3169,14 @@ export async function runPendingRuntime(): Promise<void> {
       server!.once('error', reject);
       server!.listen(config.listenPort, '0.0.0.0', resolve);
     });
+    // Durable withdrawal requests: the worker resumes pending and running ones after a restart.
+    stopWithdrawals = startWithdrawalWorker(db as never, {
+      onError: () =>
+        console.error('Directory withdrawal pass failed; retrying'),
+    });
     await new Promise<void>((resolve) => server!.once('close', resolve));
   } finally {
+    stopWithdrawals?.();
     process.removeListener('SIGINT', stop);
     process.removeListener('SIGTERM', stop);
     source.close();
