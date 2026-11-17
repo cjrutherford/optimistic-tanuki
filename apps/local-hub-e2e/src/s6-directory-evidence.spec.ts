@@ -27,6 +27,10 @@ const viewports = {
 test.skip(!evidenceRun, 'set S6_EVIDENCE=true to capture S6 evidence');
 
 async function shot(page: Page, name: string): Promise<void> {
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  );
+  expect(overflow, 'page scrolls horizontally').toBeLessThanOrEqual(0);
   mkdirSync(outDir, { recursive: true });
   await page.screenshot({
     path: join(outDir, `${name}.jpg`),
@@ -235,7 +239,7 @@ test.describe('S6 report and receipt (desktop, live)', () => {
 
     // Submitting with no reason shows a focused error summary.
     await page.getByRole('button', { name: /send report|submit/i }).click();
-    await expect(page.locator('#summary-title')).toBeFocused();
+    await expect(page.locator('.report-page__summary')).toBeFocused();
     await shot(page, 'desktop-08-report-validation');
 
     await page.getByLabel(/details are wrong/i).check();

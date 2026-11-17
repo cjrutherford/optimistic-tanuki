@@ -31,6 +31,9 @@
   }
 
   select {
+    // Long town names would otherwise set the select's intrinsic width and push the page sideways on phones.
+    max-width: 100%;
+    min-width: 0;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--border);
     border-radius: var(
