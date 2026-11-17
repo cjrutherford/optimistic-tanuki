@@ -346,7 +346,13 @@ export class DirectoryController {
         }
       );
       if (response.status === 400 && pagination === 'cursor')
-        throw new BadRequestException('Invalid cursor');
+        throw new BadRequestException(
+          cursor
+            ? 'Invalid cursor'
+            : bounds
+            ? 'Invalid bounds'
+            : 'Invalid request'
+        );
       if (!response.ok) throw Error('Directory unavailable');
       const result = await response.json();
       if (
