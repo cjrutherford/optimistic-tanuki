@@ -17,11 +17,25 @@ export const SERVED_ROW_FROM = `directory_overture_private_row r
       JOIN directory_overture_private_policy p ON p."policyId"=m."policyId" AND p.revoked=false
       JOIN directory_overture_private_completion c ON c."scanId"=r."scanId"`;
 
+/**
+ * A reviewer's open suppression hides the row it names and, once the row is a business, every row currently
+ * asserted to that business, so a later scan cannot bring a suppressed listing back. A lift ends it; the
+ * suppression rows are history and nothing here reads or changes source provenance.
+ */
+export const notSuppressedSql = (row: string): string =>
+  `AND NOT EXISTS (SELECT 1 FROM directory_listing_suppression sp
+        WHERE sp."liftedAt" IS NULL
+        AND ((sp."scanId"=${row}."scanId" AND sp."sourceFileRowNumber"=${row}."sourceFileRowNumber")
+          OR (sp."businessId" IS NOT NULL AND EXISTS (SELECT 1 FROM directory_business_assertion sa
+              WHERE sa."scanId"=${row}."scanId" AND sa."sourceFileRowNumber"=${row}."sourceFileRowNumber"
+              AND sa."businessId"=sp."businessId" AND sa.state='current'))))`;
+
 /** Visibility predicates shared by the listing read and coverage. The adult choice is deliberately not part of them. */
 export const servedRowWhere = (town: string, changeToken: string): string =>
   `r."regionId"=${town} AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=r."scanId")
       AND NOT EXISTS (SELECT 1 FROM directory_overture_private_row_revocation x WHERE x."scanId"=r."scanId" AND x."sourceFileRowNumber"=r."sourceFileRowNumber")
       ${supersededByLiveCohort('r')}
+      ${notSuppressedSql('r')}
       AND (NOT (r.listing ? 'assignmentChangeToken') OR r.listing->>'assignmentChangeToken'=${changeToken})`;
 
 /** The active, unexpired binding that lets a reviewed row show its reviewed fields. */

@@ -787,3 +787,50 @@ export class DirectoryBusinessIdentityDecision {
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
 }
+
+/**
+ * Reviewer-set suppression of one served listing. Append-only history: a lift sets the lift fields on the same
+ * row, a later suppression of the same listing is a new row. It never touches source provenance (the private row,
+ * scan, completion and revocation tables); public reads exclude a row while an un-lifted suppression names it.
+ * `actorId` and `liftedById` are reviewer profile ids; `note` is reviewer free text.
+ */
+@Entity({ name: 'directory_listing_suppression' })
+@Index('IDX_directory_listing_suppression_town', ['communityId', 'createdAt'])
+@Index('IDX_directory_listing_suppression_business', ['businessId'])
+@Index(
+  'UQ_directory_listing_suppression_open_row',
+  ['scanId', 'sourceFileRowNumber'],
+  { unique: true, where: '"liftedAt" IS NULL' }
+)
+@Check(
+  'CHK_directory_listing_suppression_reason',
+  `"reasonCode" IN ('rights-request','incorrect-details','closed-business','safety','duplicate','other')`
+)
+@Check(
+  'CHK_directory_listing_suppression_lift_reason',
+  `"liftReasonCode" IS NULL OR "liftReasonCode" IN ('resolved','mistaken-suppression','other')`
+)
+@Check(
+  'CHK_directory_listing_suppression_lift_pair',
+  `("liftedAt" IS NULL) = ("liftReasonCode" IS NULL)`
+)
+export class DirectoryListingSuppression {
+  @PrimaryColumn('uuid') id!: string;
+  @Column('uuid') communityId!: string;
+  @Column('uuid') listingId!: string;
+  @Column({ type: 'varchar', length: 64 }) scanId!: string;
+  @Column('bigint') sourceFileRowNumber!: string;
+  @Column({ type: 'uuid', nullable: true }) businessId!: string | null;
+  @Column({ type: 'varchar', length: 24 }) reasonCode!: string;
+  @Column({ type: 'varchar', length: 1024, nullable: true }) note!:
+    | string
+    | null;
+  @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+  @Column({ type: 'timestamptz', nullable: true }) liftedAt!: Date | null;
+  @Column({ type: 'varchar', length: 24, nullable: true }) liftReasonCode!:
+    | string
+    | null;
+  @Column({ type: 'uuid', nullable: true }) liftedById!: string | null;
+}
