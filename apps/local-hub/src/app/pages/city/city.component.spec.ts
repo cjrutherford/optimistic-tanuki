@@ -463,8 +463,20 @@ describe('CityComponent', () => {
       expect(mapComponent?.mode).toBe('single-location');
     });
 
-    it('passes browser geolocation to the city detail map', async () => {
+    it('does not ask for the browser location until the visitor chooses to', async () => {
       await fixture.whenStable();
+      fixture.detectChanges();
+      expect(geolocation.getCurrentPosition).not.toHaveBeenCalled();
+    });
+
+    it('passes browser geolocation to the city detail map after an explicit request', async () => {
+      await fixture.whenStable();
+      fixture.detectChanges();
+      (
+        fixture.nativeElement.querySelector(
+          '[data-testid="show-my-location"]'
+        ) as HTMLButtonElement
+      ).click();
       fixture.detectChanges();
 
       const mapComponent = fixture.debugElement.query(

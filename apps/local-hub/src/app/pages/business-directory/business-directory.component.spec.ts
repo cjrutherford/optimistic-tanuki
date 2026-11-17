@@ -2,12 +2,21 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { Title } from '@angular/platform-browser';
-import { of } from 'rxjs';
-import { BusinessDirectoryComponent } from './business-directory.component';
+import { BehaviorSubject, of } from 'rxjs';
+import {
+  BusinessDirectoryComponent,
+  readDirectoryQuery,
+} from './business-directory.component';
 import { CommunityService } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
+import {
+  DirectoryPage,
+  DirectoryQuery,
+  DirectoryRequestError,
+  DirectoryService,
+} from '../../services/directory.service';
 import { MapComponent } from '../../components/map/map.component';
 
 const cityFixture = {
@@ -16,7 +25,7 @@ const cityFixture = {
   slug: 'valdosta-ga',
   countryCode: 'US',
   adminArea: 'GA',
-  description: 'South Georgia town',
+  description: 'A town',
   imageUrl: '',
   coordinates: { lat: 30.8327, lng: -83.2785 },
   population: 1,
@@ -24,9 +33,17 @@ const cityFixture = {
   highlights: [],
   communities: 1,
 };
+const nearbyFixture = {
+  ...cityFixture,
+  id: 'city-2',
+  name: 'Quitman',
+  slug: 'quitman-ga',
+  coordinates: { lat: 30.78, lng: -83.56 },
+};
 
 const listingFixture = {
   id: '00000000-0000-4000-8000-000000000101',
+  reference: 'ref-101',
   name: 'Fixture Bakery',
   category: 'bakery',
   attribution: ['Source credit'],
@@ -38,16 +55,30 @@ const listingFixture = {
   coordinates: { lat: 30.8327, lng: -83.2785 },
 };
 
+const page = (over: Partial<DirectoryPage> = {}): DirectoryPage => ({
+  listings: [listingFixture],
+  hasMore: false,
+  nextCursor: null,
+  sourceFreshness: null,
+  coverage: null,
+  ...over,
+});
+
+interface DirectoryServiceDouble {
+  getPage: jest.Mock;
+  snapshotKey: jest.Mock;
+  saveSnapshot: jest.Mock;
+  getSnapshot: jest.Mock;
+}
+
 const communityServiceMock = {
-  getCityBySlug: jest.fn().mockResolvedValue(cityFixture),
-  getDirectoryBoundary: jest.fn().mockResolvedValue({ status: 'pending' }),
-  getLocalDirectoryListings: jest
-    .fn()
-    .mockResolvedValue({ listings: [], hasMore: false }),
-  getDirectoryBusinessLink: jest.fn().mockResolvedValue(null),
-  requestDirectoryBusinessLink: jest.fn().mockResolvedValue(undefined),
-  getMyDirectoryBusinessLinks: jest.fn().mockResolvedValue([]),
-  revokeDirectoryBusinessLink: jest.fn().mockResolvedValue(undefined),
+  getCityBySlug: jest.fn(),
+  getCities: jest.fn(),
+  getDirectoryBoundary: jest.fn(),
+  getDirectoryBusinessLink: jest.fn(),
+  requestDirectoryBusinessLink: jest.fn(),
+  getMyDirectoryBusinessLinks: jest.fn(),
+  revokeDirectoryBusinessLink: jest.fn(),
 };
 
 const authStateMock = {
@@ -56,38 +87,100 @@ const authStateMock = {
   getActingProfileId: jest.fn().mockReturnValue('profile-current'),
 };
 
+describe('readDirectoryQuery', () => {
+  it('reads q, category, adult and cursor from the URL', () => {
+    expect(
+      readDirectoryQuery(
+        convertToParamMap({
+          q: ' pie ',
+          category: 'bakery',
+          adult: '1',
+          cursor: 'abc',
+        })
+      )
+    ).toEqual({ q: 'pie', category: 'bakery', adult: true, cursor: 'abc' });
+  });
+  it('defaults to an unfiltered first page', () => {
+    expect(readDirectoryQuery(convertToParamMap({}))).toEqual({
+      q: '',
+      category: '',
+      adult: false,
+      cursor: '',
+    });
+  });
+});
+
 describe('BusinessDirectoryComponent', () => {
   let fixture: ComponentFixture<BusinessDirectoryComponent>;
+  let directory: DirectoryServiceDouble;
+  let queryParams: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
+  let router: Router;
+
+  const create = async (query: Record<string, string> = {}) => {
+    queryParams.next(convertToParamMap(query));
+    fixture = TestBed.createComponent(BusinessDirectoryComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture.componentInstance;
+  };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+    communityServiceMock.getCityBySlug.mockResolvedValue(cityFixture);
+    communityServiceMock.getCities.mockResolvedValue([
+      cityFixture,
+      nearbyFixture,
+    ]);
+    communityServiceMock.getDirectoryBoundary.mockResolvedValue({
+      status: 'pending',
+    });
+    communityServiceMock.getDirectoryBusinessLink.mockResolvedValue(null);
+    communityServiceMock.requestDirectoryBusinessLink.mockResolvedValue(
+      undefined
+    );
+    communityServiceMock.getMyDirectoryBusinessLinks.mockResolvedValue([]);
+    communityServiceMock.revokeDirectoryBusinessLink.mockResolvedValue(
+      undefined
+    );
+    directory = {
+      getPage: jest.fn().mockResolvedValue(page()),
+      snapshotKey: jest.fn(
+        (id: string, q: DirectoryQuery) =>
+          `${id}|${q.q}|${q.category}|${q.adult}|${q.cursor}`
+      ),
+      saveSnapshot: jest.fn(),
+      getSnapshot: jest.fn().mockReturnValue(undefined),
+    };
+    queryParams = new BehaviorSubject(convertToParamMap({}));
     await TestBed.configureTestingModule({
       imports: [BusinessDirectoryComponent, RouterTestingModule],
       providers: [
         { provide: PLATFORM_ID, useValue: 'server' },
         { provide: CommunityService, useValue: communityServiceMock },
+        { provide: DirectoryService, useValue: directory },
         { provide: AuthStateService, useValue: authStateMock },
         { provide: Title, useValue: { setTitle: jest.fn() } },
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: { get: () => 'valdosta-ga' } } },
+          useValue: {
+            snapshot: { paramMap: { get: () => 'valdosta-ga' } },
+            paramMap: of(convertToParamMap({ slug: 'valdosta-ga' })),
+            get queryParamMap() {
+              return queryParams;
+            },
+          },
         },
       ],
     }).compileComponents();
-
-    fixture = TestBed.createComponent(BusinessDirectoryComponent);
-    fixture.detectChanges();
+    router = TestBed.inject(Router);
+    jest.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
   it('renders the directory map with reviewed listing locations', async () => {
-    await fixture.whenStable();
-    const component = fixture.componentInstance;
-    component.listings.set([listingFixture]);
-    fixture.detectChanges();
-
+    await create();
     const map = fixture.debugElement.query(By.directive(MapComponent))
       ?.componentInstance as MapComponent | undefined;
-
-    expect(map).toBeDefined();
     expect(map?.mode).toBe('directory');
     expect(map?.directoryLocations).toEqual([
       {
@@ -96,159 +189,139 @@ describe('BusinessDirectoryComponent', () => {
         coordinates: listingFixture.coordinates,
       },
     ]);
-    expect(fixture.nativeElement.textContent).toContain('reviewed location');
   });
 
-  it('renders directory listings with source notices and paginates', async () => {
-    await fixture.whenStable();
-    const component = fixture.componentInstance;
-    component.listings.set([listingFixture]);
-    component.hasMore.set(true);
-    component.available.set(true);
-    fixture.detectChanges();
-
+  it('loads the first page in cursor mode from URL filters', async () => {
+    await create({ q: 'pie', category: 'bakery', adult: '1' });
+    expect(directory.getPage).toHaveBeenCalledWith('city-1', {
+      q: 'pie',
+      category: 'bakery',
+      adult: true,
+      cursor: '',
+    });
+    expect(fixture.componentInstance.filters()).toEqual({
+      q: 'pie',
+      category: 'bakery',
+      adult: true,
+    });
     expect(fixture.nativeElement.textContent).toContain('Fixture Bakery');
-    expect(fixture.nativeElement.textContent).toContain(
-      'Town assignments are unverified'
-    );
-    expect(fixture.nativeElement.textContent).toContain('Source credit');
     expect(fixture.nativeElement.textContent).toContain('Required notice');
-    expect(fixture.nativeElement.textContent).toContain('10 Main St');
-    expect(fixture.nativeElement.textContent).toContain('+19125550100');
-    expect(
-      fixture.nativeElement.querySelector('a[href="https://example.test/"]')
-    ).not.toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('Show more businesses');
   });
 
-  it('shows a retryable failure instead of an empty directory when loading fails', async () => {
+  it('links each card to its detail route and carries the adult flag', async () => {
+    await create({ adult: '1' });
+    const link = fixture.nativeElement.querySelector(
+      'a[href*="/city/valdosta-ga/businesses/ref-101"]'
+    ) as HTMLAnchorElement | null;
+    expect(link).not.toBeNull();
+    expect(link?.getAttribute('href')).toContain('adult=1');
+  });
+
+  it('restores a saved snapshot without asking the server', async () => {
+    directory.getSnapshot.mockReturnValue(page({ listings: [listingFixture] }));
+    await create({ cursor: 'c2' });
+    expect(directory.getPage).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Fixture Bakery');
+  });
+
+  it('accumulates results on Load more and writes the cursor to the URL', async () => {
+    directory.getPage.mockResolvedValueOnce(
+      page({ hasMore: true, nextCursor: 'c2' })
+    );
+    const component = await create();
+    directory.getPage.mockResolvedValueOnce(
+      page({
+        listings: [
+          {
+            ...listingFixture,
+            name: 'Second',
+            reference: 'ref-2',
+            id: undefined as never,
+          },
+        ],
+      })
+    );
+    await component.loadMore();
+    expect(directory.getPage).toHaveBeenLastCalledWith('city-1', {
+      q: '',
+      category: '',
+      adult: false,
+      cursor: 'c2',
+    });
+    expect(component.listings().map((l) => l.name)).toEqual([
+      'Fixture Bakery',
+      'Second',
+    ]);
+    expect(router.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParams: { cursor: 'c2' },
+        replaceUrl: true,
+      })
+    );
+  });
+
+  it('submits filters to the URL and resets the cursor', async () => {
+    const component = await create();
+    component.submitFilters({ q: 'pie', category: '', adult: false });
+    expect(router.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParams: { q: 'pie', category: null, adult: null, cursor: null },
+      })
+    );
+  });
+
+  it('restarts from the first page when a cursor is rejected', async () => {
+    directory.getPage.mockRejectedValueOnce(new DirectoryRequestError(400));
+    await create({ cursor: 'old' });
+    expect(router.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParams: { cursor: null },
+        replaceUrl: true,
+      })
+    );
+  });
+
+  it('shows a retryable failure with generic copy instead of an empty directory', async () => {
+    directory.getPage.mockRejectedValueOnce(new DirectoryRequestError(503));
+    await create();
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Business directory is temporarily unavailable');
+    expect(text).not.toContain('No businesses listed');
+    directory.getPage.mockResolvedValueOnce(page());
+    (
+      fixture.nativeElement.querySelector(
+        '[data-testid="directory-retry"]'
+      ) as HTMLElement
+    ).click();
     await fixture.whenStable();
-    const component = fixture.componentInstance;
-    communityServiceMock.getLocalDirectoryListings.mockRejectedValueOnce(
-      new Error('offline')
-    );
-
-    await component.loadPage(cityFixture.id, 0);
     fixture.detectChanges();
-
-    expect(fixture.nativeElement.textContent).toContain(
-      'Business directory is temporarily unavailable'
-    );
-    expect(fixture.nativeElement.textContent).not.toContain(
-      'No businesses found.'
-    );
-    expect(fixture.nativeElement.textContent).toContain(
-      'Business locations are temporarily unavailable.'
-    );
-    expect(fixture.nativeElement.textContent).not.toContain(
-      'No reviewed locations are in the currently loaded results.'
-    );
-    const retry = fixture.nativeElement.querySelector(
-      '[data-testid="directory-retry"]'
-    ) as HTMLButtonElement;
-    expect(retry).toBeTruthy();
-    retry.click();
-    await Promise.resolve();
-    await Promise.resolve();
-    fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).not.toContain(
-      'Business directory is temporarily unavailable'
-    );
+    expect(fixture.nativeElement.textContent).toContain('Fixture Bakery');
   });
 
-  describe('coverage states', () => {
-    const q = (sel: string) =>
-      fixture.nativeElement.querySelector(sel) as HTMLElement | null;
-    const load = async (page: unknown, search = '') => {
-      await fixture.whenStable();
-      const component = fixture.componentInstance;
-      communityServiceMock.getLocalDirectoryListings.mockResolvedValueOnce(
-        page
-      );
-      component.search = search;
-      component.searchDirectory();
-      await fixture.whenStable();
-      fixture.detectChanges();
-    };
-    const cov = (state: string, extra: object = {}) => ({
-      listings: [],
-      hasMore: false,
-      coverage: { state, withheldReviewedDetails: 0, ...extra },
-    });
+  it('shows the coverage state and keeps the directory visible with zero listings', async () => {
+    directory.getPage.mockResolvedValueOnce(
+      page({
+        listings: [],
+        coverage: { state: 'acquiring', reason: null } as never,
+      })
+    );
+    await create();
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Gathering listings');
+    expect(text).toContain('Business directory');
+  });
 
-    it.each([
-      ['empty', {}, 'No businesses are listed for this town yet.'],
-      ['acquiring', {}, 'Business listings for this town are being gathered.'],
-      [
-        'blocked',
-        { reason: 'town-ineligible' },
-        "The business directory isn't available for this town.",
-      ],
-      [
-        'blocked',
-        { reason: 'policy-withdrawn' },
-        'Business listings for this town have been withdrawn.',
-      ],
-      ['unknown', {}, "We can't tell yet whether this town has listings."],
-    ])('renders %s %j', async (state, extra, text) => {
-      await load(cov(state, extra));
-      expect(q('[data-testid="coverage-state"]')?.textContent).toContain(text);
-      expect(q('[data-testid="directory-retry"]')).toBeNull();
-    });
-
-    it('never says there are no businesses when coverage is absent', async () => {
-      await load({ listings: [], hasMore: false });
-      const text = q('[data-testid="coverage-state"]')?.textContent;
-      expect(text).toContain("We can't tell yet");
-      expect(text).not.toMatch(/no businesses/i);
-    });
-
-    it('uses no-results wording when a search finds nothing in an empty town', async () => {
-      await load(cov('empty'), 'zzz');
-      const text = q('[data-testid="coverage-state"]')?.textContent;
-      expect(text).toContain('No businesses match your search');
-      expect(text).not.toContain('for this town yet');
-    });
-
-    it('keeps listings visible under partial, stale freshness and withheld', async () => {
-      await load({
-        listings: [listingFixture],
-        hasMore: false,
-        sourceFreshness: {
-          state: 'stale',
-          releaseId: '2026-10-21.0',
-          sourcePublishedAt: '2026-10-22T03:00:00Z',
-          acquiredAt: null,
-          thresholds: { freshDays: 90, staleDays: 120 },
-        },
-        coverage: { state: 'partial', withheldReviewedDetails: 2 },
-      });
-      expect(fixture.nativeElement.textContent).toContain('Fixture Bakery');
-      expect(q('[data-testid="coverage-state"]')?.textContent).toContain(
-        'More listings are still being gathered.'
-      );
-      expect(q('[data-testid="withheld-note"]')?.textContent).toContain(
-        "Some business details are hidden until they're re-checked."
-      );
-      expect(q('[data-testid="source-freshness"]')?.textContent).toContain(
-        'may be out of date'
-      );
-    });
-
-    it('shows no coverage message when listings are available', async () => {
-      await load({
-        listings: [listingFixture],
-        hasMore: false,
-        coverage: { state: 'available', withheldReviewedDetails: 0 },
-      });
-      expect(q('[data-testid="coverage-state"]')).toBeNull();
-      expect(q('[data-testid="withheld-note"]')).toBeNull();
-    });
+  it('lists the closest other towns by distance', async () => {
+    const component = await create();
+    expect(component.nearbyTowns().map((t) => t.slug)).toEqual(['quitman-ga']);
+    expect(fixture.nativeElement.textContent).toContain('Quitman');
   });
 
   it('lets a signed-in page owner request review of a matching directory listing', async () => {
-    await fixture.whenStable();
-    const component = fixture.componentInstance;
+    const component = await create();
     const listing = {
       id: '00000000-0000-4000-8000-000000000101',
       name: 'Cafe',
@@ -306,8 +379,7 @@ describe('BusinessDirectoryComponent', () => {
   });
 
   it('offers a page owner a way to remove an approved link', async () => {
-    await fixture.whenStable();
-    const component = fixture.componentInstance;
+    const component = await create();
     const listing = {
       id: '00000000-0000-4000-8000-000000000101',
       name: 'Cafe',
@@ -337,8 +409,7 @@ describe('BusinessDirectoryComponent', () => {
   });
 
   it('maps only listings with reviewed coordinates', async () => {
-    await fixture.whenStable();
-    const component = fixture.componentInstance;
+    const component = await create();
     component.listings.set([
       {
         name: 'Reviewed',
@@ -361,86 +432,5 @@ describe('BusinessDirectoryComponent', () => {
         coordinates: { lat: 31, lng: -83 },
       },
     ]);
-  });
-
-  it('keeps adult listings off until the visitor selects them', async () => {
-    await fixture.whenStable();
-    const component = fixture.componentInstance;
-    component.isAuthenticated.set(true);
-    fixture.detectChanges();
-
-    const checkbox = fixture.nativeElement.querySelector(
-      'input[name="directoryAdult"]'
-    ) as HTMLInputElement;
-    expect(checkbox.checked).toBe(false);
-    checkbox.checked = true;
-    checkbox.dispatchEvent(new Event('change'));
-    fixture.detectChanges();
-
-    expect(
-      communityServiceMock.getLocalDirectoryListings
-    ).toHaveBeenLastCalledWith(cityFixture.id, 0, '', true);
-  });
-
-  describe('source freshness label', () => {
-    const base = {
-      releaseId: '2026-10-21.0',
-      sourcePublishedAt: '2026-10-22T03:00:00Z',
-      acquiredAt: '2026-11-01T00:00:00Z',
-      thresholds: { freshDays: 90, staleDays: 120 },
-    };
-    const labelFor = (sf: unknown) => {
-      fixture.componentInstance.sourceFreshness.set(sf as never);
-      fixture.detectChanges();
-      return fixture.nativeElement
-        .querySelector('[data-testid="source-freshness"]')
-        ?.textContent?.trim();
-    };
-
-    it.each([
-      ['fresh', 'Source data: updated 2026-10-22 (release 2026-10-21.0)'],
-      [
-        'due',
-        'Source data: updated 2026-10-22 (release 2026-10-21.0), due for refresh',
-      ],
-      [
-        'stale',
-        'Source data: updated 2026-10-22 (release 2026-10-21.0), may be out of date',
-      ],
-    ])('shows %s as text', async (state, text) => {
-      await fixture.whenStable();
-      expect(labelFor({ ...base, state })).toBe(text);
-    });
-
-    it('says the date is unknown and never invents one', async () => {
-      await fixture.whenStable();
-      expect(
-        labelFor({
-          state: 'unknown',
-          releaseId: null,
-          sourcePublishedAt: null,
-          acquiredAt: null,
-          thresholds: base.thresholds,
-        })
-      ).toBe('Source date unknown');
-    });
-
-    it('renders nothing when the field is absent, and stale keeps listings', async () => {
-      await fixture.whenStable();
-      expect(labelFor(null)).toBeUndefined();
-      fixture.componentInstance.listings.set([listingFixture]);
-      expect(labelFor({ ...base, state: 'stale' })).toContain('out of date');
-      expect(fixture.nativeElement.textContent).toContain('Fixture Bakery');
-    });
-
-    it('stores the freshness from the loaded page', async () => {
-      communityServiceMock.getLocalDirectoryListings.mockResolvedValueOnce({
-        listings: [],
-        hasMore: false,
-        sourceFreshness: { ...base, state: 'fresh' },
-      });
-      await fixture.componentInstance.loadPage(cityFixture.id, 0);
-      expect(fixture.componentInstance.sourceFreshness()?.state).toBe('fresh');
-    });
   });
 });

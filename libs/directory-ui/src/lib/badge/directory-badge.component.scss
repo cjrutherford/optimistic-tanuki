@@ -1,0 +1,22 @@
+:host {
+  display: inline-block;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm, 0.25rem);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: var(--type-small, 0.8125rem);
+  line-height: var(--line-height, 1.4);
+  letter-spacing: var(--personality-label-letter-spacing, normal);
+  white-space: nowrap;
+}
+
+.badge--page {
+  border-color: var(--primary);
+  color: var(--primary-text, var(--primary));
+  font-weight: 600;
+}

@@ -269,7 +269,6 @@ export class CityComponent implements OnInit, OnDestroy {
         );
       });
     const slug = this.route.snapshot.paramMap.get('slug') ?? '';
-    this.loadUserLocation();
     await this.loadCity(slug);
   }
 
@@ -961,6 +960,11 @@ export class CityComponent implements OnInit, OnDestroy {
       (community) =>
         !community.parentId && community.localityType !== 'neighborhood'
     );
+  }
+
+  /** Explicit, user-initiated only: the browser prompt is never raised on page load. */
+  showMyLocation(): void {
+    this.loadUserLocation();
   }
 
   private loadUserLocation(): void {

@@ -164,6 +164,14 @@
               </div>
               @if (city()!.coordinates) {
               <div class="city-map-notes">
+                <button
+                  type="button"
+                  class="btn btn-outline"
+                  data-testid="show-my-location"
+                  (click)="showMyLocation()"
+                >
+                  Show my location on the map
+                </button>
                 @if (directoryBoundary().status === 'ready') {
                 <p>
                   Verified Census boundary; the marker shows an approximate town
@@ -376,7 +384,7 @@
             </div>
             <button class="btn btn-outline" (click)="openCreateBusinessModal()">
               <otui-icon name="work" [size]="16"></otui-icon>
-              List Your Business
+              Create a business page
             </button>
           </div>
           <div class="businesses-grid">
@@ -413,7 +421,7 @@
         </div>
       </section>
       } @else {
-      <!-- Show "List Your Business" CTA even when no businesses exist yet -->
+      <!-- Show "Create a business page" CTA even when no businesses exist yet -->
       <section class="city-businesses-section city-businesses-section--empty">
         <div class="section-container">
           <div class="section-header">
@@ -425,7 +433,7 @@
             </div>
             <button class="btn btn-outline" (click)="openCreateBusinessModal()">
               <otui-icon name="work" [size]="16"></otui-icon>
-              List Your Business
+              Create a business page
             </button>
           </div>
         </div>
@@ -730,7 +738,7 @@
 <!-- ── Create Business Page Modal ──────────────────────────────────────────── -->
 <otui-modal
   [visible]="showCreateBusinessModal()"
-  heading="List Your Business"
+  heading="Create a business page"
   [closable]="true"
   (close)="showCreateBusinessModal.set(false)"
   size="md"
