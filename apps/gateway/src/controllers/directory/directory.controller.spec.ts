@@ -851,18 +851,22 @@ describe('local directory coverage projection', () => {
     jest.restoreAllMocks();
   });
 
-  it.each(['available', 'empty', 'acquiring', 'partial', 'unknown'])(
-    'passes through %s',
-    async (state) => {
-      const c = setup(page({ state, withheldReviewedDetails: 3 }));
-      const coverage = { state, withheldReviewedDetails: 3 };
-      expect((await c.localListings(id)).coverage).toEqual(coverage);
-      expect(
-        (await c.localListings(id, '0', '', undefined, undefined, 'cursor'))
-          .coverage
-      ).toEqual(coverage);
-    }
-  );
+  it.each([
+    'available',
+    'empty',
+    'acquiring',
+    'partial',
+    'unknown',
+    'unconfigured',
+  ])('passes through %s', async (state) => {
+    const c = setup(page({ state, withheldReviewedDetails: 3 }));
+    const coverage = { state, withheldReviewedDetails: 3 };
+    expect((await c.localListings(id)).coverage).toEqual(coverage);
+    expect(
+      (await c.localListings(id, '0', '', undefined, undefined, 'cursor'))
+        .coverage
+    ).toEqual(coverage);
+  });
 
   it.each(['town-ineligible', 'policy-withdrawn'])(
     'passes through blocked with %s and an empty 200 page',
@@ -918,6 +922,27 @@ describe('local directory coverage projection', () => {
       state: 'empty',
       withheldReviewedDetails: 2,
     });
+  });
+
+  it('passes a short hex policyVersion on both page shapes', async () => {
+    const c = setup({ ...page(undefined), policyVersion: '0123456789abcdef' });
+    expect((await c.localListings(id)).policyVersion).toBe('0123456789abcdef');
+    expect(
+      (await c.localListings(id, '0', '', undefined, undefined, 'cursor'))
+        .policyVersion
+    ).toBe('0123456789abcdef');
+  });
+
+  it.each([
+    ['uppercase', '0123456789ABCDEF'],
+    ['too long', '0123456789abcdef0'],
+    ['a raw policy id', '1'.repeat(64)],
+    ['not a string', 12],
+    ['an object', { id: 'x' }],
+  ])('drops a malformed policyVersion: %s', async (_n, policyVersion) => {
+    const c = setup({ ...page(undefined), policyVersion });
+    const result = await c.localListings(id);
+    expect('policyVersion' in result).toBe(false);
   });
 
   it('keeps global failures as 503', async () => {

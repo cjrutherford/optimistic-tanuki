@@ -413,3 +413,85 @@ test('other routes keep their behaviour for an ineligible town', async () => {
   );
   await assert.rejects(checks.status(town), /authority unavailable/i);
 });
+
+test('unconfigured precedence: no active policy outranks unknown, empty and acquiring', () => {
+  const state = (patch) =>
+    deriveCoverage({ ...none, anyActivePolicy: false, ...patch });
+  assert.deepEqual(state({}), {
+    state: 'unconfigured',
+    withheldReviewedDetails: 0,
+  });
+  assert.equal(
+    state({ acquiring: true, anyTarget: true }).state,
+    'unconfigured'
+  );
+  assert.equal(
+    state({ completedLive: true, anyTarget: true }).state,
+    'unconfigured'
+  );
+  // Listings served means a policy is active, so it can never be unconfigured.
+  assert.equal(state({ served: true }).state, 'available');
+  assert.equal(state({ served: true, acquiring: true }).state, 'partial');
+  // A town withdrawn by policy keeps its more specific blocked state.
+  assert.deepEqual(state({ anyTarget: true }), {
+    state: 'blocked',
+    reason: 'policy-withdrawn',
+    withheldReviewedDetails: 0,
+  });
+  assert.equal('reason' in state({}), false);
+  // Active policies, or an unknown global fact, leave the town-level states alone.
+  assert.equal(
+    deriveCoverage({ ...none, anyActivePolicy: true }).state,
+    'unknown'
+  );
+  assert.equal(deriveCoverage({ ...none }).state, 'unknown');
+});
+
+test('townCoverage maps the global policy fact and the listing page carries it', async () => {
+  const db = stubDb({
+    coverage: facts({ anyActivePolicy: false }),
+  });
+  assert.equal((await townCoverage(db, town, town)).state, 'unconfigured');
+  const page = await pendingChecks(
+    stubDb({ coverage: facts({ anyActivePolicy: false }) }),
+    source(),
+    id
+  ).localListings(town);
+  assert.equal(page.coverage.state, 'unconfigured');
+  assert.deepEqual(page.listings, []);
+  const active = await townCoverage(
+    stubDb({ coverage: facts({ anyActivePolicy: true }) }),
+    town,
+    town
+  );
+  assert.equal(active.state, 'unknown');
+});
+
+test('listing pages carry an opaque policyVersion, never a raw policy id', async () => {
+  const ids = ['d'.repeat(64), 'e'.repeat(64)];
+  const withPolicies = (extra) => {
+    const base = stubDb({ coverage: facts({ served: true }), rows: [{}] });
+    return {
+      seen: base.seen,
+      query: async (sql, params) =>
+        sql.includes('FROM directory_overture_private_policy p') &&
+        !sql.includes('directory_business_assertion')
+          ? extra.map((policyId) => ({ policyId }))
+          : base.query(sql, params),
+    };
+  };
+  const get = async (list) =>
+    pendingChecks(withPolicies(list), source(), id, cursorSecret).localListings(
+      town
+    );
+  const one = await get(ids);
+  assert.match(one.policyVersion, /^[0-9a-f]{16}$/);
+  assert.equal(JSON.stringify(one).includes(ids[0]), false);
+  assert.equal(
+    (await get([...ids].reverse())).policyVersion,
+    one.policyVersion
+  );
+  assert.notEqual((await get([ids[0]])).policyVersion, one.policyVersion);
+  const none2 = await get([]);
+  assert.equal('policyVersion' in none2, false);
+});

@@ -42,6 +42,9 @@ export interface LocalDirectorySourceFreshness {
  *  - partial: listings are served from a completed scan while a newer scan targeting the town is still acquiring.
  *  - blocked: the town is not served by policy (`reason` says which).
  *  - unknown: Directory has no recorded scan target for this town, so it cannot say whether it was scanned.
+ *  - unconfigured: no active (non-revoked) source policy exists at all, because nothing is configured or publication
+ *    is paused globally. A fact about Directory, not the town; it outranks unknown, empty and acquiring, but never
+ *    blocked/town-ineligible and never a page that serves listings.
  */
 export type LocalDirectoryCoverageState =
   | 'available'
@@ -49,7 +52,8 @@ export type LocalDirectoryCoverageState =
   | 'acquiring'
   | 'partial'
   | 'blocked'
-  | 'unknown';
+  | 'unknown'
+  | 'unconfigured';
 
 /** `town-ineligible`: the town is not eligible for the directory. `policy-withdrawn`: every scan covering it was withdrawn. */
 export type LocalDirectoryCoverageReason =
@@ -74,6 +78,11 @@ export interface LocalDirectoryPage {
   sourceFreshness?: LocalDirectorySourceFreshness;
   /** Optional so older gateway and Local Hub builds ignore it. Absent means the same as `unknown`. */
   coverage?: LocalDirectoryCoverage;
+  /**
+   * Opaque label that changes whenever the set of policies or policy generations producing the page changes.
+   * Not a policy id and not parseable: clients may only compare it for equality. Optional for older builds.
+   */
+  policyVersion?: string;
 }
 
 export interface LocalDirectoryCursorPage extends LocalDirectoryPage {

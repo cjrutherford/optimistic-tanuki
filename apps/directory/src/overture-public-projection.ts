@@ -25,7 +25,7 @@ export function projectPublicOverture(
   policy: OvertureRightsPolicy | undefined,
   visitorAdultOptIn: boolean
 ) {
-  const denied = { status: 'quarantined' as const };
+  const denied = { status: 'quarantined' as const, exportEligible: false };
   if (
     !policy ||
     !Array.isArray(policy.terms) ||
@@ -36,6 +36,13 @@ export function projectPublicOverture(
     return denied;
   const decision = evaluateOvertureFieldRights(row, 'publicDisplay', policy);
   if (!decision.eligible) return denied;
+  // Redistribution is a separate grant: deny unless the policy and every source term explicitly allow `export`.
+  // Internal only (S8 consumes it); never copied into the public listing.
+  const exportEligible = evaluateOvertureFieldRights(
+    row,
+    'export',
+    policy
+  ).eligible;
   // Reuse the private projector's strict shape and classification validation while
   // binding its display permission to the actual public-display grant.
   const publicPolicy: OvertureRightsPolicy = {
@@ -133,5 +140,5 @@ export function projectPublicOverture(
       ...new Set([...listing.termsUrls, ...rights.termsUrls]),
     ];
   }
-  return { status: 'eligible' as const, listing };
+  return { status: 'eligible' as const, listing, exportEligible };
 }
