@@ -33,6 +33,11 @@ export interface CoverageFacts {
   completedLive: boolean;
   acquiring: boolean;
   anyTarget: boolean;
+  /**
+   * Global fact: some non-revoked source policy exists. Only an explicit `false` means unconfigured; a caller that
+   * cannot say (undefined) keeps the town-level states.
+   */
+  anyActivePolicy?: boolean;
   withheldReviewedDetails: number;
 }
 
@@ -50,6 +55,13 @@ export function deriveCoverage(facts: CoverageFacts): LocalDirectoryCoverage {
     withheldReviewedDetails,
   });
   if (facts.served) return state(facts.acquiring ? 'partial' : 'available');
+  // Nothing is configured or publication is paused globally: no town-level fact can be true. A town withdrawn by
+  // policy keeps its more specific `blocked`, and town-ineligible is decided before this function is reached.
+  if (
+    facts.anyActivePolicy === false &&
+    !(facts.anyTarget && !facts.acquiring && !facts.completedLive)
+  )
+    return state('unconfigured');
   if (facts.completedLive) return state('empty');
   if (facts.acquiring) return state('acquiring');
   if (facts.anyTarget) return state('blocked', 'policy-withdrawn');
@@ -82,6 +94,7 @@ const SQL = `SELECT
     AND NOT EXISTS (SELECT 1 FROM directory_overture_private_completion c WHERE c."scanId"=t."scanId")
     AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=t."scanId")) AS acquiring,
   EXISTS (SELECT 1 FROM directory_town_scan_target t WHERE t."communityId"=$1::uuid) AS "anyTarget",
+  EXISTS (SELECT 1 FROM directory_overture_private_policy p WHERE p.revoked=false) AS "anyActivePolicy",
   (SELECT count(*)::int FROM (SELECT 1 FROM ${SERVED_ROW_FROM} WHERE ${servedRowWhere(
   '$1::text',
   '$2'
@@ -107,6 +120,9 @@ export async function townCoverage(
       completedLive: row?.completedLive === true,
       acquiring: row?.acquiring === true,
       anyTarget: row?.anyTarget === true,
+      ...(row?.anyActivePolicy === undefined
+        ? {}
+        : { anyActivePolicy: row.anyActivePolicy === true }),
       withheldReviewedDetails: Number(row?.withheld ?? 0),
     });
   };

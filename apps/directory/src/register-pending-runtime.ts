@@ -64,6 +64,7 @@ import {
   servedRowWhere,
   townCoverage,
 } from './town-coverage';
+import { currentPolicyVersion } from './policy-version';
 import { lockAuthority } from './register-reconciliation-v2';
 import { isEligibleCommunity } from './social-eligibility';
 import { geographyHash, readCurrentBoundaryCandidate } from './boundary-review';
@@ -967,6 +968,10 @@ export function pendingChecks(
     const coverage = detail
       ? undefined
       : await townCoverage(db, town, before.changeToken).catch(() => undefined);
+    // Opaque label of the policies that produce pages; omitted when it cannot be derived.
+    const policyVersion = detail
+      ? undefined
+      : await currentPolicyVersion(db, generation).catch(() => undefined);
     if (cursorMode) {
       const last = selected[24];
       return {
@@ -981,6 +986,7 @@ export function pendingChecks(
           : null,
         sourceFreshness,
         ...(coverage ? { coverage } : {}),
+        ...(policyVersion ? { policyVersion } : {}),
       };
     }
     return {
@@ -988,6 +994,7 @@ export function pendingChecks(
       hasMore,
       sourceFreshness,
       ...(coverage ? { coverage } : {}),
+      ...(policyVersion ? { policyVersion } : {}),
     };
   }
   async function localDetail(town: string, reference: string, adult = false) {
@@ -1219,7 +1226,7 @@ export function pendingServer(
     )
       return;
     if (req.method === 'GET' && req.url === '/health/live') {
-      res.writeHead(200).end('ok');
+      res.writeHead(200, { 'cache-control': 'no-store' }).end('ok');
       return;
     }
     const localUrl = req.url ? new URL(req.url, 'http://localhost') : null;
@@ -1247,11 +1254,11 @@ export function pendingServer(
         return;
       }
       if (localUrl!.search) {
-        res.writeHead(400).end();
+        res.writeHead(400, { 'cache-control': 'no-store' }).end();
         return;
       }
       if (active >= 32) {
-        res.writeHead(503).end();
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
         return;
       }
       active++;
@@ -1304,11 +1311,11 @@ export function pendingServer(
         cursors.length > 1 ||
         (cursors.length && !uuid.test(cursors[0]))
       ) {
-        res.writeHead(400).end();
+        res.writeHead(400, { 'cache-control': 'no-store' }).end();
         return;
       }
       if (active >= 32) {
-        res.writeHead(503).end();
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
         return;
       }
       active++;
@@ -1354,11 +1361,11 @@ export function pendingServer(
         return;
       }
       if (localUrl!.search) {
-        res.writeHead(400).end();
+        res.writeHead(400, { 'cache-control': 'no-store' }).end();
         return;
       }
       if (active >= 32) {
-        res.writeHead(503).end();
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
         return;
       }
       active++;
@@ -1410,11 +1417,11 @@ export function pendingServer(
         adults.length > 1 ||
         (adults.length && adults[0] !== '1')
       ) {
-        res.writeHead(400).end();
+        res.writeHead(400, { 'cache-control': 'no-store' }).end();
         return;
       }
       if (active >= 32) {
-        res.writeHead(503).end();
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
         return;
       }
       active++;
@@ -1461,11 +1468,11 @@ export function pendingServer(
         return;
       }
       if (localUrl!.search) {
-        res.writeHead(400).end();
+        res.writeHead(400, { 'cache-control': 'no-store' }).end();
         return;
       }
       if (active >= 32) {
-        res.writeHead(503).end();
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
         return;
       }
       active++;
@@ -1475,7 +1482,7 @@ export function pendingServer(
         for await (const chunk of req) {
           body = Buffer.concat([body, Buffer.from(chunk)]);
           if (body.length > 8192) {
-            res.writeHead(413).end();
+            res.writeHead(413, { 'cache-control': 'no-store' }).end();
             return;
           }
         }
@@ -1483,7 +1490,7 @@ export function pendingServer(
         try {
           parsed = JSON.parse(body.toString('utf8'));
         } catch {
-          res.writeHead(400).end();
+          res.writeHead(400, { 'cache-control': 'no-store' }).end();
           return;
         }
         if (
@@ -1493,7 +1500,7 @@ export function pendingServer(
           typeof parsed.value !== 'object' ||
           Array.isArray(parsed.value)
         ) {
-          res.writeHead(400).end();
+          res.writeHead(400, { 'cache-control': 'no-store' }).end();
           return;
         }
         await checks.localLinkAction(linkMatch[1], parsed.action, parsed.value);
@@ -1908,7 +1915,7 @@ export function pendingServer(
         adults.length > 1 ||
         (adults.length && adults[0] !== '1')
       ) {
-        res.writeHead(400).end();
+        res.writeHead(400, { 'cache-control': 'no-store' }).end();
         return;
       }
       if (active >= 32) {
@@ -2353,7 +2360,7 @@ export function pendingServer(
       req.url?.match(/^\/internal\/towns\/([0-9a-f-]{36})\/status$/);
     const readiness = req.method === 'GET' && req.url === '/health/ready';
     if (!match && !readiness) {
-      res.writeHead(404).end();
+      res.writeHead(404, { 'cache-control': 'no-store' }).end();
       return;
     }
     let ok = false;

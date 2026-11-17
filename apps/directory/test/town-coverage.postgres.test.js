@@ -157,7 +157,11 @@ test(
     const db = await open();
     try {
       const cover = async (town) => townCoverage(db, town, token);
-      assert.equal((await cover(townA)).state, 'unknown');
+      assert.equal(
+        (await cover(townA)).state,
+        'unconfigured',
+        'no policy row yet'
+      );
       // Scan A targets A (rows) and B (no rows); scan B targets A and is still running.
       const a = new OverturePrivateSink(db);
       await a.load(scanA, policy, [townA, townB]);
@@ -216,6 +220,16 @@ test(
       await db.query(
         'UPDATE directory_overture_private_policy SET revoked=true WHERE "policyId"=$1',
         [policy2]
+      );
+      assert.equal((await cover(townC)).state, 'blocked');
+      // Policy 1 stays active, so the town is not unconfigured; revoking every policy makes it so.
+      await db.query(
+        'UPDATE directory_overture_private_policy SET revoked=true'
+      );
+      assert.equal((await cover(townB)).state, 'blocked');
+      assert.equal(
+        (await cover('00000000-0000-4000-8000-0000000000e1')).state,
+        'unconfigured'
       );
       assert.equal((await cover(townC)).state, 'blocked');
     } finally {

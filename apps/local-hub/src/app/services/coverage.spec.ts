@@ -80,6 +80,20 @@ describe('describeCoverage', () => {
         .message
     ).toBe('Business listings for this town have been withdrawn.');
   });
+  it('unconfigured coverage says the directory is not available yet, without internals', () => {
+    expect(
+      readCoverage({ state: 'unconfigured', withheldReviewedDetails: 0 })
+    ).toEqual(cov('unconfigured'));
+    for (const filtersActive of [false, true]) {
+      const v = describeCoverage(cov('unconfigured'), 0, filtersActive);
+      expect(v.kind).toBe('unconfigured');
+    }
+    const v = describeCoverage(cov('unconfigured'), 0, false);
+    expect(v.message).toBe(
+      "The business directory isn't available for this town yet."
+    );
+    expect(v.message).not.toMatch(/polic|provider|scan|source|overture/i);
+  });
   it('unknown or absent coverage with no listings never claims no businesses', () => {
     for (const c of [cov('unknown'), undefined, null]) {
       const v = describeCoverage(c, 0, false);

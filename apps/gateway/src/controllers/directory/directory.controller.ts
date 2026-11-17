@@ -96,6 +96,13 @@ export class DirectoryController {
     }
   }
 
+  /** Opaque label; only a short lowercase hex string passes, anything else is dropped. */
+  private projectPolicyVersion(value: unknown): { policyVersion?: string } {
+    return typeof value === 'string' && /^[0-9a-f]{16}$/.test(value)
+      ? { policyVersion: value }
+      : {};
+  }
+
   /** Strict allowlist of town coverage; anything malformed is omitted rather than failing the page. */
   private projectCoverage(value: any): { coverage?: LocalDirectoryCoverage } {
     if (
@@ -108,6 +115,7 @@ export class DirectoryController {
         'partial',
         'blocked',
         'unknown',
+        'unconfigured',
       ].includes(value.state) ||
       !Number.isSafeInteger(value.withheldReviewedDetails) ||
       value.withheldReviewedDetails < 0 ||
@@ -364,6 +372,7 @@ export class DirectoryController {
           nextCursor: result.nextCursor,
           ...this.projectSourceFreshness(result.sourceFreshness),
           ...this.projectCoverage(result.coverage),
+          ...this.projectPolicyVersion(result.policyVersion),
         };
       }
       return {
@@ -371,6 +380,7 @@ export class DirectoryController {
         hasMore: result.hasMore,
         ...this.projectSourceFreshness(result.sourceFreshness),
         ...this.projectCoverage(result.coverage),
+        ...this.projectPolicyVersion(result.policyVersion),
       };
     } catch (error) {
       if (error instanceof BadRequestException) throw error;

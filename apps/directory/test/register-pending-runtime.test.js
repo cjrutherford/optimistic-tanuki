@@ -1510,3 +1510,259 @@ test('business identity decisions are recorded as a profile actor behind authori
   assert.equal(inserted[5], u);
   assert.equal(inserted[6], 'profile');
 });
+const S = {
+  review: 'review-secret-0123456789012345678901',
+  pending: 'pending-secret-012345678901234567890',
+  decision: 'decision-secret-01234567890123456789',
+  containment: 'containment-secret-012345678901234567',
+  local: 'local-secret-0123456789012345678901234',
+  link: 'link-secret-0123456789012345678901234',
+};
+const L = `/internal/local-evaluation/towns/${town}`;
+const ref = '00000000-0000-4000-8000-000000000101';
+const routes = [
+  ['GET', `/internal/register-towns/${town}/status`, 'pending'],
+  ['GET', `/internal/towns/${town}/containment`, 'containment'],
+  ['GET', `/internal/towns/${town}/boundary`, 'containment'],
+  ['POST', `/internal/towns/${town}/boundary-decisions`, 'decision'],
+  ['GET', `/internal/towns/${town}/boundary-candidate`, 'review'],
+  ['GET', `${L}/listings`, 'local'],
+  ['GET', `${L}/listings/${ref}`, 'local'],
+  ['GET', `${L}/address-review-candidates`, 'local'],
+  ['POST', `${L}/address-review-candidates/${ref}/decisions`, 'local'],
+  ['GET', `${L}/business-identity-review`, 'local'],
+  ['POST', `${L}/business-identity-review/decisions`, 'local'],
+  ['POST', `${L}/business-links`, 'link'],
+  ['GET', `${L}/business-links/${ref}`, 'link'],
+  ['GET', `${L}/business-links/${ref}/requests`, 'link'],
+  ['GET', `${L}/business-link-requests`, 'link'],
+  ['GET', `${L}/business-links/${ref}/owner/${town}`, 'link'],
+];
+test('every internal route sets cache-control no-store on every error path', async () => {
+  const boom = new Proxy(
+    {},
+    {
+      get: () => async () => {
+        throw new Error('boom');
+      },
+    }
+  );
+  const start = async (secrets) => {
+    const server = pendingServer(
+      boom,
+      secrets.review,
+      secrets.pending,
+      secrets.decision,
+      secrets.containment,
+      secrets.local,
+      secrets.link
+    );
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    return server;
+  };
+  const checked = [];
+  const hit = async (server, method, path, init = {}) => {
+    const res = await fetch(
+      `http://127.0.0.1:${server.address().port}${path}`,
+      {
+        method,
+        ...init,
+      }
+    );
+    await res.text();
+    assert.ok(res.status >= 400, `${method} ${path} -> ${res.status}`);
+    assert.equal(
+      res.headers.get('cache-control'),
+      'no-store',
+      `${method} ${path} -> ${res.status} lacks no-store`
+    );
+    checked.push(res.status);
+    return res.status;
+  };
+  const configured = await start(S),
+    unconfigured = await start({});
+  try {
+    for (const [method, path, key] of routes) {
+      const auth = { authorization: `Bearer ${S[key]}` };
+      assert.equal(await hit(unconfigured, method, path), 503);
+      assert.equal(await hit(configured, method, path), 401);
+      assert.equal(
+        await hit(configured, method, path, {
+          headers: { authorization: `Bearer ${'x'.repeat(S[key].length)}` },
+        }),
+        401
+      );
+      // authenticated but checks throw, or request invalid
+      const bad = await hit(configured, method, path, {
+        headers: { ...auth, 'content-type': 'application/json' },
+        ...(method === 'POST' ? { body: '{' } : {}),
+      });
+      assert.ok([400, 404, 503].includes(bad), `${path} -> ${bad}`);
+      assert.ok(
+        [400, 404].includes(
+          await hit(configured, method, `${path}?zz=1&zz=2`, {
+            headers: auth,
+            ...(method === 'POST' ? { body: '{}' } : {}),
+          })
+        ),
+        `${method} ${path} junk query`
+      );
+      if (method === 'POST')
+        assert.equal(
+          await hit(configured, method, path, {
+            headers: { ...auth, 'content-type': 'application/json' },
+            body: JSON.stringify({ pad: 'x'.repeat(70000) }),
+          }),
+          413,
+          `${path} oversize`
+        );
+    }
+    assert.equal(await hit(configured, 'GET', '/nope'), 404);
+    assert.equal(await hit(configured, 'GET', `${L}/listings/`), 404);
+    assert.equal(await hit(configured, 'DELETE', `${L}/business-links`), 404);
+    // the throwing checks surface as 503, never a stack trace
+    for (const [path, key] of [
+      [`${L}/listings`, 'local'],
+      [`${L}/listings/${ref}`, 'local'],
+      [`${L}/business-links/${ref}`, 'link'],
+      [`${L}/business-link-requests`, 'link'],
+    ]) {
+      const res = await fetch(
+        `http://127.0.0.1:${configured.address().port}${path}`,
+        { headers: { authorization: `Bearer ${S[key]}` } }
+      );
+      assert.equal(res.status, 503);
+      assert.equal(res.headers.get('cache-control'), 'no-store');
+      assert.equal(await res.text(), '');
+    }
+  } finally {
+    await new Promise((resolve) => configured.close(resolve));
+    await new Promise((resolve) => unconfigured.close(resolve));
+  }
+  assert.ok(checked.length > 80);
+  assert.ok([400, 401, 404, 413, 503].every((s) => checked.includes(s)));
+});
+test('cursors and references minted for one town and query never replay elsewhere, over HTTP', async () => {
+  const secret = 'local-replay-test-secret-123456789012345';
+  const townB = '00000000-0000-4000-8000-0000000000b5';
+  const item = {
+    name: 'Cafe',
+    category: 'restaurant',
+    location: { type: 'Point', coordinates: [-83, 31] },
+    attribution: ['Source'],
+    notices: [],
+    termsUrls: [],
+  };
+  const pageSizes = [];
+  const db = {
+    query: async (sql, params) => {
+      if (
+        sql.includes('directory_overture_private_row') &&
+        !sql.includes('directory_town_scan_target') &&
+        !sql.includes('directory_overture_source_evidence')
+      ) {
+        pageSizes.push(params);
+        return Array.from({ length: 26 }, (_, i) => ({
+          listing: item,
+          scanId: 'a'.repeat(64),
+          sourceFileRowNumber: String(i + 1),
+        }));
+      }
+      return [row()];
+    },
+  };
+  const s = {
+    scan: async () => [],
+    current: async (_id, townId) => ({
+      status: 'current',
+      changeToken: townId,
+      snapshot: { ...snapshot, id: townId },
+    }),
+  };
+  const idDb = identityDb(db);
+  // Real SQL scopes identity lookups by town (params[0]); mirror that in the fake.
+  const townScoped = {
+    query: async (sql, params) =>
+      sql.includes('FROM directory_listing_identity') && params[0] !== town
+        ? []
+        : idDb.query(sql, params),
+  };
+  const checks = pendingChecks(townScoped, s, id, secret);
+  const server = pendingServer(
+    checks,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    secret
+  );
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${server.address().port}`,
+    headers = { authorization: `Bearer ${secret}` },
+    get = async (path) => {
+      const res = await fetch(base + path, { headers });
+      return {
+        status: res.status,
+        cc: res.headers.get('cache-control'),
+        body: await res.text(),
+      };
+    };
+  try {
+    const q = '&q=cafe&category=restaurant';
+    const first = await get(
+      `/internal/local-evaluation/towns/${town}/listings?pagination=cursor${q}`
+    );
+    assert.equal(first.status, 200);
+    const page = JSON.parse(first.body);
+    assert.equal(page.listings.length, 25);
+    const cursor = page.nextCursor;
+    const same = await get(
+      `/internal/local-evaluation/towns/${town}/listings?pagination=cursor&cursor=${cursor}${q}`
+    );
+    assert.equal(same.status, 200);
+    const replays = [
+      // another town
+      `/internal/local-evaluation/towns/${townB}/listings?pagination=cursor&cursor=${cursor}${q}`,
+      // another query / category / bounds / adult choice
+      `/internal/local-evaluation/towns/${town}/listings?pagination=cursor&cursor=${cursor}&q=bakery&category=restaurant`,
+      `/internal/local-evaluation/towns/${town}/listings?pagination=cursor&cursor=${cursor}&q=cafe&category=bakery`,
+      `/internal/local-evaluation/towns/${town}/listings?pagination=cursor&cursor=${cursor}${q}&bounds=-84,30,-82,32`,
+      `/internal/local-evaluation/towns/${town}/listings?pagination=cursor&cursor=${cursor}${q}&adult=1`,
+      `/internal/local-evaluation/towns/${town}/listings?pagination=cursor&cursor=${cursor}`,
+    ];
+    for (const path of replays) {
+      const res = await get(path);
+      assert.equal(res.status, 400, path);
+      assert.equal(res.cc, 'no-store');
+      assert.equal(res.body, '');
+    }
+    // page size is fixed: limit is not a recognised parameter and is rejected
+    for (const limit of ['1', '100', '0', '-1', '26'])
+      assert.equal(
+        (
+          await get(
+            `/internal/local-evaluation/towns/${town}/listings?pagination=cursor&limit=${limit}`
+          )
+        ).status,
+        400
+      );
+    assert.ok(pageSizes.length > 0);
+    // wrong-town reference or listing id is indistinguishable from a missing one
+    const id1 = page.listings[0].id,
+      reference = page.listings[0].reference;
+    for (const r of [id1, reference]) {
+      const ok = await get(
+        `/internal/local-evaluation/towns/${town}/listings/${r}`
+      );
+      assert.equal(ok.status, 200);
+      const wrong = await get(
+        `/internal/local-evaluation/towns/${townB}/listings/${r}`
+      );
+      assert.equal(wrong.status, 404);
+      assert.equal(wrong.cc, 'no-store');
+      assert.equal(wrong.body, '');
+    }
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

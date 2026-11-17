@@ -13,6 +13,7 @@ const STATES: LocalDirectoryCoverageState[] = [
   'partial',
   'blocked',
   'unknown',
+  'unconfigured',
 ];
 const REASONS: LocalDirectoryCoverageReason[] = [
   'town-ineligible',
@@ -54,6 +55,7 @@ export type CoverageViewKind =
   | 'partial'
   | 'blocked'
   | 'unknown'
+  | 'unconfigured'
   | 'no-match';
 
 export interface CoverageView {
@@ -97,6 +99,13 @@ export function describeCoverage(
           'Directory not available',
           "The business directory isn't available for this town."
         );
+  }
+  if (coverage?.state === 'unconfigured') {
+    return view(
+      'unconfigured',
+      'Directory not available yet',
+      "The business directory isn't available for this town yet."
+    );
   }
   if (coverage?.state === 'acquiring') {
     return view(
