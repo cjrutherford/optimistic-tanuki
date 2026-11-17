@@ -7,7 +7,7 @@ import {
   WITHDRAWAL_CONFIRMATION,
   type WithdrawalKind,
   type WithdrawalRecord,
-} from '@optimistic-tanuki/social-contracts';
+} from '@optimistic-tanuki/social-contracts/directory';
 import {
   BadgeComponent,
   ButtonComponent,

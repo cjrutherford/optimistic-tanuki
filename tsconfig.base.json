@@ -207,6 +207,9 @@
       "@optimistic-tanuki/social-contracts": [
         "libs/social/contracts/src/index.ts"
       ],
+      "@optimistic-tanuki/social-contracts/directory": [
+        "libs/social/contracts/src/lib/directory.ts"
+      ],
       "@optimistic-tanuki/social-data-access": [
         "libs/social-data-access/src/index.ts"
       ],

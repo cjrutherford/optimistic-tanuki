@@ -8,7 +8,7 @@ import {
   type TaxonomyMappingList,
   type TaxonomyRunRecord,
   type TaxonomyRunScope,
-} from '@optimistic-tanuki/social-contracts';
+} from '@optimistic-tanuki/social-contracts/directory';
 import {
   BadgeComponent,
   ButtonComponent,
