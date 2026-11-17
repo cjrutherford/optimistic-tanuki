@@ -101,6 +101,7 @@ import {
   DirectoryBusinessLinkQueueController,
 } from '../controllers/directory/directory-business-link.controller';
 import { DirectoryAddressReviewController } from '../controllers/directory/directory-address-review.controller';
+import { DirectoryBusinessIdentityReviewController } from '../controllers/directory/directory-business-identity-review.controller';
 import { WellnessController } from '../controllers/wellness/wellness.controller';
 import { ClassifiedsController } from '../controllers/classifieds/classifieds.controller';
 import { CommunitiesController } from '../controllers/communities/communities.controller';
@@ -238,6 +239,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'directory-address-review',
         requiredServices: ['social', 'authentication', 'permissions'],
         value: DirectoryAddressReviewController,
+      },
+      {
+        id: 'directory-business-identity-review',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryBusinessIdentityReviewController,
       },
       {
         id: 'social-components',

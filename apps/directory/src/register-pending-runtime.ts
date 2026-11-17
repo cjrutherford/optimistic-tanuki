@@ -7,7 +7,13 @@ import {
 import {
   businessIdentityHealth,
   type BusinessIdentityHealth,
+  listIdentityReviewQueue,
 } from './business-identity-review';
+import {
+  decideBusinessIdentity,
+  type DecisionAction,
+  type DecisionRow,
+} from './business-identity-decision';
 import { accountLifecycleConfig } from './account-lifecycle-server';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import {
@@ -1096,6 +1102,55 @@ export function pendingChecks(
     await authority(town);
     return result;
   }
+  async function identityReviewQueue(town: string) {
+    if (!uuid.test(town) || !db.transaction)
+      throw Error('Identity review unavailable');
+    await authority(town);
+    const result = {
+      health: await businessIdentityHealth(db),
+      queue: await listIdentityReviewQueue(db, town),
+    };
+    await authority(town);
+    return result;
+  }
+  async function identityReviewDecision(
+    town: string,
+    value: {
+      decisionId: string;
+      action: DecisionAction;
+      businessId: string;
+      otherBusinessId?: string;
+      rows?: DecisionRow[];
+      actorId: string;
+      reason: string;
+    }
+  ) {
+    if (!uuid.test(town) || !db.transaction)
+      throw Error('Identity review unavailable');
+    await authority(town);
+    const {
+      decisionId,
+      action,
+      businessId,
+      otherBusinessId,
+      rows,
+      actorId,
+      reason,
+    } = value;
+    const { replayed, businessIds, restoredLinks } =
+      await decideBusinessIdentity(db as DataSource, {
+        decisionId,
+        townId: town,
+        action,
+        businessId,
+        otherBusinessId,
+        rows,
+        actor: { id: actorId, domain: 'profile' },
+        reason,
+      });
+    await authority(town);
+    return { replayed, businesses: businessIds.length, restoredLinks };
+  }
   return {
     ready,
     bindingHealth,
@@ -1117,6 +1172,8 @@ export function pendingChecks(
     localOwnerLinks,
     addressReviewList,
     addressReviewDecision,
+    identityReviewQueue,
+    identityReviewDecision,
   };
 }
 
@@ -1619,6 +1676,180 @@ export function pendingServer(
           .end(JSON.stringify(result));
       } catch {
         res.writeHead(503, { 'cache-control': 'no-store' }).end();
+      } finally {
+        active--;
+      }
+      return;
+    }
+    const identityReviewListMatch =
+      req.method === 'GET' &&
+      localUrl?.pathname.match(
+        /^\/internal\/local-evaluation\/towns\/([0-9a-f-]{36})\/business-identity-review$/
+      );
+    if (identityReviewListMatch) {
+      const expected = Buffer.from(localSecret || ''),
+        provided = Buffer.from(
+          req.headers.authorization?.startsWith('Bearer ')
+            ? req.headers.authorization.slice(7)
+            : ''
+        );
+      if (expected.length < 32) {
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (
+        provided.length !== expected.length ||
+        !timingSafeEqual(provided, expected)
+      ) {
+        res.writeHead(401, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (localUrl!.search || !uuid.test(identityReviewListMatch[1])) {
+        res.writeHead(400, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (active >= 32) {
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      active++;
+      try {
+        const result = await checks.identityReviewQueue(
+          identityReviewListMatch[1]
+        );
+        res
+          .writeHead(200, {
+            'content-type': 'application/json',
+            'cache-control': 'no-store',
+          })
+          .end(JSON.stringify(result));
+      } catch {
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
+      } finally {
+        active--;
+      }
+      return;
+    }
+    const identityReviewDecisionMatch =
+      req.method === 'POST' &&
+      localUrl?.pathname.match(
+        /^\/internal\/local-evaluation\/towns\/([0-9a-f-]{36})\/business-identity-review\/decisions$/
+      );
+    if (identityReviewDecisionMatch) {
+      const expected = Buffer.from(localSecret || ''),
+        provided = Buffer.from(
+          req.headers.authorization?.startsWith('Bearer ')
+            ? req.headers.authorization.slice(7)
+            : ''
+        );
+      if (expected.length < 32) {
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (
+        provided.length !== expected.length ||
+        !timingSafeEqual(provided, expected)
+      ) {
+        res.writeHead(401, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (localUrl!.search || !uuid.test(identityReviewDecisionMatch[1])) {
+        res.writeHead(400, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (active >= 32) {
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      active++;
+      req.setTimeout(5000, () => req.destroy());
+      try {
+        let body = Buffer.alloc(0);
+        for await (const chunk of req) {
+          body = Buffer.concat([body, Buffer.from(chunk)]);
+          if (body.length > 16384) {
+            res.writeHead(413, { 'cache-control': 'no-store' }).end();
+            return;
+          }
+        }
+        let value: any;
+        try {
+          value = JSON.parse(body.toString('utf8'));
+        } catch {
+          res.writeHead(400, { 'cache-control': 'no-store' }).end();
+          return;
+        }
+        const {
+          decisionId,
+          actorId,
+          action,
+          businessId,
+          otherBusinessId,
+          rows,
+          reason,
+        } = value || {};
+        const validRows =
+          Array.isArray(rows) &&
+          rows.length >= 1 &&
+          rows.length <= 100 &&
+          rows.every(
+            (r: any) =>
+              r &&
+              typeof r === 'object' &&
+              !Array.isArray(r) &&
+              typeof r.scanId === 'string' &&
+              (/^[0-9a-f]{64}$/.test(r.scanId) ||
+                /^[\w.-]{1,64}$/.test(r.scanId)) &&
+              typeof r.sourceFileRowNumber === 'string' &&
+              /^[0-9]{1,18}$/.test(r.sourceFileRowNumber)
+          );
+        if (
+          !value ||
+          typeof value !== 'object' ||
+          Array.isArray(value) ||
+          !uuid.test(actorId || '') ||
+          !uuid.test(decisionId || '') ||
+          !uuid.test(businessId || '') ||
+          !['confirm', 'retire', 'merge', 'split'].includes(action) ||
+          typeof reason !== 'string' ||
+          !reason.trim() ||
+          reason.length > 1024 ||
+          (action === 'merge'
+            ? !uuid.test(otherBusinessId || '')
+            : otherBusinessId !== undefined) ||
+          (action === 'split' ? !validRows : rows !== undefined)
+        ) {
+          res.writeHead(400, { 'cache-control': 'no-store' }).end();
+          return;
+        }
+        const result = await checks.identityReviewDecision(
+          identityReviewDecisionMatch[1],
+          {
+            decisionId,
+            action,
+            businessId,
+            otherBusinessId,
+            rows,
+            actorId,
+            reason,
+          }
+        );
+        res
+          .writeHead(200, {
+            'content-type': 'application/json',
+            'cache-control': 'no-store',
+          })
+          .end(JSON.stringify(result));
+      } catch (error) {
+        res
+          .writeHead(
+            error instanceof Error &&
+              error.message === 'Invalid business identity decision'
+              ? 409
+              : 503,
+            { 'cache-control': 'no-store' }
+          )
+          .end();
       } finally {
         active--;
       }

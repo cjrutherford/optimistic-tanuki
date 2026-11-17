@@ -53,6 +53,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'directory-identity-review/:communityId',
+        loadComponent: () =>
+          import('./components/directory-identity-review-page.component').then(
+            (m) => m.DirectoryIdentityReviewPageComponent
+          ),
+      },
+      {
         path: 'boundary-review/:communityId',
         loadComponent: () =>
           import('./components/boundary-review-page.component').then(
