@@ -62,6 +62,11 @@ test('parses Parquet statistics without discarding incomplete or inconsistent gr
     )
   );
 });
+const reserveAttempt = async (attempt) => ({
+  state: 'reserved',
+  attemptId: attempt.attemptId,
+  period: new Date().toISOString().slice(0, 7),
+});
 test('reads parquet metadata through a connection and computes candidates', async () => {
   const inventory = buildInventory(
     [item('a')],
@@ -88,7 +93,8 @@ test('reads parquet metadata through a connection and computes candidates', asyn
     connection,
     source,
     envelope,
-    '2026-10-21.0'
+    '2026-10-21.0',
+    { reserveAttempt }
   );
   assert.match(sql, /parquet_metadata\(/);
   assert.match(sql, /WHERE path_in_schema/);
@@ -98,7 +104,8 @@ test('reads parquet metadata through a connection and computes candidates', asyn
       connection,
       { ...source, asset: 'https://example.com/a.parquet' },
       envelope,
-      '2026-10-21.0'
+      '2026-10-21.0',
+      { reserveAttempt }
     )
   );
   await assert.rejects(() =>
@@ -106,7 +113,8 @@ test('reads parquet metadata through a connection and computes candidates', asyn
       connection,
       { ...source, etag: '' },
       envelope,
-      '2026-10-21.0'
+      '2026-10-21.0',
+      { reserveAttempt }
     )
   );
 });

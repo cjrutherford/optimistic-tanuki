@@ -22,6 +22,7 @@ function database() {
                 owner: id.communityId,
                 activationId: id.changeToken,
                 phase: 'blocked',
+                protocol: 'legacy',
                 cursor: null,
                 socialGeneration: '1',
                 directoryGeneration: '1',
@@ -52,7 +53,11 @@ test('exact-token read follows both locks and writes only blocked work', async (
     };
   });
   assert.equal(result, 'applied');
-  assert.match(db.calls[4][0], /'blocked'/);
+  // Boundary-decision, reviewed-geometry and candidate cleanup precede the town and work writes.
+  assert.match(
+    db.calls.at(-1)[0],
+    /INSERT INTO directory_provider_work.*'blocked'/
+  );
 });
 test('superseded does not write; null cancels work', async () => {
   const db = database();

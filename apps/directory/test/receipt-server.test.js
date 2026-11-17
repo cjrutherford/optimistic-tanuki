@@ -48,6 +48,7 @@ test('authenticates and issues only after committed receipt is visible', async (
             socialGeneration: '1',
             directoryGeneration: '1',
             phase: 'blocked',
+            protocol: 'legacy',
             cursor: null,
           },
         ]
