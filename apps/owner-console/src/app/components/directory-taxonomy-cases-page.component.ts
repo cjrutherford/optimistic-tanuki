@@ -11,7 +11,7 @@ import {
   type TaxonomyCaseSummary,
   type TaxonomyDecisionAction,
   type TaxonomyRaiseCaseResult,
-} from '@optimistic-tanuki/social-contracts';
+} from '@optimistic-tanuki/social-contracts/directory';
 import {
   BadgeComponent,
   ButtonComponent,
