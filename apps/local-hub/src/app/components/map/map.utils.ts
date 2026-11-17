@@ -1,4 +1,8 @@
-export type MapMode = 'atlas-nearby' | 'single-location' | 'radius-focus';
+export type MapMode =
+  | 'atlas-nearby'
+  | 'single-location'
+  | 'radius-focus'
+  | 'directory';
 
 export interface MapCoordinates {
   lat: number;
@@ -48,7 +52,7 @@ export function isRenderableCoordinate(
     return false;
   }
 
-  return !(coordinates.lat === 0 && coordinates.lng === 0);
+  return true;
 }
 
 export function haversineMiles(

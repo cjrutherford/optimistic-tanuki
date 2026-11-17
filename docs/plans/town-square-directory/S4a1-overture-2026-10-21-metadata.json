@@ -1,0 +1,494 @@
+{
+  "release": "2026-10-21.0",
+  "envelope": [
+    -83.802723,
+    30.355757,
+    -81.731694,
+    31.854095
+  ],
+  "inventorySha256": "ec8ceab6a4165993f827215fd9ba5659ae9451bdc67bb5070f84f873367fabd0",
+  "items": [
+    {
+      "id": "00000",
+      "bbox": [
+        -179.99806213378906,
+        -84.9901123046875,
+        -74.9131851196289,
+        28.344669342041016
+      ],
+      "rows": 5526143,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00000-a0a9949b-7e8e-59fe-803b-6cc55b17f790-c000.zstd.parquet",
+      "size": 729511821,
+      "etag": "4875d0ea87ee1003e2dd155858941baa-11",
+      "lastModified": "Wed, 21 Oct 2026 17:43:48 GMT"
+    },
+    {
+      "id": "00001",
+      "bbox": [
+        -120.6488037109375,
+        28.344669342041016,
+        -76.41238403320312,
+        34.77007293701172
+      ],
+      "rows": 5571608,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00001-95b3bb67-399f-571e-9503-61421d57661c-c000.zstd.parquet",
+      "size": 810722286,
+      "etag": "47bb338922630e7aea96a47bd57c2e90-13",
+      "lastModified": "Wed, 21 Oct 2026 17:43:57 GMT"
+    },
+    {
+      "id": "00002",
+      "bbox": [
+        -179.81707763671875,
+        34.77007293701172,
+        -87.93789672851562,
+        81.75200653076172
+      ],
+      "rows": 5524225,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00002-6f03d044-7fc3-539e-842b-7b15c796e629-c000.zstd.parquet",
+      "size": 814700009,
+      "etag": "66e8287a6251de068513fce76f2e98b9-13",
+      "lastModified": "Wed, 21 Oct 2026 17:45:32 GMT"
+    },
+    {
+      "id": "00003",
+      "bbox": [
+        -87.93790435791016,
+        34.770076751708984,
+        -74.91316986083984,
+        82.78334045410156
+      ],
+      "rows": 5576484,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00003-755a53ba-2d37-54c8-b30e-8c14897bc3f3-c000.zstd.parquet",
+      "size": 826418126,
+      "etag": "a755b221cf913d4a385342fe52a03d49-13",
+      "lastModified": "Wed, 21 Oct 2026 17:45:32 GMT"
+    },
+    {
+      "id": "00004",
+      "bbox": [
+        -74.9105224609375,
+        -84.92832946777344,
+        3.874483823776245,
+        -20.012929916381836
+      ],
+      "rows": 5425053,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00004-14b83d8c-d850-51f9-85b2-8f8a0b4634af-c000.zstd.parquet",
+      "size": 712441815,
+      "etag": "cd9c9c2fd09e39782e7cc6b2063f719b-11",
+      "lastModified": "Wed, 21 Oct 2026 17:45:26 GMT"
+    },
+    {
+      "id": "00005",
+      "bbox": [
+        -74.91317749023438,
+        -20.01293182373047,
+        4.38297700881958,
+        40.69429397583008
+      ],
+      "rows": 5465973,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00005-c3667754-428e-500c-bf3b-a0b5921b7cc0-c000.zstd.parquet",
+      "size": 720677975,
+      "etag": "673abe364c042bf4710d4417c1605e0d-11",
+      "lastModified": "Wed, 21 Oct 2026 17:44:01 GMT"
+    },
+    {
+      "id": "00006",
+      "bbox": [
+        -74.91317749023438,
+        40.69429016113281,
+        -1.5035587549209595,
+        83.57147979736328
+      ],
+      "rows": 5450810,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00006-55d446f6-129a-556e-b79e-e1cfd5735068-c000.zstd.parquet",
+      "size": 755632071,
+      "etag": "b458120a0ecd82ac2748bf4e06eb8add-12",
+      "lastModified": "Wed, 21 Oct 2026 17:50:51 GMT"
+    },
+    {
+      "id": "00007",
+      "bbox": [
+        -1.50355863571167,
+        40.69438171386719,
+        4.383083820343018,
+        60.85527420043945
+      ],
+      "rows": 5547758,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00007-a2c7689b-daa2-5233-9780-d37ccfc3ea74-c000.zstd.parquet",
+      "size": 725017426,
+      "etag": "e92948dbce4b18503f5633f019a52b20-11",
+      "lastModified": "Wed, 21 Oct 2026 17:45:46 GMT"
+    },
+    {
+      "id": "00008",
+      "bbox": [
+        4.383307456970215,
+        -84.54301452636719,
+        35.85000228881836,
+        42.22498321533203
+      ],
+      "rows": 5481928,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00008-8b09f6c1-f726-581a-9b39-f891088cc2ad-c000.zstd.parquet",
+      "size": 721833497,
+      "etag": "cb566d51c33a8717be151741f011468c-11",
+      "lastModified": "Wed, 21 Oct 2026 17:45:53 GMT"
+    },
+    {
+      "id": "00009",
+      "bbox": [
+        4.38308572769165,
+        42.22498321533203,
+        35.84453201293945,
+        47.698585510253906
+      ],
+      "rows": 5526841,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00009-fe90ff49-733f-5fa3-9755-c6cd4438305c-c000.zstd.parquet",
+      "size": 713205738,
+      "etag": "ef4fbf2137ac3bbe9c56f6bf2fabf5ce-11",
+      "lastModified": "Wed, 21 Oct 2026 17:43:29 GMT"
+    },
+    {
+      "id": "00010",
+      "bbox": [
+        4.383083343505859,
+        47.69858169555664,
+        35.849891662597656,
+        51.4741096496582
+      ],
+      "rows": 5534253,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00010-c680fdf1-f03b-5be1-93f1-56c835a00765-c000.zstd.parquet",
+      "size": 723633922,
+      "etag": "d2be0995fe0d8266579a2f780d3e6344-11",
+      "lastModified": "Wed, 21 Oct 2026 17:45:48 GMT"
+    },
+    {
+      "id": "00011",
+      "bbox": [
+        4.383083343505859,
+        51.47410583496094,
+        35.84979248046875,
+        80.50548553466797
+      ],
+      "rows": 5538972,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00011-472205f3-e3ff-5474-98a4-b9b3361f7306-c000.zstd.parquet",
+      "size": 714390669,
+      "etag": "a77c4beb9d0e1f4873c8657c0f251b9e-11",
+      "lastModified": "Wed, 21 Oct 2026 17:45:41 GMT"
+    },
+    {
+      "id": "00012",
+      "bbox": [
+        35.849998474121094,
+        -84.9798812866211,
+        106.4590835571289,
+        18.79004669189453
+      ],
+      "rows": 5587482,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00012-8cf9bdfe-d946-56f8-84c0-19493d0fbb9c-c000.zstd.parquet",
+      "size": 730097847,
+      "etag": "c1fa07385d7fa2c56f413e8e322d59cd-11",
+      "lastModified": "Wed, 21 Oct 2026 17:46:03 GMT"
+    },
+    {
+      "id": "00013",
+      "bbox": [
+        106.45907592773438,
+        -84.88636779785156,
+        179.9976043701172,
+        18.788057327270508
+      ],
+      "rows": 5561633,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00013-6c366648-1364-543e-894b-d6e65d03c056-c000.zstd.parquet",
+      "size": 719333214,
+      "etag": "fe3a6ceb7ac3d8c9a2862a46ccd4b24b-11",
+      "lastModified": "Wed, 21 Oct 2026 17:45:52 GMT"
+    },
+    {
+      "id": "00014",
+      "bbox": [
+        35.849998474121094,
+        18.7900447845459,
+        104.26789093017578,
+        81.84305572509766
+      ],
+      "rows": 5570469,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00014-dcceff87-235e-5a0e-a4b4-5f25ccb873e7-c000.zstd.parquet",
+      "size": 744601106,
+      "etag": "4ff3b0b5c984c13fb472965d6e91e953-12",
+      "lastModified": "Wed, 21 Oct 2026 17:45:49 GMT"
+    },
+    {
+      "id": "00015",
+      "bbox": [
+        104.26788330078125,
+        18.790081024169922,
+        179.95555114746094,
+        77.10000610351562
+      ],
+      "rows": 5528489,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00015-eb1c1331-f519-5db6-8fef-74a77e5776ff-c000.zstd.parquet",
+      "size": 733499664,
+      "etag": "a6c4747c58c0a8a44c937a4f2ff3cdea-11",
+      "lastModified": "Wed, 21 Oct 2026 17:44:10 GMT"
+    }
+  ],
+  "selected": [
+    {
+      "id": "00000",
+      "bbox": [
+        -179.99806213378906,
+        -84.9901123046875,
+        -74.9131851196289,
+        28.344669342041016
+      ],
+      "rows": 5526143,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00000-a0a9949b-7e8e-59fe-803b-6cc55b17f790-c000.zstd.parquet",
+      "size": 729511821,
+      "etag": "4875d0ea87ee1003e2dd155858941baa-11",
+      "lastModified": "Wed, 21 Oct 2026 17:43:48 GMT"
+    },
+    {
+      "id": "00001",
+      "bbox": [
+        -120.6488037109375,
+        28.344669342041016,
+        -76.41238403320312,
+        34.77007293701172
+      ],
+      "rows": 5571608,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00001-95b3bb67-399f-571e-9503-61421d57661c-c000.zstd.parquet",
+      "size": 810722286,
+      "etag": "47bb338922630e7aea96a47bd57c2e90-13",
+      "lastModified": "Wed, 21 Oct 2026 17:43:57 GMT"
+    },
+    {
+      "id": "00002",
+      "bbox": [
+        -179.81707763671875,
+        34.77007293701172,
+        -87.93789672851562,
+        81.75200653076172
+      ],
+      "rows": 5524225,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00002-6f03d044-7fc3-539e-842b-7b15c796e629-c000.zstd.parquet",
+      "size": 814700009,
+      "etag": "66e8287a6251de068513fce76f2e98b9-13",
+      "lastModified": "Wed, 21 Oct 2026 17:45:32 GMT"
+    },
+    {
+      "id": "00003",
+      "bbox": [
+        -87.93790435791016,
+        34.770076751708984,
+        -74.91316986083984,
+        82.78334045410156
+      ],
+      "rows": 5576484,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00003-755a53ba-2d37-54c8-b30e-8c14897bc3f3-c000.zstd.parquet",
+      "size": 826418126,
+      "etag": "a755b221cf913d4a385342fe52a03d49-13",
+      "lastModified": "Wed, 21 Oct 2026 17:45:32 GMT"
+    },
+    {
+      "id": "00004",
+      "bbox": [
+        -74.9105224609375,
+        -84.92832946777344,
+        3.874483823776245,
+        -20.012929916381836
+      ],
+      "rows": 5425053,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00004-14b83d8c-d850-51f9-85b2-8f8a0b4634af-c000.zstd.parquet",
+      "size": 712441815,
+      "etag": "cd9c9c2fd09e39782e7cc6b2063f719b-11",
+      "lastModified": "Wed, 21 Oct 2026 17:45:26 GMT"
+    },
+    {
+      "id": "00005",
+      "bbox": [
+        -74.91317749023438,
+        -20.01293182373047,
+        4.38297700881958,
+        40.69429397583008
+      ],
+      "rows": 5465973,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00005-c3667754-428e-500c-bf3b-a0b5921b7cc0-c000.zstd.parquet",
+      "size": 720677975,
+      "etag": "673abe364c042bf4710d4417c1605e0d-11",
+      "lastModified": "Wed, 21 Oct 2026 17:44:01 GMT"
+    },
+    {
+      "id": "00006",
+      "bbox": [
+        -74.91317749023438,
+        40.69429016113281,
+        -1.5035587549209595,
+        83.57147979736328
+      ],
+      "rows": 5450810,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00006-55d446f6-129a-556e-b79e-e1cfd5735068-c000.zstd.parquet",
+      "size": 755632071,
+      "etag": "b458120a0ecd82ac2748bf4e06eb8add-12",
+      "lastModified": "Wed, 21 Oct 2026 17:50:51 GMT"
+    },
+    {
+      "id": "00007",
+      "bbox": [
+        -1.50355863571167,
+        40.69438171386719,
+        4.383083820343018,
+        60.85527420043945
+      ],
+      "rows": 5547758,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00007-a2c7689b-daa2-5233-9780-d37ccfc3ea74-c000.zstd.parquet",
+      "size": 725017426,
+      "etag": "e92948dbce4b18503f5633f019a52b20-11",
+      "lastModified": "Wed, 21 Oct 2026 17:45:46 GMT"
+    },
+    {
+      "id": "00008",
+      "bbox": [
+        4.383307456970215,
+        -84.54301452636719,
+        35.85000228881836,
+        42.22498321533203
+      ],
+      "rows": 5481928,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00008-8b09f6c1-f726-581a-9b39-f891088cc2ad-c000.zstd.parquet",
+      "size": 721833497,
+      "etag": "cb566d51c33a8717be151741f011468c-11",
+      "lastModified": "Wed, 21 Oct 2026 17:45:53 GMT"
+    },
+    {
+      "id": "00009",
+      "bbox": [
+        4.38308572769165,
+        42.22498321533203,
+        35.84453201293945,
+        47.698585510253906
+      ],
+      "rows": 5526841,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00009-fe90ff49-733f-5fa3-9755-c6cd4438305c-c000.zstd.parquet",
+      "size": 713205738,
+      "etag": "ef4fbf2137ac3bbe9c56f6bf2fabf5ce-11",
+      "lastModified": "Wed, 21 Oct 2026 17:43:29 GMT"
+    },
+    {
+      "id": "00010",
+      "bbox": [
+        4.383083343505859,
+        47.69858169555664,
+        35.849891662597656,
+        51.4741096496582
+      ],
+      "rows": 5534253,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00010-c680fdf1-f03b-5be1-93f1-56c835a00765-c000.zstd.parquet",
+      "size": 723633922,
+      "etag": "d2be0995fe0d8266579a2f780d3e6344-11",
+      "lastModified": "Wed, 21 Oct 2026 17:45:48 GMT"
+    },
+    {
+      "id": "00011",
+      "bbox": [
+        4.383083343505859,
+        51.47410583496094,
+        35.84979248046875,
+        80.50548553466797
+      ],
+      "rows": 5538972,
+      "rowGroups": 512,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00011-472205f3-e3ff-5474-98a4-b9b3361f7306-c000.zstd.parquet",
+      "size": 714390669,
+      "etag": "a77c4beb9d0e1f4873c8657c0f251b9e-11",
+      "lastModified": "Wed, 21 Oct 2026 17:45:41 GMT"
+    },
+    {
+      "id": "00012",
+      "bbox": [
+        35.849998474121094,
+        -84.9798812866211,
+        106.4590835571289,
+        18.79004669189453
+      ],
+      "rows": 5587482,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00012-8cf9bdfe-d946-56f8-84c0-19493d0fbb9c-c000.zstd.parquet",
+      "size": 730097847,
+      "etag": "c1fa07385d7fa2c56f413e8e322d59cd-11",
+      "lastModified": "Wed, 21 Oct 2026 17:46:03 GMT"
+    },
+    {
+      "id": "00013",
+      "bbox": [
+        106.45907592773438,
+        -84.88636779785156,
+        179.9976043701172,
+        18.788057327270508
+      ],
+      "rows": 5561633,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00013-6c366648-1364-543e-894b-d6e65d03c056-c000.zstd.parquet",
+      "size": 719333214,
+      "etag": "fe3a6ceb7ac3d8c9a2862a46ccd4b24b-11",
+      "lastModified": "Wed, 21 Oct 2026 17:45:52 GMT"
+    },
+    {
+      "id": "00014",
+      "bbox": [
+        35.849998474121094,
+        18.7900447845459,
+        104.26789093017578,
+        81.84305572509766
+      ],
+      "rows": 5570469,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00014-dcceff87-235e-5a0e-a4b4-5f25ccb873e7-c000.zstd.parquet",
+      "size": 744601106,
+      "etag": "4ff3b0b5c984c13fb472965d6e91e953-12",
+      "lastModified": "Wed, 21 Oct 2026 17:45:49 GMT"
+    },
+    {
+      "id": "00015",
+      "bbox": [
+        104.26788330078125,
+        18.790081024169922,
+        179.95555114746094,
+        77.10000610351562
+      ],
+      "rows": 5528489,
+      "rowGroups": 256,
+      "asset": "https://overturemaps-us-west-2.s3.us-west-2.amazonaws.com/release/2026-10-21.0/theme=places/type=place/part-00015-eb1c1331-f519-5db6-8fef-74a77e5776ff-c000.zstd.parquet",
+      "size": 733499664,
+      "etag": "a6c4747c58c0a8a44c937a4f2ff3cdea-11",
+      "lastModified": "Wed, 21 Oct 2026 17:44:10 GMT"
+    }
+  ]
+}

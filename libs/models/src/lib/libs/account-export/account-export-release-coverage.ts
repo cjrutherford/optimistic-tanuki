@@ -20,6 +20,7 @@ export const ACCOUNT_EXPORT_RELEASE_OWNERS = Object.freeze([
   'chat-collector',
   'classifieds',
   'payments',
+  'directory',
 ] as const);
 
 /** Non-ORM records and artifacts have explicit release dispositions. */

@@ -1,0 +1,19 @@
+# S1 local Redis recovery evidence — 2026-11-04
+
+**Scope:** local integration evidence, not S1 acceptance or production durability approval. The existing S1 final verification identified persistence, crash recovery and lost replies as open. This test uses the current working-tree queue and worker directly through `ts-node`; they are untracked at repository HEAD, not a committed or deployed artifact.
+
+Run from the repository root with Docker and the already available `redis:alpine` image (the test uses `--pull never`):
+
+```sh
+timeout --kill-after=10s 110s env DIRECTORY_RECOVERY_TEST=1 TS_NODE_PROJECT=apps/directory-worker/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory-worker/test/redis-recovery.test.js
+```
+
+The opt-in test creates a uniquely named Redis container, binds a dynamically allocated loopback port and removes that container in `finally`. It uses its container writable layer, no named volume and no production service. Redis is configured with `appendonly yes`, `appendfsync always`, and snapshotting disabled (`save ""`). Restart reuses that container and its writable layer; port mappings are rediscovered after each restart. The test checks:
+
+- A queued job is claimed, survives a controlled Docker stop/start as active, rejects a duplicate ID, becomes claimable after lease expiry with incremented attempt and unchanged data, and rejects completion by the stale token.
+- A TCP proxy drops each selected server reply after receiving it, then closes the client connection. A committed enqueue, claim, and completion each reject at the client; independent reads show their actual states. Re-enqueueing the same ID preserves the original payload, the lost claim is recovered after its lease, stale completion is rejected, and retrying the completed transition returns false. A current-source `consumeOnce` processes a separate `s1.check` job.
+- Following the lost claim, `docker kill --signal KILL` abruptly kills Redis, then the same container is started and the active job and payload are recovered from AOF before lease recovery. This is a process crash, distinct from the controlled stop. The test does not kill the host or storage device.
+
+**Observed:** the command above exited 0, with 1 test passed, 0 failed, 0 skipped. Redis was 8.10.2 from local image `sha256:15f5a4aad4c3ba34b9874ddbc7f755b469dbd7b8a9e88c12690c52ef6c72465c`. Queue SHA-256: `4d4e33d2836c48aa3c5ffcb236457ebbf3d79cf2d860f99a6dc5a32b140d03c0`; worker SHA-256: `68da10236c4cd5fca7c698f56b55a2a1eb9d7faae96d7af08dbf0e95719fae1f`. No `s1-recovery-` containers remained after the run. The first test attempt failed because Docker assigned a new host port after restart; the test was corrected to rediscover it and the result above is the subsequent run.
+
+**Limits:** `appendfsync always` is a test choice, not evidence of deployment configuration. SIGKILL after acknowledged commands does not simulate power loss, disk/controller failure, AOF corruption, disk full, failover, restore from backup, or a crash during an individual write/fsync. The proxy simulates a reply lost after Redis sends it, not every network partition or uncertain delivery timing. Queue ID deduplication lasts only while its record is retained; retries after terminal-record expiry can reuse IDs. Lease recovery permits repeated processing, and these checks do not prove exactly-once external side effects or transactional idempotency. No provider calls, imports, production stack, production ACLs, backups, or production workload were exercised. The test's cleanup cannot run if the test runner itself is forcibly killed; remove only the uniquely named container it created if that happens. Production persistence settings, crash and restore procedures, and application-level side-effect idempotency remain deployment gates.

@@ -15,6 +15,18 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Client,
   },
   {
+    path: 'dashboard/directory-link-review/:communityId',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'dashboard/directory-address-review/:communityId',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'dashboard/boundary-review/:communityId',
+    renderMode: RenderMode.Client,
+  },
+  {
     path: 'dashboard/cities/:id',
     renderMode: RenderMode.Client,
   },

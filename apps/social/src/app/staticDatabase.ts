@@ -11,6 +11,9 @@ import { Link } from '../entities/link.entity';
 import FollowEntity from '../entities/Follow.entity';
 import { SocialComponent } from '../entities/social-component.entity';
 import { Community } from '../entities/community.entity';
+import { CommunityDirectoryChange } from '../entities/community-directory-change.entity';
+import { CommunityDirectoryEpoch } from '../entities/community-directory-epoch.entity';
+import { CommunityDirectoryRegister } from '../entities/community-directory-register.entity';
 import { CommunityMember } from '../entities/community-member.entity';
 import { CommunityInvite } from '../entities/community-invite.entity';
 import { Notification } from '../entities/notification.entity';
@@ -37,9 +40,11 @@ import { CommunityElection } from '../entities/community-election.entity';
 import { ElectionCandidate } from '../entities/election-candidate.entity';
 import { ElectionVote } from '../entities/election-vote.entity';
 
-const config = yaml.load(
-  fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
-) as Record<string, any>;
+// TypeORM runs this file from src/app, while the bundled operator runs from
+// the service output root beside assets/.
+const bundledConfig = path.resolve(__dirname, 'assets/config.yaml');
+const configPath = fs.existsSync(bundledConfig) ? bundledConfig : path.resolve(__dirname, '../assets/config.yaml');
+const config = yaml.load(fs.readFileSync(configPath, 'utf8')) as Record<string, any>;
 const {
   database: {
     host: configHost, // Renamed to avoid conflict
@@ -69,6 +74,9 @@ const entities = [
   FollowEntity,
   SocialComponent,
   Community,
+  CommunityDirectoryChange,
+  CommunityDirectoryEpoch,
+  CommunityDirectoryRegister,
   CommunityMember,
   CommunityMembershipAudit,
   GuardianContentAudit,

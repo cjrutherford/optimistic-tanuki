@@ -14,6 +14,7 @@ module.exports = {
         './src/seed-social.ts',
         './src/seed-local-communities.ts',
         './src/seed-community-posts.ts',
+        './src/source-epoch-operator.ts',
       ],
       tsConfig: './tsconfig.app.json',
       assets: ['./src/assets'],

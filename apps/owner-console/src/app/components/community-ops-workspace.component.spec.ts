@@ -21,6 +21,7 @@ describe('CommunityOpsWorkspaceComponent', () => {
         {
           id: 'community-1',
           name: 'Makers Guild',
+          localityType: 'town',
           description: 'Collaborative local makers',
           memberCount: 2,
           joinPolicy: 'approval_required',
@@ -119,6 +120,15 @@ describe('CommunityOpsWorkspaceComponent', () => {
     );
     expect(component.selectedEntity?.id).toBe('community-2');
     expect(component.selectedEntity?.entityType).toBe('community');
+  });
+
+  it('links a selected city to its private boundary review', () => {
+    const fixture=TestBed.createComponent(CommunityOpsWorkspaceComponent);fixture.detectChanges();
+    const component=fixture.componentInstance;
+    const city=component.entities.find(entity=>entity.id==='city-1')!;
+    expect(component.buildActions(city)).toContainEqual({label:'Review Boundary',route:['/dashboard/boundary-review','city-1']});
+    const community=component.entities.find(entity=>entity.id==='community-1')!;
+    expect(component.buildActions(community)).toContainEqual({label:'Review Boundary',route:['/dashboard/boundary-review','community-1']});
   });
 
   it('surfaces member entities in the unified browser from day one', () => {

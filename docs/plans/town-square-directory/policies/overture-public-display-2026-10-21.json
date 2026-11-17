@@ -1,0 +1,278 @@
+{
+  "schemaVersion": "overture-runtime-policy-v1",
+  "status": "approved-local-evaluation-all-active-towns",
+  "approvedAt": "2026-11-10",
+  "approvedBy": "repository owner (chat approval)",
+  "scope": "all active Town Square directory towns",
+  "exportApproved": false,
+  "notes": "Public display approved for address, website and phone on all active directory towns. Export remains disabled. Local evaluation only; production release still requires the S9 gate.",
+  "releaseId": "2026-10-21.0",
+  "operations": {
+    "ingest": true,
+    "retain": true,
+    "privateDisplay": true,
+    "publicDisplay": true
+  },
+  "terms": [
+    {
+      "dataset": "meta",
+      "license": "CDLA-Permissive-2.0",
+      "attribution": "meta; Overture Maps Foundation (October 2026)",
+      "termsUrl": "https://cdla.dev/permissive-2.0/",
+      "notice": "CDLA Permissive 2.0",
+      "permissions": {
+        "ingest": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "retain": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "privateDisplay": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "publicDisplay": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ]
+      }
+    },
+    {
+      "dataset": "Microsoft",
+      "license": "CDLA-Permissive-2.0",
+      "attribution": "Microsoft; Overture Maps Foundation (October 2026)",
+      "termsUrl": "https://cdla.dev/permissive-2.0/",
+      "notice": "CDLA Permissive 2.0",
+      "permissions": {
+        "ingest": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "retain": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "privateDisplay": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "publicDisplay": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ]
+      }
+    },
+    {
+      "dataset": "BrightQuery",
+      "license": "CDLA-Permissive-2.0",
+      "attribution": "BrightQuery; Overture Maps Foundation (October 2026)",
+      "termsUrl": "https://cdla.dev/permissive-2.0/",
+      "notice": "CDLA Permissive 2.0",
+      "permissions": {
+        "ingest": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "retain": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "privateDisplay": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "publicDisplay": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ]
+      }
+    },
+    {
+      "dataset": "DAC",
+      "license": "CDLA-Permissive-2.0",
+      "attribution": "DAC; Overture Maps Foundation (October 2026)",
+      "termsUrl": "https://cdla.dev/permissive-2.0/",
+      "notice": "CDLA Permissive 2.0",
+      "permissions": {
+        "ingest": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "retain": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "privateDisplay": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "publicDisplay": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ]
+      }
+    },
+    {
+      "dataset": "AllThePlaces",
+      "license": "CC0-1.0",
+      "attribution": "AllThePlaces; Overture Maps Foundation (October 2026)",
+      "termsUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "notice": "CC0 1.0",
+      "permissions": {
+        "ingest": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "retain": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "privateDisplay": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "alternate",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ],
+        "publicDisplay": [
+          "name",
+          "basic_category",
+          "primary",
+          "hierarchy",
+          "geometry",
+          "address",
+          "phone",
+          "website"
+        ]
+      }
+    }
+  ]
+}

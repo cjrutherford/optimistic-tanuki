@@ -19,6 +19,9 @@ export type DeletionOwnerPorts = ReadonlyMap<
   (grant: AccountDeletionGrant) => Promise<unknown>
 >;
 const ERASE_ORDER: readonly AccountDeletionOwner[] = [
+  // First: Directory refuses to erase on an ambiguous identity, and that must
+  // stop the operation before any other owner has erased anything.
+  'directory',
   'videos',
   'assets',
   'social',

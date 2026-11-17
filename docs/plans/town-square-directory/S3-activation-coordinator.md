@@ -1,0 +1,13 @@
+# S3 operator activation coordinator
+
+**Historical and disabled:** the three-field coordinator and activation procedure described below must not be operated. Six-field traversal proof issuance, binding and preparation do not enable activation, serving or ACKs. The external all-writer and serving-process fence remains required; restore detection is not provided. See S3-restore-fencing.md for the current handoff.
+
+The shared Ed25519 attestation encoding is implemented as a standalone primitive only. It is not connected to committed Social preparation or Directory activation; it does not authorize operating either transition. Durable result digests, generated migrations, coordinator integration and two-database crash/retry verification remain outstanding.
+
+Activation requires an externally enforced fence on **all** Social and Directory writers and serving processes, maintained from recovery through completion and subsequent separately implemented runtime gates. The coordinator cannot detect or enforce that fence. Never release it solely because this command succeeds. Directory normal startup and the Social ACK RPC remain gated separately.
+
+Historical proposal: after traversal and binding, invoke `TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register apps/directory/src/recovery-activation-operator.ts` in the operator environment with `--confirm-external-fence <sourceEpoch> <recoveryEpoch> <owner>`, supplying the signed recovery proof JSON on stdin. Set `DIRECTORY_DATABASE_URL`, `SOCIAL_OPERATOR_DATABASE_URL` (operator-only Social credentials), and the distinct `DIRECTORY_RECOVERY_PROOF_SECRET`. No HTTP endpoint is exposed. Keep proof and credentials out of logs and shell arguments.
+
+The proposed coordinator held the same Directory session advisory lock as traversal, validated the durable checkpoint and proof, invoked Social transactional activation, checked its active pair, and atomically deleted baseline receipts and marked the checkpoint enabled. Receipt capacity slots remained. A crash after Social committed left Directory traversed; retry with the same identity and proof while the external fence remained in force. An enabled retry verified the active pair and performed no retirement. The all-writer fence was essential to establish the baseline and prevent independent authority changes between the two databases.
+
+Historical local evidence used a disposable PostGIS instance with separate Directory and Social databases and minimal table fixtures, including failures after mutations, concurrent calls, wrong identity/proof, and duplicate retry preserving later events and receipts. It did not demonstrate full migrated-schema integration, process termination at every boundary, or runtime gate deployment.

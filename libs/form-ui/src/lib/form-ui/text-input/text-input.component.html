@@ -11,6 +11,8 @@
   <input
     class="form-control"
     [id]="inputId"
+    [attr.name]="name || null"
+    [attr.maxlength]="maxlength ?? null"
     [type]="type === 'obscured' ? 'password' : type"
     [value]="value"
     (input)="onInput($event)"

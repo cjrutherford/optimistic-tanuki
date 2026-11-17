@@ -94,6 +94,7 @@ describe('AccountExportJobService authorization boundary', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
   });
@@ -360,6 +361,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
     classifiedsCleanup: jest.Mock;
     paymentsCapture: jest.Mock;
     paymentsCleanup: jest.Mock;
+    directoryCapture: jest.Mock;
+    directoryCleanup: jest.Mock;
     artifacts: { recover: jest.Mock; prepare: jest.Mock; discard: jest.Mock };
   } {
     const captureMetadata = (participantId: string) => {
@@ -514,6 +517,11 @@ describe('AccountExportJobService Authentication owner staging', () => {
       cleanup: jest.fn(async () => undefined),
     };
     const paymentsCapture = { capture: jest.fn(async () => paymentsResult) };
+    const directoryResult = {
+      handle: { metadata: captureMetadata('directory') },
+      cleanup: jest.fn(async () => undefined),
+    };
+    const directoryCapture = { capture: jest.fn(async () => directoryResult) };
     const profileResult = {
       handle: { metadata: captureMetadata('profile') },
       descriptor: { handleId: 'profile-fixture' },
@@ -574,7 +582,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       chatCapture as never,
       classifiedsCapture as never,
       paymentsCapture as never,
-      artifacts as never
+      artifacts as never,
+      directoryCapture as never
     );
     const state = service as unknown as {
       run: (
@@ -625,6 +634,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       classifiedsCleanup: classifiedsResult.cleanup,
       paymentsCapture: paymentsCapture.capture,
       paymentsCleanup: paymentsResult.cleanup,
+      directoryCapture: directoryCapture.capture,
+      directoryCleanup: directoryResult.cleanup,
       artifacts,
     };
   }
@@ -700,6 +711,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'chat-collector',
         'classifieds',
         'payments',
+        'directory',
       ],
       artifactAvailable: true,
       captureCoverage: {
@@ -939,6 +951,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'chat-collector',
         'classifieds',
         'payments',
+        'directory',
       ]);
       expect(second.coverageSummary.artifactAvailable).toBe(true);
       expect(second.artifactUrl).toBe(
@@ -1032,6 +1045,46 @@ describe('AccountExportJobService Authentication owner staging', () => {
         expect(test.paymentsCleanup.mock.invocationCallOrder[0]).toBeLessThan(
           test.classifiedsCleanup.mock.invocationCallOrder[0]
         );
+      expect(await readdir(root)).toEqual([]);
+    }
+  );
+
+  it.each(['capture', 'cleanup'])(
+    'keeps twelve owners when Directory %s fails',
+    async (mode) => {
+      const owner = jest.fn(async ({ onChunk }) => {
+        const chunks = createOwnerChunks(ACCOUNT_ID);
+        for (const chunk of chunks) await onChunk(chunk);
+        return chunks[chunks.length - 1];
+      });
+      const test = harness(async () => true, owner);
+      (mode === 'capture'
+        ? test.directoryCapture
+        : test.directoryCleanup
+      ).mockRejectedValueOnce(new Error('private directory payload'));
+      const result = await test.run(input(), activeClaim);
+      expect(result.state).toBe('failed');
+      expect(result.coverageSummary.capturedDatabaseOwners).toEqual([
+        'authentication',
+        'profile',
+        'assets',
+        'videos',
+        'permissions',
+        'social',
+        'forum',
+        'workspace',
+        'app-configurator',
+        'chat-collector',
+        'classifieds',
+        'payments',
+      ]);
+      expect(result.coverageSummary.blockers).toContain(
+        'directory-capture-unavailable'
+      );
+      expect(result.artifactUrl).toBeNull();
+      expect(result.coverageSummary.artifactAvailable).toBe(false);
+      expect(JSON.stringify(result)).not.toContain('private directory payload');
+      expect(test.paymentsCleanup).toHaveBeenCalledTimes(1);
       expect(await readdir(root)).toEqual([]);
     }
   );
@@ -1231,6 +1284,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
         'chat-collector',
         'classifieds',
         'payments',
+        'directory',
       ]);
       expect(second.coverageSummary.artifactAvailable).toBe(true);
       expect(second.artifactUrl).toBe(
@@ -1550,6 +1604,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       test.chatCleanup,
       test.classifiedsCleanup,
       test.paymentsCleanup,
+      test.directoryCleanup,
     ])
       expect(cleanup).toHaveBeenCalledTimes(1);
   });
@@ -1641,6 +1696,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
     (service as unknown as { jobs: unknown }).jobs = {
@@ -1667,6 +1723,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       {} as never,
       {} as never,
       spool,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,
@@ -1755,6 +1812,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       {} as never
     );
     const internals = service as unknown as {
@@ -1809,6 +1867,7 @@ describe('AccountExportJobService database lease fence', () => {
       service = new AccountExportJobService(
         repository,
         dataSource,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,

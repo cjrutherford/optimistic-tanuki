@@ -1,0 +1,96 @@
+# Shared opt-in services, extended by the main and local-hub Compose stacks.
+# Blank configuration is intentional: processes fail closed when the profile is enabled.
+services:
+  directory:
+    profiles: [directory]
+    build:
+      context: ../..
+      dockerfile: apps/directory/Dockerfile
+    environment:
+      DIRECTORY_MODE: ${DIRECTORY_MODE:-}
+      DIRECTORY_REGISTER_RUNTIME_IDENTITY: ${DIRECTORY_REGISTER_RUNTIME_IDENTITY:-}
+      DIRECTORY_EXTERNAL_FENCE_ASSERTION: ${DIRECTORY_EXTERNAL_FENCE_ASSERTION:-}
+      DIRECTORY_REGISTER_READ_SECRET: ${DIRECTORY_REGISTER_READ_SECRET:-}
+      DIRECTORY_BOUNDARY_REVIEW_SECRET: ${DIRECTORY_BOUNDARY_REVIEW_SECRET:-}
+      DIRECTORY_BOUNDARY_DECISION_SECRET: ${DIRECTORY_BOUNDARY_DECISION_SECRET:-}
+      DIRECTORY_PENDING_READ_SECRET: ${DIRECTORY_PENDING_READ_SECRET:-}
+      DIRECTORY_CONTAINMENT_READ_SECRET: ${DIRECTORY_CONTAINMENT_READ_SECRET:-}
+      DIRECTORY_LOCAL_EVALUATION: ${DIRECTORY_LOCAL_EVALUATION:-}
+      DIRECTORY_LOCAL_EVALUATION_SECRET: ${DIRECTORY_LOCAL_EVALUATION_SECRET:-}
+      DIRECTORY_BUSINESS_LINK_SECRET: ${DIRECTORY_BUSINESS_LINK_SECRET:-}
+      DIRECTORY_DATABASE_URL: ${DIRECTORY_DATABASE_URL:-}
+      DIRECTORY_RECEIPT_CAPACITY: ${DIRECTORY_RECEIPT_CAPACITY:-}
+      SOCIAL_HOST: social
+      SOCIAL_PORT: 3003
+      DIRECTORY_SOCIAL_SECRET: ${DIRECTORY_SOCIAL_SECRET:-}
+      DIRECTORY_RECEIPT_SIGNING_SECRET: ${DIRECTORY_RECEIPT_SIGNING_SECRET:-}
+      DIRECTORY_SERVICE_SECRET: ${DIRECTORY_SERVICE_SECRET:-}
+      # Account deletion and export routes; not mounted while the secret is blank.
+      DIRECTORY_ACCOUNT_DELETION_SECRET: ${DIRECTORY_ACCOUNT_DELETION_SECRET:-}
+      DIRECTORY_AUTHENTICATION_HOST: authentication
+      DIRECTORY_AUTHENTICATION_PORT: 3001
+      DIRECTORY_PROFILE_HOST: profile
+      DIRECTORY_PROFILE_PORT: 3002
+      DIRECTORY_REDIS_URL: ${DIRECTORY_REDIS_URL:-}
+      DIRECTORY_QUEUE_PREFIX: ${DIRECTORY_QUEUE_PREFIX:-}
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3120/health/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      directory-migrate:
+        condition: service_completed_successfully
+      social:
+        condition: service_started
+    expose: ['3120', '3122']
+  directory-worker:
+    profiles: [directory]
+    restart: unless-stopped
+    build:
+      context: ../..
+      dockerfile: apps/directory-worker/Dockerfile
+    environment:
+      DIRECTORY_WORKER_MODE: ${DIRECTORY_WORKER_MODE:-}
+      DIRECTORY_REGISTER_RUNTIME_IDENTITY: ${DIRECTORY_REGISTER_RUNTIME_IDENTITY:-}
+      DIRECTORY_EXTERNAL_FENCE_ASSERTION: ${DIRECTORY_EXTERNAL_FENCE_ASSERTION:-}
+      DIRECTORY_REGISTER_READ_SECRET: ${DIRECTORY_REGISTER_READ_SECRET:-}
+      DIRECTORY_REGISTER_REPAIR_SECRET: ${DIRECTORY_REGISTER_REPAIR_SECRET:-}
+      DIRECTORY_REGISTER_SWEEP_INTERVAL_MS: ${DIRECTORY_REGISTER_SWEEP_INTERVAL_MS:-60000}
+      DIRECTORY_DATABASE_URL: ${DIRECTORY_DATABASE_URL:-}
+      DIRECTORY_CONTACT_STAGE_DATABASE_URL: ${DIRECTORY_CONTACT_STAGE_DATABASE_URL:-}
+      DIRECTORY_CONTACT_STAGE_LABEL: ${DIRECTORY_CONTACT_STAGE_LABEL:-}
+      DIRECTORY_REVIEWED_BINDING_HMAC_KEY: ${DIRECTORY_REVIEWED_BINDING_HMAC_KEY:-}
+      DIRECTORY_BINDING_SWEEP_INTERVAL_MS: ${DIRECTORY_BINDING_SWEEP_INTERVAL_MS:-3600000}
+      DIRECTORY_WORKER_STARTUP_TIMEOUT_MS: ${DIRECTORY_WORKER_STARTUP_TIMEOUT_MS:-600000}
+      SOCIAL_HOST: social
+      SOCIAL_PORT: 3003
+      DIRECTORY_SOCIAL_SECRET: ${DIRECTORY_SOCIAL_SECRET:-}
+      DIRECTORY_RECEIPT_URL: http://directory:3122/internal/receipts
+      DIRECTORY_SERVICE_SECRET: ${DIRECTORY_SERVICE_SECRET:-}
+      DIRECTORY_REDIS_URL: ${DIRECTORY_REDIS_URL:-}
+      DIRECTORY_QUEUE_PREFIX: ${DIRECTORY_QUEUE_PREFIX:-}
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3121/health/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      directory-migrate:
+        condition: service_completed_successfully
+      social:
+        condition: service_started
+    expose: ['3121']
+  directory-migrate:
+    profiles: [directory]
+    build:
+      context: ../..
+      dockerfile: apps/directory/Dockerfile
+      target: builder
+    environment:
+      DIRECTORY_DATABASE_URL: ${DIRECTORY_DATABASE_URL:-}
+      DIRECTORY_RECEIPT_CAPACITY: ${DIRECTORY_RECEIPT_CAPACITY:-}
+      NX_DAEMON: 'false'
+      NX_ISOLATE_PLUGINS: 'false'
+    command: ['sh', 'apps/directory/migrate-with-retry.sh']
+    restart: 'on-failure:3'

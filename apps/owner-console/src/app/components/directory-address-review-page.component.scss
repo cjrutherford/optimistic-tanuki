@@ -1,0 +1,205 @@
+.address-review-page {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  color: var(--primary-text, var(--primary));
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.page-header {
+  display: grid;
+  gap: 0.5rem;
+
+  h1 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--type-h1);
+    line-height: var(--heading-line-height, normal);
+    letter-spacing: var(--heading-tracking, normal);
+  }
+
+  p {
+    max-width: 80ch;
+    margin: 0;
+    color: var(--foreground-muted);
+  }
+}
+
+.page-kicker {
+  margin: 0;
+  color: var(--primary-text, var(--primary));
+  font-size: var(--type-small);
+  font-weight: 700;
+  letter-spacing: var(--personality-label-letter-spacing, normal);
+  text-transform: uppercase;
+}
+
+.status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  otui-button {
+    width: auto;
+  }
+}
+
+.page-message {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--personality-card-radius, var(--border-radius-md));
+  background: var(--surface);
+  color: var(--foreground);
+  font-size: var(--type-small);
+}
+
+.candidate-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.candidate-card {
+  display: block;
+}
+
+.candidate-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--type-h3);
+    line-height: var(--heading-line-height, normal);
+  }
+}
+
+.candidate-category {
+  margin: 0.25rem 0 0;
+  color: var(--foreground-muted);
+  font-size: var(--type-small);
+}
+
+.candidate-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 1rem;
+}
+
+.candidate-column {
+  h3 {
+    margin: 0 0 0.5rem;
+    color: var(--foreground-muted);
+    font-size: var(--type-small);
+    font-weight: 700;
+    letter-spacing: var(--personality-label-letter-spacing, normal);
+    text-transform: uppercase;
+  }
+
+  ul {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+    color: var(--foreground);
+    font-size: var(--type-small);
+  }
+}
+
+.muted {
+  color: var(--foreground-muted) !important;
+}
+
+.candidate-reasons,
+.candidate-checks,
+.candidate-review {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.candidate-reasons,
+.candidate-checks {
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: var(--type-small);
+    font-weight: 700;
+  }
+
+  ul {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    color: var(--foreground-muted);
+    font-size: var(--type-small);
+  }
+}
+
+.candidate-review {
+  display: grid;
+  gap: 0.75rem;
+
+  lib-text-input {
+    width: 100%;
+  }
+}
+
+.review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  otui-button {
+    width: auto;
+  }
+}
+
+.load-more {
+  display: flex;
+  justify-content: center;
+
+  otui-button {
+    width: auto;
+  }
+}

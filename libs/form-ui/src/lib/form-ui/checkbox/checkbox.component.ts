@@ -36,6 +36,7 @@ export class CheckboxComponent
   implements ControlValueAccessor
 {
   @Input() value = false;
+  @Input() name = '';
   @Input() label = '';
   @Input() disabled = false;
   @Input() errorMessage = '';

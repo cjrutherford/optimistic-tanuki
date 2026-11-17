@@ -12,3 +12,4 @@ export {
   EventCommands as SocialEventCommands,
   PostCommands,
 } from './lib/social-commands';
+export * from './lib/directory';

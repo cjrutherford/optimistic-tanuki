@@ -44,6 +44,11 @@
       <span class="legend-dot city"></span>
       <span>Nearby Locality</span>
     </div>
+    } @if (mode === 'directory') {
+    <div class="legend-item">
+      <span class="legend-dot directory"></span>
+      <span>Business location</span>
+    </div>
     } @if (mode === 'radius-focus') {
     <div class="legend-item">
       <span class="legend-circle"></span>

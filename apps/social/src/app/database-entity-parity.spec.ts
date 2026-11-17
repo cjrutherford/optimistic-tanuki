@@ -1,5 +1,9 @@
+import { CommunityDirectoryChange } from '../entities/community-directory-change.entity';
+import { CommunityDirectoryEpoch } from '../entities/community-directory-epoch.entity';
+import { CommunityDirectoryRegister } from '../entities/community-directory-register.entity';
 import 'reflect-metadata';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { Test } from '@nestjs/testing';
 import loadDatabase from './loadDatabase';
 import staticDatabase from './staticDatabase';
 import { AppModule } from './app.module';
@@ -46,6 +50,9 @@ const EXPECTED_SOCIAL_ENTITIES = [
   BusinessThemeContent,
   Comment,
   Community,
+  CommunityDirectoryChange,
+  CommunityDirectoryEpoch,
+  CommunityDirectoryRegister,
   CommunityElection,
   CommunityInvite,
   CommunityMember,
@@ -79,6 +86,22 @@ const names = (entities: unknown[]) =>
   entities.map((entity: any) => entity.name).sort();
 
 describe('Social TypeORM entity registration parity', () => {
+  it('resolves the epoch repository through the registered Social connection', async () => {
+    const source = new DataSource({ type: 'postgres', entities: [CommunityDirectoryEpoch] });
+    const providers = Reflect.getMetadata('providers', AppModule) as any[];
+    const provider = providers.find(
+      (entry) => entry?.provide === getRepositoryToken(CommunityDirectoryEpoch)
+    );
+    expect(provider).toBeDefined();
+    const module = await Test.createTestingModule({
+      providers: [{ provide: 'SOCIAL_CONNECTION', useValue: source }, provider],
+    }).compile();
+    expect(module.get(getRepositoryToken(CommunityDirectoryEpoch))).toBe(
+      source.getRepository(CommunityDirectoryEpoch)
+    );
+    await module.close();
+  });
+
   it('registers the same complete entity graph in runtime, migrations, and repository providers', async () => {
     const runtimeEntities = (
       loadDatabase({

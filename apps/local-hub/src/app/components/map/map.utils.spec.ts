@@ -72,7 +72,7 @@ describe('map utils', () => {
         {
           id: 'missing',
           name: 'Missing',
-          coordinates: { lat: 0, lng: 0 },
+          coordinates: undefined,
         },
         {
           id: 'savannah',
@@ -88,9 +88,9 @@ describe('map utils', () => {
     ]);
   });
 
-  it('treats nullish and zero-zero coordinates as non-renderable', () => {
+  it('rejects missing coordinates but permits an actual zero-zero point', () => {
     expect(isRenderableCoordinate(undefined)).toBe(false);
-    expect(isRenderableCoordinate({ lat: 0, lng: 0 })).toBe(false);
+    expect(isRenderableCoordinate({ lat: 0, lng: 0 })).toBe(true);
     expect(isRenderableCoordinate({ lat: 32.0809, lng: -81.0912 })).toBe(true);
   });
 

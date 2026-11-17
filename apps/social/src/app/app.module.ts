@@ -44,6 +44,9 @@ import { Attachment } from '../entities/attachment.entity';
 import { Link } from '../entities/link.entity';
 import { SocialComponent } from '../entities/social-component.entity';
 import { Community } from '../entities/community.entity';
+import { CommunityDirectoryChange } from '../entities/community-directory-change.entity';
+import { CommunityDirectoryEpoch } from '../entities/community-directory-epoch.entity';
+import { CommunityDirectoryRegister } from '../entities/community-directory-register.entity';
 import { CommunityMember } from '../entities/community-member.entity';
 import { CommunityMembershipAudit } from '../entities/community-membership-audit.entity';
 import { CommunityInvite } from '../entities/community-invite.entity';
@@ -297,6 +300,21 @@ import {
     {
       provide: getRepositoryToken(Community),
       useFactory: (ds: DataSource) => ds.getRepository(Community),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(CommunityDirectoryRegister),
+      useFactory: (ds: DataSource) => ds.getRepository(CommunityDirectoryRegister),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(CommunityDirectoryEpoch),
+      useFactory: (ds: DataSource) => ds.getRepository(CommunityDirectoryEpoch),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(CommunityDirectoryChange),
+      useFactory: (ds: DataSource) => ds.getRepository(CommunityDirectoryChange),
       inject: ['SOCIAL_CONNECTION'],
     },
     {
