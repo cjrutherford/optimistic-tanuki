@@ -2,7 +2,7 @@
 
 ## What changed
 
-Decision B is built and committed on `t3/integrate-business-directory`. It is not deployed to the local stack yet.
+Decision B is built and committed on `t3/integrate-business-directory`. It is deployed on the local stack (see Deployment below).
 
 | Commit      | Content                                                                                                 |
 | ----------- | ------------------------------------------------------------------------------------------------------- |
@@ -27,14 +27,22 @@ The commits are local; nothing is pushed.
 - The personality audit passes.
 - Full directory suite, run directly: 6 failures, all in files this slice did not touch (`account-lifecycle-http.postgres`, `business-link-compose.postgres`, `receipt-server`, and recovery/reconciliation tests). They are believed to predate the slice but are unconfirmed.
 
+## Deployment (2026-11-17)
+
+- The stack had been down for about 16 hours: every OT container exited with code 255, after what looks like a host shutdown.
+- The `ot-hostnet` buildx config under `/tmp/ot-buildx` was gone. I recreated it with the command in the memory note; the builder container had survived.
+- Rollback tags are `:pre-identity-queue` on `optimistic-tanuki-directory`, `cjrutherford/optimistic_tanuki_gateway` and `cjrutherford/optimistic_tanuki_owner-console`.
+- I rebuilt those three images and started the stack with `scripts/start-local-directory.sh`. Directory, gateway and the worker report healthy.
+- Smoke checks for town `24ba6730-…`:
+  - The internal queue returns 200, with all health counts at zero and empty lists, matching readiness.
+  - A request without the credential gets 401, and a bad decision body gets 400.
+  - The gateway route without auth gets 401, where an unknown route gets 404, which shows the route is registered.
+  - The Owner Console page returns 200.
+- No decisions were recorded.
+
 ## Next step
 
-1. Tag the current images as `:pre-identity-queue`.
-2. Rebuild and redeploy directory, gateway and owner-console (`BUILDX_BUILDER=ot-hostnet`).
-3. Open the page for a town and check that the counts match `scripts/local-directory-business-identity-review.cjs queue --town <id>`. Readiness is currently all zeros, so the lists should be empty.
-4. Do not record test decisions against the live DB.
-
-After that, the other slice is item 2: truthful acquisition and coverage states.
+Item 2: truthful acquisition and coverage states.
 
 ## Constraints (updated)
 
