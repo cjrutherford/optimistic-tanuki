@@ -320,7 +320,11 @@ export async function extractPrivate({
       regions: policy.regions,
     })
   );
-  const old = await sink.load(scanId, policy.approvalSha256);
+  const old = await sink.load(
+    scanId,
+    policy.approvalSha256,
+    policy.regions.map((r) => r.id)
+  );
   if (
     old !== null &&
     (!old ||

@@ -58,6 +58,12 @@ import {
 import { DataSource } from 'typeorm';
 import { RegisterDeliveryV2 } from '../../directory-worker/src/register-delivery';
 import { DirectoryRecoveryIdentity } from './register-recovery-authority';
+import {
+  BLOCKED_TOWN_INELIGIBLE,
+  SERVED_ROW_FROM,
+  servedRowWhere,
+  townCoverage,
+} from './town-coverage';
 import { lockAuthority } from './register-reconciliation-v2';
 import { isEligibleCommunity } from './social-eligibility';
 import { geographyHash, readCurrentBoundaryCandidate } from './boundary-review';
@@ -213,6 +219,16 @@ class TownUnavailable extends Error {
     super('Town unavailable');
   }
 }
+/**
+ * `town-ineligible`: every global check passed and only the town's own eligibility failed. Anything else,
+ * including any cause this code does not recognise, is `global` and fails closed.
+ */
+export class DirectoryAuthorityError extends Error {
+  constructor(readonly kind: 'global' | 'town-ineligible') {
+    super('Directory authority unavailable');
+    this.name = 'DirectoryAuthorityError';
+  }
+}
 type Database = Pick<DataSource, 'query'> &
   Partial<Pick<DataSource, 'transaction'>>;
 type Source = Pick<RegisterDeliveryV2, 'scan' | 'current'> &
@@ -252,10 +268,13 @@ export function pendingChecks(
       !Number.isFinite(completedAt) ||
       !Number.isFinite(now) ||
       completedAt > now ||
-      now - completedAt > 900000 ||
-      p.eligible !== true
+      now - completedAt > 900000
     )
-      throw Error('Directory authority unavailable');
+      throw new DirectoryAuthorityError('global');
+    if (p.eligible !== true)
+      throw new DirectoryAuthorityError(
+        p.eligible === false ? 'town-ineligible' : 'global'
+      );
   }
   /** Degradation signal only: expired leases hide reviewed fields but never fail readiness. */
   async function bindingHealth(): Promise<{
@@ -815,15 +834,9 @@ export function pendingChecks(
           position?.row || '0'
         )
       : await db.query(
-          `SELECT r.listing,r."scanId",r."sourceFileRowNumber",EXISTS (SELECT 1 FROM directory_reviewed_binding b WHERE b."scanId"=r."scanId" AND b."sourceFileRowNumber"=r."sourceFileRowNumber" AND b.state='active' AND b."verifiedUntil">now()) AS "reviewedActive" FROM directory_overture_private_row r
-      JOIN directory_overture_private_membership m ON m."scanId"=r."scanId"
-      JOIN directory_overture_private_policy p ON p."policyId"=m."policyId" AND p.revoked=false
-      JOIN directory_overture_private_completion c ON c."scanId"=r."scanId"
-      WHERE r."regionId"=$1 AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=r."scanId")
-      AND NOT EXISTS (SELECT 1 FROM directory_overture_private_row_revocation x WHERE x."scanId"=r."scanId" AND x."sourceFileRowNumber"=r."sourceFileRowNumber")
-      ${supersededByLiveCohort('r')}
+          `SELECT r.listing,r."scanId",r."sourceFileRowNumber",EXISTS (SELECT 1 FROM directory_reviewed_binding b WHERE b."scanId"=r."scanId" AND b."sourceFileRowNumber"=r."sourceFileRowNumber" AND b.state='active' AND b."verifiedUntil">now()) AS "reviewedActive" FROM ${SERVED_ROW_FROM}
+      WHERE ${servedRowWhere('$1', '$5')}
       AND (NOT (r.listing ? 'adult') OR r.listing->'adult'='false'::jsonb OR ($4::boolean AND r.listing->'adult'='true'::jsonb))
-      AND (NOT (r.listing ? 'assignmentChangeToken') OR r.listing->>'assignmentChangeToken'=$5)
       AND ($6='' OR r.listing->>'category'=$6)
       AND ($7='' OR (r."scanId",r."sourceFileRowNumber")>($7,$8::bigint))
       AND ($10='' OR (r."scanId"=$10 AND r."sourceFileRowNumber"=$11::bigint))
@@ -950,6 +963,10 @@ export function pendingChecks(
     const sourceFreshness: PageFreshness = detail
       ? unknownFreshness()
       : await townFreshness(town).catch(unknownFreshness);
+    // Town-level and unfiltered, from persisted facts only. A failed lookup omits the field: it never fails the page.
+    const coverage = detail
+      ? undefined
+      : await townCoverage(db, town, before.changeToken).catch(() => undefined);
     if (cursorMode) {
       const last = selected[24];
       return {
@@ -963,9 +980,15 @@ export function pendingChecks(
             })
           : null,
         sourceFreshness,
+        ...(coverage ? { coverage } : {}),
       };
     }
-    return { listings, hasMore, sourceFreshness };
+    return {
+      listings,
+      hasMore,
+      sourceFreshness,
+      ...(coverage ? { coverage } : {}),
+    };
   }
   async function localDetail(town: string, reference: string, adult = false) {
     if (
@@ -1992,7 +2015,7 @@ export function pendingServer(
           (searches[0].length > 100 || /[\x00-\x1f\x7f]/.test(searches[0]))) ||
         (offsets.length && !/^(0|[1-9][0-9]{0,6})$/.test(offsets[0]))
       ) {
-        res.writeHead(400).end();
+        res.writeHead(400, { 'cache-control': 'no-store' }).end();
         return;
       }
       const offset = offsets.length ? Number(offsets[0]) : 0;
@@ -2021,6 +2044,26 @@ export function pendingServer(
           })
           .end(JSON.stringify(result));
       } catch (error) {
+        if (
+          error instanceof DirectoryAuthorityError &&
+          error.kind === 'town-ineligible'
+        ) {
+          // Healthy authority, town not eligible: a truthful empty answer, not an outage.
+          res
+            .writeHead(200, {
+              'content-type': 'application/json',
+              'cache-control': 'no-store',
+            })
+            .end(
+              JSON.stringify({
+                listings: [],
+                hasMore: false,
+                ...(paginations.length === 1 ? { nextCursor: null } : {}),
+                coverage: BLOCKED_TOWN_INELIGIBLE,
+              })
+            );
+          return;
+        }
         res
           .writeHead(
             error instanceof Error &&

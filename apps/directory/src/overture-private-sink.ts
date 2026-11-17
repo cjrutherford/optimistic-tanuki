@@ -54,6 +54,8 @@ type Row = {
     | { status: 'eligible'; listing: Listing; upstreamId?: unknown };
 };
 
+const TARGET_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const validCheckpoint = (value: Checkpoint) =>
   value &&
   /^[a-f0-9]{64}$/.test(value.scanId) &&
@@ -253,8 +255,23 @@ export class OverturePrivateSink {
     else await this.dataSource.transaction(attach);
   }
 
-  async load(scanId: string, policyId: string): Promise<Checkpoint | null> {
+  /**
+   * `regionIds` are the policy's target regions (Social community ids). Each uuid-shaped one is recorded as a
+   * `recorded` town scan target in the same transaction that binds the scan; other ids are skipped. Idempotent.
+   */
+  async load(
+    scanId: string,
+    policyId: string,
+    regionIds: readonly string[] = []
+  ): Promise<Checkpoint | null> {
     this.loaded = false;
+    const targets = [
+      ...new Set(
+        (Array.isArray(regionIds) ? regionIds : [])
+          .filter((id) => typeof id === 'string' && TARGET_UUID.test(id))
+          .map((id) => id.toLowerCase())
+      ),
+    ];
     if (
       typeof scanId !== 'string' ||
       !/^[a-f0-9]{64}$/.test(scanId) ||
@@ -308,6 +325,12 @@ export class OverturePrivateSink {
           [scanId, policyId]
         );
       }
+      if (targets.length)
+        await manager.query(
+          `INSERT INTO directory_town_scan_target ("communityId","scanId",provenance)
+           SELECT t,$1,'recorded' FROM unnest($2::uuid[]) AS t ON CONFLICT DO NOTHING`,
+          [scanId, targets]
+        );
       const rows = await manager.query(
         'SELECT "scanId", "sourceFileRowNumber" FROM directory_overture_private_checkpoint WHERE "scanId" = $1',
         [scanId]
@@ -384,6 +407,13 @@ export class OverturePrivateSink {
         throw Error('Stale private scan checkpoint');
       await manager.query(
         'INSERT INTO directory_overture_private_completion ("scanId") VALUES ($1) ON CONFLICT DO NOTHING',
+        [scanId]
+      );
+      // Same transaction: the recorded targets learn how many rows the scan produced for them.
+      await manager.query(
+        `UPDATE directory_town_scan_target t SET "completedAt"=now(),
+           "rowCount"=(SELECT count(*)::int FROM directory_overture_private_row r WHERE r."scanId"=t."scanId" AND lower(r."regionId")=t."communityId"::text)
+         WHERE t."scanId"=$1 AND t.provenance='recorded' AND t."completedAt" IS NULL`,
         [scanId]
       );
       // Same transaction: a completion either has its evidence or provably has none.

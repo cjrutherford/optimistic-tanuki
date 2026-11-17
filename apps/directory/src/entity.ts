@@ -231,6 +231,26 @@ export class DirectoryOverturePrivateCompletion {
 }
 
 /**
+ * Which towns a scan was aimed at, so Directory can tell "scanned and empty" from "never scanned".
+ * `recorded` rows are written when a scan begins; `backfill-rows` rows are inferred from a completed scan's rows
+ * and carry a NULL completedAt. A scan is complete when its completion row exists, never by this table's completedAt.
+ */
+@Entity({ name: 'directory_town_scan_target' })
+@Index('IDX_directory_town_scan_target_scan', ['scanId'])
+@Check(
+  'CHK_directory_town_scan_target_provenance',
+  `"provenance" IN ('recorded','backfill-rows')`
+)
+export class DirectoryTownScanTarget {
+  @PrimaryColumn('uuid') communityId!: string;
+  @PrimaryColumn({ type: 'varchar', length: 64 }) scanId!: string;
+  @Column({ type: 'timestamptz', default: () => 'now()' }) targetedAt!: Date;
+  @Column({ type: 'timestamptz', nullable: true }) completedAt!: Date | null;
+  @Column({ type: 'int', nullable: true }) rowCount!: number | null;
+  @Column({ type: 'varchar', length: 24 }) provenance!: string;
+}
+
+/**
  * Immutable upstream provenance for one scan. Written only by the private sink in
  * the completion transaction (or by the attach script); never updated.
  * The only age clock is upstreamLastModified; recordedAt is the trusted DB clock.

@@ -523,14 +523,18 @@ test('local listing reads require a current eligible town before and after the b
   const db = {
     query: async (sql) =>
       sql.includes('directory_overture_private_row') &&
+      !sql.includes('directory_town_scan_target') &&
       !sql.includes('directory_overture_source_evidence')
         ? [{ listing }]
         : [row()],
   };
   const checks = pendingChecks(db, s, id);
   {
-    const { sourceFreshness, ...page } = await checks.localListings(town);
+    const { sourceFreshness, coverage, ...page } = await checks.localListings(
+      town
+    );
     assert.equal(sourceFreshness.state, 'unknown');
+    assert.equal(coverage.state, 'unknown');
     assert.deepEqual(page, { listings: [listing], hasMore: false });
   }
   await assert.rejects(checks.localListings(town, -1), /offset/i);
@@ -686,6 +690,7 @@ test('local listing reads expose a next page instead of silently truncating resu
   const db = {
     query: async (sql, params) =>
       sql.includes('directory_overture_private_row') &&
+      !sql.includes('directory_town_scan_target') &&
       !sql.includes('directory_overture_source_evidence')
         ? params[1] === 0
           ? Array.from({ length: 26 }, () => ({ listing: item }))
@@ -706,6 +711,7 @@ test('adult listings require an explicit visitor choice', async () => {
     query: async (sql, params) => {
       if (
         sql.includes('directory_overture_private_row') &&
+        !sql.includes('directory_town_scan_target') &&
         !sql.includes('directory_overture_source_evidence')
       ) {
         query = { sql, params };
@@ -728,6 +734,7 @@ test('directory category filtering uses an exact category and validates input', 
     query: async (sql, params) => {
       if (
         sql.includes('directory_overture_private_row') &&
+        !sql.includes('directory_town_scan_target') &&
         !sql.includes('directory_overture_source_evidence')
       ) {
         query = { sql, params };
@@ -760,6 +767,7 @@ test('cursor pagination binds the next page to the same town and filters', async
     query: async (sql, params) => {
       if (
         sql.includes('directory_overture_private_row') &&
+        !sql.includes('directory_town_scan_target') &&
         !sql.includes('directory_overture_source_evidence')
       ) {
         query = { sql, params };
@@ -823,6 +831,7 @@ test('offset listings can request stable identities without changing their order
   const db = {
     query: async (sql) =>
       sql.includes('directory_overture_private_row') &&
+      !sql.includes('directory_town_scan_target') &&
       !sql.includes('directory_overture_source_evidence')
         ? [{ listing: item, scanId: 'a'.repeat(64), sourceFileRowNumber: '1' }]
         : [row()],
@@ -861,6 +870,7 @@ test('detail references enforce town, visitor choice and current visibility', as
   const db = {
     query: async (sql) =>
       sql.includes('directory_overture_private_row') &&
+      !sql.includes('directory_town_scan_target') &&
       !sql.includes('directory_overture_source_evidence')
         ? visible
           ? [
@@ -897,6 +907,7 @@ test('unverified Census assignments are bound to the current town change token',
     query: async (sql, params) => {
       if (
         sql.includes('directory_overture_private_row') &&
+        !sql.includes('directory_town_scan_target') &&
         !sql.includes('directory_overture_source_evidence')
       ) {
         query = { sql, params };
@@ -932,6 +943,7 @@ test('local listing read includes only reviewed valid contact fields and their n
   const db = {
     query: async (sql) =>
       sql.includes('directory_overture_private_row') &&
+      !sql.includes('directory_town_scan_target') &&
       !sql.includes('directory_overture_source_evidence')
         ? [{ listing, reviewedActive: true }]
         : [row()],
@@ -941,6 +953,7 @@ test('local listing read includes only reviewed valid contact fields and their n
     {
       query: async (sql) =>
         sql.includes('directory_overture_private_row') &&
+        !sql.includes('directory_town_scan_target') &&
         !sql.includes('directory_overture_source_evidence')
           ? [{ listing, reviewedActive: false }]
           : [row()],
@@ -964,6 +977,7 @@ test('local directory search passes a bounded literal term to the database', asy
     query: async (sql, params) => {
       if (
         sql.includes('directory_overture_private_row') &&
+        !sql.includes('directory_town_scan_target') &&
         !sql.includes('directory_overture_source_evidence')
       ) {
         query = { sql, params };
@@ -1017,6 +1031,7 @@ test('bounded map search pages from the projection, binds cursors to the area, a
         return served;
       }
       return sql.includes('directory_overture_private_row') &&
+        !sql.includes('directory_town_scan_target') &&
         !sql.includes('directory_overture_source_evidence')
         ? []
         : [row()];
