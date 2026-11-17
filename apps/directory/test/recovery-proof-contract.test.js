@@ -61,6 +61,7 @@ test('issuance requires a locked traversed checkpoint matching all six fields', 
     ...id,
     authority: id.recoveryEpoch,
     phase: 'traversed',
+    protocol: 'legacy',
     cursor: null,
   };
   const queries = [];
@@ -92,6 +93,7 @@ test('issuance requires a locked traversed checkpoint matching all six fields', 
       ...id,
       authority: id.recoveryEpoch,
       phase: 'traversed',
+      protocol: 'legacy',
       cursor: null,
       [field]: value,
     };

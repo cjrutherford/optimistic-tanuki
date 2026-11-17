@@ -131,11 +131,14 @@ export function parseRowGroupMetadata(rows, expectedGroups, expectedRows) {
 }
 
 // The caller must first check the source against the currently verified inventory.
+// `reserveAttempt` is required: the pinned proxy refuses to fetch without an independent
+// budget reservation, so the caller owns the budget and there is no default.
 export async function readRowGroupMetadata(
   connection,
   source,
   envelope,
-  release
+  release,
+  { reserveAttempt, upstream } = {}
 ) {
   if (
     !connection ||
@@ -165,6 +168,8 @@ export async function readRowGroupMetadata(
   const proxy = await openPinnedRangeProxy({
     asset: uri.href,
     etag: source.etag,
+    reserveAttempt,
+    ...(upstream ? { upstream } : {}),
   });
   try {
     const sql = `SELECT row_group_id, row_group_num_rows, path_in_schema, stats_min, stats_max, stats_null_count FROM parquet_metadata('${proxy.url}') WHERE path_in_schema IN ('bbox, xmin','bbox, xmax','bbox, ymin','bbox, ymax') ORDER BY row_group_id, path_in_schema`;
