@@ -67,6 +67,13 @@ export const appRoutes: Route[] = [
           ).then((m) => m.DirectoryListingSuppressionPageComponent),
       },
       {
+        path: 'directory-listing-reports/:communityId',
+        loadComponent: () =>
+          import('./components/directory-listing-report-page.component').then(
+            (m) => m.DirectoryListingReportPageComponent
+          ),
+      },
+      {
         path: 'boundary-review/:communityId',
         loadComponent: () =>
           import('./components/boundary-review-page.component').then(

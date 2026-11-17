@@ -834,3 +834,62 @@ export class DirectoryListingSuppression {
     | null;
   @Column({ type: 'uuid', nullable: true }) liftedById!: string | null;
 }
+
+/**
+ * A public, anonymous report or correction request about one served listing. Nothing about a report hides a
+ * listing; a reviewer decides, and may open a suppression from it (`suppressionId`). `receiptTokenHash` is the
+ * hash of the random receipt token shown once to the reporter; the token itself is never stored.
+ * `contactEmailHash` is a keyed hash of the optional contact email, never the address, and is cleared on closed
+ * reports by the retention purge. `decidedById` is a reviewer profile id; `decisionNote` is reviewer free text.
+ */
+@Entity({ name: 'directory_listing_report' })
+@Index('UQ_directory_listing_report_receipt', ['receiptTokenHash'], {
+  unique: true,
+})
+@Index('IDX_directory_listing_report_town_status', ['communityId', 'status'])
+@Index('IDX_directory_listing_report_queue', [
+  'communityId',
+  'priority',
+  'createdAt',
+])
+@Index('IDX_directory_listing_report_listing', ['communityId', 'listingId'])
+@Check(
+  'CHK_directory_listing_report_reason',
+  `"reasonCode" IN ('rights-request','incorrect-details','closed-business','safety','duplicate','other')`
+)
+@Check(
+  'CHK_directory_listing_report_status',
+  `"status" IN ('received','under_review','resolved','declined')`
+)
+@Check(
+  'CHK_directory_listing_report_note',
+  `"note" IS NULL OR char_length("note") <= 1000`
+)
+export class DirectoryListingReport {
+  @PrimaryColumn('uuid') id!: string;
+  @Column('uuid') communityId!: string;
+  @Column('uuid') listingId!: string;
+  @Column({ type: 'varchar', length: 300, nullable: true }) listingName!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 24 }) reasonCode!: string;
+  @Column({ type: 'varchar', length: 1000, nullable: true }) note!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 16, default: 'received' }) status!: string;
+  @Column({ type: 'boolean', default: false }) priority!: boolean;
+  @Column({ type: 'char', length: 64 }) receiptTokenHash!: string;
+  @Column({ type: 'char', length: 64, nullable: true }) contactEmailHash!:
+    | string
+    | null;
+  @Column({ type: 'uuid', nullable: true }) suppressionId!: string | null;
+  @Column({ type: 'uuid', nullable: true }) decidedById!: string | null;
+  @Column({ type: 'timestamptz', nullable: true }) decidedAt!: Date | null;
+  @Column({ type: 'varchar', length: 1000, nullable: true }) decisionNote!:
+    | string
+    | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt!: Date;
+}

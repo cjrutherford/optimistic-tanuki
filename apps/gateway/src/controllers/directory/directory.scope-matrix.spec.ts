@@ -14,6 +14,10 @@ import {
 } from './directory-business-link.controller';
 import { DirectoryAddressReviewController } from './directory-address-review.controller';
 import { DirectoryListingSuppressionController } from './directory-listing-suppression.controller';
+import {
+  DirectoryListingReportController,
+  DirectoryListingReportReviewController,
+} from './directory-listing-report.controller';
 import { DirectoryBusinessIdentityReviewController } from './directory-business-identity-review.controller';
 import { AuthGuard } from '../../auth/auth.guard';
 import { GATEWAY_APP_REGISTRY } from '../registry/registry.tokens';
@@ -89,6 +93,12 @@ const reviewRoutes: MatrixRoute[] = [
     path: `${base}/listing-suppressions/${candidate}/lift`,
     body: {},
   },
+  { method: 'GET', path: `${base}/listing-reports` },
+  {
+    method: 'POST',
+    path: `${base}/listing-reports/${candidate}/review`,
+    body: {},
+  },
   { method: 'GET', path: `${base}/boundary-candidate` },
   { method: 'POST', path: `${base}/boundary-decisions`, body: {} },
 ];
@@ -144,6 +154,8 @@ describe('directory authentication and Owner Console scope matrix', () => {
         DirectoryAddressReviewController,
         DirectoryBusinessIdentityReviewController,
         DirectoryListingSuppressionController,
+        DirectoryListingReportController,
+        DirectoryListingReportReviewController,
       ],
       providers: [
         AuthGuard,
@@ -203,6 +215,22 @@ describe('directory authentication and Owner Console scope matrix', () => {
       expect(res.headers.get('cache-control')).toBe('no-store');
     }
   );
+
+  it('anonymous listing reports and receipt lookups are never auth-rejected', async () => {
+    const created = await call({
+      method: 'POST',
+      path: `${base}/listing-reports`,
+      body: { listingId: listing, reasonCode: 'other', website: 'bot' },
+    });
+    expect(created.status).toBe(201);
+    expect(created.headers.get('cache-control')).toBe('no-store');
+    const looked = await call({
+      method: 'GET',
+      path: `/directory/listing-reports/${'a'.repeat(32)}`,
+    });
+    expect([401, 403]).not.toContain(looked.status);
+    expect(looked.headers.get('cache-control')).toBe('no-store');
+  });
 
   it('an anonymous listing detail is never auth-rejected', async () => {
     const res = await call({
