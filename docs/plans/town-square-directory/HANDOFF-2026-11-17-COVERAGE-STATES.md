@@ -37,3 +37,42 @@ Retag the `:pre-coverage` images as `:latest` and restart. To restore the data, 
 - Withheld details are shown as a count only, with neutral wording.
 - A "publication paused" state is not modelled.
 - The POC and adult import scripts do not record scan targets yet, so their towns stay `unknown` until a backfill runs.
+
+## S5 close-out (later on 2026-11-17)
+
+All 12 S5 acceptance criteria now have code and test evidence. The status table is in [S5-public-contract.md](S5-public-contract.md), and example responses are in [S5-api-examples.md](S5-api-examples.md).
+
+| Commit      | Content                                                                                                                                                                                                               |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `7e5f86960` | Repairs stale recovery fixtures; the preflight now passes on the caller's budget reservation. The suite runs 0 failures.                                                                                              |
+| `8491afacb` | Adds the `unconfigured` coverage state, the opaque `policyVersion`, the internal `exportEligible` and no-store everywhere. Adds evidence tests for cross-town replay, withheld rows, the scope matrix and link races. |
+| `00476fd5e` | Adds reviewer listing suppression: table `directory_listing_suppression` (migration `1794937486351`), the gateway controller and an Owner Console page.                                                               |
+| `48352138e` | Adds the examples doc and the golden contract spec, which was checked to fail on a renamed key. Gateway middleware now sets no-store before guards run, and the cursor-mode 400 message is fixed.                     |
+
+**Deployment:**
+
+- Backups: `.agent/backups/*-pre-s5close-20261117.dump`.
+- Migration `1794937486351` is applied to both databases.
+- Rollback images are tagged `:pre-s5close` for directory, directory-worker, gateway, local-hub and owner-console.
+- Directory, gateway, local-hub and owner-console were rebuilt. The worker image did not change, because no file it is built from changed.
+- The first parallel build failed on intermittent EAI_AGAIN errors during `pnpm install`. Building one image at a time worked.
+
+**Live checks:**
+
+- The listing returns `coverage` and `policyVersion`.
+- The ineligible town returns `blocked`.
+- The suppression routes return 401 with `no-store` when anonymous.
+- The internal suppression list returns 200 empty.
+- The Owner Console suppression page returns 200.
+- An oversized cursor-mode bounds request returns 400 "Invalid bounds".
+
+No suppressions were recorded.
+
+**Still open, outside S5's code:**
+
+- Publication is paused.
+- The full account deletion with all 13 owners has not been exercised locally.
+- The `empty`, `acquiring`, `partial`, `unknown` and `unconfigured` states have not been observed live.
+- Public report intake belongs to S6.
+
+Next stage: S6, the shared public UI in every town.
