@@ -1094,6 +1094,10 @@ export class CommunityOpsWorkspaceComponent implements OnInit {
                 label: 'Suppress Listings',
                 route: ['/dashboard/directory-listing-suppressions', entity.id],
               },
+              {
+                label: 'Listing Reports',
+                route: ['/dashboard/directory-listing-reports', entity.id],
+              },
             ]
           : []),
       ];
@@ -1121,6 +1125,10 @@ export class CommunityOpsWorkspaceComponent implements OnInit {
         {
           label: 'Suppress Listings',
           route: ['/dashboard/directory-listing-suppressions', entity.id],
+        },
+        {
+          label: 'Listing Reports',
+          route: ['/dashboard/directory-listing-reports', entity.id],
         },
         { label: 'Create Community', route: ['/dashboard/communities/new'] },
       ];

@@ -31,6 +31,10 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Client,
   },
   {
+    path: 'dashboard/directory-listing-reports/:communityId',
+    renderMode: RenderMode.Client,
+  },
+  {
     path: 'dashboard/boundary-review/:communityId',
     renderMode: RenderMode.Client,
   },

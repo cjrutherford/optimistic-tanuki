@@ -76,6 +76,22 @@ import {
   type LiftReason,
   type SuppressionReason,
 } from './listing-suppression';
+import {
+  REPORT_ACTIONS,
+  REPORT_BUSY,
+  REPORT_CONFLICT,
+  REPORT_INVALID,
+  REPORT_NOT_FOUND,
+  REPORT_REASONS,
+  contactKeyFrom,
+  createReport,
+  listReports,
+  lookupReceipt,
+  transitionReport,
+  validateReport,
+  type ReportAction,
+  type ReportReason,
+} from './listing-report';
 import { currentPolicyVersion } from './policy-version';
 import { lockAuthority } from './register-reconciliation-v2';
 import { isEligibleCommunity } from './social-eligibility';
@@ -1238,7 +1254,66 @@ export function pendingChecks(
     await authority(town);
     return result;
   }
+  async function reportCreate(
+    town: string,
+    value: {
+      listingId: string;
+      reasonCode: ReportReason;
+      note?: string;
+      email?: string;
+    }
+  ) {
+    if (
+      !uuid.test(town) ||
+      !db.transaction ||
+      !cursorSecret ||
+      Buffer.byteLength(cursorSecret) < 32
+    )
+      throw Error(REPORT_BUSY);
+    validateReport({ ...value, townId: town });
+    // The report keys on the stable listing id and only a listing this town currently serves can be reported.
+    const listing = await localDetail(town, value.listingId, true);
+    if (!listing || !uuid.test(listing.id || '')) throw Error(REPORT_NOT_FOUND);
+    return createReport(db as DataSource, contactKeyFrom(cursorSecret), {
+      ...value,
+      listingId: listing.id as string,
+      townId: town,
+      listingName: typeof listing.name === 'string' ? listing.name : null,
+    });
+  }
+  async function reportLookup(receipt: string) {
+    return lookupReceipt(db, receipt);
+  }
+  async function reportList(town: string, status?: string) {
+    if (!uuid.test(town)) throw Error(REPORT_INVALID);
+    await authority(town);
+    return listReports(db, town, status);
+  }
+  async function reportTransition(
+    town: string,
+    reportId: string,
+    value: {
+      action: ReportAction;
+      actorId: string;
+      note?: string;
+      suppressionId?: string;
+    }
+  ) {
+    if (!uuid.test(town) || !db.transaction) throw Error(REPORT_INVALID);
+    await authority(town);
+    const result = await transitionReport(db as DataSource, {
+      ...value,
+      townId: town,
+      reportId,
+    });
+    await authority(town);
+    return result;
+  }
   return {
+    reportCreate,
+    reportLookup,
+    reportList,
+    reportTransition,
     suppressionList,
     suppressionCreate,
     suppressionLift,
@@ -1938,6 +2013,151 @@ export function pendingServer(
               ? 409
               : 503,
             { 'cache-control': 'no-store' }
+          )
+          .end();
+      } finally {
+        active--;
+      }
+      return;
+    }
+    const reportMatch = localUrl?.pathname.match(
+      /^\/internal\/local-evaluation\/(?:towns\/([0-9a-f-]{36})\/listing-reports(?:\/([0-9a-f-]{36})\/(review|decline|resolve))?|listing-reports\/([A-Za-z0-9_-]{32}))$/
+    );
+    if (
+      reportMatch &&
+      (reportMatch[4]
+        ? req.method === 'GET'
+        : reportMatch[3]
+        ? req.method === 'POST'
+        : req.method === 'GET' || req.method === 'POST')
+    ) {
+      const noStore = { 'cache-control': 'no-store' };
+      const expected = Buffer.from(localSecret || ''),
+        provided = Buffer.from(
+          req.headers.authorization?.startsWith('Bearer ')
+            ? req.headers.authorization.slice(7)
+            : ''
+        );
+      if (expected.length < 32) {
+        res.writeHead(503, noStore).end();
+        return;
+      }
+      if (
+        provided.length !== expected.length ||
+        !timingSafeEqual(provided, expected)
+      ) {
+        res.writeHead(401, noStore).end();
+        return;
+      }
+      const statusParams = localUrl!.searchParams.getAll('status');
+      if (
+        [...localUrl!.searchParams.keys()].some((k) => k !== 'status') ||
+        statusParams.length > 1 ||
+        (statusParams.length && (reportMatch[4] || req.method !== 'GET'))
+      ) {
+        res.writeHead(400, noStore).end();
+        return;
+      }
+      if (active >= 32) {
+        res.writeHead(503, noStore).end();
+        return;
+      }
+      active++;
+      const isRead = req.method === 'GET';
+      if (!isRead) req.setTimeout(5000, () => req.destroy());
+      try {
+        let result: unknown;
+        if (reportMatch[4]) {
+          result = await checks.reportLookup(reportMatch[4]);
+        } else if (isRead) {
+          result = await checks.reportList(
+            reportMatch[1],
+            statusParams.length ? statusParams[0] : undefined
+          );
+        } else {
+          let body = Buffer.alloc(0);
+          for await (const chunk of req) {
+            body = Buffer.concat([body, Buffer.from(chunk)]);
+            if (body.length > 8192) {
+              res.writeHead(413, noStore).end();
+              return;
+            }
+          }
+          let value: any;
+          try {
+            value = JSON.parse(body.toString('utf8'));
+          } catch {
+            res.writeHead(400, noStore).end();
+            return;
+          }
+          const shape = (allowed: string[]) =>
+            value &&
+            typeof value === 'object' &&
+            !Array.isArray(value) &&
+            Object.keys(value).every((k) => allowed.includes(k));
+          if (reportMatch[3]) {
+            if (
+              !shape(['actorId', 'note', 'suppressionId']) ||
+              !uuid.test(value.actorId || '') ||
+              (value.note !== undefined && typeof value.note !== 'string') ||
+              (value.suppressionId !== undefined &&
+                !uuid.test(value.suppressionId || ''))
+            ) {
+              res.writeHead(400, noStore).end();
+              return;
+            }
+            result = await checks.reportTransition(
+              reportMatch[1],
+              reportMatch[2],
+              {
+                action: reportMatch[3] as ReportAction,
+                actorId: value.actorId,
+                ...(value.note === undefined ? {} : { note: value.note }),
+                ...(value.suppressionId === undefined
+                  ? {}
+                  : { suppressionId: value.suppressionId }),
+              }
+            );
+          } else {
+            if (
+              !shape(['listingId', 'reasonCode', 'note', 'email']) ||
+              !uuid.test(value.listingId || '') ||
+              !(REPORT_REASONS as readonly string[]).includes(
+                value.reasonCode
+              ) ||
+              (value.note !== undefined && typeof value.note !== 'string') ||
+              (value.email !== undefined && typeof value.email !== 'string')
+            ) {
+              res.writeHead(400, noStore).end();
+              return;
+            }
+            result = await checks.reportCreate(reportMatch[1], {
+              listingId: value.listingId,
+              reasonCode: value.reasonCode,
+              ...(value.note === undefined ? {} : { note: value.note }),
+              ...(value.email === undefined ? {} : { email: value.email }),
+            });
+          }
+        }
+        res
+          .writeHead(200, {
+            'content-type': 'application/json',
+            ...noStore,
+          })
+          .end(JSON.stringify(result));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '';
+        res
+          .writeHead(
+            message === REPORT_INVALID
+              ? 400
+              : message === REPORT_CONFLICT ||
+                message === 'ACCOUNT_DELETION_FENCED'
+              ? 409
+              : message === REPORT_NOT_FOUND
+              ? 404
+              : 503,
+            noStore
           )
           .end();
       } finally {

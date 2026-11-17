@@ -103,6 +103,10 @@ import {
 import { DirectoryAddressReviewController } from '../controllers/directory/directory-address-review.controller';
 import { DirectoryBusinessIdentityReviewController } from '../controllers/directory/directory-business-identity-review.controller';
 import { DirectoryListingSuppressionController } from '../controllers/directory/directory-listing-suppression.controller';
+import {
+  DirectoryListingReportController,
+  DirectoryListingReportReviewController,
+} from '../controllers/directory/directory-listing-report.controller';
 import { WellnessController } from '../controllers/wellness/wellness.controller';
 import { ClassifiedsController } from '../controllers/classifieds/classifieds.controller';
 import { CommunitiesController } from '../controllers/communities/communities.controller';
@@ -250,6 +254,16 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'directory-listing-suppression',
         requiredServices: ['social', 'authentication', 'permissions'],
         value: DirectoryListingSuppressionController,
+      },
+      {
+        id: 'directory-listing-report',
+        requiredServices: ['social'],
+        value: DirectoryListingReportController,
+      },
+      {
+        id: 'directory-listing-report-review',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryListingReportReviewController,
       },
       {
         id: 'social-components',

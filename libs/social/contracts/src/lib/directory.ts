@@ -88,3 +88,63 @@ export interface LocalDirectoryPage {
 export interface LocalDirectoryCursorPage extends LocalDirectoryPage {
   nextCursor: string | null;
 }
+
+/** Public listing report / correction request (S6). Reasons match the reviewer suppression reasons. */
+export type ListingReportReasonCode =
+  | 'rights-request'
+  | 'incorrect-details'
+  | 'closed-business'
+  | 'safety'
+  | 'duplicate'
+  | 'other';
+
+/** The only four statuses a report can have; public labels are Received, Under review, Resolved, Declined. */
+export type ListingReportStatus =
+  | 'received'
+  | 'under_review'
+  | 'resolved'
+  | 'declined';
+
+/** POST /api/directory/towns/:townId/listing-reports (anonymous). Nothing is hidden by filing a report. */
+export interface CreateListingReportRequest {
+  /** The listing's stable public `id`, not its short-lived `reference`. */
+  listingId: string;
+  reasonCode: ListingReportReasonCode;
+  /** Optional detail, at most 1000 characters. */
+  note?: string;
+  /** Optional contact email; stored only as a keyed hash, never shown or returned. */
+  email?: string;
+  /** Honeypot: leave empty. A non-empty value is silently discarded. */
+  website?: string;
+}
+
+/** The receipt code is shown once; keep it to check the status later. */
+export interface CreateListingReportResponse {
+  receipt: string;
+}
+
+/** GET /api/directory/listing-reports/:receipt. Nothing else about the report is ever returned. */
+export interface ListingReportReceiptStatus {
+  status: ListingReportStatus;
+  reasonCode: ListingReportReasonCode;
+  createdAt: string;
+}
+
+/** Reviewer queue item (authenticated Owner Console routes). Never carries any reporter contact. */
+export interface ListingReportReviewItem {
+  reportId: string;
+  listingId: string;
+  listingName: string | null;
+  reasonCode: ListingReportReasonCode;
+  note: string | null;
+  status: ListingReportStatus;
+  /** True for safety and rights-request reports; the queue lists these first. */
+  priority: boolean;
+  createdAt: string;
+  decidedById: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  suppressionId: string | null;
+}
+
+export type ListingReportReviewAction = 'review' | 'decline' | 'resolve';
