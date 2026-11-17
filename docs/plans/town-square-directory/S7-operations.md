@@ -179,7 +179,78 @@ Apply migration `1794949427226-DirectoryFoundation` (three tables) to the live D
 
 ## 7. Taxonomy
 
-Placeholder. S7d: category mapping management and reclassification under `directory.operate`, with review and audit.
+All taxonomy work needs `directory.operate`. A review-only or rights-only operator gets 403 on every route below. Routes are in `taxonomyRoutes` in `directory.scope-matrix.spec.ts` and answer `Cache-Control: no-store`.
+
+### 7.1 Model
+
+The effective category of a stored listing is, in order: an operator override, the installed mapping's classification, the stored (legacy) category. An override beats an exclusion. Public list, detail, category filter, search and coverage all read the effective value through one SQL fragment (`taxonomy-served.ts`), so a listing is classified the same way everywhere.
+
+| Table                                                                  | Purpose                                                                                                                                                             |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `directory_taxonomy_mapping_version`, `directory_taxonomy_mapping_row` | A versioned mapping installed from a checked-in file (`taxonomy-mapping-data.ts`). One version is active at a time (unique partial index).                          |
+| `directory_listing_classification`                                     | The projection a run writes, keyed by `(scanId, sourceFileRowNumber)`: category, optional place type, basis (`mapping`, `override`, `legacy`), excluded and reason. |
+| `directory_listing_category_override`                                  | One override per `(communityId, listingKey)`. The key is the stable listing identity.                                                                               |
+| `directory_taxonomy_case`, `directory_taxonomy_event`                  | Cases and an append-only event log. The client decision id is the event primary key.                                                                                |
+| `directory_taxonomy_run`, `directory_taxonomy_run_before`              | The run ledger and the before-image of every row an apply changes.                                                                                                  |
+
+Stable listing identity is the business id when the listing has a current business assertion, otherwise the row-scoped `directory_listing_identity` id. An override keyed by a business id survives a rescan, because the new scan row carries the same business. An override keyed by a row-scoped id does not survive a rescan.
+
+Categories are `restaurants`, `activities`, `services`, `stores`, `places_and_landmarks`, `adult`, `education` and `places_of_worship`. Place types refine a category: `radio_station` (services) and `auto_dealer` (stores).
+
+### 7.2 Mapping
+
+`POST /api/directory/taxonomy/mappings/install {version, activate}` loads a version from the file the build carries. Install is idempotent by content hash: a second install returns `replayed: true`. Installing a version whose file has changed since it was installed returns 409 `decision_conflict`; ship a new version id instead. `activate: true` deactivates the others in the same transaction. Installing changes nothing that is served; only an apply run does.
+
+The shipped version is `overture-v3-local-2026-11.1`, with unmapped policy `keep_legacy`: a category the mapping does not know keeps its stored value, so nothing disappears on deploy. Classification takes the most specific taxonomy node first, adult nodes always winning, then the stored basic category. The adult category is served only for a listing flagged `adult`; an adult node on any other listing is excluded with reason `adult_restricted`. Operators cannot assign `adult`.
+
+### 7.3 Cases
+
+| Action                      | Effect                                                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `POST .../cases`            | Raise a case for one listing (`operator_raised`). One open or deferred case per listing; a second returns it. |
+| `assign`                    | Writes the override (category, optional place type). The previous override is captured for undo.              |
+| `reject`, `defer`, `reopen` | Move the case status only. Reject and defer change nothing that is served.                                    |
+| `undo`                      | Restores the override as it was before the undone assignment.                                                 |
+
+Statuses are `open`, `assigned`, `rejected` and `deferred`. Every write records the session actor, a required reason, a timestamp and the decision id. A decision carries the case version token. A stale token, a replay with different content, a non-latest undo, an undo whose override has since been replaced, or an invalid transition returns 409 with `stale_decision`, `decision_conflict`, `not_latest` or `invalid_state`. A replay with identical content returns the original result.
+
+### 7.4 Reclassification runs
+
+A run is a durable row worked in batches of 500 by a worker started in the Directory runtime (`FOR UPDATE SKIP LOCKED`). Each batch commits its writes and its cursor in one transaction, so an interrupted run resumes from the last committed batch. Five consecutive failed batches fail the run.
+
+1. `dry_run` computes every row's classification, writes nothing, and ends with a summary (transitions with samples, unchanged, unmapped, excluded) and a plan hash (a digest chain over every row's computed classification).
+2. `apply` names the plan hash of a completed dry run with the same mapping version, scope and town, and needs the typed word `APPLY`. The mapping version must be active. The worker replays the plan pass first; if the hash differs the run fails with `plan hash mismatch` and writes nothing. Otherwise it writes the before-image and the projection, batch by batch.
+3. `cancel` stops a pending run at once and a running run after its current batch.
+4. `rollback` of a completed apply needs the typed word `ROLLBACK`. It restores the before-images, but only for rows the run still owns: a row a later run changed is left alone.
+
+Only one run is active at a time. A run id is idempotent: a replay with the same content returns the run, with different content returns 409.
+
+Run routes: `GET/POST /api/directory/taxonomy/runs`, `GET .../runs/:id`, `POST .../runs/:id/cancel`, `POST .../runs/:id/rollback`.
+
+### 7.5 Owner Console
+
+`/dashboard/directory-taxonomy` is the case queue and detail: assign select (adult excluded), reason, decision history with undo, and a raise form. `/dashboard/directory-taxonomy-runs` installs mappings, starts dry runs, shows the diff table, applies with a typed confirmation, follows progress while a run is in flight, cancels and rolls back. Both are listed in the operator workspaces. Stale 409s reload the case and say so.
+
+### 7.6 Account erase
+
+`directory_taxonomy_event.actorId` and `reason`, `directory_taxonomy_run.actorId`, `canceledById`, `rollbackById` and their reasons, and `directory_taxonomy_mapping_version.installedById` are nullable. Erase nulls a matching profile id and clears the reason text; an account or legacy-id match is ambiguous and blocks. The other five tables hold no person data. The lifecycle parity test covers all eight.
+
+### 7.7 Known gaps
+
+- Stored private rows keep only the basic category, so classification works on `basic_category`; `taxonomy_node` entries apply only to a listing that carries a taxonomy path. A listing with several categories collapses to the most specific match.
+- Runs do not raise `unmapped_taxonomy` or `ambiguous_taxonomy` cases on their own. Only operators raise cases (`operator_raised`).
+- The shipped mapping has no excluded `basic_category`; exclusion today comes from the adult rule only.
+- Drift between the plan pass and the apply pass is detected at the plan hash, before any write. Rows that change while the apply phase itself runs are not re-verified.
+- A rollback restores only rows still owned by the run, by design.
+
+### 7.8 Deploy and live steps
+
+Apply migration `1794950472386-DirectoryFoundation` (eight tables) to the live Directory database before deploying this build. It was generated, validated with `pnpm run validate:typeorm-migrations`, and not applied to any live database. Then, as an operator with `directory.operate`:
+
+1. `POST /api/directory/taxonomy/mappings/install` with `{"version":"overture-v3-local-2026-11.1","activate":true}`.
+2. `POST /api/directory/taxonomy/runs` with `{id, mappingVersion, scope:"town"|"all", townId?, mode:"dry_run", reason}`. Wait for `complete`. Review the transitions and note `planHash`.
+3. `POST /api/directory/taxonomy/runs` with `{id, mappingVersion, scope, townId?, mode:"apply", reason, expectedPlanHash, confirm:"APPLY"}`. Follow `appliedRows` until `complete`.
+4. To undo: `POST /api/directory/taxonomy/runs/:id/rollback` with `{reason, confirm:"ROLLBACK"}`.
 
 ## 8. Runs
 

@@ -61,7 +61,10 @@ const identityDb = (db) => ({
         scanId,
         sourceFileRowNumber: params[2][i],
       }));
-    if (sql.includes('FROM directory_listing_identity'))
+    if (
+      sql.includes('FROM directory_listing_identity') &&
+      !sql.includes('directory_overture_private_row')
+    )
       return params[1] === '00000000-0000-4000-8000-000000000101'
         ? [{ scanId: 'a'.repeat(64), sourceFileRowNumber: '1' }]
         : [];

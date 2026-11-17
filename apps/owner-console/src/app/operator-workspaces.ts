@@ -252,6 +252,20 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
         route: '/dashboard/directory-withdrawals',
         highlight: 'Permanent removal',
       },
+      {
+        title: 'Directory Taxonomy',
+        description:
+          'Correct the category of individual listings with audited, reversible overrides.',
+        route: '/dashboard/directory-taxonomy',
+        highlight: 'Category overrides',
+      },
+      {
+        title: 'Taxonomy Runs',
+        description:
+          'Dry-run, apply, cancel and roll back a mapping version across stored listings.',
+        route: '/dashboard/directory-taxonomy-runs',
+        highlight: 'Reclassification',
+      },
     ],
   },
 ];

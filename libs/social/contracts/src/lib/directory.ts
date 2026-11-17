@@ -366,3 +366,204 @@ export interface WithdrawalRecord {
   updatedAt: string;
   completedAt: string | null;
 }
+
+/**
+ * Directory taxonomy (S7d). The controlled category ids and place types an operator can assign. They are the ids
+ * the public category filter accepts once a listing is classified; a listing that has not been classified keeps
+ * its stored (Overture basic) category.
+ */
+export const DIRECTORY_TAXONOMY_CATEGORIES = [
+  { id: 'restaurants', label: 'Restaurants' },
+  { id: 'activities', label: 'Activities' },
+  { id: 'services', label: 'Services' },
+  { id: 'stores', label: 'Stores' },
+  { id: 'places_and_landmarks', label: 'Places & landmarks' },
+  { id: 'adult', label: 'Adult businesses' },
+  { id: 'education', label: 'Education' },
+  { id: 'places_of_worship', label: 'Places of worship' },
+] as const;
+export type DirectoryTaxonomyCategoryId =
+  (typeof DIRECTORY_TAXONOMY_CATEGORIES)[number]['id'];
+
+/** Explicit refinements of a category; a place type belongs to exactly one category. */
+export const DIRECTORY_TAXONOMY_PLACE_TYPES = [
+  { id: 'radio_station', label: 'Radio station', categoryId: 'services' },
+  { id: 'auto_dealer', label: 'Auto dealership', categoryId: 'stores' },
+] as const;
+export type DirectoryTaxonomyPlaceTypeId =
+  (typeof DIRECTORY_TAXONOMY_PLACE_TYPES)[number]['id'];
+
+export function isTaxonomyPlaceTypeForCategory(
+  placeTypeId: string,
+  categoryId: string
+): boolean {
+  return DIRECTORY_TAXONOMY_PLACE_TYPES.some(
+    (p) => p.id === placeTypeId && p.categoryId === categoryId
+  );
+}
+
+export type TaxonomyExclusionReason =
+  | 'missing_basic_category'
+  | 'missing_taxonomy'
+  | 'unmapped_taxonomy'
+  | 'adult_restricted';
+export type TaxonomyClassificationBasis = 'override' | 'mapping' | 'legacy';
+
+export interface TaxonomyMappingVersion {
+  id: string;
+  sourceHash: string;
+  unmappedPolicy: 'keep_legacy' | 'exclude';
+  active: boolean;
+  installedById: string | null;
+  createdAt: string;
+  activatedAt: string | null;
+  rowCount: number;
+}
+export interface TaxonomyMappingList {
+  versions: TaxonomyMappingVersion[];
+  /** Versions the build carries and an operator could install. */
+  available: { id: string; installed: boolean }[];
+}
+export interface TaxonomyMappingInstallRequest {
+  version: string;
+  activate: boolean;
+}
+export interface TaxonomyMappingInstallResult {
+  replayed: boolean;
+  version: TaxonomyMappingVersion;
+}
+
+export type TaxonomyCaseStatus = 'open' | 'assigned' | 'rejected' | 'deferred';
+export type TaxonomyCaseReason =
+  | 'operator_raised'
+  | 'unmapped_taxonomy'
+  | 'ambiguous_taxonomy';
+export type TaxonomyDecisionAction = 'assign' | 'reject' | 'defer' | 'reopen';
+
+export interface TaxonomyCaseSummary {
+  id: string;
+  townId: string;
+  listingId: string;
+  reason: TaxonomyCaseReason;
+  name: string;
+  observedCategory: string;
+  status: TaxonomyCaseStatus;
+  /** The category currently assigned by this case's override, when one is in force. */
+  assignedCategoryId: string | null;
+  assignedPlaceTypeId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  versionToken: string;
+}
+export interface TaxonomyHistoryEntry extends DirectoryReviewHistoryEntry {
+  action: TaxonomyDecisionAction | 'open' | 'undo';
+  categoryId: string | null;
+  placeTypeId: string | null;
+  statusBefore: TaxonomyCaseStatus;
+  statusAfter: TaxonomyCaseStatus;
+}
+export interface TaxonomyCaseDetail extends TaxonomyCaseSummary {
+  history: TaxonomyHistoryEntry[];
+}
+export interface TaxonomyDecisionRequest {
+  decisionId: string;
+  action: TaxonomyDecisionAction;
+  expectedVersionToken: string;
+  reason: string;
+  /** assign only. */
+  categoryId?: string;
+  placeTypeId?: string;
+}
+export interface TaxonomyUndoRequest {
+  decisionId: string;
+  undoOf: string;
+  expectedVersionToken: string;
+  reason: string;
+}
+export interface TaxonomyRaiseCaseRequest {
+  caseId: string;
+  townId: string;
+  /** A business id (or a superseded one) or a row-scoped listing id. */
+  listingId: string;
+  reason: string;
+}
+export interface TaxonomyDecisionResult {
+  replayed: boolean;
+  status: TaxonomyCaseStatus;
+}
+export interface TaxonomyRaiseCaseResult {
+  /** True when the id was already used, or the listing already had an open case, and that case was returned. */
+  replayed: boolean;
+  case: TaxonomyCaseSummary;
+}
+
+export type TaxonomyRunScope = 'town' | 'all';
+export type TaxonomyRunMode = 'dry_run' | 'apply';
+export type TaxonomyRunPhase = 'plan' | 'apply' | 'rollback';
+export type TaxonomyRunStatus =
+  | 'pending'
+  | 'running'
+  | 'complete'
+  | 'canceled'
+  | 'failed'
+  | 'rolling_back'
+  | 'rolled_back';
+export const TAXONOMY_APPLY_CONFIRMATION = 'APPLY';
+
+export interface TaxonomyTransition {
+  from: string;
+  to: string;
+  count: number;
+  samples: { scanId: string; row: string; name: string }[];
+}
+export interface TaxonomyRunSummary {
+  transitions: TaxonomyTransition[];
+  unchanged: number;
+  unmapped: number;
+  excluded: number;
+  /** Transitions beyond the cap are counted here rather than listed. */
+  truncatedTransitions: number;
+}
+export interface TaxonomyRunRecord {
+  id: string;
+  mappingVersion: string;
+  scope: TaxonomyRunScope;
+  townId: string | null;
+  mode: TaxonomyRunMode;
+  phase: TaxonomyRunPhase;
+  status: TaxonomyRunStatus;
+  /** Null once the creating operator's account has been erased. */
+  actorId: string | null;
+  reason: string;
+  expectedPlanHash: string | null;
+  planHash: string | null;
+  scannedRows: number;
+  changedRows: number;
+  appliedRows: number;
+  restoredRows: number;
+  attempts: number;
+  cancelRequested: boolean;
+  summary: TaxonomyRunSummary;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+}
+export interface TaxonomyRunRequest {
+  id: string;
+  mappingVersion: string;
+  scope: TaxonomyRunScope;
+  townId?: string;
+  mode: TaxonomyRunMode;
+  reason: string;
+  /** apply only: the plan hash of the dry run being applied, and the deliberate confirmation. */
+  expectedPlanHash?: string;
+  confirm?: typeof TAXONOMY_APPLY_CONFIRMATION;
+}
+export interface TaxonomyRunCancelRequest {
+  reason: string;
+}
+export interface TaxonomyRunRollbackRequest {
+  reason: string;
+  confirm: 'ROLLBACK';
+}

@@ -80,6 +80,13 @@ export const DIRECTORY_DELETION_IDENTITIES = Object.freeze({
   directory_address_review_decision: [['actorId', 'profile']],
   directory_rights_event: [['actorId', 'profile']],
   directory_withdrawal_request: [['actorId', 'profile']],
+  directory_taxonomy_mapping_version: [['installedById', 'profile']],
+  directory_taxonomy_event: [['actorId', 'profile']],
+  directory_taxonomy_run: [
+    ['actorId', 'profile'],
+    ['canceledById', 'profile'],
+    ['rollbackById', 'profile'],
+  ],
   directory_listing_suppression: [
     ['actorId', 'profile'],
     ['liftedById', 'profile'],
@@ -164,6 +171,17 @@ async function inspect(
       s.profiles,
     ]),
     await one(
+      'directory_taxonomy_mapping_version WHERE "installedById"=ANY($1::uuid[])',
+      [s.profiles]
+    ),
+    await one('directory_taxonomy_event WHERE "actorId"=ANY($1::uuid[])', [
+      s.profiles,
+    ]),
+    await one(
+      'directory_taxonomy_run WHERE "actorId"=ANY($1::uuid[]) OR "canceledById"=ANY($1::uuid[]) OR "rollbackById"=ANY($1::uuid[])',
+      [s.profiles]
+    ),
+    await one(
       `directory_business_identity_decision WHERE ("actorDomain"='account' AND "actorId"=$1::uuid) OR ("actorDomain"='profile' AND "actorId"=ANY($2::uuid[]))`,
       [s.account, s.profiles]
     ),
@@ -204,6 +222,18 @@ async function inspect(
     ),
     await one(
       'directory_withdrawal_request WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_taxonomy_mapping_version WHERE "installedById"=ANY($1::uuid[]) AND NOT ("installedById"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_taxonomy_event WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_taxonomy_run WHERE ("actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))) OR ("canceledById"=ANY($1::uuid[]) AND NOT ("canceledById"=ANY($2::uuid[]))) OR ("rollbackById"=ANY($1::uuid[]) AND NOT ("rollbackById"=ANY($2::uuid[])))',
       [s.all, s.profiles]
     ),
     await one(
@@ -290,6 +320,25 @@ async function erase(manager: Manager, s: Canonical): Promise<void> {
   );
   await manager.query(
     'UPDATE directory_withdrawal_request SET "actorId"=NULL,reason=\'\' WHERE "actorId"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_taxonomy_mapping_version SET "installedById"=NULL WHERE "installedById"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_taxonomy_event SET "actorId"=NULL,reason=\'\' WHERE "actorId"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  // Each actor column and its free text are cleared independently: a run can be created by one operator and canceled by another.
+  await manager.query(
+    `UPDATE directory_taxonomy_run SET reason=CASE WHEN "actorId"=ANY($1::uuid[]) THEN '' ELSE reason END,
+       "cancelReason"=CASE WHEN "canceledById"=ANY($1::uuid[]) THEN NULL ELSE "cancelReason" END,
+       "rollbackReason"=CASE WHEN "rollbackById"=ANY($1::uuid[]) THEN NULL ELSE "rollbackReason" END,
+       "actorId"=CASE WHEN "actorId"=ANY($1::uuid[]) THEN NULL ELSE "actorId" END,
+       "canceledById"=CASE WHEN "canceledById"=ANY($1::uuid[]) THEN NULL ELSE "canceledById" END,
+       "rollbackById"=CASE WHEN "rollbackById"=ANY($1::uuid[]) THEN NULL ELSE "rollbackById" END
+     WHERE "actorId"=ANY($1::uuid[]) OR "canceledById"=ANY($1::uuid[]) OR "rollbackById"=ANY($1::uuid[])`,
     [s.profiles]
   );
 }
