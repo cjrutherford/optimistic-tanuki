@@ -14,6 +14,12 @@ const {
 const {
   authorizeAnonymousOvertureAttempt,
 } = require('../apps/directory/src/provider-budget');
+const {
+  StageStopped,
+  ledgerSink,
+  openLedger,
+  parseLedgerArgs,
+} = require('./local-directory-run-ledger.cjs');
 const digest = (x) => crypto.createHash('sha256').update(x).digest('hex');
 const geometryHash = (geometry) => `sha256:${digest(JSON.stringify(geometry))}`;
 const expectedGeometry = {
@@ -27,12 +33,18 @@ const expectedGeometry = {
     'sha256:21646e863343da4c07f6d8e372bb7f85f88b866a359a07fd6b7e3bf71c74e588',
 };
 async function main() {
-  const args = process.argv.slice(2);
+  // `--resume <runId>` and `--no-ledger` are the run-ledger flags (S7e); the rest is the original argument list.
+  const {
+    rest: args,
+    resume,
+    enabled: ledgerEnabled,
+  } = parseLedgerArgs(process.argv.slice(2));
   if (
     process.env.DIRECTORY_LOCAL_EVALUATION !== 'true' ||
     args[0] !== '--stage-local' ||
     args.length > 2 ||
-    (args[1] && !/^\d{5}$/.test(args[1]))
+    (args[1] && !/^\d{5}$/.test(args[1])) ||
+    (resume && args[1])
   )
     throw Error('Explicit local staging mode required');
   const stageUrl = new URL(process.env.LOCAL_STAGE_DATABASE_URL || ''),
@@ -130,7 +142,7 @@ async function main() {
     await connection.run('LOAD httpfs');
     const keys = crypto.generateKeyPairSync('ed25519'),
       subject = crypto.randomUUID();
-    const items = args[1]
+    const ordered = args[1]
       ? inventory.items.filter((i) => i.id === args[1])
       : [...inventory.items].sort((a, b) =>
           a.id === '00001'
@@ -139,87 +151,128 @@ async function main() {
             ? 1
             : a.id.localeCompare(b.id)
         );
-    if (!items.length) throw Error('Unknown asset');
-    for (const item of items) {
-      const policy = {
-        authorized: true,
-        inventorySha256: inventory.inventorySha256,
-        itemId: item.id,
-        approvalSha256,
-        projectionSha256,
-        classifierSha256,
-        regions,
-        localSnapshot: true,
-        maxMemoryBytes: 2 * 1024 * 1024 * 1024,
-        maxTransferBytes: 1024 * 1024 * 1024,
-      };
-      const reserveAttempt = (attempt) => {
-        const now = Date.now(),
-          claims = {
-            version: 's4-private-source-v1',
-            policyId: approvalSha256,
-            subject,
-            assetSha256: digest(item.asset),
-            etag: item.etag,
-            methods: ['GET', 'HEAD'],
-            maxCostCents: 1,
-            issuedAt: now - 1000,
-            expiresAt: now + 600000,
-          },
-          payload = Buffer.from(JSON.stringify(claims)).toString('base64url'),
-          signature = crypto
-            .sign(null, Buffer.from(payload), keys.privateKey)
-            .toString('base64url');
-        return authorizeAnonymousOvertureAttempt(
-          budget,
-          keys.publicKey,
-          { payload, signature },
-          attempt
-        );
-      };
-      const project = async ({ source }) => {
-        try {
-          const geometry =
-            typeof source.geometry === 'string'
-              ? JSON.parse(source.geometry)
-              : source.geometry;
-          return projectLocalEvaluation(
-            {
-              ...source,
-              geometry,
-              releaseId: inventory.release,
-              assignedCategoryIds: ['local'],
+    if (!ordered.length) throw Error('Unknown asset');
+    const ledger = await openLedger(budget, {
+      enabled: ledgerEnabled,
+      resume,
+      kind: 'overture-stage',
+      provider: 'overture',
+      release: inventory.release,
+      townIds: regions.map((r) => r.id),
+      reason: args[1] ? `asset ${args[1]}` : 'all assets',
+    });
+    // Resuming runs only the units an operator re-queued, in the original order.
+    const items = ledger.units
+      ? ordered.filter((i) => ledger.units.includes(i.id))
+      : ordered;
+    let unit = null;
+    try {
+      for (const item of items) {
+        if (await ledger.shouldStop()) throw new StageStopped();
+        unit = item.id;
+        await ledger.job(item.id);
+        const policy = {
+          authorized: true,
+          inventorySha256: inventory.inventorySha256,
+          itemId: item.id,
+          approvalSha256,
+          projectionSha256,
+          classifierSha256,
+          regions,
+          localSnapshot: true,
+          maxMemoryBytes: 2 * 1024 * 1024 * 1024,
+          maxTransferBytes: 1024 * 1024 * 1024,
+        };
+        const reserveAttempt = (attempt) => {
+          const now = Date.now(),
+            claims = {
+              version: 's4-private-source-v1',
+              policyId: approvalSha256,
+              subject,
+              assetSha256: digest(item.asset),
+              etag: item.etag,
+              methods: ['GET', 'HEAD'],
+              maxCostCents: 1,
+              issuedAt: now - 1000,
+              expiresAt: now + 600000,
             },
-            rights
+            payload = Buffer.from(JSON.stringify(claims)).toString('base64url'),
+            signature = crypto
+              .sign(null, Buffer.from(payload), keys.privateKey)
+              .toString('base64url');
+          return authorizeAnonymousOvertureAttempt(
+            budget,
+            keys.publicKey,
+            { payload, signature },
+            attempt
           );
-        } catch {
-          return { status: 'quarantined' };
-        }
-      };
-      const started = Date.now(),
-        heartbeat = setInterval(
-          () =>
+        };
+        const project = async ({ source }) => {
+          try {
+            const geometry =
+              typeof source.geometry === 'string'
+                ? JSON.parse(source.geometry)
+                : source.geometry;
+            return projectLocalEvaluation(
+              {
+                ...source,
+                geometry,
+                releaseId: inventory.release,
+                assignedCategoryIds: ['local'],
+              },
+              rights
+            );
+          } catch {
+            return { status: 'quarantined' };
+          }
+        };
+        const started = Date.now(),
+          heartbeat = setInterval(() => {
             console.log(
               `October asset ${item.id}: ${Math.round(
                 (Date.now() - started) / 1000
               )} seconds elapsed`
-            ),
-          30000
-        );
-      console.log(`Starting October asset ${item.id}.`);
-      try {
-        await extractPrivate({
-          connection,
-          inventory,
-          policy,
-          project,
-          sourceMode: 'remote',
-          reserveAttempt,
-          sink: new OverturePrivateSink(stage),
-        });
-        console.log(`Completed October asset ${item.id}.`);
-      } finally {
-        clearInterval(heartbeat);
+            );
+            ledger.heartbeat();
+          }, 30000);
+        console.log(`Starting October asset ${item.id}.`);
+        try {
+          const sink = ledgerSink(
+            new OverturePrivateSink(stage),
+            ledger,
+            item.id
+          );
+          const done = await extractPrivate({
+            connection,
+            inventory,
+            policy,
+            project,
+            sourceMode: 'remote',
+            reserveAttempt,
+            sink,
+          });
+          await ledger.finishJob(item.id, {
+            status: 'succeeded',
+            checkpoint: {
+              scanId: done?.scanId ?? null,
+              sourceFileRowNumber: done?.sourceFileRowNumber ?? null,
+            },
+          });
+          unit = null;
+          console.log(`Completed October asset ${item.id}.`);
+        } finally {
+          clearInterval(heartbeat);
+        }
+      }
+      await ledger.finish();
+    } catch (error) {
+      if (error instanceof StageStopped) {
+        if (unit) await ledger.finishJob(unit, { status: 'cancelled' });
+        await ledger.finish();
+        console.log('Stopped at operator request.');
+      } else {
+        await ledger.fail(error, unit);
+        throw error;
       }
     }
   } finally {

@@ -9,7 +9,7 @@ import {
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const label = /^[a-z0-9][a-z0-9._-]{0,63}$/;
-const MONTHLY_LIMIT_CENTS = 2500;
+export const MONTHLY_LIMIT_CENTS = 2500;
 export type BudgetAttempt = {
   attemptId: string;
   provider: string;

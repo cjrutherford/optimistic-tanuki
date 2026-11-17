@@ -87,6 +87,8 @@ export const DIRECTORY_DELETION_IDENTITIES = Object.freeze({
     ['canceledById', 'profile'],
     ['rollbackById', 'profile'],
   ],
+  directory_acquisition_run: [['startedById', 'profile']],
+  directory_acquisition_run_event: [['actorId', 'profile']],
   directory_listing_suppression: [
     ['actorId', 'profile'],
     ['liftedById', 'profile'],
@@ -181,6 +183,13 @@ async function inspect(
       'directory_taxonomy_run WHERE "actorId"=ANY($1::uuid[]) OR "canceledById"=ANY($1::uuid[]) OR "rollbackById"=ANY($1::uuid[])',
       [s.profiles]
     ),
+    await one('directory_acquisition_run WHERE "startedById"=ANY($1::uuid[])', [
+      s.profiles,
+    ]),
+    await one(
+      'directory_acquisition_run_event WHERE "actorId"=ANY($1::uuid[])',
+      [s.profiles]
+    ),
     await one(
       `directory_business_identity_decision WHERE ("actorDomain"='account' AND "actorId"=$1::uuid) OR ("actorDomain"='profile' AND "actorId"=ANY($2::uuid[]))`,
       [s.account, s.profiles]
@@ -234,6 +243,14 @@ async function inspect(
     ),
     await one(
       'directory_taxonomy_run WHERE ("actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))) OR ("canceledById"=ANY($1::uuid[]) AND NOT ("canceledById"=ANY($2::uuid[]))) OR ("rollbackById"=ANY($1::uuid[]) AND NOT ("rollbackById"=ANY($2::uuid[])))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_acquisition_run WHERE "startedById"=ANY($1::uuid[]) AND NOT ("startedById"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_acquisition_run_event WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
       [s.all, s.profiles]
     ),
     await one(
@@ -339,6 +356,14 @@ async function erase(manager: Manager, s: Canonical): Promise<void> {
        "canceledById"=CASE WHEN "canceledById"=ANY($1::uuid[]) THEN NULL ELSE "canceledById" END,
        "rollbackById"=CASE WHEN "rollbackById"=ANY($1::uuid[]) THEN NULL ELSE "rollbackById" END
      WHERE "actorId"=ANY($1::uuid[]) OR "canceledById"=ANY($1::uuid[]) OR "rollbackById"=ANY($1::uuid[])`,
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_acquisition_run SET "startedById"=NULL,reason=\'\' WHERE "startedById"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_acquisition_run_event SET "actorId"=NULL,reason=\'\' WHERE "actorId"=ANY($1::uuid[])',
     [s.profiles]
   );
 }

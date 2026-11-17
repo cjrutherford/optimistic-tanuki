@@ -14,9 +14,20 @@ const {
 const {
   authorizeAnonymousOvertureAttempt,
 } = require('../apps/directory/src/provider-budget');
+const {
+  StageStopped,
+  ledgerSink,
+  openLedger,
+  parseLedgerArgs,
+} = require('./local-directory-run-ledger.cjs');
 const digest = (x) => crypto.createHash('sha256').update(x).digest('hex');
 async function main() {
-  const args = process.argv.slice(2);
+  // `--resume <runId>` and `--no-ledger` are the run-ledger flags (S7e); the rest is the original argument list.
+  const {
+    rest: args,
+    resume,
+    enabled: ledgerEnabled,
+  } = parseLedgerArgs(process.argv.slice(2));
   if (
     process.env.DIRECTORY_LOCAL_EVALUATION !== 'true' ||
     args.length !== 2 ||
@@ -124,6 +135,18 @@ async function main() {
     );
     const item = inventory.items.find((i) => i.id === args[1]);
     if (!item) throw Error('Unknown asset');
+    const ledger = await openLedger(budget, {
+      enabled: ledgerEnabled,
+      resume,
+      kind: 'census-stage',
+      provider: 'overture',
+      release: inventory.release,
+      townIds: manifest.regions.map((r) => r.id),
+      reason: `asset ${item.id}`,
+    });
+    // Resuming a census run is allowed only for the asset the run queued.
+    if (ledger.units && !ledger.units.includes(item.id))
+      throw Error('Invalid run');
     const { DuckDBInstance } = await import('@duckdb/node-api'),
       { extractPrivate } = await import('./overture-private-extractor.mjs');
     const duck = await DuckDBInstance.create(':memory:');
@@ -195,27 +218,44 @@ async function main() {
       }
     };
     const start = Date.now(),
-      heartbeat = setInterval(
-        () =>
-          console.log(
-            `Census asset ${item.id}: ${Math.round(
-              (Date.now() - start) / 1000
-            )} seconds elapsed`
-          ),
-        30000
-      );
+      heartbeat = setInterval(() => {
+        console.log(
+          `Census asset ${item.id}: ${Math.round(
+            (Date.now() - start) / 1000
+          )} seconds elapsed`
+        );
+        ledger.heartbeat();
+      }, 30000);
     console.log(`Starting Census asset ${item.id}.`);
     try {
-      await extractPrivate({
+      await ledger.job(item.id);
+      const done = await extractPrivate({
         connection,
         inventory,
         policy,
         project,
         sourceMode: 'remote',
         reserveAttempt,
-        sink: new OverturePrivateSink(stage),
+        sink: ledgerSink(new OverturePrivateSink(stage), ledger, item.id),
       });
+      await ledger.finishJob(item.id, {
+        status: 'succeeded',
+        checkpoint: {
+          scanId: done?.scanId ?? null,
+          sourceFileRowNumber: done?.sourceFileRowNumber ?? null,
+        },
+      });
+      await ledger.finish();
       console.log(`Completed Census asset ${item.id}.`);
+    } catch (error) {
+      if (error instanceof StageStopped) {
+        await ledger.finishJob(item.id, { status: 'cancelled' });
+        await ledger.finish();
+        console.log('Stopped at operator request.');
+      } else {
+        await ledger.fail(error, item.id);
+        throw error;
+      }
     } finally {
       clearInterval(heartbeat);
     }

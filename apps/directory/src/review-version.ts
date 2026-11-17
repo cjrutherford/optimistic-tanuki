@@ -18,8 +18,11 @@ export class ReviewConflictError extends Error {
       | typeof STALE_DECISION
       | typeof NOT_LATEST
       | typeof IDEMPOTENCY_CONFLICT
-      | 'invalid_state',
-    message?: string
+      | 'invalid_state'
+      | 'run_blocked',
+    message?: string,
+    /** A machine-readable reason a route may return alongside the code (never free text). */
+    readonly detail?: string
   ) {
     super(message ?? code);
     this.name = 'ReviewConflictError';

@@ -130,6 +130,17 @@ import {
 } from './withdrawal-request';
 import { handleRightsRoute } from './rights-routes';
 import { handleTaxonomyRoute } from './taxonomy-routes';
+import { handleAcquisitionRoute } from './acquisition-routes';
+import {
+  acquisitionBudgetPanel,
+  cancelAcquisitionRun,
+  getAcquisitionRun,
+  importAcquisitionHistory,
+  latestAcquisitionRun,
+  listAcquisitionRuns,
+  resumeAcquisitionRun,
+  retryAcquisitionJob,
+} from './acquisition-run';
 import {
   decideTaxonomyCase,
   getTaxonomyCase,
@@ -1539,9 +1550,33 @@ export function pendingChecks(
         reason: v.reason,
       }),
   };
+  // Acquisition runs are a global operator record (S7e); the stage scripts write them, operators observe and request.
+  const acquisitionDb = db as unknown as Parameters<
+    typeof cancelAcquisitionRun
+  >[0];
+  const acquisition = {
+    acquisitionRuns: (o: Parameters<typeof listAcquisitionRuns>[1]) =>
+      listAcquisitionRuns(db, o),
+    acquisitionLatest: () => latestAcquisitionRun(db),
+    acquisitionBudget: () => acquisitionBudgetPanel(db),
+    acquisitionRun: (id: string) => getAcquisitionRun(db, id),
+    acquisitionAction: (
+      action: 'cancel' | 'resume' | 'retry',
+      id: string,
+      v: any
+    ) =>
+      (action === 'cancel'
+        ? cancelAcquisitionRun
+        : action === 'resume'
+        ? resumeAcquisitionRun
+        : retryAcquisitionJob)(acquisitionDb, { ...v, id }),
+    acquisitionImportHistory: (v: any) =>
+      importAcquisitionHistory(acquisitionDb, v),
+  };
   return {
     ...rights,
     ...taxonomy,
+    ...acquisition,
     reportCreate,
     reportLookup,
     reportList,
@@ -1592,6 +1627,7 @@ export function pendingServer(
   return createServer(async (req, res) => {
     if (await handleRightsRoute(req, res, checks, localSecret)) return;
     if (await handleTaxonomyRoute(req, res, checks, localSecret)) return;
+    if (await handleAcquisitionRoute(req, res, checks, localSecret)) return;
     if (
       lifecycle &&
       req.url?.startsWith('/internal/account-') &&

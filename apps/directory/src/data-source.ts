@@ -54,6 +54,9 @@ import {
   DirectoryTaxonomyEvent,
   DirectoryTaxonomyRun,
   DirectoryTaxonomyRunBefore,
+  DirectoryAcquisitionRun,
+  DirectoryAcquisitionRunJob,
+  DirectoryAcquisitionRunEvent,
 } from './entity';
 import { AccountDeletionWriteFenceEntity } from '../../../libs/storage/src/lib/account-deletion-write-fence';
 
@@ -113,6 +116,9 @@ const dataSource = new DataSource({
     DirectoryTaxonomyEvent,
     DirectoryTaxonomyRun,
     DirectoryTaxonomyRunBefore,
+    DirectoryAcquisitionRun,
+    DirectoryAcquisitionRunJob,
+    DirectoryAcquisitionRunEvent,
     AccountDeletionWriteFenceEntity,
   ],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],

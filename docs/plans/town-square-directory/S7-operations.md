@@ -254,7 +254,60 @@ Apply migration `1794950472386-DirectoryFoundation` (eight tables) to the live D
 
 ## 8. Runs
 
-Placeholder. S7c to S7d: run ledger, pause, resume and stop controls under `directory.operate`.
+S7e adds a run ledger and operator controls for acquisition. It adds no provider call, no worker and no new authority: real acquisition is still unauthorized (`ACQUISITION_AUTHORIZED = false` in `apps/directory/src/acquisition-run.ts`), publication stays paused, and the stage scripts remain operator-local.
+
+### 8.1 POC to target mapping
+
+| POC / existing                                                               | Target                                                                                                                             |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Per-town scan row (`directory_town_scan_target`) and its scan id             | `directory_acquisition_run_job` (`townId`, `scanId`, `unitKey`); one job per town or per source asset                              |
+| Census progress row (`directory_census_progress`)                            | a `census-stage` job; its row counts become the job counts                                                                         |
+| Stage script console heartbeat and sink checkpoint                           | `heartbeatAt`, `checkpoint` on the job, written between batches                                                                    |
+| Provider spend reservation (`provider-budget.ts`, 2500 cent monthly ceiling) | read-only budget panel (reserved, used, remaining, hard stop); `budget_exhausted` blocks a run                                     |
+| POC `eventId` idempotency, `versionToken`                                    | `directory_acquisition_run_event` primary key is the client `decisionId`; `versionToken` over status, blocked reason, events, jobs |
+| Past scans with no run record                                                | `kind: historical` runs created by the idempotent import-history operation                                                         |
+
+### 8.2 Model
+
+- `directory_acquisition_run`: id, provider, release, kind (`overture-stage`, `poc-import`, `census-stage`, `historical`), `townIds`, status, `blockedReason`, `startedById` (null for a script or an import), reason, timestamps, `heartbeatAt`, observed/accepted/rejected counts, `budgetReservedCents`, `budgetUsedCents`, and a redacted `lastError` (urls, hosts, paths and long tokens removed).
+- `directory_acquisition_run_job`: primary key (`runId`, `unitKey`); status, blocked reason, checkpoint, attempt, counts, redacted error. Run totals are recomputed from the jobs whenever a job finishes.
+- `directory_acquisition_run_event`: append-only, one row per operator write, keyed by `decisionId`. Consumption of a resume or retry by the stage is a separate `consumed` event (unique per `ofEventId`), so a request is consumed once.
+- Statuses: `queued`, `running`, `succeeded`, `succeeded_empty`, `partial`, `blocked`, `failed_retryable`, `failed_permanent`, `cancel_requested`, `cancelled`. A `running` run with no heartbeat for 10 minutes is reported `stale`.
+- Blocked reasons: `policy_blocked`, `unconfigured_provider`, `budget_exhausted`, `quota_exhausted`, `invalid_geometry`, `acquisition_unauthorized`.
+
+### 8.3 Operator-local and automatic
+
+Operator-local: the stage scripts (`local-directory-overture-stage.cjs`, `local-directory-overture-census-stage.cjs`) write the ledger by default through `scripts/local-directory-run-ledger.cjs`. `--no-ledger` runs without recording (and so without cancel or resume). `--resume <runId>` consumes the pending request and runs only the queued units, from each job's checkpoint. The scripts check the cancel flag between batches; a batch that has been committed stays committed.
+
+Automatic: nothing. The Directory runtime serves the read views and records requests. It does not start, resume or retry any acquisition. Resume and retry set the run to `queued` with a pending request and return a `resumeCommand` for the operator to run locally.
+
+Gap: there is no automatic worker acquisition. That needs the owner to authorize acquisition and a worker that consumes the same requests; until then the ledger is observation plus operator-run resumption. `local-directory-poc-import.cjs` is not wired: it is a single `--apply-local` import with its own strict arguments, and its ledger entry can be created by import-history.
+
+### 8.4 Rules
+
+- Cancel: a live run goes to `cancel_requested` and the stage stops after its current batch. A run whose heartbeat is stale is cancelled directly.
+- Resume: re-queues `partial`, `failed_retryable` and `cancelled` jobs. A `blocked` run is refused with 409 and the reason until the reason clears; only `budget_exhausted` can clear, once the budget panel shows room. `acquisition_unauthorized`, `policy_blocked` and `quota_exhausted` stay blocked: start a new run instead.
+- Retry: one job by `unitKey`.
+- Every write carries the actor profile id, a reason, a typed confirmation (`CANCEL`, `RESUME`, `RETRY`), the run's `expectedVersionToken` and a `decisionId`. A stale token is 409 `stale_decision`; a repeated `decisionId` replays. Historical runs cannot be resumed or retried.
+- Responses are `no-store`, errors are redacted, and the gateway passes only a known blocked reason through a 409.
+
+### 8.5 Routes
+
+Gateway (`apps/gateway/src/controllers/directory/directory-runs.controller.ts`), all with `AuthGuard`, `DirectoryOwnerScopeGuard`, `PermissionsGuard` and `directory.operate`: `GET /api/directory/runs` (`status`, `townId`, `limit`, `offset`), `GET /runs/latest`, `GET /runs/budget`, `GET /runs/:id`, `POST /runs/:id/cancel`, `POST /runs/:id/resume`, `POST /runs/:id/retry`, `POST /runs/history/import`. Internal routes live under `/internal/acquisition/` in `apps/directory/src/acquisition-routes.ts`.
+
+Owner Console: Acquisition Runs at `/dashboard/directory-runs` (status filter, blocked reasons, per-unit progress that refreshes while a run is in flight, budget panel, cancel, resume and retry with reason and typed confirmation, copyable resume command, import history).
+
+### 8.6 Account erase
+
+`directory_acquisition_run.startedById` and `directory_acquisition_run_event.actorId` are nullable; erase nulls a matching profile id and clears the reason text, and an account or legacy-id match is ambiguous and blocks. `directory_acquisition_run_job` holds no person data. The lifecycle parity test covers all fourteen tables.
+
+### 8.7 Deploy and live steps
+
+Apply migration `1794951718340-DirectoryFoundation` (three tables) to the live Directory database before deploying this build. It was generated, validated with `pnpm run validate:typeorm-migrations`, and not applied to any live database. Then, as an operator with `directory.operate`:
+
+1. `POST /api/directory/runs/history/import` with `{decisionId, reason}` to create historical runs from past scans and census progress. It is safe to repeat.
+2. Open Acquisition Runs to follow runs. A stage run made after the deploy records itself; do not run a stage until acquisition is authorized.
+3. To resume: open the run, type `RESUME` with a reason, then run the shown command locally, for example `DIRECTORY_LOCAL_EVALUATION=true node scripts/local-directory-overture-stage.cjs --resume <runId>`. The census stage takes `--resume` together with its asset argument.
 
 ## 9. Evidence
 

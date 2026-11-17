@@ -266,6 +266,13 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
         route: '/dashboard/directory-taxonomy-runs',
         highlight: 'Reclassification',
       },
+      {
+        title: 'Acquisition Runs',
+        description:
+          'Follow acquisition progress by town, see budget and blocked reasons, and cancel, resume or retry from a ledger.',
+        route: '/dashboard/directory-runs',
+        highlight: 'Run ledger',
+      },
     ],
   },
 ];
