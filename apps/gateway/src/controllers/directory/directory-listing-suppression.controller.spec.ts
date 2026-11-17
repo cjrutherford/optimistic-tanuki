@@ -119,12 +119,36 @@ describe('DirectoryListingSuppressionController', () => {
     );
   });
 
+  it('reports no re-review when the directory sent nothing back', async () => {
+    reply(200, {
+      replayed: false,
+      suppressionId,
+      reasonCode: 'other',
+      sentToReview: 0,
+    });
+    await expect(
+      controller.suppress(town, { ...create, reasonCode: 'other' }, req)
+    ).resolves.toMatchObject({ recorded: true, sentToReview: false });
+  });
+
+  it('refuses a directory reply whose re-review count is not a count', async () => {
+    reply(200, {
+      replayed: false,
+      suppressionId,
+      reasonCode: 'other',
+      sentToReview: true,
+    });
+    await expect(
+      controller.suppress(town, { ...create, reasonCode: 'other' }, req)
+    ).rejects.toThrow();
+  });
+
   it('suppresses with the reviewer id taken from the session', async () => {
     const spy = reply(200, {
       replayed: false,
       suppressionId,
       reasonCode: 'incorrect-details',
-      sentToReview: true,
+      sentToReview: 2,
       extra: 1,
     });
     const ok = await controller.suppress(
