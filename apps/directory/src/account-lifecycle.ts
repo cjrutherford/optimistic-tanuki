@@ -78,6 +78,8 @@ export const DIRECTORY_DELETION_IDENTITIES = Object.freeze({
   directory_business_identity_decision: [['actorId', 'tagged:actorDomain']],
   directory_boundary_decision: [['reviewerId', 'profile']],
   directory_address_review_decision: [['actorId', 'profile']],
+  directory_rights_event: [['actorId', 'profile']],
+  directory_withdrawal_request: [['actorId', 'profile']],
   directory_listing_suppression: [
     ['actorId', 'profile'],
     ['liftedById', 'profile'],
@@ -155,6 +157,12 @@ async function inspect(
       'directory_address_review_decision WHERE "actorId"=ANY($1::uuid[])',
       [s.profiles]
     ),
+    await one('directory_rights_event WHERE "actorId"=ANY($1::uuid[])', [
+      s.profiles,
+    ]),
+    await one('directory_withdrawal_request WHERE "actorId"=ANY($1::uuid[])', [
+      s.profiles,
+    ]),
     await one(
       `directory_business_identity_decision WHERE ("actorDomain"='account' AND "actorId"=$1::uuid) OR ("actorDomain"='profile' AND "actorId"=ANY($2::uuid[]))`,
       [s.account, s.profiles]
@@ -188,6 +196,14 @@ async function inspect(
     ),
     await one(
       'directory_address_review_decision WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_rights_event WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_withdrawal_request WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
       [s.all, s.profiles]
     ),
     await one(
@@ -266,6 +282,14 @@ async function erase(manager: Manager, s: Canonical): Promise<void> {
   // A human reviewer's free text and checklist are unreviewed input; automated rows hold system values.
   await manager.query(
     `UPDATE directory_address_review_decision SET "actorId"=NULL,reason=CASE WHEN "actorKind"='human' THEN NULL ELSE reason END,checks=CASE WHEN "actorKind"='human' THEN '{}'::jsonb ELSE checks END WHERE "actorId"=ANY($1::uuid[])`,
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_rights_event SET "actorId"=NULL,reason=\'\' WHERE "actorId"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_withdrawal_request SET "actorId"=NULL,reason=\'\' WHERE "actorId"=ANY($1::uuid[])',
     [s.profiles]
   );
 }

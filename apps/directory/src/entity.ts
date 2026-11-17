@@ -907,3 +907,125 @@ export class DirectoryListingReport {
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt!: Date;
 }
+
+/**
+ * A rights case (S7c): one unresolved field/source lineage, release or policy that an operator with
+ * `directory.rights` reviews. A case records evidence and a decision; it never grants public display, which stays
+ * governed by the approved policy files and signed grants.
+ */
+@Entity({ name: 'directory_rights_case' })
+@Index('UQ_directory_rights_case_subject', ['subjectKey'], { unique: true })
+@Index('IDX_directory_rights_case_status', ['status', 'updatedAt'])
+@Check(
+  'CHK_directory_rights_case_scope',
+  `"scope" IN ('field','source','release','policy')`
+)
+@Check(
+  'CHK_directory_rights_case_status',
+  `"status" IN ('review','excluded','resolved','withdrawn')`
+)
+export class DirectoryRightsCase {
+  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  id!: string;
+  @Column({ type: 'varchar', length: 16 }) scope!: string;
+  /** Natural key of the lineage, so a sync can run any number of times. */
+  @Column({ type: 'varchar', length: 700 }) subjectKey!: string;
+  @Column({ type: 'varchar', length: 64, default: 'overture' })
+  provider!: string;
+  @Column({ type: 'varchar', length: 200, nullable: true }) releaseId!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 64, nullable: true }) field!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 200, nullable: true }) dataset!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 200, nullable: true }) license!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 500, nullable: true }) sourcePointer!:
+    | string
+    | null;
+  /** The source's pointer cannot be tied to one field, so terms cannot be confirmed for it. */
+  @Column({ type: 'boolean', default: false }) ambiguous!: boolean;
+  @Column({ type: 'jsonb', default: () => `'[]'` }) reasons!: string[];
+  @Column({ type: 'integer', default: 0 }) observedRows!: number;
+  @Column({ type: 'varchar', length: 16, default: 'review' }) status!: string;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt!: Date;
+}
+
+/** Append-only rights event. `id` is the client decision id, so a retry replays instead of repeating. */
+@Entity({ name: 'directory_rights_event' })
+@Index('IDX_directory_rights_event_case', ['caseId', 'createdAt'])
+@Index('UQ_directory_rights_event_undo', ['undoOf'], {
+  unique: true,
+  where: '"undoOf" IS NOT NULL',
+})
+@Check(
+  'CHK_directory_rights_event_action',
+  `"action" IN ('open','exclude_field','confirm_terms','defer','reopen','undo','withdraw')`
+)
+@Check(
+  'CHK_directory_rights_event_evidence',
+  `("termsUrl" IS NULL) = ("termsSha256" IS NULL)`
+)
+export class DirectoryRightsEvent {
+  @PrimaryColumn('uuid') id!: string;
+  @Column('uuid') caseId!: string;
+  @Column({ type: 'varchar', length: 16 }) action!: string;
+  /** Reviewer profile id; NULL once that profile's account has been erased. */
+  @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  @Column({ type: 'varchar', length: 1024 }) reason!: string;
+  @Column({ type: 'varchar', length: 2048, nullable: true }) termsUrl!:
+    | string
+    | null;
+  @Column({ type: 'char', length: 64, nullable: true }) termsSha256!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 16 }) statusBefore!: string;
+  @Column({ type: 'varchar', length: 16 }) statusAfter!: string;
+  @Column({ type: 'uuid', nullable: true }) undoOf!: string | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+}
+
+/**
+ * A durable, authenticated withdrawal request (S7c). The Directory's own worker drives the private sink's
+ * withdraw calls until complete, resuming `pending` and `running` requests after a restart. Withdrawal is one-way.
+ */
+@Entity({ name: 'directory_withdrawal_request' })
+@Index('IDX_directory_withdrawal_request_status', ['status', 'updatedAt'])
+@Check(
+  'CHK_directory_withdrawal_request_kind',
+  `"kind" IN ('scan','policy','row')`
+)
+@Check(
+  'CHK_directory_withdrawal_request_status',
+  `"status" IN ('pending','running','complete','failed')`
+)
+export class DirectoryWithdrawalRequest {
+  @PrimaryColumn('uuid') id!: string;
+  @Column({ type: 'varchar', length: 8 }) kind!: string;
+  /** scan or policy: 64 lowercase hex; row: `<scanId>:<sourceFileRowNumber>`. */
+  @Column({ type: 'varchar', length: 128 }) target!: string;
+  @Column({ type: 'varchar', length: 1024 }) reason!: string;
+  /** Requesting operator profile id; NULL once that profile's account has been erased. */
+  @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  @Column({ type: 'uuid', nullable: true }) rightsCaseId!: string | null;
+  @Column({ type: 'varchar', length: 16, default: 'pending' }) status!: string;
+  @Column({ type: 'integer', default: 0 }) attempts!: number;
+  @Column({ type: 'integer', default: 0 }) steps!: number;
+  @Column({ type: 'jsonb', default: () => `'{}'` }) progress!: object;
+  @Column({ type: 'varchar', length: 512, nullable: true }) lastError!:
+    | string
+    | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  requestedAt!: Date;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt!: Date;
+  @Column({ type: 'timestamptz', nullable: true }) completedAt!: Date | null;
+}

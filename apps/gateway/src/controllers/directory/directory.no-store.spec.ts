@@ -47,6 +47,8 @@ describe('directory controllers never allow caching', () => {
         'DirectoryBusinessLinkQueueController',
         'DirectoryController',
         'DirectoryListingSuppressionController',
+        'DirectoryRightsCasesController',
+        'DirectoryWithdrawalsController',
         'DirectoryListingReportController',
         'DirectoryListingReportReviewController',
       ])

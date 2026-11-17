@@ -15,6 +15,10 @@ import {
 import { DirectoryAddressReviewController } from './directory-address-review.controller';
 import { DirectoryListingSuppressionController } from './directory-listing-suppression.controller';
 import {
+  DirectoryRightsCasesController,
+  DirectoryWithdrawalsController,
+} from './directory-rights.controller';
+import {
   DirectoryListingReportController,
   DirectoryListingReportReviewController,
 } from './directory-listing-report.controller';
@@ -42,6 +46,8 @@ const town = '33333333-3333-4333-8333-333333333333',
   owner = '11111111-1111-4111-8111-111111111111',
   member = '22222222-2222-4222-8222-222222222222',
   unpermitted = '66666666-6666-4666-8666-666666666666',
+  reviewOnly = '77777777-7777-4777-8777-777777777777',
+  rightsId = '88888888-8888-4888-8888-888888888888',
   secret = 'synthetic-directory-matrix-secret-123456789',
   base = `/directory/towns/${town}`;
 
@@ -71,7 +77,26 @@ const sessionOnly: MatrixRoute[] = [
   },
 ];
 // Review surfaces: session AND x-ot-appscope: owner-console.
+const rightsRoutes: MatrixRoute[] = [
+  { method: 'GET', path: '/directory/rights-cases' },
+  { method: 'POST', path: '/directory/rights-cases/sync', body: {} },
+  { method: 'GET', path: `/directory/rights-cases/${rightsId}` },
+  {
+    method: 'POST',
+    path: `/directory/rights-cases/${rightsId}/decisions`,
+    body: {},
+  },
+  {
+    method: 'POST',
+    path: `/directory/rights-cases/${rightsId}/undo`,
+    body: {},
+  },
+  { method: 'GET', path: '/directory/withdrawals' },
+  { method: 'POST', path: '/directory/withdrawals', body: {} },
+  { method: 'GET', path: `/directory/withdrawals/${rightsId}` },
+];
 const reviewRoutes: MatrixRoute[] = [
+  ...rightsRoutes,
   {
     method: 'GET',
     path: `${base}/local-evaluation-listings/${listing}/business-link/requests`,
@@ -167,11 +192,16 @@ describe('directory authentication and Owner Console scope matrix', () => {
           return of({ id: 'scope-owner-console' });
         if (pattern.cmd === RoleCommands.CheckPermission)
           return of(
-            payload.profileId === owner &&
-              payload.permission === DIRECTORY_PERMISSIONS.review
+            (payload.profileId === owner &&
+              (payload.permission === DIRECTORY_PERMISSIONS.review ||
+                payload.permission === DIRECTORY_PERMISSIONS.rights)) ||
+              (payload.profileId === reviewOnly &&
+                payload.permission === DIRECTORY_PERMISSIONS.review)
           );
         return of(
-          payload.profileId === owner || payload.profileId === unpermitted
+          payload.profileId === owner ||
+            payload.profileId === unpermitted ||
+            payload.profileId === reviewOnly
             ? [{ role: { name: 'owner_console_owner' } }]
             : []
         );
@@ -185,6 +215,8 @@ describe('directory authentication and Owner Console scope matrix', () => {
         DirectoryAddressReviewController,
         DirectoryBusinessIdentityReviewController,
         DirectoryListingSuppressionController,
+        DirectoryRightsCasesController,
+        DirectoryWithdrawalsController,
         DirectoryListingReportController,
         DirectoryListingReportReviewController,
       ],
@@ -325,6 +357,16 @@ describe('directory authentication and Owner Console scope matrix', () => {
     async (_n, route) => {
       // Passes AuthGuard and the scope guard (owner role, header) but lacks the permission.
       const res = await call(route, { token: token(unpermitted), scope: true });
+      expect(res.status).toBe(403);
+      const granted = await call(route, { token: token(owner), scope: true });
+      expect([401, 403]).not.toContain(granted.status);
+    }
+  );
+
+  it.each(rightsRoutes.map((r) => [r.method + ' ' + r.path, r] as const))(
+    'a review-only owner-console session gets 403 on rights route %s',
+    async (_n, route) => {
+      const res = await call(route, { token: token(reviewOnly), scope: true });
       expect(res.status).toBe(403);
       const granted = await call(route, { token: token(owner), scope: true });
       expect([401, 403]).not.toContain(granted.status);

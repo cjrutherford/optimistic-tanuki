@@ -141,7 +141,41 @@ Migration `1794946949693-DirectoryFoundation` adds the `undoOf` columns, a snaps
 
 ## 6. Rights
 
-Placeholder. S7c: rights case intake and handling under `directory.rights`, policy withdrawal, and row withdrawal with propagation.
+All rights work needs `directory.rights`, which is separate from `directory.review`: a review-only operator gets 403 on every route below. Routes are in `reviewRoutes` in `directory.scope-matrix.spec.ts` and answer `Cache-Control: no-store`.
+
+### 6.1 POC to target mapping
+
+| POC                                              | Target                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rights queue derived from provenance in the scan | `directory_rights_case`, one row per lineage (scope, subject key, release, field, dataset, license, source pointer). `POST /api/directory/rights-cases/sync` fills it from provenance. It is operator-triggered and idempotent: a second run reports `existing`, not `created`. |
+| Rights decisions as edits                        | Append-only `directory_rights_event`, with the client decision id as the primary key. Actions: `exclude_field`, `confirm_terms`, `defer`, `reopen`, `undo`, plus the system `withdraw`.                                                                                         |
+| Takedown script                                  | `directory_withdrawal_request`, a durable row worked by a resumable worker started in the Directory runtime.                                                                                                                                                                    |
+
+Case statuses are `review`, `excluded`, `resolved` and `withdrawn`. `defer` leaves a case in `review`.
+
+### 6.2 Rules
+
+- A decision never grants public display. `confirm_terms` records evidence (terms URL plus SHA-256, both or neither) and moves the case to `resolved`. Publication stays gated by the existing release and publication controls.
+- Every write records actor profile id, reason, timestamp and the idempotency key (the decision id). The actor comes from the session, never the body.
+- A decision carries the case version token. A stale token, a replay with different content, a non-latest undo or an invalid state transition returns 409 with `code` of `stale_decision`, `decision_conflict`, `not_latest` or `invalid_state`. A replay with identical content returns the original result.
+- Undo reverts only the latest non-undo event, once. Ambiguous cases refuse `confirm_terms`.
+- Withdrawal needs the typed word `WITHDRAW` and a reason. A duplicate request id is idempotent.
+
+### 6.3 Propagation and how it was verified
+
+Withdrawal is revoke-first: the revocation is written before rows are removed, so a restarted import cannot resurrect them. Targets are the Overture private sink rows and keys for the scan, policy (500-row batches under the scan lock) or single row. Verified in `apps/directory/test/rights-withdrawal.postgres.test.js` against a disposable Postgres: after a row withdrawal the listing disappears from search, list, bounds and detail while a control row is still served, and coverage changes after the second row. An unbound target ends `failed` rather than silently succeeding. A 1200-row policy withdrawal is interrupted after one batch (700 rows left) and the worker resumes it to completion. Provenance digests are unchanged by decisions.
+
+### 6.4 Irreversible
+
+Withdrawal is one-way. It deletes the rows and their keys and writes a revocation that fences re-import; there is no undo because the deleted source rows are not retained, and restoring them would bypass the rights decision that removed them. Case decisions other than withdrawal are reversible with undo or `reopen`.
+
+### 6.5 Account erase
+
+`directory_rights_event.actorId` and `directory_withdrawal_request.actorId` are nullable. Erase nulls the actor when it matches a profile id and clears the operator's `reason` text. An account or legacy-id match is ambiguous and blocks. The audit trail (what moved, when) is kept. `directory_rights_case` holds no person data.
+
+### 6.6 Deploy
+
+Apply migration `1794949427226-DirectoryFoundation` (three tables) to the live Directory database before deploying this build. It was generated, validated with `pnpm run validate:typeorm-migrations`, and not applied to any live database.
 
 ## 7. Taxonomy
 

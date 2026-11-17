@@ -74,6 +74,20 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'directory-rights',
+        loadComponent: () =>
+          import('./components/directory-rights-page.component').then(
+            (m) => m.DirectoryRightsPageComponent
+          ),
+      },
+      {
+        path: 'directory-withdrawals',
+        loadComponent: () =>
+          import('./components/directory-withdrawals-page.component').then(
+            (m) => m.DirectoryWithdrawalsPageComponent
+          ),
+      },
+      {
         path: 'boundary-review/:communityId',
         loadComponent: () =>
           import('./components/boundary-review-page.component').then(

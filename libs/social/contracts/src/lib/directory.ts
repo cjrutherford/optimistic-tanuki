@@ -263,3 +263,106 @@ export interface AddressReviewDecisionRequest {
   reason?: string;
   attested: true;
 }
+
+export type RightsCaseStatus = 'review' | 'excluded' | 'resolved' | 'withdrawn';
+export type RightsCaseScope = 'release' | 'field' | 'source' | 'policy';
+export type RightsDecisionAction =
+  | 'exclude_field'
+  | 'confirm_terms'
+  | 'defer'
+  | 'reopen';
+
+/**
+ * A decision never grants public display; it records evidence or removes a field from what could be shown.
+ * `defer` records a note and leaves the case in review.
+ */
+export interface RightsCaseSummary {
+  id: string;
+  scope: RightsCaseScope;
+  subjectKey: string;
+  provider: string;
+  releaseId: string | null;
+  field: string | null;
+  dataset: string | null;
+  license: string | null;
+  sourcePointer: string | null;
+  ambiguous: boolean;
+  reasons: string[];
+  observedRows: number;
+  status: RightsCaseStatus;
+  createdAt: string;
+  updatedAt: string;
+  versionToken: string;
+}
+
+export interface RightsHistoryEntry extends DirectoryReviewHistoryEntry {
+  action: RightsDecisionAction | 'open' | 'undo' | 'withdraw';
+  statusBefore: RightsCaseStatus;
+  statusAfter: RightsCaseStatus;
+  evidence: { termsUrl: string; termsSha256: string } | null;
+}
+
+export interface RightsCaseDetail extends RightsCaseSummary {
+  history: RightsHistoryEntry[];
+}
+
+export interface RightsDecisionRequest {
+  decisionId: string;
+  action: RightsDecisionAction;
+  expectedVersionToken: string;
+  reason: string;
+  /** confirm_terms only: an https terms URL and the sha-256 of the terms text that was read. */
+  termsUrl?: string;
+  termsSha256?: string;
+}
+
+export interface RightsUndoRequest {
+  decisionId: string;
+  undoOf: string;
+  expectedVersionToken: string;
+  reason: string;
+}
+
+export interface RightsSyncRequest {
+  syncId: string;
+  releaseId: string;
+}
+
+export interface RightsSyncResult {
+  created: number;
+  existing: number;
+  lineages: number;
+}
+
+export type WithdrawalKind = 'scan' | 'policy' | 'row';
+export type WithdrawalStatus = 'pending' | 'running' | 'complete' | 'failed';
+export const WITHDRAWAL_CONFIRMATION = 'WITHDRAW';
+
+/** Withdrawal is one way: nothing in the contract restores withdrawn rows. */
+export interface WithdrawalRequest {
+  id: string;
+  kind: WithdrawalKind;
+  /** scan: scan id; policy: policy id; row: `<scanId>:<sourceFileRowNumber>`. */
+  target: string;
+  reason: string;
+  confirm: typeof WITHDRAWAL_CONFIRMATION;
+  rightsCaseId?: string;
+}
+
+export interface WithdrawalRecord {
+  id: string;
+  kind: WithdrawalKind;
+  target: string;
+  reason: string;
+  /** Null once the requesting operator's account has been erased. */
+  actorId: string | null;
+  rightsCaseId: string | null;
+  status: WithdrawalStatus;
+  attempts: number;
+  steps: number;
+  progress: Record<string, number>;
+  lastError: string | null;
+  requestedAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+}

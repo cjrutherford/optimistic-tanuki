@@ -1,0 +1,102 @@
+<section class="withdrawals-page" aria-labelledby="withdrawals-title">
+  <a class="back-link" routerLink="/dashboard/directory-rights">
+    <otui-icon name="arrow-back" [size]="18" stroke="currentColor"></otui-icon>
+    Rights cases
+  </a>
+
+  <header class="page-header">
+    <p class="page-kicker">Directory</p>
+    <h1 id="withdrawals-title">Withdrawals</h1>
+    <p>
+      Withdrawal removes data from public display and then deletes it. It is
+      permanent: withdrawn data is not restored and there is no undo. A request
+      is recorded at once; a background worker does the removal and keeps going
+      if it is interrupted.
+    </p>
+  </header>
+
+  <otui-card class="withdrawal-form" tone="warning" emphasis="soft">
+    <h2>New withdrawal</h2>
+    <div class="kind-bar" role="group" aria-label="What to withdraw">
+      @for (option of kinds; track option.value) {
+      <otui-button
+        size="sm"
+        [tone]="kind === option.value ? 'brand' : 'neutral'"
+        [emphasis]="kind === option.value ? 'soft' : 'ghost'"
+        (click)="setKind(option.value)"
+      >
+        {{ option.label }}
+      </otui-button>
+      }
+    </div>
+    <lib-text-input
+      #target
+      label="Target"
+      [placeholder]="hint()"
+    ></lib-text-input>
+    <lib-text-input
+      #reason
+      label="Reason (required)"
+      placeholder="Who asked, and how was it verified?"
+    ></lib-text-input>
+    <lib-text-input
+      #rightsCase
+      label="Rights case id (optional)"
+      placeholder="Moves that case to withdrawn when the work finishes"
+    ></lib-text-input>
+    <lib-text-input
+      #confirm
+      [label]="'Type ' + confirmation + ' to confirm this cannot be undone'"
+      (valueChange)="setTyped($event)"
+    ></lib-text-input>
+    <div class="form-actions">
+      <otui-button
+        tone="danger"
+        emphasis="solid"
+        [disabled]="submitting || !confirmed()"
+        (click)="submit(target.value, reason.value, rightsCase.value)"
+      >
+        Withdraw permanently
+      </otui-button>
+    </div>
+  </otui-card>
+
+  @if (message) {
+  <p class="page-message" role="status">{{ message }}</p>
+  } @if (loading && requests.length === 0) {
+  <otui-loading-state headline="Loading withdrawals…"></otui-loading-state>
+  } @else if (!loading && requests.length === 0) {
+  <otui-empty-state
+    headline="No withdrawals yet"
+    body="Requests you make here appear in this list with their progress."
+  ></otui-empty-state>
+  }
+
+  <div class="withdrawal-list" aria-live="polite">
+    @for (r of requests; track r.id) {
+    <otui-card class="withdrawal-card" tone="neutral" emphasis="soft">
+      <div class="withdrawal-header">
+        <div>
+          <h3>{{ r.kind }} withdrawal</h3>
+          <p class="withdrawal-meta">
+            <code>{{ r.target }}</code>
+          </p>
+        </div>
+        <otui-badge [tone]="badgeTone(r.status)" size="sm">
+          {{ r.status | titlecase }}
+        </otui-badge>
+      </div>
+      <p class="withdrawal-meta">
+        {{ progressText(r) }} · step {{ r.steps }} · by
+        <code>{{ r.actorId }}</code> at {{ r.requestedAt }}
+      </p>
+      <p class="withdrawal-meta">{{ r.reason }}</p>
+      @if (r.completedAt) {
+      <p class="withdrawal-meta">Completed {{ r.completedAt }}</p>
+      } @if (r.lastError) {
+      <p class="withdrawal-error" role="alert">{{ r.lastError }}</p>
+      }
+    </otui-card>
+    }
+  </div>
+</section>
