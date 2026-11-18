@@ -524,7 +524,7 @@ the audit record, not a claim that the findings were fixed.
 
 - Approve the auto-approval policy and thresholds.
 - Approve the evidence sources and their terms of use.
-- Confirm who holds the reviewer role.
+- Confirm who holds the reviewer role. Decided 2026-11-18 (D11): the owner account holds it; see below.
 - Confirm the re-verification cadence and evidence retention.
 - Confirm whether the address auto-approval policy applies to the whole active cohort or only the reviewed sample until more evidence is processed.
 
@@ -570,3 +570,36 @@ live verified boundaries, and previously published rows were not all validated
 by this new path. One of 42 publications examined against candidate places had
 a geocode six metres outside an unverified boundary while its source point was
 inside; it remains an ambiguous review item. Publication remains paused.
+
+### 2026-11-18 decisions (D11)
+
+The owner decided that automatic approval is released for strong matches only,
+under the policy named "D11 strong match (owner 2026-11-18)". A candidate the
+classifier approves is a strong match when all of these hold:
+
+- the address geocode and the source map point both lie inside the town's
+  verified boundary (`directory_town_geometry` reviewed through
+  `directory_reviewed_geometry`, whose geometry hash must still match); and
+- the evidence sources agree (single address, geocode, precision and distance,
+  official evidence, name, address, phone, website and evidence age all pass).
+
+Everything else stays held for a reviewer (`needs_human`), with the reasons
+`auto_approval_paused` plus one cause: `sources_disagree`, `town_points_missing`,
+`town_boundary_unverified` or `point_outside_town`. A released candidate adds the
+reason `d11_strong_match`, and its audit decision row records the policy name in
+`reason`. The check is made inside the store transaction
+(`apps/directory/src/address-strong-match.ts`, called from
+`address-review-store.ts` for both first storage and evidence refresh). The
+publisher keeps its own containment gate and now shares the same boundary query.
+
+Reviewer role: the `directory.review` permission (owner-console scope) is already
+seeded for the `owner_console_owner`, `owner`, `global_admin` and `system_admin`
+roles in `apps/permissions/src/assets/default-permissions.json`, so no seed
+change is needed. The one live step is to confirm the owner profile holds one of
+those roles in the permissions database (it does after owner bootstrap); if it
+does not, assign `owner` through the permissions role-assignment API rather than
+editing the database.
+
+Tests: `address-strong-match.test.js` (unit) and
+`address-strong-match.postgres.test.js` (inside approves; one point outside,
+disagreeing sources and an unverified boundary all hold).

@@ -924,6 +924,66 @@ export class DirectoryListingSuppression {
 }
 
 /**
+ * An uncertain duplicate pair (owner decision D13). The weaker listing (`hidden*`) is hidden through an ordinary
+ * suppression (`suppressionId`) and the pair waits here for a reviewer: keep separate restores it, merge keeps it
+ * hidden. Every change writes a `directory_duplicate_case_event`; the pair is unique in either order.
+ */
+@Entity({ name: 'directory_duplicate_case' })
+@Index('IDX_directory_duplicate_case_town_state', ['communityId', 'state'])
+@Index(
+  'UQ_directory_duplicate_case_pair',
+  ['communityId', 'keptScanId', 'keptRow', 'hiddenScanId', 'hiddenRow'],
+  { unique: true }
+)
+@Check(
+  'CHK_directory_duplicate_case_state',
+  `"state" IN ('queued','kept_separate','merged')`
+)
+@Check(
+  'CHK_directory_duplicate_case_rule',
+  `"rule" IN ('same_name_near','similar_name')`
+)
+@Check(
+  'CHK_directory_duplicate_case_basis',
+  `"weakerBasis" IN ('sources','confidence','fields','updated','order')`
+)
+export class DirectoryDuplicateCase {
+  @PrimaryGeneratedColumn('uuid') id!: string;
+  @Column('uuid') communityId!: string;
+  @Column({ type: 'varchar', length: 64 }) keptScanId!: string;
+  @Column('bigint') keptRow!: string;
+  @Column({ type: 'varchar', length: 64 }) hiddenScanId!: string;
+  @Column('bigint') hiddenRow!: string;
+  @Column({ type: 'uuid', nullable: true }) suppressionId!: string | null;
+  @Column({ type: 'varchar', length: 16 }) rule!: string;
+  @Column({ type: 'varchar', length: 16 }) weakerBasis!: string;
+  @Column({ type: 'int' }) distanceMeters!: number;
+  @Column({ type: 'varchar', length: 16, default: 'queued' }) state!: string;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+  @Column({ type: 'timestamptz', nullable: true }) decidedAt!: Date | null;
+}
+
+/** Append-only audit of a duplicate case. `actorId` is a reviewer profile id (null for the automatic queue step). */
+@Entity({ name: 'directory_duplicate_case_event' })
+@Index('IDX_directory_duplicate_case_event_case', ['caseId', 'createdAt'])
+@Check(
+  'CHK_directory_duplicate_case_event_kind',
+  `"kind" IN ('queued','kept_separate','merged','undone')`
+)
+export class DirectoryDuplicateCaseEvent {
+  @PrimaryGeneratedColumn('uuid') id!: string;
+  @Column('uuid') caseId!: string;
+  @Column({ type: 'varchar', length: 16 }) kind!: string;
+  @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  @Column({ type: 'varchar', length: 1024, nullable: true }) note!:
+    | string
+    | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+}
+
+/**
  * A public, anonymous report or correction request about one served listing. Nothing about a report hides a
  * listing; a reviewer decides, and may open a suppression from it (`suppressionId`). `receiptTokenHash` is the
  * hash of the random receipt token shown once to the reporter; the token itself is never stored.

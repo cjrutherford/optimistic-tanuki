@@ -8,6 +8,7 @@ import {
   versionToken,
 } from './review-version';
 import { DataSource, EntityManager } from 'typeorm';
+import { applyStrongMatchPolicy, D11_POLICY } from './address-strong-match';
 import type {
   AddressReviewDecision,
   AddressReviewRights,
@@ -202,32 +203,25 @@ function decisionFor(verdict: AddressReviewDecision['verdict']): string {
     : 'needs_info';
 }
 
-// The classifier may still score evidence for analysis, but approval stays
-// manual until the documented precision and town-containment gates are met.
-function pauseAutomaticApproval(
-  decision: AddressReviewDecision
-): AddressReviewDecision {
-  return decision.verdict === 'auto_approve'
-    ? {
-        ...decision,
-        verdict: 'needs_human',
-        reasons: [...decision.reasons, 'auto_approval_paused'],
-      }
-    : decision;
-}
-
 export async function storeAddressReviewCandidate(
   db: DataSource,
   input: AddressReviewCandidateInput
 ): Promise<{ id: string; status: string; verdict: string }> {
   validateCandidate(input);
-  input = { ...input, decision: pauseAutomaticApproval(input.decision) };
-  const status = statusFor(input.decision.verdict);
-  const decision = decisionFor(input.decision.verdict);
   const evidenceUrl = input.officialEvidence?.url ?? null;
   const evidenceHash = input.officialEvidence?.evidenceHash ?? null;
 
   return db.transaction(async (manager) => {
+    // D11: only a strong match is released from the automatic-approval hold; everything else waits for a reviewer.
+    const gate = await applyStrongMatchPolicy(manager, {
+      communityId: input.communityId,
+      point: input.point,
+      geocode: input.geocode,
+      decision: input.decision,
+    });
+    input = { ...input, decision: gate.decision };
+    const status = statusFor(input.decision.verdict);
+    const decision = decisionFor(input.decision.verdict);
     const rows = await manager.query(
       `INSERT INTO "directory_address_review_candidate"
         ("communityId","scanId","sourceFileRowNumber","name","category","point","addresses","websites","phones","rights","risk","geocode","officialEvidence","verdict","reasons","checks","policyVersion","status")
@@ -278,7 +272,7 @@ export async function storeAddressReviewCandidate(
     await manager.query(
       `INSERT INTO "directory_address_review_decision"
         ("candidateId","actorKind","actorId","decision","evidenceUrl","evidenceHash","reason","checks","policyVersion","appliedAt")
-       VALUES ($1,'auto',NULL,$2,$3,$4,NULL,$5::jsonb,$6,NULL)`,
+       VALUES ($1,'auto',NULL,$2,$3,$4,$7,$5::jsonb,$6,NULL)`,
       [
         id,
         decision,
@@ -286,6 +280,7 @@ export async function storeAddressReviewCandidate(
         evidenceHash,
         JSON.stringify(input.decision.checks),
         input.decision.policyVersion,
+        gate.released ? D11_POLICY : null,
       ]
     );
     return { id, status, verdict: input.decision.verdict };
@@ -320,7 +315,6 @@ export async function updateAddressReviewEvidence(
   ) {
     throw Error('Invalid decision');
   }
-  input = { ...input, decision: pauseAutomaticApproval(input.decision) };
   if (
     input.risk !== undefined &&
     (!input.risk || typeof input.risk !== 'object' || Array.isArray(input.risk))
@@ -333,14 +327,12 @@ export async function updateAddressReviewEvidence(
   ) {
     throw Error('Invalid rights');
   }
-  const status = statusFor(input.decision.verdict);
-  const decision = decisionFor(input.decision.verdict);
   const evidenceUrl = input.officialEvidence?.url ?? null;
   const evidenceHash = input.officialEvidence?.evidenceHash ?? null;
 
   return db.transaction(async (manager) => {
     const candidate = await manager.query(
-      'SELECT "id","status","verdict","risk","rights" FROM "directory_address_review_candidate" WHERE "id"=$1 FOR UPDATE',
+      'SELECT "id","communityId","point","status","verdict","risk","rights" FROM "directory_address_review_candidate" WHERE "id"=$1 FOR UPDATE',
       [input.candidateId]
     );
     if (candidate.length !== 1) throw Error('Candidate not found');
@@ -348,6 +340,15 @@ export async function updateAddressReviewEvidence(
     if (!['needs_human', 'auto_approved'].includes(current.status)) {
       throw Error(`Cannot refresh evidence for ${current.status} candidate`);
     }
+    const gate = await applyStrongMatchPolicy(manager, {
+      communityId: current.communityId,
+      point: current.point,
+      geocode: input.geocode,
+      decision: input.decision,
+    });
+    input = { ...input, decision: gate.decision };
+    const status = statusFor(input.decision.verdict);
+    const decision = decisionFor(input.decision.verdict);
     await manager.query(
       `UPDATE "directory_address_review_candidate"
        SET "geocode"=$2::jsonb,"officialEvidence"=$3::jsonb,"verdict"=$4,"reasons"=$5::jsonb,"checks"=$6::jsonb,"policyVersion"=$7,"status"=$8,"risk"=$9::jsonb,"rights"=$10,"updatedAt"=CURRENT_TIMESTAMP
@@ -372,7 +373,7 @@ export async function updateAddressReviewEvidence(
       await manager.query(
         `INSERT INTO "directory_address_review_decision"
           ("candidateId","actorKind","actorId","decision","evidenceUrl","evidenceHash","reason","checks","policyVersion","appliedAt")
-         VALUES ($1,'auto',NULL,$2,$3,$4,NULL,$5::jsonb,$6,NULL)`,
+         VALUES ($1,'auto',NULL,$2,$3,$4,$7,$5::jsonb,$6,NULL)`,
         [
           input.candidateId,
           decision,
@@ -380,6 +381,7 @@ export async function updateAddressReviewEvidence(
           evidenceHash,
           JSON.stringify(input.decision.checks),
           input.decision.policyVersion,
+          gate.released ? D11_POLICY : null,
         ]
       );
     }

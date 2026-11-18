@@ -93,6 +93,7 @@ export const DIRECTORY_DELETION_IDENTITIES = Object.freeze({
   directory_acquisition_run_event: [['actorId', 'profile']],
   directory_operating_control: [['updatedBy', 'profile']],
   directory_operating_control_event: [['actorId', 'profile']],
+  directory_duplicate_case_event: [['actorId', 'profile']],
   directory_listing_suppression: [
     ['actorId', 'profile'],
     ['liftedById', 'profile'],
@@ -208,6 +209,10 @@ async function inspect(
       [s.profiles]
     ),
     await one(
+      'directory_duplicate_case_event WHERE "actorId"=ANY($1::uuid[])',
+      [s.profiles]
+    ),
+    await one(
       `directory_business_identity_decision WHERE ("actorDomain"='account' AND "actorId"=$1::uuid) OR ("actorDomain"='profile' AND "actorId"=ANY($2::uuid[]))`,
       [s.account, s.profiles]
     ),
@@ -284,6 +289,10 @@ async function inspect(
     ),
     await one(
       'directory_operating_control_event WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_duplicate_case_event WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
       [s.all, s.profiles]
     ),
     await one(
@@ -414,6 +423,10 @@ async function erase(manager: Manager, s: Canonical): Promise<void> {
   );
   await manager.query(
     'UPDATE directory_operating_control_event SET "actorId"=NULL,reason=NULL WHERE "actorId"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_duplicate_case_event SET "actorId"=NULL,note=NULL WHERE "actorId"=ANY($1::uuid[])',
     [s.profiles]
   );
 }
