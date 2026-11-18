@@ -466,6 +466,59 @@ test(
         action(run.resumeAcquisitionRun, ds, fullRun.id, d.versionToken),
         'invalid_state'
       );
+
+      // A declared release fills only runs with no release; evidence wins and a recorded release is kept.
+      assert.ok(list.runs.every((r) => r.release === null));
+      await ds.query(
+        `INSERT INTO directory_overture_source_evidence ("scanId","evidenceVersion",kind,"releaseId","artifactUrl","artifactEtag","inventorySha256","evidenceSha256",recorder)
+         VALUES ($1,1,'attached_verified','2026-09-17.0','https://example.org/a','e',$2,$3,'test')`,
+        [open, 'd'.repeat(64), 'e'.repeat(64)]
+      );
+      const declared = {
+        decisionId: randomUUID(),
+        actorId: actor,
+        reason: 'record release',
+        release: '2026-10-21.0',
+      };
+      assert.equal(
+        (await run.importAcquisitionHistory(ds, declared)).created,
+        0
+      );
+      const labelled = (await run.listAcquisitionRuns(ds, {})).runs;
+      assert.deepEqual(
+        Object.fromEntries(labelled.map((r) => [r.status, r.release])),
+        {
+          partial: '2026-09-17.0',
+          succeeded: '2026-10-21.0',
+          succeeded_empty: '2026-10-21.0',
+        }
+      );
+      assert.equal(
+        (await run.importAcquisitionHistory(ds, declared)).replayed,
+        true
+      );
+      await rejectsWith(
+        run.importAcquisitionHistory(ds, { ...declared, release: 'other' }),
+        'decision_conflict'
+      );
+      await run.importAcquisitionHistory(ds, {
+        ...declared,
+        decisionId: randomUUID(),
+        release: 'later-release',
+      });
+      assert.ok(
+        (await run.listAcquisitionRuns(ds, {})).runs.every(
+          (r) => r.release !== 'later-release'
+        )
+      );
+      await assert.rejects(
+        run.importAcquisitionHistory(ds, {
+          ...declared,
+          decisionId: randomUUID(),
+          release: 'bad release',
+        }),
+        /Invalid acquisition run/
+      );
     });
   }
 );

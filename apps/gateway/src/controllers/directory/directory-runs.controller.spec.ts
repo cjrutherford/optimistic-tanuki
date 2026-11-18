@@ -280,10 +280,26 @@ describe('DirectoryRunsController', () => {
       { decisionId, reason: '' },
       { decisionId: 'x', reason: 'r' },
       { decisionId, reason: 'r', actorId: actor },
+      { decisionId, reason: 'r', release: 'has space' },
+      { decisionId, reason: 'r', release: 7 },
     ])
       await expect(controller.importHistory(body, req)).rejects.toThrow(
         BadRequestException
       );
+  });
+
+  it('forwards a declared release on history import', async () => {
+    const spy = reply(200, { replayed: false, created: 0, existing: 11 });
+    await controller.importHistory(
+      { decisionId, reason: 'record release', release: '2026-10-21.0' },
+      req
+    );
+    expect(JSON.parse(call(spy).init.body as string)).toEqual({
+      decisionId,
+      reason: 'record release',
+      release: '2026-10-21.0',
+      actorId: actor,
+    });
   });
 
   it('never leaks upstream failures', async () => {

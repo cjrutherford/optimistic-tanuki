@@ -905,6 +905,7 @@ export function pendingChecks(
       format: v.format,
       changeToken: current.changeToken,
       policyFor: loadRightsPolicy as never,
+      releaseId: await discoverRightsRelease(db as never),
       ...(Number.isSafeInteger(cap) && cap > 0 ? { rowCap: cap } : {}),
     });
   }
@@ -1614,8 +1615,12 @@ export function pendingChecks(
         : action === 'resume'
         ? resumeAcquisitionRun
         : retryAcquisitionJob)(acquisitionDb, { ...v, id }),
-    acquisitionImportHistory: (v: any) =>
-      importAcquisitionHistory(acquisitionDb, v),
+    acquisitionImportHistory: (v: any) => {
+      // A declared release must be one an approved rights policy covers, so a typo cannot label history.
+      if (v.release !== undefined && !loadRightsPolicy(v.release))
+        throw Error('Invalid acquisition run: no rights policy for release');
+      return importAcquisitionHistory(acquisitionDb, v);
+    },
   };
   // Operator export (S8): jobs are global operator records. Without DIRECTORY_EXPORT_DIR nothing can be written, so
   // create, retry and download answer 503 rather than queueing a job no worker will run.
