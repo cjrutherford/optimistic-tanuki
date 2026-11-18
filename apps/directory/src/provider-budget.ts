@@ -12,6 +12,33 @@ import {
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const label = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 export const MONTHLY_LIMIT_CENTS = 2500;
+export const GEOAPIFY_BUDGET_PROVIDER = 'geoapify';
+
+/**
+ * Ledger scope. Geoapify is metered against its own ceiling (owner decision D8) and every other provider against the
+ * shared one, so neither can use up the other's budget.
+ */
+export const budgetScopeSql = (provider: string): string =>
+  provider === GEOAPIFY_BUDGET_PROVIDER
+    ? `provider='${GEOAPIFY_BUDGET_PROVIDER}'`
+    : `provider<>'${GEOAPIFY_BUDGET_PROVIDER}'`;
+
+/**
+ * The monthly hard stop for a provider, in cents. Geoapify reads DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS and can never
+ * exceed the $25 ceiling; a missing value means that ceiling, and an unusable one means nothing may be spent.
+ */
+export function providerLimitCents(
+  provider: string,
+  env: NodeJS.ProcessEnv = process.env
+): number {
+  if (provider !== GEOAPIFY_BUDGET_PROVIDER) return MONTHLY_LIMIT_CENTS;
+  const raw = env['DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS'];
+  if (raw === undefined || raw.trim() === '') return MONTHLY_LIMIT_CENTS;
+  const value = Number(raw);
+  return Number.isSafeInteger(value) && value >= 0
+    ? Math.min(value, MONTHLY_LIMIT_CENTS)
+    : 0;
+}
 export type BudgetAttempt = {
   attemptId: string;
   provider: string;
@@ -48,6 +75,8 @@ export async function reserveProviderBudget(
   )
     throw Error('Known positive maximum cost required');
   const attempt = { ...input };
+  const limit = providerLimitCents(attempt.provider);
+  const scope = budgetScopeSql(attempt.provider);
   return db.transaction(async (manager) => {
     await manager.query("SET LOCAL lock_timeout = '2s'");
     await manager.query("SET LOCAL statement_timeout = '10s'");
@@ -89,14 +118,14 @@ export async function reserveProviderBudget(
       )
         throw Error('Budget attempt ID already used');
       const totals = await manager.query(
-        'SELECT COALESCE(SUM("reservedCents"),0)::int AS total FROM directory_provider_budget_attempt WHERE period=$1',
+        `SELECT COALESCE(SUM("reservedCents"),0)::int AS total FROM directory_provider_budget_attempt WHERE period=$1 AND ${scope}`,
         [row.period]
       );
       return {
         state: 'replay' as const,
         attemptId: attempt.attemptId,
         period: row.period,
-        remainingCents: Math.max(0, MONTHLY_LIMIT_CENTS - totals[0].total),
+        remainingCents: Math.max(0, limit - totals[0].total),
       };
     }
     const [{ period }] = await manager.query(
@@ -105,13 +134,13 @@ export async function reserveProviderBudget(
     if (typeof period !== 'string' || !/^\d{4}-\d{2}$/.test(period))
       throw Error('Budget period unavailable');
     const [{ total }] = await manager.query(
-      'SELECT COALESCE(SUM("reservedCents"),0)::int AS total FROM directory_provider_budget_attempt WHERE period=$1',
+      `SELECT COALESCE(SUM("reservedCents"),0)::int AS total FROM directory_provider_budget_attempt WHERE period=$1 AND ${scope}`,
       [period]
     );
     if (
       !Number.isSafeInteger(total) ||
       total < 0 ||
-      total + attempt.maxCostCents > MONTHLY_LIMIT_CENTS
+      total + attempt.maxCostCents > limit
     )
       throw Error('Monthly provider budget exhausted');
     await manager.query(
@@ -128,7 +157,7 @@ export async function reserveProviderBudget(
       state: 'reserved' as const,
       attemptId: attempt.attemptId,
       period,
-      remainingCents: MONTHLY_LIMIT_CENTS - total - attempt.maxCostCents,
+      remainingCents: limit - total - attempt.maxCostCents,
     };
   });
 }

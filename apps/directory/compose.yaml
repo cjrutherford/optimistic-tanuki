@@ -89,7 +89,12 @@ services:
       DIRECTORY_ATP_CACHE_DIR: ${DIRECTORY_ATP_CACHE_DIR:-/tmp/directory-atp}
       # Geoapify private enrichment (D4): inert while the key is blank. Never defaulted here.
       GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:-}
+      # Conservative 1 cent per Place Details lookup (the integer minimum, above the list price per request).
       DIRECTORY_GEOAPIFY_COST_CENTS: ${DIRECTORY_GEOAPIFY_COST_CENTS:-1}
+      # Geoapify's own hard stop (D8): cents per month, never above the $25 ceiling.
+      DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS: ${DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS:-2500}
+      DIRECTORY_GEOAPIFY_BATCH: ${DIRECTORY_GEOAPIFY_BATCH:-5}
+      DIRECTORY_GEOAPIFY_DAILY_LOOKUPS: ${DIRECTORY_GEOAPIFY_DAILY_LOOKUPS:-50}
       DIRECTORY_RIGHTS_POLICY_FILE: ${DIRECTORY_RIGHTS_POLICY_FILE:-}
       DIRECTORY_WORKER_STARTUP_TIMEOUT_MS: ${DIRECTORY_WORKER_STARTUP_TIMEOUT_MS:-600000}
       SOCIAL_HOST: social

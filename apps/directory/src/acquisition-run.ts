@@ -12,7 +12,7 @@ import type {
   AcquisitionRunStatus,
   AcquisitionRunSummary,
 } from '../../../libs/social/contracts/src/lib/directory';
-import { MONTHLY_LIMIT_CENTS } from './provider-budget';
+import { MONTHLY_LIMIT_CENTS, providerLimitCents } from './provider-budget';
 import {
   anyAcquisitionAuthorized,
   providerAuthorizationTable,
@@ -684,7 +684,11 @@ export async function acquisitionBudgetPanel(
     `SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM') AS period`
   );
   const [{ reserved }] = await db.query(
-    `SELECT COALESCE(SUM("reservedCents"),0)::int AS reserved FROM directory_provider_budget_attempt WHERE period=$1`,
+    `SELECT COALESCE(SUM("reservedCents"),0)::int AS reserved FROM directory_provider_budget_attempt WHERE period=$1 AND provider<>'geoapify'`,
+    [period]
+  );
+  const [{ geoapify }] = await db.query(
+    `SELECT COALESCE(SUM("reservedCents"),0)::int AS geoapify FROM directory_provider_budget_attempt WHERE period=$1 AND provider='geoapify'`,
     [period]
   );
   const [{ anon }] = await db.query(
@@ -700,6 +704,8 @@ export async function acquisitionBudgetPanel(
     period,
     ceilingCents: MONTHLY_LIMIT_CENTS,
     reservedCents: reserved,
+    geoapifyReservedCents: geoapify,
+    geoapifyLimitCents: providerLimitCents('geoapify'),
     usedCents: used,
     remainingCents: Math.max(0, MONTHLY_LIMIT_CENTS - reserved),
     anonymousAttempts: anon,

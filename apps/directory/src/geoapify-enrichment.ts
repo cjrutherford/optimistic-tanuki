@@ -62,6 +62,14 @@ export function selectGeoapifyPolicy(parsed: unknown): GeoapifyPolicy | null {
   return null;
 }
 
+/** Removes any apiKey query parameter, and the literal key when known, from text that may be stored or logged. */
+export function redactSecrets(text: string, apiKey?: string): string {
+  let out = String(text).replace(/api_?key=[^&\s"')]*/gi, 'apiKey=[redacted]');
+  if (apiKey && apiKey.trim())
+    out = out.split(apiKey.trim()).join('[redacted]');
+  return out;
+}
+
 export async function recordProviderStatus(
   db: DataSource,
   provider: string,
@@ -71,7 +79,7 @@ export async function recordProviderStatus(
   await db.query(
     `INSERT INTO directory_provider_status (provider, status, detail, "checkedAt") VALUES ($1,$2,$3,now())
      ON CONFLICT (provider) DO UPDATE SET status=EXCLUDED.status, detail=EXCLUDED.detail, "checkedAt"=now()`,
-    [provider, status, detail.slice(0, 256)]
+    [provider, status, redactSecrets(detail).slice(0, 256)]
   );
 }
 
@@ -106,10 +114,21 @@ export async function fetchPlaceDetails(
   url.searchParams.set('lat', String(lat));
   url.searchParams.set('lon', String(lon));
   url.searchParams.set('apiKey', config.apiKey);
-  const response = await (config.fetchImpl ?? fetch)(url, {
-    signal: AbortSignal.timeout(15_000),
-    redirect: 'error',
-  });
+  let response: Response;
+  try {
+    response = await (config.fetchImpl ?? fetch)(url, {
+      signal: AbortSignal.timeout(15_000),
+      redirect: 'error',
+    });
+  } catch (error) {
+    // A transport error can carry the request URL, and the URL carries the key.
+    throw Error(
+      `Geoapify request failed: ${redactSecrets(
+        error instanceof Error ? error.message : 'network',
+        config.apiKey
+      ).slice(0, 120)}`
+    );
+  }
   if (!response.ok) throw Error(`Geoapify request failed: ${response.status}`);
   return extractPrivateDetails(await response.json());
 }
@@ -120,6 +139,8 @@ const CANDIDATES = `
   JOIN directory_overture_private_completion c ON c."scanId" = r."scanId"
   LEFT JOIN directory_geoapify_enrichment e ON e."scanId" = r."scanId" AND e."sourceFileRowNumber" = r."sourceFileRowNumber"
   WHERE e."scanId" IS NULL AND r.listing IS NOT NULL
+    AND jsonb_typeof(r.listing->'location'->'coordinates')='array'
+    AND jsonb_array_length(r.listing->'location'->'coordinates')=2
     AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation v WHERE v."scanId" = r."scanId")
     AND NOT EXISTS (SELECT 1 FROM directory_overture_private_row_revocation v WHERE v."scanId" = r."scanId" AND v."sourceFileRowNumber" = r."sourceFileRowNumber")
   ORDER BY r."scanId", r."sourceFileRowNumber"
@@ -145,6 +166,8 @@ export interface GeoapifySweepDeps {
   policy: GeoapifyPolicy | null;
   costCents?: number;
   batch?: number;
+  /** Lookups allowed per UTC day across sweeps; keeps a switched-on sweep small. */
+  dailyLookups?: number;
   fetchImpl?: typeof fetch;
   signal?: AbortSignal;
   log?: (message: string) => void;
@@ -183,12 +206,22 @@ export async function runGeoapifySweep(
     return out;
   }
   const cost = deps.costCents ?? 1;
+  const [{ today }] = await db.query(
+    `SELECT count(*)::int AS today FROM directory_provider_budget_attempt
+      WHERE provider=$1 AND "createdAt" >= date_trunc('day', clock_timestamp() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`,
+    [GEOAPIFY_PROVIDER]
+  );
+  const allowed = Math.max(
+    0,
+    Math.min(deps.batch ?? 20, (deps.dailyLookups ?? 50) - Number(today))
+  );
   const candidates: Array<{
     scanId: string;
     row: string;
     coordinates: [number, number];
-  }> = await db.query(CANDIDATES, [deps.batch ?? 20]);
+  }> = allowed ? await db.query(CANDIDATES, [allowed]) : [];
   let status: GeoapifyStatus = 'ok';
+  let lastError = '';
   for (const c of candidates) {
     if (deps.signal?.aborted) break;
     try {
@@ -227,10 +260,14 @@ export async function runGeoapifySweep(
         ]
       );
       out.succeeded++;
-    } catch {
+    } catch (error) {
       out.failed++;
       status = 'error';
-      deps.log?.('geoapify lookup failed');
+      lastError = redactSecrets(
+        error instanceof Error ? error.message : 'lookup failed',
+        deps.apiKey
+      );
+      deps.log?.(`geoapify lookup failed: ${lastError}`);
       break;
     }
   }
@@ -238,7 +275,9 @@ export async function runGeoapifySweep(
     db,
     GEOAPIFY_PROVIDER,
     status,
-    `enriched=${out.succeeded} failed=${out.failed}`
+    `enriched=${out.succeeded} failed=${out.failed}${
+      lastError ? ` lastError=${lastError}` : ''
+    }`
   );
   return out;
 }
