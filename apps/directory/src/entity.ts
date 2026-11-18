@@ -1031,6 +1031,72 @@ export class DirectoryWithdrawalRequest {
 }
 
 /**
+ * Operator export job (S8). `id` is the client idempotency id; `requestHash` pins the request so a replay with a
+ * different request is refused. The artifact file lives outside the database; `artifactName` is never exposed.
+ */
+@Entity({ name: 'directory_export_job' })
+@Index('IDX_directory_export_job_status', ['status', 'updatedAt'])
+@Check(
+  'CHK_directory_export_job_status',
+  `"status" IN ('queued','running','complete','failed','expired','withdrawn')`
+)
+export class DirectoryExportJob {
+  @PrimaryColumn('uuid') id!: string;
+  /** Requesting operator profile id; NULL once that profile's account has been erased. */
+  @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  @Column({ type: 'varchar', length: 100 }) releaseId!: string;
+  @Column({ type: 'jsonb', default: () => `'{}'` }) scope!: object;
+  @Column({ type: 'varchar', length: 16, default: 'jsonl' }) format!: string;
+  @Column({ type: 'char', length: 64 }) requestHash!: string;
+  @Column({ type: 'varchar', length: 16, default: 'queued' }) status!: string;
+  @Column({ type: 'integer', default: 0 }) attempts!: number;
+  @Column({ type: 'uuid', nullable: true }) leaseToken!: string | null;
+  @Column({ type: 'timestamptz', nullable: true }) leaseExpiresAt!: Date | null;
+  @Column({ type: 'varchar', length: 64, nullable: true }) errorCode!:
+    | string
+    | null;
+  @Column({ type: 'integer', default: 0 }) rowCount!: number;
+  @Column({ type: 'integer', default: 0 }) excludedRows!: number;
+  @Column({ type: 'bigint', default: 0 }) byteCount!: string;
+  @Column({ type: 'char', length: 64, nullable: true }) sha256!: string | null;
+  @Column({ type: 'varchar', length: 200, nullable: true }) artifactName!:
+    | string
+    | null;
+  @Column({
+    type: 'varchar',
+    length: 64,
+    default: 'town-square-directory-export/v1',
+  })
+  schemaVersion!: string;
+  @Column({ type: 'jsonb', default: () => `'[]'` }) scanIds!: string[];
+  @Column({ type: 'timestamptz', nullable: true }) expiresAt!: Date | null;
+  @Column({ type: 'timestamptz', nullable: true }) completedAt!: Date | null;
+  @Column({ type: 'timestamptz', nullable: true }) withdrawnAt!: Date | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt!: Date;
+}
+
+/** Every download attempt of an export artifact, including refused ones. */
+@Entity({ name: 'directory_export_download' })
+@Index('IDX_directory_export_download_job', ['jobId', 'createdAt'])
+@Check(
+  'CHK_directory_export_download_outcome',
+  `"outcome" IN ('served','not_ready','expired','withdrawn','integrity_failed')`
+)
+export class DirectoryExportDownload {
+  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  id!: string;
+  @Column('uuid') jobId!: string;
+  /** Downloading operator profile id; NULL once that profile's account has been erased. */
+  @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  @Column({ type: 'varchar', length: 16 }) outcome!: string;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+}
+
+/**
  * A checked-in taxonomy mapping, installed by an operator (S7d). `sourceHash` is the SHA-256 of the mapping's
  * canonical JSON, so installing the same version twice is a no-op and a changed file under an old version id is
  * refused. At most one version is active.

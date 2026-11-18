@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "town-square-directory-export/v1",
+  "title": "Town Square Directory export, one JSON object per line",
+  "oneOf": [
+    { "$ref": "#/definitions/header" },
+    { "$ref": "#/definitions/row" },
+    { "$ref": "#/definitions/trailer" }
+  ],
+  "definitions": {
+    "stringList": { "type": "array", "items": { "type": "string" } },
+    "header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "schema",
+        "jobId",
+        "releaseId",
+        "generatedAt",
+        "policyVersion",
+        "fields",
+        "attributions",
+        "termsUrls",
+        "notices"
+      ],
+      "properties": {
+        "type": { "const": "header" },
+        "schema": { "const": "town-square-directory-export/v1" },
+        "jobId": { "type": "string", "minLength": 1 },
+        "releaseId": { "type": "string", "minLength": 1 },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "policyVersion": { "type": "string", "minLength": 1 },
+        "fields": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "name",
+              "category",
+              "location",
+              "address",
+              "phone",
+              "website"
+            ]
+          }
+        },
+        "attributions": { "$ref": "#/definitions/stringList" },
+        "termsUrls": { "$ref": "#/definitions/stringList" },
+        "notices": { "$ref": "#/definitions/stringList" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["datasets", "attributions", "termsUrls", "notices"],
+      "properties": {
+        "datasets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["dataset", "license"],
+            "properties": {
+              "dataset": { "type": "string" },
+              "license": { "type": "string" }
+            }
+          }
+        },
+        "attributions": { "$ref": "#/definitions/stringList" },
+        "termsUrls": { "$ref": "#/definitions/stringList" },
+        "notices": { "$ref": "#/definitions/stringList" }
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "key", "name", "category", "location", "provenance"],
+      "properties": {
+        "type": { "const": "row" },
+        "key": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+        "name": { "type": "string", "minLength": 1 },
+        "category": {},
+        "location": { "type": "object" },
+        "address": {},
+        "phone": {},
+        "website": {},
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": { "$ref": "#/definitions/provenance" },
+            "category": { "$ref": "#/definitions/provenance" },
+            "location": { "$ref": "#/definitions/provenance" },
+            "address": { "$ref": "#/definitions/provenance" },
+            "phone": { "$ref": "#/definitions/provenance" },
+            "website": { "$ref": "#/definitions/provenance" }
+          },
+          "required": ["name", "category", "location"]
+        }
+      }
+    },
+    "trailer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "rowCount", "excludedRows"],
+      "properties": {
+        "type": { "const": "trailer" },
+        "rowCount": { "type": "integer", "minimum": 0 },
+        "excludedRows": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

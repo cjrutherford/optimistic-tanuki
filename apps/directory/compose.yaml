@@ -33,6 +33,11 @@ services:
       DIRECTORY_PROFILE_PORT: 3002
       DIRECTORY_REDIS_URL: ${DIRECTORY_REDIS_URL:-}
       DIRECTORY_QUEUE_PREFIX: ${DIRECTORY_QUEUE_PREFIX:-}
+      # Operator export artifacts (S8); the named volume is declared by each stack that extends this service.
+      DIRECTORY_EXPORT_DIR: /var/lib/directory/exports
+      DIRECTORY_EXPORT_RETENTION_HOURS: ${DIRECTORY_EXPORT_RETENTION_HOURS:-24}
+    volumes:
+      - directory_exports:/var/lib/directory/exports
     healthcheck:
       test:
         [

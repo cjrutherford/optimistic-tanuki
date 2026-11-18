@@ -9,5 +9,6 @@ RUN corepack enable && corepack prepare pnpm@11.0.9 --activate
 COPY --from=builder /app/dist/apps/directory/package.json /app/dist/apps/directory/pnpm-lock.yaml ./
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 COPY --from=builder /app/dist/apps/directory/ ./
+RUN mkdir -p /var/lib/directory/exports && chown node:node /var/lib/directory/exports
 USER node
 CMD ["node", "main.js"]

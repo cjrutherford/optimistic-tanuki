@@ -1442,6 +1442,7 @@ volumes:
   clamav-db:
   civic_briefing_data:
   civic_contributions_data:
+  directory_exports:
 
 networks:
   learning-runner-control:

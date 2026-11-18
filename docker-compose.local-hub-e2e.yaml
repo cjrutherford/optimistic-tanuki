@@ -354,3 +354,4 @@ services:
 
 volumes:
   local_hub_e2e_asset_data:
+  directory_exports:

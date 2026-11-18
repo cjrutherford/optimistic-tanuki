@@ -3585,6 +3585,14 @@
       "action": "operate",
       "targetId": null,
       "appScope": "owner-console"
+    },
+    {
+      "name": "directory.export",
+      "description": "Request and download directory exports",
+      "resource": "directory",
+      "action": "export",
+      "targetId": null,
+      "appScope": "owner-console"
     }
   ],
   "role_permissions": [
@@ -8256,6 +8264,26 @@
     {
       "role": "system_admin",
       "permission": "directory.operate",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "directory.export",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "directory.export",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "directory.export",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "directory.export",
       "permissionAppScope": "owner-console"
     }
   ]

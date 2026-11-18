@@ -1,0 +1,32 @@
+{
+  "authorization": {
+    "anonymousList": 401,
+    "anonymousDownload": 401,
+    "ownerList": 200,
+    "ownerListCacheControl": "no-store",
+    "ownerDownloadUnknownId": 404
+  },
+  "notGranted": {
+    "jobId": "61331381-2936-4298-b059-ad50ada47dd6",
+    "releaseId": "2026-10-21.0",
+    "status": "failed",
+    "errorCode": "export_not_granted",
+    "sha256": null,
+    "rowCount": 0,
+    "downloadStatus": 409,
+    "downloadCode": "not_ready"
+  },
+  "idempotency": {
+    "jobId": "5153cbd0-e443-42cc-a958-53a2d3701a34",
+    "firstStatus": 201,
+    "replaySameId": true,
+    "mismatchStatus": 409,
+    "mismatchCode": "idempotency_mismatch",
+    "retryStatus": 201,
+    "afterRetry": {
+      "status": "failed",
+      "errorCode": "export_not_granted"
+    },
+    "retryUnknownId": 404
+  }
+}

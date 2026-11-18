@@ -253,6 +253,13 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
         highlight: 'Permanent removal',
       },
       {
+        title: 'Directory Exports',
+        description:
+          'Request licence-checked directory exports and download the finished files.',
+        route: '/dashboard/directory-exports',
+        highlight: 'Operator export',
+      },
+      {
         title: 'Directory Taxonomy',
         description:
           'Correct the category of individual listings with audited, reversible overrides.',

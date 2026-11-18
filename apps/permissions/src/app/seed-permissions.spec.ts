@@ -10,6 +10,7 @@ describe('permissions seed integrity', () => {
       'directory.review',
       'directory.rights',
       'directory.operate',
+      'directory.export',
     ]) {
       expect(seedData.permissions).toContainEqual(
         expect.objectContaining({ name, appScope: 'owner-console' })

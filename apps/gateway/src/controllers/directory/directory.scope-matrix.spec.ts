@@ -18,6 +18,7 @@ import {
   DirectoryRightsCasesController,
   DirectoryWithdrawalsController,
 } from './directory-rights.controller';
+import { DirectoryExportsController } from './directory-exports.controller';
 import { DirectoryTaxonomyController } from './directory-taxonomy.controller';
 import { DirectoryRunsController } from './directory-runs.controller';
 import {
@@ -127,6 +128,13 @@ const taxonomyRoutes: MatrixRoute[] = [
     body: {},
   },
 ];
+const exportRoutes: MatrixRoute[] = [
+  { method: 'GET', path: '/directory/exports' },
+  { method: 'POST', path: '/directory/exports', body: {} },
+  { method: 'GET', path: `/directory/exports/${rightsId}` },
+  { method: 'POST', path: `/directory/exports/${rightsId}/retry`, body: {} },
+  { method: 'GET', path: `/directory/exports/${rightsId}/artifact` },
+];
 const runsRoutes: MatrixRoute[] = [
   { method: 'GET', path: '/directory/runs' },
   { method: 'GET', path: '/directory/runs/latest' },
@@ -141,6 +149,7 @@ const reviewRoutes: MatrixRoute[] = [
   ...rightsRoutes,
   ...taxonomyRoutes,
   ...runsRoutes,
+  ...exportRoutes,
   {
     method: 'GET',
     path: `${base}/local-evaluation-listings/${listing}/business-link/requests`,
@@ -239,7 +248,8 @@ describe('directory authentication and Owner Console scope matrix', () => {
             (payload.profileId === owner &&
               (payload.permission === DIRECTORY_PERMISSIONS.review ||
                 payload.permission === DIRECTORY_PERMISSIONS.rights ||
-                payload.permission === DIRECTORY_PERMISSIONS.operate)) ||
+                payload.permission === DIRECTORY_PERMISSIONS.operate ||
+                payload.permission === DIRECTORY_PERMISSIONS.export)) ||
               (payload.profileId === reviewOnly &&
                 payload.permission === DIRECTORY_PERMISSIONS.review)
           );
@@ -264,6 +274,7 @@ describe('directory authentication and Owner Console scope matrix', () => {
         DirectoryWithdrawalsController,
         DirectoryTaxonomyController,
         DirectoryRunsController,
+        DirectoryExportsController,
         DirectoryListingReportController,
         DirectoryListingReportReviewController,
       ],
@@ -407,6 +418,14 @@ describe('directory authentication and Owner Console scope matrix', () => {
       expect(res.status).toBe(403);
       const granted = await call(route, { token: token(owner), scope: true });
       expect([401, 403]).not.toContain(granted.status);
+    }
+  );
+
+  it.each(exportRoutes.map((r) => [r.method + ' ' + r.path, r] as const))(
+    'a review-only owner-console session gets 403 on export route %s',
+    async (_n, route) => {
+      const res = await call(route, { token: token(reviewOnly), scope: true });
+      expect(res.status).toBe(403);
     }
   );
 
