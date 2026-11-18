@@ -27,6 +27,8 @@ export interface LocalCommunity {
   slug: string;
   /** Slug of the town that absorbed this locality; set only on a merged locality (S10 D19-D25). */
   mergedIntoSlug?: string | null;
+  /** Current slug of a renamed locality, set when the requested slug was one it used before. */
+  redirectToSlug?: string | null;
   parentId?: string | null;
   description: string;
   joinPolicy?: string | null;

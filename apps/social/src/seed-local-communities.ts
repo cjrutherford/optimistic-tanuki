@@ -1,7 +1,7 @@
 import { saveCommunityWithDirectoryChange } from './app/services/community-directory-outbox';
 import { NestFactory } from '@nestjs/core';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ArrayContains, Repository } from 'typeorm';
 import { Logger } from '@nestjs/common';
 import {
   ClientProxy,
@@ -12,7 +12,11 @@ import { firstValueFrom, timeout } from 'rxjs';
 import seedData from './data/seed-cities.json';
 import { AppModule } from './app/app.module';
 import { Community, LocalityType } from './entities/community.entity';
-import { ensureCommunityChatRoom } from './seed-local-communities.helpers';
+import {
+  changedSeedFields,
+  ensureCommunityChatRoom,
+  withFormerSlug,
+} from './seed-local-communities.helpers';
 import { ChatCommands } from '@optimistic-tanuki/constants';
 
 type CityHighlight = {
@@ -247,6 +251,7 @@ async function main() {
     console.log(`Seeding ${COMMUNITIES.length} local communities...`);
     let created = 0;
     let updated = 0;
+    let unchanged = 0;
 
     for (const data of COMMUNITIES) {
       const existing =
@@ -281,11 +286,25 @@ async function main() {
           localitySlug: data.localitySlug,
           parentId: parent?.id ?? null,
         };
-        Object.assign(existing, updates);
-        await saveCommunityWithDirectoryChange(communityRepo, {
-          id: existing.id,
-          ...updates,
-        } as Community);
+        const changed = changedSeedFields(existing, updates);
+        if (changed.length > 0) {
+          // Only a real change writes a directory change; an unchanged row would invalidate its town's boundary.
+          Object.assign(existing, updates);
+          await saveCommunityWithDirectoryChange(communityRepo, {
+            id: existing.id,
+            ...updates,
+          } as Community);
+        }
+        // Former slugs are not directory data, so recording them needs no directory change.
+        const formerSlugs = withFormerSlug(
+          existing.formerSlugs,
+          data.formerSlug,
+          data.slug
+        );
+        if (changedSeedFields(existing, { formerSlugs }).length > 0) {
+          await communityRepo.update(existing.id, { formerSlugs });
+          existing.formerSlugs = formerSlugs;
+        }
         if (!SKIP_CHAT_ROOMS)
           await ensureCommunityChatRoom(existing, {
             createCommunityChat: (input) =>
@@ -294,9 +313,17 @@ async function main() {
               await communityRepo.update(communityId, { chatRoomId });
             },
           });
-        updated++;
-        console.log(`  Updated: ${data.name}`);
+        if (changed.length > 0) {
+          updated++;
+          console.log(`  Updated: ${data.name}`);
+        } else unchanged++;
       } else {
+        if (
+          await communityRepo.findOne({
+            where: { formerSlugs: ArrayContains([data.slug]) },
+          })
+        )
+          throw new Error(`${data.slug} is a former slug of another community`);
         const community = communityRepo.create({
           name: data.name,
           slug: data.slug,
@@ -368,7 +395,7 @@ async function main() {
     );
 
     console.log(
-      `\nDone. Created: ${created}, Updated: ${updated}, Total: ${COMMUNITIES.length}`
+      `\nDone. Created: ${created}, Updated: ${updated}, Unchanged: ${unchanged}, Total: ${COMMUNITIES.length}`
     );
     console.log(`Breakdown: ${JSON.stringify(totalByType)}`);
     chatClient.close();

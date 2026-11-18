@@ -65,6 +65,13 @@ export class Community {
   @Column({ type: 'uuid', nullable: true })
   mergedIntoId: string | null;
 
+  /**
+   * Slugs this community used before it was renamed in place. They are never reused for another community, and a
+   * slug lookup that finds only a former slug tells the caller the current slug to redirect to.
+   */
+  @Column({ type: 'text', array: true, default: () => "'{}'" })
+  formerSlugs: string[];
+
   /** When set, this community represents a real-world locality. */
   @Column({ type: 'varchar', length: 50, nullable: true })
   localityType: LocalityType | null;

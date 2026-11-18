@@ -1,6 +1,8 @@
 import {
+  changedSeedFields,
   ensureCommunityChatRoom,
   SeededCommunityChatRecord,
+  withFormerSlug,
 } from './seed-local-communities.helpers';
 
 describe('ensureCommunityChatRoom', () => {
@@ -51,5 +53,57 @@ describe('ensureCommunityChatRoom', () => {
 
     expect(createCommunityChat).not.toHaveBeenCalled();
     expect(setCommunityChatRoom).not.toHaveBeenCalled();
+  });
+});
+
+describe('changedSeedFields', () => {
+  const existing = {
+    name: 'Adel',
+    lat: '31.1371000',
+    lng: -83.4241,
+    population: '5300',
+    parentId: null,
+    highlights: [{ b: 2, a: 1 }],
+    tags: [{ id: 'x-1', name: 'Town' }],
+  };
+
+  it('reports nothing when only the representation differs', () => {
+    expect(
+      changedSeedFields(existing, {
+        name: 'Adel',
+        lat: 31.1371,
+        lng: '-83.4241',
+        population: 5300,
+        parentId: undefined,
+        highlights: [{ a: 1, b: 2 }],
+        tags: [{ id: 'x-1', name: 'Town' }],
+      })
+    ).toEqual([]);
+  });
+
+  it('names the fields that really changed', () => {
+    expect(
+      changedSeedFields(existing, {
+        name: 'Adel GA',
+        lat: 31.2,
+        tags: [{ id: 'x-1', name: 'City' }],
+        population: 5300,
+      })
+    ).toEqual(['name', 'lat', 'tags']);
+  });
+
+  it('treats a new value over null as a change', () => {
+    expect(changedSeedFields(existing, { parentId: 'p-1' })).toEqual([
+      'parentId',
+    ]);
+  });
+});
+
+describe('withFormerSlug', () => {
+  it('records the old slug once', () => {
+    expect(withFormerSlug([], 'old', 'new')).toEqual(['old']);
+    expect(withFormerSlug(['old'], 'old', 'new')).toEqual(['old']);
+    expect(withFormerSlug(null, null, 'new')).toEqual([]);
+    expect(withFormerSlug(['a'], 'new', 'new')).toEqual(['a']);
   });
 });

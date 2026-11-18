@@ -17,6 +17,7 @@ import {
   IsNull,
   MoreThan,
   In,
+  ArrayContains,
 } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { randomUUID } from 'node:crypto';
@@ -209,6 +210,17 @@ export class CommunityService {
       .getMany();
 
     const existingSlugs = new Set(conflicting.map((c) => c.slug));
+    // A slug a community was renamed away from still redirects to it, so it is never reused.
+    const formerRows = await this.communityRepo
+      .createQueryBuilder('c')
+      .select('c.formerSlugs')
+      .where(
+        'EXISTS (SELECT 1 FROM unnest(c."formerSlugs") f WHERE f LIKE :pattern)',
+        { pattern: `${baseSlug}%` }
+      )
+      .getMany();
+    for (const row of formerRows)
+      for (const former of row.formerSlugs ?? []) existingSlugs.add(former);
 
     if (!existingSlugs.has(baseSlug)) {
       return baseSlug;
@@ -243,6 +255,14 @@ export class CommunityService {
       name,
     }));
 
+    if (
+      dto.slug &&
+      (await this.communityRepo.findOne({
+        where: { formerSlugs: ArrayContains([dto.slug]) },
+      }))
+    ) {
+      throw new RpcException('A community with this slug already exists');
+    }
     const slug = dto.slug ? dto.slug : await this.generateUniqueSlug(dto.name);
 
     const community = this.communityRepo.create({
@@ -292,24 +312,33 @@ export class CommunityService {
     requestingProfileId?: string
   ): Promise<Community | null> {
     const community = await this.communityRepo.findOne({ where: { slug } });
-    if (community) {
+    if (!community) {
+      // A slug the community was renamed away from: tell the caller the current slug to redirect to.
+      const renamed = await this.communityRepo.findOne({
+        where: { formerSlugs: ArrayContains([slug]) },
+      });
+      if (!renamed) return null;
       const withMembers = await this.addMemberInfo(
-        community,
+        renamed,
         requestingProfileId
       );
-      // A merged locality keeps its slug; callers follow this to the town that absorbed it.
-      if (community.mergedIntoId) {
-        const target = await this.communityRepo.findOne({
-          where: { id: community.mergedIntoId },
-          select: { slug: true },
-        });
-        return Object.assign(withMembers, {
-          mergedIntoSlug: target?.slug ?? null,
-        });
-      }
-      return withMembers;
+      return Object.assign(withMembers, { redirectToSlug: renamed.slug });
     }
-    return null;
+    const withMembers = await this.addMemberInfo(
+      community,
+      requestingProfileId
+    );
+    // A merged locality keeps its slug; callers follow this to the town that absorbed it.
+    if (community.mergedIntoId) {
+      const target = await this.communityRepo.findOne({
+        where: { id: community.mergedIntoId },
+        select: { slug: true },
+      });
+      return Object.assign(withMembers, {
+        mergedIntoSlug: target?.slug ?? null,
+      });
+    }
+    return withMembers;
   }
 
   /** Return all communities that are locality-based (have a slug/localityType set). */
@@ -807,6 +836,12 @@ export class CommunityService {
         where: { slug: dto.slug },
       });
       if (slugConflict && slugConflict.id !== id) {
+        throw new RpcException('A community with this slug already exists');
+      }
+      const formerConflict = await this.communityRepo.findOne({
+        where: { formerSlugs: ArrayContains([dto.slug]) },
+      });
+      if (formerConflict && formerConflict.id !== id) {
         throw new RpcException('A community with this slug already exists');
       }
       community.slug = dto.slug;

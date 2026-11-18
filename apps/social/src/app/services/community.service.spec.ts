@@ -211,6 +211,23 @@ describe('CommunityService', () => {
     });
   });
 
+  describe('findBySlug of a renamed locality', () => {
+    it('returns the community with the slug to redirect to', async () => {
+      communityRepo.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        id: 'pv',
+        slug: 'palm-valley-fl',
+        formerSlugs: ['ponte-vedra-beach-fl'],
+      } as any);
+      const found = await service.findBySlug('ponte-vedra-beach-fl');
+      expect((found as any).redirectToSlug).toBe('palm-valley-fl');
+    });
+
+    it('returns null when no slug or former slug matches', async () => {
+      communityRepo.findOne.mockResolvedValue(null);
+      expect(await service.findBySlug('nowhere')).toBeNull();
+    });
+  });
+
   describe('join', () => {
     const joinDto = { communityId: 'community-1' };
 

@@ -58,6 +58,16 @@ describe('mergedLocalityRedirectGuard', () => {
     ).resolves.toEqual({ redirected: '/city/bandera-tx/businesses?page=2' });
   });
 
+  it('sends a former slug to the renamed town, keeping the page and query', async () => {
+    communities.getCommunityBySlug.mockResolvedValue({
+      slug: 'palm-valley-fl',
+      redirectToSlug: 'palm-valley-fl',
+    });
+    await expect(
+      run('ponte-vedra-beach-fl', '/city/ponte-vedra-beach-fl/news?x=1')
+    ).resolves.toEqual({ redirected: '/city/palm-valley-fl/news?x=1' });
+  });
+
   it('never blocks navigation when the lookup fails', async () => {
     communities.getCommunityBySlug.mockRejectedValue(new Error('down'));
     await expect(run('medina-tx', '/city/medina-tx')).resolves.toBe(true);
