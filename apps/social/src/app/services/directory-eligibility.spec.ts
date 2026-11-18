@@ -12,16 +12,14 @@ afterEach(() => jest.restoreAllMocks());
 describe('directory eligibility', () => {
   it('selects only public local-hub city/town fields and omits all other data', async () => {
     const repo = {
-      findOne: jest
-        .fn()
-        .mockResolvedValue({
-          id: 'id',
-          name: 'Town',
-          slug: null,
-          adminArea: null,
-          localityType: 'town',
-          ownerId: 'secret',
-        }),
+      findOne: jest.fn().mockResolvedValue({
+        id: 'id',
+        name: 'Town',
+        slug: null,
+        adminArea: null,
+        localityType: 'town',
+        ownerId: 'secret',
+      }),
     };
     (repo as any).manager = managerFor(repo);
     const service = new CommunityService(
@@ -39,11 +37,13 @@ describe('directory eligibility', () => {
       localityType: true,
       adminArea: true,
     });
-    expect(repo.findOne.mock.calls[0][0].where).toEqual({
+    expect(repo.findOne.mock.calls[0][0].where).toMatchObject({
       id: 'id',
       appScope: 'local-hub',
       isPrivate: false,
     });
+    // A locality merged into another town is never an eligible town.
+    expect(repo.findOne.mock.calls[0][0].where.mergedIntoId).toBeDefined();
     repo.findOne.mockResolvedValueOnce({
       id: 'id',
       localityType: 'town',
@@ -199,6 +199,7 @@ describe('directory snapshot privacy', () => {
       isPrivate: false,
     });
     expect(query.where.localityType.value).toEqual(['city', 'town']);
+    expect(query.where.mergedIntoId).toBeDefined();
     expect(Object.keys(query.select).sort()).toEqual([
       'adminArea',
       'appScope',

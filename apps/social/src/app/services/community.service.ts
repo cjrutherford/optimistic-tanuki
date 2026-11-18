@@ -9,7 +9,15 @@ import {
 } from './social-authority';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, EntityManager, Equal, ILike, MoreThan, In } from 'typeorm';
+import {
+  Repository,
+  EntityManager,
+  Equal,
+  ILike,
+  IsNull,
+  MoreThan,
+  In,
+} from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { randomUUID } from 'node:crypto';
 import { Community } from '../../entities/community.entity';
@@ -285,7 +293,21 @@ export class CommunityService {
   ): Promise<Community | null> {
     const community = await this.communityRepo.findOne({ where: { slug } });
     if (community) {
-      return await this.addMemberInfo(community, requestingProfileId);
+      const withMembers = await this.addMemberInfo(
+        community,
+        requestingProfileId
+      );
+      // A merged locality keeps its slug; callers follow this to the town that absorbed it.
+      if (community.mergedIntoId) {
+        const target = await this.communityRepo.findOne({
+          where: { id: community.mergedIntoId },
+          select: { slug: true },
+        });
+        return Object.assign(withMembers, {
+          mergedIntoSlug: target?.slug ?? null,
+        });
+      }
+      return withMembers;
     }
     return null;
   }
@@ -297,7 +319,8 @@ export class CommunityService {
   ): Promise<Community[]> {
     const qb = this.communityRepo
       .createQueryBuilder('c')
-      .where('c.slug IS NOT NULL');
+      .where('c.slug IS NOT NULL')
+      .andWhere('c.mergedIntoId IS NULL');
     if (appScope) {
       qb.andWhere('c.appScope = :appScope', { appScope });
     }
@@ -450,25 +473,24 @@ export class CommunityService {
     return this.withDirectoryEpoch(
       expectedSourceEpoch,
       async (manager) => {
-        const community = await manager
-          .getRepository(Community)
-          .findOne({
-            where: {
-              id,
-              appScope: 'local-hub',
-              isPrivate: false,
-              localityType: In(['city', 'town']),
-            },
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              adminArea: true,
-              appScope: true,
-              isPrivate: true,
-              localityType: true,
-            },
-          });
+        const community = await manager.getRepository(Community).findOne({
+          where: {
+            id,
+            appScope: 'local-hub',
+            isPrivate: false,
+            localityType: In(['city', 'town']),
+            mergedIntoId: IsNull(),
+          },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            adminArea: true,
+            appScope: true,
+            isPrivate: true,
+            localityType: true,
+          },
+        });
         return community?.adminArea === 'Development fixture'
           ? null
           : community;
@@ -511,7 +533,7 @@ export class CommunityService {
       const rows = await manager.query(
         `SELECT e."communityId" AS "eventCommunityId", e."sourceEpoch" AS "eventSourceEpoch", e."eventNonce" AS "eventNonce", c.id, c.name, c.slug, c."adminArea", c."appScope", c."isPrivate", c."localityType"
         FROM community_directory_change e LEFT JOIN community c ON c.id = e."communityId"
-          AND c."appScope" = 'local-hub' AND c."isPrivate" = false AND c."localityType" IN ('city', 'town') AND c."adminArea" IS DISTINCT FROM 'Development fixture'
+          AND c."appScope" = 'local-hub' AND c."isPrivate" = false AND c."localityType" IN ('city', 'town') AND c."mergedIntoId" IS NULL AND c."adminArea" IS DISTINCT FROM 'Development fixture'
         WHERE e.revision = $1`,
         [revision]
       );
@@ -589,6 +611,7 @@ export class CommunityService {
           .andWhere('community."localityType" IN (:...types)', {
             types: ['city', 'town'],
           })
+          .andWhere('community."mergedIntoId" IS NULL')
           .andWhere('community."adminArea" IS DISTINCT FROM :fixtureArea', {
             fixtureArea: 'Development fixture',
           });
@@ -626,7 +649,12 @@ export class CommunityService {
   async findDirectoryEligible(id: string): Promise<{ id: string } | null> {
     return this.withActiveDirectoryAuthority(async (manager) => {
       const community = await manager.getRepository(Community).findOne({
-        where: { id, appScope: 'local-hub', isPrivate: false },
+        where: {
+          id,
+          appScope: 'local-hub',
+          isPrivate: false,
+          mergedIntoId: IsNull(),
+        },
         select: { id: true, localityType: true, adminArea: true },
       });
       if (

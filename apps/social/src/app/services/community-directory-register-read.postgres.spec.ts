@@ -198,6 +198,68 @@ if (marker !== undefined && marker !== 'disposable-s3social')
       }
     });
 
+    it('treats a locality merged into another town as ineligible, in the census and the snapshot', async () => {
+      const repo = db.getRepository(Community);
+      const [target, absorbed] = await repo.save([
+        repo.create({
+          name: 'merge-target',
+          slug: 'merge-target-xx',
+          ownerId: 'fixture',
+          ownerProfileId: 'fixture',
+          appScope: 'local-hub',
+          localityType: 'town',
+          isPrivate: false,
+          adminArea: null,
+          isSystemCommunity: false,
+        }),
+        repo.create({
+          name: 'merge-absorbed',
+          slug: 'merge-absorbed-xx',
+          ownerId: 'fixture',
+          ownerProfileId: 'fixture',
+          appScope: 'local-hub',
+          localityType: 'town',
+          isPrivate: false,
+          adminArea: null,
+          isSystemCommunity: false,
+        }),
+      ]);
+      try {
+        const service = new CommunityService(
+          repo,
+          null as any,
+          null as any,
+          null as any,
+          null as any,
+          null as any,
+          null as any
+        );
+        (service as any).withDirectoryEpoch = (_epoch: string, read: any) =>
+          db.transaction(read);
+        const sourceEpoch = randomUUID();
+        const census = async () =>
+          (
+            await service.findDirectoryCensus(sourceEpoch, undefined, 200)
+          ).communities.map((row) => row.id);
+        expect(await census()).toContain(absorbed.id);
+        await repo.update(absorbed.id, { mergedIntoId: target.id });
+        expect(await census()).toContain(target.id);
+        expect(await census()).not.toContain(absorbed.id);
+        expect(
+          await service.directorySnapshot(absorbed.id, sourceEpoch)
+        ).toBeNull();
+        expect(
+          await service.directorySnapshot(target.id, sourceEpoch)
+        ).toMatchObject({ id: target.id });
+        // The slug still resolves, and says where the town went.
+        const found = (await repo.findOne({
+          where: { slug: 'merge-absorbed-xx' },
+        })) as Community;
+        expect(found.mergedIntoId).toBe(target.id);
+      } finally {
+        await repo.delete([target.id, absorbed.id]);
+      }
+    });
     it('reads geographic inputs only for currently eligible towns', async () => {
       const repo = db.getRepository(Community);
       const rows = await repo.save([

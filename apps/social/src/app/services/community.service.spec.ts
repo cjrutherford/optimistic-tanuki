@@ -183,6 +183,34 @@ describe('CommunityService', () => {
     });
   });
 
+  describe('findBySlug of a merged locality', () => {
+    it('tells the caller which town absorbed it', async () => {
+      communityRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'medina',
+          slug: 'medina-tx',
+          mergedIntoId: 'bandera',
+        } as any)
+        .mockResolvedValueOnce({ slug: 'bandera-tx' } as any);
+      const found = await service.findBySlug('medina-tx');
+      expect((found as any).mergedIntoSlug).toBe('bandera-tx');
+      expect(communityRepo.findOne).toHaveBeenLastCalledWith({
+        where: { id: 'bandera' },
+        select: { slug: true },
+      });
+    });
+
+    it('adds nothing for a locality that was not merged', async () => {
+      communityRepo.findOne.mockResolvedValueOnce({
+        id: 'bandera',
+        slug: 'bandera-tx',
+        mergedIntoId: null,
+      } as any);
+      const found = await service.findBySlug('bandera-tx');
+      expect((found as any).mergedIntoSlug).toBeUndefined();
+    });
+  });
+
   describe('join', () => {
     const joinDto = { communityId: 'community-1' };
 

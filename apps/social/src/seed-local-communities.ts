@@ -36,6 +36,13 @@ type RawLocality = {
   timezone?: string;
   /** The civic-briefing locality this town's page shows briefings for. */
   localitySlug?: string;
+  /**
+   * The slug this community had before it was renamed. The seed then renames the existing community in place (same
+   * id, so the Directory town and its data follow) instead of creating a second one.
+   */
+  formerSlug?: string;
+  /** Slug of the locality that absorbed this one (owner decision); the community is retired as a town. */
+  mergedInto?: string;
 };
 
 type NeighborhoodSeed = {
@@ -62,6 +69,8 @@ type SeedLocality = {
   tags: { id: string; name: string }[];
   localitySlug: string | null;
   parentSlug?: string;
+  formerSlug: string | null;
+  mergedInto: string | null;
 };
 
 const rawLocalities = ((seedData as { localities?: RawLocality[] })
@@ -172,6 +181,8 @@ function toSeedLocality(locality: RawLocality): SeedLocality {
     tags: buildTags(locality),
     localitySlug: locality.localitySlug ?? null,
     parentSlug: neighborhoodParentBySlug.get(locality.slug),
+    formerSlug: locality.formerSlug ?? null,
+    mergedInto: locality.mergedInto ?? null,
   };
 }
 
@@ -238,9 +249,11 @@ async function main() {
     let updated = 0;
 
     for (const data of COMMUNITIES) {
-      const existing = await communityRepo.findOne({
-        where: { slug: data.slug },
-      });
+      const existing =
+        (await communityRepo.findOne({ where: { slug: data.slug } })) ??
+        (data.formerSlug
+          ? await communityRepo.findOne({ where: { slug: data.formerSlug } })
+          : null);
 
       const parent =
         data.parentSlug != null
@@ -322,6 +335,29 @@ async function main() {
         console.log(`  Created: ${data.name}`);
       }
     }
+
+    // Merges run after every community exists, so the target of a merge is always there.
+    let merged = 0;
+    for (const data of COMMUNITIES.filter((c) => c.mergedInto)) {
+      const source = await communityRepo.findOne({
+        where: { slug: data.slug },
+      });
+      const target = await communityRepo.findOne({
+        where: { slug: data.mergedInto as string },
+      });
+      if (!source || !target || source.id === target.id)
+        throw new Error(`Cannot merge ${data.slug} into ${data.mergedInto}`);
+      if (target.mergedIntoId)
+        throw new Error(`${data.mergedInto} is itself merged`);
+      if (source.mergedIntoId === target.id) continue;
+      await saveCommunityWithDirectoryChange(communityRepo, {
+        id: source.id,
+        mergedIntoId: target.id,
+      } as Community);
+      merged++;
+      console.log(`  Merged: ${data.name} -> ${target.name}`);
+    }
+    if (merged) console.log(`Merged ${merged} communities.`);
 
     const totalByType = COMMUNITIES.reduce<Record<string, number>>(
       (acc, item) => {

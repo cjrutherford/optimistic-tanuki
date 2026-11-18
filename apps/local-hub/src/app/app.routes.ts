@@ -10,6 +10,7 @@ import {
 } from '@optimistic-tanuki/auth-ui';
 import { AuthGuard } from './guards/auth.guard';
 import { MemberGuard } from './guards/member.guard';
+import { mergedLocalityRedirectGuard } from './guards/merged-locality.guard';
 import { PublicContactPageComponent } from '@optimistic-tanuki/common-ui';
 
 export const appRoutes: Route[] = [
@@ -48,6 +49,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'city/:slug/businesses',
+    canActivate: [mergedLocalityRedirectGuard],
     loadComponent: () =>
       import('./pages/business-directory/business-directory.component').then(
         (m) => m.BusinessDirectoryComponent
@@ -55,6 +57,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'city/:slug/businesses/:reference',
+    canActivate: [mergedLocalityRedirectGuard],
     loadComponent: () =>
       import('./pages/business-detail/business-detail.component').then(
         (m) => m.BusinessDetailComponent
@@ -62,6 +65,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'city/:slug/businesses/:reference/report',
+    canActivate: [mergedLocalityRedirectGuard],
     loadComponent: () =>
       import('./pages/business-report/business-report.component').then(
         (m) => m.BusinessReportComponent
@@ -76,11 +80,13 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'city/:slug',
+    canActivate: [mergedLocalityRedirectGuard],
     loadComponent: () =>
       import('./pages/city/city.component').then((m) => m.CityComponent),
   },
   {
     path: 'city/:slug/briefing',
+    canActivate: [mergedLocalityRedirectGuard],
     loadComponent: () =>
       import('./pages/city-briefing/city-briefing-page.component').then(
         (m) => m.CityBriefingPageComponent
@@ -88,6 +94,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'city/:slug/briefing/:date',
+    canActivate: [mergedLocalityRedirectGuard],
     loadComponent: () =>
       import('./pages/city-briefing/city-briefing-page.component').then(
         (m) => m.CityBriefingPageComponent
@@ -99,10 +106,11 @@ export const appRoutes: Route[] = [
       import('./pages/daylight/report/daylight-report.page').then(
         (m) => m.DaylightReportPage
       ),
-    canActivate: [AuthGuard],
+    canActivate: [mergedLocalityRedirectGuard, AuthGuard],
   },
   {
     path: 'city/:slug/watch',
+    canActivate: [mergedLocalityRedirectGuard],
     loadComponent: () =>
       import('./pages/daylight/watch/daylight-watch.page').then(
         (m) => m.DaylightWatchPage
@@ -140,6 +148,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'city/:slug/classifieds',
+    canActivate: [mergedLocalityRedirectGuard],
     loadComponent: () =>
       import('./pages/classifieds/classifieds.component').then(
         (m) => m.ClassifiedsComponent
@@ -151,11 +160,12 @@ export const appRoutes: Route[] = [
       import('./pages/classifieds/classifieds.component').then(
         (m) => m.ClassifiedsComponent
       ),
-    canActivate: [MemberGuard],
+    canActivate: [mergedLocalityRedirectGuard, MemberGuard],
     data: { openForm: true },
   },
   {
     path: 'city/:slug/classifieds/:id',
+    canActivate: [mergedLocalityRedirectGuard],
     loadComponent: () =>
       import('./pages/classified-detail/classified-detail.component').then(
         (m) => m.ClassifiedDetailComponent
