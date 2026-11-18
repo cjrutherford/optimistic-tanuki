@@ -6,6 +6,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { OverturePrivateSink } from './overture-private-sink';
 import type { OvertureRightsPolicy } from './overture-rights';
 import { DEFAULT_ADDRESS_REVIEW_POLICY } from './address-review';
+import { queryVerifiedBoundary } from './address-strong-match';
 import {
   type BindingKey,
   documentHash,
@@ -155,22 +156,12 @@ export async function requireTownContainment(
       throw Error('Address or map point is outside the assigned town');
   }
   if (boundaryStatus === 'ready') {
-    const [result] = await manager.query(
-      `SELECT b."geometryHash",b."changeToken",encode(ST_AsEWKB(g.boundary,'XDR'),'hex') AS geometry, ST_Covers(g.boundary,ST_SetSRID(ST_MakePoint($2,$3),4326)) AS geocode_inside, ST_Covers(g.boundary,ST_SetSRID(ST_MakePoint($4,$5),4326)) AS source_inside
-      FROM directory_reviewed_geometry b
-      JOIN directory_town t ON t."communityId"=b."communityId" AND t.eligible IS TRUE AND t."geometryStatus"='ready' AND t."geometryVersion"=b.version
-      JOIN directory_town_geometry g ON g."communityId"=b."communityId" AND g.version=b.version
-      JOIN directory_boundary_decision d ON d."requestId"=b."requestId" AND d."communityId"=b."communityId" AND d.decision='verified' AND d."invalidatedAt" IS NULL
-      JOIN directory_boundary_candidate c ON c."communityId"=b."communityId" AND c."changeToken"=b."changeToken" AND c."geographyHash"=b."geographyHash" AND c."sourceEpoch"=d."sourceEpoch" AND c."activationId"=d."activationId" AND c."socialGeneration"=d."socialGeneration"
-      WHERE b."communityId"=$1 AND d."changeToken"=b."changeToken" AND d."geographyHash"=b."geographyHash" AND d."recoveryEpoch"=b."recoveryEpoch" AND d."directoryGeneration"=b."directoryGeneration"
-      FOR SHARE OF b,t,g,d,c`,
-      [
-        candidate.communityId,
-        points[0].lng,
-        points[0].lat,
-        points[1].lng,
-        points[1].lat,
-      ]
+    const result = await queryVerifiedBoundary(
+      manager,
+      candidate.communityId,
+      points[0],
+      points[1],
+      true
     );
     if (
       !result ||
