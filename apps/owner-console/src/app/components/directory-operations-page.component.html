@@ -1,0 +1,313 @@
+<section class="operations-page" aria-labelledby="operations-title">
+  <a class="back-link" routerLink="/dashboard">
+    <otui-icon name="arrow-back" [size]="18" stroke="currentColor"></otui-icon>
+    Dashboard
+  </a>
+
+  <header class="page-header">
+    <p class="page-kicker">Directory</p>
+    <h2 id="operations-title">Operations</h2>
+    <p>
+      Health of the directory and the switches that pause its background work.
+      Withdrawals cannot be paused: a withdrawal always runs to completion.
+    </p>
+    <div class="header-actions">
+      <otui-button
+        tone="neutral"
+        emphasis="soft"
+        aria-label="Refresh operations"
+        (click)="refresh()"
+      >
+        Refresh
+      </otui-button>
+      @if (metrics) {
+      <span class="generated">Generated {{ metrics.generatedAt }}</span>
+      }
+    </div>
+  </header>
+
+  @if (message) {
+  <p class="page-message" role="status">{{ message }}</p>
+  } @if (failed) {
+  <p class="page-error" role="alert">
+    Operations data could not be loaded. Try refreshing.
+  </p>
+  } @if (loading && !metrics) {
+  <otui-loading-state headline="Loading operations…"></otui-loading-state>
+  }
+
+  <section class="controls" aria-labelledby="controls-title">
+    <h3 id="controls-title">Operating controls</h3>
+    <div class="control-list">
+      @for (control of controls; track control.key) {
+      <otui-card class="control-card" tone="neutral" emphasis="soft">
+        <div class="control-header">
+          <h4>{{ label(control.key) }}</h4>
+          <otui-badge [tone]="control.paused ? 'warning' : 'success'">
+            {{ control.paused ? 'Paused' : 'Running' }}
+          </otui-badge>
+        </div>
+        <dl class="facts">
+          <div>
+            <dt>Reason</dt>
+            <dd>{{ control.reason || '–' }}</dd>
+          </div>
+          <div>
+            <dt>Last updated</dt>
+            <dd>{{ when(control.updatedAt) }}</dd>
+          </div>
+        </dl>
+        @if (control.paused) {
+        <otui-button
+          size="sm"
+          tone="brand"
+          emphasis="solid"
+          [disabled]="busy !== null"
+          [attr.aria-label]="'Resume ' + label(control.key)"
+          (click)="resume(control)"
+        >
+          Resume
+        </otui-button>
+        } @else {
+        <div class="pause-form">
+          <label [for]="'reason-' + control.key"
+            >Reason for pausing {{ label(control.key) }}</label
+          >
+          <textarea
+            [id]="'reason-' + control.key"
+            rows="2"
+            maxlength="500"
+            [attr.aria-invalid]="reasonErrors[control.key] ? 'true' : null"
+            [(ngModel)]="reasons[control.key]"
+            [name]="'reason-' + control.key"
+          ></textarea>
+          <otui-button
+            size="sm"
+            tone="neutral"
+            emphasis="soft"
+            [disabled]="busy !== null"
+            [attr.aria-label]="'Pause ' + label(control.key)"
+            (click)="pause(control)"
+          >
+            Pause
+          </otui-button>
+        </div>
+        }
+      </otui-card>
+      }
+    </div>
+  </section>
+
+  @if (metrics) {
+  <div class="metric-grid">
+    <otui-card class="metric-card" tone="neutral" emphasis="soft">
+      <section aria-labelledby="m-infrastructure">
+        <h3 id="m-infrastructure">Infrastructure</h3>
+        @if (metrics.infrastructure; as s) {
+        <dl class="facts">
+          <div>
+            <dt>Database</dt>
+            <dd>{{ s.database }}</dd>
+          </div>
+          <div>
+            <dt>PostGIS</dt>
+            <dd>{{ s.postgis ? 'Yes' : 'No' }}</dd>
+          </div>
+          <div>
+            <dt>Migrations applied</dt>
+            <dd>{{ s.migrationsApplied }}</dd>
+          </div>
+          <div>
+            <dt>Latest migration</dt>
+            <dd>{{ s.latestMigration ?? '–' }}</dd>
+          </div>
+          <div>
+            <dt>Export storage</dt>
+            <dd>{{ s.exportStorage }}</dd>
+          </div>
+        </dl>
+        } @else {
+        <p class="unavailable">Unavailable</p>
+        }
+      </section>
+    </otui-card>
+
+    <otui-card class="metric-card" tone="neutral" emphasis="soft">
+      <section aria-labelledby="m-towns">
+        <h3 id="m-towns">Towns</h3>
+        @if (metrics.towns; as s) {
+        <dl class="facts">
+          <div>
+            <dt>Total</dt>
+            <dd>{{ s.total }}</dd>
+          </div>
+          <div>
+            <dt>Onboarded</dt>
+            <dd>{{ s.onboarded }}</dd>
+          </div>
+          @for (entry of statuses(s.byStatus); track entry[0]) {
+          <div>
+            <dt>{{ entry[0] }}</dt>
+            <dd>{{ entry[1] }}</dd>
+          </div>
+          }
+        </dl>
+        } @else {
+        <p class="unavailable">Unavailable</p>
+        }
+      </section>
+    </otui-card>
+
+    <otui-card class="metric-card" tone="neutral" emphasis="soft">
+      <section aria-labelledby="m-coverage">
+        <h3 id="m-coverage">Coverage</h3>
+        @if (metrics.coverage; as s) {
+        <dl class="facts">
+          <div>
+            <dt>Towns with listings</dt>
+            <dd>{{ s.townsWithListings }}</dd>
+          </div>
+          <div>
+            <dt>Published listings</dt>
+            <dd>{{ s.publishedListings }}</dd>
+          </div>
+        </dl>
+        } @else {
+        <p class="unavailable">Unavailable</p>
+        }
+      </section>
+    </otui-card>
+
+    <otui-card class="metric-card" tone="neutral" emphasis="soft">
+      <section aria-labelledby="m-freshness">
+        <h3 id="m-freshness">Freshness</h3>
+        @if (metrics.freshness; as s) {
+        <dl class="facts">
+          <div>
+            <dt>Refresh due</dt>
+            <dd>{{ s.refreshDueListings }}</dd>
+          </div>
+          <div>
+            <dt>Stale</dt>
+            <dd>{{ s.staleListings }}</dd>
+          </div>
+          <div>
+            <dt>Oldest listing (days)</dt>
+            <dd>{{ s.oldestListingAgeDays ?? '–' }}</dd>
+          </div>
+        </dl>
+        } @else {
+        <p class="unavailable">Unavailable</p>
+        }
+      </section>
+    </otui-card>
+
+    <otui-card class="metric-card" tone="neutral" emphasis="soft">
+      <section aria-labelledby="m-policy">
+        <h3 id="m-policy">Policy</h3>
+        @if (metrics.policy; as s) {
+        <dl class="facts">
+          <div>
+            <dt>Active policies</dt>
+            <dd>{{ s.activePolicies }}</dd>
+          </div>
+          <div>
+            <dt>Revoked policies</dt>
+            <dd>{{ s.revokedPolicies }}</dd>
+          </div>
+          <div>
+            <dt>Publication</dt>
+            <dd>{{ s.publicationPaused ? 'Paused' : 'Running' }}</dd>
+          </div>
+          <div>
+            <dt>Open rights cases</dt>
+            <dd>{{ s.openRightsCases }}</dd>
+          </div>
+          <div>
+            <dt>Open taxonomy cases</dt>
+            <dd>{{ s.openTaxonomyCases }}</dd>
+          </div>
+        </dl>
+        } @else {
+        <p class="unavailable">Unavailable</p>
+        }
+      </section>
+    </otui-card>
+
+    <otui-card class="metric-card" tone="neutral" emphasis="soft">
+      <section aria-labelledby="m-spend">
+        <h3 id="m-spend">Spend</h3>
+        @if (metrics.spend; as s) {
+        <dl class="facts">
+          <div>
+            <dt>Period</dt>
+            <dd>{{ s.period }}</dd>
+          </div>
+          <div>
+            <dt>Reserved</dt>
+            <dd>{{ money(s.reservedCents) }}</dd>
+          </div>
+          <div>
+            <dt>Limit</dt>
+            <dd>{{ money(s.limitCents) }}</dd>
+          </div>
+        </dl>
+        <p class="spend-summary">
+          {{ money(s.reservedCents) }} of {{ money(s.limitCents) }} reserved
+        </p>
+        @if (s.exhausted) {
+        <p class="spend-alert" role="alert">
+          The spend limit is used up. Provider acquisition cannot reserve more
+          this period.
+        </p>
+        } @else if (s.alert) {
+        <p class="spend-alert" role="alert">
+          Spend has passed the alert level of {{ money(s.alertCents) }}.
+        </p>
+        } } @else {
+        <p class="unavailable">Unavailable</p>
+        }
+      </section>
+    </otui-card>
+
+    <otui-card class="metric-card" tone="neutral" emphasis="soft">
+      <section aria-labelledby="m-queues">
+        <h3 id="m-queues">Queues</h3>
+        @if (metrics.queues; as q) { @for (name of queueNames; track name) {
+        <h4 class="queue-name">{{ name }}</h4>
+        <dl class="facts">
+          <div>
+            <dt>Queued</dt>
+            <dd>{{ q[name].queued }}</dd>
+          </div>
+          <div>
+            <dt>Running</dt>
+            <dd>{{ q[name].running }}</dd>
+          </div>
+          <div>
+            <dt>Failed (24h)</dt>
+            <dd>{{ q[name].failedLast24h }}</dd>
+          </div>
+          <div>
+            <dt>Oldest queued (s)</dt>
+            <dd>{{ q[name].oldestQueuedSeconds ?? '–' }}</dd>
+          </div>
+        </dl>
+        } } @else {
+        <p class="unavailable">Unavailable</p>
+        }
+      </section>
+    </otui-card>
+  </div>
+
+  @if (metrics.errors.length) {
+  <section class="metric-errors" aria-labelledby="m-errors">
+    <h3 id="m-errors">Sections that failed to collect</h3>
+    <ul>
+      @for (e of metrics.errors; track e) {
+      <li>{{ e }}</li>
+      }
+    </ul>
+  </section>
+  } }
+</section>

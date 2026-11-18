@@ -95,6 +95,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'directory-operations',
+        loadComponent: () =>
+          import('./components/directory-operations-page.component').then(
+            (m) => m.DirectoryOperationsPageComponent
+          ),
+      },
+      {
         path: 'directory-taxonomy',
         loadComponent: () =>
           import('./components/directory-taxonomy-cases-page.component').then(
