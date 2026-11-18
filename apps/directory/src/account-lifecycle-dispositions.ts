@@ -976,6 +976,20 @@ const inventory: DirectoryLifecycleInventory = {
       'source-data'
     ),
     none(
+      'directory_provider_status',
+      'DirectoryProviderStatus',
+      ['provider', 'status', 'detail', 'checkedAt'],
+      'Last-known status of an optional provider capability; no listing, account or profile data.',
+      'operational'
+    ),
+    none(
+      'directory_geoapify_enrichment',
+      'DirectoryGeoapifyEnrichment',
+      ['scanId', 'sourceFileRowNumber', 'details', 'fetchedAt', 'expiresAt'],
+      'Private provider-derived opening hours and contact for a staged listing; never public, deleted by the retention scheduler, no account or profile identifier.',
+      'source-data'
+    ),
+    none(
       'directory_business',
       'DirectoryBusiness',
       [

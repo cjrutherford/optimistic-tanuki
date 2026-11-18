@@ -10,6 +10,16 @@ import {
 import type { OvertureInventory } from '../../directory/src/overture-stage-core';
 import type { OvertureRightsPolicy } from '../../directory/src/overture-rights';
 import { SpatialSession } from './geometry-sweep';
+import {
+  AtpRightsPolicy,
+  selectAtpPolicy,
+} from '../../directory/src/alltheplaces';
+import { runAtpAcquisitionSweep } from '../../directory/src/alltheplaces-acquisition';
+import {
+  runGeoapifySweep,
+  selectGeoapifyPolicy,
+} from '../../directory/src/geoapify-enrichment';
+import { createAtpSnapshotProvider } from './alltheplaces-snapshot';
 
 /** The release the owner pinned (D1). Acquisition is for this release only. */
 export const PINNED_OVERTURE_RELEASE = '2026-10-21.0';
@@ -137,6 +147,94 @@ export function createAcquisitionSweepRunner(
     } finally {
       spatial.close();
     }
+  };
+}
+
+/** The standalone AllThePlaces policy entry (pinned archive), or null when none is approved. */
+export function loadAtpPolicy(
+  rightsPolicyFile: string,
+  read: (file: string) => string = (f) => readFileSync(f, 'utf8')
+): AtpRightsPolicy | null {
+  try {
+    return rightsPolicyFile
+      ? selectAtpPolicy(JSON.parse(read(rightsPolicyFile)))
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function createAtpSweepRunner(
+  config: AcquisitionSweepConfig,
+  db: () => DataSource,
+  cacheDir: string,
+  log: (message: string) => void = (m) => console.error(m)
+): (signal?: AbortSignal) => Promise<AutoSweepOutcome> {
+  return async (signal) => {
+    const policy = loadAtpPolicy(config.rightsPolicyFile);
+    if (!policy) throw Error('AllThePlaces policy unavailable');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { extractPrivate } =
+      require('../../../scripts/overture-private-extractor.mjs') as {
+        extractPrivate: Extractor;
+      };
+    const spatial = new SpatialSession();
+    try {
+      return await runAtpAcquisitionSweep({
+        db: db(),
+        policy,
+        config,
+        signal,
+        log,
+        ensureSnapshot: createAtpSnapshotProvider({
+          policy,
+          cacheDir,
+          log,
+          connection: () => spatial.connection() as never,
+        }),
+        extract: async (request) =>
+          extractPrivate({
+            connection: await spatial.connection(),
+            sourceMode: 'local',
+            ...request,
+          }),
+      });
+    } finally {
+      spatial.close();
+    }
+  };
+}
+
+export function createGeoapifySweepRunner(
+  config: AcquisitionSweepConfig,
+  db: () => DataSource,
+  env: NodeJS.ProcessEnv,
+  log: (message: string) => void = (m) => console.error(m)
+): (signal?: AbortSignal) => Promise<AutoSweepOutcome> {
+  return async (signal) => {
+    let policy = null;
+    try {
+      policy = selectGeoapifyPolicy(
+        JSON.parse(readFileSync(config.rightsPolicyFile, 'utf8'))
+      );
+    } catch {
+      /* no policy: the sweep records it */
+    }
+    const cost = Number(env['DIRECTORY_GEOAPIFY_COST_CENTS'] || 1);
+    const batch = Number(env['DIRECTORY_GEOAPIFY_BATCH'] || 20);
+    if (!Number.isSafeInteger(cost) || cost < 1 || cost > 100)
+      throw Error('Invalid DIRECTORY_GEOAPIFY_COST_CENTS');
+    if (!Number.isSafeInteger(batch) || batch < 1 || batch > 200)
+      throw Error('Invalid DIRECTORY_GEOAPIFY_BATCH');
+    return runGeoapifySweep({
+      db: db(),
+      apiKey: env['GEOAPIFY_API_KEY'],
+      policy,
+      costCents: cost,
+      batch,
+      signal,
+      log,
+    });
   };
 }
 

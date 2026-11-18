@@ -700,6 +700,21 @@ export interface AcquisitionBudgetPanel {
   hardStop: boolean;
   /** Real acquisition is not authorised; no worker acquires automatically. */
   acquisitionAuthorized: boolean;
+  /** Per-provider authorisation: acquisition providers, and private-enrichment-only providers (never public). */
+  providers?: Array<{
+    provider: string;
+    acquisition: boolean;
+    privateEnrichment: boolean;
+    publicDisplayAndExport: boolean;
+    scope: 'acquisition' | 'private-enrichment-only';
+  }>;
+  /** Last recorded state of providers that report one (Geoapify: not_configured, ok, paused, ...). */
+  providerStatus?: Array<{
+    provider: string;
+    status: string;
+    detail: string;
+    checkedAt: string;
+  }>;
 }
 export interface AcquisitionRunActionRequest {
   decisionId: string;

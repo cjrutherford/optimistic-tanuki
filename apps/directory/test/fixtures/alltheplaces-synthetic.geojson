@@ -1,0 +1,48 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "ref": "1001",
+        "name": "Synthetic Diner",
+        "amenity": "restaurant",
+        "addr:full": "1 Example St"
+      },
+      "geometry": { "type": "Point", "coordinates": [-87.5, 31.5] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ref": "1002",
+        "brand": "Synthetic Hardware",
+        "shop": "hardware"
+      },
+      "geometry": { "type": "Point", "coordinates": [-87.6, 31.6] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ref": "1003",
+        "name": "Synthetic Clinic",
+        "amenity": "clinic"
+      },
+      "geometry": { "type": "Point", "coordinates": [-87.5, 31.5] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "ref": "1004",
+        "name": "Synthetic Line",
+        "amenity": "restaurant"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [0, 0],
+          [1, 1]
+        ]
+      }
+    }
+  ]
+}

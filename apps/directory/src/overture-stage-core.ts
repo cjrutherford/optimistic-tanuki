@@ -6,7 +6,10 @@ import {
   sign,
 } from 'node:crypto';
 import type { DataSource } from 'typeorm';
-import { authorizeAnonymousOvertureAttempt } from './provider-budget';
+import {
+  authorizeAnonymousAllThePlacesAttempt,
+  authorizeAnonymousOvertureAttempt,
+} from './provider-budget';
 import { projectLocalEvaluation } from './overture-local-evaluation';
 import type { OvertureRightsPolicy } from './overture-rights';
 
@@ -61,8 +64,14 @@ export function anonymousAttemptReserver(
     item: Pick<InventoryItem, 'asset' | 'etag'>;
     signer: StageSigner;
     automatic?: boolean;
+    /** The anonymous-read ledger entry point; Overture unless the standalone AllThePlaces archive is being read. */
+    provider?: 'overture' | 'alltheplaces';
   }
 ) {
+  const authorize =
+    input.provider === 'alltheplaces'
+      ? authorizeAnonymousAllThePlacesAttempt
+      : authorizeAnonymousOvertureAttempt;
   return (attempt: Parameters<typeof authorizeAnonymousOvertureAttempt>[3]) => {
     const now = Date.now(),
       claims = {
@@ -82,7 +91,7 @@ export function anonymousAttemptReserver(
         Buffer.from(payload),
         input.signer.privateKey
       ).toString('base64url');
-    return authorizeAnonymousOvertureAttempt(
+    return authorize(
       budget,
       input.signer.publicKey,
       { payload, signature },

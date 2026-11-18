@@ -532,7 +532,21 @@ test(
       assert.equal(p.ceilingCents, 2500);
       assert.equal(p.reservedCents, 0);
       assert.equal(p.hardStop, false);
-      assert.equal(p.acquisitionAuthorized, true); // Overture only (D1)
+      assert.equal(p.acquisitionAuthorized, true); // Overture and AllThePlaces (D1, D3)
+      assert.deepEqual(
+        p.providers.map((r) => [
+          r.provider,
+          r.acquisition,
+          r.privateEnrichment,
+          r.publicDisplayAndExport,
+        ]),
+        [
+          ['alltheplaces', true, false, false],
+          ['overture', true, false, false],
+          ['geoapify', false, true, false],
+        ]
+      );
+      assert.ok(Array.isArray(p.providerStatus));
       const period = p.period;
       const add = (cents) =>
         ds.query(

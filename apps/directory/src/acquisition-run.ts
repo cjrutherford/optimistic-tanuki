@@ -13,7 +13,10 @@ import type {
   AcquisitionRunSummary,
 } from '../../../libs/social/contracts/src/lib/directory';
 import { MONTHLY_LIMIT_CENTS } from './provider-budget';
-import { anyAcquisitionAuthorized } from './acquisition-authorization';
+import {
+  anyAcquisitionAuthorized,
+  providerAuthorizationTable,
+} from './acquisition-authorization';
 import { isPaused, ProviderPausedError } from './operating-controls';
 import {
   IDEMPOTENCY_CONFLICT,
@@ -702,6 +705,17 @@ export async function acquisitionBudgetPanel(
     anonymousAttempts: anon,
     hardStop: reserved >= MONTHLY_LIMIT_CENTS,
     acquisitionAuthorized: anyAcquisitionAuthorized(),
+    providers: providerAuthorizationTable(),
+    providerStatus: (
+      await db.query(
+        `SELECT provider,status,detail,"checkedAt" FROM directory_provider_status ORDER BY provider`
+      )
+    ).map((r: any) => ({
+      provider: String(r.provider),
+      status: String(r.status),
+      detail: String(r.detail ?? ''),
+      checkedAt: new Date(r.checkedAt).toISOString(),
+    })),
   };
 }
 

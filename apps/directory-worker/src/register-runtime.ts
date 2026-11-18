@@ -27,6 +27,8 @@ import {
   AcquisitionSweepStatus,
   acquisitionSweepConfig,
   createAcquisitionSweepRunner,
+  createAtpSweepRunner,
+  createGeoapifySweepRunner,
   runAcquisitionSweepLoop,
 } from './acquisition-sweep';
 import { retryUntilReady } from './startup-retry';
@@ -220,6 +222,10 @@ export async function runRegisterWorker(
     geometryStatus = new GeometrySweepStatus(config.geometrySweep !== null),
     acquisitionStatus = new AcquisitionSweepStatus(
       config.acquisitionSweep !== null
+    ),
+    atpStatus = new AcquisitionSweepStatus(config.acquisitionSweep !== null),
+    geoapifyStatus = new AcquisitionSweepStatus(
+      config.acquisitionSweep !== null
     );
   const stop = () => controller.abort();
   process.once('SIGTERM', stop);
@@ -320,7 +326,33 @@ export async function runRegisterWorker(
           status: acquisitionStatus,
         })
       : (console.error('acquisition sweep disabled'), Promise.resolve());
+    const atpLoop = config.acquisitionSweep
+      ? runAcquisitionSweepLoop({
+          signal: controller.signal,
+          intervalMs: config.acquisitionSweep.intervalMs,
+          run: createAtpSweepRunner(
+            config.acquisitionSweep,
+            () => db,
+            process.env['DIRECTORY_ATP_CACHE_DIR'] || '/tmp/directory-atp'
+          ),
+          status: atpStatus,
+        })
+      : Promise.resolve();
+    const geoapifyLoop = config.acquisitionSweep
+      ? runAcquisitionSweepLoop({
+          signal: controller.signal,
+          intervalMs: Math.max(config.acquisitionSweep.intervalMs, 300_000),
+          run: createGeoapifySweepRunner(
+            config.acquisitionSweep,
+            () => db,
+            process.env
+          ),
+          status: geoapifyStatus,
+        })
+      : Promise.resolve();
     await Promise.all([
+      atpLoop,
+      geoapifyLoop,
       bindingLoop,
       geometryLoop,
       acquisitionLoop,

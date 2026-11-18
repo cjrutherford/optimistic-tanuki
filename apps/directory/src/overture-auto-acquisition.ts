@@ -97,7 +97,7 @@ export interface AutoSweepOutcome {
   blocked: number;
   recordedPending: number;
 }
-const emptyOutcome = (
+export const emptyOutcome = (
   status: AutoSweepOutcome['status']
 ): AutoSweepOutcome => ({
   status,
@@ -156,13 +156,13 @@ export class AutoStageStopped extends Error {
   }
 }
 
-const TOWN_SQL = `SELECT t."communityId" AS id, t.name,
+export const TOWN_SQL = `SELECT t."communityId" AS id, t.name,
     ST_XMin(g.boundary) AS xmin, ST_YMin(g.boundary) AS ymin, ST_XMax(g.boundary) AS xmax, ST_YMax(g.boundary) AS ymax,
     ST_AsGeoJSON(ST_CollectionExtract(g.boundary,3)) AS geojson
   FROM directory_town t
   JOIN directory_town_geometry g ON g."communityId"=t."communityId" AND g.version=t."geometryVersion"`;
 
-function toTown(row: any): AutoTown | null {
+export function toTown(row: any): AutoTown | null {
   try {
     const geometry = JSON.parse(row.geojson);
     const bounds = [row.xmin, row.ymin, row.xmax, row.ymax].map(
@@ -185,7 +185,9 @@ const ACQUIRED = `EXISTS (SELECT 1 FROM directory_town_scan_target s
     JOIN directory_overture_private_membership m ON m."scanId"=s."scanId"
     JOIN directory_overture_private_policy p ON p."policyId"=m."policyId" AND p.revoked=false
     WHERE s."communityId"=t."communityId"
-      AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=s."scanId"))`;
+      AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=s."scanId")
+      AND NOT EXISTS (SELECT 1 FROM directory_acquisition_run_job j JOIN directory_acquisition_run q ON q.id=j."runId"
+        WHERE j."scanId"=s."scanId" AND q.provider='alltheplaces'))`;
 const AUTO_RUN_OF_TOWN = `r.kind='overture-stage' AND r.provider='overture' AND r.release=$1
     AND r.reason LIKE '${AUTO_RUN_REASON_PREFIX}%' AND r."townIds" @> to_jsonb(t."communityId"::text)`;
 
@@ -267,6 +269,42 @@ export async function closeStaleAutoRuns(
   return stale.length;
 }
 
+/**
+ * The private sink, with each committed batch reported to the run ledger (and a stop request honoured between
+ * batches). Shared by the Overture and the standalone AllThePlaces stages.
+ */
+export function trackedSink(
+  db: DataSource,
+  runId: string,
+  unitKey: string,
+  counts: { observed: number; accepted: number; rejected: number }
+): OverturePrivateSink {
+  return new Proxy(new OverturePrivateSink(db), {
+    get(target: any, name) {
+      const value = target[name];
+      if (typeof value !== 'function') return value;
+      if (name !== 'commit') return value.bind(target);
+      return async (rows: any[], checkpoint: any) => {
+        const out = await target.commit(rows, checkpoint);
+        counts.observed += rows.length;
+        for (const r of rows)
+          counts[r.outcome?.status === 'eligible' ? 'accepted' : 'rejected']++;
+        const stop = (
+          await progress(db, runId, unitKey, {
+            checkpoint: {
+              scanId: checkpoint?.scanId ?? null,
+              sourceFileRowNumber: checkpoint?.sourceFileRowNumber ?? null,
+            },
+            ...counts,
+          })
+        ).stop;
+        if (stop) throw new AutoStageStopped();
+        return out;
+      };
+    },
+  }) as OverturePrivateSink;
+}
+
 type RunState = {
   runId: string;
   counts: { observed: number; accepted: number; rejected: number };
@@ -284,30 +322,7 @@ async function runAsset(
   const log = deps.log ?? (() => undefined);
   await beginJob(db, state.runId, { unitKey: item.id, townId: town.id });
   const counts = { observed: 0, accepted: 0, rejected: 0 };
-  const sink = new Proxy(new OverturePrivateSink(db), {
-    get(target: any, name) {
-      const value = target[name];
-      if (typeof value !== 'function') return value;
-      if (name !== 'commit') return value.bind(target);
-      return async (rows: any[], checkpoint: any) => {
-        const out = await target.commit(rows, checkpoint);
-        counts.observed += rows.length;
-        for (const r of rows)
-          counts[r.outcome?.status === 'eligible' ? 'accepted' : 'rejected']++;
-        const stop = (
-          await progress(db, state.runId, item.id, {
-            checkpoint: {
-              scanId: checkpoint?.scanId ?? null,
-              sourceFileRowNumber: checkpoint?.sourceFileRowNumber ?? null,
-            },
-            ...counts,
-          })
-        ).stop;
-        if (stop) throw new AutoStageStopped();
-        return out;
-      };
-    },
-  });
+  const sink = trackedSink(db, state.runId, item.id, counts);
   const timer = setInterval(() => {
     heartbeat(db, state.runId).catch(() => undefined);
   }, deps.heartbeatMs ?? 30_000);
@@ -497,7 +512,7 @@ async function resumeRequested(
   }
 }
 
-function tally(out: AutoSweepOutcome, status: string): void {
+export function tally(out: AutoSweepOutcome, status: string): void {
   out.examined++;
   if (status === 'succeeded') out.succeeded++;
   else if (status === 'succeeded_empty') out.empty++;
