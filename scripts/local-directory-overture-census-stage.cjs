@@ -6,14 +6,13 @@ const {
   OverturePrivateSink,
 } = require('../apps/directory/src/overture-private-sink');
 const {
-  projectLocalEvaluation,
-} = require('../apps/directory/src/overture-local-evaluation');
-const {
   OVERTURE_RIGHTS_FIELDS_LEGACY_V1,
 } = require('../apps/directory/src/overture-rights');
 const {
-  authorizeAnonymousOvertureAttempt,
-} = require('../apps/directory/src/provider-budget');
+  anonymousAttemptReserver,
+  newStageSigner,
+  projectStagedRow,
+} = require('../apps/directory/src/overture-stage-core');
 const {
   StageStopped,
   ledgerSink,
@@ -153,8 +152,7 @@ async function main() {
     connection = await duck.connect();
     await connection.run('LOAD spatial');
     await connection.run('LOAD httpfs');
-    const keys = crypto.generateKeyPairSync('ed25519'),
-      subject = crypto.randomUUID(),
+    const signer = newStageSigner(),
       tokens = new Map(
         manifest.regions.map((r) => [r.id, r.assignmentChangeToken])
       );
@@ -171,52 +169,18 @@ async function main() {
       maxMemoryBytes: 2 * 1024 * 1024 * 1024,
       maxTransferBytes: 1024 * 1024 * 1024,
     };
-    const reserveAttempt = (attempt) => {
-      const now = Date.now(),
-        claims = {
-          version: 's4-private-source-v1',
-          policyId: approvalSha256,
-          subject,
-          assetSha256: digest(item.asset),
-          etag: item.etag,
-          methods: ['GET', 'HEAD'],
-          maxCostCents: 1,
-          issuedAt: now - 1000,
-          expiresAt: now + 600000,
-        },
-        payload = Buffer.from(JSON.stringify(claims)).toString('base64url'),
-        signature = crypto
-          .sign(null, Buffer.from(payload), keys.privateKey)
-          .toString('base64url');
-      return authorizeAnonymousOvertureAttempt(
-        budget,
-        keys.publicKey,
-        { payload, signature },
-        attempt
-      );
-    };
-    const project = async ({ source, regionId }) => {
-      try {
-        const geometry =
-            typeof source.geometry === 'string'
-              ? JSON.parse(source.geometry)
-              : source.geometry,
-          outcome = projectLocalEvaluation(
-            {
-              ...source,
-              geometry,
-              releaseId: inventory.release,
-              assignedCategoryIds: ['local'],
-            },
-            rights
-          );
-        if (outcome.status === 'eligible')
-          outcome.listing.assignmentChangeToken = tokens.get(regionId);
-        return outcome;
-      } catch {
-        return { status: 'quarantined' };
-      }
-    };
+    const reserveAttempt = anonymousAttemptReserver(budget, {
+      approvalSha256,
+      item,
+      signer,
+    });
+    const project = async ({ source, regionId }) =>
+      projectStagedRow({
+        source,
+        releaseId: inventory.release,
+        rights,
+        assignmentChangeToken: tokens.get(regionId),
+      });
     const start = Date.now(),
       heartbeat = setInterval(() => {
         console.log(

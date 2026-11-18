@@ -30,10 +30,10 @@ async function sourceEvidence(proxy, item, inventory) {
   const parsed = captured.lastModified
     ? Date.parse(captured.lastModified)
     : NaN;
-  const self = digest(await readFile(fileURLToPath(import.meta.url))).slice(
-    0,
-    12
-  );
+  // Bundled into the directory worker, import.meta.url is not a readable file; the recorder then says so.
+  const self = await readFile(fileURLToPath(import.meta.url))
+    .then((bytes) => digest(bytes).slice(0, 12))
+    .catch(() => 'bundled');
   return {
     kind: 'captured',
     releaseId: release,

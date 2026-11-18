@@ -22,6 +22,13 @@ import {
   geometrySweepConfig,
   runGeometrySweepLoop,
 } from './geometry-sweep';
+import {
+  AcquisitionSweepConfig,
+  AcquisitionSweepStatus,
+  acquisitionSweepConfig,
+  createAcquisitionSweepRunner,
+  runAcquisitionSweepLoop,
+} from './acquisition-sweep';
 import { retryUntilReady } from './startup-retry';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -49,6 +56,7 @@ export type RegisterWorkerConfig = {
   sweepIntervalMs: number;
   bindingSweep: BindingSweepConfig | null;
   geometrySweep: GeometrySweepConfig | null;
+  acquisitionSweep: AcquisitionSweepConfig | null;
   startupTimeoutMs: number;
 };
 export function registerWorkerConfig(
@@ -127,6 +135,7 @@ export function registerWorkerConfig(
   return {
     bindingSweep: bindingSweepConfig(env),
     geometrySweep: geometrySweepConfig(env),
+    acquisitionSweep: acquisitionSweepConfig(env),
     startupTimeoutMs,
     databaseUrl: need('DIRECTORY_DATABASE_URL'),
     host: need('SOCIAL_HOST'),
@@ -208,7 +217,10 @@ export async function runRegisterWorker(
   const controller = new AbortController(),
     health = new RegisterWorkerHealth(120000),
     sweepStatus = new BindingSweepStatus(config.bindingSweep !== null),
-    geometryStatus = new GeometrySweepStatus(config.geometrySweep !== null);
+    geometryStatus = new GeometrySweepStatus(config.geometrySweep !== null),
+    acquisitionStatus = new AcquisitionSweepStatus(
+      config.acquisitionSweep !== null
+    );
   const stop = () => controller.abort();
   process.once('SIGTERM', stop);
   process.once('SIGINT', stop);
@@ -300,9 +312,18 @@ export async function runRegisterWorker(
           status: geometryStatus,
         })
       : (console.error('geometry sweep disabled'), Promise.resolve());
+    const acquisitionLoop = config.acquisitionSweep
+      ? runAcquisitionSweepLoop({
+          signal: controller.signal,
+          intervalMs: config.acquisitionSweep.intervalMs,
+          run: createAcquisitionSweepRunner(config.acquisitionSweep, () => db),
+          status: acquisitionStatus,
+        })
+      : (console.error('acquisition sweep disabled'), Promise.resolve());
     await Promise.all([
       bindingLoop,
       geometryLoop,
+      acquisitionLoop,
       runRegisterLoop({
         signal: controller.signal,
         retryMs: 5000,
