@@ -11,7 +11,7 @@ No claim is made of "all businesses" or "complete coverage".
 | Gate                                                       | Status           | Why                                                                                                            |
 | ---------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------- |
 | Local integrated acceptance (S0–S9 local scope)            | ready for review | Items 1, 3 (partly), 4 and 6 are live-proven; S7 and S8 are closed; S9 is locally complete.                    |
-| First public release (S4a.3)                               | blocked          | Needs reviewer approval of cohorts, fields, notices, geography and ceiling; a canary; resumed publication.     |
+| First public release (S4a.3)                               | met (local)      | Owner approved D9 (2026-11-18): public listings on in every town that has them. Production is a separate gate. |
 | Complete integration (every source capability, production) | blocked          | 20 open/blocking and 15 deferred ledger rows; production deployment items from S9; acquisition not authorized. |
 
 ## Required live-stack evidence (plan S10 items 1–7)
@@ -73,7 +73,8 @@ The temporary test settings have been reverted: authentication auto-verify, the 
 | Pilot-row provenance (4,850 rows)                                                 | owner / operator    | [S7 handoff](HANDOFF-2026-11-17-S7.md)                      | local      | blocked               |
 | Shared-UI regression on a full stack                                              | agent               | [s10-7](s10-evidence/s10-7-regression-report.md)            | local      | ready for review      |
 | Production deployment (credentials, ACL, TLS, off-host backups, alerting, drills) | owner               | [S9 runbook gaps](S9-operations-runbook.md)                 | production | blocked               |
-| First public release (S4a.3) approval and canary                                  | designated reviewer | plan §1 approval boundaries                                 | production | blocked               |
+| First public release (S4a.3) approval and canary                                  | owner               | [s10-d9](s10-evidence/s10-d9-publication.json)              | local      | approved (2026-11-18) |
+| First public release (S4a.3), production                                          | designated reviewer | plan §1 approval boundaries                                 | production | blocked               |
 
 ## Live mutations and their reversal
 
@@ -93,5 +94,5 @@ Decided on 2026-11-18: acquisition, geometry, AllThePlaces, Geoapify, the remain
 1. Accept the local integrated scope as evidenced, or name what is missing.
 2. Settle the three unknown rows (normalize stage, dedupe uncertainty, OpenAPI regeneration).
 3. Confirm Geoapify's 30-day retention placeholder, and provide a key and budget ceiling if Geoapify should run.
-4. The address auto-approval decisions, pilot-row provenance, and resuming publication or a canary.
+4. The address auto-approval decisions. Pilot-row provenance and local publication are decided (D12, D9).
 5. Whether the 90 towns with no TIGER match need the matching rule tuned (several, such as Rincon, GA and Greenbelt, MD, look like incorporated places).

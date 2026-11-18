@@ -194,4 +194,4 @@ No operator action was needed.
 - Metrics are pull-only, with no external alerting, so the cost alert and the withdrawal-latency alert appear only on the Operations page.
 - 0 towns are onboarded, because all geometry is pending.
 - All 1,688 listings lack freshness evidence.
-- No broad rollout has happened. Publication, in the S5 sense, remains paused.
+- Publication is on for the local stack (owner decision D9, 2026-11-18; [evidence](s10-evidence/s10-d9-publication.json)). There is no runtime switch for it: public surfaces serve while an active private policy exists, and the withdrawal path is policy revocation. Production release remains a separate gate.

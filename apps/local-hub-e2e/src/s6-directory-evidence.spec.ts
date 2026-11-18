@@ -5,8 +5,8 @@ import { join } from 'node:path';
 
 /**
  * S6 acceptance evidence against the live local stack (E2E_DOCKER=true, BASE_URL=http://127.0.0.1:8087).
- * Live towns: populated (valdosta-ga), blocked/town-ineligible (dev-review-0d056f5e) and a town Directory has never
- * scanned (alexandria-va, coverage unknown — what a newly created town shows). States the stack cannot produce on
+ * Live towns: populated (valdosta-ga), blocked/town-ineligible (dev-review-0d056f5e) and a new town (alexandria-va, coverage
+ * unknown is stubbed, as every live town has been scanned by automatic acquisition). States the stack cannot produce on
  * demand (acquiring, empty, partial, unconfigured, policy-withdrawn, failed infrastructure) are rendered by
  * intercepting only the public listings response; everything else on the page is live.
  */
@@ -148,6 +148,12 @@ for (const [vp, size] of Object.entries(viewports)) {
     });
 
     test('town Directory has never scanned (new town)', async ({ page }) => {
+      // Automatic acquisition now scans every eligible town, so no live town stays unscanned. Only the coverage
+      // fact is stubbed; the town and the rest of the page are live.
+      await stubListings(page, {
+        status: 200,
+        coverage: { state: 'unknown', withheldReviewedDetails: 0 },
+      });
       await page.goto(directory(NEVER_SCANNED));
       await expect(page.getByText('Coverage unknown')).toBeVisible();
       await axe(page);
