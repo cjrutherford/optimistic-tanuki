@@ -2,6 +2,7 @@ import {
   Column,
   Entity,
   PrimaryColumn,
+  PrimaryGeneratedColumn,
   OneToOne,
   JoinColumn,
   Check,
@@ -315,7 +316,7 @@ export class DirectoryOverturePrivateMembership {
   { unique: true }
 )
 export class DirectoryListingIdentity {
-  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column('uuid') communityId!: string;
   @Column({ type: 'varchar', length: 64 }) scanId!: string;
@@ -331,7 +332,7 @@ export class DirectoryListingIdentity {
 )
 @Index('IDX_directory_address_review_candidate_status', ['status'])
 export class DirectoryAddressReviewCandidate {
-  @PrimaryColumn('uuid', { default: () => 'gen_random_uuid()' }) id!: string;
+  @PrimaryGeneratedColumn('uuid') id!: string;
   @Column('uuid') communityId!: string;
   @Column({ type: 'varchar', length: 64 }) scanId!: string;
   @Column('bigint') sourceFileRowNumber!: string;
@@ -365,7 +366,7 @@ export class DirectoryAddressReviewCandidate {
   where: '"undoOf" IS NOT NULL',
 })
 export class DirectoryAddressReviewDecision {
-  @PrimaryColumn('uuid', { default: () => 'gen_random_uuid()' }) id!: string;
+  @PrimaryGeneratedColumn('uuid') id!: string;
   @Column('uuid') candidateId!: string;
   @Column({ type: 'varchar', length: 16 }) actorKind!: string;
   @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
@@ -417,7 +418,7 @@ export class DirectoryBusinessLinkActive {
 @Entity({ name: 'directory_business_link_event' })
 @Index('IDX_directory_business_link_event_request', ['requestId'])
 export class DirectoryBusinessLinkEvent {
-  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column('uuid') requestId!: string;
   @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
@@ -472,7 +473,7 @@ export class DirectoryBusinessLinkEvent {
   `"state" <> 'active' OR "verifiedUntil" IS NOT NULL`
 )
 export class DirectoryReviewedBinding {
-  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column('uuid') candidateId!: string;
   @Column({ type: 'uuid', nullable: true }) decisionId!: string | null;
@@ -533,7 +534,7 @@ export class DirectoryReviewedBinding {
   `"kind" IN ('published','confirmed','suspended','reconfirmed','retired')`
 )
 export class DirectoryReviewedBindingEvent {
-  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column('uuid') bindingId!: string;
   @Column({ type: 'varchar', length: 16 }) kind!: string;
@@ -625,7 +626,7 @@ export class DirectoryOvertureSourceKey {
   `"successorId" IS NULL OR "state" IN ('merged','split')`
 )
 export class DirectoryBusiness {
-  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column('uuid') communityId!: string;
   @Column({ type: 'varchar', length: 16, default: 'active' }) state!: string;
@@ -666,7 +667,7 @@ export class DirectoryBusiness {
   `"state" IN ('current','superseded','withdrawn')`
 )
 export class DirectoryBusinessAssertion {
-  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column('uuid') businessId!: string;
   @Column('uuid') communityId!: string;
@@ -701,7 +702,7 @@ export class DirectoryBusinessAssertion {
   `"kind" IN ('created','carried','corroborated','confirmed','unresolved','retired','merged','split','undone')`
 )
 export class DirectoryBusinessEvent {
-  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column('uuid') businessId!: string;
   @Column({ type: 'varchar', length: 16 }) kind!: string;
@@ -755,7 +756,7 @@ export class DirectoryBusinessCarryState {
   `"state" IN ('awaiting_confirmation','restored','closed')`
 )
 export class DirectoryBusinessLinkCarry {
-  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column('uuid') requestId!: string;
   @Column('uuid') businessId!: string;
@@ -925,7 +926,7 @@ export class DirectoryListingReport {
   `"status" IN ('review','excluded','resolved','withdrawn')`
 )
 export class DirectoryRightsCase {
-  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column({ type: 'varchar', length: 16 }) scope!: string;
   /** Natural key of the lineage, so a sync can run any number of times. */
@@ -1086,7 +1087,7 @@ export class DirectoryExportJob {
   `"outcome" IN ('served','not_ready','expired','withdrawn','integrity_failed')`
 )
 export class DirectoryExportDownload {
-  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column('uuid') jobId!: string;
   /** Downloading operator profile id; NULL once that profile's account has been erased. */
@@ -1139,7 +1140,7 @@ export class DirectoryTaxonomyMappingVersion {
   `("excluded" = true AND "categoryId" IS NULL AND "placeTypeId" IS NULL AND "exclusionReason" IS NOT NULL) OR ("excluded" = false AND "categoryId" IS NOT NULL AND "exclusionReason" IS NULL)`
 )
 export class DirectoryTaxonomyMappingRow {
-  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column({ type: 'varchar', length: 100 }) versionId!: string;
   @Column({ type: 'varchar', length: 16 }) kind!: string;
@@ -1199,7 +1200,7 @@ export class DirectoryListingClassification {
   }
 )
 export class DirectoryListingCategoryOverride {
-  @PrimaryColumn({ type: 'uuid', default: () => 'gen_random_uuid()' })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column('uuid') communityId!: string;
   @Column('uuid') listingKey!: string;
