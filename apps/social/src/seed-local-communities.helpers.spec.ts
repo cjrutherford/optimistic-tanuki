@@ -81,6 +81,18 @@ describe('changedSeedFields', () => {
     ).toEqual([]);
   });
 
+  it('ignores the rounding of a decimal(9,6) coordinate', () => {
+    expect(
+      changedSeedFields(
+        { lat: '32.744892', lng: '-81.360462' },
+        { lat: 32.74489185380347, lng: -81.36046207147486 }
+      )
+    ).toEqual([]);
+    expect(changedSeedFields({ lat: '32.744892' }, { lat: 32.7449 })).toEqual([
+      'lat',
+    ]);
+  });
+
   it('names the fields that really changed', () => {
     expect(
       changedSeedFields(existing, {
