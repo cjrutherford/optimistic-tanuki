@@ -74,6 +74,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'directory-duplicates/:communityId',
+        loadComponent: () =>
+          import('./components/directory-duplicate-review-page.component').then(
+            (m) => m.DirectoryDuplicateReviewPageComponent
+          ),
+      },
+      {
         path: 'directory-rights',
         loadComponent: () =>
           import('./components/directory-rights-page.component').then(

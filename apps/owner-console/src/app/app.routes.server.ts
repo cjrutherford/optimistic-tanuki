@@ -34,6 +34,10 @@ export const serverRoutes: ServerRoute[] = [
     path: 'dashboard/directory-listing-reports/:communityId',
     renderMode: RenderMode.Client,
   },
+  {
+    path: 'dashboard/directory-duplicates/:communityId',
+    renderMode: RenderMode.Client,
+  },
   // S7 operator pages need the browser session, so they never render on the server.
   ...[
     'dashboard/directory-rights',
