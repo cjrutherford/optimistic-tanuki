@@ -86,9 +86,29 @@ import {
   DUPLICATE_ACTIONS,
   DUPLICATE_CASE_INVALID,
   DUPLICATE_CASE_NOT_FOUND,
+  DUPLICATE_CASE_STALE,
+  type DuplicateListQuery,
   decideDuplicateCase,
+  getDuplicateCase,
   listDuplicateCases,
 } from './duplicate-review';
+import {
+  SAMPLE_INVALID,
+  SAMPLE_NOT_FOUND,
+  drawDuplicateSample,
+  getDuplicateSample,
+  judgeSampleItem,
+  listDuplicateSamples,
+} from './duplicate-sample';
+import {
+  type DecideBody,
+  type DuplicateRoute,
+  parseDecideBody,
+  parseDrawBody,
+  parseDuplicateRoute,
+  parseJudgeBody,
+  parseListQuery,
+} from './duplicate-routes';
 import {
   REPORT_ACTIONS,
   REPORT_BUSY,
@@ -1449,18 +1469,31 @@ export function pendingChecks(
     await authority(town);
     return result;
   }
-  async function duplicateList(town: string) {
+  async function duplicateList(town: string, query: DuplicateListQuery = {}) {
     if (!uuid.test(town) || !db.transaction)
       throw Error(DUPLICATE_CASE_INVALID);
     await authority(town);
-    const result = await listDuplicateCases(db, town);
+    const result = await listDuplicateCases(db, town, query);
+    await authority(town);
+    return result;
+  }
+  async function duplicateDetail(town: string, caseId: string) {
+    if (!uuid.test(town) || !db.transaction)
+      throw Error(DUPLICATE_CASE_INVALID);
+    await authority(town);
+    const result = await getDuplicateCase(db, town, caseId);
     await authority(town);
     return result;
   }
   async function duplicateDecide(
     town: string,
     caseId: string,
-    value: { action: string; reason: string; actorId: string }
+    value: {
+      action: string;
+      reason: string;
+      actorId: string;
+      expectedState?: string;
+    }
   ) {
     if (!uuid.test(town) || !db.transaction)
       throw Error(DUPLICATE_CASE_INVALID);
@@ -1471,8 +1504,38 @@ export function pendingChecks(
       action: value.action as (typeof DUPLICATE_ACTIONS)[number],
       actorId: value.actorId,
       reason: value.reason,
+      ...(value.expectedState ? { expectedState: value.expectedState } : {}),
     });
     await authority(town);
+    return result;
+  }
+  async function duplicateSample(route: DuplicateRoute, body: any) {
+    if (!uuid.test(route.townId) || !db.transaction)
+      throw Error(DUPLICATE_CASE_INVALID);
+    await authority(route.townId);
+    let result: unknown;
+    if (route.kind === 'samples')
+      result = await listDuplicateSamples(db, route.townId);
+    else if (route.kind === 'sample')
+      result = await getDuplicateSample(db, route.townId, route.sampleId);
+    else if (route.kind === 'sample-draw')
+      result = await drawDuplicateSample(db as never, {
+        townId: route.townId,
+        round: body.round,
+        actorId: body.actorId,
+        ...(body.size === undefined ? {} : { size: body.size }),
+        ...(body.seed === undefined ? {} : { seed: body.seed }),
+      });
+    else if (route.kind === 'sample-judge')
+      result = await judgeSampleItem(db as never, {
+        townId: route.townId,
+        sampleId: route.sampleId,
+        caseId: body.caseId,
+        verdict: body.verdict,
+        actorId: body.actorId,
+      });
+    else throw Error(DUPLICATE_CASE_INVALID);
+    await authority(route.townId);
     return result;
   }
   async function suppressionCreate(
@@ -1699,7 +1762,9 @@ export function pendingChecks(
     reportTransition,
     suppressionList,
     duplicateList,
+    duplicateDetail,
     duplicateDecide,
+    duplicateSample,
     suppressionCreate,
     suppressionLift,
     ready,
@@ -2800,14 +2865,16 @@ export function pendingServer(
       }
       return;
     }
-    const duplicateMatch = localUrl?.pathname.match(
-      /^\/internal\/local-evaluation\/towns\/([0-9a-f-]{36})\/duplicate-cases(?:\/([0-9a-f-]{36})\/decide)?$/
-    );
-    if (
-      duplicateMatch &&
-      (duplicateMatch[2] ? req.method === 'POST' : req.method === 'GET')
-    ) {
-      const isList = req.method === 'GET';
+    const duplicateRoute = localUrl
+      ? parseDuplicateRoute(
+          req.method ?? '',
+          localUrl.pathname,
+          localUrl.search
+        )
+      : null;
+    if (duplicateRoute) {
+      const reads = ['list', 'detail', 'samples', 'sample'];
+      const isRead = reads.includes(duplicateRoute.kind);
       const expected = Buffer.from(localSecret || ''),
         provided = Buffer.from(
           req.headers.authorization?.startsWith('Bearer ')
@@ -2825,7 +2892,11 @@ export function pendingServer(
         res.writeHead(401, { 'cache-control': 'no-store' }).end();
         return;
       }
-      if (localUrl!.search || !uuid.test(duplicateMatch[1])) {
+      const listQuery =
+        duplicateRoute.kind === 'list'
+          ? parseListQuery(localUrl!.search.replace(/^\?/, ''))
+          : {};
+      if (!uuid.test(duplicateRoute.townId) || listQuery === null) {
         res.writeHead(400, { 'cache-control': 'no-store' }).end();
         return;
       }
@@ -2834,11 +2905,18 @@ export function pendingServer(
         return;
       }
       active++;
-      if (!isList) req.setTimeout(5000, () => req.destroy());
+      if (!isRead) req.setTimeout(5000, () => req.destroy());
       try {
         let result: unknown;
-        if (isList) {
-          result = await checks.duplicateList(duplicateMatch[1]);
+        if (duplicateRoute.kind === 'list') {
+          result = await checks.duplicateList(duplicateRoute.townId, listQuery);
+        } else if (duplicateRoute.kind === 'detail') {
+          result = await checks.duplicateDetail(
+            duplicateRoute.townId,
+            duplicateRoute.caseId
+          );
+        } else if (isRead) {
+          result = await checks.duplicateSample(duplicateRoute, {});
         } else {
           let body = Buffer.alloc(0);
           for await (const chunk of req) {
@@ -2848,38 +2926,31 @@ export function pendingServer(
               return;
             }
           }
-          let value: any;
+          let value: unknown;
           try {
             value = JSON.parse(body.toString('utf8'));
           } catch {
             res.writeHead(400, { 'cache-control': 'no-store' }).end();
             return;
           }
-          if (
-            !value ||
-            typeof value !== 'object' ||
-            Array.isArray(value) ||
-            !Object.keys(value).every((k) =>
-              ['action', 'reason', 'actorId'].includes(k)
-            ) ||
-            !uuid.test(value.actorId || '') ||
-            !(DUPLICATE_ACTIONS as readonly string[]).includes(value.action) ||
-            typeof value.reason !== 'string' ||
-            !value.reason.trim() ||
-            value.reason.length > 1024
-          ) {
+          const parsed =
+            duplicateRoute.kind === 'decide'
+              ? parseDecideBody(value)
+              : duplicateRoute.kind === 'sample-draw'
+              ? parseDrawBody(value)
+              : parseJudgeBody(value);
+          if (!parsed) {
             res.writeHead(400, { 'cache-control': 'no-store' }).end();
             return;
           }
-          result = await checks.duplicateDecide(
-            duplicateMatch[1],
-            duplicateMatch[2],
-            {
-              action: value.action,
-              reason: value.reason,
-              actorId: value.actorId,
-            }
-          );
+          result =
+            duplicateRoute.kind === 'decide'
+              ? await checks.duplicateDecide(
+                  duplicateRoute.townId,
+                  duplicateRoute.caseId,
+                  parsed as DecideBody
+                )
+              : await checks.duplicateSample(duplicateRoute, parsed);
         }
         res
           .writeHead(200, {
@@ -2891,11 +2962,13 @@ export function pendingServer(
         const message = error instanceof Error ? error.message : '';
         res
           .writeHead(
-            message === DUPLICATE_CASE_INVALID
+            message === DUPLICATE_CASE_INVALID || message === SAMPLE_INVALID
               ? 400
-              : message === 'ACCOUNT_DELETION_FENCED'
+              : message === 'ACCOUNT_DELETION_FENCED' ||
+                message === DUPLICATE_CASE_STALE
               ? 409
-              : message === DUPLICATE_CASE_NOT_FOUND
+              : message === DUPLICATE_CASE_NOT_FOUND ||
+                message === SAMPLE_NOT_FOUND
               ? 404
               : 503,
             { 'cache-control': 'no-store' }

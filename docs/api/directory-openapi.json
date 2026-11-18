@@ -1623,6 +1623,173 @@
         "x-required-permissions": ["directory.review"]
       }
     },
+    "/api/directory/towns/{townId}/duplicate-cases/samples": {
+      "get": {
+        "operationId": "DirectoryDuplicateCasesController_samples",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryDuplicateCases"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      },
+      "post": {
+        "operationId": "DirectoryDuplicateCasesController_draw",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryDuplicateCases"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/duplicate-cases/samples/{sampleId}": {
+      "get": {
+        "operationId": "DirectoryDuplicateCasesController_sampleDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sampleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryDuplicateCases"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/duplicate-cases/samples/{sampleId}/judge": {
+      "post": {
+        "operationId": "DirectoryDuplicateCasesController_judge",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sampleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryDuplicateCases"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/duplicate-cases/{caseId}": {
+      "get": {
+        "operationId": "DirectoryDuplicateCasesController_detailCase",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryDuplicateCases"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
     "/api/directory/towns/{townId}/duplicate-cases/{caseId}/decide": {
       "post": {
         "operationId": "DirectoryDuplicateCasesController_decide",

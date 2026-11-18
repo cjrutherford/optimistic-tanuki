@@ -1021,6 +1021,43 @@ export class DirectoryDuplicateCaseEvent {
 }
 
 /**
+ * A fixed random sample of duplicate pairs for one review round (owner decision D18). The wrong-merge limit is
+ * measured on this sample, not on every merge. `seed` and `populationSize` make the draw reproducible and the
+ * sample is stored, so it does not change when the queue does. One sample per town and round.
+ */
+@Entity({ name: 'directory_duplicate_sample' })
+@Index('UQ_directory_duplicate_sample_round', ['communityId', 'round'], {
+  unique: true,
+})
+export class DirectoryDuplicateSample {
+  @PrimaryGeneratedColumn('uuid') id!: string;
+  @Column('uuid') communityId!: string;
+  @Column({ type: 'varchar', length: 64 }) round!: string;
+  @Column({ type: 'varchar', length: 64 }) seed!: string;
+  @Column({ type: 'int' }) sampleSize!: number;
+  @Column({ type: 'int' }) populationSize!: number;
+  @Column({ type: 'uuid', nullable: true }) createdById!: string | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+}
+
+/** One sampled pair. `verdict` is the reviewer's judgement of the pair: a true duplicate or two distinct businesses. */
+@Entity({ name: 'directory_duplicate_sample_item' })
+@Check(
+  'CHK_directory_duplicate_sample_item_verdict',
+  `"verdict" IS NULL OR "verdict" IN ('duplicate','distinct')`
+)
+export class DirectoryDuplicateSampleItem {
+  @PrimaryColumn('uuid') sampleId!: string;
+  @PrimaryColumn('uuid') caseId!: string;
+  @Column({ type: 'varchar', length: 16, nullable: true }) verdict!:
+    | string
+    | null;
+  @Column({ type: 'uuid', nullable: true }) judgedById!: string | null;
+  @Column({ type: 'timestamptz', nullable: true }) judgedAt!: Date | null;
+}
+
+/**
  * A public, anonymous report or correction request about one served listing. Nothing about a report hides a
  * listing; a reviewer decides, and may open a suppression from it (`suppressionId`). `receiptTokenHash` is the
  * hash of the random receipt token shown once to the reporter; the token itself is never stored.

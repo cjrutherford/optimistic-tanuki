@@ -2,6 +2,7 @@ import type {
   DirectoryOpsMetrics,
   DirectoryOpsQueueMetrics,
 } from '../../../libs/social/contracts/src/lib/directory';
+import { TRIAGE_DAYS } from './listing-report';
 import { listControls } from './operating-controls';
 import { MONTHLY_LIMIT_CENTS, providerLimitCents } from './provider-budget';
 import { FRESH_DAYS, STALE_DAYS } from './source-freshness';
@@ -108,7 +109,8 @@ async function policy(pool: Pool) {
     `SELECT (SELECT count(*) FROM directory_overture_private_policy WHERE revoked=false)::int AS active,
             (SELECT count(*) FROM directory_overture_private_policy WHERE revoked=true)::int AS revoked,
             (SELECT count(*) FROM directory_rights_case WHERE status='review')::int AS rights,
-            (SELECT count(*) FROM directory_taxonomy_case WHERE status='open')::int AS taxonomy`
+            (SELECT count(*) FROM directory_taxonomy_case WHERE status='open')::int AS taxonomy,
+            (SELECT count(*) FROM directory_listing_report WHERE status='received' AND "createdAt" < clock_timestamp() - make_interval(days => ${TRIAGE_DAYS}))::int AS untriaged`
   );
   return {
     activePolicies: int(r.active),
@@ -116,6 +118,7 @@ async function policy(pool: Pool) {
     publicationPaused: int(r.active) === 0,
     openRightsCases: int(r.rights),
     openTaxonomyCases: int(r.taxonomy),
+    reportsUntriagedOver3Days: int(r.untriaged),
   };
 }
 
@@ -214,7 +217,8 @@ async function queues(pool: Pool) {
  *   evidence (they are neither fresh nor stale, and must not be read as fresh); oldestListingAgeDays = whole days since
  *   the oldest stamp, null when none. The evidence hash is not re-verified here.
  * - policy: activePolicies / revokedPolicies = private policies by `revoked`; publicationPaused = no active policy (the
- *   same global fact coverage reports as `unconfigured`); openRightsCases = status 'review'; openTaxonomyCases = 'open'.
+ *   same global fact coverage reports as `unconfigured`); openRightsCases = status 'review'; openTaxonomyCases = 'open'; reportsUntriagedOver3Days =
+ *   listing reports still 'received' (not acknowledged or triaged) three days after they were filed (owner decision D17).
  * - spend: reservedCents = sum of provider budget reservations for the current UTC month; alert = reserved >=
  *   alertCents (DIRECTORY_SPEND_ALERT_CENTS, default 2000); exhausted = reserved >= the 2500 cent ceiling.
  * - queues: queued = export 'queued', taxonomy run 'pending', withdrawal 'pending'; running = 'running' (taxonomy also
@@ -405,6 +409,11 @@ export function toPrometheus(m: DirectoryOpsMetrics): string {
   gauge('directory_open_taxonomy_cases', 'Open taxonomy cases.', [
     [none, m.policy?.openTaxonomyCases],
   ]);
+  gauge(
+    'directory_reports_untriaged_over_3_days',
+    'Listing reports still received (not acknowledged) after 3 days.',
+    [[none, m.policy?.reportsUntriagedOver3Days]]
+  );
   gauge(
     'directory_spend_reserved_cents',
     'Provider budget reserved this UTC month.',
