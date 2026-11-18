@@ -58,3 +58,67 @@ Compose services (docker-compose.yaml, no profiles): ot-client-interface (ot_cli
 - Local Hub directory pages and S6 evidence are green. One map marker failure, probably seed data.
 - Forum 503 in both client apps (/api/forum/topics) points at a missing or unhealthy forum/social route in the live stack rather than the UI; registration-to-login redirects landing on /register and the 403 app-context error point at gateway/auth app-scope registration for these apps. Candidate files if any are branch regressions: apps/gateway/src/controllers/authentication/authentication.controller.ts (`resolveRegistrationAppId`) and the gateway forum proxy; libs/common-ui changes (index.ts +5, decision-history component) are not implicated by any failure message seen. I did not confirm that these fail on main; a baseline run on main would settle it.
 - Not tried: re-running failures, running the failures against a clean seed.
+
+## Full-stack rerun (2026-11-18)
+
+Decision D6: start the missing services, register the business-site origin, rerun the three shared-UI suites and re-check the Local Hub focus marker. Env as before (`SKIP_SETUP=true`, `PLAYWRIGHT_HEADLESS=true`, `chrome` channel, `--reporter=line`). No source was edited; nothing in this section is a branch regression.
+
+### Services started
+
+All with `BUILDX_CONFIG=/tmp/ot-buildx BUILDX_BUILDER=ot-hostnet docker compose -p optimistic-tanuki --profile directory --env-file .env.directory.local build <svc>` then `up -d --no-deps <svc>`. The directory, directory-worker, directory DB, social and gateway containers were not touched.
+
+| Service                                           | Container              | Needed by                                                 |
+| ------------------------------------------------- | ---------------------- | --------------------------------------------------------- |
+| forum                                             | ot_forum               | forum specs in forgeofwill and client-interface (the 503) |
+| chat-collector                                    | ot_chat_collector      | chat debug spec                                           |
+| bug-report                                        | ot_bug_report          | client-interface bug-report nonce spec                    |
+| store, workspace                                  | ot_store, ot_workspace | business-site workspace provisioning (seed)               |
+| blogging                                          | ot_blogging            | business-site blog catalog                                |
+| lead-tracker                                      | ot_lead_tracker        | business-site booking and lead intake                     |
+| authentication (recreated, same image and config) | ot_authentication      | `AUTH_AUTO_VERIFY_EMAILS=true`, see below                 |
+
+Two changes to the live stack beyond starting containers:
+
+- `ot_authentication` was recreated with `AUTH_AUTO_VERIFY_EMAILS=true` (the e2e compose files under `e2e/` set the same). The live default is `false`, so every spec that registers or seeds an account hit `EMAIL_VERIFICATION_REQUIRED`. It keeps that value now; recreate it without the override to restore the default. It came back on the same container IP, so the gateway needed no restart.
+- `ot_lead_tracker` had an empty database (the compose `db-setup` was not run for it). I ran that project's own migration runner (`typeorm migration:run`, the same command `scripts/setup-and-migrate.sh` uses) against `ot_lead_tracker` only: 24 migrations applied. I did not run the full `db-setup`, because it touches every service database.
+
+### Registration of business-site
+
+The registry mounted into the gateway (`.agent/s5-tailnet-registry.json`, gitignored) already lists `business-site` at `http://localhost:8094`. The earlier 403 came from the origin: the first run used `http://127.0.0.1:8094`, and `resolveRegistrationAppId` binds the app to the registered origin string. Using `BASE_URL=http://localhost:8094` (and `localhost:8080` for client-interface) resolves the app. No registry edit was needed. The same rule explains the forgeofwill failures (below).
+
+Business seeding used the existing seeders, as `global-setup.ts` does: `scripts/seed-permissions.sh` with `SKIP_PERMISSION_USER_ASSIGNMENTS=true`, then `apps/business-site/src/seed-business.mjs` with `BUSINESS_SITE_PUBLIC_ORIGIN=http://localhost:8094 GATEWAY_URL=http://localhost:3000/api`. It was run twice: the first run seeded owners and workspaces but its lead seeding is best-effort and silently skipped while lead-tracker was down; the second run (after lead-tracker was up) seeded the accepted and queued client leads. One stray test account was also registered by a manual curl probe of the register endpoint while diagnosing the 400; it is harmless and was not removed (no direct DB edits).
+
+### Per-suite results
+
+| Suite              | Before                            | After                                           |
+| ------------------ | --------------------------------- | ----------------------------------------------- |
+| forgeofwill-e2e    | 29 pass / 5 fail / 0 skip         | 31 pass / 3 fail / 0 skip                       |
+| client-interface   | 151 pass / 27 fail / 408 skip     | 172 pass / 6 fail / 408 skip                    |
+| business-site-e2e  | 0 ran (global setup 403)          | 19 pass / 1 fail / 1 not run                    |
+| Local Hub map.spec | 24 pass / 1 fail / 2 skip (run A) | map.spec.ts:135 still fails (re-checked, below) |
+
+client-interface's 6 failures are 2 distinct tests across 3 projects (desktop, mobile, tablet).
+
+### Remaining failures
+
+| Spec:line                                                                                            | Cause                                                                                                                                                                                                                                                                                                                                          | Classification                                                             |
+| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| forgeofwill `project-crud.spec.ts:5`, `user-journey.spec.ts:19`                                      | Registration returns 400 "Email authentication is not configured for this application" (`authentication.controller.ts:707`). The registry lists forgeofwill's UI origin as `https://forgeofwill.com`, so the local origin `http://localhost:8081` resolves to no app. Fix is a registry entry plus a gateway restart, which was out of bounds. | Environment/config, not a regression                                       |
+| forgeofwill `oauth-cookie-session.spec.ts:5`, client-interface `oauth-cookie-session.spec.ts:5` (x3) | `GET /api/oauth/config` returns `{}`, so no provider button renders and no popup opens. The live gateway has no fake OAuth provider configured; the e2e compose files add an `oauth-provider` container plus `GOOGLE_*` endpoint env on the gateway. Needs a gateway restart with that env.                                                    | Environment/config, not a regression                                       |
+| client-interface `forum.spec.ts:41` (x3)                                                             | Expects topic "Community Introductions" to have no threads ("No threads in this topic yet."). The live forum DB has 1 thread in it (172 threads in total), so the topic is not empty. The request itself returns 200.                                                                                                                          | Seed/data difference, not a regression                                     |
+| business-site `business-site.spec.ts:1532` (+1 serial test not run, `:1693`)                         | Fails at `:1591`: expects exactly 1 request row matching a fixed description, finds 3. The description is not unique per run, and my reruns on the shared stack (before the accepted-client lead was seeded) left extra `client-session` leads. Booking creation itself passes.                                                                | Stack state from reruns; passes on a clean seed (not re-proven, see below) |
+| Local Hub `map.spec.ts:135`                                                                          | `findCity` returns the first `localityType==='city'` community from `/api/communities`. That is `dev-review-0d056f5e` ("Development Review City"), a leftover with `lat`/`lng` null; 179 of 180 cities have coordinates. With no focus coordinates `map.component.ts` renders no `.map-marker--focus`.                                         | Proven seed/data issue, not a regression                                   |
+
+Earlier suspicion on map.spec.ts:135 is confirmed: the data, not the component. A city with coordinates would satisfy the spec; the spec could also pick the first city that has coordinates (a test change outside this slice).
+
+Earlier failures now green: forum 503 (forum container), `bug-report.spec.ts:9`, `forum.spec.ts:5` and `:64`, `forum-access.spec.ts` (both), `community-permissions.spec.ts:71`, `profile-communities.spec.ts:13`, `user-journey.spec.ts:9` and `chat.spec.ts:298` in client-interface (the last four were account registration or profile creation blocked by email verification or missing services), and all of business-site globalSetup.
+
+### Not done
+
+- The business-site `:1532` test was not proven green on a pristine stack: that needs a clean seed, which means resetting the business data in the shared DB, which I did not do.
+- forgeofwill local registration and the fake OAuth provider both require a gateway restart (registry entry, `GOOGLE_*` env), left for whoever owns the gateway deploy.
+- No baseline run on `main` was done; none of the remaining failures points at branch code.
+
+### Containers left running
+
+ot_forum, ot_chat_collector, ot_bug_report, ot_store, ot_workspace, ot_blogging, ot_lead_tracker (new), ot_authentication (recreated with auto-verify on), plus the three client containers from the first run.
