@@ -30,6 +30,9 @@ export class DirectoryTown {
   @Column({ type: 'boolean' }) eligible!: boolean;
   @Column({ type: 'varchar', default: 'pending' }) geometryStatus!: string;
   @Column({ type: 'integer', default: 0 }) geometryVersion!: number;
+  /** When Directory first registered the town; selection sweeps take the newest first. */
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  registeredAt!: Date;
 }
 
 @Entity({ name: 'directory_town_geometry' })

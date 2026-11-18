@@ -24,6 +24,7 @@ import {
   DEFAULT_AUTO_CONFIG,
   TOWN_SQL,
   emptyOutcome,
+  orderNewestNeverAttemptedFirst,
   tally,
   toTown,
   trackedSink,
@@ -155,7 +156,8 @@ export async function selectAtpTowns(
        AND NOT EXISTS (SELECT 1 FROM (SELECT count(*) AS n, max(r."finishedAt") AS last FROM directory_acquisition_run r
              WHERE ${ATP_RUN_OF_TOWN} AND r.status='failed_retryable') f
            WHERE f.n > 0 AND (f.n >= $3 OR f.last > clock_timestamp() - make_interval(secs => ($2::numeric / 1000) * power(2, f.n - 1))))
-     ORDER BY t.name, t."communityId" LIMIT $4`,
+     ORDER BY ${orderNewestNeverAttemptedFirst(ATP_RUN_OF_TOWN)}
+     LIMIT $4`,
     [release, config.retryBackoffMs, config.maxAttempts, config.limit]
   );
   return rows.map(toTown).filter((t: AutoTown | null): t is AutoTown => !!t);

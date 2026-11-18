@@ -191,6 +191,16 @@ const ACQUIRED = `EXISTS (SELECT 1 FROM directory_town_scan_target s
 const AUTO_RUN_OF_TOWN = `r.kind='overture-stage' AND r.provider='overture' AND r.release=$1
     AND r.reason LIKE '${AUTO_RUN_REASON_PREFIX}%' AND r."townIds" @> to_jsonb(t."communityId"::text)`;
 
+/**
+ * Towns never attempted for this provider/release come first, newest geometry first, so a brand-new town is not queued
+ * behind the backlog; retries follow in the same newest-first order. `g` is the live geometry (its createdAt is when the
+ * town became ready), and `RUN_OF_TOWN` is the provider's run predicate.
+ */
+export const orderNewestNeverAttemptedFirst = (runOfTown: string): string =>
+  `EXISTS (SELECT 1 FROM directory_acquisition_run r WHERE ${runOfTown}) ASC, g."createdAt" DESC, t.name, t."communityId"`;
+const NEWEST_NEVER_ATTEMPTED_FIRST =
+  orderNewestNeverAttemptedFirst(AUTO_RUN_OF_TOWN);
+
 /** Eligible, geometry-ready towns with no acquisition for the release and nothing that should hold them back. */
 export async function selectTowns(
   db: Pick<DataSource, 'query'>,
@@ -208,7 +218,8 @@ export async function selectTowns(
        AND NOT EXISTS (SELECT 1 FROM (SELECT count(*) AS n, max(r."finishedAt") AS last FROM directory_acquisition_run r
              WHERE ${AUTO_RUN_OF_TOWN} AND r.status='failed_retryable') f
            WHERE f.n > 0 AND (f.n >= $3 OR f.last > clock_timestamp() - make_interval(secs => ($2::numeric / 1000) * power(2, f.n - 1))))
-     ORDER BY t.name, t."communityId" LIMIT $4`,
+     ORDER BY ${NEWEST_NEVER_ATTEMPTED_FIRST}
+     LIMIT $4`,
     [release, config.retryBackoffMs, config.maxAttempts, config.limit]
   );
   return rows.map(toTown).filter((t: AutoTown | null): t is AutoTown => !!t);

@@ -10,7 +10,10 @@ const { reconcileRegisterV2 } = require('../src/register-reconciliation-v2');
 const {
   storeDiscoveredBoundaryCandidate,
 } = require('../../directory-worker/src/boundary-review');
-const { runAutoBoundarySweep } = require('../src/auto-boundary');
+const {
+  runAutoBoundarySweep,
+  selectAutoBoundaryTowns,
+} = require('../src/auto-boundary');
 const { setControl } = require('../src/operating-controls');
 
 const url = process.env.AUTO_BOUNDARY_TEST_DATABASE_URL;
@@ -301,6 +304,47 @@ test(
       assert.equal(failed.errors, 1);
       assert.match((await ledger('none')).reason, /archive_digest_mismatch/);
       assert.equal(await status('none'), 'pending');
+    } finally {
+      await db.destroy();
+    }
+  }
+);
+
+test(
+  'boundary selection: never-tried towns first, most recently registered first',
+  { skip: !url },
+  async () => {
+    const db = new DataSource({ type: 'postgres', url });
+    await db.initialize();
+    try {
+      const identity = {
+        recoveryEpoch: randomUUID(),
+        directoryGeneration: '1',
+      };
+      const ids = [];
+      // Registered oldest to newest.
+      for (const [i, key] of ['first', 'second', 'third'].entries()) {
+        const id = randomUUID();
+        ids.push(id);
+        await db.query(
+          `INSERT INTO directory_town ("communityId",name,eligible,"registeredAt") VALUES ($1,$2,true,now() - ($3::int * interval '1 hour'))`,
+          [id, `Order ${key}`, 10 - i]
+        );
+      }
+      const mine = (
+        await selectAutoBoundaryTowns(db, identity, options)
+      ).filter((id) => ids.includes(id));
+      assert.deepEqual(mine, [...ids].reverse());
+      // A town already attempted drops behind the never-tried ones.
+      await db.query(
+        `INSERT INTO directory_boundary_auto_attempt ("communityId","requestId","changeToken",reason,status,"attemptedAt",attempts,candidates)
+         SELECT $1, gen_random_uuid(), gen_random_uuid(), 'x', 'error', now() - interval '1 day', 1, '[]'::jsonb`,
+        [ids[2]]
+      );
+      const again = (
+        await selectAutoBoundaryTowns(db, identity, options)
+      ).filter((id) => ids.includes(id));
+      assert.deepEqual(again, [ids[1], ids[0], ids[2]]);
     } finally {
       await db.destroy();
     }
