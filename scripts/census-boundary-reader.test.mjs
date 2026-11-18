@@ -30,12 +30,14 @@ async function shapeZip(path, stem) {
   );
 }
 
-let readCandidate, findCandidates, findAcross;
+let readCandidate, findCandidates, findAcross, townNameKeys, censusNameKey;
 try {
   ({
     readCensusBoundaryCandidate: readCandidate,
     findCensusBoundaryCandidates: findCandidates,
     findCensusBoundaryCandidatesAcross: findAcross,
+    townNameKeys,
+    censusNameKey,
   } = await import('./census-boundary-reader.mjs'));
 } catch (error) {
   if (error.code !== 'ERR_MODULE_NOT_FOUND') throw error;
@@ -204,16 +206,134 @@ test('name discovery keeps multiple candidate identifiers ambiguous and labels m
     assert.equal(none.status, 'pending');
     assert.deepEqual(none.candidateGeoids, []);
     assert.match(none.fallbackLabel, /approximate|unavailable/i);
-    assert.equal(
-      (
-        await findCandidates({
-          ...args,
-          townName: 'Solo',
-          localityType: 'town',
-        })
-      ).status,
-      'pending'
+    // The Social locality type is only a hint: a "town" matches an incorporated place whose Census type is city.
+    const relaxed = await findCandidates({
+      ...args,
+      townName: 'Solo',
+      localityType: 'town',
+    });
+    assert.equal(relaxed.status, 'candidate');
+    assert.equal(relaxed.matchRule, 'incorporated');
+  } finally {
+    c.closeSync();
+    db.closeSync();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('town name keys and Census name keys normalise abbreviations, punctuation, type words and balance suffixes', () => {
+  assert.ok(townNameKeys, 'name normalisation must be exported');
+  const matches = (social, census) =>
+    townNameKeys(social).includes(censusNameKey(census));
+  assert.ok(matches('St. Simons Island', 'Saint Simons Island'));
+  assert.ok(matches('Saint Marys', "St. Mary's"));
+  assert.ok(matches('Mt. Dora', 'Mount Dora'));
+  assert.ok(matches('Ft. Oglethorpe', 'Fort Oglethorpe'));
+  assert.ok(matches('Winston-Salem', 'Winston Salem'));
+  assert.ok(matches('City of Milford', 'Milford city (balance)'));
+  assert.ok(matches('Springfield Township', 'Springfield'));
+  assert.ok(matches('Fairview Village', 'Fairview'));
+  assert.ok(matches('Atlantic City', 'Atlantic City'));
+  assert.ok(matches('San José', 'San Jose'));
+  // A different name must never match, however similar.
+  assert.ok(!matches('Cedar', 'Cedar City'));
+  assert.ok(!matches('Madison', 'Madisonville'));
+  assert.ok(!matches('Chester', 'Chesterfield'));
+  assert.ok(!matches('New Milford', 'Milford city (balance)'));
+});
+
+test('name discovery tiers: type, any incorporated type, designated place, then a small distance; wrong names and ties never match', async () => {
+  assert.ok(findCandidates, 'Census candidate discovery must be implemented');
+  const dir = await mkdtemp(join(tmpdir(), 'census-tier-test-'));
+  const db = await DuckDBInstance.create(':memory:');
+  const c = await db.connect();
+  try {
+    await c.run('LOAD spatial');
+    const stem = join(dir, 'tl_2026_13_place');
+    // Squares in degrees; the reference point is [1, 1]. 0.01 degrees is about 1.1 km.
+    const sq = (x0, y0, x1, y1) =>
+      `ST_GeomFromText('POLYGON((${x0} ${y0},${x1} ${y0},${x1} ${y1},${x0} ${y1},${x0} ${y0}))')`;
+    const place = (id, name, lsad, geom) =>
+      `('${id}','${name}','${lsad}',${geom})`;
+    await c.run(
+      `COPY (SELECT id AS GEOID, '13' AS STATEFP, name AS NAME, lsad AS LSAD, geom FROM (VALUES
+        ${[
+          place('1300001', 'Covered Village', '47', sq(0, 0, 2, 2)),
+          place('1300002', 'Just Outside', '25', sq(1.005, 0, 2, 2)),
+          place('1300003', 'Too Far', '25', sq(1.05, 0, 2, 2)),
+          place('1300004', 'Census Place', '57', sq(0, 0, 2, 2)),
+          place('1300005', 'Near Place', '57', sq(1.01, 0, 2, 2)),
+          place('1300006', 'Twin', '25', sq(1.004, 0, 2, 2)),
+          place('1300007', 'Twin', '43', sq(1.006, 0, 2, 2)),
+          place('1300008', 'Mixed', '57', sq(0, 0, 2, 2)),
+          place('1300009', 'Mixed', '25', sq(0, 0, 2, 2)),
+          place('1300010', 'Township Only', '44', sq(0, 0, 2, 2)),
+          place('1300011', 'Covered Village Extra', '25', sq(0, 0, 2, 2)),
+        ].join(',')}
+      ) t(id,name,lsad,geom)) TO '${stem}.shp' WITH (FORMAT GDAL, DRIVER 'ESRI Shapefile', SRS 'EPSG:4269')`
     );
+    await writeFile(stem + '.prj', prj);
+    const zip = join(dir, 'source.zip');
+    await shapeZip(zip, stem);
+    const bytes = await readFile(zip);
+    const args = {
+      connection: c,
+      archivePath: zip,
+      archiveSha256: sha(bytes),
+      archiveBytes: bytes.length,
+      vintage: '2026',
+      stateFips: '13',
+      layer: 'place',
+      referencePoint: [1, 1],
+      localityType: 'city',
+    };
+    const find = (townName, extra = {}) =>
+      findCandidates({ ...args, townName, ...extra });
+    const covered = await find('Covered Village');
+    assert.deepEqual(
+      [covered.status, covered.matchRule, covered.candidateGeoids],
+      ['candidate', 'incorporated', ['1300001']]
+    );
+    // The preferred locality type still wins its own tier.
+    assert.equal(
+      (await find('Covered Village', { localityType: 'town' })).matchRule,
+      'incorporated'
+    );
+    const near = await find('Just Outside');
+    assert.deepEqual(
+      [
+        near.status,
+        near.matchRule,
+        near.candidateDetails[0].distanceMeters > 0,
+      ],
+      ['candidate', 'nearby_incorporated', true]
+    );
+    // Beyond the tolerance, or a different name close by, is no match at all.
+    assert.equal((await find('Too Far')).status, 'pending');
+    assert.equal((await find('Just Outsid')).status, 'pending');
+    assert.equal((await find('Outside')).status, 'pending');
+    // Designated places match only when nothing incorporated does.
+    assert.equal((await find('Census Place')).matchRule, 'designated_place');
+    assert.equal(
+      (await find('Near Place')).matchRule,
+      'nearby_designated_place'
+    );
+    const mixed = await find('Mixed');
+    assert.deepEqual(
+      [mixed.matchRule, mixed.candidateGeoids],
+      ['locality_type', ['1300009']]
+    );
+    // Two nearby candidates are ambiguous, never picked.
+    const twin = await find('Twin');
+    assert.equal(twin.status, 'ambiguous');
+    assert.deepEqual(twin.candidateGeoids, ['1300006', '1300007']);
+    // A township is not the town.
+    assert.equal((await find('Township Only')).status, 'pending');
+    // The install-time read accepts the same small distance and nothing farther.
+    const read = (geoid) =>
+      readCandidate({ ...args, geoid, townName: undefined });
+    assert.equal((await read('1300002')).geoid, '1300002');
+    await assert.rejects(read('1300003'), /outside/i);
   } finally {
     c.closeSync();
     db.closeSync();

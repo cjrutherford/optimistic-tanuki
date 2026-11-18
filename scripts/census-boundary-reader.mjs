@@ -14,6 +14,80 @@ const MAX_ARCHIVE = 32 * 1024 * 1024,
   MAX_TOTAL = 128 * 1024 * 1024;
 const NAD83_WKT =
   'GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137,298.257222101]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]';
+/** A reference point this close to (but outside) a name-matched polygon still counts: Social points are town centres or geocoder output, not survey points. */
+export const NEAR_METERS = 2000;
+// Distance is measured in degrees and scaled by the length of a degree of latitude, which overstates east-west distance, so it errs toward not matching.
+const METERS_PER_DEGREE = 111320;
+const ABBREVIATIONS = new Map([
+  ['st', 'saint'],
+  ['ste', 'sainte'],
+  ['mt', 'mount'],
+  ['ft', 'fort'],
+]);
+const TYPE_WORDS = ['city', 'town', 'village', 'borough', 'township', 'twp'];
+const baseName = (value) =>
+  String(value).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const words = (value) =>
+  value
+    .replace(/[.,'’`]/g, '')
+    .replace(/[-–—/&]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => ABBREVIATIONS.get(w) ?? w);
+/**
+ * Comparison keys for a Social town name: the name itself with abbreviations expanded ("St." is "saint", "Mt." is
+ * "mount"), punctuation and hyphens ignored, and also the name without a "city of" prefix or a trailing city, town,
+ * village, borough or township word. A Census name matches when it equals one of these keys.
+ */
+export function townNameKeys(value) {
+  let w = words(baseName(value).replace(/\([^)]*\)/g, ' '));
+  const keys = new Set();
+  if (w.length) keys.add(w.join(' '));
+  if (w.length > 2 && TYPE_WORDS.includes(w[0]) && w[1] === 'of')
+    w = w.slice(2);
+  if (w.length > 1 && TYPE_WORDS.includes(w[w.length - 1])) w = w.slice(0, -1);
+  if (w.length) keys.add(w.join(' '));
+  return [...keys];
+}
+/** A Census NAME in the same form. A consolidated "(balance)" name also drops its trailing type word ("Milford city (balance)"). */
+export function censusNameKey(value) {
+  const raw = baseName(value),
+    balance = /\(balance\)/.test(raw);
+  let w = words(raw.replace(/\([^)]*\)/g, ' '));
+  if (balance && w.length > 1 && TYPE_WORDS.includes(w[w.length - 1]))
+    w = w.slice(0, -1);
+  return w.join(' ');
+}
+// Incorporated governments by TIGER LSAD: borough, city, municipality, town, village (places); a county subdivision uses the same set (a township or county district is a different entity from the town).
+const INCORPORATED = {
+  place: new Set(['21', '25', '37', '43', '47']),
+  cousub: new Set(['21', '25', '37', '43', '47']),
+};
+const CDP = '57';
+/**
+ * Picks the candidate tier for a name-matched set of Census rows. Tiers, strongest first, each used only when the one
+ * before found nothing: the Social locality type's own LSAD covering the point (the original rule); any incorporated
+ * LSAD covering the point; a census designated place covering the point; an incorporated polygon within NEAR_METERS;
+ * a designated place within NEAR_METERS. More than one survivor in the winning tier is ambiguous.
+ */
+export function chooseCensusTier(rows, layer, localityType) {
+  const preferred = localityType === 'city' ? '25' : '43';
+  const incorporated = (r) =>
+    INCORPORATED[layer].has(r.lsad) ||
+    (r.lsad === '00' && layer === 'place' && r.consolidated);
+  const covering = rows.filter((r) => r.covers);
+  const near = rows.filter((r) => !r.covers && r.meters <= NEAR_METERS);
+  const tiers = [
+    ['locality_type', covering.filter((r) => r.lsad === preferred)],
+    ['incorporated', covering.filter(incorporated)],
+    ['designated_place', covering.filter((r) => r.lsad === CDP)],
+    ['nearby_incorporated', near.filter(incorporated)],
+    ['nearby_designated_place', near.filter((r) => r.lsad === CDP)],
+  ];
+  for (const [rule, found] of tiers)
+    if (found.length) return { rule, rows: found };
+  return { rule: null, rows: [] };
+}
 const quote = (value) => `'${value.replaceAll("'", "''")}'`;
 const validPosition = (p) =>
   Array.isArray(p) &&
@@ -190,24 +264,55 @@ async function readCensusArchive(options, mode) {
     const shape = `/vsizip/${snapshot}/${stem}.shp`;
     const transformed =
       "ST_Transform(geom, 'EPSG:4269', 'EPSG:4326', always_xy := true)";
-    const match =
-      mode === 'geoid'
-        ? `GEOID = ${quote(geoid)}`
-        : `lower(trim(NAME)) = lower(${quote(
-            townName.trim()
-          )}) AND LSAD = ${quote(localityType === 'city' ? '25' : '43')}`;
+    let match = mode === 'geoid' ? `GEOID = ${quote(geoid)}` : 'false';
+    let consolidated = new Set();
+    if (mode === 'name') {
+      const keys = new Set(townNameKeys(townName));
+      const names = await (
+        await connection.runAndReadAll(
+          `SELECT GEOID, NAME, LSAD FROM ST_Read(${quote(shape)})`
+        )
+      ).getRowsJS();
+      const ids = [];
+      for (const [id, name, lsad] of names) {
+        const key = censusNameKey(name);
+        const exact = keys.has(key);
+        const merged =
+          layer === 'place' &&
+          lsad === '00' &&
+          [...keys].some(
+            (k) =>
+              key.startsWith(k + ' ') && /\b(county|government)\b/.test(key)
+          );
+        if (exact || merged) {
+          ids.push(id);
+          if (lsad === '00') consolidated.add(id);
+        }
+      }
+      if (ids.length > 100) throw Error('Too many Census name matches');
+      match = ids.length ? `GEOID IN (${ids.map(quote).join(',')})` : 'false';
+    }
+    const point = `ST_Point(${referencePoint[0]}, ${referencePoint[1]})`;
     const extra = mode === 'geoid' ? `, ST_AsGeoJSON(${transformed})` : '';
-    const query = `SELECT GEOID, STATEFP, NAME, LSAD, CAST(ST_GeometryType(${transformed}) AS VARCHAR), ST_IsValid(${transformed}), ST_IsEmpty(${transformed}), ST_Covers(${transformed}, ST_Point(${
-      referencePoint[0]
-    }, ${referencePoint[1]}))${extra} FROM ST_Read(${quote(
+    const query = `SELECT GEOID, STATEFP, NAME, LSAD, CAST(ST_GeometryType(${transformed}) AS VARCHAR), ST_IsValid(${transformed}), ST_IsEmpty(${transformed}), ST_Covers(${transformed}, ${point}), ST_Distance(${transformed}, ${point}) * ${METERS_PER_DEGREE}${extra} FROM ST_Read(${quote(
       shape
     )}) WHERE ${match} ORDER BY GEOID LIMIT 101`;
     const rows = await (await connection.runAndReadAll(query)).getRowsJS();
     if (mode === 'name') {
       if (rows.length > 100) throw Error('Too many Census name matches');
       const seen = new Set(),
-        candidateGeoids = [];
-      for (const [id, state, name, lsad, type, valid, empty, covers] of rows) {
+        matched = [];
+      for (const [
+        id,
+        state,
+        name,
+        lsad,
+        type,
+        valid,
+        empty,
+        covers,
+        meters,
+      ] of rows) {
         if (
           !validGeoid(id) ||
           state !== stateFips ||
@@ -218,12 +323,21 @@ async function readCensusArchive(options, mode) {
           valid !== true ||
           empty !== false ||
           typeof covers !== 'boolean' ||
+          typeof meters !== 'number' ||
           seen.has(id)
         )
           throw Error('Invalid or duplicate Census name match');
         seen.add(id);
-        if (covers) candidateGeoids.push(id);
+        matched.push({
+          geoid: id,
+          lsad,
+          covers,
+          meters,
+          consolidated: consolidated.has(id),
+        });
       }
+      const chosen = chooseCensusTier(matched, layer, localityType);
+      const candidateGeoids = chosen.rows.map((r) => r.geoid);
       return {
         status:
           candidateGeoids.length === 0
@@ -232,6 +346,12 @@ async function readCensusArchive(options, mode) {
             ? 'candidate'
             : 'ambiguous',
         candidateGeoids,
+        matchRule: chosen.rule,
+        candidateDetails: chosen.rows.map((r) => ({
+          geoid: r.geoid,
+          rule: chosen.rule,
+          distanceMeters: r.covers ? 0 : Math.round(r.meters),
+        })),
         vintage,
         stateFips,
         layer,
@@ -260,6 +380,7 @@ async function readCensusArchive(options, mode) {
       valid,
       empty,
       covers,
+      meters,
       json,
     ] = rows[0];
     if (
@@ -275,7 +396,8 @@ async function readCensusArchive(options, mode) {
       json.length > MAX_MEMBER
     )
       throw Error('Invalid Census boundary geometry or identity');
-    if (covers !== true) throw Error('Reference point outside Census boundary');
+    if (covers !== true && !(meters <= NEAR_METERS))
+      throw Error('Reference point outside Census boundary');
     const geometry = JSON.parse(json);
     if (!validGeometry(geometry)) throw Error('Invalid WGS84 GeoJSON boundary');
     return {
@@ -331,9 +453,11 @@ export async function findCensusBoundaryCandidatesAcross(options) {
       referencePoint,
       layer,
     });
-    for (const geoid of result.candidateGeoids)
+    for (const detail of result.candidateDetails)
       candidates.push({
-        geoid,
+        geoid: detail.geoid,
+        rule: detail.rule,
+        distanceMeters: detail.distanceMeters,
         layer,
         vintage: result.vintage,
         stateFips: result.stateFips,
