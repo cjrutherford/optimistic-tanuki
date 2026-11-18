@@ -247,7 +247,7 @@ export async function reconcileAutoBoundary(
   };
 }
 
-/** Eligible towns that still need a look: never tried, or due for a retry. Oldest attempt first, bounded. */
+/** Eligible towns that still need a look: never tried, or due for a retry. Never-tried towns come first, most recently registered first; retries follow, oldest attempt first. Bounded. */
 export async function selectAutoBoundaryTowns(
   db: DataSource,
   identity: DirectoryRecoveryIdentity,
@@ -262,7 +262,9 @@ export async function selectAutoBoundaryTowns(
        AND (a."communityId" IS NULL
          OR (a.status='error' AND a."attemptedAt" < now() - ($2::int * interval '1 millisecond'))
          OR (a.status IN ('ambiguous','unmatched','unsupported') AND a."attemptedAt" < now() - ($3::int * interval '1 millisecond')))
-     ORDER BY a."attemptedAt" ASC NULLS FIRST, t."communityId" LIMIT $1`,
+     ORDER BY (a."communityId" IS NOT NULL),
+       CASE WHEN a."communityId" IS NULL THEN t."registeredAt" END DESC NULLS LAST,
+       a."attemptedAt" ASC, t."communityId" LIMIT $1`,
     [
       options.limit,
       options.retryErrorMs,

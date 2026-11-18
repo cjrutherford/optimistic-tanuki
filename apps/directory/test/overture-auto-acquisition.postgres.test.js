@@ -117,14 +117,15 @@ test(
       await withDb(async (ds) => {
         const a = await town(ds, 'Aaa');
         const b = await town(ds, 'Bbb');
-        await town(ds, 'Ccc');
+        const c = await town(ds, 'Ccc');
         await town(ds, 'Ineligible', { eligible: false });
-        const f = fakeExtractor({ [a]: 3, [b]: 0 });
+        // Newest geometry first: the two most recently ready towns are taken, the oldest waits.
+        const f = fakeExtractor({ [c]: 3, [b]: 0 });
         const out = await auto.runAutoAcquisitionSweep(deps(ds, f.extract));
         assert.equal(out.status, 'ok');
         assert.equal(out.examined, 2);
         assert.equal(out.succeeded + out.empty, 2);
-        assert.deepEqual(f.calls.map((c) => c.town).sort(), [a, b].sort());
+        assert.deepEqual(f.calls.map((x) => x.town).sort(), [b, c].sort());
         const rows = await runs(ds);
         assert.equal(rows.length, 2);
         assert.ok(rows.every((r) => r.reason.startsWith('auto:')));
@@ -279,6 +280,59 @@ test(
       );
       assert.equal(await auto.closeStaleAutoRuns(ds, RELEASE), 1);
       assert.equal((await runs(ds))[0].status, 'failed_retryable');
+    });
+  }
+);
+
+test(
+  'selection: never-attempted towns first, newest geometry first, then retries',
+  { skip: !url },
+  async () => {
+    await withDb(async (ds) => {
+      const ids = {};
+      for (const [name, age] of [
+        ['Old', 30],
+        ['Mid', 20],
+        ['New', 1],
+        ['Retried', 0],
+      ]) {
+        ids[name] = await town(ds, name);
+        await ds.query(
+          `UPDATE directory_town_geometry SET "createdAt"=now() - ($2::int * interval '1 day') WHERE "communityId"=$1`,
+          [ids[name], age]
+        );
+      }
+      // The newest geometry belongs to a town that already failed once and is due a retry; it must not jump the queue.
+      const { beginRun, finishRun } = require('../src/acquisition-run');
+      const runId = await beginRun(ds, {
+        provider: 'overture',
+        release: RELEASE,
+        kind: 'overture-stage',
+        townIds: [ids.Retried],
+        reason: 'auto: Retried',
+      });
+      await finishRun(ds, runId, {
+        status: 'failed_retryable',
+        error: Error('boom'),
+      });
+      const config = {
+        limit: 10,
+        maxAssets: 4,
+        retryBackoffMs: 0,
+        maxAttempts: 3,
+      };
+      const order = (await auto.selectTowns(ds, RELEASE, config)).map(
+        (t) => t.name
+      );
+      assert.deepEqual(order, ['New', 'Mid', 'Old', 'Retried']);
+      const first = await auto.selectTowns(ds, RELEASE, {
+        ...config,
+        limit: 1,
+      });
+      assert.deepEqual(
+        first.map((t) => t.name),
+        ['New']
+      );
     });
   }
 );
