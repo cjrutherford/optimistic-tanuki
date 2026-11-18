@@ -24,8 +24,9 @@ describe('Directory OpenAPI', () => {
   }, 60000);
 
   it('matches the committed docs/api/directory-openapi.json (run `pnpm run openapi:directory` to refresh)', () => {
-    expect(serializeDirectoryOpenApi(doc)).toBe(
-      readFileSync(COMMITTED, 'utf8')
+    // Compare content, not bytes: the commit hook reformats the committed file with prettier.
+    expect(JSON.parse(serializeDirectoryOpenApi(doc))).toEqual(
+      JSON.parse(readFileSync(COMMITTED, 'utf8'))
     );
   });
 
