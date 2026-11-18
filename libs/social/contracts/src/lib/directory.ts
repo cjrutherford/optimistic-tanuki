@@ -874,6 +874,23 @@ export interface DirectoryOpsMetrics {
     'export' | 'taxonomy' | 'withdrawal',
     DirectoryOpsQueueMetrics
   > | null;
+  /**
+   * D15 fill-time target: an eligible town reaches a terminal acquisition state (filled, zero, blocked or failed)
+   * within `targetDays` of registration or of its boundary changing.
+   */
+  fillTime?: {
+    targetDays: number;
+    /** Eligible towns with no terminal state yet whose wait already exceeds the target. */
+    waitingOverTarget: number;
+    /** Eligible towns that reached a terminal state, but after more than the target. */
+    resolvedLate: number;
+    /** waitingOverTarget + resolvedLate. */
+    overTargetTowns: number;
+    /** Eligible towns whose clock is still running. */
+    waiting: number;
+    /** True while a town is still waiting past the target. */
+    alert: boolean;
+  } | null;
   controls: DirectoryOperatingControl[] | null;
   errors: string[];
 }

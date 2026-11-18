@@ -327,8 +327,9 @@ export class OverturePrivateSink {
       }
       if (targets.length)
         await manager.query(
-          `INSERT INTO directory_town_scan_target ("communityId","scanId",provenance)
-           SELECT t,$1,'recorded' FROM unnest($2::uuid[]) AS t ON CONFLICT DO NOTHING`,
+          `INSERT INTO directory_town_scan_target ("communityId","scanId",provenance,"geometryVersion")
+           SELECT t,$1,'recorded',(SELECT dt."geometryVersion" FROM directory_town dt WHERE dt."communityId"=t)
+             FROM unnest($2::uuid[]) AS t ON CONFLICT DO NOTHING`,
           [scanId, targets]
         );
       const rows = await manager.query(

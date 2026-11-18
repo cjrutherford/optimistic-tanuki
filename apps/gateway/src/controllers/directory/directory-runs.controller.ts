@@ -288,6 +288,55 @@ export class DirectoryRunsController {
     };
   }
 
+  /**
+   * "Run this town now": records a pending request the next acquisition sweep puts first. Idempotent per town while
+   * one is pending. The sweep still checks authorization, the kill switch and the budget, and still swaps on success.
+   */
+  @Post('towns/:townId/run')
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.operate)
+  @Header('Cache-Control', 'no-store')
+  async runTownNow(
+    @Param('townId') townId: string,
+    @Body() body: any,
+    @Req() req: RequestUser
+  ) {
+    const actorId = this.actor(req);
+    if (
+      !this.isUuid(townId) ||
+      !this.object(body) ||
+      !this.isUuid(body.decisionId) ||
+      !this.text(body.reason) ||
+      body.confirm !== 'RUN' ||
+      Object.keys(body).some(
+        (k) => !['decisionId', 'reason', 'confirm'].includes(k)
+      )
+    )
+      throw new BadRequestException('Invalid town run request');
+    const result = await this.post(
+      `/internal/acquisition/towns/${townId}/run`,
+      {
+        decisionId: body.decisionId,
+        reason: body.reason,
+        confirm: 'RUN',
+        actorId,
+      }
+    );
+    this.shape(
+      this.isUuid(result.communityId) &&
+        typeof result.replayed === 'boolean' &&
+        typeof result.alreadyPending === 'boolean' &&
+        Array.isArray(result.providers)
+    );
+    return {
+      communityId: result.communityId,
+      replayed: result.replayed,
+      alreadyPending: result.alreadyPending,
+      requestedAt: result.requestedAt,
+      providers: result.providers.filter((p: unknown) => typeof p === 'string'),
+    };
+  }
+
   @Get(':runId')
   @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
   @RequirePermissions(DIRECTORY_PERMISSIONS.operate)

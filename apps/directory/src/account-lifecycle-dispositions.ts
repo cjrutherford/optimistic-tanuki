@@ -892,6 +892,42 @@ const inventory: DirectoryLifecycleInventory = {
       ],
     },
     {
+      table: 'directory_acquisition_town_request',
+      entity: 'DirectoryAcquisitionTownRequest',
+      subject: 'profile',
+      rule: 'actorId is the operator profile that asked for a town to be acquired now. A match on the account or a legacy identifier is ambiguous and blocks.',
+      columns: [
+        {
+          fields: ['actorId'],
+          class: 'identity',
+          domain: 'profile',
+          deletion: 'null-when-domain-matches',
+          export: 'exclude',
+        },
+        {
+          fields: ['reason'],
+          class: 'actor-input',
+          deletion: 'clear',
+          export: 'exclude',
+          note: 'Free text the operator supplied; cleared to an empty string on requests that operator made.',
+        },
+        {
+          fields: [
+            'id',
+            'provider',
+            'communityId',
+            'requestedAt',
+            'consumedAt',
+            'runId',
+          ],
+          class: 'history',
+          deletion: 'preserve',
+          export: 'exclude',
+          note: 'Which town was asked for, when, and which run served it: kept as the audit trail after the actor is erased.',
+        },
+      ],
+    },
+    {
       table: 'directory_operating_control',
       entity: 'DirectoryOperatingControl',
       subject: 'profile',
@@ -1258,6 +1294,7 @@ const inventory: DirectoryLifecycleInventory = {
         'completedAt',
         'rowCount',
         'provenance',
+        'geometryVersion',
       ],
       'Town scan target record.'
     ),

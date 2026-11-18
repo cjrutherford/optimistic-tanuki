@@ -30,6 +30,8 @@ export interface AcquisitionRouteChecks {
     v: any
   ): Promise<unknown>;
   acquisitionImportHistory(v: any): Promise<unknown>;
+  /** "Run this town now": records a pending request the next sweep puts first. */
+  acquisitionTownRun(townId: string, v: any): Promise<unknown>;
 }
 
 let active = 0;
@@ -88,11 +90,15 @@ export async function handleAcquisitionRoute(
   if (!req.url?.startsWith('/internal/acquisition/')) return false;
   const url = new URL(req.url, 'http://localhost');
   const m = url.pathname.match(
-    /^\/internal\/acquisition\/(budget|history\/import|runs(?:\/(latest|[0-9a-f-]{36})(?:\/(cancel|resume|retry))?)?)$/
+    /^\/internal\/acquisition\/(budget|history\/import|towns\/[0-9a-f-]{36}\/run|runs(?:\/(latest|[0-9a-f-]{36})(?:\/(cancel|resume|retry))?)?)$/
   );
   if (!m) return false;
   const [, whole, runPart, sub] = m;
-  const area = whole.startsWith('runs') ? 'runs' : whole;
+  const area = whole.startsWith('runs')
+    ? 'runs'
+    : whole.startsWith('towns/')
+    ? 'town-run'
+    : whole;
   const auth = authorized(req, secret);
   if (auth) return send(res, auth), true;
   if (active >= 32) return send(res, 503), true;
@@ -135,6 +141,20 @@ export async function handleAcquisitionRoute(
     if (!v) return send(res, 400), true;
     if (!uuid.test(v.actorId || '') || !uuid.test(v.decisionId || ''))
       return send(res, 400), true;
+    if (area === 'town-run') {
+      const townId = whole.split('/')[1];
+      if (
+        !uuid.test(townId) ||
+        !only(v, ['actorId', 'decisionId', 'reason', 'confirm']) ||
+        !text(v.reason) ||
+        v.confirm !== 'RUN'
+      )
+        return send(res, 400), true;
+      const { confirm: _confirm, ...rest } = v;
+      return (
+        send(res, 200, await checks.acquisitionTownRun(townId, rest)), true
+      );
+    }
     if (area === 'history/import') {
       if (
         !only(v, ['actorId', 'decisionId', 'reason', 'release']) ||
@@ -187,7 +207,8 @@ export async function handleAcquisitionRoute(
         code: error.code,
         ...(error.detail ? { reason: error.detail } : {}),
       });
-    else if (message === 'Run not found') send(res, 404);
+    else if (message === 'Run not found' || message === 'Town not found')
+      send(res, 404);
     else if (/^Invalid /.test(message)) send(res, 400);
     else send(res, 503);
     return true;

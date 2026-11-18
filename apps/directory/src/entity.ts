@@ -293,6 +293,43 @@ export class DirectoryTownScanTarget {
   @Column({ type: 'timestamptz', nullable: true }) completedAt!: Date | null;
   @Column({ type: 'int', nullable: true }) rowCount!: number | null;
   @Column({ type: 'varchar', length: 24 }) provenance!: string;
+  /**
+   * The town's geometry version when the scan began (recorded targets only). A newer town geometry than this means
+   * the boundary changed after the scan, so the town is refilled. NULL for backfilled scans: unknown, never a trigger.
+   */
+  @Column({ type: 'int', nullable: true }) geometryVersion!: number | null;
+}
+
+/**
+ * An operator's "run this town now" request (D15 follow-up). Pending while `consumedAt` is NULL; at most one pending
+ * request per (town, provider). The next acquisition sweep puts the town first (it still passes authorization, the
+ * kill switch and the budget ledger), and begins its run, which marks the request consumed. The row is the audit:
+ * who asked, why and when. `id` is the client's decision id, so a replay finds its own row.
+ */
+@Entity({ name: 'directory_acquisition_town_request' })
+@Index(
+  'UQ_directory_acquisition_town_request_pending',
+  ['communityId', 'provider'],
+  {
+    unique: true,
+    where: '"consumedAt" IS NULL',
+  }
+)
+@Check(
+  'CHK_directory_acquisition_town_request_provider',
+  `"provider" IN ('overture','alltheplaces')`
+)
+export class DirectoryAcquisitionTownRequest {
+  @PrimaryColumn('uuid') id!: string;
+  @PrimaryColumn({ type: 'varchar', length: 16 }) provider!: string;
+  @Column('uuid') communityId!: string;
+  /** Operator profile; NULL once the profile's account was erased. */
+  @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  @Column({ type: 'varchar', length: 1024 }) reason!: string;
+  @Column({ type: 'timestamptz', default: () => 'now()' }) requestedAt!: Date;
+  @Column({ type: 'timestamptz', nullable: true }) consumedAt!: Date | null;
+  /** The run that satisfied the request. */
+  @Column({ type: 'uuid', nullable: true }) runId!: string | null;
 }
 
 /**

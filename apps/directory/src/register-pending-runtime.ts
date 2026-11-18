@@ -153,6 +153,7 @@ import {
 } from './export-job';
 import { handleTaxonomyRoute } from './taxonomy-routes';
 import { handleAcquisitionRoute } from './acquisition-routes';
+import { requestTownAcquisition } from './acquisition-refresh';
 import {
   acquisitionBudgetPanel,
   cancelAcquisitionRun,
@@ -1648,6 +1649,8 @@ export function pendingChecks(
         : action === 'resume'
         ? resumeAcquisitionRun
         : retryAcquisitionJob)(acquisitionDb, { ...v, id }),
+    acquisitionTownRun: (townId: string, v: any) =>
+      requestTownAcquisition(db as never, { ...v, communityId: townId }),
     acquisitionImportHistory: (v: any) => {
       // A declared release must be one an approved rights policy covers, so a typo cannot label history.
       if (v.release !== undefined && !loadRightsPolicy(v.release))

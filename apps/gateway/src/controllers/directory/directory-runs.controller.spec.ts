@@ -87,6 +87,7 @@ describe('DirectoryRunsController', () => {
       'latest',
       'budget',
       'importHistory',
+      'runTownNow',
       'runDetail',
       'cancel',
       'resume',
@@ -286,6 +287,46 @@ describe('DirectoryRunsController', () => {
       await expect(controller.importHistory(body, req)).rejects.toThrow(
         BadRequestException
       );
+  });
+
+  it('requests a town run now with the session actor, a decision id and confirmation', async () => {
+    const townId = '77777777-7777-4777-8777-777777777777';
+    const spy = reply(200, {
+      communityId: townId,
+      replayed: false,
+      alreadyPending: false,
+      requestedAt: '2026-11-18T00:00:00.000Z',
+      providers: ['overture'],
+    });
+    const body = { decisionId, reason: 'owner asked', confirm: 'RUN' };
+    expect(await controller.runTownNow(townId, body, req)).toEqual({
+      communityId: townId,
+      replayed: false,
+      alreadyPending: false,
+      requestedAt: '2026-11-18T00:00:00.000Z',
+      providers: ['overture'],
+    });
+    expect(call(spy).url).toBe(
+      `http://directory:3120/internal/acquisition/towns/${townId}/run`
+    );
+    expect(JSON.parse(call(spy).init.body as string)).toEqual({
+      ...body,
+      actorId: actor,
+    });
+    for (const [id, bad] of [
+      ['x', body],
+      [townId, { ...body, confirm: 'no' }],
+      [townId, { decisionId, reason: 'r' }],
+      [townId, { ...body, actorId: actor }],
+      [townId, { ...body, reason: '' }],
+    ] as const)
+      await expect(controller.runTownNow(id, bad, req)).rejects.toThrow(
+        BadRequestException
+      );
+    reply(404);
+    await expect(controller.runTownNow(townId, body, req)).rejects.toThrow(
+      NotFoundException
+    );
   });
 
   it('forwards a declared release on history import', async () => {

@@ -61,6 +61,40 @@
     </div>
   </otui-card>
 
+  <otui-card class="run-form" tone="neutral" emphasis="soft">
+    <h2>Run a town now</h2>
+    <p class="run-meta">
+      Puts one town first on the next acquisition sweep. The sweep still checks
+      authorization, the budget and the kill switch, and the old listings keep
+      serving until the new scan replaces them. Asking twice is safe.
+    </p>
+    <lib-text-input
+      #townId
+      label="Town id"
+      placeholder="Town UUID"
+    ></lib-text-input>
+    <lib-text-input
+      #townReason
+      label="Reason (required)"
+      placeholder="Why run this town now?"
+    ></lib-text-input>
+    <lib-text-input
+      #townConfirm
+      label="Type RUN to confirm"
+      placeholder="RUN"
+    ></lib-text-input>
+    <div class="form-actions">
+      <otui-button
+        tone="brand"
+        emphasis="outline"
+        [disabled]="busy"
+        (click)="runTownNow(townId.value, townReason.value, townConfirm.value)"
+      >
+        Run this town now
+      </otui-button>
+    </div>
+  </otui-card>
+
   <div class="form-actions" role="group" aria-label="Status filter">
     @for (f of filters; track f) {
     <otui-button

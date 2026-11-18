@@ -231,3 +231,44 @@ test('routes: conflicts carry only a code and a blocked reason', async () => {
   await h.run();
   assert.equal(h.res.status, 404);
 });
+
+test('routes: run-this-town-now needs the secret, a confirmation and ids', async () => {
+  const path = `/internal/acquisition/towns/${ID}/run`;
+  const body = {
+    actorId: A,
+    decisionId: D,
+    reason: 'owner asked',
+    confirm: 'RUN',
+  };
+  let h = harness('POST', path, body);
+  await h.run();
+  assert.equal(h.res.status, 200);
+  assert.equal(h.calls[0][0], 'acquisitionTownRun');
+  assert.equal(h.calls[0][1], ID);
+  assert.equal(h.calls[0][2].confirm, undefined);
+  assert.equal(h.calls[0][2].reason, 'owner asked');
+
+  for (const bad of [
+    { ...body, confirm: 'no' },
+    { ...body, decisionId: undefined },
+    { ...body, reason: '' },
+    { ...body, extra: 1 },
+  ]) {
+    h = harness('POST', path, bad);
+    await h.run();
+    assert.equal(h.res.status, 400);
+    assert.equal(h.calls.length, 0);
+  }
+  h = harness('POST', path, body);
+  await h.run('x'.repeat(40));
+  assert.notEqual(h.res.status, 200);
+  assert.equal(h.calls.length, 0);
+  h = harness('GET', path, undefined);
+  await h.run();
+  assert.equal(h.res.status, 405);
+  h = harness('POST', path, body, {
+    acquisitionTownRun: Error('Town not found'),
+  });
+  await h.run();
+  assert.equal(h.res.status, 404);
+});

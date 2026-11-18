@@ -19,8 +19,11 @@ import {
 import { isPaused, ProviderPausedError } from './operating-controls';
 import {
   swapPendingSourceless,
+  swapPendingSuperseded,
   swapSourcelessAfterRefresh,
+  swapSupersededAfterRefresh,
 } from './town-retirement';
+import { consumeTownRequest, refreshSelectionSql } from './acquisition-refresh';
 import { OverturePrivateSink } from './overture-private-sink';
 import {
   OvertureInventory,
@@ -185,7 +188,7 @@ export function toTown(row: any): AutoTown | null {
   }
 }
 
-/** A town counts as acquired once a live, completed scan target exists for it (any earlier staging included). */
+/** A (town, scan) pair that was retired no longer counts as acquired. */
 const RETIRED = (scan: string, town: string): string =>
   `EXISTS (SELECT 1 FROM directory_town_scan_retirement z WHERE z."scanId"=${scan} AND z."communityId"=${town})`;
 /**
@@ -209,16 +212,14 @@ export const runSuperseded = (run: string, town: string): string =>
         )})))`;
 export const notRetired = (scan: string, town: string): string =>
   `NOT ${RETIRED(scan, town)}`;
-const ACQUIRED = `EXISTS (SELECT 1 FROM directory_town_scan_target s
-    JOIN directory_overture_private_completion c ON c."scanId"=s."scanId"
-    JOIN directory_overture_private_membership m ON m."scanId"=s."scanId"
-    JOIN directory_overture_private_policy p ON p."policyId"=m."policyId" AND p.revoked=false
-    WHERE s."communityId"=t."communityId"
-      AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=s."scanId")
-      AND ${notRetired('s."scanId"', 's."communityId"')}
-      AND NOT ${hasSourcelessRows('s."scanId"', 's."communityId"')}
-      AND NOT EXISTS (SELECT 1 FROM directory_acquisition_run_job j JOIN directory_acquisition_run q ON q.id=j."runId"
-        WHERE j."scanId"=s."scanId" AND q.provider='alltheplaces'))`;
+/** The Overture scans that are live for a town (a town is acquired while one exists), as a predicate over a scan-target alias `s`. */
+const OVERTURE_LIVE_SCAN = `EXISTS (SELECT 1 FROM directory_overture_private_membership m
+      JOIN directory_overture_private_policy p ON p."policyId"=m."policyId" AND p.revoked=false WHERE m."scanId"=s."scanId")
+    AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=s."scanId")
+    AND ${notRetired('s."scanId"', 's."communityId"')}
+    AND NOT ${hasSourcelessRows('s."scanId"', 's."communityId"')}
+    AND NOT EXISTS (SELECT 1 FROM directory_acquisition_run_job j JOIN directory_acquisition_run q ON q.id=j."runId"
+      WHERE j."scanId"=s."scanId" AND q.provider='alltheplaces')`;
 const AUTO_RUN_OF_TOWN = `r.kind='overture-stage' AND r.provider='overture' AND r.release=$1
     AND r.reason LIKE '${AUTO_RUN_REASON_PREFIX}%' AND r."townIds" @> to_jsonb(t."communityId"::text)
     AND NOT ${runSuperseded('r', 't."communityId"')}`;
@@ -242,26 +243,30 @@ export const orderNewestNeverAttemptedFirst = (runOfTown: string): string =>
 const NEWEST_NEVER_ATTEMPTED_FIRST =
   orderNewestNeverAttemptedFirst(AUTO_RUN_OF_TOWN);
 
-/** Eligible, geometry-ready towns with no acquisition for the release and nothing that should hold them back. */
+/**
+ * Eligible, geometry-ready towns to acquire: never acquired (first, newest first), or whose newest live scan is older
+ * than 90 days, or whose boundary changed after it was cut (refreshes follow), or that an operator asked for (before
+ * everything). Towns with a run in flight or a settled attempt since the refresh became due are held back.
+ */
 export async function selectTowns(
   db: Pick<DataSource, 'query'>,
   release: string,
   config: AutoAcquisitionConfig
 ): Promise<AutoTown[]> {
   const rows = await db.query(
-    `${TOWN_SQL}
-     WHERE t.eligible IS TRUE AND t."geometryStatus"='ready'
-       AND NOT ${ACQUIRED}
-       AND NOT EXISTS (SELECT 1 FROM directory_acquisition_run r WHERE ${AUTO_RUN_OF_TOWN} AND (
-             r.status IN ('succeeded','succeeded_empty','failed_permanent','partial','queued','cancelled','cancel_requested')
-             OR (r.status='running' AND r."heartbeatAt" > clock_timestamp() - interval '10 minutes')
-             OR (r.status='blocked' AND r."blockedReason" IN ('invalid_geometry','policy_blocked'))))
-       AND NOT EXISTS (SELECT 1 FROM (SELECT count(*) AS n, max(r."finishedAt") AS last FROM directory_acquisition_run r
-             WHERE ${AUTO_RUN_OF_TOWN} AND r.status='failed_retryable') f
-           WHERE f.n > 0 AND (f.n >= $3 OR f.last > clock_timestamp() - make_interval(secs => ($2::numeric / 1000) * power(2, f.n - 1))))
-     ORDER BY ${NEWEST_NEVER_ATTEMPTED_FIRST}
-     LIMIT $4`,
-    [release, config.retryBackoffMs, config.maxAttempts, config.limit]
+    refreshSelectionSql({
+      townSql: TOWN_SQL,
+      liveScan: OVERTURE_LIVE_SCAN,
+      runOfTown: AUTO_RUN_OF_TOWN,
+      baseOrder: NEWEST_NEVER_ATTEMPTED_FIRST,
+    }),
+    [
+      release,
+      config.retryBackoffMs,
+      config.maxAttempts,
+      config.limit,
+      AUTO_PROVIDER,
+    ]
   );
   return rows.map(toTown).filter((t: AutoTown | null): t is AutoTown => !!t);
 }
@@ -465,6 +470,7 @@ export async function acquireTown(
       townIds: [town.id],
       reason: `${AUTO_RUN_REASON_PREFIX} ${town.name}`.slice(0, 1024),
     }));
+  if (!resume) await consumeTownRequest(db, town.id, AUTO_PROVIDER, runId);
   const state: RunState = {
     runId,
     counts: { observed: 0, accepted: 0, rejected: 0 },
@@ -508,6 +514,7 @@ export async function acquireTown(
     const status = await finishRun(db, runId);
     log(`auto acquisition: ${town.name} ${status}`);
     await swapSourcelessAfterRefresh(db, town.id, 'overture', status);
+    await swapSupersededAfterRefresh(db, town.id, 'overture', status);
     return { status, runId };
   } catch (error) {
     if (error instanceof AutoStageStopped) {
@@ -595,6 +602,7 @@ export async function runAutoAcquisitionSweep(
   const out = emptyOutcome('ok');
   await closeStaleAutoRuns(db, inventory.release);
   await swapPendingSourceless(db, 'overture');
+  await swapPendingSuperseded(db, 'overture');
   out.recordedPending = await recordGeometryPending(
     db,
     inventory.release,

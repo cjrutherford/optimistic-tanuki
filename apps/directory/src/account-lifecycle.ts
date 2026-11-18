@@ -91,6 +91,7 @@ export const DIRECTORY_DELETION_IDENTITIES = Object.freeze({
   ],
   directory_acquisition_run: [['startedById', 'profile']],
   directory_acquisition_run_event: [['actorId', 'profile']],
+  directory_acquisition_town_request: [['actorId', 'profile']],
   directory_operating_control: [['updatedBy', 'profile']],
   directory_operating_control_event: [['actorId', 'profile']],
   directory_duplicate_case_event: [['actorId', 'profile']],
@@ -198,6 +199,10 @@ async function inspect(
       s.profiles,
     ]),
     await one(
+      'directory_acquisition_town_request WHERE "actorId"=ANY($1::uuid[])',
+      [s.profiles]
+    ),
+    await one(
       'directory_acquisition_run_event WHERE "actorId"=ANY($1::uuid[])',
       [s.profiles]
     ),
@@ -277,6 +282,10 @@ async function inspect(
     ),
     await one(
       'directory_acquisition_run WHERE "startedById"=ANY($1::uuid[]) AND NOT ("startedById"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_acquisition_town_request WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
       [s.all, s.profiles]
     ),
     await one(
@@ -410,6 +419,10 @@ async function erase(manager: Manager, s: Canonical): Promise<void> {
   );
   await manager.query(
     'UPDATE directory_acquisition_run SET "startedById"=NULL,reason=\'\' WHERE "startedById"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_acquisition_town_request SET "actorId"=NULL,reason=\'\' WHERE "actorId"=ANY($1::uuid[])',
     [s.profiles]
   );
   await manager.query(
