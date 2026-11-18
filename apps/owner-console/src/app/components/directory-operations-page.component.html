@@ -15,7 +15,7 @@
       <otui-button
         tone="neutral"
         emphasis="soft"
-        aria-label="Refresh operations"
+        ariaLabel="Refresh operations"
         (click)="refresh()"
       >
         Refresh
@@ -63,7 +63,7 @@
           tone="brand"
           emphasis="solid"
           [disabled]="busy !== null"
-          [attr.aria-label]="'Resume ' + label(control.key)"
+          [ariaLabel]="'Resume ' + label(control.key)"
           (click)="resume(control)"
         >
           Resume
@@ -86,7 +86,7 @@
             tone="neutral"
             emphasis="soft"
             [disabled]="busy !== null"
-            [attr.aria-label]="'Pause ' + label(control.key)"
+            [ariaLabel]="'Pause ' + label(control.key)"
             (click)="pause(control)"
           >
             Pause
@@ -190,6 +190,10 @@
           <div>
             <dt>Stale</dt>
             <dd>{{ s.staleListings }}</dd>
+          </div>
+          <div>
+            <dt>Freshness unknown</dt>
+            <dd>{{ s.unknownFreshnessListings }}</dd>
           </div>
           <div>
             <dt>Oldest listing (days)</dt>

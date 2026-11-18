@@ -41,7 +41,7 @@
       <otui-button
         tone="neutral"
         emphasis="ghost"
-        aria-label="Refresh the export list"
+        ariaLabel="Refresh the export list"
         (click)="refresh()"
       >
         Refresh
@@ -115,7 +115,7 @@
           tone="brand"
           emphasis="solid"
           [disabled]="downloading !== null"
-          [attr.aria-label]="'Download export ' + job.id"
+          [ariaLabel]="'Download export ' + job.id"
           (click)="download(job)"
         >
           Download
@@ -125,7 +125,7 @@
           size="sm"
           tone="neutral"
           emphasis="soft"
-          [attr.aria-label]="'Retry export ' + job.id"
+          [ariaLabel]="'Retry export ' + job.id"
           (click)="retry(job)"
         >
           Retry

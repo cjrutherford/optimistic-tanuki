@@ -57,3 +57,30 @@ test('readiness waits for bootstrap and a recent complete sweep, and errors clea
   health.sweepComplete();
   assert.equal(health.ready(), true);
 });
+
+test('readiness probe fails while the database is unreachable and recovers with it', async () => {
+  const health = new RegisterWorkerHealth(60000);
+  health.bootstrapComplete();
+  health.sweepComplete();
+  assert.equal(await health.readyWithProbe(async () => 1), true);
+  assert.equal(
+    await health.readyWithProbe(async () => {
+      throw new Error('ECONNREFUSED');
+    }),
+    false
+  );
+  assert.equal(
+    await health.readyWithProbe(() => new Promise(() => undefined), 20),
+    false
+  );
+  assert.equal(await health.readyWithProbe(async () => 1), true);
+  health.error();
+  let probed = false;
+  assert.equal(
+    await health.readyWithProbe(async () => {
+      probed = true;
+    }),
+    false
+  );
+  assert.equal(probed, false);
+});

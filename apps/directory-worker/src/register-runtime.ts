@@ -156,6 +156,30 @@ export class RegisterWorkerHealth {
       Date.now() - this.lastSweep <= this.staleMs
     );
   }
+  /** Sweep-based readiness plus a live database round trip, so an outage shows within one probe instead of after the stale window. */
+  async readyWithProbe(
+    probe: () => Promise<unknown>,
+    timeoutMs = 2000
+  ): Promise<boolean> {
+    if (!this.ready()) return false;
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        probe(),
+        new Promise((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error('probe timeout')),
+            timeoutMs
+          );
+        }),
+      ]);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
 }
 export async function runRegisterWorker(
   config: RegisterWorkerConfig
@@ -225,17 +249,21 @@ export async function runRegisterWorker(
         res.writeHead(404).end();
         return;
       }
-      const ok = live ? health.live() : health.ready();
-      const body =
-        ready && config.bindingSweep
-          ? JSON.stringify({
-              status: ok ? 'ok' : 'unavailable',
-              bindingSweep: sweepStatus.snapshot(),
-            })
-          : ok
-          ? 'ok'
-          : 'unavailable';
-      res.writeHead(ok ? 200 : 503).end(body);
+      void (async () => {
+        const ok = live
+          ? health.live()
+          : await health.readyWithProbe(() => db.query('SELECT 1'));
+        const body =
+          ready && config.bindingSweep
+            ? JSON.stringify({
+                status: ok ? 'ok' : 'unavailable',
+                bindingSweep: sweepStatus.snapshot(),
+              })
+            : ok
+            ? 'ok'
+            : 'unavailable';
+        res.writeHead(ok ? 200 : 503).end(body);
+      })();
     });
     await new Promise<void>((resolve, reject) => {
       server!.once('error', reject);

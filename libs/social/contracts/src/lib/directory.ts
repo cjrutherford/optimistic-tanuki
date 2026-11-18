@@ -808,6 +808,8 @@ export interface DirectoryOpsMetrics {
   freshness: {
     refreshDueListings: number;
     staleListings: number;
+    /** Live listings with no freshness evidence: neither fresh nor stale. */
+    unknownFreshnessListings: number;
     oldestListingAgeDays: number | null;
   } | null;
   policy: {

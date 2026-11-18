@@ -86,15 +86,17 @@ async function freshness(pool: Pool) {
   const [r] = await pool.query(
     `SELECT count(*) FILTER (WHERE e."upstreamLastModified" < now() - ($1::int * interval '1 day'))::int AS due,
             count(*) FILTER (WHERE e."upstreamLastModified" < now() - ($2::int * interval '1 day'))::int AS stale,
+            count(*) FILTER (WHERE e."upstreamLastModified" IS NULL)::int AS unknown,
             floor(extract(epoch FROM now() - min(e."upstreamLastModified")) / 86400)::int AS oldest
        FROM directory_listing_identity i
-       JOIN directory_overture_source_evidence e ON e."scanId"=i."scanId"
+       LEFT JOIN directory_overture_source_evidence e ON e."scanId"=i."scanId"
       WHERE ${LIVE_WHERE}`,
     [FRESH_DAYS, STALE_DAYS]
   );
   return {
     refreshDueListings: int(r.due),
     staleListings: int(r.stale),
+    unknownFreshnessListings: int(r.unknown),
     oldestListingAgeDays:
       r.oldest === null || r.oldest === undefined ? null : int(r.oldest),
   };
@@ -202,9 +204,10 @@ async function queues(pool: Pool) {
  * - coverage: publishedListings = listing identities of live scans (completed, non-revoked policy, scan not revoked,
  *   row not revoked; an upper bound, suppressions and classification exclusions are not applied);
  *   townsWithListings = distinct communities among them.
- * - freshness: over the same live identities that have source evidence with an upstreamLastModified; refreshDueListings
- *   = older than 90 days; staleListings = older than 120 days (a subset of refreshDue); oldestListingAgeDays = whole
- *   days since the oldest such stamp, null when none. The evidence hash is not re-verified here.
+ * - freshness: over the same live identities. refreshDueListings = source evidence older than 90 days; staleListings =
+ *   older than 120 days (a subset of refreshDue); unknownFreshnessListings = live identities with no upstreamLastModified
+ *   evidence (they are neither fresh nor stale, and must not be read as fresh); oldestListingAgeDays = whole days since
+ *   the oldest stamp, null when none. The evidence hash is not re-verified here.
  * - policy: activePolicies / revokedPolicies = private policies by `revoked`; publicationPaused = no active policy (the
  *   same global fact coverage reports as `unconfigured`); openRightsCases = status 'review'; openTaxonomyCases = 'open'.
  * - spend: reservedCents = sum of provider budget reservations for the current UTC month; alert = reserved >=
@@ -361,6 +364,11 @@ export function toPrometheus(m: DirectoryOpsMetrics): string {
     'directory_stale_listings',
     'Live listings whose source is older than 120 days.',
     [[none, m.freshness?.staleListings]]
+  );
+  gauge(
+    'directory_unknown_freshness_listings',
+    'Live listings with no source freshness evidence.',
+    [[none, m.freshness?.unknownFreshnessListings]]
   );
   gauge(
     'directory_oldest_listing_age_days',
