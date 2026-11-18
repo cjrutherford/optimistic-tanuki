@@ -1,0 +1,23 @@
+{
+  "capturedAt": "2026-11-18T07:38Z",
+  "action": "docker stop optimistic-tanuki-directory-1 for 13 s, then docker start (reversed)",
+  "town": "san-antonio-tx (7d8239cb-7209-4ac6-94d4-99d03f0c89f0), normally coverage available",
+  "duringOutage": {
+    "publicApi": {
+      "status": 503,
+      "body": {
+        "message": "Local directory unavailable",
+        "error": "Service Unavailable"
+      }
+    },
+    "localHubPage": {
+      "status": 200,
+      "rendered": "unavailable / try-again error state; no coverage state substituted",
+      "hostOrServiceNamesInHtml": 0
+    }
+  },
+  "afterRestart": {
+    "publicApi": 200,
+    "directoryHealth": "starting, then healthy"
+  }
+}

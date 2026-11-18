@@ -1286,3 +1286,10 @@ provider/email/payment operations, deployment/load/production AV definitions,
 backups/remote copies or operational support. The project owner/operator must
 record the external evidence and final release decision. DF-007/RR-11 remain
 open. Earlier D/U/R2/R4 receipts remain immutable revision snapshots.
+
+**2026-11-18 Town Square directory S10.** The integrated-acceptance evidence and
+release-gate checklist are in the
+[S10 scorecard](../plans/town-square-directory/S10-acceptance-scorecard.md). Local
+scope is ready for review; the first public release and complete integration
+remain blocked (acquisition authorization, geometry, production deployment,
+deferred source capabilities in DF-008).

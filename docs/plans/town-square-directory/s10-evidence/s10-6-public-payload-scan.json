@@ -1,0 +1,17 @@
+{
+  "capturedAt": "2026-11-18T07:25Z",
+  "scope": "first page of GET /api/directory/towns/:id/local-evaluation-listings for all 261 eligible towns, anonymous, via Local Hub 127.0.0.1:8087",
+  "towns": 261,
+  "listingRows": 3398,
+  "responseKeys": [
+    "listings",
+    "hasMore",
+    "sourceFreshness",
+    "coverage",
+    "policyVersion"
+  ],
+  "listingKeys": ["name", "category", "attribution", "notices", "termsUrls"],
+  "forbiddenKeyPattern": "scanId|sourceFileRowNumber|provenance|ownerId|profileId|userId|password|secret|token|geoapify|evidence|sources|rights|reviewer|suppress|private (any depth)",
+  "forbiddenKeyHits": 0,
+  "emailShapedValues": 0
+}
