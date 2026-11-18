@@ -27,7 +27,8 @@
       "socialReferencePoint": [-72.6508, 41.5832],
       "socialPointInside": false,
       "socialPointDistanceMeters": 9883,
-      "rationale": "Town of Wethersfield is a Connecticut town (county subdivision); Census has a smaller Wethersfield CDP inside it, but the town is the municipality. Social point is in neighbouring Cromwell, so it never matched."
+      "rationale": "Town of Wethersfield is a Connecticut town (county subdivision); Census has a smaller Wethersfield CDP inside it, but the town is the municipality. Social point is in neighbouring Cromwell, so it never matched.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "e080c303-70a0-4cd8-936c-219890d4720a",
@@ -54,7 +55,8 @@
       "socialReferencePoint": [-82.8023, 29.1464],
       "socialPointInside": false,
       "socialPointDistanceMeters": 24811,
-      "rationale": "Only incorporated Cedar Key in Florida; Social point falls in the Gulf, about 25 km east of the city."
+      "rationale": "Only incorporated Cedar Key in Florida; Social point falls in the Gulf, about 25 km east of the city.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "b062eb27-6245-4265-8775-5477647bc9b6",
@@ -81,7 +83,8 @@
       "socialReferencePoint": [-84.9695, 29.6575],
       "socialPointInside": false,
       "socialPointDistanceMeters": 3728,
-      "rationale": "Only St. George Island CDP in Florida; Social point is about 3.7 km west of the CDP."
+      "rationale": "Only St. George Island CDP in Florida; Social point is about 3.7 km west of the CDP.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "2248ad0e-f492-4608-8677-a0fd9a2be2ed",
@@ -108,7 +111,8 @@
       "socialReferencePoint": [-84.192, 31.1355],
       "socialPointInside": false,
       "socialPointDistanceMeters": 8185,
-      "rationale": "Only incorporated Camilla in Georgia; Social point is about 8 km south of the city."
+      "rationale": "Only incorporated Camilla in Georgia; Social point is about 8 km south of the city.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "dce721dc-af66-4113-9139-9fc8f6637b47",
@@ -135,7 +139,8 @@
       "socialReferencePoint": [-83.9879, 34.2979],
       "socialPointInside": false,
       "socialPointDistanceMeters": 10036,
-      "rationale": "Only incorporated Gainesville in Georgia (the Florida city is a different state); Social point is about 10 km west."
+      "rationale": "Only incorporated Gainesville in Georgia (the Florida city is a different state); Social point is about 10 km west.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "fd385aef-9b5e-4b6c-9039-f6f04e0861e6",
@@ -162,7 +167,8 @@
       "socialReferencePoint": [-82.9961, 30.6838],
       "socialPointInside": false,
       "socialPointDistanceMeters": 19593,
-      "rationale": "Only incorporated Lake Park in Georgia; Social point is about 20 km west."
+      "rationale": "Only incorporated Lake Park in Georgia; Social point is about 20 km west.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "b528a13d-95ec-4e7b-82bd-ef10817bbfe6",
@@ -189,7 +195,8 @@
       "socialReferencePoint": [-81.3966, 31.1535],
       "socialPointInside": true,
       "socialPointDistanceMeters": 0,
-      "rationale": "Census names the island community St. Simons CDP; same island, the Social point falls inside it."
+      "rationale": "Census names the island community St. Simons CDP; same island, the Social point falls inside it.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "7fc1bf48-7624-459c-8be1-7080890ba846",
@@ -216,7 +223,8 @@
       "socialReferencePoint": [-76.9122, 38.8143],
       "socialPointInside": false,
       "socialPointDistanceMeters": 8147,
-      "rationale": "Only incorporated Seat Pleasant in Maryland; Social point is about 8 km south-west."
+      "rationale": "Only incorporated Seat Pleasant in Maryland; Social point is about 8 km south-west.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "20d6a138-9262-44b0-a804-7d7fc3af4763",
@@ -243,7 +251,8 @@
       "socialReferencePoint": [-77.0414, 38.9767],
       "socialPointInside": false,
       "socialPointDistanceMeters": 2220,
-      "rationale": "Only incorporated Takoma Park in Maryland; Social point is in the District of Columbia, about 2 km outside."
+      "rationale": "Only incorporated Takoma Park in Maryland; Social point is in the District of Columbia, about 2 km outside.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "c0930d22-86d8-4c38-9e92-380772a3dcac",
@@ -270,7 +279,8 @@
       "socialReferencePoint": [-77.9333, 33.8783],
       "socialPointInside": false,
       "socialPointDistanceMeters": 3494,
-      "rationale": "Only the village of Bald Head Island in North Carolina; Social point is about 3.5 km away."
+      "rationale": "Only the village of Bald Head Island in North Carolina; Social point is about 3.5 km away.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "4bbfd1cb-a37e-4705-b87e-81ff16ad13c4",
@@ -297,7 +307,8 @@
       "socialReferencePoint": [-75.6902, 35.6935],
       "socialPointInside": false,
       "socialPointDistanceMeters": 50958,
-      "rationale": "Only Hatteras CDP in North Carolina; Social latitude is about 0.47 degrees too far north (longitude agrees), so the point is about 51 km away."
+      "rationale": "Only Hatteras CDP in North Carolina; Social latitude is about 0.47 degrees too far north (longitude agrees), so the point is about 51 km away.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "973fb2be-4fa9-42d0-b619-852e3e728cb7",
@@ -324,7 +335,8 @@
       "socialReferencePoint": [-75.5949, 35.9918],
       "socialPointInside": false,
       "socialPointDistanceMeters": 4535,
-      "rationale": "Only the town of Nags Head in North Carolina; Social point is about 4.5 km away."
+      "rationale": "Only the town of Nags Head in North Carolina; Social point is about 4.5 km away.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "5b054667-f54e-4953-965d-0a9b0b596e93",
@@ -351,7 +363,8 @@
       "socialReferencePoint": [-80.5632, 32.3468],
       "socialPointInside": false,
       "socialPointDistanceMeters": 6939,
-      "rationale": "Only Fripp Island CDP in South Carolina; Social point is about 7 km away."
+      "rationale": "Only Fripp Island CDP in South Carolina; Social point is about 7 km away.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "31cad931-e9b4-4f4b-81be-0b4b7685267e",
@@ -378,7 +391,8 @@
       "socialReferencePoint": [-82.294, 33.978],
       "socialPointInside": false,
       "socialPointDistanceMeters": 5725,
-      "rationale": "Only the town of McCormick in South Carolina; Social point is about 6 km away, near Troy."
+      "rationale": "Only the town of McCormick in South Carolina; Social point is about 6 km away, near Troy.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "94244eb2-7b79-4770-b5ae-69e5bb56abce",
@@ -405,7 +419,8 @@
       "socialReferencePoint": [-98.6285, 29.0369],
       "socialPointInside": false,
       "socialPointDistanceMeters": 4716,
-      "rationale": "Only incorporated Poteet in Texas; Social point is about 5 km away."
+      "rationale": "Only incorporated Poteet in Texas; Social point is about 5 km away.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "f0027b54-4ab8-448f-9601-d4bb260f26e0",
@@ -432,7 +447,8 @@
       "socialReferencePoint": [-98.9012, 30.0375],
       "socialPointInside": false,
       "socialPointDistanceMeters": 19265,
-      "rationale": "Only incorporated Kerrville in Texas; Social point is about 19 km away."
+      "rationale": "Only incorporated Kerrville in Texas; Social point is about 19 km away.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "cb7b5fbf-b724-488f-9d45-dad3da7d5005",
@@ -459,7 +475,8 @@
       "socialReferencePoint": [-77.945, 29.5689],
       "socialPointInside": false,
       "socialPointDistanceMeters": 2214251,
-      "rationale": "Only incorporated Seguin in Texas; Social longitude is exactly 20 degrees east of it (-77.945 instead of -97.945), a typo."
+      "rationale": "Only incorporated Seguin in Texas; Social longitude is exactly 20 degrees east of it (-77.945 instead of -97.945), a typo.",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "communityId": "d71c19cb-e38a-4baa-8639-5ef773d1b3fa",
@@ -486,7 +503,36 @@
       "socialReferencePoint": [-77.3001, 38.8855],
       "socialPointInside": false,
       "socialPointDistanceMeters": 11782,
-      "rationale": "Independent city of Falls Church; Social point is about 12 km west, in Oakton. The place layer is used, as the matcher does."
+      "rationale": "Independent city of Falls Church; Social point is about 12 km west, in Oakton. The place layer is used, as the matcher does.",
+      "automaticMatchReason": "no_tiger_match:v2"
+    },
+    {
+      "communityId": "2171d014-d79a-42bd-b4a9-0b8e420a8753",
+      "townName": "Spotsylvania, VA",
+      "state": "VA",
+      "localityType": "town",
+      "layer": "place",
+      "geoid": "5174470",
+      "stateFips": "51",
+      "vintage": "2026",
+      "entityType": "census designated place (CDP)",
+      "lsad": "57",
+      "censusName": "Spotsylvania Courthouse",
+      "censusNameLsad": "Spotsylvania Courthouse CDP",
+      "archiveSha256": "ef4b56daff25a287e57583c4c24e934a25ba7e3430f25defbe21c13754883a40",
+      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2026/PLACE/tl_2026_51_place.zip",
+      "censusPoint": [-77.5938202, 38.199351],
+      "censusPointInside": true,
+      "areaSqKm": {
+        "min": 22.376,
+        "max": 34.963
+      },
+      "censusAreaSqKm": 27.97,
+      "socialReferencePoint": [-77.5887, 38.2101],
+      "socialPointInside": true,
+      "socialPointDistanceMeters": 0,
+      "rationale": "Social calls this locality a town. Its point is inside Spotsylvania Courthouse CDP. Spotsylvania County also contains the point and covers a much larger area.",
+      "automaticMatchReason": "no_tiger_match:v2"
     }
   ],
   "noAuthoritativeBoundary": [
@@ -496,23 +542,26 @@
       "localityType": "town",
       "reason": "Census has no entity named Amelia Island. Fernandina Beach (incorporated city) covers only part of the island.",
       "suggestedAction": "rename to Fernandina Beach, or exclude",
-      "communityId": "8cdecba1-8889-4d43-9452-62feb4815386"
+      "communityId": "8cdecba1-8889-4d43-9452-62feb4815386",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "townName": "Ponte Vedra Beach, FL",
       "state": "FL",
       "localityType": "town",
       "reason": "Unincorporated; Census has only the Ponte Vedra county census division (a statistical area, different name) and Palm Valley CDP.",
-      "suggestedAction": "owner decides whether the Ponte Vedra census division is acceptable; otherwise exclude",
-      "communityId": "22f7dced-d609-4203-aa40-8293c8f31d91"
+      "suggestedAction": "Exclude, or explicitly rename to Palm Valley if that is the community the owner intends.",
+      "communityId": "22f7dced-d609-4203-aa40-8293c8f31d91",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "townName": "Sea Island, GA",
       "state": "GA",
       "localityType": "town",
-      "reason": "Not a Census entity in 2026; the island lies within St. Simons CDP, which is claimed by St. Simons Island.",
-      "suggestedAction": "merge into St. Simons Island, or exclude",
-      "communityId": "8e1c0a5b-10c7-4393-af3b-f66060c68e41"
+      "reason": "No Sea Island Census entity. Its point falls in St. Simons CCD and outside St. Simons CDP.",
+      "suggestedAction": "Exclude, or merge into St. Simons Island if the owner intends one community for both islands.",
+      "communityId": "8e1c0a5b-10c7-4393-af3b-f66060c68e41",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "townName": "Cape Hatteras, NC",
@@ -520,47 +569,44 @@
       "localityType": "town",
       "reason": "A cape and a seashore, not a community Census names; only the Kinnakeet township (statistical civil division) covers the point.",
       "suggestedAction": "merge into Hatteras, or exclude",
-      "communityId": "1efb9e52-7181-438c-a376-3a478a227787"
+      "communityId": "1efb9e52-7181-438c-a376-3a478a227787",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "townName": "Corolla, NC",
       "state": "NC",
       "localityType": "town",
       "reason": "No Corolla CDP in 2026; only Poplar Branch township (a civil division, much larger and a different name).",
-      "suggestedAction": "exclude, or owner approves the township",
-      "communityId": "6c44702f-b35a-4d37-a9dc-8fcc7f02b8e9"
+      "suggestedAction": "Exclude.",
+      "communityId": "6c44702f-b35a-4d37-a9dc-8fcc7f02b8e9",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "townName": "Edisto Island, SC",
       "state": "SC",
       "localityType": "town",
       "reason": "The Edisto CDP is a different place near Orangeburg; Edisto Beach is a separate town. Only the Edisto Island county census division (statistical area, 177 sq km) matches the name.",
-      "suggestedAction": "owner decides whether the census division is acceptable; otherwise exclude",
-      "communityId": "29ff21d9-aa72-4ebd-9f72-f25934c5f5cc"
+      "suggestedAction": "Exclude.",
+      "communityId": "29ff21d9-aa72-4ebd-9f72-f25934c5f5cc",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "townName": "Medina, TX",
       "state": "TX",
       "localityType": "town",
       "reason": "Medina CDP is in Starr County, far south, a different place. Only the Medina county census division (1,233 sq km) covers the Bandera County community.",
-      "suggestedAction": "owner decides whether the census division is acceptable; otherwise exclude",
-      "communityId": "654bb7b2-ce03-41bd-be56-bf09a014dcb5"
-    },
-    {
-      "townName": "Spotsylvania, VA",
-      "state": "VA",
-      "localityType": "town",
-      "reason": "Census names the community Spotsylvania Courthouse CDP; Social calls it Spotsylvania (population 14,568 matches neither the CDP nor the county).",
-      "suggestedAction": "rename to Spotsylvania Courthouse and confirm, or exclude",
-      "communityId": "2171d014-d79a-42bd-b4a9-0b8e420a8753"
+      "suggestedAction": "Exclude.",
+      "communityId": "654bb7b2-ce03-41bd-be56-bf09a014dcb5",
+      "automaticMatchReason": "no_tiger_match:v2"
     },
     {
       "townName": "(blank name)",
       "state": "",
       "localityType": "",
       "reason": "Directory town row with no name, no slug and eligible=false; nothing to match.",
-      "suggestedAction": "exclude (already ineligible); delete the row if Social no longer has it",
-      "communityId": "494e5a47-39b5-4cca-ba3d-59a4fe5118c6"
+      "suggestedAction": "Keep excluded and verify whether Social still has the community.",
+      "communityId": "494e5a47-39b5-4cca-ba3d-59a4fe5118c6",
+      "automaticMatchReason": null
     }
   ]
 }

@@ -55,7 +55,8 @@ export async function storeDiscoveredBoundaryCandidate(
   db: DataSource,
   authority: DirectoryRecoveryIdentity,
   result: Discovery,
-  delivery: GeographyReader
+  delivery: GeographyReader,
+  options?: { automatic?: boolean }
 ): Promise<void> {
   const identity = {
     sourceEpoch: authority.sourceEpoch,
@@ -115,6 +116,7 @@ export async function storeDiscoveredBoundaryCandidate(
       )
         throw Error('Social geography changed');
       return current;
-    }
+    },
+    options
   );
 }

@@ -100,6 +100,11 @@ export class TownGeometryService {
       });
       if (!town) throw new Error('Unknown town');
       if (!town.eligible) throw new Error('Ineligible town');
+      const locked = await manager.query(
+        'SELECT 1 FROM directory_boundary_lock WHERE "communityId"=$1',
+        [communityId]
+      );
+      if (locked.length) throw new Error('Boundary is locked');
       let valid = false;
       // Validate coordinates before asking PostGIS to parse. This also rejects NaN,
       // extra dimensions and out-of-range coordinates, including all rings/holes.

@@ -293,7 +293,8 @@ export function createGeometrySweepRunner(
           db,
           identity,
           { ...found, status: 'candidate', candidates: [candidate] } as never,
-          delivery as never
+          delivery as never,
+          { automatic: true }
         ),
       load: async (decision, geography) => {
         const layer = decision['layer'] as 'place' | 'cousub',

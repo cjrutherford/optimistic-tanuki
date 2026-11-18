@@ -210,6 +210,8 @@ export async function autoInstallTown(
     });
     return { outcome: 'installed', reason: AUTO_BOUNDARY_REASON };
   } catch (error) {
+    if (error instanceof Error && error.message === 'Boundary is locked')
+      return { outcome: 'locked', reason: 'boundary_locked' };
     const reason = `error: ${
       error instanceof Error ? error.message : 'unknown'
     }`.slice(0, 120);

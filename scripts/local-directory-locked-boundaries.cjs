@@ -17,12 +17,14 @@
 const { readFileSync } = require('node:fs');
 const { resolve, join } = require('node:path');
 const { tmpdir } = require('node:os');
+const { parseArgs } = require('node:util');
 const { DataSource } = require('typeorm');
 const {
   installLockedBoundary,
 } = require('../apps/directory/src/locked-boundary');
 const {
   CENSUS_TIGER_PINS,
+  CENSUS_TIGER_VINTAGE,
 } = require('../apps/directory/src/census-tiger-pins');
 const {
   CensusArchiveStore,
@@ -43,28 +45,32 @@ if (
     'Only the local ot_directory database or a disposable s10_geom_* one is allowed'
   );
 
-const args = process.argv.slice(2);
-const value = (flag) => {
-  const i = args.indexOf(flag);
-  return i >= 0 ? args[i + 1] : undefined;
-};
-const dryRun = args.includes('--dry-run');
+const { values } = parseArgs({
+  options: {
+    'dry-run': { type: 'boolean', default: false },
+    'archive-dir': { type: 'string' },
+    manifest: { type: 'string' },
+    town: { type: 'string', multiple: true, default: [] },
+  },
+});
+const dryRun = values['dry-run'];
 const manifestPath = resolve(
-  value('--manifest') ??
+  values.manifest ??
     'docs/plans/town-square-directory/s10-evidence/s10-locked-boundaries.json'
 );
 const archiveDir = resolve(
-  value('--archive-dir') ??
+  values['archive-dir'] ??
     process.env.DIRECTORY_AUTO_GEOMETRY_CACHE_DIR ??
     join(tmpdir(), 'directory-census')
 );
-const only = args.flatMap((a, i) => (a === '--town' ? [args[i + 1]] : []));
+const only = values.town;
 
 function checkEntry(e) {
   const pin = CENSUS_TIGER_PINS[e.stateFips]?.[e.layer];
   if (!pin || pin !== e.archiveSha256)
     throw Error('Manifest archive digest is not the pinned Census digest');
-  if (e.vintage !== '2026') throw Error('Unsupported TIGER vintage');
+  if (e.vintage !== CENSUS_TIGER_VINTAGE)
+    throw Error('Unsupported TIGER vintage');
   if (
     e.sourceUrl !==
     `https://www2.census.gov/geo/tiger/TIGER${

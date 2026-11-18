@@ -77,7 +77,8 @@ export async function storeBoundaryCandidate(
   db: DataSource,
   identity: DirectoryRecoveryIdentity,
   candidate: BoundaryCandidate,
-  read: SourceRead
+  read: SourceRead,
+  options: { automatic?: boolean } = {}
 ): Promise<void> {
   if (
     !candidate ||
@@ -101,6 +102,16 @@ export async function storeBoundaryCandidate(
       'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
       [value.communityId]
     );
+    if (
+      options.automatic &&
+      (
+        await manager.query(
+          'SELECT 1 FROM directory_boundary_lock WHERE "communityId"=$1',
+          [value.communityId]
+        )
+      ).length
+    )
+      throw Error('Boundary is locked');
     const towns = await manager.query(
       'SELECT eligible FROM directory_town WHERE "communityId"=$1 FOR UPDATE',
       [value.communityId]

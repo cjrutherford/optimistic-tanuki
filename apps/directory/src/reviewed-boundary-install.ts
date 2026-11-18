@@ -82,6 +82,14 @@ export async function installReviewedBoundary(
       d.directoryGeneration !== authority.directoryGeneration
     )
       throw Error('Decision unavailable or stale');
+    const locked =
+      (
+        await manager.query(
+          'SELECT 1 FROM directory_boundary_lock WHERE "communityId"=$1',
+          [request.communityId]
+        )
+      ).length > 0;
+    if (locked && (promote || d.automatic)) throw Error('Boundary is locked');
     const rows = await manager.query(
       'SELECT c.*,t.eligible,t."geometryVersion" FROM directory_boundary_candidate c JOIN directory_town t ON t."communityId"=c."communityId" WHERE c."communityId"=$1 FOR UPDATE OF c,t',
       [request.communityId]
@@ -105,7 +113,7 @@ export async function installReviewedBoundary(
       hash !== d.geographyHash
     )
       throw Error('Stale Social geography');
-    return { decision: d, candidate: c, geography: current.geography };
+    return { decision: d, candidate: c, geography: current.geography, locked };
   }
   const initial = await db.transaction(inspect);
   const extracted = await load(
@@ -143,15 +151,6 @@ export async function installReviewedBoundary(
         throw Error('Installed geometry mismatch');
       return matches[0].version as number;
     }
-    // An owner-locked boundary is never replaced by the automatic sweep; a reviewer install may, and keeps the town ready.
-    const locked =
-      (
-        await manager.query(
-          'SELECT 1 FROM directory_boundary_lock WHERE "communityId"=$1',
-          [request.communityId]
-        )
-      ).length > 0;
-    if (locked && promote) throw Error('Boundary is locked');
     const version = Number(current.candidate.geometryVersion) + 1;
     if (!Number.isSafeInteger(version) || version < 1 || version > 2147483647)
       throw Error('Geometry version exhausted');
@@ -168,7 +167,11 @@ export async function installReviewedBoundary(
     );
     await manager.query(
       'UPDATE directory_town SET "geometryVersion"=$2,"geometryStatus"=$3 WHERE "communityId"=$1',
-      [request.communityId, version, promote || locked ? 'ready' : 'pending']
+      [
+        request.communityId,
+        version,
+        promote || current.locked ? 'ready' : 'pending',
+      ]
     );
     await manager.query(
       `INSERT INTO directory_reviewed_geometry ("communityId","requestId",version,"changeToken","geographyHash","geometryHash","recoveryEpoch","directoryGeneration") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT ("communityId") DO UPDATE SET "requestId"=EXCLUDED."requestId",version=EXCLUDED.version,"changeToken"=EXCLUDED."changeToken","geographyHash"=EXCLUDED."geographyHash","geometryHash"=EXCLUDED."geometryHash","recoveryEpoch"=EXCLUDED."recoveryEpoch","directoryGeneration"=EXCLUDED."directoryGeneration"`,

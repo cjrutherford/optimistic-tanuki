@@ -201,6 +201,15 @@ export async function recordAutomaticBoundaryDecision(
       'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
       [value.candidate.communityId]
     );
+    if (
+      (
+        await manager.query(
+          'SELECT 1 FROM directory_boundary_lock WHERE "communityId"=$1',
+          [value.candidate.communityId]
+        )
+      ).length
+    )
+      throw Error('Boundary is locked');
     const rows = await manager.query(
       'SELECT c.*,t.eligible FROM directory_boundary_candidate c JOIN directory_town t ON t."communityId"=c."communityId" WHERE c."communityId"=$1 FOR UPDATE OF c,t',
       [value.candidate.communityId]
