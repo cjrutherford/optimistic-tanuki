@@ -83,9 +83,35 @@ export class DirectoryBoundaryDecision {
   @Column({ type: 'varchar', length: 2 }) stateFips!: string;
   @Column({ type: 'varchar', length: 64 }) archiveSha256!: string;
   @Column({ type: 'varchar', length: 64 }) geographyHash!: string;
+  /** True for a system decision made by the geometry sweep; reviewerId is then null. */
+  @Column({ type: 'boolean', default: false }) automatic!: boolean;
+  @Column({ type: 'varchar', length: 120, nullable: true }) reason!:
+    | string
+    | null;
   @Column({ type: 'timestamptz', nullable: true }) invalidatedAt!: Date | null;
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
+}
+
+/**
+ * Outcome of the automatic Census TIGER geometry sweep for one town: what it did, or why the town stays pending
+ * for a human (ambiguous or missing match). It is evidence for the review queue, never authority to serve.
+ */
+@Entity({ name: 'directory_boundary_auto_attempt' })
+@Check(
+  'CHK_directory_boundary_auto_status',
+  "status IN ('installed','ambiguous','unmatched','unsupported','undone','error')"
+)
+export class DirectoryBoundaryAutoAttempt {
+  @PrimaryColumn('uuid') communityId!: string;
+  @Column({ type: 'varchar', length: 16 }) status!: string;
+  @Column({ type: 'varchar', length: 120 }) reason!: string;
+  @Column({ type: 'uuid', nullable: true }) changeToken!: string | null;
+  @Column({ type: 'uuid', nullable: true }) requestId!: string | null;
+  @Column({ type: 'jsonb', default: () => `'[]'` }) candidates!: unknown;
+  @Column({ type: 'integer', default: 1 }) attempts!: number;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  attemptedAt!: Date;
 }
 
 // Active private binding only; historical geometry and decision rows remain audit evidence.

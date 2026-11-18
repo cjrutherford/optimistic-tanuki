@@ -29,13 +29,22 @@ type SourceLoader = (
   geography: unknown
 ) => Promise<SourceGeometry>;
 
+/**
+ * Only the automatic Census sweep passes `promote`: it labels the public geometry source and rights and moves the
+ * town off 'pending' in the same transaction. Without it the install stays private and the town stays pending.
+ */
+export type InstallOptions = {
+  promote?: { source: string; rights: string };
+};
+
 /** Private installation primitive. Only a trusted caller that derives geometry from the pinned archive may provide load. */
 export async function installReviewedBoundary(
   db: DataSource,
   identity: DirectoryRecoveryIdentity,
   input: { communityId: string; requestId: string },
   read: SourceRead,
-  load: SourceLoader
+  load: SourceLoader,
+  options?: InstallOptions
 ): Promise<number> {
   if (
     !input ||
@@ -46,7 +55,8 @@ export async function installReviewedBoundary(
   )
     throw Error('Invalid installation request');
   const authority = { ...identity },
-    request = { ...input };
+    request = { ...input },
+    promote = options?.promote ? { ...options.promote } : undefined;
   async function inspect(manager: EntityManager) {
     await lockAuthority(manager, authority);
     await manager.query(
@@ -173,14 +183,14 @@ export async function installReviewedBoundary(
         request.communityId,
         version,
         json,
-        d.sourceUrl,
+        promote?.source ?? d.sourceUrl,
         d.vintage,
-        'Census source; reviewed private installation',
+        promote?.rights ?? 'Census source; reviewed private installation',
       ]
     );
     await manager.query(
-      'UPDATE directory_town SET "geometryVersion"=$2,"geometryStatus"=\'pending\' WHERE "communityId"=$1',
-      [request.communityId, version]
+      'UPDATE directory_town SET "geometryVersion"=$2,"geometryStatus"=$3 WHERE "communityId"=$1',
+      [request.communityId, version, promote ? 'ready' : 'pending']
     );
     await manager.query(
       `INSERT INTO directory_reviewed_geometry ("communityId","requestId",version,"changeToken","geographyHash","geometryHash","recoveryEpoch","directoryGeneration") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT ("communityId") DO UPDATE SET "requestId"=EXCLUDED."requestId",version=EXCLUDED.version,"changeToken"=EXCLUDED."changeToken","geographyHash"=EXCLUDED."geographyHash","geometryHash"=EXCLUDED."geometryHash","recoveryEpoch"=EXCLUDED."recoveryEpoch","directoryGeneration"=EXCLUDED."directoryGeneration"`,

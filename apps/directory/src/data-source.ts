@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import {
   DirectoryBoundaryCandidate,
   DirectoryBoundaryDecision,
+  DirectoryBoundaryAutoAttempt,
   DirectoryReviewedGeometry,
   DirectoryProviderBudgetAttempt,
   DirectoryAnonymousOvertureAttempt,
@@ -75,6 +76,7 @@ const dataSource = new DataSource({
     DirectoryProviderBudgetAttempt,
     DirectoryAnonymousOvertureAttempt,
     DirectoryInstallation,
+    DirectoryBoundaryAutoAttempt,
     DirectoryTown,
     DirectoryTownGeometry,
     DirectoryReconciliationReceipt,

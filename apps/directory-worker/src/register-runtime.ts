@@ -15,6 +15,13 @@ import {
   createBindingSweepRunner,
   runBindingSweepLoop,
 } from './binding-sweep';
+import {
+  GeometrySweepConfig,
+  GeometrySweepStatus,
+  createGeometrySweepRunner,
+  geometrySweepConfig,
+  runGeometrySweepLoop,
+} from './geometry-sweep';
 import { retryUntilReady } from './startup-retry';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -41,6 +48,7 @@ export type RegisterWorkerConfig = {
   workerPort: number;
   sweepIntervalMs: number;
   bindingSweep: BindingSweepConfig | null;
+  geometrySweep: GeometrySweepConfig | null;
   startupTimeoutMs: number;
 };
 export function registerWorkerConfig(
@@ -118,6 +126,7 @@ export function registerWorkerConfig(
     throw Error('Invalid startup timeout');
   return {
     bindingSweep: bindingSweepConfig(env),
+    geometrySweep: geometrySweepConfig(env),
     startupTimeoutMs,
     databaseUrl: need('DIRECTORY_DATABASE_URL'),
     host: need('SOCIAL_HOST'),
@@ -198,7 +207,8 @@ export async function runRegisterWorker(
   let client: RegisterDeliveryV2 | undefined, server: Server | undefined;
   const controller = new AbortController(),
     health = new RegisterWorkerHealth(120000),
-    sweepStatus = new BindingSweepStatus(config.bindingSweep !== null);
+    sweepStatus = new BindingSweepStatus(config.bindingSweep !== null),
+    geometryStatus = new GeometrySweepStatus(config.geometrySweep !== null);
   const stop = () => controller.abort();
   process.once('SIGTERM', stop);
   process.once('SIGINT', stop);
@@ -278,8 +288,21 @@ export async function runRegisterWorker(
         })
       : (console.error('binding sweep disabled: missing configuration'),
         Promise.resolve());
+    const geometryLoop = config.geometrySweep
+      ? runGeometrySweepLoop({
+          signal: controller.signal,
+          intervalMs: config.geometrySweep.intervalMs,
+          run: createGeometrySweepRunner(config.geometrySweep, () => ({
+            db,
+            identity: id,
+            delivery: client!,
+          })),
+          status: geometryStatus,
+        })
+      : (console.error('geometry sweep disabled'), Promise.resolve());
     await Promise.all([
       bindingLoop,
+      geometryLoop,
       runRegisterLoop({
         signal: controller.signal,
         retryMs: 5000,
