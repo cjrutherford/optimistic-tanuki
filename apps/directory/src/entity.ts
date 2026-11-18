@@ -30,6 +30,13 @@ export class DirectoryTown {
   @Column({ type: 'boolean' }) eligible!: boolean;
   @Column({ type: 'varchar', default: 'pending' }) geometryStatus!: string;
   @Column({ type: 'integer', default: 0 }) geometryVersion!: number;
+  /**
+   * Set when the owner merged this town into another (decision D19-D25). The town is ineligible and keeps no
+   * boundary of its own; the pointer survives Social reconciliation until Social reports the town eligible again.
+   */
+  @Column({ type: 'uuid', nullable: true }) mergedIntoCommunityId!:
+    | string
+    | null;
   /** When Directory first registered the town; selection sweeps take the newest first. */
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   registeredAt!: Date;
