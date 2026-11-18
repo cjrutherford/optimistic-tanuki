@@ -254,6 +254,21 @@ export class DirectoryOverturePrivateRowRevocation {
   @PrimaryColumn('bigint') sourceFileRowNumber!: string;
 }
 
+/**
+ * A town's rows from one scan taken out of service (for example rows that carry no source provenance). The row is
+ * the audit record: who, why, when and how many rows were revoked. Acquisition does not count a retired
+ * (town, scan) as acquired, so the automatic sweeps fetch the town again.
+ */
+@Entity({ name: 'directory_town_scan_retirement' })
+export class DirectoryTownScanRetirement {
+  @PrimaryColumn('uuid') communityId!: string;
+  @PrimaryColumn({ type: 'varchar', length: 64 }) scanId!: string;
+  @Column({ type: 'text' }) reason!: string;
+  @Column({ type: 'varchar', length: 64 }) actor!: string;
+  @Column({ type: 'int' }) rowsRevoked!: number;
+  @Column({ type: 'timestamptz', default: () => 'now()' }) retiredAt!: Date;
+}
+
 /** Completed scans remain private and can still be withdrawn. */
 @Entity({ name: 'directory_overture_private_completion' })
 export class DirectoryOverturePrivateCompletion {

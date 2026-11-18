@@ -78,6 +78,8 @@ test('public listing shows the CC0 attribution and no spider id or ref', () => {
   });
   assert.equal(out.status, 'eligible');
   assert.deepEqual(out.listing.attribution, ['AllThePlaces contributors, CC0']);
+  // Stored provenance lets the field-rights evaluator, and so the public export, include the row.
+  assert.deepEqual(out.listing.sources, atp.ATP_SOURCES);
   const text = JSON.stringify(out.listing);
   assert.doesNotMatch(text, /syn_spider|1001/);
   const {
@@ -197,4 +199,30 @@ test('the public projection and public export never read Geoapify-derived data',
     'entity.ts',
     'geoapify-enrichment.ts',
   ]);
+});
+
+test('staged listings keep only source records the private sink accepts', () => {
+  const { privateSources } = require('../src/overture-stage-core');
+  const ok = {
+    property: '/properties/names',
+    dataset: 'meta',
+    license: 'CDLA',
+  };
+  const long = 'x'.repeat(201);
+  assert.deepEqual(
+    privateSources([
+      { ...ok, record_id: 'secret', update_time: 'now' },
+      { dataset: 'd' },
+      { dataset: '', license: 'l' },
+      { dataset: long, license: 'l' },
+      { ...ok, property: 'no-slash' },
+      { dataset: 'd', license: 'l', property: '' },
+      null,
+      'x',
+    ]),
+    [ok, { dataset: 'd', license: 'l', property: '' }]
+  );
+  assert.equal(privateSources(Array(30).fill(ok)).length, 20);
+  assert.deepEqual(privateSources(undefined), []);
+  assert.deepEqual(privateSources({ dataset: 'd', license: 'l' }), []);
 });

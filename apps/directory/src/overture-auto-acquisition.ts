@@ -180,16 +180,26 @@ export function toTown(row: any): AutoTown | null {
 }
 
 /** A town counts as acquired once a live, completed scan target exists for it (any earlier staging included). */
+const RETIRED = (scan: string, town: string): string =>
+  `EXISTS (SELECT 1 FROM directory_town_scan_retirement z WHERE z."scanId"=${scan} AND z."communityId"=${town})`;
+/** A run is superseded when the scan it produced for this town has since been retired: it no longer counts as an attempt. */
+export const runSuperseded = (run: string, town: string): string =>
+  `EXISTS (SELECT 1 FROM directory_acquisition_run_job sj JOIN directory_town_scan_retirement sz
+      ON sz."scanId"=sj."scanId" AND sz."communityId"=${town} WHERE sj."runId"=${run}.id)`;
+export const notRetired = (scan: string, town: string): string =>
+  `NOT ${RETIRED(scan, town)}`;
 const ACQUIRED = `EXISTS (SELECT 1 FROM directory_town_scan_target s
     JOIN directory_overture_private_completion c ON c."scanId"=s."scanId"
     JOIN directory_overture_private_membership m ON m."scanId"=s."scanId"
     JOIN directory_overture_private_policy p ON p."policyId"=m."policyId" AND p.revoked=false
     WHERE s."communityId"=t."communityId"
       AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=s."scanId")
+      AND ${notRetired('s."scanId"', 's."communityId"')}
       AND NOT EXISTS (SELECT 1 FROM directory_acquisition_run_job j JOIN directory_acquisition_run q ON q.id=j."runId"
         WHERE j."scanId"=s."scanId" AND q.provider='alltheplaces'))`;
 const AUTO_RUN_OF_TOWN = `r.kind='overture-stage' AND r.provider='overture' AND r.release=$1
-    AND r.reason LIKE '${AUTO_RUN_REASON_PREFIX}%' AND r."townIds" @> to_jsonb(t."communityId"::text)`;
+    AND r.reason LIKE '${AUTO_RUN_REASON_PREFIX}%' AND r."townIds" @> to_jsonb(t."communityId"::text)
+    AND NOT ${runSuperseded('r', 't."communityId"')}`;
 
 /**
  * Towns never attempted for this provider/release come first, newest geometry first, so a brand-new town is not queued
@@ -290,30 +300,35 @@ export function trackedSink(
   unitKey: string,
   counts: { observed: number; accepted: number; rejected: number }
 ): OverturePrivateSink {
-  return new Proxy(new OverturePrivateSink(db), {
-    get(target: any, name) {
-      const value = target[name];
-      if (typeof value !== 'function') return value;
-      if (name !== 'commit') return value.bind(target);
-      return async (rows: any[], checkpoint: any) => {
-        const out = await target.commit(rows, checkpoint);
-        counts.observed += rows.length;
-        for (const r of rows)
-          counts[r.outcome?.status === 'eligible' ? 'accepted' : 'rejected']++;
-        const stop = (
-          await progress(db, runId, unitKey, {
-            checkpoint: {
-              scanId: checkpoint?.scanId ?? null,
-              sourceFileRowNumber: checkpoint?.sourceFileRowNumber ?? null,
-            },
-            ...counts,
-          })
-        ).stop;
-        if (stop) throw new AutoStageStopped();
-        return out;
-      };
-    },
-  }) as OverturePrivateSink;
+  return new Proxy(
+    new OverturePrivateSink(db, { includeSourceProvenance: true }),
+    {
+      get(target: any, name) {
+        const value = target[name];
+        if (typeof value !== 'function') return value;
+        if (name !== 'commit') return value.bind(target);
+        return async (rows: any[], checkpoint: any) => {
+          const out = await target.commit(rows, checkpoint);
+          counts.observed += rows.length;
+          for (const r of rows)
+            counts[
+              r.outcome?.status === 'eligible' ? 'accepted' : 'rejected'
+            ]++;
+          const stop = (
+            await progress(db, runId, unitKey, {
+              checkpoint: {
+                scanId: checkpoint?.scanId ?? null,
+                sourceFileRowNumber: checkpoint?.sourceFileRowNumber ?? null,
+              },
+              ...counts,
+            })
+          ).stop;
+          if (stop) throw new AutoStageStopped();
+          return out;
+        };
+      },
+    }
+  ) as OverturePrivateSink;
 }
 
 type RunState = {

@@ -106,6 +106,41 @@ export function anonymousAttemptReserver(
  * thrown projection is a quarantine, never a partial listing. `assignmentChangeToken`, when given, pins the row to the
  * town's current assignment (the Census stage); the plain stage and the automatic sweep leave it unset.
  */
+/** The source records the private sink accepts (dataset and license present, a JSON-pointer property), at most 20. */
+export function privateSources(
+  value: unknown
+): { property?: string; dataset: string; license: string }[] {
+  if (!Array.isArray(value)) return [];
+  const out: { property?: string; dataset: string; license: string }[] = [];
+  for (const entry of value) {
+    if (out.length === 20) break;
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+    const { dataset, license, property } = entry as Record<string, unknown>;
+    if (
+      typeof dataset !== 'string' ||
+      !dataset.trim() ||
+      dataset.length > 200 ||
+      typeof license !== 'string' ||
+      !license.trim() ||
+      license.length > 200
+    )
+      continue;
+    if (
+      property !== undefined &&
+      (typeof property !== 'string' ||
+        property.length > 500 ||
+        (property !== '' && !property.startsWith('/')))
+    )
+      continue;
+    out.push(
+      property === undefined
+        ? { dataset, license }
+        : { property, dataset, license }
+    );
+  }
+  return out;
+}
+
 export function projectStagedRow(input: {
   source: Record<string, unknown> & { geometry?: unknown };
   releaseId: string;
@@ -128,6 +163,11 @@ export function projectStagedRow(input: {
     ) as { status: 'eligible' | 'quarantined'; listing?: any };
     if (outcome.status === 'eligible' && input.assignmentChangeToken)
       outcome.listing.assignmentChangeToken = input.assignmentChangeToken;
+    if (outcome.status === 'eligible' && outcome.listing) {
+      // The rights evaluator reads field provenance from the stored listing; a row without it can never be exported.
+      const sources = privateSources(input.source['sources']);
+      if (sources.length) outcome.listing.sources = sources;
+    }
     return outcome;
   } catch {
     return { status: 'quarantined' };
