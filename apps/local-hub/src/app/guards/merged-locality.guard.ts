@@ -4,7 +4,7 @@ import { CommunityService } from '../services/community.service';
 
 /**
  * A locality the owner merged into another keeps its slug in Social, so old links and bookmarks still reach the
- * route. This sends them to the same page of the town that absorbed it. A failed lookup never blocks navigation.
+ * route, and a renamed locality keeps its old slug as a redirect. This sends them to the same page of the town that absorbed it. A failed lookup never blocks navigation.
  */
 export const mergedLocalityRedirectGuard: CanActivateFn = async (
   route,
@@ -16,7 +16,7 @@ export const mergedLocalityRedirectGuard: CanActivateFn = async (
   const router = inject(Router);
   try {
     const community = await communities.getCommunityBySlug(slug);
-    const target = community?.mergedIntoSlug;
+    const target = community?.mergedIntoSlug ?? community?.redirectToSlug;
     if (!target) return true;
     const prefix = `/city/${slug}`;
     const cut = state.url.search(/[?#]/);

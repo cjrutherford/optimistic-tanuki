@@ -642,6 +642,7 @@
             "timezone",
             "localitySlug",
             "mergedIntoId",
+            "formerSlugs",
             "memberCount",
             "bannerAssetId",
             "logoAssetId",

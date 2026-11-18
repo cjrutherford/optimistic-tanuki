@@ -108,6 +108,7 @@ export const SOCIAL_DELETION_COLUMNS: Readonly<
     'countryCode',
     'createdAt',
     'description',
+    'formerSlugs',
     'highlights',
     'id',
     'imageUrl',
