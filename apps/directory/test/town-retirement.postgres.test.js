@@ -143,6 +143,19 @@ test(
       });
       // The pilot is acquired again; the town sharing the scan and the town whose rows carry sources are not.
       assert.deepEqual(await dueNames(ds, auto.selectTowns), ['Pilot']);
+      // A retired town is fetched ahead of towns that were never attempted, however new their geometry.
+      const fresh = await town(ds, 'Fresh');
+      await ds.query(
+        `UPDATE directory_town_geometry SET "createdAt"=now() - interval '90 days' WHERE "communityId"=$1`,
+        [pilot]
+      );
+      const ordered = (await auto.selectTowns(ds, RELEASE, config)).map(
+        (t) => t.name
+      );
+      assert.deepEqual(ordered, ['Pilot', 'Fresh']);
+      await ds.query(`DELETE FROM directory_town WHERE "communityId"=$1`, [
+        fresh,
+      ]);
       // Running it again changes nothing.
       const again = await retireSourcelessTownRows(ds, {
         communityId: pilot,
