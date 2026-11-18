@@ -243,26 +243,58 @@ interface Lineage {
   readonly rows: number;
 }
 
-/** Distinct source lineages retained in served private rows. Read-only; no network. */
+/**
+ * Distinct source lineages retained in served private rows. Read-only; no network.
+ *
+ * Aggregated one served scan at a time and merged here: a single aggregate over every served row (~180k once rows
+ * carry provenance) runs past the runtime pool's per-query timeout, while each scan's share stays well inside it.
+ */
 async function observedLineages(q: Q): Promise<Lineage[]> {
-  const rows = await q.query(
-    `SELECT s->>'dataset' AS dataset, s->>'license' AS license, s->>'property' AS property, count(*)::int AS rows
-     FROM directory_overture_private_row r
-     JOIN directory_overture_private_membership m ON m."scanId"=r."scanId"
+  const scans: Array<{ scanId: string }> = await q.query(
+    `SELECT DISTINCT m."scanId"
+     FROM directory_overture_private_membership m
      JOIN directory_overture_private_policy p ON p."policyId"=m."policyId" AND p.revoked=false
-     JOIN directory_overture_private_completion c ON c."scanId"=r."scanId",
-     LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.listing->'sources')='array' THEN r.listing->'sources' ELSE '[]'::jsonb END) s
-     WHERE NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=r."scanId")
-       AND NOT EXISTS (SELECT 1 FROM directory_overture_private_row_revocation x WHERE x."scanId"=r."scanId" AND x."sourceFileRowNumber"=r."sourceFileRowNumber")
-       AND jsonb_typeof(s)='object' AND s ? 'dataset' AND s ? 'license'
-     GROUP BY 1,2,3 ORDER BY 1,2,3 LIMIT 2000`
+     JOIN directory_overture_private_completion c ON c."scanId"=m."scanId"
+     WHERE NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=m."scanId")
+     ORDER BY 1`
   );
-  return rows.map((r: any) => ({
-    dataset: r.dataset,
-    license: r.license,
-    property: typeof r.property === 'string' ? r.property : null,
-    rows: Number(r.rows),
-  }));
+  const merged = new Map<string, Lineage>();
+  for (const { scanId } of scans) {
+    const rows = await q.query(
+      `SELECT s->>'dataset' AS dataset, s->>'license' AS license, s->>'property' AS property, count(*)::int AS rows
+       FROM directory_overture_private_row r,
+       LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.listing->'sources')='array' THEN r.listing->'sources' ELSE '[]'::jsonb END) s
+       WHERE r."scanId"=$1
+         AND NOT EXISTS (SELECT 1 FROM directory_overture_private_row_revocation x WHERE x."scanId"=r."scanId" AND x."sourceFileRowNumber"=r."sourceFileRowNumber")
+         AND jsonb_typeof(s)='object' AND s ? 'dataset' AND s ? 'license'
+       GROUP BY 1,2,3`,
+      [scanId]
+    );
+    for (const r of rows) {
+      const property = typeof r.property === 'string' ? r.property : null;
+      const key = JSON.stringify([r.dataset, r.license, property]);
+      const prior = merged.get(key);
+      if (prior)
+        merged.set(key, { ...prior, rows: prior.rows + Number(r.rows) });
+      else
+        merged.set(key, {
+          dataset: r.dataset,
+          license: r.license,
+          property,
+          rows: Number(r.rows),
+        });
+    }
+  }
+  const cmp = (a: string | null, b: string | null) =>
+    (a ?? '') < (b ?? '') ? -1 : (a ?? '') > (b ?? '') ? 1 : 0;
+  return [...merged.values()]
+    .sort(
+      (a, b) =>
+        cmp(a.dataset, b.dataset) ||
+        cmp(a.license, b.license) ||
+        cmp(a.property, b.property)
+    )
+    .slice(0, 2000);
 }
 
 interface Wanted {

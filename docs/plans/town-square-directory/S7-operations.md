@@ -16,7 +16,7 @@ Owner decisions:
   - All three are seeded to `owner_console_owner`, `owner`, `global_admin` and `system_admin`, in `apps/permissions/src/assets/default-permissions.json`. The permissions seed is an idempotent upsert, so re-running it on the live stack adds them with no migration and no hand edit of the database.
 - **Run ledger and controls.** Every import, census and reclassification run is recorded, and an operator can pause, resume or stop one. Detail in section 8.
 - **Full taxonomy workflow.** Category mappings and reclassification are managed in the product, with review and an audit trail, not edited in code. Detail in section 7.
-- **Accountable operator.** The repository owner is the accountable operator. A backup operator is not named yet. **Open public-release blocker:** a named backup must exist before the directory is publicly released.
+- **Accountable operator.** The repository owner is the accountable operator. The owner decided on 2026-11-17 that no backup operator is required, so this is not a release blocker.
 - **Absence procedure.** If the accountable operator is unavailable and no backup exists, narrow or pause the public rollout (fewer towns, or publication paused). Do not leave a growing public surface with no one watching reports.
 
 Not in scope: paid placement, paid correction priority, owner self-service editing of listing facts. Publication stays paused until the release blockers are closed.
@@ -247,7 +247,7 @@ Run routes: `GET/POST /api/directory/taxonomy/runs`, `GET .../runs/:id`, `POST .
 
 Apply migration `1794950472386-DirectoryFoundation` (eight tables) to the live Directory database before deploying this build. It was generated, validated with `pnpm run validate:typeorm-migrations`. It was applied to the local `ot_directory` on 2026-11-17. Then, as an operator with `directory.operate`:
 
-1. `POST /api/directory/taxonomy/mappings/install` with `{"version":"overture-v3-local-2026-11.1","activate":true}`. Activation is the owner's call: Owner Console has no deactivate control, and once a mapping is active a case undo re-derives the category from it. The local deploy installed the version without activating it.
+1. `POST /api/directory/taxonomy/mappings/install` with `{"version":"overture-v3-local-2026-11.1","activate":true}`. Activation is the owner's call: Owner Console has no deactivate control, and once a mapping is active a case undo re-derives the category from it. The owner approved activation, and the local directory activated it on 2026-11-18T01:58:59Z (see section 10).
 2. `POST /api/directory/taxonomy/runs` with `{id, mappingVersion, scope:"town"|"all", townId?, mode:"dry_run", reason}`. Wait for `complete`. Review the transitions and note `planHash`.
 3. `POST /api/directory/taxonomy/runs` with `{id, mappingVersion, scope, townId?, mode:"apply", reason, expectedPlanHash, confirm:"APPLY"}`. Follow `appliedRows` until `complete`.
 4. To undo: `POST /api/directory/taxonomy/runs/:id/rollback` with `{reason, confirm:"ROLLBACK"}`.
@@ -328,9 +328,9 @@ The final run on 2026-11-17 passed 9 of 9 in 1.0 minutes. Every page gets an axe
 | 3. Correction propagation | Suppress PINEVIEW GROCERY. It is gone from public search, detail (an open detail page expires) and map, and does not come back from browser history. Then lift it, and it is restored                    | Pass. The suppression was lifted, and no suppressions are open                                                                                                  |
 | 4. Identity review        | Queue health and the empty queue                                                                                                                                                                         | The live queue is empty (0 unresolved), so confirm/undo is shown by the Postgres suites in section 5                                                            |
 | 5. Address review         | `needs_info`, undo, history grows by one each time, then a stale token is refused with `409 stale_decision`                                                                                              | Pass. The candidate is back at `needs_human`                                                                                                                    |
-| 6. Rights                 | The queue and its empty state                                                                                                                                                                            | The live queue is empty (see 9.3)                                                                                                                               |
+| 6. Rights                 | The queue and its empty state                                                                                                                                                                            | The live queue was empty on this run. Since section 10 it holds 6 cases, and sync, defer and undo pass live                                                     |
 | 7. Withdrawals            | A one-row withdrawal through form, queue and worker, for a scan bound to no policy                                                                                                                       | The worker fails it permanently with "Scan not bound to policy" after 1 attempt, with no retry, and removes nothing. Shown on the card                          |
-| 8a. Taxonomy runs         | Install the mapping, a town dry run (18 transitions, 1,846 rows, plan hash shown), then apply while the mapping is inactive                                                                              | The server refuses the apply with 409. No apply run is created and the public category does not change                                                          |
+| 8a. Taxonomy runs         | Install the mapping, a town dry run (18 transitions, 1,846 rows, plan hash shown), then apply while the mapping is inactive                                                                              | The server refuses the apply with 409. No apply run is created and the public category does not change. Since section 10 the run applies and rolls back         |
 | 8b. Taxonomy case         | Raise a case, assign `stores`, see the public list and detail change, then undo                                                                                                                          | Pass. The public category is restored                                                                                                                           |
 
 ### 9.2 Defects the live run found and fixed
@@ -343,8 +343,8 @@ The final run on 2026-11-17 passed 9 of 9 in 1.0 minutes. Every page gets an axe
 
 ### 9.3 What the live run does not show
 
-- **Taxonomy apply and rollback.** Activating the shipped mapping is a lasting change to the live directory and is left to the owner (7.8). The spec applies and rolls back by itself once the mapping is active. Until then, apply and rollback are shown by the Postgres suites in section 7.
-- **Rights sync, defer and undo, and the invalid-hash check.** The served private rows were staged before source provenance was kept (`includeSourceProvenance`), so they have no `sources` lineage. No run records a release either. A sync would have nothing real to derive. Syncing against an invented release would leave a permanent case, so the run does not do it. Restaging with provenance needs acquisition, which is paused. The mechanics are covered by `rights-case` and `rights-withdrawal` Postgres suites (section 6).
+- **Taxonomy apply and rollback.** Shown live since section 10, after the owner approved activation.
+- **Rights sync, defer and undo** (now shown live, section 10) **and the invalid-hash check.** At the time of this run the served private rows were staged before source provenance was kept (`includeSourceProvenance`), so they have no `sources` lineage. No run records a release either. A sync would have nothing real to derive. Syncing against an invented release would leave a permanent case, so the run does not do it. Restaging with provenance needs acquisition, which is paused. The mechanics are covered by `rights-case` and `rights-withdrawal` Postgres suites (section 6).
 - **A completing withdrawal.** Any target that completes writes a revocation that cannot be undone. Completion is shown in `rights-withdrawal.postgres.test.js`.
 - **Identity decisions.** The live identity queue is empty.
 
@@ -356,9 +356,9 @@ These are append-only audit records of test actions. None of them change what th
 - Address-review decisions on "Peach Mart Burton Brooks": `needs_info`, then its undo, for each run.
 - One `operator_raised` taxonomy case on PINEVIEW GROCERY. It is open again after the undo, and later runs reuse it. There is no dismiss action.
 - `failed` withdrawal requests for the inert target `000…001:4000000000`.
-- Completed taxonomy dry runs, and the installed but inactive mapping `overture-v3-local-2026-11.1`.
+- Completed taxonomy dry runs. Since section 10, the town apply-and-rollback pairs of each evidence run, and the active mapping `overture-v3-local-2026-11.1`.
 
-After the final run: 0 open suppressions, 0 active category overrides, 0 classification rows, 0 apply runs, 0 row revocations, and 0 rights cases.
+After the final run of 9.1: 0 open suppressions, 0 active category overrides, 0 classification rows, 0 apply runs, 0 row revocations, and 0 rights cases.
 
 ### 9.5 Suites
 
@@ -366,3 +366,81 @@ After the final run: 0 open suppressions, 0 active category overrides, 0 classif
 - Gateway: 145 suites, 2,257 tests (5 skipped).
 - Directory runtime and Postgres suites ran green on scratch databases for each of S7a to S7e (sections 5 to 8).
 - The personality audit is clean.
+
+## 10. Follow-up 2026-11-17: mapping activated, rights provenance attached
+
+The owner approved three changes: activate the taxonomy mapping, load the rights data, and drop the backup-operator requirement.
+
+### 10.1 Taxonomy mapping
+
+- **Backup.** `ot_directory` was dumped before activation (`pg_dump -Fc`, 32.7 MB).
+- **Activation.** The install call (7.8 step 1) activated `overture-v3-local-2026-11.1`: 155 rows, unmapped policy `keep_legacy`.
+- **Dry run, all towns.** Plan hash `40b99b0a…4476`. 187,127 rows changed, out of 187,127 scanned. The largest transitions:
+  - `restaurant` → restaurants: 48,593
+  - `fashion_and_apparel_store` → stores: 23,883
+  - `hardware_home_and_garden_store` → stores: 17,472
+  - `food_and_beverage_store` → stores: 13,002
+  - `casual_eatery` → restaurants: 12,906
+  - `auto_dealer` → stores: 9,220
+- **Apply.** Run `a61be785…` was applied against that plan hash, writing 187,127 rows.
+- **Classification projection afterwards.**
+  - stores: 106,355
+  - restaurants: 67,616
+  - services: 13,155
+  - `adult_entertainment_venue`: 1. Its legacy category is kept. The row is flagged `adult`, so public reads hide it unless the viewer opts in.
+- **Rollback.** To undo the activation's effect, roll back run `a61be785…` (7.8 step 4). Owner Console still has no deactivate control.
+- **Plan hash.** A town dry run after the apply plans 0 changes. It keeps the same plan hash as before, because the hash covers the target projection of every row in scope, not the diff.
+
+### 10.2 Rights provenance
+
+The census rows were staged without `sources`. The October contact capture (policy `7dd1e46f…`, stage database) re-read the same four pinned assets with the same `(regionId, sourceFileRowNumber)` numbering, and it kept `{dataset, license, property}`. So no new acquisition or network access was needed, and scan ids did not change.
+
+`scripts/local-directory-overture-provenance-attach.cjs` adds `listing.sources` to served rows that match on region, row number and name, and that have no `sources` yet:
+
+- `--check` writes nothing.
+- `--apply --confirm-database ot_directory --record <file>` writes in one transaction.
+- `--rollback <file>` removes the key again.
+
+A unit test covers the planner. The live check matched 182,277 of 187,127 served rows, with 0 name mismatches and 0 ambiguous keys. The 4,850 unmatched rows are the September pilot scan, which has no contact capture. `ot_directory` was dumped first, and the touched keys were recorded for rollback.
+
+The sync showed a defect. One aggregate over all served rows takes about 3 seconds, and the runtime pool's 3-second `query_timeout` refused it intermittently. The Gateway reported that as "Rights unavailable". `observedLineages` now aggregates one served scan at a time and merges the results. Sync takes about 330 ms, and 5 of 5 internal calls succeeded.
+
+The live rights queue for release `2026-10-21.0` has 6 cases, all `review`:
+
+- the release case;
+- AllThePlaces (CC0-1.0, 4,645 rows);
+- BrightQuery (38,468);
+- DAC (2,448);
+- meta (114,542);
+- Microsoft (22,174).
+
+The last four are under CDLA-Permissive-2.0.
+
+These are real owner decisions, and the evidence run reverses its own defer. None of the cases offers "Confirm terms read" in its current state, so the invalid-hash check is still covered only by the suites.
+
+### 10.3 Evidence rerun
+
+All 9 of 9 pass with `S7_RIGHTS_RELEASE=2026-10-21.0`.
+
+- **8a** now applies to one town, then rolls back. The town plans 0 changes, since everything is already applied.
+- **6** syncs, defers and undoes.
+
+Two test races were fixed:
+
+- axe ran before a client-rendered page existed;
+- the rights card was counted before the queue loaded.
+
+The history assertion now counts relative to earlier runs.
+
+State after the run:
+
+- 187,127 classifications (the full apply is intact);
+- 1 complete apply;
+- 2 rolled-back town applies;
+- 6 rights cases in `review`;
+- 0 open suppressions.
+
+### 10.4 Deploy
+
+- **Image.** Directory was rebuilt and deployed. The rollback tag is `optimistic-tanuki-directory:pre-provenance`.
+- **Shell environment.** Deploy from a shell that has not sourced `.env.directory.local`. With `set -a`, bash strips the quotes from the unquoted JSON in `DIRECTORY_REGISTER_RUNTIME_IDENTITY`. The exported value then overrides the env file in compose, and Directory fails to start with "Invalid runtime identity". That happened once here and was fixed by redeploying from a clean shell.
