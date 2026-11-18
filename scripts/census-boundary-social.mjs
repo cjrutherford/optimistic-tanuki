@@ -1,6 +1,6 @@
 import { findCensusBoundaryCandidatesAcross } from './census-boundary-reader.mjs';
 
-const states = Object.freeze({
+export const states = Object.freeze({
   AL: '01',
   AK: '02',
   AZ: '04',

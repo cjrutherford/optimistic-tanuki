@@ -233,6 +233,13 @@ const inventory: DirectoryLifecycleInventory = {
           export: 'include',
         },
         {
+          fields: ['automatic', 'reason'],
+          class: 'history',
+          deletion: 'preserve',
+          export: 'include',
+          note: 'Marks the automatic Census decision and its fixed system reason; no actor, so nothing to erase.',
+        },
+        {
           fields: [
             'sourceEpoch',
             'activationId',
@@ -1248,6 +1255,21 @@ const inventory: DirectoryLifecycleInventory = {
         'createdAt',
       ],
       'Town boundary geometry.'
+    ),
+    none(
+      'directory_boundary_auto_attempt',
+      'DirectoryBoundaryAutoAttempt',
+      [
+        'communityId',
+        'status',
+        'reason',
+        'changeToken',
+        'requestId',
+        'candidates',
+        'attempts',
+        'attemptedAt',
+      ],
+      'Automatic Census boundary ledger: per-town outcome and review reason, no actor.'
     ),
     none(
       'directory_boundary_candidate',

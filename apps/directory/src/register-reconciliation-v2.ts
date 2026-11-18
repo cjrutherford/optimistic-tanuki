@@ -104,7 +104,7 @@ async function apply(
     );
   if (snapshot) {
     await manager.query(
-      `INSERT INTO directory_town ("communityId",name,slug,"administrativeArea",eligible,"geometryStatus") VALUES ($1,$2,$3,$4,true,'pending') ON CONFLICT ("communityId") DO UPDATE SET name=EXCLUDED.name,slug=EXCLUDED.slug,"administrativeArea"=EXCLUDED."administrativeArea",eligible=true,"geometryStatus"='pending'`,
+      `INSERT INTO directory_town ("communityId",name,slug,"administrativeArea",eligible,"geometryStatus") VALUES ($1,$2,$3,$4,true,'pending') ON CONFLICT ("communityId") DO UPDATE SET name=EXCLUDED.name,slug=EXCLUDED.slug,"administrativeArea"=EXCLUDED."administrativeArea",eligible=true, "geometryStatus"=CASE WHEN directory_town.eligible THEN directory_town."geometryStatus" ELSE 'pending' END`,
       [id, snapshot.name, snapshot.slug, snapshot.adminArea]
     );
     await manager.query(
