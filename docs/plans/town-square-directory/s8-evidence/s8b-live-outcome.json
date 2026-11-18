@@ -29,12 +29,12 @@
   },
   "uiDownload": {
     "filename": "town-square-listings-2026-11-18.csv",
-    "bytes": 303611
+    "bytes": 300607
   },
   "throttle": {
-    "probes": 3,
-    "statuses": [404, 404, 429],
-    "first429At": 3,
+    "probes": 2,
+    "statuses": [404, 429],
+    "first429At": 2,
     "retryAfter": null,
     "note": "limit reached; budget resets after the 60s window"
   }

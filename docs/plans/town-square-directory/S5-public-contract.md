@@ -49,7 +49,7 @@ Related commits: 62a7141cb (acquisition and coverage states), 8491afacb (unconfi
 
 ### Remaining caveats
 
-- Publication is still paused. The local reviewed sample has not passed the full-frame quality review.
+- Publication is on for the local stack by owner decision D9 (2026-11-18). Production release remains a separate gate.
 - The full 13-owner account-deletion run has not been exercised on the local stack.
 - `empty`, `acquiring`, `partial`, `unknown` and `unconfigured` coverage were not observed live; they are tested only.
 - A bounds query that matches rows was not captured live.
