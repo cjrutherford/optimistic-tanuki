@@ -445,3 +445,7 @@ State after the run:
 
 - **Image.** Directory was rebuilt and deployed. The rollback tag is `optimistic-tanuki-directory:pre-provenance`.
 - **Shell environment.** Deploy from a shell that has not sourced `.env.directory.local`. With `set -a`, bash strips the quotes from the unquoted JSON in `DIRECTORY_REGISTER_RUNTIME_IDENTITY`. The exported value then overrides the env file in compose, and Directory fails to start with "Invalid runtime identity". That happened once here and was fixed by redeploying from a clean shell.
+
+### Update 2026-11-18: automatic Overture acquisition (owner decision D1)
+
+`ACQUISITION_AUTHORIZED = false` is replaced by per-provider authorization (`apps/directory/src/acquisition-authorization.ts`): Overture is authorized, every other provider is not. The directory worker's acquisition sweep (`apps/directory-worker/src/acquisition-sweep.ts`, shared logic in `apps/directory/src/overture-auto-acquisition.ts`) acquires each eligible town that has no successful acquisition for the pinned release. It runs under the rights policy file, the budget ledger, the run ledger (runs show in the Owner Console with reason `auto: <town>`) and the `provider_acquisition` kill switch. `DIRECTORY_AUTO_ACQUISITION=off` disables it; `DIRECTORY_AUTO_ACQUISITION_LIMIT` (default 2) bounds towns per sweep. A town whose geometry is pending is recorded as blocked with reason `geometry_pending`.

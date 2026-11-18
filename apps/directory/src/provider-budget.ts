@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { KeyObject } from 'node:crypto';
 import { createHash } from 'node:crypto';
 import { isPaused, ProviderPausedError } from './operating-controls';
+import { isAcquisitionAuthorized } from './acquisition-authorization';
 import {
   ProviderAttempt,
   SignedProviderGrant,
@@ -167,9 +168,15 @@ export async function authorizeAnonymousOvertureAttempt(
   db: DataSource,
   publicKey: KeyObject | string | Buffer,
   token: SignedProviderGrant,
-  attempt: ProviderAttempt
+  attempt: ProviderAttempt,
+  options: { automatic?: boolean } = {}
 ): Promise<{ state: 'authorized-free'; attemptId: string; period: string }> {
-  if (process.env.DIRECTORY_LOCAL_EVALUATION !== 'true')
+  // Operator-local scripts opt in with DIRECTORY_LOCAL_EVALUATION; the worker's automatic sweep is allowed only while
+  // Overture is an authorised provider (owner decision D1). The kill switch and policy row are checked below either way.
+  if (
+    process.env.DIRECTORY_LOCAL_EVALUATION !== 'true' &&
+    !(options.automatic === true && isAcquisitionAuthorized('overture'))
+  )
     throw Error('Local evaluation is not enabled');
   const signedToken = Object.freeze({ ...token }),
     request = Object.freeze({ ...attempt });

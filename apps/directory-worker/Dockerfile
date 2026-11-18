@@ -12,6 +12,7 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 COPY --from=builder /app/dist/apps/directory-worker/ ./
 USER node
 # The automatic Census boundary sweep reads TIGER archives with DuckDB, whose native binding needs glibc, and loads
-# the spatial extension at runtime with autoinstall off, so the extension is installed into the image here.
-RUN node -e "const {DuckDBInstance}=require('@duckdb/node-api');DuckDBInstance.create(':memory:').then(async d=>{const c=await d.connect();await c.run('INSTALL spatial');await c.run('LOAD spatial');console.log('spatial ready')})"
+# the spatial extension at runtime with autoinstall off, so the extension is installed into the image here. The automatic
+# Overture acquisition also loads httpfs (range reads through the pinned proxy).
+RUN node -e "const {DuckDBInstance}=require('@duckdb/node-api');DuckDBInstance.create(':memory:').then(async d=>{const c=await d.connect();await c.run('INSTALL spatial');await c.run('LOAD spatial');await c.run('INSTALL httpfs');await c.run('LOAD httpfs');console.log('spatial ready')})"
 CMD ["node", "main.js"]

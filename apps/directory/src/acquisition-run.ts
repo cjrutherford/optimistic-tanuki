@@ -13,6 +13,7 @@ import type {
   AcquisitionRunSummary,
 } from '../../../libs/social/contracts/src/lib/directory';
 import { MONTHLY_LIMIT_CENTS } from './provider-budget';
+import { anyAcquisitionAuthorized } from './acquisition-authorization';
 import { isPaused, ProviderPausedError } from './operating-controls';
 import {
   IDEMPOTENCY_CONFLICT,
@@ -38,8 +39,7 @@ const PROVIDER = /^[a-z0-9][a-z0-9._-]{0,31}$/;
 
 /** A running run that has not heartbeated for this long is presumed dead; an operator cancel then ends it directly. */
 export const ACQUISITION_STALE_MINUTES = 10;
-/** Real acquisition is not authorised. A run blocked for this reason cannot be resumed from the console. */
-export const ACQUISITION_AUTHORIZED = false;
+/** Authorisation is per provider (`acquisition-authorization.ts`); a run blocked as unauthorised cannot be resumed from the console. */
 
 const KINDS: readonly AcquisitionRunKind[] = [
   'overture-stage',
@@ -83,6 +83,7 @@ const REASONS: readonly AcquisitionBlockedReason[] = [
   'invalid_geometry',
   'acquisition_unauthorized',
   'provider_paused',
+  'geometry_pending',
 ];
 
 const iso = (v: unknown) =>
@@ -146,7 +147,15 @@ export function classifyStageError(error: unknown): {
   return { status: 'failed_retryable', blockedReason: null, message };
 }
 
-export function resumeCommand(kind: string, id: string): string | null {
+/** Reason prefix of a run the directory worker started itself; the worker also consumes its resume requests. */
+export const AUTO_RUN_REASON_PREFIX = 'auto:';
+
+export function resumeCommand(
+  kind: string,
+  id: string,
+  reason = ''
+): string | null {
+  if (reason.startsWith(AUTO_RUN_REASON_PREFIX)) return null;
   const scripts: Record<string, string> = {
     'overture-stage': 'local-directory-overture-stage.cjs --stage-local',
     'census-stage': 'local-directory-overture-census-stage.cjs --stage-local',
@@ -263,7 +272,9 @@ async function loadDetail(
     },
     versionToken: tokenOf(run, jobs, events.length),
     pendingRequest: pending,
-    resumeCommand: pending ? resumeCommand(summary.kind, id) : null,
+    resumeCommand: pending
+      ? resumeCommand(summary.kind, id, summary.reason)
+      : null,
   };
 }
 
@@ -690,7 +701,7 @@ export async function acquisitionBudgetPanel(
     remainingCents: Math.max(0, MONTHLY_LIMIT_CENTS - reserved),
     anonymousAttempts: anon,
     hardStop: reserved >= MONTHLY_LIMIT_CENTS,
-    acquisitionAuthorized: ACQUISITION_AUTHORIZED,
+    acquisitionAuthorized: anyAcquisitionAuthorized(),
   };
 }
 

@@ -618,7 +618,8 @@ export type AcquisitionBlockedReason =
   | 'quota_exhausted'
   | 'invalid_geometry'
   | 'acquisition_unauthorized'
-  | 'provider_paused';
+  | 'provider_paused'
+  | 'geometry_pending';
 export type AcquisitionRunAction = 'cancel' | 'resume' | 'retry';
 
 export interface AcquisitionRunSummary {

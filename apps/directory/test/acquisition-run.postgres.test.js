@@ -532,7 +532,7 @@ test(
       assert.equal(p.ceilingCents, 2500);
       assert.equal(p.reservedCents, 0);
       assert.equal(p.hardStop, false);
-      assert.equal(p.acquisitionAuthorized, false);
+      assert.equal(p.acquisitionAuthorized, true); // Overture only (D1)
       const period = p.period;
       const add = (cents) =>
         ds.query(
