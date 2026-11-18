@@ -1,0 +1,138 @@
+<section class="exports-page" aria-labelledby="exports-title">
+  <a class="back-link" routerLink="/dashboard">
+    <otui-icon name="arrow-back" [size]="18" stroke="currentColor"></otui-icon>
+    Dashboard
+  </a>
+
+  <header class="page-header">
+    <p class="page-kicker">Directory</p>
+    <h1 id="exports-title">Exports</h1>
+    <p>
+      An export carries only the rows and fields the source licences allow to
+      leave. Public display approval does not allow export; a release needs its
+      own export grant. Files are prepared in the background and expire after
+      about a day.
+    </p>
+  </header>
+
+  <otui-card class="export-form" tone="neutral" emphasis="soft">
+    <h2>Request an export</h2>
+    <lib-text-input
+      name="releaseId"
+      label="Release id"
+      placeholder="2026-10-21.0"
+      [(ngModel)]="releaseId"
+    ></lib-text-input>
+    <lib-text-input
+      name="communityId"
+      label="Community id (optional)"
+      placeholder="Limit the export to one community"
+      [(ngModel)]="communityId"
+    ></lib-text-input>
+    <div class="form-actions">
+      <otui-button
+        tone="brand"
+        emphasis="solid"
+        [disabled]="submitting"
+        (click)="submit()"
+      >
+        Request export
+      </otui-button>
+      <otui-button
+        tone="neutral"
+        emphasis="ghost"
+        aria-label="Refresh the export list"
+        (click)="refresh()"
+      >
+        Refresh
+      </otui-button>
+    </div>
+  </otui-card>
+
+  @if (message) {
+  <p class="page-message" role="status">{{ message }}</p>
+  } @if (loading && jobs.length === 0) {
+  <otui-loading-state headline="Loading exports…"></otui-loading-state>
+  } @else if (!loading && jobs.length === 0) {
+  <otui-empty-state
+    headline="No exports yet"
+    body="Exports you request here appear in this list with their progress."
+  ></otui-empty-state>
+  }
+
+  <div class="export-list" aria-live="polite">
+    @for (job of jobs; track job.id) {
+    <otui-card class="export-card" tone="neutral" emphasis="soft">
+      <div class="export-header">
+        <div>
+          <h3>Release {{ job.releaseId }}</h3>
+          <p class="export-meta">
+            <code>{{ job.id }}</code>
+            @if (job.scope.communityId) { · community
+            <code>{{ job.scope.communityId }}</code>
+            }
+          </p>
+        </div>
+        <otui-badge [tone]="badgeTone(job.status)" size="sm">
+          {{ job.status | titlecase }}
+        </otui-badge>
+      </div>
+      <dl class="export-facts">
+        <div>
+          <dt>Rows</dt>
+          <dd>{{ job.rowCount ?? '–' }}</dd>
+        </div>
+        <div>
+          <dt>Excluded</dt>
+          <dd>{{ job.excludedRows ?? '–' }}</dd>
+        </div>
+        <div>
+          <dt>Size</dt>
+          <dd>{{ size(job.byteCount) || '–' }}</dd>
+        </div>
+        <div>
+          <dt>SHA-256</dt>
+          <dd>
+            @if (job.sha256) {
+            <code class="sha" [title]="job.sha256">{{
+              shortSha(job.sha256)
+            }}</code>
+            } @else { – }
+          </dd>
+        </div>
+        <div>
+          <dt>Expires</dt>
+          <dd>{{ job.expiresAt ?? '–' }}</dd>
+        </div>
+      </dl>
+      @if (job.errorCode) {
+      <p class="export-error" role="alert">{{ errorText(job.errorCode) }}</p>
+      }
+      <div class="export-actions">
+        @if (canDownload(job)) {
+        <otui-button
+          size="sm"
+          tone="brand"
+          emphasis="solid"
+          [disabled]="downloading !== null"
+          [attr.aria-label]="'Download export ' + job.id"
+          (click)="download(job)"
+        >
+          Download
+        </otui-button>
+        } @if (job.status === 'failed') {
+        <otui-button
+          size="sm"
+          tone="neutral"
+          emphasis="soft"
+          [attr.aria-label]="'Retry export ' + job.id"
+          (click)="retry(job)"
+        >
+          Retry
+        </otui-button>
+        }
+      </div>
+    </otui-card>
+    }
+  </div>
+</section>

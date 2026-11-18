@@ -80,6 +80,8 @@ export const DIRECTORY_DELETION_IDENTITIES = Object.freeze({
   directory_address_review_decision: [['actorId', 'profile']],
   directory_rights_event: [['actorId', 'profile']],
   directory_withdrawal_request: [['actorId', 'profile']],
+  directory_export_job: [['actorId', 'profile']],
+  directory_export_download: [['actorId', 'profile']],
   directory_taxonomy_mapping_version: [['installedById', 'profile']],
   directory_taxonomy_event: [['actorId', 'profile']],
   directory_taxonomy_run: [
@@ -172,6 +174,12 @@ async function inspect(
     await one('directory_withdrawal_request WHERE "actorId"=ANY($1::uuid[])', [
       s.profiles,
     ]),
+    await one('directory_export_job WHERE "actorId"=ANY($1::uuid[])', [
+      s.profiles,
+    ]),
+    await one('directory_export_download WHERE "actorId"=ANY($1::uuid[])', [
+      s.profiles,
+    ]),
     await one(
       'directory_taxonomy_mapping_version WHERE "installedById"=ANY($1::uuid[])',
       [s.profiles]
@@ -231,6 +239,14 @@ async function inspect(
     ),
     await one(
       'directory_withdrawal_request WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_export_job WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_export_download WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
       [s.all, s.profiles]
     ),
     await one(
@@ -337,6 +353,14 @@ async function erase(manager: Manager, s: Canonical): Promise<void> {
   );
   await manager.query(
     'UPDATE directory_withdrawal_request SET "actorId"=NULL,reason=\'\' WHERE "actorId"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_export_job SET "actorId"=NULL WHERE "actorId"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_export_download SET "actorId"=NULL WHERE "actorId"=ANY($1::uuid[])',
     [s.profiles]
   );
   await manager.query(

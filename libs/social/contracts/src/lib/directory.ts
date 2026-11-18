@@ -158,6 +158,7 @@ export const DIRECTORY_PERMISSIONS = {
   review: 'directory.review',
   rights: 'directory.rights',
   operate: 'directory.operate',
+  export: 'directory.export',
 } as const;
 export type DirectoryPermission =
   (typeof DIRECTORY_PERMISSIONS)[keyof typeof DIRECTORY_PERMISSIONS];
@@ -700,4 +701,51 @@ export interface AcquisitionImportHistoryResult {
   replayed: boolean;
   created: number;
   existing: number;
+}
+
+/** Lifecycle of an operator export job. */
+export type DirectoryExportStatus =
+  | 'queued'
+  | 'running'
+  | 'complete'
+  | 'failed'
+  | 'expired'
+  | 'withdrawn';
+
+export const DIRECTORY_EXPORT_STATUSES: readonly DirectoryExportStatus[] = [
+  'queued',
+  'running',
+  'complete',
+  'failed',
+  'expired',
+  'withdrawn',
+];
+
+/** An export job as the Gateway returns it. It never carries a file path. */
+export interface DirectoryExportJob {
+  id: string;
+  actorId: string;
+  releaseId: string;
+  scope: { communityId?: string };
+  format: 'jsonl';
+  status: DirectoryExportStatus;
+  attempts: number;
+  errorCode: string | null;
+  rowCount: number | null;
+  excludedRows: number | null;
+  byteCount: number | null;
+  sha256: string | null;
+  schemaVersion: string | null;
+  expiresAt: string | null;
+  completedAt: string | null;
+  withdrawnAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** The request body of POST /directory/exports. */
+export interface DirectoryExportRequest {
+  id: string;
+  releaseId: string;
+  communityId?: string;
 }

@@ -88,6 +88,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'directory-exports',
+        loadComponent: () =>
+          import('./components/directory-exports-page.component').then(
+            (m) => m.DirectoryExportsPageComponent
+          ),
+      },
+      {
         path: 'directory-taxonomy',
         loadComponent: () =>
           import('./components/directory-taxonomy-cases-page.component').then(

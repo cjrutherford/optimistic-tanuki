@@ -1,6 +1,11 @@
 import { IDEMPOTENCY_CONFLICT, ReviewConflictError } from './review-version';
 import { markRightsCaseWithdrawn } from './rights-case';
 import { OverturePrivateSink } from './overture-private-sink';
+import {
+  removeExportFiles,
+  withdrawExportArtifacts,
+  withdrawalScanIds,
+} from './export-job';
 
 /**
  * Authenticated, durable withdrawal (S7c). An operator holding `directory.rights` records a request; the
@@ -180,6 +185,8 @@ export interface WithdrawalWorkerOptions {
   readonly maxBatches?: number;
   /** Most requests one pass may drive. */
   readonly maxRequests?: number;
+  /** Export artifact directory; withdrawn export files are deleted from it once the request commits. */
+  readonly exportDir?: string;
 }
 
 /** Errors that retrying cannot fix. */
@@ -283,6 +290,7 @@ export async function runWithdrawalPass(
         Number(claimed.attempts) + 1 >= WITHDRAWAL_MAX_ATTEMPTS;
     }
     const progress = await remaining(db, claimed);
+    let withdrawnArtifacts: string[] = [];
     await db.transaction(async (q) => {
       if (error !== null) {
         await q.query(
@@ -301,6 +309,13 @@ export async function runWithdrawalPass(
           complete,
         ]
       );
+      // A finished withdrawal also withdraws every export artifact that holds data from the withdrawn scans.
+      if (complete)
+        withdrawnArtifacts = (
+          await withdrawExportArtifacts(q, {
+            scanIds: await withdrawalScanIds(q, claimed),
+          })
+        ).artifactNames;
       if (complete && claimed.rightsCaseId)
         await markRightsCaseWithdrawn(q, {
           caseId: claimed.rightsCaseId,
@@ -313,6 +328,8 @@ export async function runWithdrawalPass(
             ),
         });
     });
+    if (options.exportDir && withdrawnArtifacts.length)
+      await removeExportFiles(options.exportDir, withdrawnArtifacts);
   }
   return stepped;
 }

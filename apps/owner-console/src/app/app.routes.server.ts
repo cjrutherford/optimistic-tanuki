@@ -38,6 +38,7 @@ export const serverRoutes: ServerRoute[] = [
   ...[
     'dashboard/directory-rights',
     'dashboard/directory-withdrawals',
+    'dashboard/directory-exports',
     'dashboard/directory-taxonomy',
     'dashboard/directory-taxonomy-runs',
     'dashboard/directory-runs',

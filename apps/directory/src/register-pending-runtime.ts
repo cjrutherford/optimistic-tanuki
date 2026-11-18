@@ -129,6 +129,16 @@ import {
   startWithdrawalWorker,
 } from './withdrawal-request';
 import { handleRightsRoute } from './rights-routes';
+import { handleExportRoute } from './export-routes';
+import {
+  createExportJob,
+  ExportUnavailableError,
+  getExportJob,
+  listExportJobs,
+  openExportArtifact,
+  retryExportJob,
+  startExportWorker,
+} from './export-job';
 import { handleTaxonomyRoute } from './taxonomy-routes';
 import { handleAcquisitionRoute } from './acquisition-routes';
 import {
@@ -1573,8 +1583,31 @@ export function pendingChecks(
     acquisitionImportHistory: (v: any) =>
       importAcquisitionHistory(acquisitionDb, v),
   };
+  // Operator export (S8): jobs are global operator records. Without DIRECTORY_EXPORT_DIR nothing can be written, so
+  // create, retry and download answer 503 rather than queueing a job no worker will run.
+  const exportDir = process.env.DIRECTORY_EXPORT_DIR;
+  const requireExportDir = () => {
+    if (!exportDir) throw new ExportUnavailableError();
+    return exportDir;
+  };
+  const exportOps = {
+    exportCreate: async (v: Parameters<typeof createExportJob>[1]) => {
+      requireExportDir();
+      return (await createExportJob(rightsDb as never, v)).job;
+    },
+    exportList: (o: Parameters<typeof listExportJobs>[1]) =>
+      listExportJobs(db, o),
+    exportGet: (id: string) => getExportJob(db, id),
+    exportRetry: (id: string, v: { actorId: string }) => {
+      requireExportDir();
+      return retryExportJob(db, { id, actorId: v.actorId });
+    },
+    exportArtifact: (v: { id: string; actorId: string }) =>
+      openExportArtifact(db, { ...v, dir: requireExportDir() }),
+  };
   return {
     ...rights,
+    ...exportOps,
     ...taxonomy,
     ...acquisition,
     reportCreate,
@@ -1626,6 +1659,7 @@ export function pendingServer(
   let active = 0;
   return createServer(async (req, res) => {
     if (await handleRightsRoute(req, res, checks, localSecret)) return;
+    if (await handleExportRoute(req, res, checks, localSecret)) return;
     if (await handleTaxonomyRoute(req, res, checks, localSecret)) return;
     if (await handleAcquisitionRoute(req, res, checks, localSecret)) return;
     if (
@@ -3246,6 +3280,7 @@ export async function runPendingRuntime(): Promise<void> {
   let server: Server | undefined;
   let stopWithdrawals: (() => void) | undefined;
   let stopTaxonomy: (() => void) | undefined;
+  let stopExports: (() => void) | undefined;
   let stopping = false;
   const stop = () => {
     stopping = true;
@@ -3274,10 +3309,22 @@ export async function runPendingRuntime(): Promise<void> {
       server!.listen(config.listenPort, '0.0.0.0', resolve);
     });
     // Durable withdrawal requests: the worker resumes pending and running ones after a restart.
+    const exportDir = process.env.DIRECTORY_EXPORT_DIR;
     stopWithdrawals = startWithdrawalWorker(db as never, {
+      ...(exportDir ? { exportDir } : {}),
       onError: () =>
         console.error('Directory withdrawal pass failed; retrying'),
     });
+    // Operator exports run only when DIRECTORY_EXPORT_DIR names a writable directory.
+    if (exportDir) {
+      const hours = Number(process.env.DIRECTORY_EXPORT_RETENTION_HOURS);
+      stopExports = startExportWorker(db as never, {
+        dir: exportDir,
+        policyFor: loadRightsPolicy as never,
+        retentionHours: Number.isFinite(hours) && hours > 0 ? hours : 24,
+        onError: () => console.error('Directory export pass failed; retrying'),
+      });
+    }
     // Durable reclassification runs resume the same way.
     stopTaxonomy = startTaxonomyWorker(db as never, {
       onError: () => console.error('Directory taxonomy pass failed; retrying'),
@@ -3285,6 +3332,7 @@ export async function runPendingRuntime(): Promise<void> {
     await new Promise<void>((resolve) => server!.once('close', resolve));
   } finally {
     stopWithdrawals?.();
+    stopExports?.();
     stopTaxonomy?.();
     process.removeListener('SIGINT', stop);
     process.removeListener('SIGTERM', stop);
