@@ -103,6 +103,7 @@ import {
 import { DirectoryAddressReviewController } from '../controllers/directory/directory-address-review.controller';
 import { DirectoryBusinessIdentityReviewController } from '../controllers/directory/directory-business-identity-review.controller';
 import { DirectoryListingSuppressionController } from '../controllers/directory/directory-listing-suppression.controller';
+import { DirectoryDuplicateCasesController } from '../controllers/directory/directory-duplicate-cases.controller';
 import {
   DirectoryRightsCasesController,
   DirectoryWithdrawalsController,
@@ -263,6 +264,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'directory-listing-suppression',
         requiredServices: ['social', 'authentication', 'permissions'],
         value: DirectoryListingSuppressionController,
+      },
+      {
+        id: 'directory-duplicate-cases',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryDuplicateCasesController,
       },
       {
         id: 'directory-rights-cases',

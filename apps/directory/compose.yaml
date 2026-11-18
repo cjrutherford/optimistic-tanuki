@@ -85,6 +85,10 @@ services:
       DIRECTORY_AUTO_ACQUISITION_LIMIT: ${DIRECTORY_AUTO_ACQUISITION_LIMIT:-2}
       DIRECTORY_AUTO_ACQUISITION_MAX_ASSETS: ${DIRECTORY_AUTO_ACQUISITION_MAX_ASSETS:-4}
       DIRECTORY_AUTO_ACQUISITION_INVENTORY_FILE: /etc/directory/overture/inventory.json
+      # Uncertain-duplicate sweep (owner decision D13): 'off' disables it; the provider_acquisition pause also stops it.
+      DIRECTORY_AUTO_DUPLICATES: ${DIRECTORY_AUTO_DUPLICATES:-on}
+      DIRECTORY_AUTO_DUPLICATES_INTERVAL_MS: ${DIRECTORY_AUTO_DUPLICATES_INTERVAL_MS:-300000}
+      DIRECTORY_AUTO_DUPLICATES_LIMIT: ${DIRECTORY_AUTO_DUPLICATES_LIMIT:-5}
       # Standalone AllThePlaces (D3) reads its pinned archive from the rights policy; the snapshot cache is derived data.
       DIRECTORY_ATP_CACHE_DIR: ${DIRECTORY_ATP_CACHE_DIR:-/tmp/directory-atp}
       # Geoapify private enrichment (D4): inert while the key is blank. Never defaulted here.

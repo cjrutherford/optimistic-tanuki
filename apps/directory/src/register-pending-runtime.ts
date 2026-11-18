@@ -83,6 +83,13 @@ import {
   type SuppressionReason,
 } from './listing-suppression';
 import {
+  DUPLICATE_ACTIONS,
+  DUPLICATE_CASE_INVALID,
+  DUPLICATE_CASE_NOT_FOUND,
+  decideDuplicateCase,
+  listDuplicateCases,
+} from './duplicate-review';
+import {
   REPORT_ACTIONS,
   REPORT_BUSY,
   REPORT_CONFLICT,
@@ -1441,6 +1448,32 @@ export function pendingChecks(
     await authority(town);
     return result;
   }
+  async function duplicateList(town: string) {
+    if (!uuid.test(town) || !db.transaction)
+      throw Error(DUPLICATE_CASE_INVALID);
+    await authority(town);
+    const result = await listDuplicateCases(db, town);
+    await authority(town);
+    return result;
+  }
+  async function duplicateDecide(
+    town: string,
+    caseId: string,
+    value: { action: string; reason: string; actorId: string }
+  ) {
+    if (!uuid.test(town) || !db.transaction)
+      throw Error(DUPLICATE_CASE_INVALID);
+    await authority(town);
+    const result = await decideDuplicateCase(db as never, {
+      caseId,
+      townId: town,
+      action: value.action as (typeof DUPLICATE_ACTIONS)[number],
+      actorId: value.actorId,
+      reason: value.reason,
+    });
+    await authority(town);
+    return result;
+  }
   async function suppressionCreate(
     town: string,
     value: {
@@ -1662,6 +1695,8 @@ export function pendingChecks(
     reportList,
     reportTransition,
     suppressionList,
+    duplicateList,
+    duplicateDecide,
     suppressionCreate,
     suppressionLift,
     ready,
@@ -2752,6 +2787,112 @@ export function pendingServer(
               message === 'ACCOUNT_DELETION_FENCED'
               ? 409
               : message === SUPPRESSION_NOT_FOUND
+              ? 404
+              : 503,
+            { 'cache-control': 'no-store' }
+          )
+          .end();
+      } finally {
+        active--;
+      }
+      return;
+    }
+    const duplicateMatch = localUrl?.pathname.match(
+      /^\/internal\/local-evaluation\/towns\/([0-9a-f-]{36})\/duplicate-cases(?:\/([0-9a-f-]{36})\/decide)?$/
+    );
+    if (
+      duplicateMatch &&
+      (duplicateMatch[2] ? req.method === 'POST' : req.method === 'GET')
+    ) {
+      const isList = req.method === 'GET';
+      const expected = Buffer.from(localSecret || ''),
+        provided = Buffer.from(
+          req.headers.authorization?.startsWith('Bearer ')
+            ? req.headers.authorization.slice(7)
+            : ''
+        );
+      if (expected.length < 32) {
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (
+        provided.length !== expected.length ||
+        !timingSafeEqual(provided, expected)
+      ) {
+        res.writeHead(401, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (localUrl!.search || !uuid.test(duplicateMatch[1])) {
+        res.writeHead(400, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      if (active >= 32) {
+        res.writeHead(503, { 'cache-control': 'no-store' }).end();
+        return;
+      }
+      active++;
+      if (!isList) req.setTimeout(5000, () => req.destroy());
+      try {
+        let result: unknown;
+        if (isList) {
+          result = await checks.duplicateList(duplicateMatch[1]);
+        } else {
+          let body = Buffer.alloc(0);
+          for await (const chunk of req) {
+            body = Buffer.concat([body, Buffer.from(chunk)]);
+            if (body.length > 16384) {
+              res.writeHead(413, { 'cache-control': 'no-store' }).end();
+              return;
+            }
+          }
+          let value: any;
+          try {
+            value = JSON.parse(body.toString('utf8'));
+          } catch {
+            res.writeHead(400, { 'cache-control': 'no-store' }).end();
+            return;
+          }
+          if (
+            !value ||
+            typeof value !== 'object' ||
+            Array.isArray(value) ||
+            !Object.keys(value).every((k) =>
+              ['action', 'reason', 'actorId'].includes(k)
+            ) ||
+            !uuid.test(value.actorId || '') ||
+            !(DUPLICATE_ACTIONS as readonly string[]).includes(value.action) ||
+            typeof value.reason !== 'string' ||
+            !value.reason.trim() ||
+            value.reason.length > 1024
+          ) {
+            res.writeHead(400, { 'cache-control': 'no-store' }).end();
+            return;
+          }
+          result = await checks.duplicateDecide(
+            duplicateMatch[1],
+            duplicateMatch[2],
+            {
+              action: value.action,
+              reason: value.reason,
+              actorId: value.actorId,
+            }
+          );
+        }
+        res
+          .writeHead(200, {
+            'content-type': 'application/json',
+            'cache-control': 'no-store',
+          })
+          .end(JSON.stringify(result));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '';
+        res
+          .writeHead(
+            message === DUPLICATE_CASE_INVALID
+              ? 400
+              : message === 'ACCOUNT_DELETION_FENCED'
+              ? 409
+              : message === DUPLICATE_CASE_NOT_FOUND
               ? 404
               : 503,
             { 'cache-control': 'no-store' }

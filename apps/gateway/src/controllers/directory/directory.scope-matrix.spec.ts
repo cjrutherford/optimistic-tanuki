@@ -14,6 +14,7 @@ import {
 } from './directory-business-link.controller';
 import { DirectoryAddressReviewController } from './directory-address-review.controller';
 import { DirectoryListingSuppressionController } from './directory-listing-suppression.controller';
+import { DirectoryDuplicateCasesController } from './directory-duplicate-cases.controller';
 import {
   DirectoryRightsCasesController,
   DirectoryWithdrawalsController,
@@ -203,6 +204,12 @@ const reviewRoutes: MatrixRoute[] = [
     path: `${base}/listing-suppressions/${candidate}/lift`,
     body: {},
   },
+  { method: 'GET', path: `${base}/duplicate-cases` },
+  {
+    method: 'POST',
+    path: `${base}/duplicate-cases/${candidate}/decide`,
+    body: {},
+  },
   { method: 'GET', path: `${base}/listing-reports` },
   {
     method: 'POST',
@@ -282,6 +289,7 @@ describe('directory authentication and Owner Console scope matrix', () => {
         DirectoryAddressReviewController,
         DirectoryBusinessIdentityReviewController,
         DirectoryListingSuppressionController,
+        DirectoryDuplicateCasesController,
         DirectoryRightsCasesController,
         DirectoryWithdrawalsController,
         DirectoryTaxonomyController,
