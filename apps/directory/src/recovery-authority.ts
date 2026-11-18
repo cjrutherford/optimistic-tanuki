@@ -111,7 +111,7 @@ export async function beginRecovery(db: DataSource, request: BeginRequest) {
       ? (BigInt(old.directoryGeneration) + 1n).toString()
       : '1';
     await manager.query(
-      `UPDATE directory_town SET "geometryStatus"='pending' WHERE "geometryStatus" <> 'pending'`
+      `UPDATE directory_town SET "geometryStatus"='pending' WHERE "geometryStatus" <> 'pending' AND NOT EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=directory_town."communityId")`
     );
     await manager.query(
       `UPDATE directory_provider_work SET status='blocked', "updatedAt"=CURRENT_TIMESTAMP`

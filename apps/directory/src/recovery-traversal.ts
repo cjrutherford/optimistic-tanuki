@@ -160,7 +160,7 @@ export async function recoveryPage(
           throw Error('Invalid snapshot');
         if (current && isEligibleCommunity(current)) {
           await r.query(
-            `INSERT INTO directory_town ("communityId", name, slug, "administrativeArea", eligible, "geometryStatus") VALUES ($1,$2,$3,$4,true,'pending') ON CONFLICT ("communityId") DO UPDATE SET name=EXCLUDED.name, slug=EXCLUDED.slug, "administrativeArea"=EXCLUDED."administrativeArea", eligible=true, "geometryStatus"='pending'`,
+            `INSERT INTO directory_town ("communityId", name, slug, "administrativeArea", eligible, "geometryStatus") VALUES ($1,$2,$3,$4,true,'pending') ON CONFLICT ("communityId") DO UPDATE SET name=EXCLUDED.name, slug=EXCLUDED.slug, "administrativeArea"=EXCLUDED."administrativeArea", eligible=true, "geometryStatus"=CASE WHEN EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=directory_town."communityId") THEN directory_town."geometryStatus" ELSE 'pending' END`,
             [id, current.name, current.slug, current.adminArea]
           );
           await r.query(
@@ -169,7 +169,7 @@ export async function recoveryPage(
           );
         } else {
           await r.query(
-            `UPDATE directory_town SET eligible=false, "geometryStatus"='pending' WHERE "communityId"=$1`,
+            `UPDATE directory_town SET eligible=false, "geometryStatus"=CASE WHEN EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=directory_town."communityId") THEN "geometryStatus" ELSE 'pending' END WHERE "communityId"=$1`,
             [id]
           );
           await r.query(

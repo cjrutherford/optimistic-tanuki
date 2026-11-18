@@ -48,7 +48,7 @@ export class TownGeometryService {
       ON CONFLICT ("communityId") DO UPDATE SET name = EXCLUDED.name, slug = EXCLUDED.slug,
       "administrativeArea" = EXCLUDED."administrativeArea", eligible = EXCLUDED.eligible,
       "geometryStatus" = CASE WHEN NOT EXCLUDED.eligible OR NOT directory_town.eligible
-        THEN 'pending' ELSE directory_town."geometryStatus" END`,
+        THEN CASE WHEN EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=directory_town."communityId") THEN directory_town."geometryStatus" ELSE 'pending' END ELSE directory_town."geometryStatus" END`,
         [
           input.communityId,
           input.name,
@@ -83,7 +83,7 @@ export class TownGeometryService {
         [communityId]
       );
       await manager.query(
-        `UPDATE directory_town SET eligible = false, "geometryStatus" = 'pending' WHERE "communityId" = $1`,
+        `UPDATE directory_town SET eligible = false, "geometryStatus" = CASE WHEN EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=directory_town."communityId") THEN "geometryStatus" ELSE 'pending' END WHERE "communityId" = $1`,
         [communityId]
       );
     });

@@ -117,6 +117,30 @@ export class DirectoryBoundaryAutoAttempt {
   attemptedAt!: Date;
 }
 
+/**
+ * Owner lock on a town's boundary: the town is bound to one researched Census geometry that the geometry sweep, the
+ * register re-reconcile and every other automatic path leave alone (they neither replace it nor reset the town to
+ * pending). Only a reviewer decision through the boundary review routes may change the installed geometry. The row
+ * keeps the provenance of the locked install: the Census entity, the archive digest, the geometry hash and a hash of
+ * the whole evidence record.
+ */
+@Entity({ name: 'directory_boundary_lock' })
+export class DirectoryBoundaryLock {
+  @PrimaryColumn('uuid') communityId!: string;
+  @Column('integer') version!: number;
+  @Column({ type: 'varchar', length: 10 }) geoid!: string;
+  @Column({ type: 'varchar', length: 6 }) layer!: string;
+  @Column({ type: 'varchar', length: 4 }) vintage!: string;
+  @Column({ type: 'varchar', length: 2 }) stateFips!: string;
+  @Column({ type: 'varchar', length: 64 }) archiveSha256!: string;
+  @Column({ type: 'varchar', length: 64 }) geometryHash!: string;
+  @Column({ type: 'varchar', length: 64 }) evidenceHash!: string;
+  @Column({ type: 'varchar', length: 2048 }) sourceUrl!: string;
+  @Column({ type: 'jsonb' }) evidence!: unknown;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  lockedAt!: Date;
+}
+
 // Active private binding only; historical geometry and decision rows remain audit evidence.
 @Entity({ name: 'directory_reviewed_geometry' })
 export class DirectoryReviewedGeometry {

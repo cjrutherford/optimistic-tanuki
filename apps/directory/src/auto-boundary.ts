@@ -71,6 +71,7 @@ export type AutoOutcome =
   | 'ambiguous'
   | 'unmatched'
   | 'unsupported'
+  | 'locked'
   | 'error';
 
 export interface AutoBoundaryDeps {
@@ -139,6 +140,12 @@ export async function autoInstallTown(
   communityId: string
 ): Promise<{ outcome: AutoOutcome; reason: string }> {
   try {
+    // An owner-locked boundary is never replaced or re-searched by an automatic path.
+    const locked = await deps.db.query(
+      'SELECT 1 FROM directory_boundary_lock WHERE "communityId"=$1',
+      [communityId]
+    );
+    if (locked.length) return { outcome: 'locked', reason: 'boundary_locked' };
     const found = await deps.discover(communityId);
     if (found.status === 'unavailable' || found.status === 'superseded') {
       await record(deps, communityId, 'error', `social_${found.status}`);
@@ -243,11 +250,17 @@ export async function reconcileAutoBoundary(
     `DELETE FROM directory_boundary_auto_attempt a WHERE a.status='installed' AND NOT ${active} RETURNING a."communityId"`,
     params
   );
-  await db.query(
-    `UPDATE directory_town t SET "geometryStatus"='pending' WHERE t."geometryStatus"='ready'
-       AND EXISTS (SELECT 1 FROM directory_boundary_decision d WHERE d."communityId"=t."communityId" AND d.automatic AND d."invalidatedAt" IS NOT NULL)
-       AND NOT EXISTS (SELECT 1 FROM directory_reviewed_geometry g JOIN directory_boundary_decision d ON d."requestId"=g."requestId" AND d."invalidatedAt" IS NULL WHERE g."communityId"=t."communityId")`
-  );
+  await db.transaction(async (manager) => {
+    await manager.query(
+      "SELECT pg_advisory_xact_lock(hashtextextended('directory-recovery-authority-v1', 0))"
+    );
+    await manager.query(
+      `UPDATE directory_town t SET "geometryStatus"='pending' WHERE t."geometryStatus"='ready'
+         AND NOT EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=t."communityId")
+         AND EXISTS (SELECT 1 FROM directory_boundary_decision d WHERE d."communityId"=t."communityId" AND d.automatic AND d."invalidatedAt" IS NOT NULL)
+         AND NOT EXISTS (SELECT 1 FROM directory_reviewed_geometry g JOIN directory_boundary_decision d ON d."requestId"=g."requestId" AND d."invalidatedAt" IS NULL WHERE g."communityId"=t."communityId")`
+    );
+  });
   // A register re-reconcile or an older deployment can leave a town pending while its automatic geometry is live.
   const promoted = await db.query(
     `UPDATE directory_town t SET "geometryStatus"='ready' WHERE t.eligible AND t."geometryStatus"='pending'
@@ -273,6 +286,7 @@ export async function selectAutoBoundaryTowns(
     `SELECT t."communityId" FROM directory_town t
      LEFT JOIN directory_boundary_auto_attempt a ON a."communityId"=t."communityId"
      WHERE t.eligible IS TRUE
+       AND NOT EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=t."communityId")
        AND NOT EXISTS (SELECT 1 FROM directory_reviewed_geometry g JOIN directory_boundary_decision d ON d."requestId"=g."requestId" AND d."communityId"=g."communityId" AND d."invalidatedAt" IS NULL
                        WHERE g."communityId"=t."communityId" AND g."recoveryEpoch"=$4 AND g."directoryGeneration"=$5)
        AND (a."communityId" IS NULL
@@ -332,6 +346,7 @@ export async function runAutoBoundarySweep(
       break;
     }
     const { outcome, reason } = await autoInstallTown(deps, town);
+    if (outcome === 'locked') continue;
     result.examined++;
     result.reasons[reason] = (result.reasons[reason] ?? 0) + 1;
     if (outcome === 'installed') result.installed++;
