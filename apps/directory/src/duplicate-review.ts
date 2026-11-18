@@ -38,6 +38,8 @@ export const UNCERTAIN_RADIUS_METERS = 500;
 export const SIMILAR_NAME_JACCARD = 0.6;
 export const DUPLICATE_CASE_INVALID = 'Invalid duplicate case';
 export const DUPLICATE_CASE_NOT_FOUND = 'Duplicate case unavailable';
+/** The case is no longer in the state the reviewer saw (stale decision). */
+export const DUPLICATE_CASE_STALE = 'Duplicate case changed';
 export const DUPLICATE_POLICY = 'D13 uncertain duplicate (owner 2026-11-18)';
 const MAX_ROWS = 20_000;
 const FILLER = new Set(['the', 'and', 'of', 'inc', 'llc', 'co', 'company']);
@@ -349,6 +351,16 @@ export async function queueUncertainDuplicates(
 }
 
 export const DUPLICATE_ACTIONS = ['keep_separate', 'merge', 'undo'] as const;
+export const DUPLICATE_STATES: readonly string[] = [
+  'queued',
+  'kept_separate',
+  'merged',
+];
+export const DUPLICATE_RULES: readonly string[] = [
+  'same_name_near',
+  'similar_name',
+];
+export const DUPLICATE_PAGE_MAX = 100;
 export type DuplicateAction = (typeof DUPLICATE_ACTIONS)[number];
 export interface DuplicateDecisionInput {
   readonly caseId: string;
@@ -356,6 +368,8 @@ export interface DuplicateDecisionInput {
   readonly action: DuplicateAction;
   readonly actorId: string;
   readonly reason: string;
+  /** The state the reviewer saw. A decision on a case that has since moved is refused as stale. */
+  readonly expectedState?: string;
 }
 export interface DuplicateDecisionResult {
   readonly replayed: boolean;
@@ -375,7 +389,9 @@ export async function decideDuplicateCase(
     !(DUPLICATE_ACTIONS as readonly string[]).includes(input.action) ||
     typeof input.reason !== 'string' ||
     !input.reason.trim() ||
-    input.reason.length > 1024
+    input.reason.length > 1024 ||
+    (input.expectedState !== undefined &&
+      !DUPLICATE_STATES.includes(input.expectedState))
   )
     throw Error(DUPLICATE_CASE_INVALID);
   return db.transaction(async (tx) => {
@@ -394,6 +410,8 @@ export async function decideDuplicateCase(
         : 'queued';
     if (c.state === target && input.action !== 'undo')
       return { replayed: true, state: c.state };
+    if (input.expectedState !== undefined && input.expectedState !== c.state)
+      throw Error(DUPLICATE_CASE_STALE);
     if (input.action === 'undo' && c.state === 'queued')
       throw Error(DUPLICATE_CASE_INVALID);
     const liftOpen = () =>
@@ -453,32 +471,195 @@ export interface DuplicateCaseRecord {
   readonly createdAt: string;
 }
 
-/** Reviewer queue for one town: queued cases first, capped at 200. */
+export interface DuplicateListQuery {
+  readonly state?: string;
+  readonly rule?: string;
+  readonly limit?: number;
+  readonly offset?: number;
+}
+
+/**
+ * Reviewer queue for one town, paged on the server: queued cases first, then newest. Optional `state` and `rule`
+ * filters. `total` counts every case matching the filters, not just the page.
+ */
 export async function listDuplicateCases(
   q: Q,
-  town: string
-): Promise<{ cases: DuplicateCaseRecord[] }> {
-  if (!UUID.test(town)) throw Error(DUPLICATE_CASE_INVALID);
+  town: string,
+  query: DuplicateListQuery = {}
+): Promise<{
+  cases: DuplicateCaseRecord[];
+  total: number;
+  limit: number;
+  offset: number;
+}> {
+  const limit = query.limit ?? 25;
+  const offset = query.offset ?? 0;
+  if (
+    !UUID.test(town) ||
+    (query.state !== undefined && !DUPLICATE_STATES.includes(query.state)) ||
+    (query.rule !== undefined && !DUPLICATE_RULES.includes(query.rule)) ||
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > DUPLICATE_PAGE_MAX ||
+    !Number.isInteger(offset) ||
+    offset < 0 ||
+    offset > 10_000_000
+  )
+    throw Error(DUPLICATE_CASE_INVALID);
+  const params: unknown[] = [town];
+  let where = 'c."communityId"=$1';
+  if (query.state !== undefined) {
+    params.push(query.state);
+    where += ` AND c.state=$${params.length}`;
+  }
+  if (query.rule !== undefined) {
+    params.push(query.rule);
+    where += ` AND c.rule=$${params.length}`;
+  }
+  const [count] = await q.query(
+    `SELECT count(*)::int AS n FROM directory_duplicate_case c WHERE ${where}`,
+    params
+  );
   const rows = await q.query(
     `SELECT c.id,c.state,c.rule,c."weakerBasis",c."distanceMeters",c."keptScanId",c."keptRow"::text AS "keptRow",c."hiddenScanId",c."hiddenRow"::text AS "hiddenRow",c."createdAt",
         (SELECT r.listing->>'name' FROM directory_overture_private_row r WHERE r."scanId"=c."keptScanId" AND r."sourceFileRowNumber"=c."keptRow") AS "keptName",
         (SELECT r.listing->>'name' FROM directory_overture_private_row r WHERE r."scanId"=c."hiddenScanId" AND r."sourceFileRowNumber"=c."hiddenRow") AS "hiddenName"
-       FROM directory_duplicate_case c WHERE c."communityId"=$1
-      ORDER BY (c.state='queued') DESC, c."createdAt" DESC, c.id LIMIT 200`,
-    [town]
+       FROM directory_duplicate_case c WHERE ${where}
+      ORDER BY (c.state='queued') DESC, c."createdAt" DESC, c.id LIMIT ${limit} OFFSET ${offset}`,
+    params
   );
   return {
-    cases: rows.map((r) => ({
-      caseId: r.id,
-      state: r.state,
-      rule: r.rule,
-      weakerBasis: r.weakerBasis,
-      distanceMeters: r.distanceMeters,
-      kept: { scanId: r.keptScanId, sourceFileRowNumber: r.keptRow },
-      hidden: { scanId: r.hiddenScanId, sourceFileRowNumber: r.hiddenRow },
-      keptName: r.keptName ?? null,
-      hiddenName: r.hiddenName ?? null,
-      createdAt: new Date(r.createdAt).toISOString(),
+    cases: rows.map(toRecord),
+    total: count?.n ?? 0,
+    limit,
+    offset,
+  };
+}
+
+const toRecord = (r: any): DuplicateCaseRecord => ({
+  caseId: r.id,
+  state: r.state,
+  rule: r.rule,
+  weakerBasis: r.weakerBasis,
+  distanceMeters: r.distanceMeters,
+  kept: { scanId: r.keptScanId, sourceFileRowNumber: r.keptRow },
+  hidden: { scanId: r.hiddenScanId, sourceFileRowNumber: r.hiddenRow },
+  keptName: r.keptName ?? null,
+  hiddenName: r.hiddenName ?? null,
+  createdAt: new Date(r.createdAt).toISOString(),
+});
+
+export interface DuplicateListingView {
+  readonly scanId: string;
+  readonly sourceFileRowNumber: string;
+  readonly name: string | null;
+  readonly category: string | null;
+  readonly addresses: string[];
+  readonly phones: string[];
+  readonly websites: string[];
+  /** Distinct source datasets that assert the listing (provenance). */
+  readonly sources: string[];
+  readonly coordinates: [number, number] | null;
+  /** True for the weaker listing the case hid. */
+  readonly hidden: boolean;
+}
+export interface DuplicateCaseHistoryEntry {
+  readonly eventId: string;
+  readonly kind: string;
+  readonly actorId: string | null;
+  readonly note: string | null;
+  readonly createdAt: string;
+}
+export interface DuplicateCaseDetail extends DuplicateCaseRecord {
+  readonly decidedAt: string | null;
+  readonly keptListing: DuplicateListingView;
+  readonly hiddenListing: DuplicateListingView;
+  readonly history: DuplicateCaseHistoryEntry[];
+}
+
+const strings = (v: unknown, max = 10): string[] =>
+  Array.isArray(v)
+    ? v
+        .filter((x): x is string => typeof x === 'string')
+        .slice(0, max)
+        .map((x) => x.slice(0, 300))
+    : [];
+
+function listingView(
+  scanId: string,
+  row: string,
+  listing: any,
+  hidden: boolean
+): DuplicateListingView {
+  const l = listing ?? {};
+  const c = l.location?.coordinates;
+  const datasets = new Set<string>();
+  for (const s of Array.isArray(l.sources) ? l.sources : [])
+    if (typeof s?.dataset === 'string') datasets.add(s.dataset.slice(0, 64));
+  return {
+    scanId,
+    sourceFileRowNumber: row,
+    name: typeof l.name === 'string' ? l.name.slice(0, 300) : null,
+    category: typeof l.category === 'string' ? l.category.slice(0, 120) : null,
+    addresses: strings(l.addresses),
+    phones: strings(l.phones),
+    websites: strings(l.websites),
+    sources: [...datasets].sort(),
+    coordinates:
+      Array.isArray(c) && Number.isFinite(c[0]) && Number.isFinite(c[1])
+        ? [c[0], c[1]]
+        : null,
+    hidden,
+  };
+}
+
+/** One case with both listings side by side and its decision history. Reviewer-only. */
+export async function getDuplicateCase(
+  q: Q,
+  town: string,
+  caseId: string
+): Promise<DuplicateCaseDetail> {
+  if (!UUID.test(town) || !UUID.test(caseId))
+    throw Error(DUPLICATE_CASE_INVALID);
+  const [c] = await q.query(
+    `SELECT c.id,c.state,c.rule,c."weakerBasis",c."distanceMeters",c."keptScanId",c."keptRow"::text AS "keptRow",c."hiddenScanId",c."hiddenRow"::text AS "hiddenRow",c."createdAt",c."decidedAt"
+       FROM directory_duplicate_case c WHERE c.id=$1 AND c."communityId"=$2`,
+    [caseId, town]
+  );
+  if (!c) throw Error(DUPLICATE_CASE_NOT_FOUND);
+  const row = async (scanId: string, n: string) =>
+    (
+      await q.query(
+        'SELECT r.listing FROM directory_overture_private_row r WHERE r."scanId"=$1 AND r."sourceFileRowNumber"=$2',
+        [scanId, n]
+      )
+    )[0]?.listing;
+  const kept = await row(c.keptScanId, c.keptRow);
+  const hidden = await row(c.hiddenScanId, c.hiddenRow);
+  const events = await q.query(
+    `SELECT id,kind,"actorId",note,"createdAt" FROM directory_duplicate_case_event WHERE "caseId"=$1 ORDER BY "createdAt" ASC, id LIMIT 200`,
+    [caseId]
+  );
+  return {
+    ...toRecord({
+      ...c,
+      keptName: kept?.name,
+      hiddenName: hidden?.name,
+    }),
+    decidedAt: c.decidedAt ? new Date(c.decidedAt).toISOString() : null,
+    keptListing: listingView(c.keptScanId, c.keptRow, kept, false),
+    hiddenListing: listingView(
+      c.hiddenScanId,
+      c.hiddenRow,
+      hidden,
+      c.state !== 'kept_separate'
+    ),
+    history: events.map((e) => ({
+      eventId: e.id,
+      kind: e.kind,
+      actorId: e.actorId ?? null,
+      note: e.note ?? null,
+      createdAt: new Date(e.createdAt).toISOString(),
     })),
   };
 }

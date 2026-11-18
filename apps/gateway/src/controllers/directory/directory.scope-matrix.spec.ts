@@ -206,6 +206,15 @@ const reviewRoutes: MatrixRoute[] = [
     body: {},
   },
   { method: 'GET', path: `${base}/duplicate-cases` },
+  { method: 'GET', path: `${base}/duplicate-cases/${candidate}` },
+  { method: 'GET', path: `${base}/duplicate-cases/samples` },
+  { method: 'POST', path: `${base}/duplicate-cases/samples`, body: {} },
+  { method: 'GET', path: `${base}/duplicate-cases/samples/${candidate}` },
+  {
+    method: 'POST',
+    path: `${base}/duplicate-cases/samples/${candidate}/judge`,
+    body: {},
+  },
   {
     method: 'POST',
     path: `${base}/duplicate-cases/${candidate}/decide`,

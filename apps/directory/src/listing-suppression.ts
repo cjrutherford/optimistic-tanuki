@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { assertDirectoryIdentitiesUnfenced } from './account-lifecycle-fence';
 import { findListingIdentity } from './listing-identity';
 import { resolveBusinessId } from './business-identity-read';
@@ -233,6 +234,62 @@ export async function suppressListing(
       sentToReview,
     };
   });
+}
+
+/** Marks a suppression a report opened by itself (owner decision D17); a decline of that report lifts exactly these. */
+export const PROVISIONAL_NOTE_PREFIX = 'D17 provisional hide: report ';
+
+/**
+ * Owner decision D17: a safety or privacy report hides its listing at once, until a reviewer decides. This reuses the
+ * ordinary suppression row (so every public read, the map and the export already exclude it) with no actor, and runs
+ * inside the caller's transaction. Returns the suppression id, or null when the listing cannot be resolved or is
+ * already suppressed (nothing more to hide).
+ */
+export async function provisionallyHideListing(
+  tx: Q,
+  input: {
+    townId: string;
+    listingId: string;
+    reasonCode: SuppressionReason;
+    reportId: string;
+  }
+): Promise<string | null> {
+  if (
+    !UUID.test(input?.townId ?? '') ||
+    !UUID.test(input.listingId ?? '') ||
+    !UUID.test(input.reportId ?? '') ||
+    !(SUPPRESSION_REASONS as readonly string[]).includes(input.reasonCode)
+  )
+    throw Error(SUPPRESSION_CONFLICT);
+  await lockTown(tx, input.townId);
+  let target: Awaited<ReturnType<typeof resolveRow>>;
+  try {
+    target = await resolveRow(tx, input.townId, input.listingId);
+  } catch (error) {
+    if (error instanceof Error && error.message === SUPPRESSION_NOT_FOUND)
+      return null;
+    throw error;
+  }
+  const open = await tx.query(
+    'SELECT 1 FROM directory_listing_suppression WHERE "scanId"=$1 AND "sourceFileRowNumber"=$2 AND "liftedAt" IS NULL',
+    [target.scanId, target.row]
+  );
+  if (open.length) return null;
+  const id = randomUUID();
+  await tx.query(
+    `INSERT INTO directory_listing_suppression (id,"communityId","listingId","scanId","sourceFileRowNumber","businessId","reasonCode",note,"actorId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NULL)`,
+    [
+      id,
+      input.townId,
+      input.listingId,
+      target.scanId,
+      target.row,
+      target.businessId,
+      input.reasonCode,
+      `${PROVISIONAL_NOTE_PREFIX}${input.reportId}`,
+    ]
+  );
+  return id;
 }
 
 export async function liftSuppression(

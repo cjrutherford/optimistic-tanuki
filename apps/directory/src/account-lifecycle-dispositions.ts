@@ -402,6 +402,58 @@ const inventory: DirectoryLifecycleInventory = {
         },
       ],
     },
+    {
+      table: 'directory_duplicate_sample',
+      entity: 'DirectoryDuplicateSample',
+      subject: 'profile',
+      rule: 'createdById is the reviewer profile id that drew the sample. A match on the account or a legacy identifier is ambiguous and blocks.',
+      columns: [
+        {
+          fields: ['createdById'],
+          class: 'identity',
+          domain: 'profile',
+          deletion: 'null-when-domain-matches',
+          export: 'exclude',
+        },
+        {
+          fields: [
+            'id',
+            'communityId',
+            'round',
+            'seed',
+            'sampleSize',
+            'populationSize',
+            'createdAt',
+          ],
+          class: 'history',
+          deletion: 'preserve',
+          export: 'exclude',
+          note: 'The recorded draw, kept after the reviewer is erased so the wrong-merge rate stays reproducible.',
+        },
+      ],
+    },
+    {
+      table: 'directory_duplicate_sample_item',
+      entity: 'DirectoryDuplicateSampleItem',
+      subject: 'profile',
+      rule: 'judgedById is the reviewer profile id that judged the pair. A match on the account or a legacy identifier is ambiguous and blocks.',
+      columns: [
+        {
+          fields: ['judgedById'],
+          class: 'identity',
+          domain: 'profile',
+          deletion: 'null-when-domain-matches',
+          export: 'exclude',
+        },
+        {
+          fields: ['sampleId', 'caseId', 'verdict', 'judgedAt'],
+          class: 'history',
+          deletion: 'preserve',
+          export: 'exclude',
+          note: 'The verdict is the measurement; it is kept after the reviewer is erased.',
+        },
+      ],
+    },
     none(
       'directory_rights_case',
       'DirectoryRightsCase',

@@ -95,6 +95,8 @@ export const DIRECTORY_DELETION_IDENTITIES = Object.freeze({
   directory_operating_control: [['updatedBy', 'profile']],
   directory_operating_control_event: [['actorId', 'profile']],
   directory_duplicate_case_event: [['actorId', 'profile']],
+  directory_duplicate_sample: [['createdById', 'profile']],
+  directory_duplicate_sample_item: [['judgedById', 'profile']],
   directory_listing_suppression: [
     ['actorId', 'profile'],
     ['liftedById', 'profile'],
@@ -218,6 +220,14 @@ async function inspect(
       [s.profiles]
     ),
     await one(
+      'directory_duplicate_sample WHERE "createdById"=ANY($1::uuid[])',
+      [s.profiles]
+    ),
+    await one(
+      'directory_duplicate_sample_item WHERE "judgedById"=ANY($1::uuid[])',
+      [s.profiles]
+    ),
+    await one(
       `directory_business_identity_decision WHERE ("actorDomain"='account' AND "actorId"=$1::uuid) OR ("actorDomain"='profile' AND "actorId"=ANY($2::uuid[]))`,
       [s.account, s.profiles]
     ),
@@ -302,6 +312,14 @@ async function inspect(
     ),
     await one(
       'directory_duplicate_case_event WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_duplicate_sample WHERE "createdById"=ANY($1::uuid[]) AND NOT ("createdById"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_duplicate_sample_item WHERE "judgedById"=ANY($1::uuid[]) AND NOT ("judgedById"=ANY($2::uuid[]))',
       [s.all, s.profiles]
     ),
     await one(
@@ -440,6 +458,14 @@ async function erase(manager: Manager, s: Canonical): Promise<void> {
   );
   await manager.query(
     'UPDATE directory_duplicate_case_event SET "actorId"=NULL,note=NULL WHERE "actorId"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_duplicate_sample SET "createdById"=NULL WHERE "createdById"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_duplicate_sample_item SET "judgedById"=NULL WHERE "judgedById"=ANY($1::uuid[])',
     [s.profiles]
   );
 }

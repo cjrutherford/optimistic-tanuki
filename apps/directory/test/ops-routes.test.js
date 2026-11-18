@@ -40,6 +40,7 @@ const metrics = (over = {}) => ({
     publicationPaused: false,
     openRightsCases: 2,
     openTaxonomyCases: 3,
+    reportsUntriagedOver3Days: 4,
   },
   spend: {
     period: '2026-11',

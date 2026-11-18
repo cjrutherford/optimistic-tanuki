@@ -1,10 +1,18 @@
 import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { assertDirectoryIdentitiesUnfenced } from './account-lifecycle-fence';
-import { SUPPRESSION_REASONS } from './listing-suppression';
+import {
+  PROVISIONAL_NOTE_PREFIX,
+  SUPPRESSION_REASONS,
+  provisionallyHideListing,
+} from './listing-suppression';
 
 /**
- * Public, anonymous listing reports and corrections (S6). A report never hides anything: it enters a reviewer
- * queue, and a reviewer may open a suppression from it (see `listing-suppression.ts`).
+ * Public, anonymous listing reports and corrections (S6). A report enters a reviewer queue, and a reviewer may open
+ * a suppression from it (see `listing-suppression.ts`). One exception (owner decision D17, hide now, triage in 3
+ * days): a safety or privacy (`rights-request`) report hides its listing at once through the ordinary suppression,
+ * until a reviewer decides. Declining the report lifts that hide; resolving it keeps the listing hidden and the
+ * reviewer lifts it through the suppression page if the listing should return. Every report is expected to leave
+ * `received` within `TRIAGE_DAYS`; the restricted ops metrics count those that did not.
  *
  *  - The reporter gets a random receipt token once. Only its SHA-256 is stored; lookup by token returns the
  *    status, reason and creation time and nothing else.
@@ -30,6 +38,8 @@ export const REPORT_ACTIONS = ['review', 'decline', 'resolve'] as const;
 export const PRIORITY_REASONS: readonly string[] = ['safety', 'rights-request'];
 export const REPORT_NOTE_MAX = 1000;
 export const CONTACT_RETENTION_DAYS = 180;
+/** Every report is acknowledged (leaves `received`) within this many days (owner decision D17). */
+export const TRIAGE_DAYS = 3;
 /** Per-town ceiling on reports created in one hour; a defence behind the gateway's per-IP limit. */
 export const TOWN_HOURLY_CAP = 300;
 export const REPORT_INVALID = 'Invalid listing report';
@@ -153,11 +163,12 @@ export async function createReport(
       [input.townId]
     );
     if ((recent[0]?.n ?? 0) >= TOWN_HOURLY_CAP) throw Error(REPORT_BUSY);
+    const reportId = randomUUID();
     await tx.query(
       `INSERT INTO directory_listing_report (id,"communityId","listingId","listingName","reasonCode",note,priority,"receiptTokenHash","contactEmailHash")
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
       [
-        randomUUID(),
+        reportId,
         input.townId,
         input.listingId,
         typeof input.listingName === 'string'
@@ -170,6 +181,19 @@ export async function createReport(
         email === null ? null : emailHash(contactKey, email),
       ]
     );
+    if (PRIORITY_REASONS.includes(input.reasonCode)) {
+      const suppressionId = await provisionallyHideListing(tx, {
+        townId: input.townId,
+        listingId: input.listingId,
+        reasonCode: input.reasonCode,
+        reportId,
+      });
+      if (suppressionId)
+        await tx.query(
+          'UPDATE directory_listing_report SET "suppressionId"=$2 WHERE id=$1',
+          [reportId, suppressionId]
+        );
+    }
     return { receipt: token };
   });
   try {
@@ -283,7 +307,8 @@ export async function transitionReport(
         (r.decidedById ?? null) !== input.actorId ||
         (input.action !== 'review' &&
           ((r.decisionNote ?? null) !== (input.note ?? null) ||
-            (r.suppressionId ?? null) !== (input.suppressionId ?? null)))
+            (input.suppressionId !== undefined &&
+              (r.suppressionId ?? null) !== input.suppressionId)))
       )
         throw Error(REPORT_CONFLICT);
       return { replayed: true, reportId: r.id, status: target };
@@ -299,7 +324,7 @@ export async function transitionReport(
     const closing = target === 'resolved' || target === 'declined';
     await tx.query(
       `UPDATE directory_listing_report SET status=$2,"decidedById"=$3,"decidedAt"=CURRENT_TIMESTAMP,"decisionNote"=$4,
-              "suppressionId"=$5,"contactEmailHash"=CASE WHEN $6::boolean THEN NULL ELSE "contactEmailHash" END,"updatedAt"=CURRENT_TIMESTAMP
+              "suppressionId"=COALESCE($5,"suppressionId"),"contactEmailHash"=CASE WHEN $6::boolean THEN NULL ELSE "contactEmailHash" END,"updatedAt"=CURRENT_TIMESTAMP
         WHERE id=$1`,
       [
         r.id,
@@ -310,6 +335,19 @@ export async function transitionReport(
         closing,
       ]
     );
+    // Declined: the report was unfounded, so the provisional hide it opened (D17) is lifted. A suppression a
+    // reviewer opened is never lifted here.
+    if (target === 'declined' && r.suppressionId) {
+      await tx.query(
+        'SELECT pg_advisory_xact_lock(hashtextextended($1::text,0))',
+        [`directory-listing-suppression:${input.townId}`]
+      );
+      await tx.query(
+        `UPDATE directory_listing_suppression SET "liftedAt"=CURRENT_TIMESTAMP,"liftReasonCode"='mistaken-suppression',"liftedById"=$2
+          WHERE id=$1 AND "liftedAt" IS NULL AND "actorId" IS NULL AND note=$3`,
+        [r.suppressionId, input.actorId, `${PROVISIONAL_NOTE_PREFIX}${r.id}`]
+      );
+    }
     return { replayed: false, reportId: r.id, status: target };
   });
 }

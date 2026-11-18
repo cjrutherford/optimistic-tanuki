@@ -861,6 +861,8 @@ export interface DirectoryOpsMetrics {
     publicationPaused: boolean;
     openRightsCases: number;
     openTaxonomyCases: number;
+    /** Listing reports not acknowledged or triaged within 3 days (owner decision D17). */
+    reportsUntriagedOver3Days: number;
   } | null;
   spend: {
     period: string;
