@@ -121,6 +121,7 @@ export const SOCIAL_DELETION_COLUMNS: Readonly<
     'managerId',
     'managerProfileId',
     'memberCount',
+    'mergedIntoId',
     'name',
     'ownerId',
     'ownerProfileId',

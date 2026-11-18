@@ -2399,7 +2399,8 @@
           "imageUrl": "https://picsum.photos/seed/2795/800/600"
         }
       ],
-      "timezone": "UTC"
+      "timezone": "UTC",
+      "mergedInto": "st-simons-island-ga"
     },
     {
       "name": "Dahlonega, GA",
@@ -2666,6 +2667,37 @@
         {
           "headline": "Southern Cuisine",
           "link": "https://example.com/edisto-island-sc/southern-cuisine",
+          "imageUrl": "https://picsum.photos/seed/3242/800/600"
+        }
+      ],
+      "timezone": "UTC",
+      "mergedInto": "edisto-beach-sc"
+    },
+    {
+      "name": "Edisto Beach, SC",
+      "slug": "edisto-beach-sc",
+      "localityType": "town",
+      "city": "Edisto Beach",
+      "state": "SC",
+      "lat": 32.4986,
+      "lng": -80.3137,
+      "population": 775,
+      "imageUrl": "https://picsum.photos/seed/1587/800/600",
+      "description": "Edisto Beach, South Carolina is a small oceanfront town on Edisto Island, known for its quiet beaches, marshes and relaxed coastal community.",
+      "highlights": [
+        {
+          "headline": "Historic Downtown",
+          "link": "https://example.com/edisto-beach-sc/historic-downtown",
+          "imageUrl": "https://picsum.photos/seed/3365/800/600"
+        },
+        {
+          "headline": "Waterfront Views",
+          "link": "https://example.com/edisto-beach-sc/waterfront-views",
+          "imageUrl": "https://picsum.photos/seed/3259/800/600"
+        },
+        {
+          "headline": "Southern Cuisine",
+          "link": "https://example.com/edisto-beach-sc/southern-cuisine",
           "imageUrl": "https://picsum.photos/seed/3242/800/600"
         }
       ],
@@ -3452,34 +3484,35 @@
       "timezone": "UTC"
     },
     {
-      "name": "Ponte Vedra Beach, FL",
-      "slug": "ponte-vedra-beach-fl",
+      "name": "Palm Valley, FL",
+      "slug": "palm-valley-fl",
       "localityType": "town",
-      "city": "Ponte Vedra Beach",
+      "city": "Palm Valley",
       "state": "FL",
-      "lat": 30.2408,
-      "lng": -81.3895,
-      "population": 26000,
+      "lat": 30.2033,
+      "lng": -81.3985,
+      "population": 20019,
       "imageUrl": "https://picsum.photos/seed/1924/800/600",
-      "description": "Ponte Vedra Beach, Florida is a beloved coastal town known for its pristine beaches, water activities, and laid-back Florida lifestyle.",
+      "description": "Palm Valley, Florida is a coastal community between the Intracoastal Waterway and the Atlantic, known for its waterfront, marshes and laid-back Florida lifestyle.",
       "highlights": [
         {
           "headline": "Beautiful Beaches",
-          "link": "https://example.com/ponte-vedra-beach-fl/beautiful-beaches",
+          "link": "https://example.com/palm-valley-fl/beautiful-beaches",
           "imageUrl": "https://picsum.photos/seed/3613/800/600"
         },
         {
           "headline": "Water Sports",
-          "link": "https://example.com/ponte-vedra-beach-fl/water-sports",
+          "link": "https://example.com/palm-valley-fl/water-sports",
           "imageUrl": "https://picsum.photos/seed/3168/800/600"
         },
         {
           "headline": "Fresh Seafood",
-          "link": "https://example.com/ponte-vedra-beach-fl/fresh-seafood",
+          "link": "https://example.com/palm-valley-fl/fresh-seafood",
           "imageUrl": "https://picsum.photos/seed/3212/800/600"
         }
       ],
-      "timezone": "UTC"
+      "timezone": "UTC",
+      "formerSlug": "ponte-vedra-beach-fl"
     },
     {
       "name": "Amelia Island, FL",
@@ -3509,7 +3542,8 @@
           "imageUrl": "https://picsum.photos/seed/2840/800/600"
         }
       ],
-      "timezone": "UTC"
+      "timezone": "UTC",
+      "mergedInto": "fernandina-beach-fl"
     },
     {
       "name": "Kitty Hawk, NC",
@@ -3719,7 +3753,8 @@
           "imageUrl": "https://picsum.photos/seed/2651/800/600"
         }
       ],
-      "timezone": "UTC"
+      "timezone": "UTC",
+      "mergedInto": "hatteras-nc"
     },
     {
       "name": "Beaufort, NC",
@@ -11789,7 +11824,8 @@
           "imageUrl": "https://picsum.photos/seed/6304/800/600"
         }
       ],
-      "timezone": "UTC"
+      "timezone": "UTC",
+      "mergedInto": "bandera-tx"
     },
     {
       "name": "Bexar County, TX",

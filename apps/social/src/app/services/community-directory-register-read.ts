@@ -90,7 +90,7 @@ export async function readDirectoryRegisterSnapshot(
   const rows = await manager.query(
     `SELECT r."communityId", r."changeToken", r.operation, (c.id IS NOT NULL) AS eligible, c.name, c.slug, c."adminArea", c."localityType"
     FROM community_directory_register r LEFT JOIN community c ON c.id=r."communityId" AND r.operation='changed'
-      AND c."isPrivate" IS FALSE AND c."appScope"='local-hub' AND c."localityType" IN ('city','town') AND c."adminArea" IS DISTINCT FROM 'Development fixture'
+      AND c."isPrivate" IS FALSE AND c."appScope"='local-hub' AND c."localityType" IN ('city','town') AND c."mergedIntoId" IS NULL AND c."adminArea" IS DISTINCT FROM 'Development fixture'
     WHERE r."communityId"=$1 AND r."changeToken"=$2 AND r.dirty IS TRUE`,
     [communityId, changeToken]
   );
@@ -204,7 +204,7 @@ export async function readCurrentDirectoryRegister(
     FROM (SELECT $1::uuid AS id) requested
     LEFT JOIN community_directory_register r ON r."communityId"=requested.id
     LEFT JOIN community c ON c.id=requested.id
-    LEFT JOIN community eligible ON eligible.id=c.id AND eligible."isPrivate" IS FALSE AND eligible."appScope"='local-hub' AND eligible."localityType" IN ('city','town') AND eligible."adminArea" IS DISTINCT FROM 'Development fixture'`,
+    LEFT JOIN community eligible ON eligible.id=c.id AND eligible."isPrivate" IS FALSE AND eligible."appScope"='local-hub' AND eligible."localityType" IN ('city','town') AND eligible."mergedIntoId" IS NULL AND eligible."adminArea" IS DISTINCT FROM 'Development fixture'`,
     [communityId]
   );
   if (rows.length !== 1) throw new Error('Invalid register read');
@@ -250,7 +250,7 @@ export async function readCurrentDirectoryGeography(
     FROM (SELECT $1::uuid AS id) requested
     LEFT JOIN community_directory_register r ON r."communityId"=requested.id
     LEFT JOIN community c ON c.id=requested.id
-    LEFT JOIN community eligible ON eligible.id=c.id AND eligible."isPrivate" IS FALSE AND eligible."appScope"='local-hub' AND eligible."localityType" IN ('city','town') AND eligible."adminArea" IS DISTINCT FROM 'Development fixture'`,
+    LEFT JOIN community eligible ON eligible.id=c.id AND eligible."isPrivate" IS FALSE AND eligible."appScope"='local-hub' AND eligible."localityType" IN ('city','town') AND eligible."mergedIntoId" IS NULL AND eligible."adminArea" IS DISTINCT FROM 'Development fixture'`,
     [communityId]
   );
   if (rows.length !== 1) throw new Error('Invalid register read');
