@@ -8,6 +8,7 @@ import {
   OvertureRightsEvaluation,
   OvertureRightsPolicy,
 } from './overture-rights';
+import { isPaused } from './operating-controls';
 
 /**
  * Operator export (S8). A job is a durable row; the Directory's own worker reads the served private rows, applies
@@ -650,6 +651,8 @@ export async function runExportPass(
   const clock = options.now ?? (() => new Date());
   await sweep(db, options, clock());
   const max = options.maxJobs ?? 5;
+  // Paused: claim nothing new (a job already running finishes under its own lease). The sweep above still runs.
+  if (await isPaused(db, 'export_worker')) return 0;
   const seen = new Set<string>();
   let ran = 0;
   while (ran < max) {

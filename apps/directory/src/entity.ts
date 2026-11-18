@@ -1476,3 +1476,43 @@ export class DirectoryAcquisitionRunEvent {
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
 }
+
+/**
+ * Operator pause switches (S9a). An absent row means running. `version` is the optimistic-concurrency token: every
+ * change increments it. The withdrawal worker has no key here on purpose; rights obligations are never pausable.
+ */
+@Entity({ name: 'directory_operating_control' })
+@Check(
+  'CHK_directory_operating_control_key',
+  `"key" IN ('provider_acquisition','export_worker','taxonomy_worker')`
+)
+@Check(
+  'CHK_directory_operating_control_reason_length',
+  `"reason" IS NULL OR char_length("reason") <= 500`
+)
+@Check(
+  'CHK_directory_operating_control_paused_reason',
+  `"paused" = false OR ("reason" IS NOT NULL AND char_length(btrim("reason")) > 0)`
+)
+export class DirectoryOperatingControl {
+  @PrimaryColumn({ type: 'text' }) key!: string;
+  @Column({ type: 'boolean', default: false }) paused!: boolean;
+  @Column({ type: 'text', nullable: true }) reason!: string | null;
+  @Column({ type: 'integer', default: 1 }) version!: number;
+  /** Operator profile that made the last change. */
+  @Column({ type: 'uuid', nullable: true }) updatedBy!: string | null;
+  @Column({ type: 'timestamptz', default: () => 'now()' }) updatedAt!: Date;
+}
+
+/** Append-only audit of every operating-control change. */
+@Entity({ name: 'directory_operating_control_event' })
+@Index('IDX_directory_operating_control_event_key', ['key', 'at'])
+export class DirectoryOperatingControlEvent {
+  @PrimaryGeneratedColumn('uuid') id!: string;
+  @Column({ type: 'text' }) key!: string;
+  @Column({ type: 'boolean' }) paused!: boolean;
+  @Column({ type: 'text', nullable: true }) reason!: string | null;
+  @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  @Column({ type: 'integer' }) previousVersion!: number;
+  @Column({ type: 'timestamptz', default: () => 'now()' }) at!: Date;
+}

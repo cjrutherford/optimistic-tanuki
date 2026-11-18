@@ -818,6 +818,57 @@ const inventory: DirectoryLifecycleInventory = {
       ],
     },
     {
+      table: 'directory_operating_control',
+      entity: 'DirectoryOperatingControl',
+      subject: 'profile',
+      rule: 'updatedBy is the operator profile that last changed a pause switch. A match on the account or a legacy identifier is ambiguous and blocks.',
+      columns: [
+        {
+          fields: ['updatedBy'],
+          class: 'identity',
+          domain: 'profile',
+          deletion: 'null-when-domain-matches',
+          export: 'exclude',
+        },
+        {
+          fields: ['key', 'paused', 'reason', 'version', 'updatedAt'],
+          class: 'operational',
+          deletion: 'preserve',
+          export: 'exclude',
+          note: 'Whether a worker is paused and why. A paused switch must keep its reason, so it is not cleared when the operator is erased.',
+        },
+      ],
+    },
+    {
+      table: 'directory_operating_control_event',
+      entity: 'DirectoryOperatingControlEvent',
+      subject: 'profile',
+      rule: 'actorId is the operator profile that paused or resumed a switch. A match on the account or a legacy identifier is ambiguous and blocks.',
+      columns: [
+        {
+          fields: ['actorId'],
+          class: 'identity',
+          domain: 'profile',
+          deletion: 'null-when-domain-matches',
+          export: 'exclude',
+        },
+        {
+          fields: ['reason'],
+          class: 'actor-input',
+          deletion: 'clear',
+          export: 'exclude',
+          note: 'Free text the operator supplied; cleared on events that operator authored.',
+        },
+        {
+          fields: ['id', 'key', 'paused', 'previousVersion', 'at'],
+          class: 'history',
+          deletion: 'preserve',
+          export: 'exclude',
+          note: 'Which switch moved, to what, and when: the audit trail kept after the actor is erased.',
+        },
+      ],
+    },
+    {
       table: 'directory_listing_report',
       entity: 'DirectoryListingReport',
       subject: 'profile',

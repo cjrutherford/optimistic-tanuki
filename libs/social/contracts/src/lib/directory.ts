@@ -596,7 +596,8 @@ export type AcquisitionBlockedReason =
   | 'budget_exhausted'
   | 'quota_exhausted'
   | 'invalid_geometry'
-  | 'acquisition_unauthorized';
+  | 'acquisition_unauthorized'
+  | 'provider_paused';
 export type AcquisitionRunAction = 'cancel' | 'resume' | 'retry';
 
 export interface AcquisitionRunSummary {
@@ -748,4 +749,86 @@ export interface DirectoryExportRequest {
   id: string;
   releaseId: string;
   communityId?: string;
+}
+
+/** Workers and provider paths an operator can pause. The withdrawal worker is deliberately not pausable. */
+export type DirectoryOperatingControlKey =
+  | 'provider_acquisition'
+  | 'export_worker'
+  | 'taxonomy_worker';
+
+export const DIRECTORY_OPERATING_CONTROL_KEYS: readonly DirectoryOperatingControlKey[] =
+  ['provider_acquisition', 'export_worker', 'taxonomy_worker'];
+
+/** One operating control. An absent row reads as running with version 0. */
+export interface DirectoryOperatingControl {
+  key: DirectoryOperatingControlKey;
+  paused: boolean;
+  reason: string | null;
+  /** 0 when nothing was ever set; otherwise increments on every change. */
+  version: number;
+  updatedBy: string | null;
+  updatedAt: string | null;
+}
+
+/** The request body of POST /directory/ops/controls/:key. */
+export interface DirectoryOperatingControlUpdate {
+  paused: boolean;
+  /** Required (non-empty, at most 500 characters) when pausing. */
+  reason?: string | null;
+  expectedVersion: number;
+}
+
+export interface DirectoryOpsQueueMetrics {
+  queued: number;
+  running: number;
+  failedLast24h: number;
+  oldestQueuedSeconds: number | null;
+}
+
+/**
+ * Restricted operator metrics. Each section is collected independently; a section that failed is null and its name
+ * is listed in `errors`. See apps/directory/src/ops-metrics.ts for the exact definition of each number.
+ */
+export interface DirectoryOpsMetrics {
+  generatedAt: string;
+  infrastructure: {
+    database: 'ok';
+    postgis: boolean;
+    migrationsApplied: number;
+    latestMigration: string | null;
+    exportStorage: 'configured' | 'unconfigured';
+  } | null;
+  towns: {
+    total: number;
+    onboarded: number;
+    byStatus: Record<string, number>;
+  } | null;
+  coverage: { townsWithListings: number; publishedListings: number } | null;
+  freshness: {
+    refreshDueListings: number;
+    staleListings: number;
+    oldestListingAgeDays: number | null;
+  } | null;
+  policy: {
+    activePolicies: number;
+    revokedPolicies: number;
+    publicationPaused: boolean;
+    openRightsCases: number;
+    openTaxonomyCases: number;
+  } | null;
+  spend: {
+    period: string;
+    reservedCents: number;
+    limitCents: number;
+    alertCents: number;
+    alert: boolean;
+    exhausted: boolean;
+  } | null;
+  queues: Record<
+    'export' | 'taxonomy' | 'withdrawal',
+    DirectoryOpsQueueMetrics
+  > | null;
+  controls: DirectoryOperatingControl[] | null;
+  errors: string[];
 }

@@ -91,6 +91,8 @@ export const DIRECTORY_DELETION_IDENTITIES = Object.freeze({
   ],
   directory_acquisition_run: [['startedById', 'profile']],
   directory_acquisition_run_event: [['actorId', 'profile']],
+  directory_operating_control: [['updatedBy', 'profile']],
+  directory_operating_control_event: [['actorId', 'profile']],
   directory_listing_suppression: [
     ['actorId', 'profile'],
     ['liftedById', 'profile'],
@@ -198,6 +200,13 @@ async function inspect(
       'directory_acquisition_run_event WHERE "actorId"=ANY($1::uuid[])',
       [s.profiles]
     ),
+    await one('directory_operating_control WHERE "updatedBy"=ANY($1::uuid[])', [
+      s.profiles,
+    ]),
+    await one(
+      'directory_operating_control_event WHERE "actorId"=ANY($1::uuid[])',
+      [s.profiles]
+    ),
     await one(
       `directory_business_identity_decision WHERE ("actorDomain"='account' AND "actorId"=$1::uuid) OR ("actorDomain"='profile' AND "actorId"=ANY($2::uuid[]))`,
       [s.account, s.profiles]
@@ -267,6 +276,14 @@ async function inspect(
     ),
     await one(
       'directory_acquisition_run_event WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_operating_control WHERE "updatedBy"=ANY($1::uuid[]) AND NOT ("updatedBy"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
+    await one(
+      'directory_operating_control_event WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
       [s.all, s.profiles]
     ),
     await one(
@@ -388,6 +405,15 @@ async function erase(manager: Manager, s: Canonical): Promise<void> {
   );
   await manager.query(
     'UPDATE directory_acquisition_run_event SET "actorId"=NULL,reason=\'\' WHERE "actorId"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  // The control's own reason is the pause's operational justification (a paused row must keep one), so only the actor goes.
+  await manager.query(
+    'UPDATE directory_operating_control SET "updatedBy"=NULL WHERE "updatedBy"=ANY($1::uuid[])',
+    [s.profiles]
+  );
+  await manager.query(
+    'UPDATE directory_operating_control_event SET "actorId"=NULL,reason=NULL WHERE "actorId"=ANY($1::uuid[])',
     [s.profiles]
   );
 }
