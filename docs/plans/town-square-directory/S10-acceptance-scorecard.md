@@ -51,12 +51,12 @@ After the owner's [decisions](DECISIONS-2026-11-18-S10.md), these slices were bu
 
 Effect on the items above:
 
-- **Item 2** is now met for an existing town (onboarded, geometry, acquisition, populated listings, all automatic). A brand-new town created through Social has not yet been taken end to end to populated listings, because the acquisition backlog (about 165 towns at 2 per sweep) runs ahead of it.
-- **Item 3:** populated states are live. A provider-completed zero-result town and a `partial` town have still not been observed live; they may appear as the backlog drains.
+- **Item 2** is **met (local)**. Elkin, NC was created through Social at 12:29 UTC. It had TIGER geometry at 12:30, and the public API returned `available` with listings at 13:09; Local Hub rendered them. No operator acted. See [s10-2 end to end](s10-evidence/s10-2-new-town-end-to-end.json). Sweeps now take never-attempted towns first, newest first (`b0d77251b`). The run itself takes about 4 minutes; this one waited on a deploy restart and the retry backoff. Elkin is a real town and was left in place.
+- **Item 3:** populated, blocked, infrastructure-failure and provider-completed zero-result states are now live. The zero-result town is Marineland, FL: its AllThePlaces run ended `succeeded_empty` and public coverage is `empty`. A live `partial` town has not been observed; it is covered by tests only.
 - **Item 5:** Overture and AllThePlaces are wired live under rights, attribution, budget and kill switch. Geoapify is wired but unproven without a key, and its 30-day retention is a placeholder for the owner to confirm. There is still no invoice reconciliation.
-- **Item 7:** every remaining failure is classified as data or environment. `forum.spec.ts:41` expects an empty topic that holds a real user's thread. `business-site.spec.ts:1532` needs a fresh business seed. `map.spec.ts:135` takes the committed review-seed city, which has no coordinates. No `main` baseline was run.
+- **Item 7** is **met (local)**. Three brittle specs now pass whatever the live data holds (forum topic contents, booking leftovers, a seed city with no coordinates; `f6805d96f`). Full-stack results: forgeofwill 34/0; client-interface 178/0 with 408 skipped; business-site 21/0; Local Hub narrow set 25/0 with 2 skipped. No `main` baseline was needed. The temporary test settings were then reverted and the extra services stopped.
 
-Live stack changes left in place: `ot_authentication` runs with `AUTH_AUTO_VERIFY_EMAILS=true`, the gateway has the e2e fake-OAuth `GOOGLE_*` env, and the local registry gives forgeofwill a `http://localhost:8081` origin. The revert steps are in [s10-7](s10-evidence/s10-7-regression-report.md). Rollback image tags are `rollback-s10-geom`, `rollback-s10-acq` and `rollback-s10-atp`.
+The temporary test settings have been reverted: authentication auto-verify, the gateway's fake-OAuth env, the forgeofwill local origin, and the eleven extra test containers (stopped, volumes kept). Elkin, NC stays in Social as a real town. Rollback image tags are `rollback-s10-geom`, `rollback-s10-acq` and `rollback-s10-atp`.
 
 ## Release-gate checklist
 
