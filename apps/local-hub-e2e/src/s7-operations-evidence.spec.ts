@@ -83,7 +83,9 @@ async function shot(page: Page, name: string): Promise<void> {
 }
 
 async function axe(page: Page): Promise<void> {
-  // The Owner Console has no <main>; its pages are a labelled <section>.
+  // The Owner Console has no <main>; its pages are a labelled <section>. Operator pages render on the client, so
+  // wait for it after a reload rather than letting axe find nothing.
+  await page.locator('main, section[aria-labelledby]').first().waitFor();
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa'])
     .include('main, section[aria-labelledby]')
@@ -810,6 +812,10 @@ test.describe('S7 operator workflows (live)', () => {
     }
     await page.reload();
     const cards = page.locator('otui-card.case-card');
+    // The queue loads after the page renders: wait for either cards or the empty state before counting.
+    await expect(
+      cards.first().or(page.getByText('No cases in this status'))
+    ).toBeVisible();
     const count = await cards.count();
     outcome['reviewCases'] = count;
     if (count === 0) {
@@ -871,8 +877,14 @@ test.describe('S7 operator workflows (live)', () => {
         target.locator('.decision-history__entry').first()
       ).toBeVisible();
       await shot(page, 'desktop-rights-03-deferred-history');
+      // Earlier evidence runs leave their (reversed) decisions in the history, so count relative to now.
+      const afterDefer = await target
+        .locator('.decision-history__entry')
+        .count();
       await confirmUndo(page, target, 'S7 evidence: undo defer');
-      await expect(target.locator('.decision-history__entry')).toHaveCount(2);
+      await expect(target.locator('.decision-history__entry')).toHaveCount(
+        afterDefer + 1
+      );
       await axe(page);
       await shot(page, 'desktop-rights-04-history-after-undo');
     }

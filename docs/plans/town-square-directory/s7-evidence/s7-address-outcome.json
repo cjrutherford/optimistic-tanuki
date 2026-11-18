@@ -1,6 +1,6 @@
 {
   "candidateAvailable": true,
-  "historyBeforeRun": 12,
+  "historyBeforeRun": 18,
   "finalStatus": "needs_human",
   "staleDecision": {
     "status": 409,
