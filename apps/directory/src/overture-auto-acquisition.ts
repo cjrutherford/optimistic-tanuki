@@ -39,7 +39,9 @@ import type { OvertureRightsPolicy } from './overture-rights';
 export const AUTO_PROVIDER = 'overture';
 export const AUTO_KIND = 'overture-stage' as const;
 /** Bump when the local-evaluation projection changes: it is part of the scan identity. */
-export const AUTO_PROJECTION_VERSION = 'overture-auto-projection-v1';
+// v2: staged listings carry sanitized source provenance. The version is part of the scan identity, so a town whose
+// earlier scan was retired is scanned again rather than resolving to the retired, already-complete scan.
+export const AUTO_PROJECTION_VERSION = 'overture-auto-projection-v2';
 export const AUTO_SCOPE = 'auto-acquisition-overture-v1';
 
 export interface AutoAcquisitionConfig {

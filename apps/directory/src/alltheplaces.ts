@@ -12,7 +12,7 @@ export const ATP_DATASET = 'AllThePlaces';
 export const ATP_LICENSE = 'CC0-1.0';
 export const ATP_ARCHIVE_HOST = 'alltheplaces-data.openaddresses.io';
 /** Bump when the feature-to-row mapping or the screen changes: it is part of the scan identity. */
-export const ATP_PROJECTION_VERSION = 'alltheplaces-projection-v1';
+export const ATP_PROJECTION_VERSION = 'alltheplaces-projection-v2';
 export const ATP_SCOPE = 'auto-acquisition-alltheplaces-v1';
 
 export interface AtpArchivePin {
