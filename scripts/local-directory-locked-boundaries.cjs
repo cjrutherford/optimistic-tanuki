@@ -23,6 +23,9 @@ const {
   installLockedBoundary,
 } = require('../apps/directory/src/locked-boundary');
 const {
+  assertOwnerApprovalForEntity,
+} = require('../apps/directory/src/locked-boundary-manifest');
+const {
   CENSUS_TIGER_PINS,
   CENSUS_TIGER_VINTAGE,
 } = require('../apps/directory/src/census-tiger-pins');
@@ -66,6 +69,7 @@ const archiveDir = resolve(
 const only = values.town;
 
 function checkEntry(e) {
+  assertOwnerApprovalForEntity(e);
   const pin = CENSUS_TIGER_PINS[e.stateFips]?.[e.layer];
   if (!pin || pin !== e.archiveSha256)
     throw Error('Manifest archive digest is not the pinned Census digest');
@@ -143,6 +147,7 @@ function checkEntry(e) {
               socialPointInside: e.socialPointInside,
               socialPointDistanceMeters: e.socialPointDistanceMeters,
               rationale: e.rationale,
+              ...(e.ownerDecision ? { ownerDecision: e.ownerDecision } : {}),
             },
           },
           { dryRun }
