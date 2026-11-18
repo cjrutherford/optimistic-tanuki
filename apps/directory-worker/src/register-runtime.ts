@@ -31,6 +31,13 @@ import {
   createGeoapifySweepRunner,
   runAcquisitionSweepLoop,
 } from './acquisition-sweep';
+import {
+  DuplicateSweepConfig,
+  DuplicateSweepStatus,
+  createDuplicateSweepRunner,
+  duplicateSweepConfig,
+  runDuplicateSweepLoop,
+} from './duplicate-sweep';
 import { retryUntilReady } from './startup-retry';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -59,6 +66,7 @@ export type RegisterWorkerConfig = {
   bindingSweep: BindingSweepConfig | null;
   geometrySweep: GeometrySweepConfig | null;
   acquisitionSweep: AcquisitionSweepConfig | null;
+  duplicateSweep: DuplicateSweepConfig | null;
   startupTimeoutMs: number;
 };
 export function registerWorkerConfig(
@@ -138,6 +146,7 @@ export function registerWorkerConfig(
     bindingSweep: bindingSweepConfig(env),
     geometrySweep: geometrySweepConfig(env),
     acquisitionSweep: acquisitionSweepConfig(env),
+    duplicateSweep: duplicateSweepConfig(env),
     startupTimeoutMs,
     databaseUrl: need('DIRECTORY_DATABASE_URL'),
     host: need('SOCIAL_HOST'),
@@ -350,7 +359,36 @@ export async function runRegisterWorker(
           status: geoapifyStatus,
         })
       : Promise.resolve();
+    const duplicateStatus = new DuplicateSweepStatus(
+      config.duplicateSweep !== null
+    );
+    const duplicateLoop = config.duplicateSweep
+      ? runDuplicateSweepLoop({
+          signal: controller.signal,
+          intervalMs: config.duplicateSweep.intervalMs,
+          limit: config.duplicateSweep.limit,
+          run: createDuplicateSweepRunner(config.duplicateSweep, () => db, {
+            // The same read the geometry sweep uses: Social's current assignment token for the town.
+            changeToken: async (townId) => {
+              const current = await client!.geography(
+                {
+                  sourceEpoch: id.sourceEpoch,
+                  activationId: id.activationId,
+                  socialGeneration: id.socialGeneration,
+                },
+                townId
+              );
+              return current.status === 'current' &&
+                typeof current.changeToken === 'string'
+                ? current.changeToken
+                : null;
+            },
+          }),
+          status: duplicateStatus,
+        })
+      : (console.error('duplicate sweep disabled'), Promise.resolve());
     await Promise.all([
+      duplicateLoop,
       atpLoop,
       geoapifyLoop,
       bindingLoop,

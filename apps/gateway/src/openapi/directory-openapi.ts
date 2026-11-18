@@ -25,6 +25,7 @@ import {
   DirectoryListingReportReviewController,
 } from '../controllers/directory/directory-listing-report.controller';
 import { DirectoryListingSuppressionController } from '../controllers/directory/directory-listing-suppression.controller';
+import { DirectoryDuplicateCasesController } from '../controllers/directory/directory-duplicate-cases.controller';
 import { DirectoryOperationsController } from '../controllers/directory/directory-operations.controller';
 import { DirectoryPublicExportController } from '../controllers/directory/directory-public-export.controller';
 import {
@@ -51,6 +52,7 @@ export const DIRECTORY_CONTROLLERS: Type<unknown>[] = [
   DirectoryListingReportController,
   DirectoryListingReportReviewController,
   DirectoryListingSuppressionController,
+  DirectoryDuplicateCasesController,
 ];
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete'] as const;

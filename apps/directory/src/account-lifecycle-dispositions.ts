@@ -1262,6 +1262,12 @@ const inventory: DirectoryLifecycleInventory = {
       'Town scan target record.'
     ),
     none(
+      'directory_town_scan_retirement',
+      'DirectoryTownScanRetirement',
+      ['communityId', 'scanId', 'reason', 'actor', 'rowsRevoked', 'retiredAt'],
+      'Operator/system audit of a town scan taken out of service; actor is a fixed operator or system label, never an account.'
+    ),
+    none(
       'directory_overture_source_evidence',
       'DirectoryOvertureSourceEvidence',
       [
@@ -1310,6 +1316,7 @@ const inventory: DirectoryLifecycleInventory = {
         'eligible',
         'geometryStatus',
         'geometryVersion',
+        'registeredAt',
       ],
       'Town communities owned by Social; a town is not an account.'
     ),
