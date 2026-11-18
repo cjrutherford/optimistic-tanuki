@@ -77,6 +77,7 @@ async function overtureDone(ds, townId) {
         name: 'Synthetic Diner',
         category: 'restaurant',
         location: { type: 'Point', coordinates: [-87.5, 31.5] },
+        sources: [{ dataset: 'overture', license: 'CDLA-Permissive-2.0' }],
       }),
     ]
   );
