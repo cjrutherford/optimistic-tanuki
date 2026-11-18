@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   BadRequestException,
   Body,
@@ -75,18 +76,22 @@ const trimmed = ({ value }: { value: unknown }) =>
 
 /** Validated with whitelist + forbidNonWhitelisted by the gateway's global pipe. */
 export class CreateListingReportDto {
+  @ApiProperty({ format: 'uuid' })
   @IsUUID()
   listingId!: string;
 
+  @ApiProperty({ enum: LISTING_REPORT_REASONS as unknown as string[] })
   @IsIn(LISTING_REPORT_REASONS as unknown as string[])
   reasonCode!: ListingReportReasonCode;
 
+  @ApiPropertyOptional({ maxLength: LISTING_REPORT_NOTE_MAX })
   @IsOptional()
   @Transform(trimmed)
   @IsString()
   @MaxLength(LISTING_REPORT_NOTE_MAX)
   note?: string;
 
+  @ApiPropertyOptional({ format: 'email', maxLength: 254 })
   @IsOptional()
   @Transform(trimmed)
   @IsEmail()
@@ -94,6 +99,10 @@ export class CreateListingReportDto {
   email?: string;
 
   /** Honeypot. Real clients leave it empty. */
+  @ApiPropertyOptional({
+    maxLength: 512,
+    description: 'Honeypot; leave empty.',
+  })
   @IsOptional()
   @Transform(blankToUndefined)
   @IsString()
