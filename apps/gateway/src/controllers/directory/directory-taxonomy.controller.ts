@@ -31,7 +31,7 @@ const conflictCodes = new Set([
   'decision_conflict',
   'invalid_state',
 ]);
-const caseStatuses = ['open', 'assigned', 'rejected', 'deferred'];
+const caseStatuses = ['open', 'assigned', 'rejected', 'deferred', 'dismissed'];
 const decisionActions = ['assign', 'reject', 'defer', 'reopen'];
 const id100 = /^[A-Za-z0-9._-]{1,100}$/;
 export const TAXONOMY_ROLLBACK_CONFIRMATION = 'ROLLBACK';
@@ -319,6 +319,41 @@ export class DirectoryTaxonomyController {
         ...(body.placeTypeId === undefined
           ? {}
           : { placeTypeId: body.placeTypeId }),
+        actorId,
+      }
+    );
+    this.shape(
+      typeof result.replayed === 'boolean' &&
+        caseStatuses.includes(result.status)
+    );
+    return { recorded: true, replayed: result.replayed, status: result.status };
+  }
+
+  @Post('cases/:caseId/dismiss')
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.operate)
+  @Header('Cache-Control', 'no-store')
+  async dismiss(
+    @Param('caseId') caseId: string,
+    @Body() body: any,
+    @Req() req: RequestUser
+  ) {
+    const actorId = this.actor(req);
+    if (
+      !this.isUuid(caseId) ||
+      !this.object(body) ||
+      !this.isUuid(body.decisionId) ||
+      !this.text(body.reason) ||
+      typeof body.expectedVersionToken !== 'string' ||
+      !hex64.test(body.expectedVersionToken)
+    )
+      throw new BadRequestException('Invalid taxonomy dismissal');
+    const result = await this.post(
+      `/internal/taxonomy/cases/${caseId}/dismiss`,
+      {
+        decisionId: body.decisionId,
+        reason: body.reason,
+        expectedVersionToken: body.expectedVersionToken,
         actorId,
       }
     );

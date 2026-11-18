@@ -111,7 +111,12 @@ describe('DirectoryRightsCasesController', () => {
       { syncId: decisionId, releaseId: '2026-01-01.0', actorId: 'evil' },
       req
     );
-    expect(out).toEqual({ created: 3, existing: 0, lineages: 2 });
+    expect(out).toEqual({
+      created: 3,
+      existing: 0,
+      lineages: 2,
+      resolved: 0,
+    });
     expect(JSON.parse(call(spy).init.body as string)).toEqual({
       syncId: decisionId,
       releaseId: '2026-01-01.0',

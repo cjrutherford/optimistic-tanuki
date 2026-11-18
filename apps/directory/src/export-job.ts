@@ -29,6 +29,7 @@ export const EXPORT_STATUSES = [
   'failed',
   'expired',
   'withdrawn',
+  'revoked',
 ] as const;
 export const EXPORT_MAX_ATTEMPTS = 3;
 export const EXPORT_LEASE_MS = 120_000;
@@ -72,13 +73,14 @@ export interface ExportJobRecord {
   expiresAt: string | null;
   completedAt: string | null;
   withdrawnAt: string | null;
+  revokedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
 const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v));
 const isoOrNull = (v: unknown) => (v ? iso(v) : null);
-const COLUMNS = `id,"actorId","releaseId",scope,format,"requestHash",status,attempts,"leaseToken","leaseExpiresAt","errorCode","rowCount","excludedRows","byteCount",sha256,"artifactName","schemaVersion","scanIds","expiresAt","completedAt","withdrawnAt","createdAt","updatedAt"`;
+const COLUMNS = `id,"actorId","releaseId",scope,format,"requestHash",status,attempts,"leaseToken","leaseExpiresAt","errorCode","rowCount","excludedRows","byteCount",sha256,"artifactName","schemaVersion","scanIds","exportedSources","expiresAt","completedAt","withdrawnAt","revokedAt","createdAt","updatedAt"`;
 const record = (r: any): ExportJobRecord => ({
   id: r.id,
   actorId: r.actorId,
@@ -97,6 +99,7 @@ const record = (r: any): ExportJobRecord => ({
   expiresAt: isoOrNull(r.expiresAt),
   completedAt: isoOrNull(r.completedAt),
   withdrawnAt: isoOrNull(r.withdrawnAt),
+  revokedAt: isoOrNull(r.revokedAt),
   createdAt: iso(r.createdAt),
   updatedAt: iso(r.updatedAt),
 });
@@ -203,6 +206,235 @@ export function projectExportRow(
     };
   }
   return { included: true, fields, provenance };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Rights exclusions and revocation
+// ---------------------------------------------------------------------------------------------------------------
+
+export interface FieldExclusion {
+  readonly field: string;
+  readonly dataset: string;
+  readonly license: string;
+}
+/** What an artifact carries, per source term: the export keys that source's data supplied. */
+export interface ExportedSource {
+  dataset: string;
+  license: string;
+  fields: string[];
+}
+export const EXPORT_REVOKE_FIELD_EXCLUDED = 'rights_field_excluded';
+export const EXPORT_REVOKE_POLICY = 'policy_revoked';
+
+/** The export keys a rights field feeds. `alternate` and `id` are never exported. */
+export function exportKeysForRightsField(field: string): string[] {
+  return EXPORT_FIELDS.filter((f) =>
+    (f.rights as readonly string[]).includes(field)
+  ).map((f) => f.key);
+}
+
+/** Open `exclude_field` rights decisions for a release. An undone or reopened case is no longer excluded. */
+export async function loadFieldExclusions(
+  q: Q,
+  releaseId: string
+): Promise<FieldExclusion[]> {
+  return rowsOf(
+    await q.query(
+      `SELECT field,dataset,license FROM directory_rights_case WHERE status='excluded' AND scope='field' AND "releaseId"=$1`,
+      [releaseId]
+    )
+  ).filter(
+    (r) =>
+      typeof r?.field === 'string' &&
+      typeof r?.dataset === 'string' &&
+      typeof r?.license === 'string'
+  );
+}
+
+/**
+ * Denies a field wherever one of its sources is the excluded dataset/license, so a later export or public download
+ * cannot bring back what an operator decided not to use.
+ */
+export function applyFieldExclusions(
+  evaluation: OvertureRightsEvaluation,
+  exclusions: readonly FieldExclusion[]
+): OvertureRightsEvaluation {
+  if (!exclusions.length) return evaluation;
+  const fields = { ...evaluation.fields };
+  for (const ex of exclusions) {
+    const d = fields[ex.field];
+    if (
+      d &&
+      d.status === 'eligible' &&
+      (d.sources as ReadonlyArray<any>).some(
+        (s) => s?.dataset === ex.dataset && s?.license === ex.license
+      )
+    )
+      fields[ex.field] = {
+        ...d,
+        status: 'omitted',
+        reviewRequired: true,
+        impact: 'omit_field',
+        reasons: ['operation_not_approved'],
+        attributions: [],
+        termsUrls: [],
+        notices: [],
+      };
+  }
+  return { ...evaluation, eligible: false, fields };
+}
+
+function sourcesOf(job: { exportedSources?: unknown }): ExportedSource[] {
+  return Array.isArray(job.exportedSources)
+    ? (job.exportedSources as ExportedSource[]).filter(
+        (s) => s && typeof s.dataset === 'string' && Array.isArray(s.fields)
+      )
+    : [];
+}
+
+/** Marks the given jobs `revoked`; their files are deleted now when `dir` is given, otherwise by the next sweep. */
+async function revokeJobs(
+  q: Q,
+  ids: readonly string[],
+  reason: string,
+  dir?: string
+): Promise<number> {
+  if (!ids.length) return 0;
+  const rows = rowsOf(
+    await q.query(
+      `UPDATE directory_export_job SET status='revoked',"revokedAt"=clock_timestamp(),"errorCode"=$2,"updatedAt"=clock_timestamp(),"leaseToken"=NULL
+       WHERE status='complete' AND id = ANY($1::uuid[]) RETURNING "artifactName"`,
+      [[...ids], reason]
+    )
+  );
+  const names = rows
+    .map((r) => r.artifactName)
+    .filter((n): n is string => typeof n === 'string');
+  if (dir && names.length) {
+    await removeExportFiles(dir, names);
+    await q.query(
+      `UPDATE directory_export_job SET "artifactName"=NULL WHERE status='revoked' AND "artifactName" = ANY($1::text[])`,
+      [names]
+    );
+  }
+  return rows.length;
+}
+
+/**
+ * Revokes every complete artifact of `releaseId` that carries the excluded field from the excluded source, the same
+ * way a completed withdrawal does. An artifact with no recorded sources (written before they were recorded) is
+ * treated as carrying everything. Idempotent: only `complete` jobs change.
+ */
+export async function revokeExportsForExclusion(
+  q: Q,
+  input: FieldExclusion & { releaseId: string; dir?: string }
+): Promise<number> {
+  const keys = exportKeysForRightsField(input.field);
+  if (!keys.length || !input.releaseId) return 0;
+  const jobs = rowsOf(
+    await q.query(
+      `SELECT id,"exportedSources" FROM directory_export_job WHERE status='complete' AND "releaseId"=$1`,
+      [input.releaseId]
+    )
+  );
+  const hit = jobs.filter((j) => {
+    const sources = sourcesOf(j);
+    return (
+      !sources.length ||
+      sources.some(
+        (s) =>
+          s.dataset === input.dataset &&
+          s.license === input.license &&
+          s.fields.some((f) => keys.includes(f))
+      )
+    );
+  });
+  return revokeJobs(
+    q,
+    hit.map((j) => j.id),
+    EXPORT_REVOKE_FIELD_EXCLUDED,
+    input.dir
+  );
+}
+
+/**
+ * Re-checks every complete artifact against the current policy and exclusions: a policy that is gone, no longer
+ * grants `export`, or whose source term no longer lists a field the artifact carries revokes it, and so does an
+ * open `exclude_field` decision for a field and source it carries. Idempotent; the worker runs it every tick.
+ */
+export async function revokeStaleExports(
+  q: Q,
+  input: {
+    policyFor: (releaseId: string) => OvertureRightsPolicy | undefined;
+    dir?: string;
+  }
+): Promise<{ policy: number; excluded: number }> {
+  const jobs = rowsOf(
+    await q.query(
+      `SELECT id,"releaseId","exportedSources" FROM directory_export_job WHERE status='complete'`
+    )
+  );
+  const exclusions = new Map<string, FieldExclusion[]>();
+  const policyIds: string[] = [];
+  const excludedIds: string[] = [];
+  for (const job of jobs) {
+    const policy = input.policyFor(job.releaseId);
+    const sources = sourcesOf(job);
+    const everything = EXPORT_FIELDS.map((f) => f.key as string);
+    let permitted = !!policy && policy.operations?.export === true;
+    if (permitted)
+      for (const s of sources.length
+        ? sources
+        : [{ dataset: '', license: '', fields: everything }]) {
+        const terms = (policy!.terms ?? []).filter(
+          (t) =>
+            !sources.length ||
+            (t.dataset === s.dataset && t.license === s.license)
+        );
+        for (const key of s.fields) {
+          const rights = EXPORT_FIELDS.find((f) => f.key === key)?.rights ?? [];
+          const ok = terms.some((t) =>
+            rights.every((r) =>
+              (
+                t.permissions?.export as readonly string[] | undefined
+              )?.includes(r)
+            )
+          );
+          if (!ok) permitted = false;
+        }
+      }
+    if (!permitted) {
+      policyIds.push(job.id);
+      continue;
+    }
+    if (!exclusions.has(job.releaseId))
+      exclusions.set(
+        job.releaseId,
+        await loadFieldExclusions(q, job.releaseId)
+      );
+    const hit = exclusions.get(job.releaseId)!.some((ex) => {
+      const keys = exportKeysForRightsField(ex.field);
+      return (
+        !sources.length ||
+        sources.some(
+          (s) =>
+            s.dataset === ex.dataset &&
+            s.license === ex.license &&
+            s.fields.some((f) => keys.includes(f))
+        )
+      );
+    });
+    if (hit) excludedIds.push(job.id);
+  }
+  return {
+    policy: await revokeJobs(q, policyIds, EXPORT_REVOKE_POLICY, input.dir),
+    excluded: await revokeJobs(
+      q,
+      excludedIds,
+      EXPORT_REVOKE_FIELD_EXCLUDED,
+      input.dir
+    ),
+  };
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -466,11 +698,16 @@ async function runJob(
   const notices = new Set<string>();
   let rowCount = 0;
   let excluded = 0;
+  const exclusions = await loadFieldExclusions(db, job.releaseId);
+  const carried = new Map<string, ExportedSource>();
   const evaluationFor = (listing: Record<string, unknown>) =>
-    evaluateOvertureFieldRights(
-      { releaseId: job.releaseId, sources: listing['sources'] as never },
-      'export',
-      policy
+    applyFieldExclusions(
+      evaluateOvertureFieldRights(
+        { releaseId: job.releaseId, sources: listing['sources'] as never },
+        'export',
+        policy
+      ),
+      exclusions
     );
   try {
     await mkdir(options.dir, { recursive: true });
@@ -498,7 +735,17 @@ async function runJob(
               excluded++;
               continue;
             }
-            for (const p of Object.values(projection.provenance)) {
+            for (const [key, p] of Object.entries(projection.provenance)) {
+              for (const d of p.datasets) {
+                const id = JSON.stringify([d.dataset, d.license]);
+                const entry = carried.get(id) ?? {
+                  dataset: d.dataset,
+                  license: d.license,
+                  fields: [],
+                };
+                if (!entry.fields.includes(key)) entry.fields.push(key);
+                carried.set(id, entry);
+              }
               p.attributions.forEach((v) => attributions.add(v));
               p.termsUrls.forEach((v) => termsUrls.add(v));
               p.notices.forEach((v) => notices.add(v));
@@ -587,7 +834,7 @@ async function runJob(
       const updated = rowsOf(
         await q.query(
           `UPDATE directory_export_job SET status='complete',"rowCount"=$3,"excludedRows"=$4,"byteCount"=$5,sha256=$6,"artifactName"=$7,
-             "scanIds"=$8::jsonb,"completedAt"=$9,"expiresAt"=$10,"leaseToken"=NULL,"leaseExpiresAt"=NULL,"errorCode"=NULL,"updatedAt"=clock_timestamp()
+             "scanIds"=$8::jsonb,"completedAt"=$9,"expiresAt"=$10,"exportedSources"=$11::jsonb,"leaseToken"=NULL,"leaseExpiresAt"=NULL,"errorCode"=NULL,"updatedAt"=clock_timestamp()
            WHERE id=$1 AND "leaseToken"=$2 AND status='running' RETURNING id`,
           [
             job.id,
@@ -600,6 +847,7 @@ async function runJob(
             JSON.stringify(scans),
             now,
             new Date(now.getTime() + retention * 3_600_000),
+            JSON.stringify([...carried.values()]),
           ]
         )
       );
@@ -621,6 +869,11 @@ async function runJob(
 }
 
 async function sweep(db: Q, options: ExportPassOptions, now: Date) {
+  // Rights changes apply before anything else: a revoked artifact is unreadable from this point.
+  await revokeStaleExports(db, {
+    policyFor: options.policyFor,
+    dir: options.dir,
+  });
   await db.query(
     `UPDATE directory_export_job SET status='expired',"updatedAt"=clock_timestamp()
      WHERE status='complete' AND "expiresAt" IS NOT NULL AND "expiresAt" <= $1`,
@@ -628,13 +881,13 @@ async function sweep(db: Q, options: ExportPassOptions, now: Date) {
   );
   const stale = rowsOf(
     await db.query(
-      `SELECT id,"artifactName" FROM directory_export_job WHERE status IN ('expired','withdrawn') AND "artifactName" IS NOT NULL LIMIT 100`
+      `SELECT id,"artifactName" FROM directory_export_job WHERE status IN ('expired','withdrawn','revoked') AND "artifactName" IS NOT NULL LIMIT 100`
     )
   );
   for (const row of stale) {
     await removeExportFiles(options.dir, [row.artifactName]);
     await db.query(
-      `UPDATE directory_export_job SET "artifactName"=NULL WHERE id=$1 AND status IN ('expired','withdrawn')`,
+      `UPDATE directory_export_job SET "artifactName"=NULL WHERE id=$1 AND status IN ('expired','withdrawn','revoked')`,
       [row.id]
     );
   }
@@ -724,7 +977,12 @@ export type ExportArtifactResult =
   | { ok: false; code: 'not_found' }
   | {
       ok: false;
-      code: 'not_ready' | 'expired' | 'withdrawn' | 'integrity_failed';
+      code:
+        | 'not_ready'
+        | 'expired'
+        | 'withdrawn'
+        | 'revoked'
+        | 'integrity_failed';
     }
   | {
       ok: true;
@@ -755,13 +1013,14 @@ export async function openExportArtifact(
       [randomUUID(), job.id, input.actorId, outcome]
     );
   const refuse = async (
-    code: 'not_ready' | 'expired' | 'withdrawn' | 'integrity_failed'
+    code: 'not_ready' | 'expired' | 'withdrawn' | 'revoked' | 'integrity_failed'
   ): Promise<ExportArtifactResult> => {
     await audit(code);
     return { ok: false, code };
   };
   const now = (input.now ?? (() => new Date()))();
   if (job.status === 'withdrawn') return refuse('withdrawn');
+  if (job.status === 'revoked') return refuse('revoked');
   if (job.status === 'expired') return refuse('expired');
   if (job.status !== 'complete') return refuse('not_ready');
   if (job.expiresAt && new Date(job.expiresAt) <= now) return refuse('expired');

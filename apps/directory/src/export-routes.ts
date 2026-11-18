@@ -2,6 +2,11 @@ import { timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { pipeline } from 'node:stream/promises';
 import { ExportArtifactResult, ExportConflictError } from './export-job';
+import {
+  PUBLIC_EXPORT_FORMATS,
+  type PublicExportFormat,
+  type PublicExportResult,
+} from './public-export';
 
 /**
  * Internal operator-export routes (S8), reached only by the Gateway with the local-evaluation secret. Responses are
@@ -189,6 +194,75 @@ export async function handleExportRoute(
     if (res.headersSent) res.destroy();
     else if (error instanceof ExportConflictError)
       send(res, 409, { code: error.code });
+    else if (/^Invalid /.test(message)) send(res, 400);
+    else send(res, 503);
+    return true;
+  } finally {
+    active--;
+  }
+}
+
+export interface PublicExportRouteChecks {
+  publicExport(v: {
+    town: string;
+    format: PublicExportFormat;
+  }): Promise<PublicExportResult>;
+}
+
+/**
+ * `GET /internal/public-export/<town>?format=csv|jsonl` (S8b), reached only by the Gateway's public route. The body
+ * is generated from current data and never cacheable. Failures carry only a machine code.
+ */
+export async function handlePublicExportRoute(
+  req: IncomingMessage,
+  res: ServerResponse,
+  checks: PublicExportRouteChecks,
+  secret?: string
+): Promise<boolean> {
+  if (!req.url?.startsWith('/internal/public-export/')) return false;
+  const url = new URL(req.url, 'http://localhost');
+  const match = url.pathname.match(
+    /^\/internal\/public-export\/([0-9a-f-]{36})$/
+  );
+  if (!match || req.method !== 'GET') return false;
+  const auth = authorized(req, secret);
+  if (auth) return send(res, auth), true;
+  const formats = url.searchParams.getAll('format');
+  if (
+    !uuid.test(match[1]) ||
+    [...url.searchParams.keys()].some((k) => k !== 'format') ||
+    formats.length !== 1 ||
+    !(PUBLIC_EXPORT_FORMATS as readonly string[]).includes(formats[0])
+  )
+    return send(res, 400), true;
+  if (active >= 8) return send(res, 503), true;
+  active++;
+  try {
+    const result = await checks.publicExport({
+      town: match[1],
+      format: formats[0] as PublicExportFormat,
+    });
+    if ('code' in result) return send(res, 404, { code: result.code }), true;
+    res
+      .writeHead(200, {
+        'content-type': result.contentType,
+        'content-length': String(Buffer.byteLength(result.body)),
+        'content-disposition': `attachment; filename="${result.filename}"`,
+        'x-row-count': String(result.rowCount),
+        'x-export-truncated': result.truncated ? '1' : '0',
+        'cache-control': 'no-store',
+        'x-content-type-options': 'nosniff',
+      })
+      .end(result.body);
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    if (/^Town unavailable$|town-ineligible/.test(message)) send(res, 404);
+    else if (
+      error instanceof Error &&
+      (error as any).kind === 'town-ineligible'
+    )
+      send(res, 404);
     else if (/^Invalid /.test(message)) send(res, 400);
     else send(res, 503);
     return true;

@@ -66,6 +66,15 @@ describe('DirectoryService', () => {
     expect(page.hasMore).toBe(true);
   });
 
+  it('builds the public export download link for a town and format', () => {
+    expect(service.publicExportUrl('town-1', 'csv')).toBe(
+      '/api/directory/towns/town-1/public-export?format=csv'
+    );
+    expect(service.publicExportUrl('a/b', 'jsonl')).toBe(
+      '/api/directory/towns/a%2Fb/public-export?format=jsonl'
+    );
+  });
+
   it('omits empty filters on the first page', async () => {
     const result = service.getPage('t1', first);
     const req = http.expectOne((r) => r.url.includes('/directory/towns/t1/'));

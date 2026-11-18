@@ -375,6 +375,17 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Download the town's listings as a file. The server decides what the file may contain. */
+  downloadListings(format: 'csv' | 'jsonl'): void {
+    const city = this.city();
+    if (!city || !isPlatformBrowser(this.platformId)) return;
+    const link = document.createElement('a');
+    link.href = this.directoryService.publicExportUrl(city.id, format);
+    link.rel = 'noopener';
+    link.download = '';
+    link.click();
+  }
+
   async loadMore(): Promise<void> {
     const city = this.city();
     const cursor = this.nextCursor();

@@ -232,9 +232,7 @@ export async function countMissingSpatial(
   return row.n;
 }
 
-export async function readSpatialState(
-  db: Queryable
-): Promise<{
+export async function readSpatialState(db: Queryable): Promise<{
   validatorVersion: number;
   rebuildStartedAt: Date | null;
   rebuildCompletedAt: Date | null;

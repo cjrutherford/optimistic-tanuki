@@ -29,6 +29,10 @@ const ERROR_TEXT: Record<string, string> = {
   export_not_granted:
     'No export grant for this release. Public display approval does not allow export.',
   no_eligible_rows: 'No rows were eligible to export.',
+  rights_field_excluded:
+    'Revoked: a rights decision excluded a field this export contained.',
+  policy_revoked:
+    'Revoked: the rights policy no longer permits export of a field this export contained.',
 };
 
 /**
@@ -209,7 +213,7 @@ export class DirectoryExportsPageComponent implements OnInit, OnDestroy {
           this.downloading = null;
           this.message =
             error?.status === 410
-              ? 'This export has expired or was withdrawn and can no longer be downloaded.'
+              ? 'This export has expired or was withdrawn (or revoked for rights reasons) and can no longer be downloaded.'
               : error?.status === 409
               ? 'This export is not ready yet.'
               : 'The download failed. Try again.';

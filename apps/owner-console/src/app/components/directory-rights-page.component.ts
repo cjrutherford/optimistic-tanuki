@@ -124,7 +124,7 @@ export class DirectoryRightsPageComponent implements OnInit {
 
   sync(releaseId: string): void {
     const release = releaseId.trim();
-    if (!/^[A-Za-z0-9._-]{1,100}$/.test(release)) {
+    if (release && !/^[A-Za-z0-9._-]{1,100}$/.test(release)) {
       this.message = 'Enter the release id, for example 2026-01-01.0.';
       return;
     }
@@ -135,13 +135,19 @@ export class DirectoryRightsPageComponent implements OnInit {
     this.http
       .post<RightsSyncResult>(`${this.api}/directory/rights-cases/sync`, {
         syncId: this.syncId,
-        releaseId: release,
+        ...(release ? { releaseId: release } : {}),
       })
       .subscribe({
         next: (result) => {
           this.syncing = false;
           this.syncId = null;
-          this.message = `Sync complete: ${result.created} new, ${result.existing} already known.`;
+          this.message = `Sync complete: ${result.created} new, ${
+            result.existing
+          } already known${
+            result.resolved
+              ? `, ${result.resolved} resolved by the approved policy`
+              : ''
+          }.`;
           this.refresh();
         },
         error: () => {

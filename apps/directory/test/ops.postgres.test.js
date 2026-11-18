@@ -240,9 +240,15 @@ test(
       assert.equal(m.infrastructure.postgis, true);
       assert.equal(m.infrastructure.exportStorage, 'configured');
       assert.ok(m.infrastructure.migrationsApplied > 0);
-      assert.match(
+      // The newest migration on disk, so later slices do not break this check.
+      const newest = require('node:fs')
+        .readdirSync(require('node:path').join(__dirname, '../migrations'))
+        .map((f) => /^(\d+)-(\w+)\.ts$/.exec(f))
+        .filter(Boolean)
+        .sort((a, b) => Number(b[1]) - Number(a[1]))[0];
+      assert.equal(
         m.infrastructure.latestMigration,
-        /^DirectoryOperatingControls\d+$/
+        `${newest[2]}${newest[1]}`
       );
       assert.equal(m.spend.reservedCents, 1);
       assert.equal(m.spend.alertCents, 2000);

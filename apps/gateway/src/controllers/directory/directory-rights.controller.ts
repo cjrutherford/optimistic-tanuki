@@ -199,15 +199,16 @@ export class DirectoryRightsCasesController extends DirectoryRightsBase {
     if (
       !this.object(body) ||
       !this.isUuid(body.syncId) ||
-      typeof body.releaseId !== 'string' ||
-      !/^[A-Za-z0-9._-]{1,100}$/.test(body.releaseId)
+      (body.releaseId !== undefined &&
+        (typeof body.releaseId !== 'string' ||
+          !/^[A-Za-z0-9._-]{1,100}$/.test(body.releaseId)))
     )
       throw new BadRequestException('Invalid rights sync');
     const result = await this.send('/internal/rights/cases/sync', {
       method: 'POST',
       body: JSON.stringify({
         syncId: body.syncId,
-        releaseId: body.releaseId,
+        ...(body.releaseId === undefined ? {} : { releaseId: body.releaseId }),
         actorId,
       }),
     });
@@ -220,6 +221,7 @@ export class DirectoryRightsCasesController extends DirectoryRightsBase {
       created: result.created,
       existing: result.existing,
       lineages: Number.isSafeInteger(result.lineages) ? result.lineages : 0,
+      resolved: Number.isSafeInteger(result.resolved) ? result.resolved : 0,
     };
   }
 

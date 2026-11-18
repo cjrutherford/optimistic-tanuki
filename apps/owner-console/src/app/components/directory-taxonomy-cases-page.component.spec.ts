@@ -134,6 +134,29 @@ describe('DirectoryTaxonomyCasesPageComponent', () => {
       .flush({ ...taxonomyCase, versionToken: vt2, history: [] });
   });
 
+  it('dismisses with a required reason and reports a stale token', () => {
+    open();
+    const c = component.cases[0];
+    component.dismiss(c, ' ');
+    expect(component.message).toContain('reason');
+    http.expectNone(`${api}/${taxonomyCase.id}/dismiss`);
+    component.dismiss(c, ' not a problem ');
+    const req = http.expectOne(`${api}/${taxonomyCase.id}/dismiss`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toMatchObject({
+      reason: 'not a problem',
+      expectedVersionToken: vt,
+    });
+    req.flush(
+      { code: 'stale_decision' },
+      { status: 409, statusText: 'Conflict' }
+    );
+    expect(component.message).toBe(TAXONOMY_STALE_MESSAGE);
+    http
+      .expectOne(`${api}/${taxonomyCase.id}`)
+      .flush({ ...taxonomyCase, versionToken: vt2, history: [] });
+  });
+
   it('undoes through the history with the current version token', () => {
     open();
     component.undo(component.cases[0], {

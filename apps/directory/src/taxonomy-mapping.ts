@@ -372,3 +372,68 @@ export function effectiveClassification(
     adult: listing?.adult === true,
   });
 }
+
+export interface TaxonomyCaseFlag {
+  readonly reason: 'unmapped_taxonomy' | 'ambiguous_taxonomy';
+  /** The stored category, or the competing node keys for an ambiguous listing. */
+  readonly observed: string;
+}
+
+/** Every taxonomy path a stored listing carries: the single path, plus any alternate `taxonomyPaths`. */
+function taxonomyPathsOf(listing: any): string[][] {
+  const paths: string[][] = [];
+  const single = taxonomyPathOf(listing);
+  if (single.length) paths.push(single);
+  if (Array.isArray(listing?.taxonomyPaths))
+    for (const p of listing.taxonomyPaths)
+      if (Array.isArray(p)) {
+        const clean = p.filter(
+          (x: unknown): x is string => typeof x === 'string' && x.length > 0
+        );
+        if (clean.length) paths.push(clean);
+      }
+  return paths;
+}
+
+const sameOutcome = (a: TaxonomyMappingEntry, b: TaxonomyMappingEntry) =>
+  (a.categoryId ?? null) === (b.categoryId ?? null) &&
+  (a.placeTypeId ?? null) === (b.placeTypeId ?? null) &&
+  (a.excluded === true) === (b.excluded === true);
+
+/**
+ * Whether a listing needs an operator's decision under a mapping. `unmapped_taxonomy`: it has a category but no
+ * taxonomy node or basic-category entry knows it. `ambiguous_taxonomy`: several taxonomy paths reach a node of
+ * the same (greatest) depth and those nodes map to different outcomes, so "most specific wins" cannot choose.
+ * An adult node always wins, as in the classifier, so it is never ambiguous.
+ */
+export function taxonomyCaseFlag(
+  mapping: LoadedMapping,
+  listing: any
+): TaxonomyCaseFlag | null {
+  const hits: { depth: number; key: string; entry: TaxonomyMappingEntry }[] =
+    [];
+  for (const path of taxonomyPathsOf(listing)) {
+    let best: (typeof hits)[number] | null = null;
+    path.forEach((key, depth) => {
+      const entry = mapping.nodes.get(key);
+      if (entry) best = { depth, key, entry };
+    });
+    if (best) hits.push(best);
+  }
+  if (hits.some((h) => h.entry.categoryId === 'adult')) return null;
+  if (hits.length) {
+    const top = Math.max(...hits.map((h) => h.depth));
+    const tied = hits.filter((h) => h.depth === top);
+    const first = tied[0];
+    if (tied.some((h) => !sameOutcome(h.entry, first.entry)))
+      return {
+        reason: 'ambiguous_taxonomy',
+        observed: [...new Set(tied.map((h) => h.key))].sort().join(' | '),
+      };
+    return null;
+  }
+  const category =
+    typeof listing?.category === 'string' ? listing.category.trim() : '';
+  if (!category || mapping.basic.has(category)) return null;
+  return { reason: 'unmapped_taxonomy', observed: category };
+}

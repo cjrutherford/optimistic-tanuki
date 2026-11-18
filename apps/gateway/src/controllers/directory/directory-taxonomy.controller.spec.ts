@@ -213,6 +213,54 @@ describe('DirectoryTaxonomyController', () => {
     ).rejects.toThrow(ServiceUnavailableException);
   });
 
+  it('dismisses with the session actor, the same permission and a strict body', async () => {
+    const permission = Reflect.getMetadata(
+      PERMISSIONS_KEY,
+      DirectoryTaxonomyController.prototype.dismiss
+    );
+    expect(JSON.stringify(permission)).toContain(DIRECTORY_PERMISSIONS.operate);
+    expect(
+      Reflect.getMetadata(
+        GUARDS_METADATA,
+        DirectoryTaxonomyController.prototype.dismiss
+      ).length
+    ).toBe(3);
+    const good = { decisionId, reason: ' fine ', expectedVersionToken: token };
+    const spy = reply(200, { replayed: false, status: 'dismissed', leak: 1 });
+    expect(await controller.dismiss(caseId, good, req)).toEqual({
+      recorded: true,
+      replayed: false,
+      status: 'dismissed',
+    });
+    const { url, init } = call(spy);
+    expect(url).toBe(
+      `http://directory:3120/internal/taxonomy/cases/${caseId}/dismiss`
+    );
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      actorId: actor,
+      decisionId,
+      expectedVersionToken: token,
+    });
+    spy.mockClear();
+    for (const bad of [
+      { ...good, reason: ' ' },
+      { ...good, reason: undefined },
+      { ...good, expectedVersionToken: 'short' },
+      { ...good, decisionId: 'x' },
+    ])
+      await expect(controller.dismiss(caseId, bad, req)).rejects.toThrow(
+        BadRequestException
+      );
+    await expect(controller.dismiss('x', good, req)).rejects.toThrow(
+      BadRequestException
+    );
+    expect(spy).not.toHaveBeenCalled();
+    reply(409, { code: 'stale_decision' });
+    await expect(controller.dismiss(caseId, good, req)).rejects.toThrow(
+      ConflictException
+    );
+  });
+
   it('maps Directory statuses', async () => {
     const body = {
       decisionId,

@@ -154,6 +154,38 @@
         [notices]="[]"
         [termsUrls]="[]"
       ></otd-directory-source-attribution>
+      <section
+        class="directory-page__download"
+        aria-labelledby="download-heading"
+      >
+        <h2 id="download-heading" class="directory-page__download-title">
+          Download listings
+        </h2>
+        <p class="directory-page__download-note">
+          Only fields the data sources allow us to share are included, with
+          attribution. Adult, withdrawn and private listings are never included.
+        </p>
+        <div class="directory-page__download-actions">
+          <otui-button
+            tone="brand"
+            emphasis="outline"
+            size="sm"
+            ariaLabel="Download listings as CSV"
+            (click)="downloadListings('csv')"
+          >
+            CSV
+          </otui-button>
+          <otui-button
+            tone="brand"
+            emphasis="outline"
+            size="sm"
+            ariaLabel="Download listings as JSON Lines"
+            (click)="downloadListings('jsonl')"
+          >
+            JSON Lines
+          </otui-button>
+        </div>
+      </section>
       <p class="directory-page__report-status">
         <a routerLink="/directory/reports/status">Check a report status</a>
       </p>

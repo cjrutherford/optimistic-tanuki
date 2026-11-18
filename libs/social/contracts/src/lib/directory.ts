@@ -326,13 +326,16 @@ export interface RightsUndoRequest {
 
 export interface RightsSyncRequest {
   syncId: string;
-  releaseId: string;
+  /** Optional override; otherwise the release recorded on the newest Overture acquisition run. */
+  releaseId?: string;
 }
 
 export interface RightsSyncResult {
   created: number;
   existing: number;
   lineages: number;
+  /** Cases in review that an approved rights policy resolved during this sync. */
+  resolved?: number;
 }
 
 export type WithdrawalKind = 'scan' | 'policy' | 'row';
@@ -434,12 +437,22 @@ export interface TaxonomyMappingInstallResult {
   version: TaxonomyMappingVersion;
 }
 
-export type TaxonomyCaseStatus = 'open' | 'assigned' | 'rejected' | 'deferred';
+export type TaxonomyCaseStatus =
+  | 'open'
+  | 'assigned'
+  | 'rejected'
+  | 'deferred'
+  | 'dismissed';
 export type TaxonomyCaseReason =
   | 'operator_raised'
   | 'unmapped_taxonomy'
   | 'ambiguous_taxonomy';
-export type TaxonomyDecisionAction = 'assign' | 'reject' | 'defer' | 'reopen';
+export type TaxonomyDecisionAction =
+  | 'assign'
+  | 'reject'
+  | 'defer'
+  | 'reopen'
+  | 'dismiss';
 
 export interface TaxonomyCaseSummary {
   id: string;
@@ -474,6 +487,12 @@ export interface TaxonomyDecisionRequest {
   /** assign only. */
   categoryId?: string;
   placeTypeId?: string;
+}
+/** Dismisses an automatically raised case (`unmapped_taxonomy` or `ambiguous_taxonomy`): nothing is served differently. */
+export interface TaxonomyDismissRequest {
+  decisionId: string;
+  expectedVersionToken: string;
+  reason: string;
 }
 export interface TaxonomyUndoRequest {
   decisionId: string;
@@ -542,6 +561,8 @@ export interface TaxonomyRunRecord {
   changedRows: number;
   appliedRows: number;
   restoredRows: number;
+  /** Rows the apply phase skipped because they changed after the plan pass; they are reported, never overwritten. */
+  driftedRows: number;
   attempts: number;
   cancelRequested: boolean;
   summary: TaxonomyRunSummary;
@@ -711,7 +732,8 @@ export type DirectoryExportStatus =
   | 'complete'
   | 'failed'
   | 'expired'
-  | 'withdrawn';
+  | 'withdrawn'
+  | 'revoked';
 
 export const DIRECTORY_EXPORT_STATUSES: readonly DirectoryExportStatus[] = [
   'queued',
@@ -720,6 +742,7 @@ export const DIRECTORY_EXPORT_STATUSES: readonly DirectoryExportStatus[] = [
   'failed',
   'expired',
   'withdrawn',
+  'revoked',
 ];
 
 /** An export job as the Gateway returns it. It never carries a file path. */
@@ -740,6 +763,7 @@ export interface DirectoryExportJob {
   expiresAt: string | null;
   completedAt: string | null;
   withdrawnAt: string | null;
+  revokedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

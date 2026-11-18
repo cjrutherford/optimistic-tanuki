@@ -477,6 +477,8 @@ const inventory: DirectoryLifecycleInventory = {
             'expiresAt',
             'completedAt',
             'withdrawnAt',
+            'revokedAt',
+            'exportedSources',
             'createdAt',
             'updatedAt',
           ],
@@ -586,6 +588,13 @@ const inventory: DirectoryLifecycleInventory = {
       'Before-image of a projection row a reclassification run changed. Holds no actor, owner or account column.',
       'history'
     ),
+    none(
+      'directory_taxonomy_run_plan',
+      'DirectoryTaxonomyRunPlan',
+      ['runId', 'scanId', 'sourceFileRowNumber', 'digest'],
+      'Per-row digest a reclassification plan pass computed, for the apply-phase re-check. Holds no actor, owner or account column.',
+      'history'
+    ),
     {
       table: 'directory_taxonomy_mapping_version',
       entity: 'DirectoryTaxonomyMappingVersion',
@@ -693,6 +702,7 @@ const inventory: DirectoryLifecycleInventory = {
             'changedRows',
             'appliedRows',
             'restoredRows',
+            'driftedRows',
             'attempts',
             'summary',
             'lastError',
