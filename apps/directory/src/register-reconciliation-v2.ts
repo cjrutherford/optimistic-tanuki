@@ -104,7 +104,7 @@ async function apply(
     );
   if (snapshot) {
     await manager.query(
-      `INSERT INTO directory_town ("communityId",name,slug,"administrativeArea",eligible,"geometryStatus") VALUES ($1,$2,$3,$4,true,'pending') ON CONFLICT ("communityId") DO UPDATE SET name=EXCLUDED.name,slug=EXCLUDED.slug,"administrativeArea"=EXCLUDED."administrativeArea",eligible=true, "geometryStatus"=CASE WHEN directory_town.eligible THEN directory_town."geometryStatus" ELSE 'pending' END`,
+      `INSERT INTO directory_town ("communityId",name,slug,"administrativeArea",eligible,"geometryStatus") VALUES ($1,$2,$3,$4,true,'pending') ON CONFLICT ("communityId") DO UPDATE SET name=EXCLUDED.name,slug=EXCLUDED.slug,"administrativeArea"=EXCLUDED."administrativeArea",eligible=true, "geometryStatus"=CASE WHEN directory_town.eligible OR EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=directory_town."communityId") THEN directory_town."geometryStatus" ELSE 'pending' END`,
       [id, snapshot.name, snapshot.slug, snapshot.adminArea]
     );
     await manager.query(
@@ -113,7 +113,7 @@ async function apply(
     );
   } else {
     await manager.query(
-      `UPDATE directory_town SET name='',slug=NULL,"administrativeArea"=NULL,eligible=false,"geometryStatus"='pending' WHERE "communityId"=$1`,
+      `UPDATE directory_town SET name='',slug=NULL,"administrativeArea"=NULL,eligible=false,"geometryStatus"=CASE WHEN EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=directory_town."communityId") THEN "geometryStatus" ELSE 'pending' END WHERE "communityId"=$1`,
       [id]
     );
     await manager.query(

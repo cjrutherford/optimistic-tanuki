@@ -1,4 +1,7 @@
-import { createHash } from 'node:crypto';
+import {
+  serializeBoundaryGeometry,
+  validateBoundaryGeometry,
+} from './boundary-geometry-validation';
 import { DataSource, EntityManager } from 'typeorm';
 import { geographyHash, SourceRead } from './boundary-review';
 import { DirectoryRecoveryIdentity } from './register-recovery-authority';
@@ -120,46 +123,12 @@ export async function installReviewedBoundary(
     extracted.sourceSha256 !== d.archiveSha256
   )
     throw Error('Source geometry identity mismatch');
-  const geometry = structuredClone(extracted.geometry) as {
-    type?: string;
-    coordinates?: unknown;
-  };
-  const position = (p: unknown): boolean =>
-    Array.isArray(p) &&
-    p.length === 2 &&
-    p.every((n) => typeof n === 'number' && Number.isFinite(n)) &&
-    Math.abs(p[0]) <= 180 &&
-    Math.abs(p[1]) <= 90;
-  const ring = (r: unknown): boolean =>
-    Array.isArray(r) && r.length >= 4 && r.every(position);
-  const polygon = (p: unknown): boolean =>
-    Array.isArray(p) && p.length > 0 && p.every(ring);
-  if (
-    !geometry ||
-    !(geometry.type === 'Polygon'
-      ? polygon(geometry.coordinates)
-      : geometry.type === 'MultiPolygon' &&
-        Array.isArray(geometry.coordinates) &&
-        geometry.coordinates.length > 0 &&
-        geometry.coordinates.every(polygon))
-  )
-    throw Error('Invalid source geometry');
-  const json = JSON.stringify(geometry);
-  if (Buffer.byteLength(json) > 8 * 1024 * 1024)
-    throw Error('Source geometry too large');
+  const json = serializeBoundaryGeometry(extracted.geometry);
   return db.transaction(async (manager) => {
     const current = await inspect(manager);
     if (candidateFields.some((k) => current.decision[k] !== d[k]))
       throw Error('Decision changed');
-    const checked = await manager.query(
-      `SELECT ST_IsValid(g) AND NOT ST_IsEmpty(g) AND ST_SRID(g)=4326 AND GeometryType(g) IN ('POLYGON','MULTIPOLYGON') AS valid, encode(ST_AsEWKB(g,'XDR'),'hex') AS binary FROM (SELECT ST_SetSRID(ST_GeomFromGeoJSON($1),4326) g) x`,
-      [json]
-    );
-    if (checked[0]?.valid !== true || typeof checked[0].binary !== 'string')
-      throw Error('Invalid source geometry');
-    const geometryHash = createHash('sha256')
-      .update(Buffer.from(checked[0].binary, 'hex'))
-      .digest('hex');
+    const { geometryHash } = await validateBoundaryGeometry(manager, json);
     const matches = await manager.query(
       'SELECT * FROM directory_reviewed_geometry WHERE "communityId"=$1 FOR UPDATE',
       [request.communityId]
@@ -174,6 +143,15 @@ export async function installReviewedBoundary(
         throw Error('Installed geometry mismatch');
       return matches[0].version as number;
     }
+    // An owner-locked boundary is never replaced by the automatic sweep; a reviewer install may, and keeps the town ready.
+    const locked =
+      (
+        await manager.query(
+          'SELECT 1 FROM directory_boundary_lock WHERE "communityId"=$1',
+          [request.communityId]
+        )
+      ).length > 0;
+    if (locked && promote) throw Error('Boundary is locked');
     const version = Number(current.candidate.geometryVersion) + 1;
     if (!Number.isSafeInteger(version) || version < 1 || version > 2147483647)
       throw Error('Geometry version exhausted');
@@ -190,7 +168,7 @@ export async function installReviewedBoundary(
     );
     await manager.query(
       'UPDATE directory_town SET "geometryVersion"=$2,"geometryStatus"=$3 WHERE "communityId"=$1',
-      [request.communityId, version, promote ? 'ready' : 'pending']
+      [request.communityId, version, promote || locked ? 'ready' : 'pending']
     );
     await manager.query(
       `INSERT INTO directory_reviewed_geometry ("communityId","requestId",version,"changeToken","geographyHash","geometryHash","recoveryEpoch","directoryGeneration") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT ("communityId") DO UPDATE SET "requestId"=EXCLUDED."requestId",version=EXCLUDED.version,"changeToken"=EXCLUDED."changeToken","geographyHash"=EXCLUDED."geographyHash","geometryHash"=EXCLUDED."geometryHash","recoveryEpoch"=EXCLUDED."recoveryEpoch","directoryGeneration"=EXCLUDED."directoryGeneration"`,

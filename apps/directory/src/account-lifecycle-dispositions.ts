@@ -1439,6 +1439,25 @@ const inventory: DirectoryLifecycleInventory = {
       'Automatic Census boundary ledger: per-town outcome and review reason, no actor.'
     ),
     none(
+      'directory_boundary_lock',
+      'DirectoryBoundaryLock',
+      [
+        'communityId',
+        'version',
+        'geoid',
+        'layer',
+        'vintage',
+        'stateFips',
+        'archiveSha256',
+        'geometryHash',
+        'evidenceHash',
+        'sourceUrl',
+        'evidence',
+        'lockedAt',
+      ],
+      'Owner lock on a town boundary: Census entity and evidence hashes, no actor.'
+    ),
+    none(
       'directory_boundary_candidate',
       'DirectoryBoundaryCandidate',
       [
