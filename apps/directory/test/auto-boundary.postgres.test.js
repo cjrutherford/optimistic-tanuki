@@ -13,6 +13,7 @@ const {
 const {
   runAutoBoundarySweep,
   selectAutoBoundaryTowns,
+  UNMATCHED_REASON,
 } = require('../src/auto-boundary');
 const { setControl } = require('../src/operating-controls');
 
@@ -257,7 +258,8 @@ test(
       assert.equal((await ledger('multi')).status, 'ambiguous');
       assert.equal((await ledger('multi')).reason, 'multiple_place_matches');
       assert.equal(await status('none'), 'pending');
-      assert.equal((await ledger('none')).reason, 'no_tiger_match');
+      assert.equal((await ledger('none')).reason, UNMATCHED_REASON);
+      assert.match(UNMATCHED_REASON, /^no_tiger_match:v\d+$/);
       assert.equal(
         (
           await db.query(
@@ -345,6 +347,44 @@ test(
         await selectAutoBoundaryTowns(db, identity, options)
       ).filter((id) => ids.includes(id));
       assert.deepEqual(again, [ids[1], ids[0], ids[2]]);
+    } finally {
+      await db.destroy();
+    }
+  }
+);
+
+test(
+  'boundary selection: a town unmatched under an older matching rule version is due at once, one unmatched now waits out the backoff',
+  { skip: !url },
+  async () => {
+    const db = new DataSource({ type: 'postgres', url });
+    await db.initialize();
+    try {
+      const identity = {
+        recoveryEpoch: randomUUID(),
+        directoryGeneration: '1',
+      };
+      const ids = {};
+      for (const [key, reason] of [
+        ['old', 'no_tiger_match'],
+        ['current', UNMATCHED_REASON],
+        ['ambiguous', 'multiple_place_matches'],
+      ]) {
+        ids[key] = randomUUID();
+        await db.query(
+          `INSERT INTO directory_town ("communityId",name,eligible) VALUES ($1,$2,true)`,
+          [ids[key], `Rule ${key}`]
+        );
+        await db.query(
+          `INSERT INTO directory_boundary_auto_attempt ("communityId","requestId","changeToken",reason,status,"attemptedAt",attempts,candidates)
+           SELECT $1, gen_random_uuid(), gen_random_uuid(), $2, $3, now() - interval '1 minute', 1, '[]'::jsonb`,
+          [ids[key], reason, key === 'ambiguous' ? 'ambiguous' : 'unmatched']
+        );
+      }
+      const due = (await selectAutoBoundaryTowns(db, identity, options)).filter(
+        (id) => Object.values(ids).includes(id)
+      );
+      assert.deepEqual(due, [ids.old]);
     } finally {
       await db.destroy();
     }

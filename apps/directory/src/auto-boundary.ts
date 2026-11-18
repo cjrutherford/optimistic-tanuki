@@ -15,12 +15,23 @@ export const AUTO_BOUNDARY_PROMOTE = {
   rights: 'public domain',
 } as const;
 
+/**
+ * Version of the name and location matching rules in scripts/census-boundary-reader.mjs. It is part of the reason
+ * recorded for an unmatched town, so a town last tried under an older rule set is due again at once instead of
+ * waiting out the review backoff. Bump it when the rules gain a way to match.
+ */
+export const TIGER_MATCH_RULES_VERSION = 2;
+export const UNMATCHED_REASON = `no_tiger_match:v${TIGER_MATCH_RULES_VERSION}`;
+
 export type TigerCandidate = {
   geoid: string;
   layer: 'place' | 'cousub';
   vintage: string;
   stateFips: string;
   sourceSha256: string;
+  /** Which matching tier found it (name and location rule), recorded with the decision candidates. */
+  rule?: string;
+  distanceMeters?: number;
 };
 /** What the Census search found for one town; the verdict is recomputed here with place-first precedence. */
 export interface AutoDiscovery {
@@ -112,7 +123,12 @@ async function record(
 }
 
 const summarize = (cs: TigerCandidate[]) =>
-  cs.map(({ geoid, layer, vintage }) => ({ geoid, layer, vintage }));
+  cs.map(({ geoid, layer, vintage, rule, distanceMeters }) => ({
+    geoid,
+    layer,
+    vintage,
+    ...(rule ? { rule, distanceMeters } : {}),
+  }));
 
 /**
  * Installs the town's TIGER boundary when exactly one candidate applies, otherwise leaves it pending and records
@@ -137,10 +153,10 @@ export async function autoInstallTown(
     }
     const choice = chooseTigerMatch(found.candidates ?? []);
     if (choice.kind === 'missing') {
-      await record(deps, communityId, 'unmatched', 'no_tiger_match', {
+      await record(deps, communityId, 'unmatched', UNMATCHED_REASON, {
         changeToken,
       });
-      return { outcome: 'unmatched', reason: 'no_tiger_match' };
+      return { outcome: 'unmatched', reason: UNMATCHED_REASON };
     }
     if (choice.kind === 'ambiguous') {
       await record(deps, communityId, 'ambiguous', choice.reason, {
@@ -247,7 +263,7 @@ export async function reconcileAutoBoundary(
   };
 }
 
-/** Eligible towns that still need a look: never tried, or due for a retry. Never-tried towns come first, most recently registered first; retries follow, oldest attempt first. Bounded. */
+/** Eligible towns that still need a look: never tried, or due for a retry (including an unmatched town last tried under an older matching rule version). Never-tried towns come first, most recently registered first; retries follow, oldest attempt first. Bounded. */
 export async function selectAutoBoundaryTowns(
   db: DataSource,
   identity: DirectoryRecoveryIdentity,
@@ -261,7 +277,8 @@ export async function selectAutoBoundaryTowns(
                        WHERE g."communityId"=t."communityId" AND g."recoveryEpoch"=$4 AND g."directoryGeneration"=$5)
        AND (a."communityId" IS NULL
          OR (a.status='error' AND a."attemptedAt" < now() - ($2::int * interval '1 millisecond'))
-         OR (a.status IN ('ambiguous','unmatched','unsupported') AND a."attemptedAt" < now() - ($3::int * interval '1 millisecond')))
+         OR (a.status IN ('ambiguous','unmatched','unsupported') AND a."attemptedAt" < now() - ($3::int * interval '1 millisecond'))
+         OR (a.status='unmatched' AND a.reason IS DISTINCT FROM $6))
      ORDER BY (a."communityId" IS NOT NULL),
        CASE WHEN a."communityId" IS NULL THEN t."registeredAt" END DESC NULLS LAST,
        a."attemptedAt" ASC, t."communityId" LIMIT $1`,
@@ -271,6 +288,7 @@ export async function selectAutoBoundaryTowns(
       options.retryReviewMs,
       identity.recoveryEpoch,
       identity.directoryGeneration,
+      UNMATCHED_REASON,
     ]
   );
   return rows.map((r: { communityId: string }) => r.communityId);
