@@ -1,0 +1,41 @@
+{
+  "town": {
+    "id": "7d8239cb-7209-4ac6-94d4-99d03f0c89f0",
+    "slug": "san-antonio-tx"
+  },
+  "anonymousDownloads": {
+    "csv": {
+      "status": 200,
+      "rows": 5000,
+      "commentLines": 17
+    },
+    "jsonl": {
+      "status": 200,
+      "rows": 5000,
+      "truncated": true,
+      "fields": ["name", "category", "location"],
+      "licences": [
+        "CC0-1.0",
+        "CDLA-Permissive-2.0",
+        "CDLA-Permissive-2.0",
+        "CDLA-Permissive-2.0",
+        "CDLA-Permissive-2.0"
+      ]
+    },
+    "rowCapChecked": 5000
+  },
+  "refusals": {
+    "unknownTown": 404
+  },
+  "uiDownload": {
+    "filename": "town-square-listings-2026-11-18.csv",
+    "bytes": 303611
+  },
+  "throttle": {
+    "probes": 3,
+    "statuses": [404, 404, 429],
+    "first429At": 3,
+    "retryAfter": null,
+    "note": "limit reached; budget resets after the 60s window"
+  }
+}

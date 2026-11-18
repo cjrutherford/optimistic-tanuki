@@ -940,16 +940,35 @@ const stableUuid = (seed: string) => {
  */
 export async function importAcquisitionHistory(
   db: Db,
-  i: { decisionId: string; actorId: string; reason: string }
+  i: {
+    decisionId: string;
+    actorId: string;
+    reason: string;
+    /**
+     * The Overture release the operator declares for historical scans that carry no source evidence. Evidence
+     * always wins, and a run that already records a release keeps it. The caller checks that an approved rights
+     * policy exists for it.
+     */
+    release?: string;
+  }
 ): Promise<AcquisitionImportHistoryResult> {
   if (
     !UUID.test(i.decisionId) ||
     !UUID.test(i.actorId) ||
     typeof i.reason !== 'string' ||
     !i.reason.trim() ||
-    i.reason.length > 1024
+    i.reason.length > 1024 ||
+    (i.release !== undefined &&
+      (typeof i.release !== 'string' ||
+        !/^[A-Za-z0-9._-]{1,100}$/.test(i.release)))
   )
     throw Error('Invalid acquisition run');
+  // The declared release is part of the audited decision, so a replay with a different release is a conflict.
+  const reason =
+    i.release === undefined
+      ? i.reason
+      : `${i.reason} [declared release ${i.release}]`;
+  if (reason.length > 1024) throw Error('Invalid acquisition run');
   return db.transaction(async (q) => {
     await q.query(
       `SELECT pg_advisory_xact_lock(hashtextextended('directory-acquisition-history-v1',0))`
@@ -962,7 +981,7 @@ export async function importAcquisitionHistory(
       if (
         prior.action !== 'import_history' ||
         prior.actorId !== i.actorId ||
-        prior.reason !== i.reason
+        prior.reason !== reason
       )
         throw new ReviewConflictError(IDEMPOTENCY_CONFLICT);
       const [{ n }] = await q.query(
@@ -992,12 +1011,20 @@ export async function importAcquisitionHistory(
       tally(
         await q.query(
           `INSERT INTO directory_acquisition_run (id,provider,release,kind,"townIds",status,reason,"createdAt","startedAt","finishedAt","heartbeatAt")
-           VALUES ($1,'overture',(SELECT e."releaseId" FROM directory_overture_source_evidence e WHERE e."scanId"=$6 ORDER BY e."evidenceVersion" DESC LIMIT 1),
+           VALUES ($1,'overture',COALESCE((SELECT e."releaseId" FROM directory_overture_source_evidence e WHERE e."scanId"=$6 ORDER BY e."evidenceVersion" DESC LIMIT 1),$7::varchar),
                    'historical',$2::jsonb,$3,'Imported from scan targets',$4,$4,$5,$5)
            ON CONFLICT (id) DO UPDATE SET release=COALESCE(directory_acquisition_run.release,EXCLUDED.release),status=EXCLUDED.status,"finishedAt"=EXCLUDED."finishedAt","heartbeatAt"=EXCLUDED."heartbeatAt","updatedAt"=clock_timestamp()
              WHERE directory_acquisition_run.kind='historical'
            RETURNING (xmax=0) AS inserted`,
-          [id, JSON.stringify(t.towns), status, t.first, t.last, t.scanId]
+          [
+            id,
+            JSON.stringify(t.towns),
+            status,
+            t.first,
+            t.last,
+            t.scanId,
+            i.release ?? null,
+          ]
         )
       );
       await q.query(
@@ -1046,7 +1073,7 @@ export async function importAcquisitionHistory(
     }
     await q.query(
       `INSERT INTO directory_acquisition_run_event (id,action,"actorId",reason) VALUES ($1,'import_history',$2,$3)`,
-      [i.decisionId, i.actorId, i.reason]
+      [i.decisionId, i.actorId, reason]
     );
     return { replayed: false, created, existing };
   });

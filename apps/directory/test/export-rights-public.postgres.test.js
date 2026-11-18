@@ -434,6 +434,25 @@ test(
         code: 'no_public_export',
       });
 
+      // A scan with no source evidence row uses the ledger release, and only that release's policy.
+      await ds.query(
+        'DELETE FROM directory_overture_source_evidence WHERE "scanId"=$1',
+        [scanId]
+      );
+      assert.deepEqual(await build(), { ok: false, code: 'no_public_export' });
+      assert.deepEqual(await build('jsonl', { releaseId: 'other-release' }), {
+        ok: false,
+        code: 'no_public_export',
+      });
+      const fallback = await build('jsonl', { releaseId: RELEASE });
+      assert.equal(fallback.ok, true);
+      assert.equal(parse(fallback).at(-1).rowCount, 3);
+      await ds.query(
+        `INSERT INTO directory_overture_source_evidence ("scanId","evidenceVersion",kind,"releaseId","artifactUrl","artifactEtag","inventorySha256","evidenceSha256",recorder)
+         VALUES ($1,1,'attached_verified',$2,'https://example.org/a','e',$3,$4,'test')`,
+        [scanId, RELEASE, hex(), hex()]
+      );
+
       // Only fields the term grants publicly leave.
       current = policyOf({
         ...publicOn,

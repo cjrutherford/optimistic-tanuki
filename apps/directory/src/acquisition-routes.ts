@@ -136,7 +136,13 @@ export async function handleAcquisitionRoute(
     if (!uuid.test(v.actorId || '') || !uuid.test(v.decisionId || ''))
       return send(res, 400), true;
     if (area === 'history/import') {
-      if (!only(v, ['actorId', 'decisionId', 'reason']) || !text(v.reason))
+      if (
+        !only(v, ['actorId', 'decisionId', 'reason', 'release']) ||
+        !text(v.reason) ||
+        (v.release !== undefined &&
+          (typeof v.release !== 'string' ||
+            !/^[A-Za-z0-9._-]{1,100}$/.test(v.release)))
+      )
         return send(res, 400), true;
       return send(res, 200, await checks.acquisitionImportHistory(v)), true;
     }

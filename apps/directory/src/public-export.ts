@@ -65,6 +65,11 @@ export interface PublicExportInput {
   readonly format: PublicExportFormat;
   readonly changeToken: string;
   readonly policyFor: (releaseId: string) => OvertureRightsPolicy | undefined;
+  /**
+   * The release the run ledger records (as rights sync and operator export use), for scans with no source
+   * evidence row. A scan's own evidence release always wins.
+   */
+  readonly releaseId?: string | null;
   readonly rowCap?: number;
   readonly now?: () => Date;
 }
@@ -97,7 +102,8 @@ export async function buildPublicExport(
         [scanId]
       )
     );
-    const releaseId: string | undefined = evidence?.releaseId;
+    const releaseId: string | undefined =
+      evidence?.releaseId ?? input.releaseId ?? undefined;
     const policy = releaseId ? input.policyFor(releaseId) : undefined;
     // Default off: no policy, or no publicExport opt-in, exposes nothing from this scan.
     if (!releaseId || !policy || policy.operations?.publicExport !== true)

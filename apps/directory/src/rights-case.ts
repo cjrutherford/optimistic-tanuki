@@ -8,6 +8,7 @@ import {
 } from './review-version';
 import {
   evaluateOvertureFieldRights,
+  OVERTURE_RIGHTS_FIELDS,
   type OvertureRightsOperation,
   type OvertureRightsPolicy,
 } from './overture-rights';
@@ -375,8 +376,21 @@ export function wantedCases(
     const whole = lineage.property === null || lineage.property === '';
     if (whole) {
       // A whole-record source overlaps every field, so it cannot be tied to one: a source-scope, ambiguous case.
-      const reasons = Object.values(evaluation.fields).flatMap((f) =>
-        f.reviewRequired ? [...f.reasons] : []
+      // When exactly one approved term maps the source, an optional field that term does not permit (such as the
+      // upstream `id`, kept only as a keyed hash) is an approved omission, not a gap; only required fields count.
+      const mapped =
+        approved &&
+        policy.terms.filter(
+          (t) =>
+            t && t.dataset === lineage.dataset && t.license === lineage.license
+        ).length === 1;
+      const reasons = Object.entries(evaluation.fields).flatMap(([name, f]) =>
+        f.reviewRequired &&
+        (!mapped ||
+          OVERTURE_RIGHTS_FIELDS[name as keyof typeof OVERTURE_RIGHTS_FIELDS]
+            .required)
+          ? [...f.reasons]
+          : []
       );
       if (reasons.length)
         add({

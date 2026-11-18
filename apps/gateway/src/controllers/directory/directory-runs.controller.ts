@@ -262,12 +262,18 @@ export class DirectoryRunsController {
       !this.object(body) ||
       !this.isUuid(body.decisionId) ||
       !this.text(body.reason) ||
-      Object.keys(body).some((k) => !['decisionId', 'reason'].includes(k))
+      Object.keys(body).some(
+        (k) => !['decisionId', 'reason', 'release'].includes(k)
+      ) ||
+      (body.release !== undefined &&
+        (typeof body.release !== 'string' ||
+          !/^[A-Za-z0-9._-]{1,100}$/.test(body.release)))
     )
       throw new BadRequestException('Invalid history import');
     const result = await this.post('/internal/acquisition/history/import', {
       decisionId: body.decisionId,
       reason: body.reason,
+      ...(body.release === undefined ? {} : { release: body.release }),
       actorId,
     });
     this.shape(
