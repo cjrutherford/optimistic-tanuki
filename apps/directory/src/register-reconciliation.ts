@@ -90,7 +90,7 @@ export async function reconcileRegister(
       );
     if (current) {
       await manager.query(
-        `INSERT INTO directory_town ("communityId", name, slug, "administrativeArea", eligible, "geometryStatus") VALUES ($1,$2,$3,$4,true,'pending') ON CONFLICT ("communityId") DO UPDATE SET name=EXCLUDED.name, slug=EXCLUDED.slug, "administrativeArea"=EXCLUDED."administrativeArea", eligible=true, "geometryStatus"=CASE WHEN directory_town.eligible OR EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=directory_town."communityId") THEN directory_town."geometryStatus" ELSE 'pending' END`,
+        `INSERT INTO directory_town ("communityId", name, slug, "administrativeArea", eligible, "geometryStatus") VALUES ($1,$2,$3,$4,true,'pending') ON CONFLICT ("communityId") DO UPDATE SET name=EXCLUDED.name, slug=EXCLUDED.slug, "administrativeArea"=EXCLUDED."administrativeArea", eligible=true, "mergedIntoCommunityId"=NULL, "geometryStatus"=CASE WHEN directory_town.eligible OR EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=directory_town."communityId") THEN directory_town."geometryStatus" ELSE 'pending' END`,
         [identity.communityId, current.name, current.slug, current.adminArea]
       );
       await manager.query(

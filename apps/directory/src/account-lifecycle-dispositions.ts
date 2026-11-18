@@ -1403,6 +1403,7 @@ const inventory: DirectoryLifecycleInventory = {
         'slug',
         'administrativeArea',
         'eligible',
+        'mergedIntoCommunityId',
         'geometryStatus',
         'geometryVersion',
         'registeredAt',
