@@ -134,3 +134,7 @@ provider/email/payment operations, deployment/load/production AV definitions,
 backups/remote copies or operational support. The project owner/operator must
 record the external evidence and final release decision. DF-007/RR-11 remain
 open. Earlier D/U/R2/R4 receipts remain immutable revision snapshots.
+
+### DF-008 — Town Square business directory: remaining source capabilities
+
+S10 (2026-11-18) dispositions every source capability of the business-directory POC in the [S10 capability ledger](../plans/town-square-directory/S10-capability-ledger.md); the evidence is in the [S10 scorecard](../plans/town-square-directory/S10-acceptance-scorecard.md). Locally integrated: 69 of 107 rows. Deferred: Geoapify adapters, dev routes and retention scheduler (Geoapify stays denied for public display and export); standalone AllThePlaces wiring; the `/regions` route; fixture and sample provider modes; `public-probe`. Open: live acquisition (not authorized), automatic geometry, the orchestration and provider libraries, quality evaluation, production deployment and drills. Implementation L, validation XL. The full "each source service" objective stays incomplete until the owner confirms these deferrals or changes scope.
