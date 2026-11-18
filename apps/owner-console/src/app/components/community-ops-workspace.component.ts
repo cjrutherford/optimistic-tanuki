@@ -1098,6 +1098,10 @@ export class CommunityOpsWorkspaceComponent implements OnInit {
                 label: 'Listing Reports',
                 route: ['/dashboard/directory-listing-reports', entity.id],
               },
+              {
+                label: 'Review Duplicates',
+                route: ['/dashboard/directory-duplicates', entity.id],
+              },
             ]
           : []),
       ];
@@ -1129,6 +1133,10 @@ export class CommunityOpsWorkspaceComponent implements OnInit {
         {
           label: 'Listing Reports',
           route: ['/dashboard/directory-listing-reports', entity.id],
+        },
+        {
+          label: 'Review Duplicates',
+          route: ['/dashboard/directory-duplicates', entity.id],
         },
         { label: 'Create Community', route: ['/dashboard/communities/new'] },
       ];
