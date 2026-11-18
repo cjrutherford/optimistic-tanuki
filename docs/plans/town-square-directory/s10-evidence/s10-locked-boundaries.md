@@ -1,6 +1,6 @@
 # S10 locked town boundaries
 
-The live queue showed 26 named towns pending with `no_tiger_match:v2`. One blank, ineligible row was pending and had no match attempt. The [operator manifest](s10-locked-boundaries.json) contains 19 locks and records the remaining eight rows.
+The live queue showed 26 named towns pending with `no_tiger_match:v2`. One blank, ineligible row was pending and had no match attempt. The [operator manifest](s10-locked-boundaries.json) contains 21 locks (19 researched, plus Corolla and Palm Valley from the owner's fourth-round decisions) and records the remaining eight rows with their dispositions.
 
 The Census name, state, entity type and published interior point support each match. The Social point falls inside two of the 19 polygons. For the other 17, the table records its approximate distance from the border. These points need separate correction in Social.
 
@@ -40,5 +40,26 @@ The Census name, state, entity type and published interior point support each ma
 | Edisto Island, SC     | town                 | The Edisto CDP is a different place near Orangeburg. Edisto Beach is a separate town. Only the Edisto Island county census division (statistical area, 177 sq km) matches the name. | Exclude.                                                                             |
 | Medina, TX            | town                 | Medina CDP is in Starr County, far south, a different place. Only the Medina county census division (1,233 sq km) covers the Bandera County community.                              | Exclude.                                                                             |
 | (blank name)          | Unavailable          | Directory town row with no name, no slug and eligible=false. Nothing to match.                                                                                                      | Keep excluded and confirm that the blank record can be retired.                      |
+
+## Owner dispositions for the eight rows (D19-D26)
+
+The owner decided each row on 2026-11-18 ([decisions](../DECISIONS-2026-11-18-S10.md)). Social owns which communities exist, so a merge retires the community there first and the Directory follows.
+
+| Row                   | Decision | Disposition                                                                                                                                                                |
+| --------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Amelia Island, FL     | D19      | Merged into Fernandina Beach, FL, which has its own Census border.                                                                                                         |
+| Ponte Vedra Beach, FL | D20      | Renamed to Palm Valley, FL (same community id) and locked to the Palm Valley CDP border (`1254525`, 35.2 sq km).                                                           |
+| Sea Island, GA        | D21      | Merged into St. Simons Island, GA.                                                                                                                                         |
+| Cape Hatteras, NC     | D22      | Merged into Hatteras, NC.                                                                                                                                                  |
+| Corolla, NC           | D23      | Locked to the Poplar Branch township border (`3705392552`, 661.3 sq km, mostly water and much larger than Corolla). The manifest entry records the decision; see the note. |
+| Edisto Island, SC     | D24      | Merged into Edisto Beach, SC, a new Social community seeded as a town that takes its own Census place border (`4523020`).                                                  |
+| Medina, TX            | D25      | Merged into Bandera, TX.                                                                                                                                                   |
+| (blank name)          | D26      | Retired without checking Social. The Directory row is deleted when no table references it; otherwise it stays ineligible and the operator script reports what holds it.    |
+
+A merged community keeps its row, slug and members in Social (`mergedIntoId`), so old links resolve: Local Hub redirects `/city/<old-slug>` to the absorbing town. The register reports it ineligible and the Directory records `mergedIntoCommunityId` on the town. None of the merged towns had businesses, scan targets or a boundary in the Directory.
+
+The lock script still requires the Census entity to be the town (same name, allowing a descriptor such as "St. Simons" for "St. Simons Island"). An entity with a different name, such as Poplar Branch for Corolla, installs only when the entry carries an `ownerDecision` naming the decision, its date and a summary. Entries without one are checked exactly as before.
+
+Corolla's lock covers a township far larger than the community, as the owner accepted. Businesses anywhere in Poplar Branch township will be listed under Corolla.
 
 Sources are limited to the 2026 Census TIGER/Line archives. [Places](https://www2.census.gov/geo/tiger/TIGER2026/PLACE/) · [County subdivisions](https://www2.census.gov/geo/tiger/TIGER2026/COUSUB/) · [Counties](https://www2.census.gov/geo/tiger/TIGER2026/COUNTY/) · [Consolidated cities](https://www2.census.gov/geo/tiger/TIGER2026/CONCITY/)
