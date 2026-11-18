@@ -31,6 +31,7 @@ const metrics = (over = {}) => ({
   freshness: {
     refreshDueListings: 5,
     staleListings: 1,
+    unknownFreshnessListings: 2,
     oldestListingAgeDays: 130,
   },
   policy: {

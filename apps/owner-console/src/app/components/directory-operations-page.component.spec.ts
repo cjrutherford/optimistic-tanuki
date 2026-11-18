@@ -28,6 +28,7 @@ const metrics = (over: Record<string, unknown> = {}) => ({
   freshness: {
     refreshDueListings: 5,
     staleListings: 4,
+    unknownFreshnessListings: 7,
     oldestListingAgeDays: 90,
   },
   policy: {
@@ -96,7 +97,7 @@ describe('DirectoryOperationsPageComponent', () => {
   };
   const text = () => el.textContent as string;
   const button = (label: string) =>
-    el.querySelector(`otui-button[aria-label="${label}"]`) as HTMLElement;
+    el.querySelector(`button[aria-label="${label}"]`) as HTMLElement;
   const click = (label: string) => {
     (button(label).querySelector('button') ?? button(label)).click();
     fixture.detectChanges();
