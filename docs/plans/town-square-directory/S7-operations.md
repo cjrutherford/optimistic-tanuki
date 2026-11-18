@@ -238,9 +238,10 @@ Run routes: `GET/POST /api/directory/taxonomy/runs`, `GET .../runs/:id`, `POST .
 ### 7.7 Known gaps
 
 - Stored private rows keep only the basic category, so classification works on `basic_category`; `taxonomy_node` entries apply only to a listing that carries a taxonomy path. A listing with several categories collapses to the most specific match.
-- Runs do not raise `unmapped_taxonomy` or `ambiguous_taxonomy` cases on their own. Only operators raise cases (`operator_raised`).
+- Closed 2026-11-18: the plan pass raises `unmapped_taxonomy` and `ambiguous_taxonomy` cases itself, and operators can dismiss a case (and reopen it) from Owner Console. A live round trip is in [`s7-evidence/s7-dismiss-live-outcome.json`](s7-evidence/s7-dismiss-live-outcome.json).
 - The shipped mapping has no excluded `basic_category`; exclusion today comes from the adult rule only.
-- Drift between the plan pass and the apply pass is detected at the plan hash, before any write. Rows that change while the apply phase itself runs are not re-verified.
+- Drift between the plan pass and the apply pass is detected at the plan hash, before any write. Closed 2026-11-18: apply records the planned rows and reports rows that changed during the apply phase as `driftedRows`.
+- The release on a run is recorded from source evidence, or declared by the owner on `POST /api/directory/runs/history/import` (`release`, which must have a rights policy). A declared release fills only runs with no recorded release; evidence always wins. There is no Owner Console control for it yet; it is API only.
 - A rollback restores only rows still owned by the run, by design.
 
 ### 7.8 Deploy and live steps

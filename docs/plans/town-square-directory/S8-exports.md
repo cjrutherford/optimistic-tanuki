@@ -262,9 +262,19 @@ Allow and deny examples, by source and field:
 
 ### 7.5 Open items
 
-- **Export grant**: this is an owner decision. The live stack exports nothing until a policy for the release sets `operations.export: true`, and each source term lists `export` fields, in `DIRECTORY_RIGHTS_POLICY_FILE`. The six open rights cases for `2026-10-21.0` must be decided first.
+- **Export grant**: closed 2026-11-18. The owner accepted the six rights cases and granted export; see §7.6.
 - **Withdrawal granularity**: closed by section 8. Rights `exclude_field` decisions, policy revocations and source-term changes now revoke matching artifacts.
-- **Public self-service export**: built in section 9. It is default off: no field is public until a policy sets `operations.publicExport: true` and lists `publicExport` fields on a source term. The live policy file has not been changed.
+- **Public self-service export**: built in section 9. It is default off: no field is public until a policy sets `operations.publicExport: true` and lists `publicExport` fields on a source term. The live policy now grants it for `2026-10-21.0`; see §7.6.
+
+### 7.6 Live stack with the grant (2026-11-18)
+
+- **Policy**: `rights-policies/policies.json` for `2026-10-21.0` (CC0-1.0 and CDLA-Permissive-2.0 sources) sets `operations.export` and `operations.publicExport`, mounted read-only through `DIRECTORY_RIGHTS_POLICY_FILE`.
+- **Rights sync** (`s8-exports-evidence.spec.ts` test 0): the owner's history import declares the release, so sync runs without a `releaseId`. The first sync resolved 5 source cases over 10 lineages (the release case had already resolved); a second sync resolves and creates nothing. All 6 cases are `resolved`. An optional field (the keyed `id` hash) no longer holds a policy-mapped source case open.
+- **Granted export**: job `eadd589a…` completed with 182,277 rows, 4,850 excluded (pilot rows without provenance), 160.7 MB. The SHA-256 was recomputed from the downloaded file and matches. A replay returns the same job. Screenshots: `s8-01-granted-desktop.jpg`, `s8-02-granted-mobile.jpg`. Outcome: [`s8-evidence/s8-live-outcome.json`](s8-evidence/s8-live-outcome.json).
+- **Public export** (`s8b-public-export-evidence.spec.ts`, 5 of 5): San Antonio (`san-antonio-tx`) returns CSV and JSONL anonymously, 5,000 rows (the cap, `truncated: true`), fields name, category and location, five source licences, attribution lines, no `@` and no Geoapify value. An unknown town is 404 and the throttle answered 429 on the third probe after the downloads. The Local Hub "Download listings" section passes axe at desktop and mobile. Outcome: [`s8-evidence/s8b-live-outcome.json`](s8-evidence/s8b-live-outcome.json).
+- **Release fallback**: no live scan has a source evidence row, so public export uses the run ledger's release when a scan has none; a scan's own evidence release still wins.
+- **Pilot towns**: valdosta-ga and alexandria-va rows carry no `sources`, so their public export answers 404 by design until pilot provenance exists.
+- **Live revocation** was not exercised, because it needs a rights field exclusion that would change live rights state. It is covered by `export-rights-public.postgres.test.js`.
 
 ## 8. Rights-driven revocation
 
