@@ -226,3 +226,31 @@ test('staged listings keep only source records the private sink accepts', () => 
   assert.deepEqual(privateSources(undefined), []);
   assert.deepEqual(privateSources({ dataset: 'd', license: 'l' }), []);
 });
+
+test('Geoapify: redaction and the provider limit', () => {
+  const { providerLimitCents } = require('../src/provider-budget');
+  assert.equal(
+    geo.redactSecrets('GET https://x/v2?lat=1&apiKey=abc123&lon=2', 'abc123'),
+    'GET https://x/v2?lat=1&apiKey=[redacted]&lon=2'
+  );
+  assert.equal(
+    geo.redactSecrets('plain secret-key here', 'secret-key'),
+    'plain [redacted] here'
+  );
+  const limit = (v) =>
+    providerLimitCents(
+      'geoapify',
+      v === undefined ? {} : { DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS: v }
+    );
+  assert.equal(limit(undefined), 2500);
+  assert.equal(limit('1000'), 1000);
+  assert.equal(limit('9999'), 2500, 'never above the $25 ceiling');
+  assert.equal(limit('abc'), 0, 'unusable means nothing may be spent');
+  assert.equal(limit('-5'), 0);
+  assert.equal(
+    providerLimitCents('overture', {
+      DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS: '1',
+    }),
+    2500
+  );
+});

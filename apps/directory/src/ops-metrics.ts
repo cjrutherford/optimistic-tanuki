@@ -3,7 +3,7 @@ import type {
   DirectoryOpsQueueMetrics,
 } from '../../../libs/social/contracts/src/lib/directory';
 import { listControls } from './operating-controls';
-import { MONTHLY_LIMIT_CENTS } from './provider-budget';
+import { MONTHLY_LIMIT_CENTS, providerLimitCents } from './provider-budget';
 import { FRESH_DAYS, STALE_DAYS } from './source-freshness';
 
 type Pool = { query(sql: string, params?: unknown[]): Promise<any[]> };
@@ -122,7 +122,9 @@ async function spend(pool: Pool, env: NodeJS.ProcessEnv) {
   const [r] = await pool.query(
     `SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM') AS period,
             (SELECT COALESCE(SUM("reservedCents"),0)::int FROM directory_provider_budget_attempt
-              WHERE period=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM')) AS reserved`
+              WHERE provider<>'geoapify' AND period=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM')) AS reserved,
+            (SELECT COALESCE(SUM("reservedCents"),0)::int FROM directory_provider_budget_attempt
+              WHERE provider='geoapify' AND period=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM')) AS geoapify`
   );
   const reservedCents = int(r.reserved);
   const alertCents = spendAlertCents(env);
@@ -130,6 +132,8 @@ async function spend(pool: Pool, env: NodeJS.ProcessEnv) {
     period: String(r.period),
     reservedCents,
     limitCents: MONTHLY_LIMIT_CENTS,
+    geoapifyReservedCents: int(r.geoapify),
+    geoapifyLimitCents: providerLimitCents('geoapify', env),
     alertCents,
     alert: reservedCents >= alertCents,
     exhausted: reservedCents >= MONTHLY_LIMIT_CENTS,

@@ -693,6 +693,9 @@ export interface AcquisitionBudgetPanel {
   period: string;
   ceilingCents: number;
   reservedCents: number;
+  /** Geoapify is metered on its own ledger and ceiling (owner decision D8), so it never counts against `reservedCents`. */
+  geoapifyReservedCents?: number;
+  geoapifyLimitCents?: number;
   usedCents: number;
   remainingCents: number;
   anonymousAttempts: number;

@@ -226,7 +226,11 @@ export function createGeoapifySweepRunner(
       throw Error('Invalid DIRECTORY_GEOAPIFY_COST_CENTS');
     if (!Number.isSafeInteger(batch) || batch < 1 || batch > 200)
       throw Error('Invalid DIRECTORY_GEOAPIFY_BATCH');
+    const daily = Number(env['DIRECTORY_GEOAPIFY_DAILY_LOOKUPS'] || 50);
+    if (!Number.isSafeInteger(daily) || daily < 1 || daily > 2500)
+      throw Error('Invalid DIRECTORY_GEOAPIFY_DAILY_LOOKUPS');
     return runGeoapifySweep({
+      dailyLookups: daily,
       db: db(),
       apiKey: env['GEOAPIFY_API_KEY'],
       policy,

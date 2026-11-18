@@ -444,3 +444,109 @@ test(
     });
   }
 );
+
+test(
+  'Geoapify: its own monthly hard stop is never exceeded and never touches the shared ledger',
+  { skip: !url },
+  async () => {
+    const budget = require('../src/provider-budget');
+    const saved = process.env.DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS;
+    process.env.DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS = '3';
+    try {
+      await withDb(async (ds) => {
+        for (let i = 0; i < 6; i++) await stagedRow(ds, 'scan-b', i);
+        const out = await geo.runGeoapifySweep({
+          db: ds,
+          apiKey: 'test-key-not-real',
+          policy: gpolicy,
+          costCents: 1,
+          batch: 10,
+          fetchImpl: okFetch([]),
+        });
+        assert.equal(out.succeeded, 3, 'stops at the 3 cent limit');
+        assert.equal(out.status, 'blocked');
+        assert.equal((await status(ds))[0].status, 'budget_blocked');
+        assert.equal(
+          (await ds.query(`SELECT 1 FROM directory_geoapify_enrichment`))
+            .length,
+          3
+        );
+        // Another provider is unaffected by Geoapify spend, and by Geoapify being exhausted.
+        const r = await budget.reserveProviderBudget(ds, {
+          attemptId: require('node:crypto').randomUUID(),
+          provider: 'overture',
+          operation: 'range.get',
+          maxCostCents: 2500,
+        });
+        assert.equal(r.state, 'reserved');
+        // ...and the other way round: shared spend does not use up Geoapify's ceiling.
+        process.env.DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS = '2500';
+        const g = await budget.reserveProviderBudget(ds, {
+          attemptId: require('node:crypto').randomUUID(),
+          provider: 'geoapify',
+          operation: 'place-details',
+          maxCostCents: 1,
+        });
+        assert.equal(g.remainingCents, 2500 - 3 - 1);
+      });
+    } finally {
+      if (saved === undefined)
+        delete process.env.DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS;
+      else process.env.DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS = saved;
+    }
+  }
+);
+
+test(
+  'Geoapify: daily cap bounds lookups, coordinate-less rows are skipped, errors never carry the key',
+  { skip: !url },
+  async () => {
+    await withDb(async (ds) => {
+      for (let i = 0; i < 4; i++) await stagedRow(ds, 'scan-c', i);
+      await ds.query(
+        `INSERT INTO directory_overture_private_row ("scanId","sourceFileRowNumber","regionId",listing) VALUES ('scan-c',99,'r','{"name":"no coords"}')`
+      );
+      const first = await geo.runGeoapifySweep({
+        db: ds,
+        apiKey: 'test-key-not-real',
+        policy: gpolicy,
+        batch: 10,
+        dailyLookups: 2,
+        fetchImpl: okFetch([]),
+      });
+      assert.equal(first.succeeded, 2);
+      const second = await geo.runGeoapifySweep({
+        db: ds,
+        apiKey: 'test-key-not-real',
+        policy: gpolicy,
+        batch: 10,
+        dailyLookups: 2,
+        fetchImpl: okFetch([]),
+      });
+      assert.equal(second.examined, 0, 'the daily cap is spent');
+      // A transport error that echoes the request URL is redacted before it is logged or stored.
+      const logs = [];
+      const bad = await geo.runGeoapifySweep({
+        db: ds,
+        apiKey: 'test-key-not-real',
+        policy: gpolicy,
+        batch: 10,
+        dailyLookups: 50,
+        log: (m) => logs.push(m),
+        fetchImpl: async (u) => {
+          throw Error(`fetch failed for ${u.toString()}`);
+        },
+      });
+      assert.equal(bad.failed, 1);
+      const [s] = await ds.query(
+        `SELECT status,detail FROM directory_provider_status WHERE provider='geoapify'`
+      );
+      assert.equal(s.status, 'error');
+      assert.doesNotMatch(
+        JSON.stringify([s, logs]),
+        /test-key-not-real|apiKey=test/
+      );
+      assert.match(s.detail, /redacted/);
+    });
+  }
+);
