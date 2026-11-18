@@ -22,7 +22,7 @@ export interface RightsRouteChecks {
   rightsSync(v: {
     syncId: string;
     actorId: string;
-    releaseId: string;
+    releaseId?: string;
     operation?: string;
   }): Promise<unknown>;
   rightsDecide(caseId: string, v: any): Promise<unknown>;
@@ -42,6 +42,7 @@ const OPERATIONS = [
   'privateDisplay',
   'publicDisplay',
   'export',
+  'publicExport',
   'enrich',
 ];
 let active = 0;
@@ -149,8 +150,9 @@ export async function handleRightsRoute(
           !only(v, ['syncId', 'actorId', 'releaseId', 'operation']) ||
           !uuid.test(v.syncId || '') ||
           !uuid.test(v.actorId || '') ||
-          typeof v.releaseId !== 'string' ||
-          !/^[A-Za-z0-9._-]{1,100}$/.test(v.releaseId) ||
+          (v.releaseId !== undefined &&
+            (typeof v.releaseId !== 'string' ||
+              !/^[A-Za-z0-9._-]{1,100}$/.test(v.releaseId))) ||
           (v.operation !== undefined && !OPERATIONS.includes(v.operation))
         )
           return send(res, 400), true;
@@ -161,7 +163,7 @@ export async function handleRightsRoute(
             await checks.rightsSync({
               syncId: v.syncId,
               actorId: v.actorId,
-              releaseId: v.releaseId,
+              ...(v.releaseId === undefined ? {} : { releaseId: v.releaseId }),
               ...(v.operation ? { operation: v.operation } : {}),
             })
           ),

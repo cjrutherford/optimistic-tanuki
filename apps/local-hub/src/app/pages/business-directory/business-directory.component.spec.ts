@@ -191,6 +191,21 @@ describe('BusinessDirectoryComponent', () => {
     ]);
   });
 
+  it('offers CSV and JSON Lines downloads with accessible names and no fetch', async () => {
+    await create();
+    const labels = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        '.directory-page__download otui-button'
+      )
+    ).map((el) => (el as HTMLElement).getAttribute('ariaLabel'));
+    expect(labels).toEqual([
+      'Download listings as CSV',
+      'Download listings as JSON Lines',
+    ]);
+    // Rendering the control asks for nothing; the download is a navigation.
+    expect(directory.getPage).toHaveBeenCalledTimes(1);
+  });
+
   it('loads the first page in cursor mode from URL filters', async () => {
     await create({ q: 'pie', category: 'bakery', adult: '1' });
     expect(directory.getPage).toHaveBeenCalledWith('city-1', {

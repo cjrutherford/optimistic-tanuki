@@ -19,28 +19,24 @@ describe('directory business-page linkage', () => {
   });
   const clients = () => ({
     social: {
-      send: jest
-        .fn()
-        .mockReturnValue(
-          of({
-            id: page,
-            appScope: 'local-hub',
-            isPrivate: false,
-            slug: 'my-business',
-            name: 'My Business',
-          })
-        ),
+      send: jest.fn().mockReturnValue(
+        of({
+          id: page,
+          appScope: 'local-hub',
+          isPrivate: false,
+          slug: 'my-business',
+          name: 'My Business',
+        })
+      ),
     },
     payments: {
-      send: jest
-        .fn()
-        .mockReturnValue(
-          of({
-            communityId: page,
-            ownerId: owner,
-            lemonSqueezySubscriptionId: 'secret',
-          })
-        ),
+      send: jest.fn().mockReturnValue(
+        of({
+          communityId: page,
+          ownerId: owner,
+          lemonSqueezySubscriptionId: 'secret',
+        })
+      ),
     },
   });
   it('protects requests and requires owner-console authorization for reviews', () => {
@@ -155,23 +151,21 @@ describe('directory business-page linkage', () => {
     process.env.DIRECTORY_INTERNAL_URL = 'http://directory:3120';
     process.env.DIRECTORY_BUSINESS_LINK_SECRET =
       'business-link-secret-123456789012345';
-    jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          requests: [
-            {
-              listingId: listing,
-              requestId,
-              businessCommunityId: page,
-              ownerId: owner,
-              secret: 'hidden',
-            },
-          ],
-          nextCursor: null,
-        }),
-      } as Response);
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        requests: [
+          {
+            listingId: listing,
+            requestId,
+            businessCommunityId: page,
+            ownerId: owner,
+            secret: 'hidden',
+          },
+        ],
+        nextCursor: null,
+      }),
+    } as Response);
     const q = new DirectoryBusinessLinkQueueController();
     await expect(q.requests(town, { user: {} } as any)).rejects.toMatchObject({
       status: 403,
@@ -200,21 +194,19 @@ describe('directory business-page linkage', () => {
         c.social as any,
         c.payments as any
       );
-    jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          requests: [
-            {
-              requestId,
-              businessCommunityId: page,
-              ownerId: owner,
-              secret: 'hidden',
-            },
-          ],
-        }),
-      } as Response);
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        requests: [
+          {
+            requestId,
+            businessCommunityId: page,
+            ownerId: owner,
+            secret: 'hidden',
+          },
+        ],
+      }),
+    } as Response);
     await expect(
       controller.requests(town, listing, { user: {} } as any)
     ).rejects.toMatchObject({ status: 403 });
@@ -236,21 +228,19 @@ describe('directory business-page linkage', () => {
         c.social as any,
         c.payments as any
       );
-    jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          requests: [
-            {
-              requestId,
-              businessCommunityId: page,
-              status: 'approved',
-              ownerId: 'hidden',
-            },
-          ],
-        }),
-      } as Response);
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        requests: [
+          {
+            requestId,
+            businessCommunityId: page,
+            status: 'approved',
+            ownerId: 'hidden',
+          },
+        ],
+      }),
+    } as Response);
     await expect(
       controller.mine(town, listing, { user: {} } as any)
     ).rejects.toMatchObject({ status: 403 });
@@ -310,14 +300,12 @@ describe('directory business-page linkage', () => {
         c.social as any,
         c.payments as any
       );
-    jest
-      .spyOn(global, 'fetch')
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          link: { businessCommunityId: page, ownerId: owner },
-        }),
-      } as Response);
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        link: { businessCommunityId: page, ownerId: owner },
+      }),
+    } as Response);
     expect(await controller.read(town, listing)).toEqual({
       link: { communityId: page, slug: 'my-business', name: 'My Business' },
     });

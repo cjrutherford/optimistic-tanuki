@@ -73,6 +73,7 @@ export class DirectoryTaxonomyCasesPageComponent implements OnInit {
     { value: 'deferred', label: 'Deferred' },
     { value: 'assigned', label: 'Assigned' },
     { value: 'rejected', label: 'Rejected' },
+    { value: 'dismissed', label: 'Dismissed' },
     { value: 'all', label: 'All' },
   ];
   /** The operator cannot assign adult: adult rows are served only to a visitor who opted in. */
@@ -246,8 +247,48 @@ export class DirectoryTaxonomyCasesPageComponent implements OnInit {
     return c.status === 'open';
   }
 
+  canDismiss(c: TaxonomyCaseSummary): boolean {
+    return c.status === 'open' || c.status === 'deferred';
+  }
+
   canReopen(c: TaxonomyCaseSummary): boolean {
-    return c.status === 'rejected';
+    return c.status === 'rejected' || c.status === 'dismissed';
+  }
+
+  /** Dismiss: the listing keeps what the mapping or its stored category gives it. A reason is required. */
+  dismiss(c: TaxonomyCaseSummary, reason: string): void {
+    const why = reason.trim();
+    if (!why) {
+      this.message = 'A reason is required to dismiss a case.';
+      return;
+    }
+    const key = `${c.id}:dismiss`;
+    const decisionId = this.decisionIds.get(key) ?? crypto.randomUUID();
+    this.decisionIds.set(key, decisionId);
+    this.message = '';
+    this.http
+      .post<{ recorded: boolean; status: string }>(
+        `${this.api}/directory/taxonomy/cases/${c.id}/dismiss`,
+        { decisionId, reason: why, expectedVersionToken: c.versionToken }
+      )
+      .subscribe({
+        next: () => {
+          this.decisionIds.delete(key);
+          this.message = 'Case dismissed.';
+          this.loadDetail(c.id);
+        },
+        error: (error: HttpErrorResponse) => {
+          if (error?.status === 409) {
+            this.decisionIds.delete(key);
+            this.stale();
+            return;
+          }
+          this.message =
+            error?.status === 400
+              ? 'The dismissal was refused. Check the reason.'
+              : 'The case could not be dismissed. Try again.';
+        },
+      });
   }
 
   decide(

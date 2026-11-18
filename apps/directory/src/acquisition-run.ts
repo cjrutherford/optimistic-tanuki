@@ -991,12 +991,13 @@ export async function importAcquisitionHistory(
           : 'succeeded_empty';
       tally(
         await q.query(
-          `INSERT INTO directory_acquisition_run (id,provider,kind,"townIds",status,reason,"createdAt","startedAt","finishedAt","heartbeatAt")
-           VALUES ($1,'overture','historical',$2::jsonb,$3,'Imported from scan targets',$4,$4,$5,$5)
-           ON CONFLICT (id) DO UPDATE SET status=EXCLUDED.status,"finishedAt"=EXCLUDED."finishedAt","heartbeatAt"=EXCLUDED."heartbeatAt","updatedAt"=clock_timestamp()
+          `INSERT INTO directory_acquisition_run (id,provider,release,kind,"townIds",status,reason,"createdAt","startedAt","finishedAt","heartbeatAt")
+           VALUES ($1,'overture',(SELECT e."releaseId" FROM directory_overture_source_evidence e WHERE e."scanId"=$6 ORDER BY e."evidenceVersion" DESC LIMIT 1),
+                   'historical',$2::jsonb,$3,'Imported from scan targets',$4,$4,$5,$5)
+           ON CONFLICT (id) DO UPDATE SET release=COALESCE(directory_acquisition_run.release,EXCLUDED.release),status=EXCLUDED.status,"finishedAt"=EXCLUDED."finishedAt","heartbeatAt"=EXCLUDED."heartbeatAt","updatedAt"=clock_timestamp()
              WHERE directory_acquisition_run.kind='historical'
            RETURNING (xmax=0) AS inserted`,
-          [id, JSON.stringify(t.towns), status, t.first, t.last]
+          [id, JSON.stringify(t.towns), status, t.first, t.last, t.scanId]
         )
       );
       await q.query(

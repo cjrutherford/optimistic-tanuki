@@ -36,8 +36,11 @@ services:
       # Operator export artifacts (S8); the named volume is declared by each stack that extends this service.
       DIRECTORY_EXPORT_DIR: /var/lib/directory/exports
       DIRECTORY_EXPORT_RETENTION_HOURS: ${DIRECTORY_EXPORT_RETENTION_HOURS:-24}
+      # Owner-approved rights policies (rights sync and export). Blank means no approval for any release.
+      DIRECTORY_RIGHTS_POLICY_FILE: ${DIRECTORY_RIGHTS_POLICY_FILE:-}
     volumes:
       - directory_exports:/var/lib/directory/exports
+      - ./rights-policies:/etc/directory/rights-policies:ro
     healthcheck:
       test:
         [

@@ -108,6 +108,7 @@ import {
   DirectoryWithdrawalsController,
 } from '../controllers/directory/directory-rights.controller';
 import { DirectoryExportsController } from '../controllers/directory/directory-exports.controller';
+import { DirectoryPublicExportController } from '../controllers/directory/directory-public-export.controller';
 import { DirectoryOperationsController } from '../controllers/directory/directory-operations.controller';
 import { DirectoryTaxonomyController } from '../controllers/directory/directory-taxonomy.controller';
 import { DirectoryRunsController } from '../controllers/directory/directory-runs.controller';
@@ -277,6 +278,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'directory-exports',
         requiredServices: ['social', 'authentication', 'permissions'],
         value: DirectoryExportsController,
+      },
+      {
+        id: 'directory-public-export',
+        requiredServices: [],
+        value: DirectoryPublicExportController,
       },
       {
         id: 'directory-operations',

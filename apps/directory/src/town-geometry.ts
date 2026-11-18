@@ -94,12 +94,10 @@ export class TownGeometryService {
     input: BoundaryInput
   ): Promise<'ready' | 'invalid'> {
     return this.db.transaction(async (manager) => {
-      const town = await manager
-        .getRepository(DirectoryTown)
-        .findOne({
-          where: { communityId },
-          lock: { mode: 'pessimistic_write' },
-        });
+      const town = await manager.getRepository(DirectoryTown).findOne({
+        where: { communityId },
+        lock: { mode: 'pessimistic_write' },
+      });
       if (!town) throw new Error('Unknown town');
       if (!town.eligible) throw new Error('Ineligible town');
       let valid = false;
@@ -152,16 +150,14 @@ export class TownGeometryService {
         return 'invalid';
       }
       const version = town.geometryVersion + 1;
-      await manager
-        .getRepository(DirectoryTownGeometry)
-        .insert({
-          communityId,
-          version,
-          boundary: geo as object,
-          source: input.source,
-          vintage: input.vintage,
-          rights: input.rights,
-        });
+      await manager.getRepository(DirectoryTownGeometry).insert({
+        communityId,
+        version,
+        boundary: geo as object,
+        source: input.source,
+        vintage: input.vintage,
+        rights: input.rights,
+      });
       town.geometryVersion = version;
       town.geometryStatus = 'ready';
       await manager.save(town);

@@ -39,6 +39,7 @@ export type OvertureRightsOperation =
   | 'privateDisplay'
   | 'publicDisplay'
   | 'export'
+  | 'publicExport'
   | 'enrich';
 export interface OvertureRightsSource {
   readonly property?: unknown;
@@ -100,6 +101,7 @@ const operations: readonly string[] = [
   'privateDisplay',
   'publicDisplay',
   'export',
+  'publicExport',
   'enrich',
 ];
 const validPointer = (p: unknown): p is string =>

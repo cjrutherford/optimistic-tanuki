@@ -165,6 +165,16 @@
           >
             Defer
           </otui-button>
+          } @if (canDismiss(c)) {
+          <otui-button
+            size="sm"
+            tone="neutral"
+            emphasis="outline"
+            [ariaLabel]="'Dismiss case for ' + c.name"
+            (click)="dismiss(c, reason.value)"
+          >
+            Dismiss
+          </otui-button>
           } @if (canReopen(c)) {
           <otui-button
             size="sm"

@@ -638,8 +638,12 @@ test(
         caseA,
         'one open case per listing'
       );
-      const caseB = randomUUID();
-      assert.equal((await raise(caseB, mystery.id)).json.case.status, 'open');
+      // The plan pass already raised an `unmapped_taxonomy` case for the unknown category; raising returns it.
+      const raisedB = await raise(randomUUID(), mystery.id);
+      assert.equal(raisedB.json.replayed, true);
+      assert.equal(raisedB.json.case.status, 'open');
+      assert.equal(raisedB.json.case.reason, 'unmapped_taxonomy');
+      const caseB = raisedB.json.case.id;
       const listed = (await call('GET', `${T}/cases?status=open&limit=100`))
         .json.cases;
       assert.equal(listed.length, 2);

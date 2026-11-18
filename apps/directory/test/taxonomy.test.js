@@ -178,3 +178,70 @@ test('routes: auth, strict bodies and no-store', async () => {
   h = harness('GET', '/internal/other');
   assert.equal(await h.run(), false);
 });
+
+test('case flags: unmapped category, ambiguous equal-depth nodes, adult wins, known is quiet', () => {
+  const { taxonomyCaseFlag } = require('../src/taxonomy-mapping');
+  assert.deepEqual(
+    taxonomyCaseFlag(mapping, { category: 'weird_unknown_category' }),
+    { reason: 'unmapped_taxonomy', observed: 'weird_unknown_category' }
+  );
+  assert.equal(taxonomyCaseFlag(mapping, { category: 'restaurant' }), null);
+  assert.equal(taxonomyCaseFlag(mapping, { category: '' }), null);
+  const nodes = file.entries.filter(
+    (e) =>
+      e.kind === 'taxonomy_node' && e.categoryId && e.categoryId !== 'adult'
+  );
+  const a = nodes[0];
+  const b = nodes.find((n) => n.categoryId !== a.categoryId);
+  const flagged = taxonomyCaseFlag(mapping, {
+    category: 'restaurant',
+    taxonomyPaths: [[a.key], [b.key]],
+  });
+  assert.equal(flagged.reason, 'ambiguous_taxonomy');
+  assert.equal(flagged.observed, [a.key, b.key].sort().join(' | '));
+  // Deeper node on one path is more specific, so there is nothing to decide.
+  assert.equal(
+    taxonomyCaseFlag(mapping, {
+      category: 'restaurant',
+      taxonomyPaths: [[a.key], ['unknown_root', b.key]],
+    }),
+    null
+  );
+  // Two paths that agree are not ambiguous.
+  assert.equal(
+    taxonomyCaseFlag(mapping, { taxonomyPaths: [[a.key], [a.key]] }),
+    null
+  );
+  const adult = file.entries.find(
+    (e) => e.kind === 'taxonomy_node' && e.categoryId === 'adult'
+  );
+  assert.equal(
+    taxonomyCaseFlag(mapping, { taxonomyPaths: [[a.key], [adult.key]] }),
+    null
+  );
+});
+
+test('routes: dismiss takes a strict body and reaches the check', async () => {
+  const D = '33333333-3333-4333-8333-333333333333';
+  const good = {
+    actorId: A,
+    decisionId: D,
+    reason: 'not a real problem',
+    expectedVersionToken: 'a'.repeat(64),
+  };
+  let h = harness('POST', `/internal/taxonomy/cases/${ID}/dismiss`, good);
+  await h.run();
+  assert.equal(h.res.status, 200);
+  assert.equal(h.calls[0][0], 'taxonomyDismiss');
+  for (const bad of [
+    { ...good, reason: ' ' },
+    { ...good, action: 'dismiss' },
+    { ...good, expectedVersionToken: 'x' },
+    { ...good, decisionId: 'nope' },
+  ]) {
+    h = harness('POST', `/internal/taxonomy/cases/${ID}/dismiss`, bad);
+    await h.run();
+    assert.equal(h.res.status, 400);
+    assert.equal(h.calls.length, 0);
+  }
+});

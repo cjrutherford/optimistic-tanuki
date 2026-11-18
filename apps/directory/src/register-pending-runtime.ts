@@ -119,6 +119,7 @@ import {
   decideRightsCase,
   getRightsCase,
   listRightsCases,
+  discoverRightsRelease,
   syncRightsCases,
   undoRightsDecision,
 } from './rights-case';
@@ -129,7 +130,8 @@ import {
   startWithdrawalWorker,
 } from './withdrawal-request';
 import { handleRightsRoute } from './rights-routes';
-import { handleExportRoute } from './export-routes';
+import { handleExportRoute, handlePublicExportRoute } from './export-routes';
+import { buildPublicExport, type PublicExportFormat } from './public-export';
 import { handleOpsRoute } from './ops-routes';
 import { listControls, setControl } from './operating-controls';
 import { collectOpsMetrics } from './ops-metrics';
@@ -884,6 +886,28 @@ export function pendingChecks(
       return run(manager);
     });
   }
+  /** Public self-service export (S8b): the town must be a current, eligible register town, as for the listing read. */
+  async function publicExport(v: { town: string; format: PublicExportFormat }) {
+    if (!uuid.test(v.town)) throw Error('Invalid town');
+    await authority(v.town);
+    const current = await source.current(id, v.town);
+    if (
+      current?.status !== 'current' ||
+      !uuid.test(current.changeToken) ||
+      !current.snapshot ||
+      current.snapshot.id !== v.town ||
+      !isEligibleCommunity(current.snapshot)
+    )
+      throw Error('Town unavailable');
+    const cap = Number(process.env.DIRECTORY_PUBLIC_EXPORT_MAX_ROWS);
+    return buildPublicExport(db, {
+      town: v.town,
+      format: v.format,
+      changeToken: current.changeToken,
+      policyFor: loadRightsPolicy as never,
+      ...(Number.isSafeInteger(cap) && cap > 0 ? { rowCap: cap } : {}),
+    });
+  }
   async function localListings(
     town: string,
     offset = 0,
@@ -1513,17 +1537,22 @@ export function pendingChecks(
     rightsList: (o: Parameters<typeof listRightsCases>[1]) =>
       listRightsCases(db, o),
     rightsDetail: (id: string) => getRightsCase(db, id),
-    rightsSync: (v: {
+    rightsSync: async (v: {
       syncId: string;
       actorId: string;
-      releaseId: string;
+      releaseId?: string;
       operation?: string;
-    }) =>
-      syncRightsCases(rightsDb, {
+    }) => {
+      // The release an operator names wins; otherwise the one a stage run recorded.
+      const releaseId = v.releaseId ?? (await discoverRightsRelease(rightsDb));
+      if (!releaseId) throw Error('Invalid rights sync: no release recorded');
+      return syncRightsCases(rightsDb, {
         ...v,
+        releaseId,
         operation: v.operation as never,
-        policy: loadRightsPolicy(v.releaseId),
-      }),
+        policy: loadRightsPolicy(releaseId),
+      });
+    },
     rightsDecide: (caseId: string, v: any) =>
       decideRightsCase(rightsDb, { ...v, caseId }),
     rightsUndo: (caseId: string, v: any) =>
@@ -1548,6 +1577,8 @@ export function pendingChecks(
     taxonomyCase: (id: string) => getTaxonomyCase(db, id),
     taxonomyDecide: (caseId: string, v: any) =>
       decideTaxonomyCase(taxonomyDb, { ...v, caseId }),
+    taxonomyDismiss: (caseId: string, v: any) =>
+      decideTaxonomyCase(taxonomyDb, { ...v, caseId, action: 'dismiss' }),
     taxonomyUndo: (caseId: string, v: any) =>
       undoTaxonomyDecision(taxonomyDb, { ...v, caseId }),
     taxonomyRuns: (o: Parameters<typeof listTaxonomyRuns>[1]) =>
@@ -1639,6 +1670,7 @@ export function pendingChecks(
     decision,
     containment,
     boundary,
+    publicExport,
     localListings,
     localDetail,
     localLinkAction,
@@ -1671,6 +1703,7 @@ export function pendingServer(
   return createServer(async (req, res) => {
     if (await handleRightsRoute(req, res, checks, localSecret)) return;
     if (await handleExportRoute(req, res, checks, localSecret)) return;
+    if (await handlePublicExportRoute(req, res, checks, localSecret)) return;
     if (await handleOpsRoute(req, res, checks, localSecret)) return;
     if (await handleTaxonomyRoute(req, res, checks, localSecret)) return;
     if (await handleAcquisitionRoute(req, res, checks, localSecret)) return;

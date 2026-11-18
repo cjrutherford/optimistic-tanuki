@@ -11,6 +11,7 @@ import {
   type OvertureRightsOperation,
   type OvertureRightsPolicy,
 } from './overture-rights';
+import { revokeExportsForExclusion } from './export-job';
 
 /**
  * Rights cases (S7c). A case is one unresolved field/source lineage (or release or policy) that the rights
@@ -46,6 +47,11 @@ export const RIGHTS_ACTIONS = [
   'reopen',
 ] as const;
 export type RightsAction = (typeof RIGHTS_ACTIONS)[number];
+/**
+ * `policy_resolved` is written only by a rights sync when an approved policy covers a case; it is a system
+ * resolution, so it is not a human decision and is deliberately not undoable (reopen stays available).
+ */
+export const POLICY_RESOLVED_ACTION = 'policy_resolved';
 const UNDOABLE = new Set<string>(RIGHTS_ACTIONS);
 
 export interface RightsHistoryEntry {
@@ -225,7 +231,8 @@ function derivedId(...parts: string[]): string {
 export interface SyncInput {
   readonly syncId: string;
   readonly actorId: string;
-  readonly releaseId: string;
+  /** Omitted: the newest Overture release recorded on an acquisition run (see `discoverRightsRelease`). */
+  readonly releaseId?: string;
   readonly operation?: OvertureRightsOperation;
   /** Trusted, operator-loaded policy for the release; when absent every observed lineage needs review. */
   readonly policy?: OvertureRightsPolicy;
@@ -234,6 +241,19 @@ export interface SyncResult {
   readonly created: number;
   readonly existing: number;
   readonly lineages: number;
+  /** Cases in review that the supplied approved policy now covers, moved to `resolved` by this sync. */
+  readonly resolved: number;
+}
+
+function canonicalJson(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(canonicalJson).join(',')}]`;
+  if (v && typeof v === 'object')
+    return `{${Object.keys(v as object)
+      .sort()
+      .filter((k) => (v as any)[k] !== undefined)
+      .map((k) => `${JSON.stringify(k)}:${canonicalJson((v as any)[k])}`)
+      .join(',')}}`;
+  return JSON.stringify(v) ?? 'null';
 }
 
 interface Lineage {
@@ -394,6 +414,18 @@ export function wantedCases(
  * Operator-triggered, idempotent, offline: opens a review case for every unresolved lineage the current
  * evaluation reports. Existing cases (any status) are left alone, so a decision is never reset by a re-sync.
  */
+export async function discoverRightsRelease(q: Q): Promise<string | null> {
+  const rows = await q.query(
+    `SELECT release FROM directory_acquisition_run WHERE provider='overture' AND release IS NOT NULL
+     ORDER BY COALESCE("startedAt","createdAt") DESC, id LIMIT 10`
+  );
+  const found = rows.find(
+    (r: any) =>
+      typeof r.release === 'string' && /^[A-Za-z0-9._-]{1,100}$/.test(r.release)
+  );
+  return found ? found.release : null;
+}
+
 export async function syncRightsCases(
   db: Db,
   input: SyncInput
@@ -401,22 +433,21 @@ export async function syncRightsCases(
   if (
     !UUID.test(input.syncId) ||
     !UUID.test(input.actorId) ||
-    typeof input.releaseId !== 'string' ||
-    !/^[A-Za-z0-9._-]{1,100}$/.test(input.releaseId)
+    (input.releaseId !== undefined &&
+      (typeof input.releaseId !== 'string' ||
+        !/^[A-Za-z0-9._-]{1,100}$/.test(input.releaseId)))
   )
     throw Error('Invalid rights sync');
   const operation = input.operation ?? 'publicDisplay';
   return db.transaction(async (q) => {
+    // An explicit release (the operator's override) wins; otherwise the release a stage run recorded.
+    const releaseId = input.releaseId ?? (await discoverRightsRelease(q));
+    if (!releaseId) throw Error('Invalid rights sync: no release recorded');
     await q.query(
       `SELECT pg_advisory_xact_lock(hashtext('directory_rights_sync'))`
     );
     const lineages = await observedLineages(q);
-    const wanted = wantedCases(
-      input.releaseId,
-      lineages,
-      operation,
-      input.policy
-    );
+    const wanted = wantedCases(releaseId, lineages, operation, input.policy);
     let created = 0;
     for (const w of wanted) {
       const inserted = await q.query(
@@ -425,7 +456,7 @@ export async function syncRightsCases(
         [
           w.scope,
           w.subjectKey,
-          input.releaseId,
+          releaseId,
           w.field,
           w.dataset,
           w.license,
@@ -448,10 +479,42 @@ export async function syncRightsCases(
         ]
       );
     }
+    // An approved policy for this release resolves the review cases the evaluation no longer wants. Without a
+    // policy for the release nothing is resolved; excluded, withdrawn and resolved cases are never touched.
+    let resolved = 0;
+    if (input.policy && input.policy.releaseId === releaseId) {
+      const policySha = createHash('sha256')
+        .update(canonicalJson(input.policy))
+        .digest('hex');
+      const keep = new Set(wanted.map((w) => w.subjectKey));
+      const open = await q.query(
+        `SELECT ${CASE_COLUMNS} FROM directory_rights_case c
+         WHERE c."releaseId"=$1 AND c.status='review' ORDER BY c.id FOR UPDATE`,
+        [releaseId]
+      );
+      for (const c of open) {
+        if (keep.has(c.subjectKey)) continue;
+        const id = derivedId(input.syncId, c.id, POLICY_RESOLVED_ACTION);
+        const [prior] = await q.query(
+          `SELECT id FROM directory_rights_event WHERE id=$1`,
+          [id]
+        );
+        if (prior) continue;
+        await applyEvent(q, c, {
+          id,
+          action: POLICY_RESOLVED_ACTION,
+          actorId: input.actorId,
+          reason: `Resolved by approved rights policy (sync ${input.syncId}, policy sha256 ${policySha})`,
+          statusAfter: 'resolved',
+        });
+        resolved++;
+      }
+    }
     return {
       created,
       existing: wanted.length - created,
       lineages: lineages.length,
+      resolved,
     };
   });
 }
@@ -606,6 +669,15 @@ export async function decideRightsCase(
       termsSha256: input.termsSha256,
       statusAfter,
     });
+    // An excluded field must leave existing export artifacts in the same transaction, the way a completed
+    // withdrawal does. Files are deleted by the export worker's sweep.
+    if (input.action === 'exclude_field' && c.releaseId)
+      await revokeExportsForExclusion(q, {
+        releaseId: c.releaseId,
+        field: c.field,
+        dataset: c.dataset,
+        license: c.license,
+      });
     return { replayed: false, status: statusAfter };
   });
 }

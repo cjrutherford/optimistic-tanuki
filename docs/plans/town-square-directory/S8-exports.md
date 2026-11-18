@@ -2,8 +2,9 @@
 
 Status: implemented, deployed and verified locally on 2026-11-17. Evidence is in §7.
 
-Scope: operator export from the Owner Console. Public self-service export is a
-separate product decision and is not built here.
+Scope: operator export from the Owner Console, rights-driven revocation of
+operator artifacts (section 8) and a public self-service town export
+(section 9). Sections 1 to 7 describe the operator export as first built.
 
 ## 1. Rules
 
@@ -106,7 +107,7 @@ Both tables are TypeORM entities. The migration is generated, never written by h
 - `jobId` uuid.
 - `actorId` uuid.
 - `outcome` varchar(16), one of `served`, `not_ready`, `expired`, `withdrawn`,
-  `integrity_failed`. This is a CHECK constraint.
+  `integrity_failed`, `revoked`. This is a CHECK constraint.
 - `createdAt`.
 
 ## 3. Worker
@@ -262,5 +263,88 @@ Allow and deny examples, by source and field:
 ### 7.5 Open items
 
 - **Export grant**: this is an owner decision. The live stack exports nothing until a policy for the release sets `operations.export: true`, and each source term lists `export` fields, in `DIRECTORY_RIGHTS_POLICY_FILE`. The six open rights cases for `2026-10-21.0` must be decided first.
-- **Withdrawal granularity**: rights `exclude_field` decisions do not yet revoke existing artifacts. Only completed withdrawals do. Artifacts expire within 24 h in any case.
-- **Public self-service export**: a separate product decision, not built.
+- **Withdrawal granularity**: closed by section 8. Rights `exclude_field` decisions, policy revocations and source-term changes now revoke matching artifacts.
+- **Public self-service export**: built in section 9. It is default off: no field is public until a policy sets `operations.publicExport: true` and lists `publicExport` fields on a source term. The live policy file has not been changed.
+
+## 8. Rights-driven revocation
+
+A completed export job records which sources and fields it carried in
+`exportedSources` (`[{dataset, license, fields[]}]`). An artifact is revoked
+the way a completed withdrawal revokes it: the file is deleted, the job moves
+to `status='revoked'` with `revokedAt` and an `errorCode`, and a download is
+refused with HTTP 410 and a `revoked` audit outcome.
+
+Triggers, all idempotent because only `status='complete'` jobs change:
+
+1. **Rights decision.** `decideRightsCase` with `exclude_field` on a case that
+   has a release revokes jobs for that release that carried the field from that
+   dataset and licence. This happens in the same transaction as the decision
+   (`errorCode='rights_field_excluded'`).
+2. **Policy or term change.** Every worker sweep re-checks complete jobs against
+   the current policy: `operations.export` no longer true, or a term that no
+   longer lists the field for a source the job carried
+   (`errorCode='policy_revoked'`). A job with no recorded sources (written
+   before this change) is treated as carrying everything.
+3. **Jobs finishing after a decision.** New jobs apply the excluded-field cases
+   when they project rows, so a job running during a decision cannot
+   reintroduce the field. The sweep is the backstop.
+
+Migration `1794978715901-DirectoryExportRevocation` (generated): adds
+`directory_export_job."exportedSources"` jsonb not null default `'[]'` and
+`"revokedAt"` timestamptz, and replaces the two CHECK constraints with
+`CHK_directory_export_job_status_v2` and
+`CHK_directory_export_download_outcome_v2`, both including `revoked`. The
+constraint names carry a `_v2` suffix because the TypeORM generator does not
+detect a changed CHECK expression under an unchanged name.
+
+## 9. Public self-service export
+
+Anyone, signed in or not, may download a town's listings, limited to what the
+rights policy has separately granted for public export.
+
+**Policy keys** (in `DIRECTORY_RIGHTS_POLICY_FILE`, per release policy):
+
+- `operations.publicExport: true` turns the release on. Default off.
+- `terms[].permissions.publicExport: [<rights fields>]` lists the rights fields
+  public export may carry for that source term. Default empty.
+
+These are independent of `export`, `publicDisplay` and `privateDisplay`.
+Without both keys a scan contributes nothing, and a town with no contributing
+scan returns 404 `no_public_export`.
+
+**What is never included**: adult rows, withdrawn or revoked rows, suppressed
+and superseded rows, rows outside the town's current assignment, and any value
+Geoapify contributed. Excluded rights fields (section 8) apply on the very
+next download. There are no row ids, scan ids, provenance per row, owner or
+reporter data, so no PII.
+
+**Shape**: per town, CSV or JSONL, a hard row cap (default 5000, env
+`DIRECTORY_PUBLIC_EXPORT_MAX_ROWS`); `truncated` is reported. Columns are
+`name, category, latitude, longitude, address, phone, website`, only those
+granted. Cells that start with a formula character are prefixed with `'`.
+Schema `town-square-public-export/v1`. CSV opens with `#` comment lines for
+provenance (rows, generated time, and per source the licence, attribution,
+terms URL and notice). JSONL starts with a header line carrying the same and
+ends with a trailer line.
+
+**Synchronous, not a job.** The cap bounds the work, there is no stored file
+and so nothing to expire or revoke, and a withdrawal or rights change applies
+immediately because each download reads current state. A concurrency cap of 8
+protects Directory.
+
+**Routes**
+
+- Directory internal, bearer-authed: `GET /internal/public-export/:town?format=csv|jsonl`.
+  Headers `content-disposition: attachment`, `x-row-count`,
+  `x-export-truncated`, `cache-control: no-store`, `x-content-type-options: nosniff`.
+- Gateway public: `GET /directory/towns/:id/public-export?format=csv|jsonl`
+  (default csv). `@Public()`, no permission guard, `IdentityThrottlerGuard`
+  with a per-caller limit (`THROTTLE_DIRECTORY_PUBLIC_EXPORT_LIMIT`, default 6
+  per minute in production), `Cache-Control: no-store`.
+- Local Hub: the business directory page has a "Download listings" section
+  with CSV and JSON Lines buttons that navigate to the gateway route.
+
+**Tests**: `apps/directory/test/public-export.test.js` (unit),
+`export-rights-public.postgres.test.js` (revocation and public export against a
+disposable database), the gateway controller spec and the Local Hub directory
+page and service specs.

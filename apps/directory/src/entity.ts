@@ -967,8 +967,8 @@ export class DirectoryRightsCase {
   where: '"undoOf" IS NOT NULL',
 })
 @Check(
-  'CHK_directory_rights_event_action',
-  `"action" IN ('open','exclude_field','confirm_terms','defer','reopen','undo','withdraw')`
+  'CHK_directory_rights_event_action_v2',
+  `"action" IN ('open','exclude_field','confirm_terms','defer','reopen','undo','withdraw','policy_resolved')`
 )
 @Check(
   'CHK_directory_rights_event_evidence',
@@ -1038,8 +1038,8 @@ export class DirectoryWithdrawalRequest {
 @Entity({ name: 'directory_export_job' })
 @Index('IDX_directory_export_job_status', ['status', 'updatedAt'])
 @Check(
-  'CHK_directory_export_job_status',
-  `"status" IN ('queued','running','complete','failed','expired','withdrawn')`
+  'CHK_directory_export_job_status_v2',
+  `"status" IN ('queued','running','complete','failed','expired','withdrawn','revoked')`
 )
 export class DirectoryExportJob {
   @PrimaryColumn('uuid') id!: string;
@@ -1070,6 +1070,9 @@ export class DirectoryExportJob {
   })
   schemaVersion!: string;
   @Column({ type: 'jsonb', default: () => `'[]'` }) scanIds!: string[];
+  /** What the artifact carries, as `[{dataset, license, fields: [exportKey]}]`; rights revocation reads it. */
+  @Column({ type: 'jsonb', default: () => `'[]'` }) exportedSources!: object[];
+  @Column({ type: 'timestamptz', nullable: true }) revokedAt!: Date | null;
   @Column({ type: 'timestamptz', nullable: true }) expiresAt!: Date | null;
   @Column({ type: 'timestamptz', nullable: true }) completedAt!: Date | null;
   @Column({ type: 'timestamptz', nullable: true }) withdrawnAt!: Date | null;
@@ -1083,8 +1086,8 @@ export class DirectoryExportJob {
 @Entity({ name: 'directory_export_download' })
 @Index('IDX_directory_export_download_job', ['jobId', 'createdAt'])
 @Check(
-  'CHK_directory_export_download_outcome',
-  `"outcome" IN ('served','not_ready','expired','withdrawn','integrity_failed')`
+  'CHK_directory_export_download_outcome_v2',
+  `"outcome" IN ('served','not_ready','expired','withdrawn','revoked','integrity_failed')`
 )
 export class DirectoryExportDownload {
   @PrimaryGeneratedColumn('uuid')
@@ -1224,8 +1227,8 @@ export class DirectoryListingCategoryOverride {
   where: `"status" IN ('open','deferred')`,
 })
 @Check(
-  'CHK_directory_taxonomy_case_status',
-  `"status" IN ('open','assigned','rejected','deferred')`
+  'CHK_directory_taxonomy_case_status_v2',
+  `"status" IN ('open','assigned','rejected','deferred','dismissed')`
 )
 @Check(
   'CHK_directory_taxonomy_case_reason',
@@ -1255,8 +1258,8 @@ export class DirectoryTaxonomyCase {
   where: '"undoOf" IS NOT NULL',
 })
 @Check(
-  'CHK_directory_taxonomy_event_action',
-  `"action" IN ('open','assign','reject','defer','reopen','undo')`
+  'CHK_directory_taxonomy_event_action_v2',
+  `"action" IN ('open','assign','reject','defer','reopen','dismiss','undo')`
 )
 export class DirectoryTaxonomyEvent {
   @PrimaryColumn('uuid') id!: string;
@@ -1327,6 +1330,8 @@ export class DirectoryTaxonomyRun {
   @Column({ type: 'integer', default: 0 }) changedRows!: number;
   @Column({ type: 'integer', default: 0 }) appliedRows!: number;
   @Column({ type: 'integer', default: 0 }) restoredRows!: number;
+  /** Apply-phase rows skipped because they no longer matched the plan pass. */
+  @Column({ type: 'integer', default: 0 }) driftedRows!: number;
   @Column({ type: 'integer', default: 0 }) attempts!: number;
   @Column({ type: 'jsonb', default: () => `'{}'` }) summary!: object;
   @Column({ type: 'varchar', length: 512, nullable: true }) lastError!:
@@ -1354,6 +1359,18 @@ export class DirectoryTaxonomyRunBefore {
   @PrimaryColumn('bigint') sourceFileRowNumber!: string;
   @Column({ type: 'boolean' }) hadProjection!: boolean;
   @Column({ type: 'jsonb', nullable: true }) before!: object | null;
+}
+
+/**
+ * What the plan pass of an apply run computed for each row it would change, so the apply phase can re-check a row
+ * against the plan and skip it (as `drifted`) when it moved in between.
+ */
+@Entity({ name: 'directory_taxonomy_run_plan' })
+export class DirectoryTaxonomyRunPlan {
+  @PrimaryColumn('uuid') runId!: string;
+  @PrimaryColumn({ type: 'varchar', length: 64 }) scanId!: string;
+  @PrimaryColumn('bigint') sourceFileRowNumber!: string;
+  @Column({ type: 'char', length: 64 }) digest!: string;
 }
 
 /**

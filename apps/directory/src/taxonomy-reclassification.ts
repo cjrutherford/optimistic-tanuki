@@ -12,9 +12,11 @@ import {
   effectiveClassification,
   loadMapping,
   mappingHash,
+  taxonomyCaseFlag,
   type LoadedMapping,
 } from './taxonomy-mapping';
 import { findTaxonomyMapping } from './taxonomy-mapping-data';
+import { raiseAutomaticTaxonomyCase } from './taxonomy-case';
 
 /**
  * Reclassification runs (S7d): apply a mapping version to the persisted classification projection.
@@ -45,7 +47,7 @@ const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v));
 const sha = (v: string) => createHash('sha256').update(v).digest('hex');
 
 const RUN_COLUMNS = `id,"mappingVersion",scope,"communityId",mode,phase,status,"actorId",reason,"expectedPlanHash","planHash","planAccumulator",
-  "cursorScanId","cursorRow","scannedRows","changedRows","appliedRows","restoredRows",attempts,summary,"lastError","cancelRequested",
+  "cursorScanId","cursorRow","scannedRows","changedRows","appliedRows","restoredRows","driftedRows",attempts,summary,"lastError","cancelRequested",
   "canceledById","cancelReason","rollbackById","rollbackReason","createdAt","updatedAt","completedAt"`;
 
 const emptySummary = (): TaxonomyRunSummary => ({
@@ -74,6 +76,7 @@ function toRecord(r: any): TaxonomyRunRecord {
     changedRows: Number(r.changedRows),
     appliedRows: Number(r.appliedRows),
     restoredRows: Number(r.restoredRows),
+    driftedRows: Number(r.driftedRows ?? 0),
     attempts: Number(r.attempts),
     cancelRequested: r.cancelRequested === true,
     summary: { ...emptySummary(), ...s },
@@ -324,6 +327,10 @@ const PROJECTION_KEYS = [
   'exclusionReason',
 ] as const;
 
+/** The digest of one row's planned projection; the apply phase compares it with the row's projection at write time. */
+const rowDigest = (next: Record<string, unknown>) =>
+  sha(PROJECTION_KEYS.map((k) => String(next[k])).join('|'));
+
 function projectionOf(r: any): Record<string, unknown> | null {
   return r.hasProjection
     ? {
@@ -363,7 +370,7 @@ export interface TaxonomyPassOptions {
   readonly beforeCommit?: () => void | Promise<void>;
 }
 
-const ROW_BATCH_SQL = `SELECT r."scanId",r."sourceFileRowNumber",r.listing,
+const ROW_BATCH_SQL = `SELECT r."scanId",r."sourceFileRowNumber",r."regionId",r.listing,
     lc."mappingVersion" AS "lcVersion",lc."categoryId" AS "lcCategory",lc."placeTypeId" AS "lcPlace",lc.basis AS "lcBasis",
     lc.excluded AS "lcExcluded",lc."exclusionReason" AS "lcReason",(lc."scanId" IS NOT NULL) AS "hasProjection",
     ov."categoryId" AS "ovCategory",ov."placeTypeId" AS "ovPlace"
@@ -418,6 +425,26 @@ async function step(
   let changed = 0;
   let applied = 0;
   const applying = run.phase === 'apply';
+  let drifted = 0;
+  // Apply phase: what the plan pass computed for the rows of this batch, to re-check each row before writing it.
+  const planned = new Map<string, string>();
+  if (applying && rows.length) {
+    const first = rows[0];
+    const lastRow = rows[rows.length - 1];
+    const stored = await q.query(
+      `SELECT "scanId","sourceFileRowNumber",digest FROM directory_taxonomy_run_plan
+       WHERE "runId"=$1 AND ("scanId","sourceFileRowNumber")>=($2,$3::bigint) AND ("scanId","sourceFileRowNumber")<=($4,$5::bigint)`,
+      [
+        run.id,
+        first.scanId,
+        first.sourceFileRowNumber,
+        lastRow.scanId,
+        lastRow.sourceFileRowNumber,
+      ]
+    );
+    for (const s of stored)
+      planned.set(`${s.scanId}:${s.sourceFileRowNumber}`, s.digest);
+  }
   for (const r of rows) {
     const e = effectiveClassification(
       mapping,
@@ -457,7 +484,36 @@ async function step(
         });
       if (e.basis === 'legacy') summary.unmapped += 1;
       if (e.excluded) summary.excluded += 1;
+      if (run.mode === 'apply' && differs)
+        await q.query(
+          `INSERT INTO directory_taxonomy_run_plan ("runId","scanId","sourceFileRowNumber",digest) VALUES ($1,$2,$3,$4)
+           ON CONFLICT DO NOTHING`,
+          [run.id, r.scanId, r.sourceFileRowNumber, rowDigest(next)]
+        );
+      // A listing the mapping cannot decide needs an operator. An operator's own override already decided it.
+      if (!r.ovCategory && UUID.test(String(r.regionId ?? ''))) {
+        const flag = taxonomyCaseFlag(mapping, r.listing);
+        if (flag)
+          await raiseAutomaticTaxonomyCase(q, {
+            runId: run.id,
+            mappingVersion: mapping.id,
+            actorId: run.actorId ?? null,
+            townId: r.regionId,
+            scanId: r.scanId,
+            row: String(r.sourceFileRowNumber),
+            name: String(r.listing?.name ?? ''),
+            reason: flag.reason,
+            observed: flag.observed,
+          });
+      }
     } else if (differs) {
+      // The row moved after the plan pass (or was never planned to change): report it, never overwrite it.
+      if (
+        planned.get(`${r.scanId}:${r.sourceFileRowNumber}`) !== rowDigest(next)
+      ) {
+        drifted += 1;
+        continue;
+      }
       await q.query(
         `INSERT INTO directory_taxonomy_run_before ("runId","scanId","sourceFileRowNumber","hadProjection",before)
          VALUES ($1,$2,$3,$4,$5::jsonb) ON CONFLICT DO NOTHING`,
@@ -529,7 +585,7 @@ async function step(
     return;
   }
   await q.query(
-    `UPDATE directory_taxonomy_run SET status=$2,"cursorScanId"=$3,"cursorRow"=$4,"appliedRows"="appliedRows"+$5,attempts=0,"lastError"=NULL,
+    `UPDATE directory_taxonomy_run SET status=$2,"cursorScanId"=$3,"cursorRow"=$4,"appliedRows"="appliedRows"+$5,"driftedRows"="driftedRows"+$7,attempts=0,"lastError"=NULL,
        "completedAt"=CASE WHEN $6 THEN clock_timestamp() ELSE NULL END,"updatedAt"=clock_timestamp() WHERE id=$1`,
     [
       run.id,
@@ -538,8 +594,13 @@ async function step(
       done ? run.cursorRow : last?.sourceFileRowNumber ?? run.cursorRow ?? null,
       applied,
       done,
+      drifted,
     ]
   );
+  if (done)
+    await q.query(`DELETE FROM directory_taxonomy_run_plan WHERE "runId"=$1`, [
+      run.id,
+    ]);
 }
 
 async function stepRollback(

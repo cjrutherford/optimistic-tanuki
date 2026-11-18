@@ -96,6 +96,17 @@ export class DirectoryService {
     )}/local-evaluation-listings`;
   }
 
+  /**
+   * Where a resident downloads a town's listings. The browser follows this as
+   * a plain attachment link, so nothing is buffered in the app. What the file
+   * contains is decided by Directory, not here.
+   */
+  publicExportUrl(townId: string, format: 'csv' | 'jsonl'): string {
+    return `${this.apiBaseUrl}/directory/towns/${encodeURIComponent(
+      townId
+    )}/public-export?format=${format}`;
+  }
+
   async getPage(townId: string, query: DirectoryQuery): Promise<DirectoryPage> {
     const params = new URLSearchParams({ pagination: 'cursor' });
     if (query.cursor) params.set('cursor', query.cursor);

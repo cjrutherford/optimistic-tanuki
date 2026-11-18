@@ -10,7 +10,10 @@ import {
   type TaxonomyRaiseCaseResult,
 } from '../../../libs/social/contracts/src/lib/directory';
 import { resolveBusinessId } from './business-identity-read';
-import { findListingIdentity } from './listing-identity';
+import {
+  findListingIdentity,
+  getOrCreateListingIdentities,
+} from './listing-identity';
 import {
   assertFreshToken,
   IDEMPOTENCY_CONFLICT,
@@ -34,12 +37,19 @@ type Db = Q & { transaction<T>(work: (manager: Q) => Promise<T>): Promise<T> };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const INVALID = 'Invalid taxonomy decision';
-const STATUSES = ['open', 'assigned', 'rejected', 'deferred'] as const;
+const STATUSES = [
+  'open',
+  'assigned',
+  'rejected',
+  'deferred',
+  'dismissed',
+] as const;
 export const TAXONOMY_ACTIONS = [
   'assign',
   'reject',
   'defer',
   'reopen',
+  'dismiss',
 ] as const;
 type Action = (typeof TAXONOMY_ACTIONS)[number];
 const UNDOABLE = new Set<string>(TAXONOMY_ACTIONS);
@@ -365,9 +375,14 @@ function nextStatus(c: any, input: TaxonomyDecisionInput): TaxonomyCaseStatus {
     case 'defer':
       if (c.status !== 'open') throw new ReviewConflictError('invalid_state');
       return 'deferred';
+    case 'dismiss':
+      // Nothing is served differently: the listing keeps what the mapping or its stored category gives it.
+      if (!['open', 'deferred'].includes(c.status))
+        throw new ReviewConflictError('invalid_state');
+      return 'dismissed';
     case 'reopen':
       // An assigned case is changed by assigning again or by undo; reopening would orphan its override.
-      if (!['rejected', 'deferred'].includes(c.status))
+      if (!['rejected', 'deferred', 'dismissed'].includes(c.status))
         throw new ReviewConflictError('invalid_state');
       return 'open';
   }
@@ -607,4 +622,75 @@ export async function undoTaxonomyDecision(
       await refreshRowProjection(q, c.scanId, String(c.sourceFileRowNumber));
     return { replayed: false, status: top.statusBefore };
   });
+}
+
+export interface AutomaticTaxonomyCaseInput {
+  readonly runId: string;
+  readonly mappingVersion: string;
+  /** The run's operator; null once that profile has been erased. */
+  readonly actorId: string | null;
+  readonly townId: string;
+  readonly scanId: string;
+  readonly row: string;
+  readonly name: string;
+  readonly reason: 'unmapped_taxonomy' | 'ambiguous_taxonomy';
+  readonly observed: string;
+}
+
+/**
+ * Raises the case a taxonomy run's plan pass found (a category the mapping does not know, or competing equally
+ * specific entries). The id is derived from the listing, the observed category and the mapping version, so a
+ * re-run, an apply that replays the plan, or a decided case never produces a second one. A listing that already
+ * has an open or deferred case keeps it. Returns true when a case was created.
+ */
+export async function raiseAutomaticTaxonomyCase(
+  q: Q,
+  input: AutomaticTaxonomyCaseInput
+): Promise<boolean> {
+  const [assertion] = await q.query(
+    `SELECT "businessId" FROM directory_business_assertion WHERE "scanId"=$1 AND "sourceFileRowNumber"=$2 AND state='current'`,
+    [input.scanId, input.row]
+  );
+  let key: string | undefined = assertion?.businessId;
+  if (!key) {
+    const [identity] = await getOrCreateListingIdentities(q, input.townId, [
+      { scanId: input.scanId, row: input.row },
+    ]);
+    key = identity?.id;
+  }
+  if (!key) return false;
+  const caseId = derivedId(
+    'auto-case',
+    input.reason,
+    input.townId,
+    key,
+    input.observed,
+    input.mappingVersion
+  );
+  const created = await q.query(
+    `INSERT INTO directory_taxonomy_case (id,"communityId","listingKey","scanId","sourceFileRowNumber",reason,name,"observedCategory",status,"createdAt","updatedAt")
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'open',clock_timestamp(),clock_timestamp()) ON CONFLICT DO NOTHING RETURNING id`,
+    [
+      caseId,
+      input.townId,
+      key,
+      input.scanId,
+      input.row,
+      input.reason,
+      input.name.slice(0, 2000),
+      input.observed.slice(0, 200),
+    ]
+  );
+  if (!created.length) return false;
+  await q.query(
+    `INSERT INTO directory_taxonomy_event (id,"caseId",action,"actorId",reason,"statusBefore","statusAfter","createdAt")
+     VALUES ($1,$2,'open',$3,$4,'open','open',clock_timestamp())`,
+    [
+      derivedId('open', caseId),
+      caseId,
+      input.actorId,
+      `Raised by taxonomy run ${input.runId} (${input.reason}, mapping ${input.mappingVersion})`,
+    ]
+  );
+  return true;
 }

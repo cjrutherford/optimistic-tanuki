@@ -27,6 +27,7 @@ export interface TaxonomyRouteChecks {
   taxonomyRaise(v: any): Promise<unknown>;
   taxonomyCase(id: string): Promise<unknown | null>;
   taxonomyDecide(caseId: string, v: any): Promise<unknown>;
+  taxonomyDismiss(caseId: string, v: any): Promise<unknown>;
   taxonomyUndo(caseId: string, v: any): Promise<unknown>;
   taxonomyRuns(o: { limit?: number; offset?: number }): Promise<unknown>;
   taxonomyRunCreate(v: any): Promise<unknown>;
@@ -93,7 +94,7 @@ export async function handleTaxonomyRoute(
   if (!req.url?.startsWith('/internal/taxonomy/')) return false;
   const url = new URL(req.url, 'http://localhost');
   const m = url.pathname.match(
-    /^\/internal\/taxonomy\/(mappings(?:\/(install))?|cases(?:\/([0-9a-f-]{36})(?:\/(decisions|undo))?)?|runs(?:\/([0-9a-f-]{36})(?:\/(cancel|rollback))?)?)$/
+    /^\/internal\/taxonomy\/(mappings(?:\/(install))?|cases(?:\/([0-9a-f-]{36})(?:\/(decisions|dismiss|undo))?)?|runs(?:\/([0-9a-f-]{36})(?:\/(cancel|rollback))?)?)$/
   );
   if (!m) return false;
   const [, , install, caseId, caseSub, runId, runSub] = m;
@@ -205,6 +206,17 @@ export async function handleTaxonomyRoute(
       )
         return send(res, 400), true;
       return send(res, 200, await checks.taxonomyDecide(caseId, v)), true;
+    }
+    if (area === 'cases' && caseId && caseSub === 'dismiss') {
+      if (
+        !only(v, ['decisionId', 'actorId', 'reason', 'expectedVersionToken']) ||
+        !uuid.test(v.decisionId || '') ||
+        !text(v.reason) ||
+        typeof v.expectedVersionToken !== 'string' ||
+        !VERSION_TOKEN.test(v.expectedVersionToken)
+      )
+        return send(res, 400), true;
+      return send(res, 200, await checks.taxonomyDismiss(caseId, v)), true;
     }
     if (area === 'cases' && caseId && caseSub === 'undo') {
       if (
