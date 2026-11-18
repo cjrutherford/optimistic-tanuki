@@ -260,6 +260,13 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
         highlight: 'Operator export',
       },
       {
+        title: 'Directory Operations',
+        description:
+          'Check directory health and spend, and pause or resume background work.',
+        route: '/dashboard/directory-operations',
+        highlight: 'Pause controls',
+      },
+      {
         title: 'Directory Taxonomy',
         description:
           'Correct the category of individual listings with audited, reversible overrides.',

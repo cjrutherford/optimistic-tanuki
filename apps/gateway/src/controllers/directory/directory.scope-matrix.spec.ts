@@ -19,6 +19,7 @@ import {
   DirectoryWithdrawalsController,
 } from './directory-rights.controller';
 import { DirectoryExportsController } from './directory-exports.controller';
+import { DirectoryOperationsController } from './directory-operations.controller';
 import { DirectoryTaxonomyController } from './directory-taxonomy.controller';
 import { DirectoryRunsController } from './directory-runs.controller';
 import {
@@ -135,6 +136,16 @@ const exportRoutes: MatrixRoute[] = [
   { method: 'POST', path: `/directory/exports/${rightsId}/retry`, body: {} },
   { method: 'GET', path: `/directory/exports/${rightsId}/artifact` },
 ];
+const operationsRoutes: MatrixRoute[] = [
+  { method: 'GET', path: '/directory/operations/metrics' },
+  { method: 'GET', path: '/directory/operations/metrics/prometheus' },
+  { method: 'GET', path: '/directory/operations/controls' },
+  {
+    method: 'POST',
+    path: '/directory/operations/controls/export_worker',
+    body: {},
+  },
+];
 const runsRoutes: MatrixRoute[] = [
   { method: 'GET', path: '/directory/runs' },
   { method: 'GET', path: '/directory/runs/latest' },
@@ -150,6 +161,7 @@ const reviewRoutes: MatrixRoute[] = [
   ...taxonomyRoutes,
   ...runsRoutes,
   ...exportRoutes,
+  ...operationsRoutes,
   {
     method: 'GET',
     path: `${base}/local-evaluation-listings/${listing}/business-link/requests`,
@@ -275,6 +287,7 @@ describe('directory authentication and Owner Console scope matrix', () => {
         DirectoryTaxonomyController,
         DirectoryRunsController,
         DirectoryExportsController,
+        DirectoryOperationsController,
         DirectoryListingReportController,
         DirectoryListingReportReviewController,
       ],
@@ -423,6 +436,14 @@ describe('directory authentication and Owner Console scope matrix', () => {
 
   it.each(exportRoutes.map((r) => [r.method + ' ' + r.path, r] as const))(
     'a review-only owner-console session gets 403 on export route %s',
+    async (_n, route) => {
+      const res = await call(route, { token: token(reviewOnly), scope: true });
+      expect(res.status).toBe(403);
+    }
+  );
+
+  it.each(operationsRoutes.map((r) => [r.method + ' ' + r.path, r] as const))(
+    'a review-only owner-console session gets 403 on operations route %s',
     async (_n, route) => {
       const res = await call(route, { token: token(reviewOnly), scope: true });
       expect(res.status).toBe(403);
