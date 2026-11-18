@@ -15,6 +15,8 @@ async function main() {
       [
         '-r',
         'ts-node/register/transpile-only',
+        '-r',
+        'tsconfig-paths/register',
         '--test',
         ...files.map((f) => `apps/directory/test/${f}`),
       ],
@@ -73,6 +75,8 @@ async function main() {
           [
             '-r',
             'ts-node/register/transpile-only',
+            '-r',
+            'tsconfig-paths/register',
             '--test',
             `apps/directory/test/${file}`,
           ],
