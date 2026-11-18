@@ -161,3 +161,40 @@ Closed: forgeofwill `project-crud.spec.ts:5`, `user-journey.spec.ts:19` and `oau
 
 - No test change to `findCity` (map) or the forum spec; both are outside this slice.
 - No baseline run on `main`.
+
+## Spec fixes and teardown (2026-11-18)
+
+### Spec changes (test code only, no data edits)
+
+| Spec                                                    | Change                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| client-interface `forum.spec.ts` "opens a seeded topic" | After the 200 response it reads the thread list. If the API returns no threads it asserts "No threads in this topic yet."; otherwise it asserts that text is absent and the first thread's title is rendered. Intent (the scoped thread list loads and the page reflects it) is kept. |
+| business-site `business-site.spec.ts` CRUD test         | `bookingDescription` is now `uniqueLabel(...)` (timestamp plus random suffix), so the `queue-row` filter matches only this run's request. The serial test after it now runs.                                                                                                          |
+| Local Hub `map.spec.ts` city focus marker               | Picks the first city with renderable coordinates instead of `findCity`. The API returns `lat`/`lng` as top-level strings (not `coordinates`), so both are read and parsed; null or 0,0 is rejected. Skips only if no such city exists.                                                |
+
+Each fixed spec was run alone first (forum x3 projects, business-site CRUD, map city focus): all passed. Prettier and eslint are clean on the three files.
+
+### Final suite counts (one run each, live stack)
+
+| Suite                                                              | Result                                                    |
+| ------------------------------------------------------------------ | --------------------------------------------------------- |
+| forgeofwill-e2e                                                    | 34 pass / 0 fail                                          |
+| client-interface (desktop, mobile, tablet)                         | 178 pass / 0 fail / 408 skip                              |
+| business-site-e2e                                                  | 21 pass / 0 fail (the previously unrun `:1693` ran)       |
+| Local Hub public-pages, map, unauthenticated-protection, api-smoke | 25 pass / 0 fail / 2 skip (skips are existing, as before) |
+
+No remaining failures. The three data-dependent failures from the earlier sections are closed by spec changes. All runs were made while the temporary test settings below were still in place; they are not reproducible with the settings reverted (registration needs auto-verify and the forgeofwill registry origin).
+
+### Teardown of the temporary test settings
+
+| Item                                                      | Action and verification                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.agent/s5-tailnet-registry.json` forgeofwill `uiBaseUrl` | Restored from the backup; `cmp` against the backup is identical (it differed only in that field).                                                                                                                                                                                                                                                                                                                                               |
+| `ot_gateway`                                              | Recreated with `docker compose -p optimistic-tanuki --profile directory --env-file .env.directory.local up -d --no-deps gateway`, no override file. Env has no `e2e-google` values and no Google endpoint variables; only the three keys it had before (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`). `/api/oauth/config` returns `{}` again. `GET /api/directory/towns/<city id>/local-evaluation-listings` returns 200. |
+| `optimistic-tanuki-oauth-provider-1`                      | `docker rm -f`.                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `ot_authentication`                                       | Recreated with the normal compose command; env shows `AUTH_AUTO_VERIFY_EMAILS=false`.                                                                                                                                                                                                                                                                                                                                                           |
+| Extra services                                            | Stopped, not removed, no volumes touched (list below).                                                                                                                                                                                                                                                                                                                                                                                          |
+
+Stopped: ot_forum, ot_chat_collector, ot_bug_report, ot_store, ot_workspace, ot_blogging, ot_lead_tracker, ot_project_planning, ot_client_interface, fow_client_interface, ot_business_site. `docker inspect` showed all eleven were created today between 07:34 and 09:00 UTC (the S10 test sessions), restart policy `no`, so none predated the testing. Still running and untouched: directory, directory-worker, town-square-directory-db, ot_social, ot_local_hub, ot_payments, ot_permissions, ot_profile, ot_gateway, ot_authentication.
+
+Left in place: the lead-tracker database migrations (24 applied) and the seeded business data; both stay in the DB, and the stopped containers can be started again with `up -d --no-deps <svc>`.
