@@ -133,9 +133,9 @@ export function privateSources(
     )
       continue;
     out.push(
-      property === undefined
-        ? { dataset, license }
-        : { property, dataset, license }
+      typeof property === 'string'
+        ? { property, dataset, license }
+        : { dataset, license }
     );
   }
   return out;
