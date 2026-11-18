@@ -2,6 +2,17 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
 const { DataSource } = require('typeorm');
+const { DirectoryTown, DirectoryTownGeometry } = require('../src/entity');
+const { TownGeometryService } = require('../src/town-geometry');
+const {
+  storeBoundaryCandidate,
+  readCurrentBoundaryCandidate,
+} = require('../src/boundary-review');
+const {
+  recordBoundaryDecision,
+  recordAutomaticBoundaryDecision,
+} = require('../src/boundary-decision');
+const { installReviewedBoundary } = require('../src/reviewed-boundary-install');
 const {
   beginRegisterRecovery,
   advanceRegisterRecovery,
@@ -51,7 +62,11 @@ test(
       u.pathname,
       /^\/(?:directory_test_[a-f0-9]{32}|s10_geom_[a-z0-9_]+)$/
     );
-    const db = new DataSource({ type: 'postgres', url });
+    const db = new DataSource({
+      type: 'postgres',
+      url,
+      entities: [DirectoryTown, DirectoryTownGeometry],
+    });
     await db.initialize();
     try {
       const sourceEpoch = randomUUID(),
@@ -158,6 +173,16 @@ test(
       const again = await installLockedBoundary(db, input);
       assert.equal(again.status, 'unchanged');
       assert.equal((await row('locked')).v, before + 1);
+      const geometry = new TownGeometryService(db);
+      await assert.rejects(
+        geometry.setBoundary(ids.locked, {
+          geometry: square,
+          source: 'fixture',
+          vintage: '2026',
+          rights: 'public domain',
+        }),
+        /Boundary is locked/
+      );
 
       // The sweep and its selection skip the locked town; the open town is still selected.
       const selected = await selectAutoBoundaryTowns(db, auth, options);
@@ -196,6 +221,84 @@ test(
       assert.deepEqual(await row('locked'), { s: 'ready', v: before + 1 });
       // An unlocked town is still reset to pending by the same register path.
       assert.equal((await row('open')).s, 'pending');
+
+      const candidate = {
+        communityId: ids.locked,
+        changeToken: randomUUID(),
+        geoid: '1323873',
+        layer: input.layer,
+        vintage: input.vintage,
+        stateFips: input.stateFips,
+        archiveSha256: SHA,
+      };
+      const read = async () => ({
+        status: 'current',
+        changeToken: candidate.changeToken,
+        geography: {
+          communityId: ids.locked,
+          name: input.expectedName,
+          city: input.expectedName,
+          adminArea: 'GA',
+          countryCode: 'US',
+          localityType: 'city',
+          referencePoint: point,
+        },
+      });
+      await assert.rejects(
+        storeBoundaryCandidate(db, auth, candidate, read, { automatic: true }),
+        /Boundary is locked/
+      );
+      await storeBoundaryCandidate(db, auth, candidate, read);
+      const current = await readCurrentBoundaryCandidate(
+        db,
+        auth,
+        ids.locked,
+        read
+      );
+      const requestId = randomUUID();
+      const decision = {
+        requestId,
+        sourceUrl: input.sourceUrl,
+        candidate: current,
+      };
+      await assert.rejects(
+        recordAutomaticBoundaryDecision(
+          db,
+          auth,
+          { ...decision, reason: 'test' },
+          read
+        ),
+        /Boundary is locked/
+      );
+      await recordBoundaryDecision(
+        db,
+        auth,
+        {
+          ...decision,
+          reviewerId: randomUUID(),
+          decision: 'verified',
+          attested: true,
+        },
+        read
+      );
+      await installReviewedBoundary(
+        db,
+        auth,
+        { requestId, communityId: ids.locked },
+        read,
+        async () => ({
+          ...candidate,
+          status: 'candidate',
+          sourceSha256: SHA,
+          geometry: square,
+        })
+      );
+      assert.deepEqual(await row('locked'), { s: 'ready', v: before + 2 });
+      assert.equal(
+        (await installLockedBoundary(db, input)).status,
+        'unchanged'
+      );
+      assert.deepEqual(await row('locked'), { s: 'ready', v: before + 2 });
     } finally {
       await db.destroy();
     }
