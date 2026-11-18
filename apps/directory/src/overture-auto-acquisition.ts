@@ -17,6 +17,10 @@ import {
   isAcquisitionAuthorized,
 } from './acquisition-authorization';
 import { isPaused, ProviderPausedError } from './operating-controls';
+import {
+  swapPendingSourceless,
+  swapSourcelessAfterRefresh,
+} from './town-retirement';
 import { OverturePrivateSink } from './overture-private-sink';
 import {
   OvertureInventory,
@@ -184,10 +188,25 @@ export function toTown(row: any): AutoTown | null {
 /** A town counts as acquired once a live, completed scan target exists for it (any earlier staging included). */
 const RETIRED = (scan: string, town: string): string =>
   `EXISTS (SELECT 1 FROM directory_town_scan_retirement z WHERE z."scanId"=${scan} AND z."communityId"=${town})`;
-/** A run is superseded when the scan it produced for this town has since been retired: it no longer counts as an attempt. */
+/**
+ * The scan holds rows for this town that carry no source provenance (scans staged before provenance tracking). Such a
+ * scan keeps serving until a fresh sourced scan replaces it, but it never counts as an acquisition.
+ */
+export const hasSourcelessRows = (scan: string, town: string): string =>
+  `EXISTS (SELECT 1 FROM directory_overture_private_row sr WHERE sr."scanId"=${scan} AND sr."regionId"=${town}::text
+      AND (sr.listing IS NULL OR NOT (sr.listing ? 'sources')))`;
+/**
+ * A run is superseded when the scan it produced for this town has since been retired, or still carries sourceless
+ * rows: it no longer counts as an attempt, so the town is fetched again.
+ */
 export const runSuperseded = (run: string, town: string): string =>
-  `EXISTS (SELECT 1 FROM directory_acquisition_run_job sj JOIN directory_town_scan_retirement sz
-      ON sz."scanId"=sj."scanId" AND sz."communityId"=${town} WHERE sj."runId"=${run}.id)`;
+  `EXISTS (SELECT 1 FROM directory_acquisition_run_job sj LEFT JOIN directory_town_scan_retirement sz
+      ON sz."scanId"=sj."scanId" AND sz."communityId"=${town}
+      WHERE sj."runId"=${run}.id AND (sz."scanId" IS NOT NULL
+        OR (sj."scanId" IS NOT NULL AND ${hasSourcelessRows(
+          'sj."scanId"',
+          town
+        )})))`;
 export const notRetired = (scan: string, town: string): string =>
   `NOT ${RETIRED(scan, town)}`;
 const ACQUIRED = `EXISTS (SELECT 1 FROM directory_town_scan_target s
@@ -197,6 +216,7 @@ const ACQUIRED = `EXISTS (SELECT 1 FROM directory_town_scan_target s
     WHERE s."communityId"=t."communityId"
       AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=s."scanId")
       AND ${notRetired('s."scanId"', 's."communityId"')}
+      AND NOT ${hasSourcelessRows('s."scanId"', 's."communityId"')}
       AND NOT EXISTS (SELECT 1 FROM directory_acquisition_run_job j JOIN directory_acquisition_run q ON q.id=j."runId"
         WHERE j."scanId"=s."scanId" AND q.provider='alltheplaces'))`;
 const AUTO_RUN_OF_TOWN = `r.kind='overture-stage' AND r.provider='overture' AND r.release=$1
@@ -204,13 +224,20 @@ const AUTO_RUN_OF_TOWN = `r.kind='overture-stage' AND r.provider='overture' AND 
     AND NOT ${runSuperseded('r', 't."communityId"')}`;
 
 /**
- * Towns whose rows were retired come before everything else (they have nothing to serve until they are fetched again).
+ * Towns whose rows were retired, or that only have sourceless scans, come before everything else (the first have
+ * nothing to serve until fetched again; the second keep serving until the fresh scan replaces them).
  * Towns never attempted for this provider/release come next, newest geometry first, so a brand-new town is not queued
  * behind the backlog; retries follow in the same newest-first order. `g` is the live geometry (its createdAt is when the
  * town became ready), and `RUN_OF_TOWN` is the provider's run predicate.
  */
 export const orderNewestNeverAttemptedFirst = (runOfTown: string): string =>
-  `EXISTS (SELECT 1 FROM directory_town_scan_retirement z WHERE z."communityId"=t."communityId") DESC,
+  `(EXISTS (SELECT 1 FROM directory_town_scan_retirement z WHERE z."communityId"=t."communityId")
+    OR EXISTS (SELECT 1 FROM directory_town_scan_target ss JOIN directory_overture_private_completion sc ON sc."scanId"=ss."scanId"
+      WHERE ss."communityId"=t."communityId" AND ${notRetired(
+        'ss."scanId"',
+        'ss."communityId"'
+      )}
+        AND ${hasSourcelessRows('ss."scanId"', 'ss."communityId"')})) DESC,
    EXISTS (SELECT 1 FROM directory_acquisition_run r WHERE ${runOfTown}) ASC, g."createdAt" DESC, t.name, t."communityId"`;
 const NEWEST_NEVER_ATTEMPTED_FIRST =
   orderNewestNeverAttemptedFirst(AUTO_RUN_OF_TOWN);
@@ -480,6 +507,7 @@ export async function acquireTown(
     }
     const status = await finishRun(db, runId);
     log(`auto acquisition: ${town.name} ${status}`);
+    await swapSourcelessAfterRefresh(db, town.id, 'overture', status);
     return { status, runId };
   } catch (error) {
     if (error instanceof AutoStageStopped) {
@@ -566,6 +594,7 @@ export async function runAutoAcquisitionSweep(
     return emptyOutcome('blocked');
   const out = emptyOutcome('ok');
   await closeStaleAutoRuns(db, inventory.release);
+  await swapPendingSourceless(db, 'overture');
   out.recordedPending = await recordGeometryPending(
     db,
     inventory.release,

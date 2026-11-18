@@ -17,6 +17,10 @@ import {
 } from './acquisition-authorization';
 import { isPaused, ProviderPausedError } from './operating-controls';
 import {
+  swapPendingSourceless,
+  swapSourcelessAfterRefresh,
+} from './town-retirement';
+import {
   AutoAcquisitionConfig,
   AutoStageStopped,
   AutoSweepOutcome,
@@ -24,6 +28,7 @@ import {
   DEFAULT_AUTO_CONFIG,
   TOWN_SQL,
   emptyOutcome,
+  hasSourcelessRows,
   notRetired,
   orderNewestNeverAttemptedFirst,
   runSuperseded,
@@ -130,6 +135,7 @@ const OVERTURE_DONE = `(EXISTS (SELECT 1 FROM directory_town_scan_target s
       JOIN directory_overture_private_completion c ON c."scanId"=s."scanId"
       WHERE s."communityId"=t."communityId"
         AND ${notRetired('s."scanId"', 's."communityId"')}
+        AND NOT ${hasSourcelessRows('s."scanId"', 's."communityId"')}
         AND NOT EXISTS (SELECT 1 FROM directory_acquisition_run_job j JOIN directory_acquisition_run q ON q.id=j."runId"
           WHERE j."scanId"=s."scanId" AND q.provider='alltheplaces'))
     OR EXISTS (SELECT 1 FROM directory_acquisition_run o WHERE o.provider='overture' AND o.kind='overture-stage'
@@ -141,6 +147,7 @@ const ATP_ACQUIRED = `EXISTS (SELECT 1 FROM directory_acquisition_run_job j JOIN
     JOIN directory_overture_private_completion c ON c."scanId"=j."scanId"
     WHERE r.provider='alltheplaces' AND r.release=$1 AND j."townId"=t."communityId"
       AND ${notRetired('j."scanId"', 'j."townId"')}
+      AND NOT ${hasSourcelessRows('j."scanId"', 'j."townId"')}
       AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=j."scanId"))`;
 const ATP_RUN_OF_TOWN = `r.kind='overture-stage' AND r.provider='alltheplaces' AND r.release=$1
     AND r.reason LIKE '${AUTO_RUN_REASON_PREFIX}%' AND r."townIds" @> to_jsonb(t."communityId"::text)
@@ -352,6 +359,7 @@ export async function acquireAtpTown(
     });
     const status = await finishRun(db, runId);
     log(`atp acquisition: ${town.name} ${status}`);
+    await swapSourcelessAfterRefresh(db, town.id, 'alltheplaces', status);
     return { status, runId };
   } catch (error) {
     if (error instanceof AutoStageStopped) {
@@ -394,6 +402,7 @@ export async function runAtpAcquisitionSweep(
     return emptyOutcome('blocked');
   const out = emptyOutcome('ok');
   await closeStaleAtpRuns(db, policy.releaseId);
+  await swapPendingSourceless(db, 'alltheplaces');
   const towns = await selectAtpTowns(db, policy.releaseId, config);
   for (const town of towns) {
     if (deps.signal?.aborted) break;
