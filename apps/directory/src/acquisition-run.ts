@@ -13,6 +13,7 @@ import type {
   AcquisitionRunSummary,
 } from '../../../libs/social/contracts/src/lib/directory';
 import { MONTHLY_LIMIT_CENTS } from './provider-budget';
+import { isPaused, ProviderPausedError } from './operating-controls';
 import {
   IDEMPOTENCY_CONFLICT,
   ReviewConflictError,
@@ -81,6 +82,7 @@ const REASONS: readonly AcquisitionBlockedReason[] = [
   'quota_exhausted',
   'invalid_geometry',
   'acquisition_unauthorized',
+  'provider_paused',
 ];
 
 const iso = (v: unknown) =>
@@ -123,6 +125,8 @@ export function classifyStageError(error: unknown): {
 } {
   const raw = error instanceof Error ? error.message : '';
   const message = redactError(error);
+  if (error instanceof ProviderPausedError || /provider_paused/.test(raw))
+    return { status: 'blocked', blockedReason: 'provider_paused', message };
   if (/Monthly provider budget exhausted/i.test(raw))
     return { status: 'blocked', blockedReason: 'budget_exhausted', message };
   if (/quota/i.test(raw))
@@ -287,9 +291,11 @@ export async function beginRun(db: Q, input: BeginRunInput): Promise<string> {
     townIds.some((t) => !UUID.test(t))
   )
     throw Error('Invalid acquisition run');
+  // A paused provider path records a blocked run and refuses before the stage does any provider work.
+  const paused = await isPaused(db, 'provider_acquisition');
   await db.query(
-    `INSERT INTO directory_acquisition_run (id,provider,release,kind,"townIds",status,reason,"startedAt","heartbeatAt")
-     VALUES ($1,$2,$3,$4,$5::jsonb,'running',$6,clock_timestamp(),clock_timestamp())`,
+    `INSERT INTO directory_acquisition_run (id,provider,release,kind,"townIds",status,"blockedReason",reason,"startedAt","heartbeatAt","finishedAt","lastError")
+     VALUES ($1,$2,$3,$4,$5::jsonb,$7,$8,$6,clock_timestamp(),clock_timestamp(),CASE WHEN $9::boolean THEN clock_timestamp() END,$10)`,
     [
       id,
       input.provider,
@@ -297,8 +303,13 @@ export async function beginRun(db: Q, input: BeginRunInput): Promise<string> {
       input.kind,
       JSON.stringify(townIds),
       (input.reason ?? '').slice(0, 1024),
+      paused ? 'blocked' : 'running',
+      paused ? 'provider_paused' : null,
+      paused,
+      paused ? 'Provider acquisition is paused' : null,
     ]
   );
+  if (paused) throw new ProviderPausedError();
   return id;
 }
 
@@ -326,6 +337,8 @@ export async function resumeRunFromRequest(
     );
     if (run.status !== 'queued' || !pending.length)
       throw Error('No pending resume request');
+    if (await isPaused(q, 'provider_acquisition'))
+      throw new ProviderPausedError();
     for (const p of pending)
       await q.query(
         `INSERT INTO directory_acquisition_run_event (id,"runId",action,reason,"statusBefore","statusAfter","ofEventId")
@@ -710,6 +723,8 @@ async function reasonCleared(q: Q, reason: string | null): Promise<boolean> {
   if (!reason) return true;
   if (reason === 'budget_exhausted')
     return !(await acquisitionBudgetPanel(q)).hardStop;
+  if (reason === 'provider_paused')
+    return !(await isPaused(q, 'provider_acquisition'));
   return false;
 }
 

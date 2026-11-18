@@ -7,6 +7,7 @@ import {
 } from '../../../libs/social/contracts/src/lib/directory';
 import { IDEMPOTENCY_CONFLICT, ReviewConflictError } from './review-version';
 import { SERVED_ROW_FROM } from './town-coverage';
+import { isPaused } from './operating-controls';
 import {
   effectiveClassification,
   loadMapping,
@@ -608,6 +609,8 @@ export async function runTaxonomyBatch(
   options: TaxonomyPassOptions = {}
 ): Promise<boolean> {
   let claimedId: string | null = null;
+  // Paused: claim no run and take no batch; a run resumes where its cursor left it.
+  if (await isPaused(db, 'taxonomy_worker')) return false;
   try {
     return await db.transaction(async (q) => {
       const [run] = await q.query(

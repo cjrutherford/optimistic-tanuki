@@ -286,7 +286,7 @@ test('erase writes nothing when an ambiguous row exists or the catalog drifted',
     runDirectoryDeletion(blocked, scope, 'erase'),
     (error) =>
       error instanceof DirectoryDeletionBlockedError &&
-      error.report.blocked === 16 &&
+      error.report.blocked === 18 &&
       error.report.remaining === 0
   );
   assert.equal(
@@ -297,7 +297,7 @@ test('erase writes nothing when an ambiguous row exists or the catalog drifted',
   );
   assert.deepEqual(await runDirectoryDeletion(blocked, scope, 'readback'), {
     remaining: 0,
-    blocked: 16,
+    blocked: 18,
   });
   const drift = {
     transaction: (fn) =>
@@ -330,7 +330,7 @@ test('erase writes nothing when an ambiguous row exists or the catalog drifted',
   assert.ok(fence >= 0 && firstWrite > fence);
   assert.equal(
     clean.sql.filter((text) => text.startsWith('SELECT count(*)')).length,
-    64
+    72
   );
 });
 
@@ -363,7 +363,7 @@ test('a grant is refused unless it names Directory, its action, and an authority
       grant('fence'),
       'fence'
     ),
-    { verified: true, remaining: 16, blocked: 16 }
+    { verified: true, remaining: 18, blocked: 18 }
   );
   assert.deepEqual(
     await executeDirectoryAccountDeletion(
@@ -371,7 +371,7 @@ test('a grant is refused unless it names Directory, its action, and an authority
       grant('readback'),
       'readback'
     ),
-    { verified: false, remaining: 16, blocked: 16 }
+    { verified: false, remaining: 18, blocked: 18 }
   );
   const refuse = (value, action, d = deps) =>
     assert.rejects(

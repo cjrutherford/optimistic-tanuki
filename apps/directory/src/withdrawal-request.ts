@@ -334,7 +334,10 @@ export async function runWithdrawalPass(
   return stepped;
 }
 
-/** In-process loop for the Directory runtime: drives requests every `intervalMs`, resuming after a restart. */
+/**
+ * In-process loop for the Directory runtime: drives requests every `intervalMs`, resuming after a restart.
+ * Deliberately NOT pausable via operating controls: withdrawals are rights obligations and must always run.
+ */
 export function startWithdrawalWorker(
   db: Db,
   options: WithdrawalWorkerOptions & {

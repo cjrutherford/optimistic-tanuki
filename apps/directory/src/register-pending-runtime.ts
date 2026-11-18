@@ -130,6 +130,9 @@ import {
 } from './withdrawal-request';
 import { handleRightsRoute } from './rights-routes';
 import { handleExportRoute } from './export-routes';
+import { handleOpsRoute } from './ops-routes';
+import { listControls, setControl } from './operating-controls';
+import { collectOpsMetrics } from './ops-metrics';
 import {
   createExportJob,
   ExportUnavailableError,
@@ -1605,9 +1608,17 @@ export function pendingChecks(
     exportArtifact: (v: { id: string; actorId: string }) =>
       openExportArtifact(db, { ...v, dir: requireExportDir() }),
   };
+  // Operations (S9a): restricted metrics and pause switches. Global operator records, so no town authority applies.
+  const ops = {
+    opsMetrics: () => collectOpsMetrics(db, process.env),
+    opsControls: () => listControls(db),
+    opsSetControl: (v: Parameters<typeof setControl>[1]) =>
+      setControl(db as unknown as Parameters<typeof setControl>[0], v),
+  };
   return {
     ...rights,
     ...exportOps,
+    ...ops,
     ...taxonomy,
     ...acquisition,
     reportCreate,
@@ -1660,6 +1671,7 @@ export function pendingServer(
   return createServer(async (req, res) => {
     if (await handleRightsRoute(req, res, checks, localSecret)) return;
     if (await handleExportRoute(req, res, checks, localSecret)) return;
+    if (await handleOpsRoute(req, res, checks, localSecret)) return;
     if (await handleTaxonomyRoute(req, res, checks, localSecret)) return;
     if (await handleAcquisitionRoute(req, res, checks, localSecret)) return;
     if (

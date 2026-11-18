@@ -59,6 +59,8 @@ import {
   DirectoryAcquisitionRun,
   DirectoryAcquisitionRunJob,
   DirectoryAcquisitionRunEvent,
+  DirectoryOperatingControl,
+  DirectoryOperatingControlEvent,
 } from './entity';
 import { AccountDeletionWriteFenceEntity } from '../../../libs/storage/src/lib/account-deletion-write-fence';
 
@@ -123,6 +125,8 @@ const dataSource = new DataSource({
     DirectoryAcquisitionRun,
     DirectoryAcquisitionRunJob,
     DirectoryAcquisitionRunEvent,
+    DirectoryOperatingControl,
+    DirectoryOperatingControlEvent,
     AccountDeletionWriteFenceEntity,
   ],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],

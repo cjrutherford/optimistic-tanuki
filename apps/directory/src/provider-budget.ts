@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { KeyObject } from 'node:crypto';
 import { createHash } from 'node:crypto';
+import { isPaused, ProviderPausedError } from './operating-controls';
 import {
   ProviderAttempt,
   SignedProviderGrant,
@@ -62,6 +63,9 @@ export async function reserveProviderBudget(
       "SELECT pg_advisory_xact_lock(hashtextextended('directory-provider-budget-v1',0))"
     );
     authorization?.revalidate();
+    // Fail closed while an operator has paused provider acquisition; checked under the budget lock.
+    if (await isPaused(manager, 'provider_acquisition'))
+      throw new ProviderPausedError();
     if (
       (
         await manager.query(
@@ -203,6 +207,8 @@ export async function authorizeAnonymousOvertureAttempt(
       "SELECT pg_advisory_xact_lock(hashtextextended('directory-provider-budget-v1',0))"
     );
     verifyProviderGrant(publicKey, signedToken, request);
+    if (await isPaused(manager, 'provider_acquisition'))
+      throw new ProviderPausedError();
     if (
       (
         await manager.query(
