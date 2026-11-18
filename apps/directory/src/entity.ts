@@ -640,6 +640,35 @@ export class DirectoryOvertureSourceKey {
   @Column('integer') keyVersion!: number;
 }
 
+/**
+ * Last-known status of one provider's optional capability (for example Geoapify private enrichment reporting
+ * `not_configured` while no key is set). Operational state only: no listing, account or profile data.
+ */
+@Entity({ name: 'directory_provider_status' })
+export class DirectoryProviderStatus {
+  @PrimaryColumn({ type: 'varchar', length: 32 }) provider!: string;
+  @Column({ type: 'varchar', length: 24 }) status!: string;
+  @Column({ type: 'varchar', length: 256, default: '' }) detail!: string;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  checkedAt!: Date;
+}
+
+/**
+ * Private Geoapify Places details for one already-staged listing (owner decision D4). Never read by a public
+ * projection or the public export; deleted by the retention scheduler once `expiresAt` passes or the scan is
+ * revoked. Holds provider-derived opening hours and contact only, no account or profile identifier.
+ */
+@Entity({ name: 'directory_geoapify_enrichment' })
+@Index('IDX_directory_geoapify_enrichment_expiry', ['expiresAt'])
+export class DirectoryGeoapifyEnrichment {
+  @PrimaryColumn({ type: 'varchar', length: 64 }) scanId!: string;
+  @PrimaryColumn('bigint') sourceFileRowNumber!: string;
+  @Column({ type: 'jsonb' }) details!: Record<string, unknown>;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  fetchedAt!: Date;
+  @Column({ type: 'timestamptz' }) expiresAt!: Date;
+}
+
 /** Canonical business within one town. It holds no listing content and no account identifier. */
 @Entity({ name: 'directory_business' })
 @Index('IDX_directory_business_town', ['communityId'])

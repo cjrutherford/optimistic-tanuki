@@ -163,19 +163,80 @@ export function createBudgetedProviderAttempts(
   };
 }
 
+type AnonymousProviderGate = {
+  provider: string;
+  validAsset: (url: URL) => boolean;
+};
+
+const OVERTURE_GATE: AnonymousProviderGate = {
+  provider: 'overture',
+  validAsset: (url) =>
+    url.hostname === 'overturemaps-us-west-2.s3.us-west-2.amazonaws.com' &&
+    /^\/release\/\d{4}-\d{2}-\d{2}\.\d+\/theme=places\/type=place\/[^/]+\.parquet$/.test(
+      url.pathname
+    ),
+};
+const ALLTHEPLACES_GATE: AnonymousProviderGate = {
+  provider: 'alltheplaces',
+  validAsset: (url) =>
+    url.hostname === 'alltheplaces-data.openaddresses.io' &&
+    /^\/runs\/\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\/output\.zip$/.test(
+      url.pathname
+    ),
+};
+
 /** Local-only receipt for anonymous HTTPS reads of the public Overture S3 bucket. */
-export async function authorizeAnonymousOvertureAttempt(
+export function authorizeAnonymousOvertureAttempt(
   db: DataSource,
   publicKey: KeyObject | string | Buffer,
   token: SignedProviderGrant,
   attempt: ProviderAttempt,
   options: { automatic?: boolean } = {}
+) {
+  return authorizeAnonymousAttempt(
+    db,
+    publicKey,
+    token,
+    attempt,
+    options,
+    OVERTURE_GATE
+  );
+}
+
+/**
+ * Receipt for the anonymous HTTPS read of the pinned AllThePlaces archive (owner decision D3). Same ledger, kill switch
+ * and policy-row checks as Overture; the worker's automatic sweep is allowed only while AllThePlaces is authorised.
+ */
+export function authorizeAnonymousAllThePlacesAttempt(
+  db: DataSource,
+  publicKey: KeyObject | string | Buffer,
+  token: SignedProviderGrant,
+  attempt: ProviderAttempt,
+  options: { automatic?: boolean } = {}
+) {
+  return authorizeAnonymousAttempt(
+    db,
+    publicKey,
+    token,
+    attempt,
+    options,
+    ALLTHEPLACES_GATE
+  );
+}
+
+async function authorizeAnonymousAttempt(
+  db: DataSource,
+  publicKey: KeyObject | string | Buffer,
+  token: SignedProviderGrant,
+  attempt: ProviderAttempt,
+  options: { automatic?: boolean },
+  gate: AnonymousProviderGate
 ): Promise<{ state: 'authorized-free'; attemptId: string; period: string }> {
   // Operator-local scripts opt in with DIRECTORY_LOCAL_EVALUATION; the worker's automatic sweep is allowed only while
-  // Overture is an authorised provider (owner decision D1). The kill switch and policy row are checked below either way.
+  // the provider is authorised (owner decisions D1, D3). The kill switch and policy row are checked below either way.
   if (
     process.env.DIRECTORY_LOCAL_EVALUATION !== 'true' &&
-    !(options.automatic === true && isAcquisitionAuthorized('overture'))
+    !(options.automatic === true && isAcquisitionAuthorized(gate.provider))
   )
     throw Error('Local evaluation is not enabled');
   const signedToken = Object.freeze({ ...token }),
@@ -189,15 +250,12 @@ export async function authorizeAnonymousOvertureAttempt(
   }
   if (
     url.protocol !== 'https:' ||
-    url.hostname !== 'overturemaps-us-west-2.s3.us-west-2.amazonaws.com' ||
+    !gate.validAsset(url) ||
     url.port ||
     url.username ||
     url.password ||
     url.search ||
-    url.hash ||
-    !/^\/release\/\d{4}-\d{2}-\d{2}\.\d+\/theme=places\/type=place\/[^/]+\.parquet$/.test(
-      url.pathname
-    )
+    url.hash
   )
     throw Error('Invalid anonymous asset');
   return db.transaction(async (manager) => {

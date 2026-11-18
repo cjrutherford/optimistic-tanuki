@@ -376,5 +376,112 @@
         }
       }
     ]
+  },
+  {
+    "releaseId": "atp-2026-11-07-13-32-32",
+    "operations": {
+      "ingest": true,
+      "retain": true,
+      "privateDisplay": true,
+      "publicDisplay": true,
+      "export": true,
+      "publicExport": true
+    },
+    "terms": [
+      {
+        "dataset": "AllThePlaces",
+        "license": "CC0-1.0",
+        "attribution": "AllThePlaces contributors, CC0",
+        "termsUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "notice": "CC0 1.0",
+        "permissions": {
+          "ingest": [
+            "name",
+            "basic_category",
+            "primary",
+            "hierarchy",
+            "alternate",
+            "geometry",
+            "address",
+            "phone",
+            "website"
+          ],
+          "retain": [
+            "name",
+            "basic_category",
+            "primary",
+            "hierarchy",
+            "alternate",
+            "geometry",
+            "address",
+            "phone",
+            "website"
+          ],
+          "privateDisplay": [
+            "name",
+            "basic_category",
+            "primary",
+            "hierarchy",
+            "alternate",
+            "geometry",
+            "address",
+            "phone",
+            "website"
+          ],
+          "publicDisplay": [
+            "name",
+            "basic_category",
+            "primary",
+            "hierarchy",
+            "alternate",
+            "geometry",
+            "address",
+            "phone",
+            "website"
+          ],
+          "export": [
+            "name",
+            "basic_category",
+            "primary",
+            "hierarchy",
+            "geometry",
+            "address",
+            "phone",
+            "website"
+          ],
+          "publicExport": [
+            "name",
+            "basic_category",
+            "primary",
+            "hierarchy",
+            "geometry",
+            "address",
+            "phone",
+            "website"
+          ]
+        }
+      }
+    ],
+    "archive": {
+      "runId": "2026-11-07-13-32-32",
+      "url": "https://alltheplaces-data.openaddresses.io/runs/2026-11-07-13-32-32/output.zip",
+      "sizeBytes": 3193517403,
+      "sha256": "b59df82f569edc49fec7cac60f3782a83d6c47866f98b8c01eb62ece61cc7882"
+    }
+  },
+  {
+    "releaseId": "geoapify-place-details-v1",
+    "provider": "geoapify",
+    "operations": {
+      "ingest": true,
+      "retain": true,
+      "privateDisplay": true,
+      "enrich": true,
+      "publicDisplay": false,
+      "export": false,
+      "publicExport": false
+    },
+    "retentionDays": 30,
+    "terms": []
   }
 ]

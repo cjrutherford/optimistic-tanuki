@@ -85,6 +85,11 @@ services:
       DIRECTORY_AUTO_ACQUISITION_LIMIT: ${DIRECTORY_AUTO_ACQUISITION_LIMIT:-2}
       DIRECTORY_AUTO_ACQUISITION_MAX_ASSETS: ${DIRECTORY_AUTO_ACQUISITION_MAX_ASSETS:-4}
       DIRECTORY_AUTO_ACQUISITION_INVENTORY_FILE: /etc/directory/overture/inventory.json
+      # Standalone AllThePlaces (D3) reads its pinned archive from the rights policy; the snapshot cache is derived data.
+      DIRECTORY_ATP_CACHE_DIR: ${DIRECTORY_ATP_CACHE_DIR:-/tmp/directory-atp}
+      # Geoapify private enrichment (D4): inert while the key is blank. Never defaulted here.
+      GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:-}
+      DIRECTORY_GEOAPIFY_COST_CENTS: ${DIRECTORY_GEOAPIFY_COST_CENTS:-1}
       DIRECTORY_RIGHTS_POLICY_FILE: ${DIRECTORY_RIGHTS_POLICY_FILE:-}
       DIRECTORY_WORKER_STARTUP_TIMEOUT_MS: ${DIRECTORY_WORKER_STARTUP_TIMEOUT_MS:-600000}
       SOCIAL_HOST: social

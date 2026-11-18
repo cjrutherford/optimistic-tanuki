@@ -29,9 +29,10 @@ test('acquisition is on by default, off only when explicitly off, bounded to 2 t
   );
 });
 
-test('only Overture is authorized', () => {
+test('only Overture and AllThePlaces are authorized for acquisition; Geoapify is not', () => {
   assert.equal(isAcquisitionAuthorized('overture'), true);
-  for (const p of ['foursquare', 'google_places', 'yelp', ''])
+  assert.equal(isAcquisitionAuthorized('alltheplaces'), true);
+  for (const p of ['geoapify', 'foursquare', 'google_places', 'yelp', ''])
     assert.equal(isAcquisitionAuthorized(p), false);
   assert.equal(anyAcquisitionAuthorized(), true);
 });
