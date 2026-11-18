@@ -1,5 +1,5 @@
 {
-  "description": "S10 researched Census boundaries installed as owner-locked geometry by scripts/local-directory-locked-boundaries.cjs. noAuthoritativeBoundary lists towns where Census has no matching entity; nothing is installed for them.",
+  "description": "S10 researched Census boundaries installed as owner-locked geometry by scripts/local-directory-locked-boundaries.cjs. noAuthoritativeBoundary lists towns where Census has no matching entity; nothing is installed for them unless the disposition says otherwise (D19-D26: merge, rename, lock or retire). A locked entry whose Census entity has a different name from the town must carry an ownerDecision.",
   "vintage": "2026",
   "locked": [
     {
@@ -533,6 +533,72 @@
       "socialPointDistanceMeters": 0,
       "rationale": "Social calls this locality a town. Its point is inside Spotsylvania Courthouse CDP. Spotsylvania County also contains the point and covers a much larger area.",
       "automaticMatchReason": "no_tiger_match:v2"
+    },
+    {
+      "communityId": "6c44702f-b35a-4d37-a9dc-8fcc7f02b8e9",
+      "townName": "Corolla, NC",
+      "state": "NC",
+      "localityType": "town",
+      "layer": "cousub",
+      "geoid": "3705392552",
+      "stateFips": "37",
+      "vintage": "2026",
+      "entityType": "county subdivision (township / minor civil division)",
+      "lsad": "44",
+      "censusName": "Poplar Branch",
+      "censusNameLsad": "Poplar Branch township",
+      "archiveSha256": "0e5731d475ac8dc0fa8933972e0c25c2567c3534588844976c5d1a50bf8c7d03",
+      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2026/COUSUB/tl_2026_37_cousub.zip",
+      "censusPoint": [-75.8537976, 36.2545267],
+      "censusPointInside": true,
+      "areaSqKm": {
+        "min": 529.009,
+        "max": 826.576
+      },
+      "censusAreaSqKm": 661.261,
+      "socialReferencePoint": [-75.8319, 36.3786],
+      "socialPointInside": true,
+      "socialPointDistanceMeters": 13908,
+      "rationale": "Census has no Corolla place in 2026. Corolla lies in Poplar Branch township (Currituck County), a civil division much larger than the community and with a different name. The owner chose to lock Corolla to this border and accept that it is larger than Corolla.",
+      "automaticMatchReason": "no_tiger_match:v2",
+      "ownerDecision": {
+        "id": "D23",
+        "date": "2026-11-18",
+        "summary": "Lock Corolla to the Poplar Branch township border, accepting that it is larger than Corolla."
+      }
+    },
+    {
+      "communityId": "22f7dced-d609-4203-aa40-8293c8f31d91",
+      "townName": "Palm Valley, FL",
+      "state": "FL",
+      "localityType": "town",
+      "layer": "place",
+      "geoid": "1254525",
+      "stateFips": "12",
+      "vintage": "2026",
+      "entityType": "census designated place (CDP)",
+      "lsad": "57",
+      "censusName": "Palm Valley",
+      "censusNameLsad": "Palm Valley CDP",
+      "archiveSha256": "38a86feeb17300f9991d5c89b5fb1d61c42823cc4bacb1f7f0738605a22ed8ec",
+      "sourceUrl": "https://www2.census.gov/geo/tiger/TIGER2026/PLACE/tl_2026_12_place.zip",
+      "censusPoint": [-81.3984663, 30.203349],
+      "censusPointInside": true,
+      "areaSqKm": {
+        "min": 28.197,
+        "max": 44.058
+      },
+      "censusAreaSqKm": 35.246,
+      "socialReferencePoint": [-81.3985, 30.2033],
+      "socialPointInside": true,
+      "socialPointDistanceMeters": 5,
+      "rationale": "Formerly Ponte Vedra Beach, which Census does not name (unincorporated). The owner renamed the community to Palm Valley, the only matching Census entity (Palm Valley CDP), and its Social point was moved to the CDP interior point. Installed after the Social rename reconciles, because the install checks the town name.",
+      "automaticMatchReason": "no_tiger_match:v2",
+      "ownerDecision": {
+        "id": "D20",
+        "date": "2026-11-18",
+        "summary": "Rename Ponte Vedra Beach to Palm Valley and use the Palm Valley CDP border."
+      }
     }
   ],
   "noAuthoritativeBoundary": [
@@ -543,7 +609,13 @@
       "reason": "Census has no entity named Amelia Island. Fernandina Beach (incorporated city) covers only part of the island.",
       "suggestedAction": "rename to Fernandina Beach, or exclude",
       "communityId": "8cdecba1-8889-4d43-9452-62feb4815386",
-      "automaticMatchReason": "no_tiger_match:v2"
+      "automaticMatchReason": "no_tiger_match:v2",
+      "disposition": {
+        "decision": "D19",
+        "action": "merged",
+        "target": "Fernandina Beach, FL",
+        "summary": "Merged into Fernandina Beach (Census place border). No boundary of its own."
+      }
     },
     {
       "townName": "Ponte Vedra Beach, FL",
@@ -552,7 +624,13 @@
       "reason": "Unincorporated; Census has only the Ponte Vedra county census division (a statistical area, different name) and Palm Valley CDP.",
       "suggestedAction": "Exclude, or explicitly rename to Palm Valley if that is the community the owner intends.",
       "communityId": "22f7dced-d609-4203-aa40-8293c8f31d91",
-      "automaticMatchReason": "no_tiger_match:v2"
+      "automaticMatchReason": "no_tiger_match:v2",
+      "disposition": {
+        "decision": "D20",
+        "action": "renamed",
+        "target": "Palm Valley, FL",
+        "summary": "Renamed to Palm Valley; its border is the locked Palm Valley CDP entry above."
+      }
     },
     {
       "townName": "Sea Island, GA",
@@ -561,7 +639,13 @@
       "reason": "No Sea Island Census entity. Its point falls in St. Simons CCD and outside St. Simons CDP.",
       "suggestedAction": "Exclude, or merge into St. Simons Island if the owner intends one community for both islands.",
       "communityId": "8e1c0a5b-10c7-4393-af3b-f66060c68e41",
-      "automaticMatchReason": "no_tiger_match:v2"
+      "automaticMatchReason": "no_tiger_match:v2",
+      "disposition": {
+        "decision": "D21",
+        "action": "merged",
+        "target": "St. Simons Island, GA",
+        "summary": "Merged into St. Simons Island."
+      }
     },
     {
       "townName": "Cape Hatteras, NC",
@@ -570,7 +654,13 @@
       "reason": "A cape and a seashore, not a community Census names; only the Kinnakeet township (statistical civil division) covers the point.",
       "suggestedAction": "merge into Hatteras, or exclude",
       "communityId": "1efb9e52-7181-438c-a376-3a478a227787",
-      "automaticMatchReason": "no_tiger_match:v2"
+      "automaticMatchReason": "no_tiger_match:v2",
+      "disposition": {
+        "decision": "D22",
+        "action": "merged",
+        "target": "Hatteras, NC",
+        "summary": "Merged into Hatteras."
+      }
     },
     {
       "townName": "Corolla, NC",
@@ -579,7 +669,12 @@
       "reason": "No Corolla CDP in 2026; only Poplar Branch township (a civil division, much larger and a different name).",
       "suggestedAction": "Exclude.",
       "communityId": "6c44702f-b35a-4d37-a9dc-8fcc7f02b8e9",
-      "automaticMatchReason": "no_tiger_match:v2"
+      "automaticMatchReason": "no_tiger_match:v2",
+      "disposition": {
+        "decision": "D23",
+        "action": "locked",
+        "summary": "Locked to the Poplar Branch township border (locked entry above)."
+      }
     },
     {
       "townName": "Edisto Island, SC",
@@ -588,7 +683,13 @@
       "reason": "The Edisto CDP is a different place near Orangeburg; Edisto Beach is a separate town. Only the Edisto Island county census division (statistical area, 177 sq km) matches the name.",
       "suggestedAction": "Exclude.",
       "communityId": "29ff21d9-aa72-4ebd-9f72-f25934c5f5cc",
-      "automaticMatchReason": "no_tiger_match:v2"
+      "automaticMatchReason": "no_tiger_match:v2",
+      "disposition": {
+        "decision": "D24",
+        "action": "merged",
+        "target": "Edisto Beach, SC",
+        "summary": "Merged into Edisto Beach, a new Social community that takes its own Census place border."
+      }
     },
     {
       "townName": "Medina, TX",
@@ -597,7 +698,13 @@
       "reason": "Medina CDP is in Starr County, far south, a different place. Only the Medina county census division (1,233 sq km) covers the Bandera County community.",
       "suggestedAction": "Exclude.",
       "communityId": "654bb7b2-ce03-41bd-be56-bf09a014dcb5",
-      "automaticMatchReason": "no_tiger_match:v2"
+      "automaticMatchReason": "no_tiger_match:v2",
+      "disposition": {
+        "decision": "D25",
+        "action": "merged",
+        "target": "Bandera, TX",
+        "summary": "Merged into Bandera."
+      }
     },
     {
       "townName": "(blank name)",
@@ -606,7 +713,70 @@
       "reason": "Directory town row with no name, no slug and eligible=false; nothing to match.",
       "suggestedAction": "Keep excluded and verify whether Social still has the community.",
       "communityId": "494e5a47-39b5-4cca-ba3d-59a4fe5118c6",
-      "automaticMatchReason": null
+      "automaticMatchReason": null,
+      "disposition": {
+        "decision": "D26",
+        "action": "retired",
+        "summary": "Retired: the blank, ineligible directory row is removed when nothing references it."
+      }
+    }
+  ],
+  "merges": [
+    {
+      "decision": "D19",
+      "communityId": "8cdecba1-8889-4d43-9452-62feb4815386",
+      "townName": "Amelia Island, FL",
+      "into": {
+        "communityId": "5242b47b-369f-4a85-9791-afdf026c6f61",
+        "slug": "fernandina-beach-fl",
+        "townName": "Fernandina Beach, FL"
+      }
+    },
+    {
+      "decision": "D21",
+      "communityId": "8e1c0a5b-10c7-4393-af3b-f66060c68e41",
+      "townName": "Sea Island, GA",
+      "into": {
+        "communityId": "b528a13d-95ec-4e7b-82bd-ef10817bbfe6",
+        "slug": "st-simons-island-ga",
+        "townName": "St. Simons Island, GA"
+      }
+    },
+    {
+      "decision": "D22",
+      "communityId": "1efb9e52-7181-438c-a376-3a478a227787",
+      "townName": "Cape Hatteras, NC",
+      "into": {
+        "communityId": "4bbfd1cb-a37e-4705-b87e-81ff16ad13c4",
+        "slug": "hatteras-nc",
+        "townName": "Hatteras, NC"
+      }
+    },
+    {
+      "decision": "D24",
+      "communityId": "29ff21d9-aa72-4ebd-9f72-f25934c5f5cc",
+      "townName": "Edisto Island, SC",
+      "into": {
+        "slug": "edisto-beach-sc",
+        "townName": "Edisto Beach, SC"
+      }
+    },
+    {
+      "decision": "D25",
+      "communityId": "654bb7b2-ce03-41bd-be56-bf09a014dcb5",
+      "townName": "Medina, TX",
+      "into": {
+        "communityId": "f5ec6f96-7a45-488e-a32f-41fdb38b695d",
+        "slug": "bandera-tx",
+        "townName": "Bandera, TX"
+      }
+    }
+  ],
+  "retire": [
+    {
+      "decision": "D26",
+      "communityId": "494e5a47-39b5-4cca-ba3d-59a4fe5118c6",
+      "townName": "(blank name)"
     }
   ]
 }
