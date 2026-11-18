@@ -1,0 +1,2106 @@
+{
+  "components": {
+    "schemas": {
+      "CreateListingReportDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "maxLength": 254,
+            "type": "string"
+          },
+          "listingId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "reasonCode": {
+            "enum": [
+              "rights-request",
+              "incorrect-details",
+              "closed-business",
+              "safety",
+              "duplicate",
+              "other"
+            ],
+            "type": "string"
+          },
+          "website": {
+            "description": "Honeypot; leave empty.",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": ["listingId", "reasonCode"],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "contact": {},
+    "description": "Directory endpoints exposed by the gateway. Public routes need no credentials; every other route needs a bearer session and the permission named in x-required-permissions. Routes marked x-app-scope additionally require the X-OT-AppScope header.",
+    "title": "Optimistic Tanuki Directory API",
+    "version": "1.0"
+  },
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/directory/exports": {
+      "get": {
+        "operationId": "DirectoryExportsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryExports"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.export"]
+      },
+      "post": {
+        "operationId": "DirectoryExportsController_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryExports"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.export"]
+      }
+    },
+    "/api/directory/exports/{id}": {
+      "get": {
+        "operationId": "DirectoryExportsController_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryExports"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.export"]
+      }
+    },
+    "/api/directory/exports/{id}/artifact": {
+      "get": {
+        "operationId": "DirectoryExportsController_artifact",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryExports"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.export"]
+      }
+    },
+    "/api/directory/exports/{id}/retry": {
+      "post": {
+        "operationId": "DirectoryExportsController_retry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryExports"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.export"]
+      }
+    },
+    "/api/directory/listing-reports/{receipt}": {
+      "get": {
+        "operationId": "DirectoryListingReportController_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "receipt",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": ["DirectoryListingReport"],
+        "x-public": true
+      }
+    },
+    "/api/directory/operations/controls": {
+      "get": {
+        "operationId": "DirectoryOperationsController_controls",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryOperations"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/operations/controls/{key}": {
+      "post": {
+        "operationId": "DirectoryOperationsController_setControl",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryOperations"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/operations/metrics": {
+      "get": {
+        "operationId": "DirectoryOperationsController_metrics",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryOperations"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/operations/metrics/prometheus": {
+      "get": {
+        "operationId": "DirectoryOperationsController_prometheus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryOperations"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/rights-cases": {
+      "get": {
+        "operationId": "DirectoryRightsCasesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRightsCases"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.rights"]
+      }
+    },
+    "/api/directory/rights-cases/sync": {
+      "post": {
+        "operationId": "DirectoryRightsCasesController_sync",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRightsCases"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.rights"]
+      }
+    },
+    "/api/directory/rights-cases/{caseId}": {
+      "get": {
+        "operationId": "DirectoryRightsCasesController_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRightsCases"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.rights"]
+      }
+    },
+    "/api/directory/rights-cases/{caseId}/decisions": {
+      "post": {
+        "operationId": "DirectoryRightsCasesController_decide",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRightsCases"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.rights"]
+      }
+    },
+    "/api/directory/rights-cases/{caseId}/undo": {
+      "post": {
+        "operationId": "DirectoryRightsCasesController_undo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRightsCases"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.rights"]
+      }
+    },
+    "/api/directory/runs": {
+      "get": {
+        "operationId": "DirectoryRunsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRuns"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/runs/budget": {
+      "get": {
+        "operationId": "DirectoryRunsController_budget",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRuns"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/runs/history/import": {
+      "post": {
+        "operationId": "DirectoryRunsController_importHistory",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRuns"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/runs/latest": {
+      "get": {
+        "operationId": "DirectoryRunsController_latest",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRuns"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/runs/{runId}": {
+      "get": {
+        "operationId": "DirectoryRunsController_runDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "runId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRuns"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/runs/{runId}/cancel": {
+      "post": {
+        "operationId": "DirectoryRunsController_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "runId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRuns"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/runs/{runId}/resume": {
+      "post": {
+        "operationId": "DirectoryRunsController_resume",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "runId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRuns"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/runs/{runId}/retry": {
+      "post": {
+        "operationId": "DirectoryRunsController_retry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "runId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRuns"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/taxonomy/cases": {
+      "get": {
+        "operationId": "DirectoryTaxonomyController_cases",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      },
+      "post": {
+        "operationId": "DirectoryTaxonomyController_raise",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/taxonomy/cases/{caseId}": {
+      "get": {
+        "operationId": "DirectoryTaxonomyController_caseDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/taxonomy/cases/{caseId}/decisions": {
+      "post": {
+        "operationId": "DirectoryTaxonomyController_decide",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/taxonomy/cases/{caseId}/dismiss": {
+      "post": {
+        "operationId": "DirectoryTaxonomyController_dismiss",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/taxonomy/cases/{caseId}/undo": {
+      "post": {
+        "operationId": "DirectoryTaxonomyController_undo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/taxonomy/mappings": {
+      "get": {
+        "operationId": "DirectoryTaxonomyController_mappings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/taxonomy/mappings/install": {
+      "post": {
+        "operationId": "DirectoryTaxonomyController_install",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/taxonomy/runs": {
+      "get": {
+        "operationId": "DirectoryTaxonomyController_runs",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      },
+      "post": {
+        "operationId": "DirectoryTaxonomyController_createRun",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/taxonomy/runs/{runId}": {
+      "get": {
+        "operationId": "DirectoryTaxonomyController_runDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "runId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/taxonomy/runs/{runId}/cancel": {
+      "post": {
+        "operationId": "DirectoryTaxonomyController_cancelRun",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "runId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/taxonomy/runs/{runId}/rollback": {
+      "post": {
+        "operationId": "DirectoryTaxonomyController_rollbackRun",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "runId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/towns/{id}/boundary": {
+      "get": {
+        "operationId": "DirectoryController_boundary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": ["Directory"],
+        "x-public": true
+      }
+    },
+    "/api/directory/towns/{id}/boundary-candidate": {
+      "get": {
+        "operationId": "DirectoryController_boundaryCandidate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["Directory"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{id}/boundary-decisions": {
+      "post": {
+        "operationId": "DirectoryController_boundaryDecision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["Directory"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{id}/local-evaluation-listings": {
+      "get": {
+        "operationId": "DirectoryController_localListings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "adult",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pagination",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "bounds",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "identities",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": ["Directory"],
+        "x-public": true
+      }
+    },
+    "/api/directory/towns/{id}/local-evaluation-listings/{reference}": {
+      "get": {
+        "operationId": "DirectoryController_localListingDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "reference",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "adult",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": ["Directory"],
+        "x-public": true
+      }
+    },
+    "/api/directory/towns/{id}/public-export": {
+      "get": {
+        "operationId": "DirectoryPublicExportController_download",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": ["DirectoryPublicExport"],
+        "x-public": true
+      }
+    },
+    "/api/directory/towns/{id}/status": {
+      "get": {
+        "operationId": "DirectoryController_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": ["Directory"],
+        "x-public": true
+      }
+    },
+    "/api/directory/towns/{id}/validate": {
+      "get": {
+        "operationId": "DirectoryController_validate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "longitude",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "latitude",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": ["Directory"],
+        "x-public": true
+      }
+    },
+    "/api/directory/towns/{townId}/address-review-candidates": {
+      "get": {
+        "operationId": "DirectoryAddressReviewController_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryAddressReview"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/address-review-candidates/{candidateId}": {
+      "get": {
+        "operationId": "DirectoryAddressReviewController_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "candidateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryAddressReview"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/address-review-candidates/{candidateId}/decisions": {
+      "post": {
+        "operationId": "DirectoryAddressReviewController_decide",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "candidateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryAddressReview"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/address-review-candidates/{candidateId}/undo": {
+      "post": {
+        "operationId": "DirectoryAddressReviewController_undo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "candidateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryAddressReview"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/business-identity-review": {
+      "get": {
+        "operationId": "DirectoryBusinessIdentityReviewController_queue",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryBusinessIdentityReview"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/business-identity-review/decisions": {
+      "post": {
+        "operationId": "DirectoryBusinessIdentityReviewController_decide",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryBusinessIdentityReview"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/business-identity-review/{businessId}": {
+      "get": {
+        "operationId": "DirectoryBusinessIdentityReviewController_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "businessId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryBusinessIdentityReview"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/business-identity-review/{businessId}/undo": {
+      "post": {
+        "operationId": "DirectoryBusinessIdentityReviewController_undo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "businessId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryBusinessIdentityReview"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/business-link-requests": {
+      "get": {
+        "operationId": "DirectoryBusinessLinkQueueController_requests",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryBusinessLinkQueue"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/listing-reports": {
+      "get": {
+        "operationId": "DirectoryListingReportReviewController_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryListingReportReview"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      },
+      "post": {
+        "operationId": "DirectoryListingReportController_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListingReportDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": ["DirectoryListingReport"],
+        "x-public": true
+      }
+    },
+    "/api/directory/towns/{townId}/listing-reports/{reportId}/{action}": {
+      "post": {
+        "operationId": "DirectoryListingReportReviewController_transition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "reportId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryListingReportReview"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/listing-suppressions": {
+      "get": {
+        "operationId": "DirectoryListingSuppressionController_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryListingSuppression"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      },
+      "post": {
+        "operationId": "DirectoryListingSuppressionController_suppress",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryListingSuppression"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/listing-suppressions/{suppressionId}/lift": {
+      "post": {
+        "operationId": "DirectoryListingSuppressionController_lift",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "suppressionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryListingSuppression"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/local-evaluation-listings/{listingId}/business-link": {
+      "get": {
+        "operationId": "DirectoryBusinessLinkController_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "listingId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "adult",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": ["DirectoryBusinessLink"],
+        "x-public": true
+      }
+    },
+    "/api/directory/towns/{townId}/local-evaluation-listings/{listingId}/business-link/mine": {
+      "get": {
+        "operationId": "DirectoryBusinessLinkController_mine",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "listingId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryBusinessLink"],
+        "x-public": false
+      }
+    },
+    "/api/directory/towns/{townId}/local-evaluation-listings/{listingId}/business-link/requests": {
+      "get": {
+        "operationId": "DirectoryBusinessLinkController_requests",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "listingId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryBusinessLink"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      },
+      "post": {
+        "operationId": "DirectoryBusinessLinkController_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "listingId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryBusinessLink"],
+        "x-public": false
+      }
+    },
+    "/api/directory/towns/{townId}/local-evaluation-listings/{listingId}/business-link/reviews": {
+      "post": {
+        "operationId": "DirectoryBusinessLinkController_review",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "listingId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryBusinessLink"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/local-evaluation-listings/{listingId}/business-link/revoke": {
+      "post": {
+        "operationId": "DirectoryBusinessLinkController_revoke",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "listingId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryBusinessLink"],
+        "x-public": false
+      }
+    },
+    "/api/directory/withdrawals": {
+      "get": {
+        "operationId": "DirectoryWithdrawalsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryWithdrawals"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.rights"]
+      },
+      "post": {
+        "operationId": "DirectoryWithdrawalsController_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryWithdrawals"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.rights"]
+      }
+    },
+    "/api/directory/withdrawals/{withdrawalId}": {
+      "get": {
+        "operationId": "DirectoryWithdrawalsController_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "withdrawalId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryWithdrawals"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.rights"]
+      }
+    }
+  },
+  "servers": [],
+  "tags": [
+    {
+      "name": "Directory"
+    },
+    {
+      "name": "DirectoryAddressReview"
+    },
+    {
+      "name": "DirectoryBusinessIdentityReview"
+    },
+    {
+      "name": "DirectoryBusinessLink"
+    },
+    {
+      "name": "DirectoryBusinessLinkQueue"
+    },
+    {
+      "name": "DirectoryExports"
+    },
+    {
+      "name": "DirectoryListingReport"
+    },
+    {
+      "name": "DirectoryListingReportReview"
+    },
+    {
+      "name": "DirectoryListingSuppression"
+    },
+    {
+      "name": "DirectoryOperations"
+    },
+    {
+      "name": "DirectoryPublicExport"
+    },
+    {
+      "name": "DirectoryRightsCases"
+    },
+    {
+      "name": "DirectoryRuns"
+    },
+    {
+      "name": "DirectoryTaxonomy"
+    },
+    {
+      "name": "DirectoryWithdrawals"
+    }
+  ]
+}
