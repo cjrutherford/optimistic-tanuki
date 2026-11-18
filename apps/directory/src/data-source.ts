@@ -126,6 +126,9 @@ const dataSource = new DataSource({
     AccountDeletionWriteFenceEntity,
   ],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
+  // The schema's uuid defaults are gen_random_uuid() (built into PostgreSQL 13+). Without this TypeORM assumes
+  // uuid-ossp's uuid_generate_v4(), which is not installed, and every migration:generate re-emits no-op default drift.
+  uuidExtension: 'pgcrypto',
   extra: { connectionTimeoutMillis: 2000, statement_timeout: 2000 },
   synchronize: false,
   migrationsRun: false,
