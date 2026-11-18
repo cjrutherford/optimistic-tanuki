@@ -43,12 +43,17 @@ export async function ensureCommunityChatRoom(
   return chatRoom.id;
 }
 
+/** lat and lng are decimal(9,6), so Postgres rounds what the seed writes to six places; compare at that scale. */
+function roundToColumnScale(value: number): number {
+  return Math.round(value * 1e6) / 1e6;
+}
+
 function normaliseSeedValue(value: unknown): unknown {
   if (value === undefined || value === null || value === '') return null;
   if (typeof value === 'number' || typeof value === 'bigint')
-    return Number(value);
+    return roundToColumnScale(Number(value));
   if (typeof value === 'string' && value.trim() !== '' && !isNaN(Number(value)))
-    return Number(value);
+    return roundToColumnScale(Number(value));
   if (Array.isArray(value)) return value.map(normaliseSeedValue);
   if (typeof value === 'object')
     return Object.fromEntries(
