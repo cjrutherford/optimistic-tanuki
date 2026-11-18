@@ -5,6 +5,7 @@ import type {
 import { listControls } from './operating-controls';
 import { MONTHLY_LIMIT_CENTS, providerLimitCents } from './provider-budget';
 import { FRESH_DAYS, STALE_DAYS } from './source-freshness';
+import { fillTimeMetrics } from './acquisition-refresh';
 
 type Pool = { query(sql: string, params?: unknown[]): Promise<any[]> };
 
@@ -219,6 +220,11 @@ async function queues(pool: Pool) {
  * - queues: queued = export 'queued', taxonomy run 'pending', withdrawal 'pending'; running = 'running' (taxonomy also
  *   'rolling_back'); failedLast24h = status 'failed' with updatedAt in the last 24 h; oldestQueuedSeconds = age of the
  *   oldest queued row's creation (requestedAt for withdrawals), null when nothing is queued.
+ * - fillTime: D15 target of 7 days from registration (or from a later boundary version) to a terminal acquisition
+ *   state: a completed live scan (filled) or an automatic run ending succeeded / succeeded_empty (zero) / blocked
+ *   (other than geometry_pending) / failed_permanent. waitingOverTarget = eligible towns with none yet and a wait past
+ *   the target; resolvedLate = reached one after more than the target; overTargetTowns = their sum; alert = any town
+ *   still waiting past the target.
  * - controls: the three operating controls (absent row = running, version 0).
  */
 export async function collectOpsMetrics(
@@ -248,7 +254,7 @@ export async function collectOpsMetrics(
       if (timer) clearTimeout(timer);
     }
   };
-  const [inf, tw, cov, fr, pol, sp, qs, ctl] = await Promise.all([
+  const [inf, tw, cov, fr, pol, sp, qs, ft, ctl] = await Promise.all([
     section('infrastructure', () => infrastructure(pool, env)),
     section('towns', () => towns(pool)),
     section('coverage', () => coverage(pool)),
@@ -256,6 +262,7 @@ export async function collectOpsMetrics(
     section('policy', () => policy(pool)),
     section('spend', () => spend(pool, env)),
     section('queues', () => queues(pool)),
+    section('fillTime', () => fillTimeMetrics(pool)),
     section('controls', () => listControls(pool)),
   ]);
   return {
@@ -267,6 +274,7 @@ export async function collectOpsMetrics(
     policy: pol,
     spend: sp,
     queues: qs,
+    fillTime: ft,
     controls: ctl,
     errors: errors.sort(),
   };
@@ -317,6 +325,7 @@ export function toPrometheus(m: DirectoryOpsMetrics): string {
       'policy',
       'spend',
       'queues',
+      'fillTime',
       'controls',
     ].map(
       (s) =>
@@ -446,6 +455,26 @@ export function toPrometheus(m: DirectoryOpsMetrics): string {
           number | null
         ]
     )
+  );
+  gauge(
+    'directory_fill_target_days',
+    'Days from registration to a terminal acquisition state (D15).',
+    [[none, m.fillTime?.targetDays]]
+  );
+  gauge(
+    'directory_fill_over_target_towns',
+    'Eligible towns whose wait to a terminal acquisition state exceeds the target.',
+    [[none, m.fillTime?.overTargetTowns]]
+  );
+  gauge(
+    'directory_fill_waiting_over_target_towns',
+    'Eligible towns still waiting for acquisition past the target.',
+    [[none, m.fillTime?.waitingOverTarget]]
+  );
+  gauge(
+    'directory_fill_alert',
+    'A town is still waiting for acquisition past the fill-time target.',
+    [[none, flag(m.fillTime?.alert)]]
   );
   gauge(
     'directory_control_paused',

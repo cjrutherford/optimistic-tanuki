@@ -24,6 +24,8 @@ import {
 } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const ACQUISITION_POLL_MS = 3000;
 const ACTIVE: AcquisitionRunStatus[] = [
   'queued',
@@ -60,6 +62,15 @@ const BLOCKED_TEXT: Record<string, string> = {
   unconfigured_provider: 'The provider is not configured for this run.',
   invalid_geometry: 'The town boundary is invalid for this run.',
 };
+
+/** What the gateway returns for a town run request. */
+interface AcquisitionTownRunResult {
+  communityId: string;
+  replayed: boolean;
+  alreadyPending: boolean;
+  requestedAt: string;
+  providers: string[];
+}
 
 /**
  * Acquisition runs. The ledger is written by the local stage scripts, so an operator observes progress here and
@@ -342,6 +353,43 @@ export class DirectoryAcquisitionRunsPageComponent
         },
         error: (error: HttpErrorResponse) =>
           this.failed(key, error, 'The history import'),
+      });
+  }
+
+  /** Asks for one town to be acquired first on the next sweep. The sweep still checks authorization, budget and the kill switch. */
+  runTownNow(townId: string, reason: string, confirm: string): void {
+    const id = townId.trim();
+    if (this.busy) return;
+    if (!UUID.test(id)) {
+      this.message = 'Enter the town id (a UUID).';
+      return;
+    }
+    if (!reason.trim()) {
+      this.message = 'A reason is required.';
+      return;
+    }
+    if (confirm.trim() !== 'RUN') {
+      this.message = 'Type RUN to confirm.';
+      return;
+    }
+    const key = `town:${id}:${reason.trim()}`;
+    this.busy = true;
+    this.message = '';
+    this.http
+      .post<AcquisitionTownRunResult>(
+        `${this.api}/directory/runs/towns/${id}/run`,
+        { decisionId: this.idFor(key), reason: reason.trim(), confirm: 'RUN' }
+      )
+      .subscribe({
+        next: (result) => {
+          this.busy = false;
+          this.ids.delete(key);
+          this.message = result.alreadyPending
+            ? 'This town already has a pending request. It goes first on the next sweep.'
+            : 'Request recorded. The town goes first on the next sweep, which still checks authorization, budget and the kill switch.';
+        },
+        error: (error: HttpErrorResponse) =>
+          this.failed(key, error, 'The town request'),
       });
   }
 

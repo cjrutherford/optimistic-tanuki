@@ -497,6 +497,35 @@
         "x-required-permissions": ["directory.operate"]
       }
     },
+    "/api/directory/runs/towns/{townId}/run": {
+      "post": {
+        "operationId": "DirectoryRunsController_runTownNow",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRuns"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
     "/api/directory/runs/{runId}": {
       "get": {
         "operationId": "DirectoryRunsController_runDetail",

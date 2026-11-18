@@ -66,6 +66,7 @@ import {
   DirectoryAcquisitionRun,
   DirectoryAcquisitionRunJob,
   DirectoryAcquisitionRunEvent,
+  DirectoryAcquisitionTownRequest,
   DirectoryOperatingControl,
   DirectoryOperatingControlEvent,
 } from './entity';
@@ -139,6 +140,7 @@ const dataSource = new DataSource({
     DirectoryAcquisitionRun,
     DirectoryAcquisitionRunJob,
     DirectoryAcquisitionRunEvent,
+    DirectoryAcquisitionTownRequest,
     DirectoryOperatingControl,
     DirectoryOperatingControlEvent,
     AccountDeletionWriteFenceEntity,

@@ -152,6 +152,7 @@ const runsRoutes: MatrixRoute[] = [
   { method: 'GET', path: '/directory/runs/latest' },
   { method: 'GET', path: '/directory/runs/budget' },
   { method: 'POST', path: '/directory/runs/history/import', body: {} },
+  { method: 'POST', path: `/directory/runs/towns/${rightsId}/run`, body: {} },
   { method: 'GET', path: `/directory/runs/${rightsId}` },
   { method: 'POST', path: `/directory/runs/${rightsId}/cancel`, body: {} },
   { method: 'POST', path: `/directory/runs/${rightsId}/resume`, body: {} },

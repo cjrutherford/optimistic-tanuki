@@ -49,6 +49,14 @@ const metrics = (over = {}) => ({
     alert: true,
     exhausted: false,
   },
+  fillTime: {
+    targetDays: 7,
+    waitingOverTarget: 2,
+    resolvedLate: 1,
+    overTargetTowns: 3,
+    waiting: 4,
+    alert: true,
+  },
   queues: {
     export: { queued: 1, running: 0, failedLast24h: 0, oldestQueuedSeconds: 9 },
     taxonomy: {
@@ -241,6 +249,16 @@ test('prometheus exposition: gauges only, fixed labels, nulls omitted', () => {
   assert.match(text, /directory_queue_queued\{queue="export"\} 1\n/);
   assert.match(text, /directory_control_paused\{key="export_worker"\} 0\n/);
   assert.match(text, /directory_spend_alert 1\n/);
+  assert.match(text, /directory_fill_target_days 7\n/);
+  assert.match(text, /directory_fill_over_target_towns 3\n/);
+  assert.match(text, /directory_fill_waiting_over_target_towns 2\n/);
+  assert.match(text, /directory_fill_alert 1\n/);
+  assert.match(
+    toPrometheus(
+      metrics({ fillTime: { ...metrics().fillTime, alert: false } })
+    ),
+    /directory_fill_alert 0\n/
+  );
   assert.doesNotMatch(
     text,
     /directory_queue_oldest_queued_seconds\{queue="taxonomy"\}/

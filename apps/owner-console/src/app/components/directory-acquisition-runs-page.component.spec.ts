@@ -271,4 +271,27 @@ describe('DirectoryAcquisitionRunsPageComponent', () => {
     expect(component.message).toContain('4 added');
     http.expectOne(listUrl).flush({ runs: [], total: 0 });
   });
+  it('asks for a town run now only with a town id, a reason and RUN', () => {
+    const town = '77777777-7777-4777-8777-777777777777';
+    http.expectOne(listUrl).flush({ runs: [], total: 0 });
+    component.runTownNow('nope', 'why', 'RUN');
+    expect(component.message).toContain('town id');
+    component.runTownNow(town, ' ', 'RUN');
+    expect(component.message).toContain('reason');
+    component.runTownNow(town, 'why', 'run');
+    expect(component.message).toContain('RUN');
+    http.expectNone(`${base}/towns/${town}/run`);
+    component.runTownNow(town, 'why', 'RUN');
+    const req = http.expectOne(`${base}/towns/${town}/run`);
+    expect(req.request.body).toMatchObject({ reason: 'why', confirm: 'RUN' });
+    req.flush({
+      communityId: town,
+      replayed: false,
+      alreadyPending: true,
+      requestedAt: '2026-11-18T00:00:00.000Z',
+      providers: ['overture'],
+    });
+    expect(component.message).toContain('already has a pending request');
+    expect(component.busy).toBe(false);
+  });
 });
