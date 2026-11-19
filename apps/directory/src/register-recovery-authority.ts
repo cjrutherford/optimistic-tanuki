@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { ensureAllOwnerLockBindings } from './locked-boundary-binding';
 import { DataSource } from 'typeorm';
 
 export type DirectoryRecoveryIdentity = {
@@ -124,6 +125,11 @@ export async function beginRegisterRecovery(db: DataSource, request: Begin) {
     await manager.query(
       `UPDATE directory_town SET "geometryStatus"='pending' WHERE "geometryStatus" <> 'pending' AND NOT EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=directory_town."communityId")`
     );
+    // A lock is an owner-verified border: keep its decision and binding verified under the new authority.
+    await ensureAllOwnerLockBindings(manager, {
+      recoveryEpoch,
+      directoryGeneration,
+    });
     await manager.query(
       `UPDATE directory_provider_work SET status='blocked', "updatedAt"=CURRENT_TIMESTAMP`
     );

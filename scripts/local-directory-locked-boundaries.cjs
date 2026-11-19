@@ -5,7 +5,9 @@
 // pinned Census TIGER archive (digest checked against the pins and the manifest, same reader the reviewed install
 // uses), validates it (valid polygon, SRID 4326, area band, geometry and evidence hashes) and installs it with a lock
 // the geometry sweep, the register re-reconcile and the recovery resets never override. Idempotent: a town already
-// locked with the same evidence is reported "unchanged". Every install bumps the town's geometry version, so the
+// locked with the same evidence is reported "unchanged", or "backfilled" when its owner-verified boundary decision and
+// reviewed-geometry record were missing and have now been written (the lock IS an owner-verified border; the D11 strong
+// match, publish containment and the recovery runtime read those records). --dry-run reports "would-backfill". Every install bumps the town's geometry version, so the
 // refresh rule refills the town.
 //
 // Run through ts-node (the directory sources are TypeScript):

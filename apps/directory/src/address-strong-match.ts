@@ -42,7 +42,22 @@ export async function queryVerifiedBoundary(
       ${lock ? 'FOR SHARE OF b,t,g,d,c' : ''}`,
     [communityId, geocode.lng, geocode.lat, source.lng, source.lat]
   );
-  return row ?? null;
+  if (row) return row;
+  // An owner-locked town has no Social candidate to join (the lock exists because the Social point is wrong); its
+  // owner-verified decision and binding are accepted when they match the lock and the current recovery authority.
+  const [locked] = await q.query(
+    `SELECT b."geometryHash",b."changeToken",encode(ST_AsEWKB(g.boundary,'XDR'),'hex') AS geometry, ST_Covers(g.boundary,ST_SetSRID(ST_MakePoint($2,$3),4326)) AS geocode_inside, ST_Covers(g.boundary,ST_SetSRID(ST_MakePoint($4,$5),4326)) AS source_inside
+      FROM directory_reviewed_geometry b
+      JOIN directory_town t ON t."communityId"=b."communityId" AND t.eligible IS TRUE AND t."geometryStatus"='ready' AND t."geometryVersion"=b.version
+      JOIN directory_town_geometry g ON g."communityId"=b."communityId" AND g.version=b.version
+      JOIN directory_boundary_decision d ON d."requestId"=b."requestId" AND d."communityId"=b."communityId" AND d.decision='verified' AND d."invalidatedAt" IS NULL AND d.reason='owner_lock'
+      JOIN directory_boundary_lock l ON l."communityId"=b."communityId" AND l.version=b.version AND l."geometryHash"=b."geometryHash"
+      JOIN directory_census_progress p ON p.id='recovery' AND p."recoveryEpoch"=b."recoveryEpoch" AND p."directoryGeneration"=b."directoryGeneration"
+      WHERE b."communityId"=$1 AND d."changeToken"=b."changeToken" AND d."geographyHash"=b."geographyHash" AND d."recoveryEpoch"=b."recoveryEpoch" AND d."directoryGeneration"=b."directoryGeneration"
+      ${lock ? 'FOR SHARE OF b,t,g,d,l' : ''}`,
+    [communityId, geocode.lng, geocode.lat, source.lng, source.lat]
+  );
+  return locked ?? null;
 }
 
 const finite = (p: unknown): p is Point =>
