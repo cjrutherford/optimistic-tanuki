@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Generated,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -12,7 +13,8 @@ export class CommunityDirectoryChange {
   @Column('uuid') communityId!: string;
   @Column({ type: 'varchar', length: 16 }) operation!: 'changed' | 'deleted';
   @Column({ type: 'uuid', nullable: true }) sourceEpoch!: string | null;
-  @Column({ type: 'uuid', unique: true, default: () => 'gen_random_uuid()' })
+  @Generated('uuid')
+  @Column({ type: 'uuid', unique: true })
   eventNonce!: string;
   @CreateDateColumn({ type: 'timestamptz' }) createdAt!: Date;
 }
