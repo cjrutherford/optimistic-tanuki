@@ -78,7 +78,8 @@ describe('seeded towns → generated registry', () => {
       const wanted = seed.filter(
         (city) => city.localityType === 'city' || city.localityType === 'town'
       ).length;
-      expect(wanted).toBe(262);
+      // S10 town decisions: Edisto Beach added, Ponte Vedra Beach replaced by Palm Valley.
+      expect(wanted).toBe(263);
       expect(registry.editions()).toHaveLength(wanted);
       expect(registry.all().length).toBeGreaterThan(registry.editions().length);
       expect(registry.get('nashville-ga')?.excludePhrases).toEqual([
