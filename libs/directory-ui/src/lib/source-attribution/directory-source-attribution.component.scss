@@ -17,4 +17,22 @@
       outline-offset: 2px;
     }
   }
+
+  &__title {
+    margin: 0.5rem 0 0;
+    font-family: var(--font-heading, inherit);
+    font-size: var(--type-small, 0.8125rem);
+    font-weight: 600;
+    letter-spacing: var(--personality-label-letter-spacing, 0.04em);
+    text-transform: uppercase;
+  }
+
+  &__list {
+    margin: 0.25rem 0 0;
+    padding-left: 1.25rem;
+  }
+
+  &__item {
+    overflow-wrap: anywhere;
+  }
 }

@@ -2,7 +2,6 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, input, TemplateRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DirectoryBadgeComponent } from '../badge/directory-badge.component';
-import { DirectorySourceAttributionComponent } from '../source-attribution/directory-source-attribution.component';
 import { LocalDirectoryListing } from '../models';
 import { humanizeCategory } from '../state';
 
@@ -10,12 +9,7 @@ import { humanizeCategory } from '../state';
 @Component({
   selector: 'otd-directory-card',
   standalone: true,
-  imports: [
-    NgTemplateOutlet,
-    RouterLink,
-    DirectoryBadgeComponent,
-    DirectorySourceAttributionComponent,
-  ],
+  imports: [NgTemplateOutlet, RouterLink, DirectoryBadgeComponent],
   template: `
     <article class="card" [attr.aria-labelledby]="headingId()">
       <div class="card__heading">
@@ -60,13 +54,6 @@ import { humanizeCategory } from '../state';
         ></ng-container>
       </div>
       }
-      <otd-directory-source-attribution
-        [attribution]="listing().attribution"
-        [notices]="listing().notices"
-        [termsUrls]="listing().termsUrls ?? []"
-        [showLimitation]="false"
-        [ariaLabel]="'Data source for ' + listing().name"
-      ></otd-directory-source-attribution>
     </article>
   `,
   styleUrls: ['./directory-card.component.scss'],
