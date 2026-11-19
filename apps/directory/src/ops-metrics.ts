@@ -258,7 +258,7 @@ export async function collectOpsMetrics(
       if (timer) clearTimeout(timer);
     }
   };
-  const [inf, tw, cov, fr, pol, sp, qs, ft, ctl] = await Promise.all([
+  const [inf, tw, cov, fr, pol, sp, qs, ft, rq, ctl] = await Promise.all([
     section('infrastructure', () => infrastructure(pool, env)),
     section('towns', () => towns(pool)),
     section('coverage', () => coverage(pool)),
@@ -267,6 +267,7 @@ export async function collectOpsMetrics(
     section('spend', () => spend(pool, env)),
     section('queues', () => queues(pool)),
     section('fillTime', () => fillTimeMetrics(pool)),
+    section('runQuality', () => runQualityMetrics(pool)),
     section('controls', () => listControls(pool)),
   ]);
   return {
@@ -279,8 +280,23 @@ export async function collectOpsMetrics(
     spend: sp,
     queues: qs,
     fillTime: ft,
+    runQuality: rq,
     controls: ctl,
     errors: errors.sort(),
+  };
+}
+
+async function runQualityMetrics(pool: Pool) {
+  const rows = await pool.query(
+    `SELECT count(*) FILTER (WHERE quality->>'passed' = 'false')::int AS total,
+            count(*) FILTER (WHERE quality->>'passed' = 'false'
+                             AND "finishedAt" > now() - interval '24 hours')::int AS recent
+       FROM directory_acquisition_run
+      WHERE status = 'failed_permanent'`
+  );
+  return {
+    failedTotal: Number(rows[0]?.total ?? 0),
+    failedLast24h: Number(rows[0]?.recent ?? 0),
   };
 }
 
@@ -330,6 +346,7 @@ export function toPrometheus(m: DirectoryOpsMetrics): string {
       'spend',
       'queues',
       'fillTime',
+      'runQuality',
       'controls',
     ].map(
       (s) =>
@@ -484,6 +501,14 @@ export function toPrometheus(m: DirectoryOpsMetrics): string {
     'directory_fill_alert',
     'A town is still waiting for acquisition past the fill-time target.',
     [[none, flag(m.fillTime?.alert)]]
+  );
+  gauge(
+    'directory_runs_failed_quality',
+    'Acquisition runs failed on the quality scorecard (quality_limit), by window.',
+    [
+      [{ window: 'total' }, m.runQuality?.failedTotal],
+      [{ window: 'last24h' }, m.runQuality?.failedLast24h],
+    ]
   );
   gauge(
     'directory_control_paused',
