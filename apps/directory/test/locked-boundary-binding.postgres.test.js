@@ -199,6 +199,26 @@ test(
       });
       assert.equal((await runtime.boundary(id)).status, 'ready');
 
+      // A Social save re-tokens the community; register reconcile must keep the owner lock verified.
+      await reconcileRegisterV2(db, auth, id, randomUUID(), async () => ({
+        status: 'current',
+        snapshot: {
+          id,
+          name: 'Locked Town',
+          slug: null,
+          adminArea: 'GA',
+          appScope: 'local-hub',
+          isPrivate: false,
+          localityType: 'city',
+        },
+      }));
+      const [afterRetoken] = (await decisions()).filter(
+        (x) => x.reason === OWNER_LOCK_REASON
+      );
+      assert.equal(afterRetoken.invalidatedAt, null);
+      assert.ok(await queryVerifiedBoundary(db, id, inside, inside, true));
+      assert.equal((await runtime.boundary(id)).status, 'ready');
+
       // The automatic reconcile and a stale-candidate read leave it alone.
       await reconcileAutoBoundary(db, auth);
       assert.equal(
