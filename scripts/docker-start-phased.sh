@@ -5,6 +5,10 @@ set -euo pipefail
 export LOCAL_UID="${LOCAL_UID:-$(id -u)}"
 export LOCAL_GID="${LOCAL_GID:-$(id -g)}"
 
+CIVIC_SERVICES=$(
+    clamav civic civic-briefing civic-contributions
+)
+
 DRY_RUN=0
 FULL_RESTART=0
 COMPOSE_FILE="docker-compose.yaml"
@@ -88,7 +92,7 @@ CLIENT_SERVICES=(
 MANAGED_SERVICES=(
     postgres redis "${CORE_SERVICES[@]}" "${ESSENTIAL_API_SERVICES[@]}"
     "${FEATURE_SERVICES[@]}" "${HEAVY_SERVICES[@]}" gateway
-    "${CLIENT_SERVICES[@]}"
+    "${CLIENT_SERVICES[@]}" "${CIVIC_SERVICES[@]}"
 )
 
 EXTERNAL_SERVICES=$(node -e 'const fs=require("node:fs"); const v=fs.existsSync(".env")?require("dotenv").parse(fs.readFileSync(".env")):{};process.stdout.write(process.env.DOCKER_DEV_EXTERNAL_SERVICES||v.DOCKER_DEV_EXTERNAL_SERVICES||"")')
@@ -293,9 +297,15 @@ run_phase "Phase 5: Feature services" "$PHASE_DELAY" \
     "${FEATURE_SERVICES[@]}"
 run_phase "Phase 6: Heavy services" "$PHASE_DELAY" \
     "${HEAVY_SERVICES[@]}"
-run_phase "Phase 7: Gateway" "$PHASE_DELAY" gateway
+for civic_service in "${CIVIC_SERVICES[@]}"; do
+    if selected_service "$civic_service" && ! external_service "$civic_service"; then
+        run_phase "Phase 7: Civic service $civic_service" "$PHASE_DELAY" "$civic_service"
+    fi
+run_phase "Phase 7: Civic services" "$PHASE_DELAY" "${CIVIC_SERVICES[@]}"
+done
+run_phase "Phase 8: Gateway" "$PHASE_DELAY" gateway
 
-run_phase "Phase 8: Client interfaces" 0 "${CLIENT_SERVICES[@]}"
+run_phase "Phase 9: Client interfaces" 0 "${CLIENT_SERVICES[@]}"
 
 echo "=== Startup complete ==="
 run_compose ps
