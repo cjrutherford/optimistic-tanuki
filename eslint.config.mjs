@@ -185,4 +185,11 @@ export default [
       '@nx/enforce-module-boundaries': 'off',
     },
   },
+  {
+    files: ['apps/directory-worker/src/**/*.ts'],
+    rules: {
+      // The worker runs the directory app's own domain code against the same database; it ships both from one tree.
+      '@nx/enforce-module-boundaries': 'off',
+    },
+  },
 ];
