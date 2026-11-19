@@ -200,6 +200,52 @@ export class DirectoryProviderCreditAttempt {
   createdAt!: Date;
 }
 
+/**
+ * A newer Overture release the worker found (owner decision D29). It is recorded with its rights check, run on a few
+ * canary towns and promoted (becomes the pinned release the refresh rule acquires) only when every canary succeeded.
+ * A promoted row is the active release; the newest promoted row wins. Held and rejected rows stay as the record.
+ */
+@Entity({ name: 'directory_overture_release_candidate' })
+@Check(
+  'CHK_directory_overture_release_status',
+  "\"status\" IN ('detected','canary_running','held','rejected','promoted')"
+)
+@Check(
+  'CHK_directory_overture_release_rights',
+  "\"rightsStatus\" IN ('approved','mismatch')"
+)
+@Index('IDX_directory_overture_release_status', ['status', 'detectedAt'])
+export class DirectoryOvertureReleaseCandidate {
+  @PrimaryColumn({ type: 'varchar', length: 64 }) release!: string;
+  @Column({ type: 'varchar', length: 16, default: 'detected' }) status!: string;
+  @Column({ type: 'varchar', length: 16 }) rightsStatus!: string;
+  /** What the licence check compared: the licence the release declares and the ones the pinned policy approves. */
+  @Column({ type: 'jsonb' }) rightsDetail!: Record<string, unknown>;
+  /** The pinned policy re-labelled for this release; only present when the licence check matched. */
+  @Column({ type: 'jsonb', nullable: true }) rightsPolicy!: unknown | null;
+  @Column({ type: 'jsonb', nullable: true }) inventory!: unknown | null;
+  @Column({ type: 'jsonb', default: () => "'[]'" }) canaryTownIds!: string[];
+  /** Canary runs created before this instant belong to an earlier attempt (an operator retry resets it). */
+  @Column({ type: 'timestamptz', nullable: true })
+  canaryStartedAt!: Date | null;
+  @Column({ type: 'jsonb', default: () => "'[]'" }) canaryResults!: unknown[];
+  @Column({ type: 'varchar', length: 64, nullable: true }) holdReason!:
+    | string
+    | null;
+  @Column({ type: 'varchar', length: 1024, nullable: true }) lastError!:
+    | string
+    | null;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  detectedAt!: Date;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt!: Date;
+  @Column({ type: 'timestamptz', nullable: true }) decidedAt!: Date | null;
+  @Column({ type: 'uuid', nullable: true }) decidedBy!: string | null;
+  @Column({ type: 'uuid', nullable: true }) decisionId!: string | null;
+  @Column({ type: 'varchar', length: 1024, nullable: true })
+  decisionReason!: string | null;
+}
+
 /** Replay fence for anonymous, non-billed Overture S3 reads in local evaluation. */
 @Entity({ name: 'directory_anonymous_overture_attempt' })
 @Check(

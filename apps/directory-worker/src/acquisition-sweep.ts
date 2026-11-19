@@ -20,9 +20,16 @@ import {
   selectGeoapifyPolicy,
 } from '../../directory/src/geoapify-enrichment';
 import { createAtpSnapshotProvider } from './alltheplaces-snapshot';
+import {
+  DEFAULT_CANARY_TOWNS,
+  PINNED_OVERTURE_RELEASE,
+  activeOvertureRelease,
+  isReleaseId,
+  runOvertureReleaseSweep,
+  type ReleaseSource,
+} from '../../directory/src/overture-release';
 
-/** The release the owner pinned (D1). Acquisition is for this release only. */
-export const PINNED_OVERTURE_RELEASE = '2026-10-21.0';
+export { PINNED_OVERTURE_RELEASE };
 
 export type AcquisitionSweepConfig = AutoAcquisitionConfig & {
   intervalMs: number;
@@ -102,6 +109,26 @@ export function loadAcquisitionInputs(
   }
 }
 
+/**
+ * The inputs the sweep runs under: the newest promoted release (its inventory and rights policy are stored with the
+ * candidate, D29), or the pinned release from the inventory and policy files when none has been promoted.
+ */
+export async function resolveAcquisitionInputs(
+  config: AcquisitionSweepConfig,
+  db: Pick<DataSource, 'query'>,
+  read?: (file: string) => string
+): Promise<{
+  inventory: OvertureInventory;
+  rights: OvertureRightsPolicy;
+} | null> {
+  const active = await activeOvertureRelease(db);
+  if (active.source === 'promoted')
+    return active.inventory && active.rights
+      ? { inventory: active.inventory, rights: active.rights }
+      : null;
+  return loadAcquisitionInputs(config, read);
+}
+
 type Extractor = (args: Record<string, unknown>) => Promise<{
   scanId?: string | null;
   sourceFileRowNumber?: number | null;
@@ -128,6 +155,106 @@ export function createAcquisitionSweepRunner(
         db: db(),
         inventory: inputs.inventory,
         rights: inputs.rights,
+        config,
+        signal,
+        log,
+        extract: async (request: ExtractRequest) => {
+          const connection = await spatial.connection();
+          if (!remote) {
+            await connection.run('LOAD httpfs');
+            remote = true;
+          }
+          return extractPrivate({
+            connection,
+            sourceMode: 'remote',
+            ...request,
+          });
+        },
+      });
+    } finally {
+      spatial.close();
+    }
+  };
+}
+
+/** Overture's public release metadata (STAC): the release list, the licence declaration and the pinned inventory. */
+export function createStacReleaseSource(
+  fetchImpl: typeof fetch = fetch,
+  preflight?: ReleaseSource['buildInventory']
+): ReleaseSource {
+  const base = 'https://stac.overturemaps.org';
+  const json = async (url: string) => {
+    const res = await fetchImpl(url, {
+      signal: AbortSignal.timeout(15_000),
+      redirect: 'error',
+    });
+    if (!res.ok) throw Error(`Release metadata request failed: ${res.status}`);
+    return res.json();
+  };
+  return {
+    async listReleases() {
+      const catalog = await json(`${base}/catalog.json`);
+      return (Array.isArray(catalog?.links) ? catalog.links : [])
+        .filter((l: { rel?: string }) => l?.rel === 'child')
+        .map(
+          (l: { href?: string }) =>
+            String(l.href).replace(`${base}/`, '').split('/')[0]
+        )
+        .filter(isReleaseId);
+    },
+    async licenseOf(release) {
+      if (!isReleaseId(release)) throw Error('Invalid release');
+      const c = await json(`${base}/${release}/places/place/collection.json`);
+      const link = (Array.isArray(c?.links) ? c.links : []).find(
+        (l: { rel?: string }) => l?.rel === 'license'
+      );
+      return typeof c?.license === 'string' && c.license
+        ? `${c.license}|${link?.href ?? ''}`
+        : null;
+    },
+    buildInventory(release, envelope) {
+      if (preflight) return preflight(release, envelope);
+      const { preflight: build } =
+        require('../../../scripts/overture-release-preflight.mjs') as {
+          preflight: ReleaseSource['buildInventory'];
+        };
+      return build(release, envelope);
+    },
+  };
+}
+
+/** The release watcher: detects a newer release, runs the canaries and promotes or holds it (D29). */
+export function createReleaseSweepRunner(
+  config: AcquisitionSweepConfig,
+  db: () => DataSource,
+  env: NodeJS.ProcessEnv,
+  log: (message: string) => void = (m) => console.error(m),
+  source: ReleaseSource = createStacReleaseSource()
+): (signal?: AbortSignal) => Promise<AutoSweepOutcome> {
+  return async (signal) => {
+    const canary = Number(
+      env['DIRECTORY_OVERTURE_CANARY_TOWNS'] || DEFAULT_CANARY_TOWNS
+    );
+    if (!Number.isSafeInteger(canary) || canary < 1 || canary > 10)
+      throw Error('Invalid DIRECTORY_OVERTURE_CANARY_TOWNS');
+    const inputs = await resolveAcquisitionInputs(config, db());
+    if (!inputs) throw Error('Acquisition inputs unavailable');
+    const { extractPrivate } =
+      require('../../../scripts/overture-private-extractor.mjs') as {
+        extractPrivate: Extractor;
+      };
+    const spatial = new SpatialSession();
+    let remote = false;
+    try {
+      return await runOvertureReleaseSweep({
+        db: db(),
+        source,
+        active: {
+          release: inputs.inventory.release,
+          inventory: inputs.inventory,
+          rights: inputs.rights,
+        },
+        canaryTowns: canary,
         config,
         signal,
         log,

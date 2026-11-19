@@ -32,6 +32,14 @@ export interface AcquisitionRouteChecks {
   acquisitionImportHistory(v: any): Promise<unknown>;
   /** "Run this town now": records a pending request the next sweep puts first. */
   acquisitionTownRun(townId: string, v: any): Promise<unknown>;
+  /** The active Overture release and the newest candidate releases (D29). */
+  acquisitionReleases(): Promise<unknown>;
+  /** Operator retry or reject of a held candidate release. */
+  acquisitionReleaseAction(
+    action: 'retry' | 'reject',
+    release: string,
+    v: any
+  ): Promise<unknown>;
 }
 
 let active = 0;
@@ -90,11 +98,13 @@ export async function handleAcquisitionRoute(
   if (!req.url?.startsWith('/internal/acquisition/')) return false;
   const url = new URL(req.url, 'http://localhost');
   const m = url.pathname.match(
-    /^\/internal\/acquisition\/(budget|history\/import|towns\/[0-9a-f-]{36}\/run|runs(?:\/(latest|[0-9a-f-]{36})(?:\/(cancel|resume|retry))?)?)$/
+    /^\/internal\/acquisition\/(budget|releases(?:\/\d{4}-\d{2}-\d{2}\.\d+\/(?:retry|reject))?|history\/import|towns\/[0-9a-f-]{36}\/run|runs(?:\/(latest|[0-9a-f-]{36})(?:\/(cancel|resume|retry))?)?)$/
   );
   if (!m) return false;
   const [, whole, runPart, sub] = m;
-  const area = whole.startsWith('runs')
+  const area = whole.startsWith('releases')
+    ? 'releases'
+    : whole.startsWith('runs')
     ? 'runs'
     : whole.startsWith('towns/')
     ? 'town-run'
@@ -111,6 +121,10 @@ export async function handleAcquisitionRoute(
       if (area === 'budget') {
         if (url.search) return send(res, 400), true;
         return send(res, 200, await checks.acquisitionBudget()), true;
+      }
+      if (area === 'releases' && whole === 'releases') {
+        if (url.search) return send(res, 400), true;
+        return send(res, 200, await checks.acquisitionReleases()), true;
       }
       if (area === 'runs' && !runPart) {
         if (!keysOk(['status', 'townId', 'limit', 'offset']))
@@ -141,6 +155,29 @@ export async function handleAcquisitionRoute(
     if (!v) return send(res, 400), true;
     if (!uuid.test(v.actorId || '') || !uuid.test(v.decisionId || ''))
       return send(res, 400), true;
+    if (area === 'releases') {
+      const [, release, action] = whole.split('/');
+      if (
+        !release ||
+        !only(v, ['actorId', 'decisionId', 'reason', 'confirm']) ||
+        !text(v.reason) ||
+        v.confirm !== (action === 'retry' ? 'RETRY' : 'REJECT')
+      )
+        return send(res, 400), true;
+      const { confirm: _confirm, ...rest } = v;
+      return (
+        send(
+          res,
+          200,
+          await checks.acquisitionReleaseAction(
+            action as 'retry' | 'reject',
+            release,
+            rest
+          )
+        ),
+        true
+      );
+    }
     if (area === 'town-run') {
       const townId = whole.split('/')[1];
       if (
@@ -207,7 +244,11 @@ export async function handleAcquisitionRoute(
         code: error.code,
         ...(error.detail ? { reason: error.detail } : {}),
       });
-    else if (message === 'Run not found' || message === 'Town not found')
+    else if (
+      message === 'Run not found' ||
+      message === 'Town not found' ||
+      message === 'Release not found'
+    )
       send(res, 404);
     else if (/^Invalid /.test(message)) send(res, 400);
     else send(res, 503);

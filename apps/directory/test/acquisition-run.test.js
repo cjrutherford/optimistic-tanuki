@@ -272,3 +272,60 @@ test('routes: run-this-town-now needs the secret, a confirmation and ids', async
   await h.run();
   assert.equal(h.res.status, 404);
 });
+
+test('routes: overture release list and strict retry/reject', async () => {
+  const REL = '2026-11-18.0';
+  let h = harness('GET', '/internal/acquisition/releases');
+  await h.run();
+  assert.equal(h.res.status, 200);
+  assert.equal(h.calls[0][0], 'acquisitionReleases');
+  h = harness('GET', '/internal/acquisition/releases?x=1');
+  await h.run();
+  assert.equal(h.res.status, 400);
+  const body = (extra = {}) => ({
+    actorId: A,
+    decisionId: D,
+    reason: 'looked',
+    confirm: 'RETRY',
+    ...extra,
+  });
+  h = harness('POST', `/internal/acquisition/releases/${REL}/retry`, body());
+  await h.run();
+  assert.equal(h.res.status, 200);
+  assert.deepEqual(h.calls[0].slice(0, 3), [
+    'acquisitionReleaseAction',
+    'retry',
+    REL,
+  ]);
+  assert.equal(h.calls[0][3].confirm, undefined);
+  for (const [action, b] of [
+    ['retry', body({ confirm: 'REJECT' })],
+    ['reject', body({ confirm: 'RETRY' })],
+    ['retry', body({ extra: 1 })],
+    ['retry', body({ reason: '' })],
+    ['retry', body({ actorId: 'x' })],
+  ]) {
+    h = harness('POST', `/internal/acquisition/releases/${REL}/${action}`, b);
+    await h.run();
+    assert.equal(h.res.status, 400);
+    assert.equal(h.calls.length, 0);
+  }
+  h = harness(
+    'POST',
+    `/internal/acquisition/releases/${REL}/reject`,
+    body({ confirm: 'REJECT' })
+  );
+  await h.run();
+  assert.equal(h.res.status, 200);
+  h = harness(
+    'POST',
+    `/internal/acquisition/releases/${REL}/reject`,
+    body({ confirm: 'REJECT' }),
+    { acquisitionReleaseAction: Error('Release not found') }
+  );
+  await h.run();
+  assert.equal(h.res.status, 404);
+  h = harness('POST', `/internal/acquisition/releases/latest/retry`, body());
+  await h.run();
+  assert.equal(h.res.status, 0); // not a release route
+});

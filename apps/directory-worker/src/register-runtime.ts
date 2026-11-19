@@ -28,6 +28,7 @@ import {
   acquisitionSweepConfig,
   createAcquisitionSweepRunner,
   createAtpSweepRunner,
+  createReleaseSweepRunner,
   createGeoapifySweepRunner,
   runAcquisitionSweepLoop,
 } from './acquisition-sweep';
@@ -235,6 +236,9 @@ export async function runRegisterWorker(
     atpStatus = new AcquisitionSweepStatus(config.acquisitionSweep !== null),
     geoapifyStatus = new AcquisitionSweepStatus(
       config.acquisitionSweep !== null
+    ),
+    releaseStatus = new AcquisitionSweepStatus(
+      config.acquisitionSweep !== null
     );
   const stop = () => controller.abort();
   process.once('SIGTERM', stop);
@@ -347,6 +351,23 @@ export async function runRegisterWorker(
           status: atpStatus,
         })
       : Promise.resolve();
+    const releaseLoop = config.acquisitionSweep
+      ? runAcquisitionSweepLoop({
+          signal: controller.signal,
+          intervalMs: Math.max(
+            config.acquisitionSweep.intervalMs,
+            Number(
+              process.env['DIRECTORY_OVERTURE_RELEASE_CHECK_INTERVAL_MS']
+            ) || 3_600_000
+          ),
+          run: createReleaseSweepRunner(
+            config.acquisitionSweep,
+            () => db,
+            process.env
+          ),
+          status: releaseStatus,
+        })
+      : Promise.resolve();
     const geoapifyLoop = config.acquisitionSweep
       ? runAcquisitionSweepLoop({
           signal: controller.signal,
@@ -391,6 +412,7 @@ export async function runRegisterWorker(
       duplicateLoop,
       atpLoop,
       geoapifyLoop,
+      releaseLoop,
       bindingLoop,
       geometryLoop,
       acquisitionLoop,

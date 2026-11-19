@@ -102,3 +102,69 @@ test('loop records status, never throws, and stops on abort', async () => {
   });
   assert.equal(status.snapshot().lastStatus, 'paused');
 });
+
+test('a promoted release supplies the inputs; otherwise the files do', async () => {
+  const {
+    resolveAcquisitionInputs,
+    createStacReleaseSource,
+  } = require('../src/acquisition-sweep');
+  const cfg = { inventoryFile: 'inv', rightsPolicyFile: 'rp' };
+  const files = (f) =>
+    f === 'inv'
+      ? JSON.stringify({ release: '2026-10-21.0', items: [] })
+      : JSON.stringify([{ releaseId: '2026-10-21.0' }]);
+  const dbWith = (rows) => ({ query: async () => rows });
+  const pinned = await resolveAcquisitionInputs(cfg, dbWith([]), files);
+  assert.equal(pinned.inventory.release, '2026-10-21.0');
+  const inventory = { release: '2026-11-18.0', items: [{ id: 'x' }] };
+  const rights = { releaseId: '2026-11-18.0' };
+  const promoted = await resolveAcquisitionInputs(
+    cfg,
+    dbWith([{ release: '2026-11-18.0', inventory, rightsPolicy: rights }]),
+    files
+  );
+  assert.deepEqual(promoted, { inventory, rights });
+  // A promoted release without stored inputs yields nothing rather than falling back to the old pin.
+  assert.equal(
+    await resolveAcquisitionInputs(
+      cfg,
+      dbWith([
+        { release: '2026-11-18.0', inventory: null, rightsPolicy: null },
+      ]),
+      files
+    ),
+    null
+  );
+
+  const base = 'https://stac.overturemaps.org';
+  const fetched = [];
+  const src = createStacReleaseSource(async (url) => {
+    fetched.push(url);
+    const body = url.endsWith('/catalog.json')
+      ? {
+          links: [
+            { rel: 'self', href: `${base}/catalog.json` },
+            { rel: 'child', href: `${base}/2026-10-21.0/catalog.json` },
+            { rel: 'child', href: `${base}/2026-11-18.0/catalog.json` },
+            { rel: 'child', href: `${base}/not-a-release/catalog.json` },
+          ],
+        }
+      : {
+          license: 'other',
+          links: [
+            {
+              rel: 'license',
+              href: 'https://docs.overturemaps.org/attribution/',
+            },
+          ],
+        };
+    return { ok: true, status: 200, json: async () => body };
+  });
+  assert.deepEqual(await src.listReleases(), ['2026-10-21.0', '2026-11-18.0']);
+  assert.equal(
+    await src.licenseOf('2026-11-18.0'),
+    'other|https://docs.overturemaps.org/attribution/'
+  );
+  await assert.rejects(src.licenseOf('../x'), /Invalid release/);
+  assert.ok(fetched.every((u) => u.startsWith(base)));
+});

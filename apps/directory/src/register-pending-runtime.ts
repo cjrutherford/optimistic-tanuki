@@ -1,3 +1,10 @@
+import {
+  overtureReleasePanel,
+  primePromotedRights,
+  promotedRightsPolicy,
+  rejectReleaseCandidate,
+  retryReleaseCandidate,
+} from './overture-release';
 import { readFileSync } from 'node:fs';
 import {
   createServer,
@@ -394,13 +401,15 @@ function loadRightsPolicy(
   releaseId: string
 ): Parameters<typeof syncRightsCases>[1]['policy'] {
   const file = process.env.DIRECTORY_RIGHTS_POLICY_FILE;
-  if (!file) return undefined;
+  // A release the worker promoted (D29) carries its derived policy in the database; the file stays the first source.
+  const promoted = () => promotedRightsPolicy(releaseId) as never;
+  if (!file) return promoted();
   try {
     const parsed = JSON.parse(readFileSync(file, 'utf8'));
     const all = Array.isArray(parsed) ? parsed : [parsed];
-    return all.find((p) => p?.releaseId === releaseId);
+    return all.find((p) => p?.releaseId === releaseId) ?? promoted();
   } catch {
-    return undefined;
+    return promoted();
   }
 }
 
@@ -968,6 +977,7 @@ export function pendingChecks(
     )
       throw Error('Town unavailable');
     const cap = Number(process.env.DIRECTORY_PUBLIC_EXPORT_MAX_ROWS);
+    await primePromotedRights(db as never).catch(() => undefined);
     return buildPublicExport(db, {
       town: v.town,
       format: v.format,
@@ -1684,6 +1694,7 @@ export function pendingChecks(
       operation?: string;
     }) => {
       // The release an operator names wins; otherwise the one a stage run recorded.
+      await primePromotedRights(rightsDb as never).catch(() => undefined);
       const releaseId = v.releaseId ?? (await discoverRightsRelease(rightsDb));
       if (!releaseId) throw Error('Invalid rights sync: no release recorded');
       return syncRightsCases(rightsDb, {
@@ -1754,6 +1765,16 @@ export function pendingChecks(
         : action === 'resume'
         ? resumeAcquisitionRun
         : retryAcquisitionJob)(acquisitionDb, { ...v, id }),
+    acquisitionReleases: () => overtureReleasePanel(acquisitionDb as never),
+    acquisitionReleaseAction: (
+      action: 'retry' | 'reject',
+      release: string,
+      v: any
+    ) =>
+      (action === 'retry' ? retryReleaseCandidate : rejectReleaseCandidate)(
+        acquisitionDb as never,
+        { ...v, release }
+      ),
     acquisitionTownRun: (townId: string, v: any) =>
       requestTownAcquisition(db as never, { ...v, communityId: townId }),
     acquisitionImportHistory: (v: any) => {
@@ -3626,6 +3647,12 @@ export async function runPendingRuntime(): Promise<void> {
     });
     // Operator exports run only when DIRECTORY_EXPORT_DIR names a writable directory.
     if (exportDir) {
+      await primePromotedRights(db as never).catch(() => undefined);
+      const primer = setInterval(
+        () => void primePromotedRights(db as never).catch(() => undefined),
+        60_000
+      );
+      primer.unref?.();
       const hours = Number(process.env.DIRECTORY_EXPORT_RETENTION_HOURS);
       stopExports = startExportWorker(db as never, {
         dir: exportDir,

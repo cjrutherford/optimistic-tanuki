@@ -92,6 +92,8 @@ describe('DirectoryRunsController', () => {
       'cancel',
       'resume',
       'retry',
+      'releases',
+      'releaseAction',
     ] as const) {
       const handler = controller[name];
       expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toHaveLength(3);
@@ -341,6 +343,62 @@ describe('DirectoryRunsController', () => {
       release: '2026-10-21.0',
       actorId: actor,
     });
+  });
+
+  it('reads the release panel and sends a confirmed release decision with the session actor', async () => {
+    const panel = {
+      active: { release: '2026-10-21.0', source: 'pinned' },
+      candidates: [],
+    };
+    const spy = reply(200, panel);
+    expect(await controller.releases({}, req)).toEqual(panel);
+    expect(call(spy).url).toBe(
+      'http://directory:3120/internal/acquisition/releases'
+    );
+    await expect(controller.releases({ x: '1' }, req)).rejects.toThrow(
+      BadRequestException
+    );
+    const post = reply(200, {
+      release: '2026-11-18.0',
+      status: 'detected',
+      replayed: false,
+      extra: 'dropped',
+    });
+    const out = await controller.releaseAction(
+      '2026-11-18.0',
+      'retry',
+      { decisionId, reason: 'checked', confirm: 'RETRY' },
+      req
+    );
+    expect(out).toEqual({
+      release: '2026-11-18.0',
+      status: 'detected',
+      replayed: false,
+    });
+    expect(call(post).url).toBe(
+      'http://directory:3120/internal/acquisition/releases/2026-11-18.0/retry'
+    );
+    expect(JSON.parse(call(post).init.body as string)).toEqual({
+      decisionId,
+      reason: 'checked',
+      confirm: 'RETRY',
+      actorId: actor,
+    });
+    const good = { decisionId, reason: 'checked', confirm: 'REJECT' };
+    for (const [release, act, body] of [
+      ['latest', 'reject', good],
+      ['2026-11-18.0', 'delete', good],
+      ['2026-11-18.0', 'reject', { ...good, confirm: 'RETRY' }],
+      ['2026-11-18.0', 'reject', { ...good, actorId: actor }],
+      ['2026-11-18.0', 'reject', { ...good, reason: ' ' }],
+      ['2026-11-18.0', 'reject', { ...good, decisionId: 'x' }],
+    ] as [string, string, Record<string, unknown>][]) {
+      post.mockClear();
+      await expect(
+        controller.releaseAction(release, act, body, req)
+      ).rejects.toThrow(BadRequestException);
+      expect(post).not.toHaveBeenCalled();
+    }
   });
 
   it('never leaks upstream failures', async () => {
