@@ -45,3 +45,7 @@ Contact completeness minima are 0 (reported only) because live rows keep no cont
 `DIRECTORY_QUALITY_LIMITS` (JSON object of limit names; invalid values are ignored).
 
 Operators see the scorecard on the Owner Console runs page. Metrics: `directory_runs_failed_quality{window="total|last24h"}`.
+
+## Rollout (2026-11-19)
+
+The normalize stage and the re-normalization backfill ran on the live local stack, and the scorecard is active on every run (`39ecfb24b`, `50a807753`). Limits that are provisional: the invalid-address and invalid-phone ceilings (0.35) were set from distributions before any refresh scorecard existed, so revisit them once real refresh scorecards are in. Canary runs for a new Overture release (D29) go through this same scorecard, and they are real acquisitions: a canary scan goes live if it passes. `canary_empty` counts as a canary failure.
