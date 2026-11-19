@@ -366,6 +366,8 @@ const inventory: DirectoryLifecycleInventory = {
             'state',
             'createdAt',
             'decidedAt',
+            'decidedBy',
+            'autoRule',
           ],
           class: 'operational',
           deletion: 'preserve',
@@ -394,7 +396,7 @@ const inventory: DirectoryLifecycleInventory = {
           note: 'Free text the deciding reviewer supplied; cleared on rows that reviewer authored. Not exported: reviewer actions are operational audit records.',
         },
         {
-          fields: ['id', 'caseId', 'kind', 'createdAt'],
+          fields: ['id', 'caseId', 'kind', 'createdAt', 'actorKind', 'ruleId'],
           class: 'history',
           deletion: 'preserve',
           export: 'exclude',
