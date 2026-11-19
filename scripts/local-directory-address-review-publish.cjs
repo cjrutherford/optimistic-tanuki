@@ -58,33 +58,45 @@ const policyPath = value(
 );
 const reviewer = value('--reviewer', '');
 const limit = Number(value('--limit', '10'));
+const communityId = value('--community', '');
+const releaseId = value('--release', '');
 const apply = flag('--apply');
 const databaseUrl = process.env.DIRECTORY_REVIEW_DATABASE_URL;
 
-if (apply) {
-  console.error(
-    'Address publication is paused pending source identity, town containment, withdrawal and quality-gate repairs.'
-  );
-  process.exit(1);
-}
+// The pause on --apply is lifted (owner D11/D12): the publisher keeps its own source-identity, containment,
+// withdrawal and quality gates, and D12 candidates are published on an exact Census geocode alone.
 if (!databaseUrl) {
   console.error(
     'DIRECTORY_REVIEW_DATABASE_URL is required. Point it at the database that owns the private review rows.'
   );
   process.exit(1);
 }
-if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
-  console.error('--limit must be between 1 and 100');
+if (!Number.isSafeInteger(limit) || limit < 1 || limit > 5000) {
+  console.error('--limit must be between 1 and 5000');
   process.exit(1);
 }
 if (apply && !policyPath) {
   console.error('--policy is required when --apply is set');
   process.exit(1);
 }
+if (
+  communityId &&
+  !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    communityId
+  )
+) {
+  console.error('--community must be a UUID');
+  process.exit(1);
+}
 let policy = null;
 if (policyPath) {
   try {
     policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
+    // A rights-policy file may hold several releases; --release picks one (default: the last).
+    if (Array.isArray(policy))
+      policy =
+        (releaseId && policy.find((p) => p?.releaseId === releaseId)) ||
+        (releaseId ? null : policy[policy.length - 1]);
   } catch {
     console.error('Unable to read --policy');
     process.exit(1);
@@ -211,9 +223,10 @@ function sourceFromContact(candidate, listing) {
     const candidates = await db.query(
       `SELECT * FROM "directory_address_review_candidate"
        WHERE "status" IN ('approved','auto_approved')
+         AND ($2::uuid IS NULL OR "communityId"=$2)
        ORDER BY "updatedAt" ASC, "id"
        LIMIT $1`,
-      [limit]
+      [limit, communityId || null]
     );
     if (!candidates.length) {
       console.log(
@@ -252,6 +265,7 @@ function sourceFromContact(candidate, listing) {
       rightsBlocked: 0,
       published: 0,
       failed: 0,
+      failures: {},
       samples: [],
     };
 
@@ -363,15 +377,20 @@ function sourceFromContact(candidate, listing) {
               },
         });
         summary.published += 1;
-      } catch {
+      } catch (error) {
         summary.failed += 1;
+        const why = String(error?.message || error).slice(0, 80);
+        summary.failures[why] = (summary.failures[why] || 0) + 1;
       }
     }
 
     console.log(
       JSON.stringify(
         {
-          source: contactMode ? contactStage : source,
+          source: contactMode
+            ? 'contact-stage:' +
+              (process.env.DIRECTORY_CONTACT_STAGE_LABEL || 'unlabelled')
+            : source,
           limit,
           apply,
           policy: policy ? policy.releaseId : null,

@@ -229,3 +229,102 @@ test('rate limiter spaces calls', async () => {
   await limiter();
   assert.ok(Date.now() - start >= 4);
 });
+
+// Census batch geocoding (D12 throughput).
+const {
+  buildCensusBatchCsv,
+  geocodeCensusBatch,
+  parseCensusBatchResponse,
+  parseCsv,
+  splitCensusAddress,
+} = require('../src/address-evidence');
+
+test('batch address splitting reads a trailing state and ZIP, or falls back to the town', () => {
+  assert.deepEqual(
+    splitCensusAddress({
+      id: '1',
+      address: '1017 4th Ave W, Bradenton, FL 34205-7832',
+    }),
+    { street: '1017 4th Ave W', city: 'Bradenton', state: 'FL', zip: '34205' }
+  );
+  assert.deepEqual(
+    splitCensusAddress({
+      id: '1',
+      address: '1689 Vernon Rd  # 5, Lagrange, GA',
+    }),
+    { street: '1689 Vernon Rd  # 5', city: 'Lagrange', state: 'GA', zip: '' }
+  );
+  assert.deepEqual(
+    splitCensusAddress({
+      id: '1',
+      address: '8491 US-84',
+      fallbackState: 'GA',
+    }),
+    { street: '8491 US-84', city: '', state: 'GA', zip: '' }
+  );
+  assert.equal(splitCensusAddress({ id: '1', address: '8491 US-84' }), null);
+});
+
+test('batch CSV quotes fields, carries no personal data and reports skipped rows', () => {
+  const out = buildCensusBatchCsv([
+    { id: 'a', address: '5 Main St, "Odd", Town, GA 31601' },
+    { id: 'b', address: 'no state here' },
+  ]);
+  assert.deepEqual(out.sent, ['a']);
+  assert.deepEqual(out.skipped, ['b']);
+  assert.equal(out.csv, '"a","5 Main St, ""Odd""","Town","GA","31601"\n');
+});
+
+test('batch response parsing marks exact, non-exact, tie, no-match and malformed rows', () => {
+  const text = [
+    '"a","1 Main St, Town, GA, 31601","Match","Exact","1 MAIN ST, TOWN, GA, 31601","-83.28,30.83","123","L"',
+    '"b","2 Main St, Town, GA, 31601","Match","Non_Exact","2 MAIN ST, TOWN, GA, 31601","-83.29,30.84","124","R"',
+    '"c","3 Main St, Town, GA, 31601","Tie"',
+    '"d","4 Main St, Town, GA, 31601","No_Match"',
+    '"e","5 Main St","Match","Exact","5 MAIN ST","bad","1","L"',
+  ].join('\r\n');
+  const out = parseCensusBatchResponse(text, '2026-11-19T00:00:00.000Z');
+  assert.equal(out.get('a').status, 'match');
+  assert.equal(out.get('a').matchType, 'exact');
+  assert.deepEqual(out.get('a').coordinates, { lat: 30.83, lng: -83.28 });
+  assert.equal(out.get('b').matchType, 'non_exact');
+  assert.equal(out.get('c').status, 'ambiguous');
+  assert.equal(out.get('d').status, 'no_match');
+  assert.equal(out.get('e').status, 'error');
+  assert.equal(out.has('f'), false);
+  assert.deepEqual(parseCsv('"x,y","z""q"\n1,2\n'), [
+    ['x,y', 'z"q'],
+    ['1', '2'],
+  ]);
+});
+
+test('batch POST retries with backoff, then succeeds or gives up', async () => {
+  const waits = [];
+  let calls = 0;
+  const sleep = async (ms) => void waits.push(ms);
+  const flaky = async (url, init) => {
+    calls += 1;
+    assert.equal(init.method, 'POST');
+    assert.match(init.headers['user-agent'], /^TownSquareDirectoryReview/);
+    assert.equal(init.body.get('benchmark'), 'Public_AR_Current');
+    if (calls < 3) return new Response('busy', { status: 503 });
+    return new Response('"a","x","No_Match"', { status: 200 });
+  };
+  const text = await geocodeCensusBatch({
+    csv: '"a"\n',
+    fetchImpl: flaky,
+    sleep,
+    backoffMs: 10,
+  });
+  assert.match(text, /No_Match/);
+  assert.deepEqual(waits, [10, 20]);
+  await assert.rejects(
+    geocodeCensusBatch({
+      csv: '"a"\n',
+      fetchImpl: async () => new Response('x', { status: 500 }),
+      sleep,
+      retries: 1,
+    }),
+    /after 2 attempts/
+  );
+});
