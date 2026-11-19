@@ -37,7 +37,7 @@ async function withDb(fn) {
   try {
     await ds.query(
       `TRUNCATE directory_acquisition_run, directory_acquisition_run_job, directory_acquisition_run_event, directory_town_scan_target,
-       directory_town_geometry, directory_town, directory_provider_budget_attempt, directory_anonymous_overture_attempt,
+       directory_town_geometry, directory_town, directory_provider_budget_attempt, directory_provider_credit_attempt, directory_anonymous_overture_attempt,
        directory_operating_control, directory_overture_private_row, directory_overture_private_completion,
        directory_overture_private_revocation, directory_provider_status, directory_geoapify_enrichment CASCADE`
     );
@@ -322,7 +322,7 @@ test(
         0
       );
       assert.equal(
-        (await ds.query(`SELECT 1 FROM directory_provider_budget_attempt`))
+        (await ds.query(`SELECT 1 FROM directory_provider_credit_attempt`))
           .length,
         0
       );
@@ -343,28 +343,37 @@ test(
         db: ds,
         apiKey: 'test-key-not-real',
         policy: gpolicy,
-        costCents: 2,
+        creditsPerRequest: 2,
         batch: 10,
         fetchImpl: okFetch(log),
       });
       assert.equal(out.succeeded, 2, 'the incomplete scan is not enriched');
       const budget = await ds.query(
-        `SELECT provider,operation,"reservedCents" FROM directory_provider_budget_attempt`
+        `SELECT provider,operation,credits,day=(now() AT TIME ZONE 'UTC')::date AS today FROM directory_provider_credit_attempt`
       );
       assert.equal(budget.length, 2);
       assert.deepEqual(budget[0], {
         provider: 'geoapify',
         operation: 'place-details',
-        reservedCents: 2,
+        credits: 2,
+        today: true,
       });
+      assert.equal(
+        (await ds.query(`SELECT 1 FROM directory_provider_budget_attempt`))
+          .length,
+        0,
+        'Geoapify no longer uses the cent ledger'
+      );
       const rows = await ds.query(
         `SELECT details,"expiresAt","fetchedAt" FROM directory_geoapify_enrichment`
       );
       assert.equal(rows.length, 2);
-      assert.deepEqual(rows[0].details, {
+      const { normalized, ...rawDetails } = rows[0].details;
+      assert.deepEqual(rawDetails, {
         openingHours: 'Mo-Fr 09:00-17:00',
         phone: '+1 555 0100',
       });
+      assert.equal(normalized.v, 'normalize-v1');
       const days = (rows[0].expiresAt - rows[0].fetchedAt) / 86400000;
       assert.ok(Math.abs(days - gpolicy.retentionDays) < 0.01);
       assert.doesNotMatch(
@@ -447,12 +456,12 @@ test(
 );
 
 test(
-  'Geoapify: its own monthly hard stop is never exceeded and never touches the shared ledger',
+  'Geoapify: the daily credit hard stop is never exceeded, never touches the shared cent ledger, and resets at UTC midnight',
   { skip: !url },
   async () => {
     const budget = require('../src/provider-budget');
-    const saved = process.env.DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS;
-    process.env.DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS = '3';
+    const saved = process.env.DIRECTORY_GEOAPIFY_DAILY_CREDITS;
+    process.env.DIRECTORY_GEOAPIFY_DAILY_CREDITS = '3';
     try {
       await withDb(async (ds) => {
         for (let i = 0; i < 6; i++) await stagedRow(ds, 'scan-b', i);
@@ -460,19 +469,54 @@ test(
           db: ds,
           apiKey: 'test-key-not-real',
           policy: gpolicy,
-          costCents: 1,
+          creditsPerRequest: 1,
           batch: 10,
           fetchImpl: okFetch([]),
         });
-        assert.equal(out.succeeded, 3, 'stops at the 3 cent limit');
-        assert.equal(out.status, 'blocked');
+        assert.equal(out.succeeded, 3, 'stops at the 3 credit limit');
+        assert.equal(await budget.geoapifyCreditsToday(ds), 3);
+        // The next sweep is blocked before it calls anything.
+        const log = [];
+        const again = await geo.runGeoapifySweep({
+          db: ds,
+          apiKey: 'test-key-not-real',
+          policy: gpolicy,
+          batch: 10,
+          fetchImpl: okFetch(log),
+        });
+        assert.equal(again.status, 'blocked');
+        assert.equal(log.length, 0);
         assert.equal((await status(ds))[0].status, 'budget_blocked');
-        assert.equal(
-          (await ds.query(`SELECT 1 FROM directory_geoapify_enrichment`))
-            .length,
-          3
+        await assert.rejects(
+          budget.reserveProviderCredits(ds, {
+            attemptId: require('node:crypto').randomUUID(),
+            provider: 'geoapify',
+            operation: 'place-details',
+            credits: 1,
+          }),
+          /Daily provider credits exhausted/
         );
-        // Another provider is unaffected by Geoapify spend, and by Geoapify being exhausted.
+        // A multi-credit request that would cross the limit is refused whole.
+        process.env.DIRECTORY_GEOAPIFY_DAILY_CREDITS = '4';
+        await assert.rejects(
+          budget.reserveProviderCredits(ds, {
+            attemptId: require('node:crypto').randomUUID(),
+            provider: 'geoapify',
+            operation: 'place-details',
+            credits: 2,
+          }),
+          /Daily provider credits exhausted/
+        );
+        // The cent ledger refuses Geoapify, and another provider is unaffected by Geoapify being exhausted.
+        await assert.rejects(
+          budget.reserveProviderBudget(ds, {
+            attemptId: require('node:crypto').randomUUID(),
+            provider: 'geoapify',
+            operation: 'place-details',
+            maxCostCents: 1,
+          }),
+          /metered in credits/
+        );
         const r = await budget.reserveProviderBudget(ds, {
           attemptId: require('node:crypto').randomUUID(),
           provider: 'overture',
@@ -480,26 +524,27 @@ test(
           maxCostCents: 2500,
         });
         assert.equal(r.state, 'reserved');
-        // ...and the other way round: shared spend does not use up Geoapify's ceiling.
-        process.env.DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS = '2500';
-        const g = await budget.reserveProviderBudget(ds, {
-          attemptId: require('node:crypto').randomUUID(),
-          provider: 'geoapify',
-          operation: 'place-details',
-          maxCostCents: 1,
-        });
-        assert.equal(g.remainingCents, 2500 - 3 - 1);
+        // Yesterday's credits do not count: the ledger resets at UTC midnight.
+        await ds.query(
+          `UPDATE directory_provider_credit_attempt SET day=day-1`
+        );
+        assert.equal(await budget.geoapifyCreditsToday(ds), 0);
+        // Calls the retired cent ledger recorded today still count (one credit each) so the cut-over day cannot overspend.
+        await ds.query(
+          `INSERT INTO directory_provider_budget_attempt ("attemptId",period,provider,operation,"reservedCents") VALUES (gen_random_uuid(),to_char(now() AT TIME ZONE 'UTC','YYYY-MM'),'geoapify','place-details',1)`
+        );
+        assert.equal(await budget.geoapifyCreditsToday(ds), 1);
       });
     } finally {
       if (saved === undefined)
-        delete process.env.DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS;
-      else process.env.DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS = saved;
+        delete process.env.DIRECTORY_GEOAPIFY_DAILY_CREDITS;
+      else process.env.DIRECTORY_GEOAPIFY_DAILY_CREDITS = saved;
     }
   }
 );
 
 test(
-  'Geoapify: daily cap bounds lookups, coordinate-less rows are skipped, errors never carry the key',
+  'Geoapify: daily credit cap bounds lookups, coordinate-less rows are skipped, errors never carry the key',
   { skip: !url },
   async () => {
     await withDb(async (ds) => {
@@ -507,12 +552,12 @@ test(
       await ds.query(
         `INSERT INTO directory_overture_private_row ("scanId","sourceFileRowNumber","regionId",listing) VALUES ('scan-c',99,'r','{"name":"no coords"}')`
       );
+      process.env.DIRECTORY_GEOAPIFY_DAILY_CREDITS = '2';
       const first = await geo.runGeoapifySweep({
         db: ds,
         apiKey: 'test-key-not-real',
         policy: gpolicy,
         batch: 10,
-        dailyLookups: 2,
         fetchImpl: okFetch([]),
       });
       assert.equal(first.succeeded, 2);
@@ -521,18 +566,17 @@ test(
         apiKey: 'test-key-not-real',
         policy: gpolicy,
         batch: 10,
-        dailyLookups: 2,
         fetchImpl: okFetch([]),
       });
       assert.equal(second.examined, 0, 'the daily cap is spent');
       // A transport error that echoes the request URL is redacted before it is logged or stored.
       const logs = [];
+      process.env.DIRECTORY_GEOAPIFY_DAILY_CREDITS = '50';
       const bad = await geo.runGeoapifySweep({
         db: ds,
         apiKey: 'test-key-not-real',
         policy: gpolicy,
         batch: 10,
-        dailyLookups: 50,
         log: (m) => logs.push(m),
         fetchImpl: async (u) => {
           throw Error(`fetch failed for ${u.toString()}`);

@@ -12,7 +12,11 @@ import type {
   AcquisitionRunStatus,
   AcquisitionRunSummary,
 } from '../../../libs/social/contracts/src/lib/directory';
-import { MONTHLY_LIMIT_CENTS, providerLimitCents } from './provider-budget';
+import {
+  geoapifyCreditsToday,
+  geoapifyDailyCreditLimit,
+  MONTHLY_LIMIT_CENTS,
+} from './provider-budget';
 import {
   anyAcquisitionAuthorized,
   providerAuthorizationTable,
@@ -131,7 +135,7 @@ export function classifyStageError(error: unknown): {
   const message = redactError(error);
   if (error instanceof ProviderPausedError || /provider_paused/.test(raw))
     return { status: 'blocked', blockedReason: 'provider_paused', message };
-  if (/Monthly provider budget exhausted/i.test(raw))
+  if (/(Monthly provider budget|Daily provider credits) exhausted/i.test(raw))
     return { status: 'blocked', blockedReason: 'budget_exhausted', message };
   if (/quota/i.test(raw))
     return { status: 'blocked', blockedReason: 'quota_exhausted', message };
@@ -692,10 +696,6 @@ export async function acquisitionBudgetPanel(
     `SELECT COALESCE(SUM("reservedCents"),0)::int AS reserved FROM directory_provider_budget_attempt WHERE period=$1 AND provider<>'geoapify'`,
     [period]
   );
-  const [{ geoapify }] = await db.query(
-    `SELECT COALESCE(SUM("reservedCents"),0)::int AS geoapify FROM directory_provider_budget_attempt WHERE period=$1 AND provider='geoapify'`,
-    [period]
-  );
   const [{ anon }] = await db.query(
     `SELECT count(*)::int AS anon FROM directory_anonymous_overture_attempt WHERE period=$1`,
     [period]
@@ -709,8 +709,8 @@ export async function acquisitionBudgetPanel(
     period,
     ceilingCents: MONTHLY_LIMIT_CENTS,
     reservedCents: reserved,
-    geoapifyReservedCents: geoapify,
-    geoapifyLimitCents: providerLimitCents('geoapify'),
+    geoapifyCreditsToday: await geoapifyCreditsToday(db),
+    geoapifyDailyCreditLimit: geoapifyDailyCreditLimit(),
     usedCents: used,
     remainingCents: Math.max(0, MONTHLY_LIMIT_CENTS - reserved),
     anonymousAttempts: anon,

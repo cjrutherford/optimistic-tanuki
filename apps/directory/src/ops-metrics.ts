@@ -4,7 +4,11 @@ import type {
 } from '../../../libs/social/contracts/src/lib/directory';
 import { TRIAGE_DAYS } from './listing-report';
 import { listControls } from './operating-controls';
-import { MONTHLY_LIMIT_CENTS, providerLimitCents } from './provider-budget';
+import {
+  geoapifyCreditsToday,
+  geoapifyDailyCreditLimit,
+  MONTHLY_LIMIT_CENTS,
+} from './provider-budget';
 import { FRESH_DAYS, STALE_DAYS } from './source-freshness';
 import { fillTimeMetrics } from './acquisition-refresh';
 
@@ -126,9 +130,7 @@ async function spend(pool: Pool, env: NodeJS.ProcessEnv) {
   const [r] = await pool.query(
     `SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM') AS period,
             (SELECT COALESCE(SUM("reservedCents"),0)::int FROM directory_provider_budget_attempt
-              WHERE provider<>'geoapify' AND period=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM')) AS reserved,
-            (SELECT COALESCE(SUM("reservedCents"),0)::int FROM directory_provider_budget_attempt
-              WHERE provider='geoapify' AND period=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM')) AS geoapify`
+              WHERE provider<>'geoapify' AND period=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM')) AS reserved`
   );
   const reservedCents = int(r.reserved);
   const alertCents = spendAlertCents(env);
@@ -136,8 +138,8 @@ async function spend(pool: Pool, env: NodeJS.ProcessEnv) {
     period: String(r.period),
     reservedCents,
     limitCents: MONTHLY_LIMIT_CENTS,
-    geoapifyReservedCents: int(r.geoapify),
-    geoapifyLimitCents: providerLimitCents('geoapify', env),
+    geoapifyCreditsToday: await geoapifyCreditsToday(pool),
+    geoapifyDailyCreditLimit: geoapifyDailyCreditLimit(env),
     alertCents,
     alert: reservedCents >= alertCents,
     exhausted: reservedCents >= MONTHLY_LIMIT_CENTS,
@@ -438,6 +440,14 @@ export function toPrometheus(m: DirectoryOpsMetrics): string {
   );
   gauge('directory_spend_limit_cents', 'Monthly provider budget ceiling.', [
     [none, m.spend?.limitCents],
+  ]);
+  gauge(
+    'directory_geoapify_credits_today',
+    'Geoapify credits used today (UTC).',
+    [[none, m.spend?.geoapifyCreditsToday]]
+  );
+  gauge('directory_geoapify_credits_limit', 'Geoapify daily credit limit.', [
+    [none, m.spend?.geoapifyDailyCreditLimit],
   ]);
   gauge('directory_spend_alert_cents', 'Spend alert threshold.', [
     [none, m.spend?.alertCents],

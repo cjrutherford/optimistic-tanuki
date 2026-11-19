@@ -24,20 +24,106 @@ export const budgetScopeSql = (provider: string): string =>
     : `provider<>'${GEOAPIFY_BUDGET_PROVIDER}'`;
 
 /**
- * The monthly hard stop for a provider, in cents. Geoapify reads DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS and can never
- * exceed the $25 ceiling; a missing value means that ceiling, and an unusable one means nothing may be spent.
+ * Geoapify is metered in credits per UTC day, not cents (owner decision D30: free plan, 3,000 credits a day). The
+ * limit is DIRECTORY_GEOAPIFY_DAILY_CREDITS; a missing value means the plan's 3,000, it can never be set above that,
+ * and an unusable one means nothing may be used. Geoapify documents the allowance as daily but not the reset time or
+ * time zone, so the ledger resets at UTC midnight.
  */
-export function providerLimitCents(
-  provider: string,
+export const GEOAPIFY_DAILY_CREDITS = 3000;
+export function geoapifyDailyCreditLimit(
   env: NodeJS.ProcessEnv = process.env
 ): number {
-  if (provider !== GEOAPIFY_BUDGET_PROVIDER) return MONTHLY_LIMIT_CENTS;
-  const raw = env['DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS'];
-  if (raw === undefined || raw.trim() === '') return MONTHLY_LIMIT_CENTS;
+  const raw = env['DIRECTORY_GEOAPIFY_DAILY_CREDITS'];
+  if (raw === undefined || raw.trim() === '') return GEOAPIFY_DAILY_CREDITS;
   const value = Number(raw);
   return Number.isSafeInteger(value) && value >= 0
-    ? Math.min(value, MONTHLY_LIMIT_CENTS)
+    ? Math.min(value, GEOAPIFY_DAILY_CREDITS)
     : 0;
+}
+
+type Q = { query(sql: string, params?: unknown[]): Promise<any[]> };
+
+/**
+ * Credits used so far this UTC day. Also counts calls the retired cent ledger recorded today for Geoapify (one
+ * credit each), so the day the credit ledger was introduced cannot be overspent; those rows age out at midnight.
+ */
+export async function geoapifyCreditsToday(db: Q): Promise<number> {
+  const [r] = await db.query(
+    `SELECT
+       (SELECT COALESCE(SUM(credits),0) FROM directory_provider_credit_attempt
+         WHERE provider=$1 AND day=(clock_timestamp() AT TIME ZONE 'UTC')::date)::int
+     + (SELECT count(*) FROM directory_provider_budget_attempt
+         WHERE provider=$1 AND "createdAt" >= date_trunc('day', clock_timestamp() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')::int AS used`,
+    [GEOAPIFY_BUDGET_PROVIDER]
+  );
+  return Number(r?.used ?? 0);
+}
+
+export type CreditAttempt = {
+  attemptId: string;
+  provider: string;
+  operation: string;
+  credits: number;
+};
+
+/**
+ * Counts a credit-metered request before it is made. Refuses at the daily limit, while the kill switch is on, and for
+ * a reused attempt ID. Credits are counted once per request (Geoapify documents a credit cost per endpoint but returns
+ * no usage header); an attempt is never released, so a failed call still counts.
+ */
+export async function reserveProviderCredits(
+  db: DataSource,
+  input: CreditAttempt
+): Promise<{
+  attemptId: string;
+  day: string;
+  usedToday: number;
+  remaining: number;
+}> {
+  if (
+    !input ||
+    !uuid.test(input.attemptId || '') ||
+    input.provider !== GEOAPIFY_BUDGET_PROVIDER ||
+    !label.test(input.operation || '') ||
+    !Number.isSafeInteger(input.credits) ||
+    input.credits < 1 ||
+    input.credits > GEOAPIFY_DAILY_CREDITS
+  )
+    throw Error('Invalid credit attempt');
+  const attempt = { ...input };
+  const limit = geoapifyDailyCreditLimit();
+  return db.transaction(async (manager) => {
+    await manager.query("SET LOCAL lock_timeout = '2s'");
+    await manager.query("SET LOCAL statement_timeout = '10s'");
+    await manager.query(
+      "SELECT pg_advisory_xact_lock(hashtextextended('directory-provider-budget-v1',0))"
+    );
+    if (await isPaused(manager, 'provider_acquisition'))
+      throw new ProviderPausedError();
+    if (
+      (
+        await manager.query(
+          'SELECT 1 FROM directory_provider_credit_attempt WHERE "attemptId"=$1',
+          [attempt.attemptId]
+        )
+      ).length
+    )
+      throw Error('Credit attempt ID already used');
+    const used = await geoapifyCreditsToday(manager);
+    if (used + attempt.credits > limit)
+      throw Error('Daily provider credits exhausted');
+    const [{ day }] = await manager.query(
+      `INSERT INTO directory_provider_credit_attempt ("attemptId",day,provider,operation,credits)
+       VALUES ($1,(clock_timestamp() AT TIME ZONE 'UTC')::date,$2,$3,$4) RETURNING to_char(day,'YYYY-MM-DD') AS day`,
+      [attempt.attemptId, attempt.provider, attempt.operation, attempt.credits]
+    );
+    return {
+      attemptId: attempt.attemptId,
+      day,
+      usedToday: used + attempt.credits,
+      remaining: limit - used - attempt.credits,
+    };
+  });
 }
 export type BudgetAttempt = {
   attemptId: string;
@@ -74,8 +160,10 @@ export async function reserveProviderBudget(
     input.maxCostCents > MONTHLY_LIMIT_CENTS
   )
     throw Error('Known positive maximum cost required');
+  if (input.provider === GEOAPIFY_BUDGET_PROVIDER)
+    throw Error('Geoapify is metered in credits: use reserveProviderCredits');
   const attempt = { ...input };
-  const limit = providerLimitCents(attempt.provider);
+  const limit = MONTHLY_LIMIT_CENTS;
   const scope = budgetScopeSql(attempt.provider);
   return db.transaction(async (manager) => {
     await manager.query("SET LOCAL lock_timeout = '2s'");

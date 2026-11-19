@@ -220,21 +220,17 @@ export function createGeoapifySweepRunner(
     } catch {
       /* no policy: the sweep records it */
     }
-    const cost = Number(env['DIRECTORY_GEOAPIFY_COST_CENTS'] || 1);
+    const credits = Number(env['DIRECTORY_GEOAPIFY_CREDITS_PER_REQUEST'] || 1);
     const batch = Number(env['DIRECTORY_GEOAPIFY_BATCH'] || 20);
-    if (!Number.isSafeInteger(cost) || cost < 1 || cost > 100)
-      throw Error('Invalid DIRECTORY_GEOAPIFY_COST_CENTS');
+    if (!Number.isSafeInteger(credits) || credits < 1 || credits > 100)
+      throw Error('Invalid DIRECTORY_GEOAPIFY_CREDITS_PER_REQUEST');
     if (!Number.isSafeInteger(batch) || batch < 1 || batch > 200)
       throw Error('Invalid DIRECTORY_GEOAPIFY_BATCH');
-    const daily = Number(env['DIRECTORY_GEOAPIFY_DAILY_LOOKUPS'] || 50);
-    if (!Number.isSafeInteger(daily) || daily < 1 || daily > 2500)
-      throw Error('Invalid DIRECTORY_GEOAPIFY_DAILY_LOOKUPS');
     return runGeoapifySweep({
-      dailyLookups: daily,
       db: db(),
       apiKey: env['GEOAPIFY_API_KEY'],
       policy,
-      costCents: cost,
+      creditsPerRequest: credits,
       batch,
       signal,
       log,

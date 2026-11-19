@@ -725,9 +725,12 @@ export interface AcquisitionBudgetPanel {
   period: string;
   ceilingCents: number;
   reservedCents: number;
-  /** Geoapify is metered on its own ledger and ceiling (owner decision D8), so it never counts against `reservedCents`. */
-  geoapifyReservedCents?: number;
-  geoapifyLimitCents?: number;
+  /**
+   * Geoapify is metered in credits on its own daily ledger (owner decision D30: free plan, 3,000 credits per UTC day),
+   * so it never counts against `reservedCents`.
+   */
+  geoapifyCreditsToday?: number;
+  geoapifyDailyCreditLimit?: number;
   usedCents: number;
   remainingCents: number;
   anonymousAttempts: number;
@@ -900,6 +903,9 @@ export interface DirectoryOpsMetrics {
     period: string;
     reservedCents: number;
     limitCents: number;
+    /** Geoapify credits used today (UTC) against the daily limit (D30). */
+    geoapifyCreditsToday?: number;
+    geoapifyDailyCreditLimit?: number;
     alertCents: number;
     alert: boolean;
     exhausted: boolean;

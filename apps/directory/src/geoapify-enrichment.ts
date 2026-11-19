@@ -2,7 +2,11 @@ import { randomUUID } from 'node:crypto';
 import type { DataSource } from 'typeorm';
 import { isPrivateEnrichmentAuthorized } from './acquisition-authorization';
 import { isPaused, ProviderPausedError } from './operating-controls';
-import { reserveProviderBudget } from './provider-budget';
+import {
+  geoapifyCreditsToday,
+  geoapifyDailyCreditLimit,
+  reserveProviderCredits,
+} from './provider-budget';
 import { emptyOutcome } from './overture-auto-acquisition';
 import type { AutoSweepOutcome } from './overture-auto-acquisition';
 import { normalizeGeoapifyDetails } from './normalize';
@@ -31,7 +35,7 @@ export interface GeoapifyPolicy {
 }
 export interface GeoapifyConfig {
   apiKey: string;
-  costCents: number;
+  creditsPerRequest: number;
   batch: number;
   fetchImpl?: typeof fetch;
 }
@@ -165,10 +169,9 @@ export interface GeoapifySweepDeps {
   /** Absent or empty means not configured. */
   apiKey?: string;
   policy: GeoapifyPolicy | null;
-  costCents?: number;
+  /** Credits one Place Details request costs (Geoapify's documented per-endpoint cost; 1 unless configured). */
+  creditsPerRequest?: number;
   batch?: number;
-  /** Lookups allowed per UTC day across sweeps; keeps a switched-on sweep small. */
-  dailyLookups?: number;
   fetchImpl?: typeof fetch;
   signal?: AbortSignal;
   log?: (message: string) => void;
@@ -206,16 +209,23 @@ export async function runGeoapifySweep(
     out.status = 'paused';
     return out;
   }
-  const cost = deps.costCents ?? 1;
-  const [{ today }] = await db.query(
-    `SELECT count(*)::int AS today FROM directory_provider_budget_attempt
-      WHERE provider=$1 AND "createdAt" >= date_trunc('day', clock_timestamp() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`,
-    [GEOAPIFY_PROVIDER]
-  );
+  const credits = deps.creditsPerRequest ?? 1;
+  // The daily credit ledger is the hard stop (D30); the batch size only keeps one sweep small.
+  const left = geoapifyDailyCreditLimit() - (await geoapifyCreditsToday(db));
   const allowed = Math.max(
     0,
-    Math.min(deps.batch ?? 20, (deps.dailyLookups ?? 50) - Number(today))
+    Math.min(deps.batch ?? 20, Math.floor(left / credits))
   );
+  if (!allowed && left < credits) {
+    await recordProviderStatus(
+      db,
+      GEOAPIFY_PROVIDER,
+      'budget_blocked',
+      'daily credits used up; resets at UTC midnight'
+    );
+    out.status = 'blocked';
+    return out;
+  }
   const candidates: Array<{
     scanId: string;
     row: string;
@@ -226,11 +236,11 @@ export async function runGeoapifySweep(
   for (const c of candidates) {
     if (deps.signal?.aborted) break;
     try {
-      await reserveProviderBudget(db, {
+      await reserveProviderCredits(db, {
         attemptId: randomUUID(),
         provider: GEOAPIFY_PROVIDER,
         operation: GEOAPIFY_OPERATION,
-        maxCostCents: cost,
+        credits,
       });
     } catch (error) {
       if (error instanceof ProviderPausedError) {
