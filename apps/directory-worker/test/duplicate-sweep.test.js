@@ -104,3 +104,44 @@ test('the loop records status and never throws', async () => {
   });
   assert.equal(status.snapshot().lastStatus, 'error');
 });
+
+test('each run closes stale cases first and resolves obvious pairs of the town it examines', async () => {
+  const seen = [];
+  const tx = {
+    query: async (sql) => {
+      seen.push(sql.replace(/\s+/g, ' ').slice(0, 60));
+      if (/SET state='stale'/.test(sql)) return [{ id: 'c1' }];
+      return [];
+    },
+  };
+  const db = {
+    query: async (sql) => {
+      if (/directory_operating_control/.test(sql)) return [];
+      if (/keptReason/.test(sql))
+        return [
+          {
+            id: 'c1',
+            town: A,
+            suppressionId: null,
+            keptReason: null,
+            hiddenReason: 'scan_retired',
+          },
+        ];
+      if (/directory_town_scan_target/.test(sql))
+        return [{ town: A, scans: 's1' }];
+      return [];
+    },
+    transaction: async (work) => work(tx),
+  };
+  const run = createDuplicateSweepRunner(
+    duplicateSweepConfig({}),
+    () => db,
+    { changeToken: async () => TOKEN },
+    () => undefined
+  );
+  const out = await run();
+  assert.equal(out.closedStale, 1);
+  assert.equal(out.autoResolved, 0);
+  assert.equal(out.examined, 1);
+  assert.ok(seen.some((s) => /SET state='stale'/.test(s) || /UPDATE/.test(s)));
+});

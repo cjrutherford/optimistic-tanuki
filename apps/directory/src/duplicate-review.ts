@@ -29,8 +29,10 @@ import { SERVED_ROW_FROM, servedRowWhere } from './town-coverage';
  * an older scan completion; then the lower (scanId, row). The rule is total, so the same pair always names the
  * same listing.
  */
-type Q = { query(sql: string, params?: unknown[]): Promise<any[]> };
-type Db = Q & { transaction<T>(work: (manager: Q) => Promise<T>): Promise<T> };
+export type Q = { query(sql: string, params?: unknown[]): Promise<any[]> };
+export type Db = Q & {
+  transaction<T>(work: (manager: Q) => Promise<T>): Promise<T>;
+};
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const CERTAIN_RADIUS_METERS = 150;
@@ -155,7 +157,7 @@ export interface QueueResult {
   readonly keptSeparateRecorded: number;
 }
 
-const lockTown = (tx: Q, town: string) =>
+export const lockTown = (tx: Q, town: string) =>
   tx.query('SELECT pg_advisory_xact_lock(hashtextextended($1::text,0))', [
     `directory-listing-suppression:${town}`,
   ]);
@@ -228,19 +230,27 @@ function candidatePairs(
   return pairs;
 }
 
-const audit = (
+export const audit = (
   q: Q,
   caseId: string,
   kind: string,
   actorId: string | null,
-  note: string | null
+  note: string | null,
+  actor: { kind?: 'reviewer' | 'auto' | 'system'; ruleId?: string } = {}
 ) =>
   q.query(
-    `INSERT INTO directory_duplicate_case_event ("caseId",kind,"actorId",note) VALUES ($1,$2,$3,$4)`,
-    [caseId, kind, actorId, note]
+    `INSERT INTO directory_duplicate_case_event ("caseId",kind,"actorId",note,"actorKind","ruleId") VALUES ($1,$2,$3,$4,$5,$6)`,
+    [
+      caseId,
+      kind,
+      actorId,
+      note,
+      actor.kind ?? (actorId ? 'reviewer' : 'system'),
+      actor.ruleId ?? null,
+    ]
   );
 
-async function hideRow(
+export async function hideRow(
   tx: Q,
   town: string,
   row: { scanId: string; row: string },
@@ -283,7 +293,7 @@ export async function queueUncertainDuplicates(
   return db.transaction(async (tx) => {
     await lockTown(tx, town);
     const lifted = await tx.query(
-      `WITH u AS (UPDATE directory_duplicate_case c SET state='kept_separate',"decidedAt"=CURRENT_TIMESTAMP
+      `WITH u AS (UPDATE directory_duplicate_case c SET state='kept_separate',"decidedAt"=CURRENT_TIMESTAMP,"decidedBy"='reviewer',"autoRule"=NULL
          FROM directory_listing_suppression s
         WHERE c."communityId"=$1 AND c.state='queued' AND s.id=c."suppressionId" AND s."liftedAt" IS NOT NULL
         RETURNING c.id,s."liftedById" AS "actorId") SELECT id,"actorId" FROM u`,
@@ -350,11 +360,24 @@ export async function queueUncertainDuplicates(
   });
 }
 
-export const DUPLICATE_ACTIONS = ['keep_separate', 'merge', 'undo'] as const;
+export const DUPLICATE_ACTIONS = [
+  'keep_separate',
+  'merge',
+  'undo',
+  'swap_kept',
+] as const;
 export const DUPLICATE_STATES: readonly string[] = [
   'queued',
   'kept_separate',
   'merged',
+  'stale',
+];
+/** Reviewer-facing groups of cases: open (queued), auto-resolved, stale (closed by cleanup) and reviewed. */
+export const DUPLICATE_STATUSES: readonly string[] = [
+  'open',
+  'auto_resolved',
+  'stale',
+  'reviewed',
 ];
 export const DUPLICATE_RULES: readonly string[] = [
   'same_name_near',
@@ -370,6 +393,8 @@ export interface DuplicateDecisionInput {
   readonly reason: string;
   /** The state the reviewer saw. A decision on a case that has since moved is refused as stale. */
   readonly expectedState?: string;
+  /** For `swap_kept`: the listing the reviewer saw as kept. A swap that was already applied is a replay, not a swap back. */
+  readonly expectedKept?: { scanId: string; sourceFileRowNumber: string };
 }
 export interface DuplicateDecisionResult {
   readonly replayed: boolean;
@@ -391,7 +416,10 @@ export async function decideDuplicateCase(
     !input.reason.trim() ||
     input.reason.length > 1024 ||
     (input.expectedState !== undefined &&
-      !DUPLICATE_STATES.includes(input.expectedState))
+      !DUPLICATE_STATES.includes(input.expectedState)) ||
+    (input.expectedKept !== undefined &&
+      (typeof input.expectedKept?.scanId !== 'string' ||
+        !/^[0-9]{1,18}$/.test(String(input.expectedKept?.sourceFileRowNumber))))
   )
     throw Error(DUPLICATE_CASE_INVALID);
   return db.transaction(async (tx) => {
@@ -402,13 +430,20 @@ export async function decideDuplicateCase(
       [input.caseId, input.townId]
     );
     if (!c) throw Error(DUPLICATE_CASE_NOT_FOUND);
+    if (c.state === 'stale') throw Error(DUPLICATE_CASE_STALE);
+    if (input.action === 'swap_kept') return swapKept(tx, c, input);
     const target =
       input.action === 'keep_separate'
         ? 'kept_separate'
         : input.action === 'merge'
         ? 'merged'
         : 'queued';
-    if (c.state === target && input.action !== 'undo')
+    // A reviewer confirming an automatic resolution takes it over: it counts as reviewed from then on.
+    const confirmsAuto =
+      input.action === 'merge' &&
+      c.state === 'merged' &&
+      c.decidedBy === 'auto';
+    if (c.state === target && input.action !== 'undo' && !confirmsAuto)
       return { replayed: true, state: c.state };
     if (input.expectedState !== undefined && input.expectedState !== c.state)
       throw Error(DUPLICATE_CASE_STALE);
@@ -444,7 +479,8 @@ export async function decideDuplicateCase(
       );
     }
     await tx.query(
-      `UPDATE directory_duplicate_case SET state=$2::varchar,"suppressionId"=$3,"decidedAt"=CASE WHEN $2::varchar='queued' THEN NULL ELSE CURRENT_TIMESTAMP END WHERE id=$1`,
+      `UPDATE directory_duplicate_case SET state=$2::varchar,"suppressionId"=$3,"decidedAt"=CASE WHEN $2::varchar='queued' THEN NULL ELSE CURRENT_TIMESTAMP END,
+        "decidedBy"=CASE WHEN $2::varchar='queued' THEN NULL ELSE 'reviewer' END,"autoRule"=NULL WHERE id=$1`,
       [c.id, target, suppressionId]
     );
     await audit(
@@ -458,9 +494,56 @@ export async function decideDuplicateCase(
   });
 }
 
+/**
+ * Swap which listing of a hidden pair is kept: the hidden listing returns and the kept one is hidden instead. Allowed
+ * while the pair is open or resolved (hidden). The case keeps its state, except that a swapped automatic resolution
+ * becomes a reviewer decision. Recorded as a `swapped` event.
+ */
+async function swapKept(
+  tx: Q,
+  c: any,
+  input: DuplicateDecisionInput
+): Promise<DuplicateDecisionResult> {
+  if (c.state !== 'queued' && c.state !== 'merged')
+    throw Error(DUPLICATE_CASE_INVALID);
+  const seen = input.expectedKept;
+  if (seen) {
+    const is = (scan: string, row: unknown) =>
+      seen.scanId === scan && String(seen.sourceFileRowNumber) === String(row);
+    if (is(c.hiddenScanId, c.hiddenRow))
+      return { replayed: true, state: c.state };
+    if (!is(c.keptScanId, c.keptRow)) throw Error(DUPLICATE_CASE_STALE);
+  }
+  if (input.expectedState !== undefined && input.expectedState !== c.state)
+    throw Error(DUPLICATE_CASE_STALE);
+  await tx.query(
+    `UPDATE directory_listing_suppression SET "liftedAt"=CURRENT_TIMESTAMP,"liftReasonCode"='resolved',"liftedById"=$2
+      WHERE id=$1 AND "liftedAt" IS NULL`,
+    [c.suppressionId, input.actorId]
+  );
+  const suppressionId = await hideRow(
+    tx,
+    input.townId,
+    { scanId: c.keptScanId, row: String(c.keptRow) },
+    c.id
+  );
+  await tx.query(
+    `UPDATE directory_duplicate_case SET "keptScanId"=$2,"keptRow"=$3,"hiddenScanId"=$4,"hiddenRow"=$5,"suppressionId"=$6,
+        "decidedBy"=CASE WHEN state='queued' THEN NULL ELSE 'reviewer' END,"autoRule"=NULL,
+        "decidedAt"=CASE WHEN state='queued' THEN NULL ELSE CURRENT_TIMESTAMP END WHERE id=$1`,
+    [c.id, c.hiddenScanId, c.hiddenRow, c.keptScanId, c.keptRow, suppressionId]
+  );
+  await audit(tx, c.id, 'swapped', input.actorId, input.reason);
+  return { replayed: false, state: c.state };
+}
+
 export interface DuplicateCaseRecord {
   readonly caseId: string;
   readonly state: string;
+  /** open, auto_resolved, stale or reviewed. */
+  readonly status: string;
+  /** The automatic rule that resolved the case, when it was resolved automatically. */
+  readonly autoRule: string | null;
   readonly rule: string;
   readonly weakerBasis: string;
   readonly distanceMeters: number;
@@ -473,6 +556,7 @@ export interface DuplicateCaseRecord {
 
 export interface DuplicateListQuery {
   readonly state?: string;
+  readonly status?: string;
   readonly rule?: string;
   readonly limit?: number;
   readonly offset?: number;
@@ -491,6 +575,7 @@ export async function listDuplicateCases(
   total: number;
   limit: number;
   offset: number;
+  counts: DuplicateStatusCounts;
 }> {
   const limit = query.limit ?? 25;
   const offset = query.offset ?? 0;
@@ -498,6 +583,8 @@ export async function listDuplicateCases(
     !UUID.test(town) ||
     (query.state !== undefined && !DUPLICATE_STATES.includes(query.state)) ||
     (query.rule !== undefined && !DUPLICATE_RULES.includes(query.rule)) ||
+    (query.status !== undefined &&
+      !DUPLICATE_STATUSES.includes(query.status)) ||
     !Number.isInteger(limit) ||
     limit < 1 ||
     limit > DUPLICATE_PAGE_MAX ||
@@ -516,12 +603,13 @@ export async function listDuplicateCases(
     params.push(query.rule);
     where += ` AND c.rule=$${params.length}`;
   }
+  if (query.status !== undefined) where += ` AND ${STATUS_SQL[query.status]}`;
   const [count] = await q.query(
     `SELECT count(*)::int AS n FROM directory_duplicate_case c WHERE ${where}`,
     params
   );
   const rows = await q.query(
-    `SELECT c.id,c.state,c.rule,c."weakerBasis",c."distanceMeters",c."keptScanId",c."keptRow"::text AS "keptRow",c."hiddenScanId",c."hiddenRow"::text AS "hiddenRow",c."createdAt",
+    `SELECT c.id,c.state,c."decidedBy",c."autoRule",c.rule,c."weakerBasis",c."distanceMeters",c."keptScanId",c."keptRow"::text AS "keptRow",c."hiddenScanId",c."hiddenRow"::text AS "hiddenRow",c."createdAt",
         (SELECT r.listing->>'name' FROM directory_overture_private_row r WHERE r."scanId"=c."keptScanId" AND r."sourceFileRowNumber"=c."keptRow") AS "keptName",
         (SELECT r.listing->>'name' FROM directory_overture_private_row r WHERE r."scanId"=c."hiddenScanId" AND r."sourceFileRowNumber"=c."hiddenRow") AS "hiddenName"
        FROM directory_duplicate_case c WHERE ${where}
@@ -533,12 +621,59 @@ export async function listDuplicateCases(
     total: count?.n ?? 0,
     limit,
     offset,
+    counts: await duplicateStatusCounts(q, town),
   };
 }
+
+export interface DuplicateStatusCounts {
+  readonly open: number;
+  readonly autoResolved: number;
+  readonly stale: number;
+  readonly reviewed: number;
+}
+
+const STATUS_SQL: Record<string, string> = {
+  open: `c.state='queued'`,
+  auto_resolved: `(c.state='merged' AND c."decidedBy"='auto')`,
+  stale: `c.state='stale'`,
+  reviewed: `(c.state IN ('merged','kept_separate') AND COALESCE(c."decidedBy",'reviewer')<>'auto')`,
+};
+
+/** Every case of the town counted by status, so a reviewer sees the whole queue whatever the page filter. */
+export async function duplicateStatusCounts(
+  q: Q,
+  town: string
+): Promise<DuplicateStatusCounts> {
+  const [r] = await q.query(
+    `SELECT count(*) FILTER (WHERE ${STATUS_SQL['open']})::int AS open,
+            count(*) FILTER (WHERE ${STATUS_SQL['auto_resolved']})::int AS "autoResolved",
+            count(*) FILTER (WHERE ${STATUS_SQL['stale']})::int AS stale,
+            count(*) FILTER (WHERE ${STATUS_SQL['reviewed']})::int AS reviewed
+       FROM directory_duplicate_case c WHERE c."communityId"=$1`,
+    [town]
+  );
+  return {
+    open: r?.open ?? 0,
+    autoResolved: r?.autoResolved ?? 0,
+    stale: r?.stale ?? 0,
+    reviewed: r?.reviewed ?? 0,
+  };
+}
+
+const statusOf = (r: any): string =>
+  r.state === 'queued'
+    ? 'open'
+    : r.state === 'stale'
+    ? 'stale'
+    : r.decidedBy === 'auto'
+    ? 'auto_resolved'
+    : 'reviewed';
 
 const toRecord = (r: any): DuplicateCaseRecord => ({
   caseId: r.id,
   state: r.state,
+  status: statusOf(r),
+  autoRule: r.decidedBy === 'auto' ? r.autoRule ?? null : null,
   rule: r.rule,
   weakerBasis: r.weakerBasis,
   distanceMeters: r.distanceMeters,
@@ -567,6 +702,8 @@ export interface DuplicateCaseHistoryEntry {
   readonly eventId: string;
   readonly kind: string;
   readonly actorId: string | null;
+  readonly actorKind: string;
+  readonly ruleId: string | null;
   readonly note: string | null;
   readonly createdAt: string;
 }
@@ -622,7 +759,7 @@ export async function getDuplicateCase(
   if (!UUID.test(town) || !UUID.test(caseId))
     throw Error(DUPLICATE_CASE_INVALID);
   const [c] = await q.query(
-    `SELECT c.id,c.state,c.rule,c."weakerBasis",c."distanceMeters",c."keptScanId",c."keptRow"::text AS "keptRow",c."hiddenScanId",c."hiddenRow"::text AS "hiddenRow",c."createdAt",c."decidedAt"
+    `SELECT c.id,c.state,c."decidedBy",c."autoRule",c.rule,c."weakerBasis",c."distanceMeters",c."keptScanId",c."keptRow"::text AS "keptRow",c."hiddenScanId",c."hiddenRow"::text AS "hiddenRow",c."createdAt",c."decidedAt"
        FROM directory_duplicate_case c WHERE c.id=$1 AND c."communityId"=$2`,
     [caseId, town]
   );
@@ -637,7 +774,7 @@ export async function getDuplicateCase(
   const kept = await row(c.keptScanId, c.keptRow);
   const hidden = await row(c.hiddenScanId, c.hiddenRow);
   const events = await q.query(
-    `SELECT id,kind,"actorId",note,"createdAt" FROM directory_duplicate_case_event WHERE "caseId"=$1 ORDER BY "createdAt" ASC, id LIMIT 200`,
+    `SELECT id,kind,"actorId","actorKind","ruleId",note,"createdAt" FROM directory_duplicate_case_event WHERE "caseId"=$1 ORDER BY "createdAt" ASC, id LIMIT 200`,
     [caseId]
   );
   return {
@@ -652,12 +789,14 @@ export async function getDuplicateCase(
       c.hiddenScanId,
       c.hiddenRow,
       hidden,
-      c.state !== 'kept_separate'
+      c.state !== 'kept_separate' && c.state !== 'stale'
     ),
     history: events.map((e) => ({
       eventId: e.id,
       kind: e.kind,
       actorId: e.actorId ?? null,
+      actorKind: e.actorId ? 'reviewer' : e.actorKind ?? 'system',
+      ruleId: e.ruleId ?? null,
       note: e.note ?? null,
       createdAt: new Date(e.createdAt).toISOString(),
     })),

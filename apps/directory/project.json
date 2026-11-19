@@ -23,6 +23,12 @@
         "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node apps/directory/test/run-isolated.cjs"
       }
     },
+    "duplicate-cleanup": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/directory-duplicate-cleanup.mjs"
+      }
+    },
     "install-reviewed-boundary": {
       "executor": "nx:run-commands",
       "options": {
