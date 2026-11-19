@@ -449,10 +449,10 @@ export async function publishAddressReviewCandidate(
     category: candidate.category,
     point: candidate.point,
   });
-  if (
-    candidate.scanId !== active.scanId ||
-    String(candidate.sourceFileRowNumber) !== active.sourceFileRowNumber
-  ) {
+  // A refresh supersedes the scan a candidate was stored under. The active row was matched on community, name,
+  // category and point above and the contact fields were compared with the source, so the same source row number
+  // in the newer scan is the same business; the binding is made against the active scan.
+  if (String(candidate.sourceFileRowNumber) !== active.sourceFileRowNumber) {
     throw Error('Candidate source key does not match the active private row');
   }
   const sink = new OverturePrivateSink(db);
