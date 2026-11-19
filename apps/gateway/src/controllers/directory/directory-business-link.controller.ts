@@ -85,6 +85,7 @@ export class DirectoryBusinessLinkController {
         typeof community.name !== 'string' ||
         !community.name.trim() ||
         community.name.length > 255 ||
+        // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted names.
         /[\x00-\x1f\x7f]/.test(community.name) ||
         !page ||
         page.communityId !== communityId ||

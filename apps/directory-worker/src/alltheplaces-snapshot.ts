@@ -235,9 +235,12 @@ export async function ndjsonToParquet(
 
 export async function sha256File(path: string): Promise<string> {
   const hash = createHash('sha256');
-  await pipeline(createReadStream(path), async function* (source) {
-    for await (const chunk of source) hash.update(chunk as Buffer);
-  });
+  await pipeline(
+    createReadStream(path),
+    async (source: AsyncIterable<Buffer>) => {
+      for await (const chunk of source) hash.update(chunk);
+    }
+  );
   return hash.digest('hex');
 }
 

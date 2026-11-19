@@ -182,6 +182,7 @@ export class DirectoryController {
       typeof v === 'string' &&
       !!v.trim() &&
       v.length <= 2000 &&
+      // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted names.
       !/[\x00-\x1f\x7f]/.test(v);
     const list = (v: unknown) =>
       Array.isArray(v) && v.length <= 50 && v.every(text);
@@ -286,6 +287,7 @@ export class DirectoryController {
       search !== undefined &&
       (typeof search !== 'string' ||
         search.length > 100 ||
+        // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted names.
         /[\x00-\x1f\x7f]/.test(search))
     )
       throw new BadRequestException('Invalid search');
@@ -455,6 +457,7 @@ export class DirectoryController {
           typeof v === 'string' &&
           !!v.trim() &&
           v.length <= n &&
+          // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted names.
           !/[\x00-\x1f\x7f]/.test(v);
       if (
         !context ||
