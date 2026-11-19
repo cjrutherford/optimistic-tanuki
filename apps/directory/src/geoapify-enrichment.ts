@@ -5,6 +5,7 @@ import { isPaused, ProviderPausedError } from './operating-controls';
 import { reserveProviderBudget } from './provider-budget';
 import { emptyOutcome } from './overture-auto-acquisition';
 import type { AutoSweepOutcome } from './overture-auto-acquisition';
+import { normalizeGeoapifyDetails } from './normalize';
 
 /**
  * Geoapify private enrichment (owner decision D4). For an already-staged listing it asks Geoapify Place Details for
@@ -255,7 +256,10 @@ export async function runGeoapifySweep(
         [
           c.scanId,
           c.row,
-          JSON.stringify(details),
+          JSON.stringify({
+            ...details,
+            normalized: normalizeGeoapifyDetails(details),
+          }),
           String(deps.policy.retentionDays),
         ]
       );
