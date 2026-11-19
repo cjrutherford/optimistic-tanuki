@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -15,9 +16,11 @@ export class CommunityElection {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index('idx_election_communityId')
   @Column({ type: 'uuid' })
   communityId: string;
 
+  @Index('idx_election_status')
   @Column({
     type: 'varchar',
     default: 'pending',
