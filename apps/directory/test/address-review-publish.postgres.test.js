@@ -608,6 +608,35 @@ test(
 );
 
 test(
+  'publishes a candidate stored under a superseded scan when the active row is the same source row',
+  { skip: !url },
+  async () => {
+    const db = new DataSource({ type: 'postgres', url });
+    await db.initialize();
+    try {
+      const candidateId = await seed(db);
+      await db.query(
+        'UPDATE "directory_address_review_candidate" SET "scanId"=$2 WHERE "id"=$1',
+        [candidateId, 'f'.repeat(64)]
+      );
+      await publishAddressReviewCandidate(db, {
+        candidateId,
+        source,
+        policy,
+        actorId: reviewerId,
+      });
+      const rows = await db.query(
+        'SELECT listing FROM "directory_overture_private_row" WHERE "scanId"=$1',
+        [scanId]
+      );
+      assert.ok(rows[0].listing.reviewed);
+    } finally {
+      await db.destroy();
+    }
+  }
+);
+
+test(
   'refuses contact fields that differ from the reviewed candidate',
   { skip: !url },
   async () => {
