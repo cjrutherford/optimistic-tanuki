@@ -1,4 +1,4 @@
-const { test } = require('node:test');
+const nodeTest = require('node:test').test;
 const assert = require('node:assert/strict');
 const { DirectoryQueue } = require('../src/queue');
 const { consumeOnce } = require('../src/worker');
@@ -11,10 +11,13 @@ const required = [
   'DIRECTORY_TEST_REDIS_ADMIN_URL',
 ];
 const missing = required.filter((name) => !process.env[name]);
-if (missing.length)
-  throw new Error(
-    `Disposable Redis test configuration required: ${missing.join(', ')}`
-  );
+// These tests need disposable Redis instances. Without them (CI has none) they
+// are skipped with the reason, like the Postgres suites, instead of crashing
+// the whole directory-worker test run.
+const skip = missing.length
+  ? `disposable Redis test configuration required: ${missing.join(', ')}`
+  : false;
+const test = (name, fn) => nodeTest(name, { skip }, fn);
 for (const command of [
   'eval',
   'hget',
