@@ -1,3 +1,4 @@
+import { finishRunWithQuality, type QualityLimits } from './run-quality';
 import type { DataSource } from 'typeorm';
 import {
   AUTO_RUN_REASON_PREFIX,
@@ -92,6 +93,8 @@ export interface AutoAcquisitionDeps {
   extract: (request: ExtractRequest) => Promise<ExtractResult | undefined>;
   config?: Partial<AutoAcquisitionConfig>;
   signal?: AbortSignal;
+  /** Run quality limits (D28); the environment or the defaults when omitted. */
+  qualityLimits?: QualityLimits;
   log?: (message: string) => void;
   /** Heartbeat period while one asset streams (no batch boundary to report at). */
   heartbeatMs?: number;
@@ -511,7 +514,12 @@ export async function acquireTown(
       await runAsset(deps, town, item, state, approval, signer);
       unit = null;
     }
-    const status = await finishRun(db, runId);
+    const status = await finishRunWithQuality(
+      db,
+      runId,
+      town.id,
+      deps.qualityLimits
+    );
     log(`auto acquisition: ${town.name} ${status}`);
     await swapSourcelessAfterRefresh(db, town.id, 'overture', status);
     await swapSupersededAfterRefresh(db, town.id, 'overture', status);

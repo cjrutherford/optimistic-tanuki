@@ -646,6 +646,38 @@ export interface AcquisitionRunSummary {
   budgetReservedCents: number;
   budgetUsedCents: number;
   lastError: string | null;
+  /** `quality_limit` when the run was failed by its quality scorecard (D28); otherwise null. */
+  failureReason: 'quality_limit' | null;
+  /** The run's quality scorecard, or null for a run that never reached the gate (older runs, errors, cancels). */
+  quality: AcquisitionRunQuality | null;
+}
+/** Per-run quality scorecard (D28). Rates and completeness are shares between 0 and 1. */
+export interface AcquisitionRunQuality {
+  version: string;
+  normalizerVersion: string;
+  computedAt: string;
+  rows: number;
+  completeness: {
+    name: number;
+    address: number;
+    phone: number;
+    website: number;
+    category: number;
+    hours: number;
+  };
+  invalid: {
+    address: number;
+    phone: number;
+    addressRate: number;
+    phoneRate: number;
+  };
+  outOfBoundary: { count: number; rate: number };
+  duplicates: { count: number; rate: number };
+  /** The limits applied to this run, by name. */
+  limits: Record<string, number>;
+  /** The limits the run is past. A run with any breach is failed with reason `quality_limit`. */
+  breaches: string[];
+  passed: boolean;
 }
 export interface AcquisitionJobRecord {
   unitKey: string;
@@ -892,6 +924,11 @@ export interface DirectoryOpsMetrics {
     waiting: number;
     /** True while a town is still waiting past the target. */
     alert: boolean;
+  } | null;
+  /** D28: acquisition runs failed on the quality scorecard (`quality_limit`). */
+  runQuality?: {
+    failedTotal: number;
+    failedLast24h: number;
   } | null;
   controls: DirectoryOperatingControl[] | null;
   errors: string[];
