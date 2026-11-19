@@ -603,3 +603,24 @@ editing the database.
 Tests: `address-strong-match.test.js` (unit) and
 `address-strong-match.postgres.test.js` (inside approves; one point outside,
 disagreeing sources and an unverified boundary all hold).
+
+### 2026-11-19 amendment (D12, geocode strong match)
+
+The owner amended D11 (the decision log carries it as D12a because the number D12
+was already used for the pilot rows). A candidate is released under the policy
+named "D12 geocode strong match (owner 2026-11-19)" without official-website
+evidence when all of these hold:
+
+- the Census geocode is an exact match (`matchType` is `Exact`; the single-call
+  geocoder carries no such flag, so only Census batch results qualify);
+- the geocode point and the source point both lie inside the town's verified
+  boundary, and the geocode-to-source distance check passes; and
+- the category is not residential, residential-unknown, sensitive or adult.
+
+Official evidence that was collected and disagrees (`official_*_mismatch`) still
+holds the candidate for a human; the other safety holds stay. Code:
+`apps/directory/src/address-strong-match.ts` (`d12Eligible`, `releaseD12`), the
+D12 publish branch in `address-review-publish.ts`, and the resumable batch mode
+`--batch-geocode` in `scripts/local-directory-address-review-evidence.cjs`
+(Census `addressbatch`, 5,000 rows per request, official-page fetch stays a
+separate slower pass).
