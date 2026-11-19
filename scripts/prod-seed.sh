@@ -89,6 +89,8 @@ if [ -n "$COMPOSE_ENV_FILE" ]; then
 fi
 
 echo "Restarting services before seeding..."
+echo "Ensuring Civic services are running..."
+compose_cmd up -d --no-build clamav civic civic-briefing civic-contributions
 restart_service permissions
 restart_service gateway
 wait_for_gateway
