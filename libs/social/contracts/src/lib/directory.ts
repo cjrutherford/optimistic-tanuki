@@ -939,6 +939,11 @@ export interface DirectoryOpsMetrics {
     retryableLastHour?: number;
     retryableLast24h?: number;
   } | null;
+  /** Export artifacts past retention whose file is not yet deleted (the sweep retries; above zero for long needs an operator). */
+  exportRetention?: {
+    pendingDeletion: number;
+    oldestPendingSeconds: number | null;
+  } | null;
   /** D29: the active Overture release and the state of candidate releases. */
   overtureReleases?: {
     active: string;

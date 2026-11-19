@@ -316,3 +316,16 @@ test('spend alert threshold: integer 1..2500 else 2000', () => {
   for (const bad of ['0', '2501', '-5', '12.5', 'abc', '', '1e3'])
     assert.equal(spendAlertCents(env(bad)), 2000, bad);
 });
+
+test('prometheus exposition reports export artifacts waiting for deletion, the signal of a failing retention sweep', () => {
+  const text = toPrometheus(
+    metrics({
+      exportRetention: { pendingDeletion: 2, oldestPendingSeconds: 90 },
+    })
+  );
+  assert.match(text, /directory_export_artifacts_pending_deletion 2\n/);
+  assert.match(
+    text,
+    /directory_export_artifact_oldest_pending_deletion_seconds 90\n/
+  );
+});
