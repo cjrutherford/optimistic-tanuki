@@ -10,6 +10,7 @@ import {
   authorizeAnonymousAllThePlacesAttempt,
   authorizeAnonymousOvertureAttempt,
 } from './provider-budget';
+import { normalizeRecord, toStored, type NormalizeProvider } from './normalize';
 import { projectLocalEvaluation } from './overture-local-evaluation';
 import type { OvertureRightsPolicy } from './overture-rights';
 
@@ -146,6 +147,7 @@ export function projectStagedRow(input: {
   releaseId: string;
   rights: OvertureRightsPolicy;
   assignmentChangeToken?: string;
+  provider?: NormalizeProvider;
 }): { status: 'eligible' | 'quarantined'; listing?: any } {
   try {
     const geometry =
@@ -167,6 +169,13 @@ export function projectStagedRow(input: {
       // The rights evaluator reads field provenance from the stored listing; a row without it can never be exported.
       const sources = privateSources(input.source['sources']);
       if (sources.length) outcome.listing.sources = sources;
+      // The shared normalize stage (D27): derived keys and states stored beside the raw name and category.
+      outcome.listing.normalized = toStored(
+        normalizeRecord(input.provider ?? 'overture', {
+          ...input.source,
+          geometry,
+        })
+      );
     }
     return outcome;
   } catch {

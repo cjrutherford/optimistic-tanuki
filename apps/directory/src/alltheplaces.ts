@@ -1,3 +1,9 @@
+import {
+  baseNameKey,
+  cleanText,
+  nameMatchKey,
+  osmBasicCategory,
+} from './normalize';
 import type { OvertureRightsPolicy } from './overture-rights';
 
 /**
@@ -73,54 +79,8 @@ export function selectAtpPolicy(parsed: unknown): AtpRightsPolicy | null {
   return null;
 }
 
-/** OSM-style tags AllThePlaces emits, mapped to the low-risk Overture basic categories the local screen allows. */
-const AMENITY: Record<string, string> = {
-  restaurant: 'restaurant',
-  fast_food: 'fast_food_restaurant',
-  cafe: 'casual_eatery',
-  fuel: 'gas_station',
-};
-const SHOP: Record<string, string> = {
-  convenience: 'convenience_store',
-  supermarket: 'food_and_beverage_store',
-  grocery: 'food_and_beverage_store',
-  bakery: 'food_and_beverage_store',
-  butcher: 'food_and_beverage_store',
-  greengrocer: 'food_and_beverage_store',
-  variety_store: 'discount_store',
-  department_store: 'discount_store',
-  second_hand: 'second_hand_store',
-  hardware: 'hardware_home_and_garden_store',
-  doityourself: 'hardware_home_and_garden_store',
-  garden_centre: 'hardware_home_and_garden_store',
-  electronics: 'electronics_store',
-  computer: 'electronics_store',
-  mobile_phone: 'electronics_store',
-  clothes: 'fashion_and_apparel_store',
-  shoes: 'fashion_and_apparel_store',
-  florist: 'flowers_and_gifts_store',
-  gift: 'flowers_and_gifts_store',
-  car: 'auto_dealer',
-  car_parts: 'vehicle_parts_store',
-};
-const TOURISM: Record<string, string> = {
-  hotel: 'hotel',
-  motel: 'hotel',
-};
-const hasOwn = (o: object, k: string) =>
-  Object.prototype.hasOwnProperty.call(o, k);
-
 export function atpCategory(props: Record<string, unknown>): string | null {
-  const pick = (table: Record<string, string>, key: string) => {
-    const v = props[key];
-    return typeof v === 'string' && hasOwn(table, v) ? table[v] : null;
-  };
-  return (
-    pick(AMENITY, 'amenity') ??
-    pick(SHOP, 'shop') ??
-    pick(TOURISM, 'tourism') ??
-    null
-  );
+  return osmBasicCategory(props);
 }
 
 export interface AtpRow {
@@ -174,12 +134,13 @@ export function atpFeatureToRow(
     ...(typeof ref === 'string' && ref && spider
       ? { id: `${spider}:${ref}` }
       : {}),
-    names: { primary: rawName.trim() },
+    names: { primary: cleanText(rawName) },
     basic_category: category,
     taxonomy: { primary: category, hierarchy: [category] },
     lon: c[0],
     lat: c[1],
-    address: address ? address.trim().slice(0, 300) : null,
+    address:
+      address && cleanText(address) ? cleanText(address).slice(0, 300) : null,
   };
 }
 
@@ -190,14 +151,7 @@ export const ATP_SOURCES = Object.freeze([
 
 /* --------------------------- dedupe against Overture --------------------------- */
 
-export const normalizeName = (name: string): string =>
-  name
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
+export const normalizeName = baseNameKey;
 
 export function distanceMeters(
   a: [number, number],
@@ -238,12 +192,12 @@ export class OvertureDedupeIndex {
       const k = OvertureDedupeIndex.key(p.coordinates[0], p.coordinates[1]);
       (this.cells.get(k) ?? this.cells.set(k, []).get(k)!).push({
         ...p,
-        name: normalizeName(p.name),
+        name: nameMatchKey(p.name),
       });
     }
   }
   match(name: string, coordinates: [number, number]): DedupeReason | null {
-    const n = normalizeName(name);
+    const n = nameMatchKey(name);
     if (!n) return null;
     const cx = Math.floor(coordinates[0] / 0.002);
     const cy = Math.floor(coordinates[1] / 0.002);

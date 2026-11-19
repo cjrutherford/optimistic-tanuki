@@ -2,6 +2,7 @@ import { unprojectScan, unprojectRow } from './reviewed-spatial';
 import { DataSource, EntityManager } from 'typeorm';
 import { isIP } from 'node:net';
 import { projectPublicOverture } from './overture-public-projection';
+import { sanitizeStored } from './normalize';
 import { OvertureRightsPolicy } from './overture-rights';
 import {
   insertSourceEvidence,
@@ -26,6 +27,7 @@ type Listing = {
   addresses?: string[];
   websites?: string[];
   phones?: string[];
+  normalized?: unknown;
 };
 export interface OverturePrivateSinkOptions {
   /**
@@ -668,6 +670,15 @@ export class OverturePrivateSink {
         termsUrls: l.termsUrls,
       };
       if (l.adult === true) Object.assign(listing, { adult: true });
+      // The shared normalize stage's block: validated, and its contact values kept only where the raw ones are.
+      const normalized = (l as any).normalized;
+      if (normalized !== undefined)
+        Object.assign(listing, {
+          normalized: sanitizeStored(
+            normalized,
+            this.options.includeContactFields === true
+          ),
+        });
       if (l.assignmentChangeToken !== undefined) {
         if (
           typeof l.assignmentChangeToken !== 'string' ||
