@@ -11,6 +11,7 @@ import type {
   AcquisitionRunActionResult,
   AcquisitionRunDetail,
   AcquisitionRunList,
+  AcquisitionRunQuality,
   AcquisitionRunStatus,
   AcquisitionRunSummary,
 } from '@optimistic-tanuki/social-contracts';
@@ -25,6 +26,13 @@ import {
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+interface QualityRow {
+  label: string;
+  value: string;
+  limit: string;
+  breached: boolean;
+}
 
 export const ACQUISITION_POLL_MS = 3000;
 const ACTIVE: AcquisitionRunStatus[] = [
@@ -401,6 +409,63 @@ export class DirectoryAcquisitionRunsPageComponent
       this.message =
         'Copy is unavailable here. Select the command and copy it.';
     }
+  }
+
+  /** One row per scorecard measure: value, the limit it was held to, and whether it was breached. */
+  qualityRows(q: AcquisitionRunQuality): QualityRow[] {
+    const pct = (n: number | undefined) =>
+      typeof n === 'number' ? `${(n * 100).toFixed(1)}%` : 'n/a';
+    const row = (
+      label: string,
+      value: number,
+      key: string,
+      kind: 'min' | 'max'
+    ): QualityRow => ({
+      label,
+      value: pct(value),
+      limit:
+        q.limits[key] === undefined
+          ? 'none'
+          : `${kind === 'min' ? 'at least' : 'at most'} ${pct(q.limits[key])}`,
+      breached: q.breaches.includes(key),
+    });
+    return [
+      row('Name present', q.completeness.name, 'minNameCompleteness', 'min'),
+      row(
+        'Category present',
+        q.completeness.category,
+        'minCategoryCompleteness',
+        'min'
+      ),
+      row(
+        'Address present',
+        q.completeness.address,
+        'minAddressCompleteness',
+        'min'
+      ),
+      row('Phone present', q.completeness.phone, 'minPhoneCompleteness', 'min'),
+      row(
+        'Website present',
+        q.completeness.website,
+        'minWebsiteCompleteness',
+        'min'
+      ),
+      row('Hours present', q.completeness.hours, 'minHoursCompleteness', 'min'),
+      row(
+        'Invalid address',
+        q.invalid.addressRate,
+        'maxInvalidAddressRate',
+        'max'
+      ),
+      row('Invalid phone', q.invalid.phoneRate, 'maxInvalidPhoneRate', 'max'),
+      row(
+        'Outside boundary',
+        q.outOfBoundary.rate,
+        'maxOutOfBoundaryRate',
+        'max'
+      ),
+      row('In-run duplicates', q.duplicates.rate, 'maxDuplicateRate', 'max'),
+    ];
   }
 
   badgeTone(status: string): 'success' | 'warning' | 'danger' | 'neutral' {
