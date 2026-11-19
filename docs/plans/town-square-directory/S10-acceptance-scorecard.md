@@ -140,3 +140,5 @@ Decided on 2026-11-18: D1 to D30 ([DECISIONS-2026-11-18-S10](DECISIONS-2026-11-1
 4. Check the owner follow-ups listed in the 2026-11-19 update below.
 5. Production deployment of items 1 to 5 and D27 to D30 (not done).
 6. The outside monitor and all production items: the owner will handle these personally.
+
+- D12a (2026-11-19) amends D11: an exact Census geocode inside the verified boundary publishes without official evidence; mismatches and sensitive categories still hold. See [S7](S7-address-review-auto-approval.md#2026-11-19-amendment-d12-geocode-strong-match).

@@ -206,6 +206,7 @@ Plan section 4 S10 states that any deferred source capability keeps the "each se
 ### open/blocking items
 
 - Address auto-approval (D11): built and deployed, not yet exercised by a live refresh. (The D11 boundary query itself was checked read-only on live data on 2026-11-19: a verified containing border for all 259 ready towns.)
+- Address auto-approval (D12a amendment, 2026-11-19): geocode strong match releases and publishes without official evidence (`address-strong-match.ts` `D12_POLICY`); Census batch geocode mode in the evidence worker; see S7 section 12.
 - Pilot rows (4,850, no provenance): D12 swap still finishing, 32 towns left at the last check.
 - Production credentials, Redis ACL, TLS (owner handles personally)
 - Production secret management (owner handles personally)
