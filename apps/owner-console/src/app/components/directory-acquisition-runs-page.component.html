@@ -42,6 +42,79 @@
       </li>
     </ul>
   </otui-card>
+  } @if (releases) {
+  <otui-card class="run-form overture-releases" tone="neutral" emphasis="soft">
+    <h2>Overture release · {{ releases.active.release }}</h2>
+    <p class="run-meta">
+      A newer release is run on a few canary towns first and becomes the active
+      release only when every canary succeeds and none fails the quality
+      scorecard.
+    </p>
+    @if (!releases.candidates.length) {
+    <p class="run-meta">No newer release has been found.</p>
+    } @for (c of releases.candidates; track c.release) {
+    <div class="release-candidate">
+      <h3>{{ c.release }} · {{ c.status }}</h3>
+      <ul class="run-facts">
+        <li>Rights check: {{ c.rightsStatus }}</li>
+        @if (c.holdReason) {
+        <li class="release-hold">Held: {{ c.holdReason }}</li>
+        } @if (c.lastError) {
+        <li>Last error: {{ c.lastError }}</li>
+        } @for (k of c.canary; track k.townId) {
+        <li>
+          Canary {{ k.townName || k.townId }}: {{ k.outcome
+          }}{{ k.reason ? ' (' + k.reason + ')' : '' }}
+        </li>
+        }
+      </ul>
+      @if (c.status === 'held') {
+      <lib-text-input
+        #releaseReason
+        label="Reason (required)"
+        placeholder="Why retry or reject this release?"
+      ></lib-text-input>
+      <lib-text-input
+        #releaseConfirm
+        label="Type RETRY or REJECT to confirm"
+        placeholder="RETRY or REJECT"
+      ></lib-text-input>
+      <div class="form-actions">
+        <otui-button
+          tone="brand"
+          emphasis="outline"
+          [disabled]="busy"
+          (click)="
+            decideRelease(
+              c.release,
+              'retry',
+              releaseReason.value,
+              releaseConfirm.value
+            )
+          "
+        >
+          Retry canaries
+        </otui-button>
+        <otui-button
+          tone="warning"
+          emphasis="outline"
+          [disabled]="busy"
+          (click)="
+            decideRelease(
+              c.release,
+              'reject',
+              releaseReason.value,
+              releaseConfirm.value
+            )
+          "
+        >
+          Reject release
+        </otui-button>
+      </div>
+      }
+    </div>
+    }
+  </otui-card>
   }
 
   <otui-card class="run-form" tone="neutral" emphasis="soft">

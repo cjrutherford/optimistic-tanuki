@@ -497,6 +497,63 @@
         "x-required-permissions": ["directory.operate"]
       }
     },
+    "/api/directory/runs/releases": {
+      "get": {
+        "operationId": "DirectoryRunsController_releases",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRuns"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/runs/releases/{release}/{action}": {
+      "post": {
+        "operationId": "DirectoryRunsController_releaseAction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["DirectoryRuns"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
     "/api/directory/runs/towns/{townId}/run": {
       "post": {
         "operationId": "DirectoryRunsController_runTownNow",

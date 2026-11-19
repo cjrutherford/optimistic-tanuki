@@ -1,3 +1,4 @@
+import { activeOvertureRelease } from './overture-release';
 import type {
   DirectoryOpsMetrics,
   DirectoryOpsQueueMetrics,
@@ -260,7 +261,7 @@ export async function collectOpsMetrics(
       if (timer) clearTimeout(timer);
     }
   };
-  const [inf, tw, cov, fr, pol, sp, qs, ft, rq, ctl] = await Promise.all([
+  const [inf, tw, cov, fr, pol, sp, qs, ft, rq, rel, ctl] = await Promise.all([
     section('infrastructure', () => infrastructure(pool, env)),
     section('towns', () => towns(pool)),
     section('coverage', () => coverage(pool)),
@@ -270,6 +271,7 @@ export async function collectOpsMetrics(
     section('queues', () => queues(pool)),
     section('fillTime', () => fillTimeMetrics(pool)),
     section('runQuality', () => runQualityMetrics(pool)),
+    section('overtureReleases', () => overtureReleaseMetrics(pool)),
     section('controls', () => listControls(pool)),
   ]);
   return {
@@ -283,9 +285,35 @@ export async function collectOpsMetrics(
     queues: qs,
     fillTime: ft,
     runQuality: rq,
+    overtureReleases: rel,
     controls: ctl,
     errors: errors.sort(),
   };
+}
+
+/** D29: the active Overture release and how many candidate releases are in each state (held ones need an operator). */
+async function overtureReleaseMetrics(pool: Pool) {
+  const active = await activeOvertureRelease(pool as never);
+  const rows = await pool.query(
+    `SELECT status, count(*)::int AS n,
+            min(release) FILTER (WHERE status='held') AS "heldRelease",
+            min("holdReason") FILTER (WHERE status='held') AS "heldReason"
+       FROM directory_overture_release_candidate GROUP BY status`
+  );
+  const counts: Record<string, number> = {
+    detected: 0,
+    canary_running: 0,
+    held: 0,
+    rejected: 0,
+    promoted: 0,
+  };
+  let held: { release: string; reason: string | null } | null = null;
+  for (const r of rows) {
+    counts[r.status] = Number(r.n);
+    if (r.status === 'held')
+      held = { release: r.heldRelease, reason: r.heldReason ?? null };
+  }
+  return { active: active.release, counts, held };
 }
 
 async function runQualityMetrics(pool: Pool) {
@@ -349,6 +377,7 @@ export function toPrometheus(m: DirectoryOpsMetrics): string {
       'queues',
       'fillTime',
       'runQuality',
+      'overtureReleases',
       'controls',
     ].map(
       (s) =>
@@ -518,6 +547,25 @@ export function toPrometheus(m: DirectoryOpsMetrics): string {
     [
       [{ window: 'total' }, m.runQuality?.failedTotal],
       [{ window: 'last24h' }, m.runQuality?.failedLast24h],
+    ]
+  );
+  gauge(
+    'directory_overture_release_candidates',
+    'Candidate Overture releases by state (held needs an operator: retry or reject).',
+    Object.entries(m.overtureReleases?.counts ?? {}).map(
+      ([status, n]) => [{ status }, n] as [Record<string, string>, number]
+    )
+  );
+  gauge(
+    'directory_overture_release_held',
+    'A candidate Overture release is held after a failed canary or licence check.',
+    [
+      [
+        none,
+        m.overtureReleases
+          ? flag(m.overtureReleases.counts['held'] > 0)
+          : undefined,
+      ],
     ]
   );
   gauge(

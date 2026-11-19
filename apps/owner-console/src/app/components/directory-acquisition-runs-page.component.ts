@@ -14,6 +14,7 @@ import type {
   AcquisitionRunQuality,
   AcquisitionRunStatus,
   AcquisitionRunSummary,
+  OvertureReleasePanel,
 } from '@optimistic-tanuki/social-contracts';
 import {
   BadgeComponent,
@@ -113,6 +114,7 @@ export class DirectoryAcquisitionRunsPageComponent
   runs: AcquisitionRunSummary[] = [];
   total = 0;
   budget: AcquisitionBudgetPanel | null = null;
+  releases: OvertureReleasePanel | null = null;
   selected: AcquisitionRunDetail | null = null;
   filter: AcquisitionRunStatus | '' = '';
   loading = false;
@@ -126,6 +128,7 @@ export class DirectoryAcquisitionRunsPageComponent
 
   ngOnInit(): void {
     this.loadBudget();
+    this.loadReleases();
     this.load(true);
   }
 
@@ -147,6 +150,56 @@ export class DirectoryAcquisitionRunsPageComponent
       .subscribe({
         next: (budget) => (this.budget = budget),
         error: () => (this.message = 'The budget panel is unavailable.'),
+      });
+  }
+
+  private loadReleases(): void {
+    this.http
+      .get<OvertureReleasePanel>(`${this.api}/directory/runs/releases`)
+      .subscribe({
+        next: (panel) => (this.releases = panel),
+        error: () => (this.releases = null),
+      });
+  }
+
+  /** A held release can be retried (the canaries run again) or rejected (never considered again). */
+  decideRelease(
+    release: string,
+    action: 'retry' | 'reject',
+    reason: string,
+    confirm: string
+  ): void {
+    if (this.busy) return;
+    const word = action === 'retry' ? 'RETRY' : 'REJECT';
+    if (confirm.trim() !== word) {
+      this.message = `Type ${word} to confirm.`;
+      return;
+    }
+    if (!reason.trim()) {
+      this.message = 'A reason is required.';
+      return;
+    }
+    const key = `release:${action}:${release}:${reason.trim()}`;
+    this.busy = true;
+    this.message = '';
+    this.http
+      .post(`${this.api}/directory/runs/releases/${release}/${action}`, {
+        decisionId: this.idFor(key),
+        reason: reason.trim(),
+        confirm: word,
+      })
+      .subscribe({
+        next: () => {
+          this.busy = false;
+          this.ids.delete(key);
+          this.message =
+            action === 'retry'
+              ? `Retry recorded for ${release}. The next release check runs its canary towns again.`
+              : `${release} rejected. It will not be considered again.`;
+          this.loadReleases();
+        },
+        error: (error: HttpErrorResponse) =>
+          this.failed(key, error, `The release ${action}`),
       });
   }
 

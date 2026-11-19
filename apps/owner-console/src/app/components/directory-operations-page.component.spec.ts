@@ -140,6 +140,22 @@ describe('DirectoryOperationsPageComponent', () => {
     expect(el.querySelector('[role="alert"]')).toBeNull();
   });
 
+  it('shows the active Overture release and a held candidate', () => {
+    load(
+      metrics({
+        overtureReleases: {
+          active: '2026-10-21.0',
+          counts: { held: 1 },
+          held: { release: '2026-11-18.0', reason: 'quality_limit' },
+        },
+      })
+    );
+    expect(text()).toContain('Active release 2026-10-21.0');
+    expect(text()).toContain('2026-11-18.0 is held (quality_limit)');
+    const alert = el.querySelector('p.spend-alert[role="alert"]');
+    expect(alert?.textContent).toContain('acquisition runs page');
+  });
+
   it('shows a null section as Unavailable and lists errors', () => {
     load(metrics({ coverage: null, errors: ['coverage'] }));
     const card = el.querySelector('section[aria-labelledby="m-coverage"]');

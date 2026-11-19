@@ -936,6 +936,47 @@ export interface DirectoryOpsMetrics {
     failedTotal: number;
     failedLast24h: number;
   } | null;
+  /** D29: the active Overture release and the state of candidate releases. */
+  overtureReleases?: {
+    active: string;
+    counts: Record<string, number>;
+    held: { release: string; reason: string | null } | null;
+  } | null;
   controls: DirectoryOperatingControl[] | null;
   errors: string[];
+}
+
+/** D29: one canary run of a candidate Overture release. */
+export interface OvertureReleaseCanary {
+  townId: string;
+  townName: string;
+  runId: string | null;
+  status: string | null;
+  outcome: 'ok' | 'pending' | 'failed';
+  /** `quality_limit` when the run failed the quality scorecard. */
+  reason: string | null;
+}
+
+/** D29: a candidate Overture release and how far it got. */
+export interface OvertureReleaseCandidateSummary {
+  release: string;
+  status: 'detected' | 'canary_running' | 'held' | 'rejected' | 'promoted';
+  rightsStatus: 'approved' | 'mismatch';
+  holdReason: string | null;
+  lastError: string | null;
+  canary: OvertureReleaseCanary[];
+  canaryTownCount: number;
+  detectedAt: string;
+  updatedAt: string;
+  decidedAt: string | null;
+}
+
+export interface OvertureReleasePanel {
+  active: { release: string; source: 'pinned' | 'promoted' };
+  candidates: OvertureReleaseCandidateSummary[];
+}
+
+export interface OvertureReleaseDecisionRequest {
+  decisionId: string;
+  reason: string;
 }

@@ -252,6 +252,72 @@ export class DirectoryRunsController {
     return result;
   }
 
+  /** D29: the active Overture release and the newest candidate releases with their canary results. */
+  @Get('releases')
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.operate)
+  @Header('Cache-Control', 'no-store')
+  async releases(
+    @Query() query: Record<string, unknown>,
+    @Req() req: RequestUser
+  ) {
+    this.actor(req);
+    if (Object.keys(query).length)
+      throw new BadRequestException('Invalid query');
+    const result = await this.send('/internal/acquisition/releases');
+    this.shape(
+      this.object(result.active) &&
+        typeof result.active.release === 'string' &&
+        Array.isArray(result.candidates)
+    );
+    return result;
+  }
+
+  /** D29: retry (run the canaries again) or reject a held candidate release. */
+  @Post('releases/:release/:action')
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.operate)
+  @Header('Cache-Control', 'no-store')
+  async releaseAction(
+    @Param('release') release: string,
+    @Param('action') action: string,
+    @Body() body: any,
+    @Req() req: RequestUser
+  ) {
+    const actorId = this.actor(req);
+    if (
+      !/^\d{4}-\d{2}-\d{2}\.\d+$/.test(release) ||
+      !['retry', 'reject'].includes(action) ||
+      !this.object(body) ||
+      !this.isUuid(body.decisionId) ||
+      !this.text(body.reason) ||
+      body.confirm !== (action === 'retry' ? 'RETRY' : 'REJECT') ||
+      Object.keys(body).some(
+        (k) => !['decisionId', 'reason', 'confirm'].includes(k)
+      )
+    )
+      throw new BadRequestException('Invalid release decision');
+    const result = await this.post(
+      `/internal/acquisition/releases/${release}/${action}`,
+      {
+        decisionId: body.decisionId,
+        reason: body.reason,
+        confirm: body.confirm,
+        actorId,
+      }
+    );
+    this.shape(
+      typeof result.release === 'string' &&
+        typeof result.status === 'string' &&
+        typeof result.replayed === 'boolean'
+    );
+    return {
+      release: result.release,
+      status: result.status,
+      replayed: result.replayed,
+    };
+  }
+
   @Post('history/import')
   @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
   @RequirePermissions(DIRECTORY_PERMISSIONS.operate)

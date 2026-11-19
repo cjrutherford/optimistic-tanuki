@@ -77,6 +77,33 @@ const budget = {
   acquisitionAuthorized: false,
 };
 
+const heldPanel = {
+  active: { release: '2026-10-21.0', source: 'pinned' },
+  candidates: [
+    {
+      release: '2026-11-18.0',
+      status: 'held',
+      rightsStatus: 'approved',
+      holdReason: 'quality_limit',
+      lastError: null,
+      canary: [
+        {
+          townId: 't1',
+          townName: 'Aaa',
+          runId: runId,
+          status: 'failed_permanent',
+          outcome: 'failed',
+          reason: 'quality_limit',
+        },
+      ],
+      canaryTownCount: 1,
+      detectedAt: '2026-11-18T00:00:00.000Z',
+      updatedAt: '2026-11-18T01:00:00.000Z',
+      decidedAt: null,
+    },
+  ],
+};
+
 describe('DirectoryAcquisitionRunsPageComponent', () => {
   let fixture: ComponentFixture<DirectoryAcquisitionRunsPageComponent>;
   let http: HttpTestingController;
@@ -107,6 +134,7 @@ describe('DirectoryAcquisitionRunsPageComponent', () => {
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
     http.expectOne(`${base}/budget`).flush(budget);
+    http.expectOne(`${base}/releases`).flush(heldPanel);
   });
 
   afterEach(() => {
@@ -165,6 +193,35 @@ describe('DirectoryAcquisitionRunsPageComponent', () => {
     ) as HTMLElement;
     expect(row.textContent).toContain('50.0%');
     expect(row.textContent).toContain('Past limit');
+  });
+
+  it('shows a held Overture release with its reason and canary, and decides it only when confirmed', () => {
+    http.expectOne(listUrl).flush({ runs: [], total: 0 });
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Overture release');
+    expect(text).toContain('2026-11-18.0');
+    expect(text).toContain('Held: quality_limit');
+    expect(text).toContain('Aaa');
+    component.decideRelease('2026-11-18.0', 'retry', 'looked', 'nope');
+    expect(component.message).toContain('Type RETRY');
+    component.decideRelease('2026-11-18.0', 'reject', ' ', 'REJECT');
+    expect(component.message).toContain('reason');
+    component.decideRelease('2026-11-18.0', 'retry', 'looked', 'RETRY');
+    const req = http.expectOne(`${base}/releases/2026-11-18.0/retry`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      decisionId: expect.stringMatching(/^d0000000-/),
+      reason: 'looked',
+      confirm: 'RETRY',
+    });
+    req.flush({ release: '2026-11-18.0', status: 'detected', replayed: false });
+    http.expectOne(`${base}/releases`).flush({ ...heldPanel, candidates: [] });
+    fixture.detectChanges();
+    expect(component.message).toContain('Retry recorded');
+    expect(fixture.nativeElement.textContent).toContain(
+      'No newer release has been found'
+    );
   });
 
   it('shows the budget panel and blocked reasons in the list', () => {

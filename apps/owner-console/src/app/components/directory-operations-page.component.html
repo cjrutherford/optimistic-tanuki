@@ -284,6 +284,26 @@
       </section>
     </otui-card>
 
+    @if (metrics.overtureReleases; as r) {
+    <otui-card class="metric-card" tone="neutral" emphasis="soft">
+      <section aria-labelledby="m-releases">
+        <h3 id="m-releases">Overture release</h3>
+        <p class="spend-summary">Active release {{ r.active }}</p>
+        <p class="spend-summary">
+          Candidates: {{ r.counts['detected'] ?? 0 }} waiting,
+          {{ r.counts['canary_running'] ?? 0 }} on canary towns,
+          {{ r.counts['held'] ?? 0 }} held
+        </p>
+        @if (r.held; as h) {
+        <p class="spend-alert" role="alert">
+          {{ h.release }} is held ({{ h.reason ?? 'no reason recorded' }}).
+          Retry or reject it on the acquisition runs page.
+        </p>
+        }
+      </section>
+    </otui-card>
+    }
+
     <otui-card class="metric-card" tone="neutral" emphasis="soft">
       <section aria-labelledby="m-queues">
         <h3 id="m-queues">Queues</h3>
