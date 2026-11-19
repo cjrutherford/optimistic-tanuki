@@ -935,6 +935,9 @@ export interface DirectoryOpsMetrics {
   runQuality?: {
     failedTotal: number;
     failedLast24h: number;
+    /** Runs ended `failed_retryable` (provider outage or interrupted worker). */
+    retryableLastHour?: number;
+    retryableLast24h?: number;
   } | null;
   /** D29: the active Overture release and the state of candidate releases. */
   overtureReleases?: {
