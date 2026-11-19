@@ -64,6 +64,7 @@ import {
   supersededByLiveCohort,
 } from './business-identity-read';
 import { DataSource } from 'typeorm';
+import { analyzeServedRowTables } from './planner-statistics';
 import { RegisterDeliveryV2 } from '../../directory-worker/src/register-delivery';
 import { DirectoryRecoveryIdentity } from './register-recovery-authority';
 import {
@@ -3602,6 +3603,8 @@ export async function runPendingRuntime(): Promise<void> {
       connectionTimeoutMillis: 2000,
       statement_timeout: 2000,
       query_timeout: 3000,
+      // The 2 s read bound is for short OLTP reads; JIT compilation of the served-row join alone costs ~0.8 s.
+      options: '-c jit=off',
     },
   });
   const source = new RegisterDeliveryV2(
@@ -3623,6 +3626,7 @@ export async function runPendingRuntime(): Promise<void> {
   try {
     await db.initialize();
     if (stopping) return;
+    await analyzeServedRowTables(db);
     server = pendingServer(
       pendingChecks(db, source, config.identity, config.localSecret),
       config.reviewSecret,

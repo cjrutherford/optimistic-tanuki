@@ -187,7 +187,7 @@ No operator action was needed.
 
 - No production environment, credentials, ACL or TLS. Everything above is local Docker.
 - Provider prices are estimates. There is no invoice reconciliation.
-- Retention task failure was not drilled (the provider outage was, see the S10 drill). After a large Overture load the San Antonio listing route can exceed its 2 s read bound and answer 503; open. Legacy Redis suites were not rerun, because they need disposable Redis.
+- Retention task failure was not drilled (the provider outage was, see the S10 drill). The San Antonio listing 503 after a large Overture load was a planner problem (never-analyzed empty control tables, then JIT), fixed by analyzing them at API start, `jit=off` on the API pool and a `regionId` index; see the S10 provider outage drill. Legacy Redis suites were not rerun, because they need disposable Redis.
 - Backups are not encrypted, and there is no off-host copy.
 - A restore does not rotate the source epoch.
 - `shellcheck` has not been run on the scripts.
