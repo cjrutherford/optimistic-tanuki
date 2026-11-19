@@ -33,17 +33,15 @@ describe('source census and register repair', () => {
   });
   it('preserves correct tokens and obtains writer authority before incarnation validation', async () => {
     const manager = {
-      query: jest
-        .fn()
-        .mockResolvedValue([
-          {
-            exists: true,
-            communityId: id,
-            operation: 'changed',
-            dirty: true,
-            changeToken: token,
-          },
-        ]),
+      query: jest.fn().mockResolvedValue([
+        {
+          exists: true,
+          communityId: id,
+          operation: 'changed',
+          dirty: true,
+          changeToken: token,
+        },
+      ]),
     } as any;
     await expect(
       repairSourceCommunityRegister(manager, identity, id)
