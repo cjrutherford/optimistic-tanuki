@@ -4,6 +4,10 @@ import {
   SocialCommunitySnapshot,
   isEligibleCommunity,
 } from './social-eligibility';
+import {
+  KEEP_OWNER_LOCK_DECISIONS,
+  KEEP_OWNER_LOCK_GEOMETRY,
+} from './locked-boundary-binding';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const generation = (x: unknown): x is string =>
@@ -79,7 +83,10 @@ async function apply(
   )
     throw new Error('Invalid register snapshot');
   await manager.query(
-    'UPDATE directory_boundary_decision SET "invalidatedAt"=CURRENT_TIMESTAMP WHERE "communityId"=$1 AND "invalidatedAt" IS NULL AND ($2::uuid IS NULL OR "changeToken"<>$2)',
+    // A lock is an owner-verified border: a re-tokened community keeps its owner_lock decision and binding.
+    `UPDATE directory_boundary_decision SET "invalidatedAt"=CURRENT_TIMESTAMP WHERE "communityId"=$1 AND "invalidatedAt" IS NULL AND ($2::uuid IS NULL OR "changeToken"<>$2)${
+      snapshot === null ? '' : ` ${KEEP_OWNER_LOCK_DECISIONS}`
+    }`,
     [id, snapshot === null ? null : token]
   );
   if (snapshot === null || token === null)
@@ -89,7 +96,7 @@ async function apply(
     );
   else
     await manager.query(
-      'DELETE FROM directory_reviewed_geometry WHERE "communityId"=$1 AND "changeToken"<>$2',
+      `DELETE FROM directory_reviewed_geometry WHERE "communityId"=$1 AND "changeToken"<>$2 ${KEEP_OWNER_LOCK_GEOMETRY}`,
       [id, token]
     );
   if (snapshot === null || token === null)
