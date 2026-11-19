@@ -18,9 +18,11 @@ import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 
 export const DUPLICATE_STALE_MESSAGE = 'This pair changed since you opened it';
 
-export type DuplicateState = 'queued' | 'kept_separate' | 'merged';
+export type DuplicateState = 'queued' | 'kept_separate' | 'merged' | 'stale';
+export type DuplicateStatus = 'open' | 'auto_resolved' | 'stale' | 'reviewed';
+type StatusFilter = DuplicateStatus | 'all';
 export type DuplicateRule = 'similar_name' | 'same_name_near';
-export type DuplicateAction = 'merge' | 'keep_separate' | 'undo';
+export type DuplicateAction = 'merge' | 'keep_separate' | 'undo' | 'swap_kept';
 type StateFilter = DuplicateState | 'all';
 type RuleFilter = DuplicateRule | 'all';
 type Tab = 'queue' | 'sample';
@@ -34,6 +36,8 @@ export interface DuplicateCaseSummary {
   keptName: string | null;
   hiddenName: string | null;
   createdAt: string;
+  status?: DuplicateStatus;
+  autoRule?: string | null;
 }
 
 export interface DuplicateListingView {
@@ -52,6 +56,8 @@ export interface DuplicateHistoryEvent {
   eventId: string;
   kind: string;
   actorId: string | null;
+  actorKind?: 'reviewer' | 'auto' | 'system';
+  ruleId?: string | null;
   note: string | null;
   createdAt: string;
 }
@@ -68,6 +74,14 @@ export interface DuplicatePage {
   total: number;
   limit: number;
   offset: number;
+  counts?: DuplicateStatusCounts;
+}
+
+export interface DuplicateStatusCounts {
+  open: number;
+  autoResolved: number;
+  stale: number;
+  reviewed: number;
 }
 
 export interface WrongMergeReport {
@@ -138,6 +152,9 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
   tab: Tab = 'queue';
   state: StateFilter = 'queued';
   rule: RuleFilter = 'all';
+  status: StatusFilter = 'all';
+  counts: DuplicateStatusCounts | null = null;
+  swapPending: string | null = null;
   cases: DuplicateCaseSummary[] = [];
   total = 0;
   details: Record<string, DuplicateCaseDetail> = {};
@@ -159,7 +176,19 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
     { value: 'queued', label: 'Queued' },
     { value: 'merged', label: 'Merged' },
     { value: 'kept_separate', label: 'Kept separate' },
+    { value: 'stale', label: 'Stale' },
     { value: 'all', label: 'All' },
+  ];
+  readonly statuses: Array<{
+    value: StatusFilter;
+    label: string;
+    count?: keyof DuplicateStatusCounts;
+  }> = [
+    { value: 'all', label: 'Any status' },
+    { value: 'open', label: 'Open', count: 'open' },
+    { value: 'auto_resolved', label: 'Auto-resolved', count: 'autoResolved' },
+    { value: 'reviewed', label: 'Reviewed', count: 'reviewed' },
+    { value: 'stale', label: 'Stale', count: 'stale' },
   ];
   readonly rules: Array<{ value: RuleFilter; label: string }> = [
     { value: 'all', label: 'Any reason' },
@@ -187,8 +216,19 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
     if (tab === 'sample' && !this.samplesLoaded) this.loadSamples();
   }
 
+  setStatus(status: StatusFilter): void {
+    this.status = status;
+    if (status !== 'all') this.state = 'all';
+    this.refresh();
+  }
+
+  statusCount(option: { count?: keyof DuplicateStatusCounts }): string {
+    return option.count && this.counts ? ` (${this.counts[option.count]})` : '';
+  }
+
   setState(state: StateFilter): void {
     this.state = state;
+    if (state !== 'all') this.status = 'all';
     this.refresh();
   }
 
@@ -217,6 +257,7 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
     this.loading = true;
     const filters =
       (this.state === 'all' ? '' : `state=${this.state}&`) +
+      (this.status === 'all' ? '' : `status=${this.status}&`) +
       (this.rule === 'all' ? '' : `rule=${this.rule}&`);
     this.http
       .get<DuplicatePage>(
@@ -226,6 +267,7 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
         next: (result) => {
           this.loading = false;
           this.total = result.total ?? 0;
+          this.counts = result.counts ?? this.counts;
           this.cases =
             this.offset === 0
               ? result.cases ?? []
@@ -272,10 +314,31 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
     return c.state === 'queued';
   }
 
+  canSwap(c: DuplicateCaseSummary): boolean {
+    return c.state === 'queued' || c.state === 'merged';
+  }
+
+  askSwap(c: DuplicateCaseSummary): void {
+    this.swapPending = c.caseId;
+  }
+
+  cancelSwap(): void {
+    this.swapPending = null;
+  }
+
+  /** Swap which listing is kept; sends the pair the reviewer saw so a moved pair is refused. */
+  swap(d: DuplicateCaseDetail, reason: string): void {
+    this.decide(d, 'swap_kept', reason, {
+      scanId: d.keptListing.scanId,
+      sourceFileRowNumber: d.keptListing.sourceFileRowNumber,
+    });
+  }
+
   decide(
     c: DuplicateCaseSummary,
     action: DuplicateAction,
-    reason: string
+    reason: string,
+    expectedKept?: { scanId: string; sourceFileRowNumber: string }
   ): void {
     if (this.deciding) return;
     const why = reason.trim();
@@ -288,11 +351,17 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
     this.http
       .post<{ recorded: boolean; replayed: boolean; state: DuplicateState }>(
         `${this.url}/${c.caseId}/decide`,
-        { action, reason: why, expectedState: c.state }
+        {
+          action,
+          reason: why,
+          expectedState: c.state,
+          ...(expectedKept ? { expectedKept } : {}),
+        }
       )
       .subscribe({
         next: (result) => {
           this.deciding = false;
+          this.swapPending = null;
           this.message = result.replayed
             ? 'That decision was already recorded.'
             : 'Decision recorded.';
@@ -323,13 +392,18 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
     return events.map((h, i) => ({
       id: h.eventId,
       label: h.kind.replace(/_/g, ' ').replace(/^./, (ch) => ch.toUpperCase()),
-      actor: h.actorId ?? 'System',
+      actor:
+        h.actorKind === 'auto'
+          ? `Automatic${h.ruleId ? ` (${h.ruleId})` : ''}`
+          : h.actorId ?? 'System',
       at: h.createdAt,
       reason: h.note ?? '',
       isUndo: h.kind === 'undone',
       reversible:
         i === last &&
-        (h.kind === 'merged' || h.kind === 'kept_separate') &&
+        (h.kind === 'merged' ||
+          h.kind === 'auto_merged' ||
+          h.kind === 'kept_separate') &&
         detail.state !== 'queued',
     }));
   }
@@ -343,7 +417,14 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
   badgeTone(state: string): 'success' | 'warning' | 'danger' | 'neutral' {
     if (state === 'queued') return 'warning';
     if (state === 'merged') return 'danger';
+    if (state === 'stale') return 'neutral';
     return 'success';
+  }
+
+  autoLabel(c: DuplicateCaseSummary): string {
+    return c.status === 'auto_resolved' && c.autoRule
+      ? `Auto-resolved by ${c.autoRule.replace(/_/g, ' ')}`
+      : '';
   }
 
   stateLabel(state: string): string {

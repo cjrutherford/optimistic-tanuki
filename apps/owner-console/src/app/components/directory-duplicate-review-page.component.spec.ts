@@ -184,6 +184,52 @@ describe('DirectoryDuplicateReviewPageComponent', () => {
     expect(component.message).toBe('Decision recorded.');
   });
 
+  it('swaps the kept listing only after confirmation, sending the kept row it saw', () => {
+    open();
+    component.askSwap(component.cases[0]);
+    expect(component.swapPending).toBe(caseId);
+    component.swap(detail('queued'), ' ');
+    expect(component.message).toContain('reason');
+    http.expectNone(`${url}/${caseId}/decide`);
+    component.swap(detail('queued'), 'other is better');
+    const req = http.expectOne(`${url}/${caseId}/decide`);
+    expect(req.request.body).toEqual({
+      action: 'swap_kept',
+      reason: 'other is better',
+      expectedState: 'queued',
+      expectedKept: { scanId: '7', sourceFileRowNumber: '12' },
+    });
+    req.flush({ recorded: true, replayed: false, state: 'queued' });
+    http.expectOne(`${url}/${caseId}`).flush(detail('queued'));
+    expect(component.swapPending).toBeNull();
+  });
+
+  it('filters to auto-resolved pairs and shows the status counts', () => {
+    open();
+    component.setStatus('auto_resolved');
+    const req = http.expectOne(`${url}?status=auto_resolved&limit=25&offset=0`);
+    req.flush({
+      cases: [
+        {
+          ...summary,
+          state: 'merged',
+          status: 'auto_resolved',
+          autoRule: 'auto_exact_name_colocated',
+        },
+      ],
+      total: 1,
+      limit: 25,
+      offset: 0,
+      counts: { open: 5, autoResolved: 1, stale: 2, reviewed: 3 },
+    });
+    fixture.detectChanges();
+    expect(component.state).toBe('all');
+    expect(component.statusCount(component.statuses[2])).toBe(' (1)');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Auto-resolved by auto exact name colocated'
+    );
+  });
+
   it('reloads the pair when a decision loses a race', () => {
     open();
     component.decide(component.cases[0], 'keep_separate', 'different shops');
