@@ -182,6 +182,24 @@ export class DirectoryProviderBudgetAttempt {
   createdAt!: Date;
 }
 
+/**
+ * Daily credit ledger for credit-metered providers (Geoapify, free plan: 3,000 credits per UTC day, owner decision
+ * D30). One row per request, counted before the request is made, so a failed or timed-out call still counts.
+ */
+@Entity({ name: 'directory_provider_credit_attempt' })
+@Check('CHK_directory_provider_credit_credits', '"credits" BETWEEN 1 AND 3000')
+@Index('IDX_directory_provider_credit_day', ['provider', 'day'])
+export class DirectoryProviderCreditAttempt {
+  @PrimaryColumn('uuid') attemptId!: string;
+  /** UTC calendar day the credits count against. */
+  @Column({ type: 'date' }) day!: string;
+  @Column({ type: 'varchar', length: 64 }) provider!: string;
+  @Column({ type: 'varchar', length: 64 }) operation!: string;
+  @Column('integer') credits!: number;
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt!: Date;
+}
+
 /** Replay fence for anonymous, non-billed Overture S3 reads in local evaluation. */
 @Entity({ name: 'directory_anonymous_overture_attempt' })
 @Check(

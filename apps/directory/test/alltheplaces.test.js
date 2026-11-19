@@ -228,7 +228,7 @@ test('staged listings keep only source records the private sink accepts', () => 
 });
 
 test('Geoapify: redaction and the provider limit', () => {
-  const { providerLimitCents } = require('../src/provider-budget');
+  const { geoapifyDailyCreditLimit } = require('../src/provider-budget');
   assert.equal(
     geo.redactSecrets('GET https://x/v2?lat=1&apiKey=abc123&lon=2', 'abc123'),
     'GET https://x/v2?lat=1&apiKey=[redacted]&lon=2'
@@ -238,19 +238,12 @@ test('Geoapify: redaction and the provider limit', () => {
     'plain [redacted] here'
   );
   const limit = (v) =>
-    providerLimitCents(
-      'geoapify',
-      v === undefined ? {} : { DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS: v }
+    geoapifyDailyCreditLimit(
+      v === undefined ? {} : { DIRECTORY_GEOAPIFY_DAILY_CREDITS: v }
     );
-  assert.equal(limit(undefined), 2500);
+  assert.equal(limit(undefined), 3000, 'the free plan allowance');
   assert.equal(limit('1000'), 1000);
-  assert.equal(limit('9999'), 2500, 'never above the $25 ceiling');
-  assert.equal(limit('abc'), 0, 'unusable means nothing may be spent');
+  assert.equal(limit('9999'), 3000, 'never above the plan allowance');
+  assert.equal(limit('abc'), 0, 'unusable means nothing may be used');
   assert.equal(limit('-5'), 0);
-  assert.equal(
-    providerLimitCents('overture', {
-      DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS: '1',
-    }),
-    2500
-  );
 });

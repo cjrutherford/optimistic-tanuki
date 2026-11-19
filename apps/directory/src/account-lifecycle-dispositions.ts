@@ -1515,6 +1515,12 @@ const inventory: DirectoryLifecycleInventory = {
       'Provider budget reservations.'
     ),
     none(
+      'directory_provider_credit_attempt',
+      'DirectoryProviderCreditAttempt',
+      ['attemptId', 'day', 'provider', 'operation', 'credits', 'createdAt'],
+      'Provider daily credit ledger (Geoapify).'
+    ),
+    none(
       'directory_anonymous_overture_attempt',
       'DirectoryAnonymousOvertureAttempt',
       ['attemptId', 'period', 'policyId', 'assetSha256', 'method', 'createdAt'],

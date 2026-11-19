@@ -20,6 +20,12 @@
         used {{ budget.usedCents }} · {{ budget.remainingCents }} remaining
       </li>
       <li>{{ budget.anonymousAttempts }} anonymous attempts this period</li>
+      @if (budget.geoapifyDailyCreditLimit !== undefined) {
+      <li class="geoapify-credits">
+        Geoapify: {{ budget.geoapifyCreditsToday ?? 0 }} of
+        {{ budget.geoapifyDailyCreditLimit }} credits used today (UTC)
+      </li>
+      }
       <li>
         {{
           budget.hardStop

@@ -263,7 +263,13 @@
         <p class="spend-summary">
           {{ money(s.reservedCents) }} of {{ money(s.limitCents) }} reserved
         </p>
-        @if (s.exhausted) {
+        @if (s.geoapifyDailyCreditLimit !== undefined) {
+        <p class="spend-summary geoapify-credits">
+          Geoapify: {{ s.geoapifyCreditsToday ?? 0 }} of
+          {{ s.geoapifyDailyCreditLimit }} credits used today (resets at UTC
+          midnight)
+        </p>
+        } @if (s.exhausted) {
         <p class="spend-alert" role="alert">
           The spend limit is used up. Provider acquisition cannot reserve more
           this period.

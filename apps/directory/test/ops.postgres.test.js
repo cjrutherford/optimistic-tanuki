@@ -253,6 +253,8 @@ test(
       assert.equal(m.spend.reservedCents, 1);
       assert.equal(m.spend.alertCents, 2000);
       assert.equal(m.spend.alert, false);
+      assert.equal(m.spend.geoapifyCreditsToday, 0);
+      assert.equal(m.spend.geoapifyDailyCreditLimit, 3000);
       assert.equal(m.queues.export.queued, 0);
       assert.equal(m.queues.export.oldestQueuedSeconds, null);
       assert.equal(m.controls.length, 3);
