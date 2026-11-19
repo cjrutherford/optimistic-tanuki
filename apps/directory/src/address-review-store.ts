@@ -8,7 +8,7 @@ import {
   versionToken,
 } from './review-version';
 import { DataSource, EntityManager } from 'typeorm';
-import { applyStrongMatchPolicy, D11_POLICY } from './address-strong-match';
+import { applyStrongMatchPolicy } from './address-strong-match';
 import type {
   AddressReviewDecision,
   AddressReviewRights,
@@ -280,7 +280,7 @@ export async function storeAddressReviewCandidate(
         evidenceHash,
         JSON.stringify(input.decision.checks),
         input.decision.policyVersion,
-        gate.released ? D11_POLICY : null,
+        gate.policy,
       ]
     );
     return { id, status, verdict: input.decision.verdict };
@@ -381,7 +381,7 @@ export async function updateAddressReviewEvidence(
           evidenceHash,
           JSON.stringify(input.decision.checks),
           input.decision.policyVersion,
-          gate.released ? D11_POLICY : null,
+          gate.policy,
         ]
       );
     }

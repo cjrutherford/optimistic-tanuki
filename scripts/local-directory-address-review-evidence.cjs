@@ -13,6 +13,14 @@
  *     node -r ts-node/register/transpile-only scripts/local-directory-address-review-evidence.cjs \
  *     --limit 10
  *
+ * Geocode-only batch mode (D12, owner 2026-11-19): `--batch-geocode` sends candidates that have no geocode yet to the
+ * Census batch endpoint (up to 10,000 per request), stores each result and re-runs the decision engine. A candidate
+ * with an exact in-town geocode and no contradicting official evidence is released as `auto_approved` under the
+ * D12 policy. The official-page fetch is a separate, slower pass (the default mode, without --batch-geocode).
+ * Flags: --batch-size (default 5000, max 10000), --limit (total rows this run), --community <uuid>,
+ * --batch-delay ms between requests (default 3000), --retries (default 4), --dry-run. Resumable: a candidate with
+ * a stored Census-batch geocode (provider 'census-batch') is never re-sent; single-call geocodes carry no exact/non-exact flag, so they are sent once again, and re-running continues where the last run stopped.
+ *
  * To characterise a multi-town backlog without processing every row, pass
  * `--per-town 5`. The worker then selects up to five candidates per community
  * (ordered by creation time) instead of the first N overall.
@@ -29,6 +37,9 @@ const {
   createRateLimiter,
   fetchOfficialPage,
   geocodeCensus,
+  buildCensusBatchCsv,
+  geocodeCensusBatch,
+  parseCensusBatchResponse,
 } = require('../apps/directory/src/address-evidence');
 const {
   updateAddressReviewEvidence,
@@ -54,6 +65,11 @@ const perTown = Number(value('--per-town', '0'));
 const status = value('--status', 'needs_human');
 const censusDelay = Number(value('--census-delay', '1200'));
 const pageDelay = Number(value('--page-delay', '1500'));
+const batchGeocode = flag('--batch-geocode');
+const batchSize = Number(value('--batch-size', '5000'));
+const batchDelay = Number(value('--batch-delay', '3000'));
+const retries = Number(value('--retries', '4'));
+const communityFilter = value('--community', '');
 const refresh = flag('--refresh');
 const dryRun = flag('--dry-run');
 const skipOfficial = flag('--no-official');
@@ -83,9 +99,32 @@ if (
 if (
   !Number.isSafeInteger(limit) ||
   limit < 1 ||
-  limit > (perTown ? 5000 : 100)
+  limit > (batchGeocode ? 1_000_000 : perTown ? 5000 : 100)
 ) {
-  console.error(`--limit must be between 1 and ${perTown ? 5000 : 100}`);
+  console.error(
+    `--limit must be between 1 and ${
+      batchGeocode ? 1_000_000 : perTown ? 5000 : 100
+    }`
+  );
+  process.exit(1);
+}
+if (
+  !Number.isSafeInteger(batchSize) ||
+  batchSize < 1 ||
+  batchSize > 10_000 ||
+  !Number.isSafeInteger(retries) ||
+  retries < 0 ||
+  retries > 10 ||
+  !Number.isFinite(batchDelay) ||
+  batchDelay < 0 ||
+  (communityFilter &&
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      communityFilter
+    ))
+) {
+  console.error(
+    '--batch-size must be 1-10000, --retries 0-10, --batch-delay >= 0, --community a UUID'
+  );
   process.exit(1);
 }
 if (!Number.isSafeInteger(perTown) || perTown < 0 || perTown > 100) {
@@ -176,10 +215,201 @@ async function readSourceRows(path, rowNumbers) {
   return rows;
 }
 
+const stamp = () => new Date().toISOString();
+const log = (event, data = {}) =>
+  console.log(JSON.stringify({ at: stamp(), event, ...data }));
+
+/** Returns a promise pool: runs `task` over `items` with at most `n` in flight. */
+async function pool(items, n, task) {
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(n, items.length) }, async () => {
+      while (next < items.length) await task(items[next++]);
+    })
+  );
+}
+
+async function runBatchGeocode(db) {
+  const totals = {
+    selected: 0,
+    sent: 0,
+    skippedNoAddress: 0,
+    geocodeMatch: 0,
+    exact: 0,
+    nonExact: 0,
+    noMatch: 0,
+    ambiguous: 0,
+    unanswered: 0,
+    released: 0,
+    needsHuman: 0,
+    rejected: 0,
+    writeFailed: 0,
+    batches: 0,
+  };
+  const startedAt = Date.now();
+  let cursor = '00000000-0000-0000-0000-000000000000';
+  while (totals.selected < limit) {
+    const take = Math.min(batchSize, limit - totals.selected);
+    const rows = await db.query(
+      `SELECT c.*, t."name" AS "townName"
+         FROM "directory_address_review_candidate" c
+         LEFT JOIN "directory_town" t ON t."communityId"=c."communityId"
+        WHERE c."status"=$1 AND c."id">$2
+          AND ($3::uuid IS NULL OR c."communityId"=$3)
+          AND (c."geocode" IS NULL OR c."geocode"='null'::jsonb
+               OR c."geocode"->>'provider' IS DISTINCT FROM 'census-batch')
+        ORDER BY c."id" LIMIT $4`,
+      [status, cursor, communityFilter || null, take]
+    );
+    if (!rows.length) break;
+    cursor = rows[rows.length - 1].id;
+    totals.selected += rows.length;
+    const inputs = rows.map((row) => {
+      // The town name is "City, ST"; only its state fills in a freeform address that has no city of its own.
+      const m = /^(.*?),\s*([A-Za-z]{2})$/.exec(row.townName || '');
+      return {
+        id: row.id,
+        address: Array.isArray(row.addresses) ? row.addresses[0] || '' : '',
+        fallbackState: m?.[2],
+      };
+    });
+    const { csv, sent, skipped } = buildCensusBatchCsv(inputs);
+    totals.skippedNoAddress += skipped.length;
+    let results = new Map();
+    if (sent.length) {
+      totals.sent += sent.length;
+      try {
+        results = parseCensusBatchResponse(
+          await geocodeCensusBatch({
+            csv,
+            retries,
+            onRetry: (attempt, reason) =>
+              log('census_retry', { attempt, reason }),
+          })
+        );
+      } catch (error) {
+        // Nothing was written for this batch; the rows stay un-geocoded and the next run resends them.
+        log('batch_failed', {
+          rows: sent.length,
+          error: String(error.message),
+        });
+        totals.unanswered += sent.length;
+        if (!dryRun) break;
+      }
+    }
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const work = [];
+    for (const id of sent) {
+      const geocode = results.get(id);
+      if (!geocode || geocode.status === 'error') {
+        totals.unanswered += 1;
+        continue;
+      }
+      if (geocode.status === 'match') {
+        totals.geocodeMatch += 1;
+        if (geocode.matchType === 'exact') totals.exact += 1;
+        else totals.nonExact += 1;
+        const row = byId.get(id);
+        if (
+          row.point &&
+          Number.isFinite(row.point.lat) &&
+          Number.isFinite(row.point.lng)
+        )
+          geocode.distanceMeters = haversineMeters(
+            row.point,
+            geocode.coordinates
+          );
+      } else if (geocode.status === 'no_match') totals.noMatch += 1;
+      else totals.ambiguous += 1;
+      work.push({ row: byId.get(id), geocode });
+    }
+    await pool(work, 4, async ({ row, geocode }) => {
+      const stored = row.risk && typeof row.risk === 'object' ? row.risk : {};
+      const cls = classifyAddressRisk({
+        name: row.name,
+        category: row.category,
+        address: row.addresses?.[0],
+      });
+      // Stored flags came from the import's taxonomy; a fresh `true` can only tighten them, never loosen.
+      const risk = Object.fromEntries(
+        ['residential', 'sensitive', 'adult'].map((k) => [
+          k,
+          stored[k] === true || cls[k] === true ? true : stored[k],
+        ])
+      );
+      const official = row.officialEvidence?.status
+        ? row.officialEvidence
+        : null;
+      const raw = decideAddressReview({
+        candidate: {
+          sourceRow: Number(row.sourceFileRowNumber),
+          name: row.name,
+          category: row.category,
+          point: row.point,
+          addresses: Array.isArray(row.addresses) ? row.addresses : [],
+          websites: Array.isArray(row.websites) ? row.websites : [],
+          phones: Array.isArray(row.phones) ? row.phones : [],
+          rights: row.rights,
+          ...risk,
+        },
+        geocode,
+        official,
+      });
+      // A batch no-match or far match is not proof the address is bad (the city is a state-only guess), so a
+      // geocode-only failure waits for a reviewer instead of being rejected outright.
+      const failed = Object.entries(raw.checks).filter(([, v]) => v === 'fail');
+      const decision =
+        raw.verdict === 'reject' &&
+        failed.every(([k]) => k === 'geocode' || k === 'geocodeDistance')
+          ? { ...raw, verdict: 'needs_human' }
+          : raw;
+      try {
+        if (dryRun) {
+          if (decision.verdict === 'reject') totals.rejected += 1;
+          else totals.needsHuman += 1;
+          return;
+        }
+        const out = await updateAddressReviewEvidence(db, {
+          candidateId: row.id,
+          geocode,
+          officialEvidence: official,
+          risk,
+          rights: row.rights,
+          decision,
+        });
+        if (out.status === 'auto_approved') totals.released += 1;
+        else if (out.status === 'rejected') totals.rejected += 1;
+        else totals.needsHuman += 1;
+      } catch (error) {
+        totals.writeFailed += 1;
+        log('write_failed', {
+          id: row.id,
+          error: String(error.message).slice(0, 120),
+        });
+      }
+    });
+    totals.batches += 1;
+    const seconds = Math.max(1, (Date.now() - startedAt) / 1000);
+    log('batch_done', {
+      batch: totals.batches,
+      ratePerMin: Math.round((totals.selected / seconds) * 60),
+      ...totals,
+    });
+    if (batchDelay) await new Promise((r) => setTimeout(r, batchDelay));
+  }
+  log('run_done', {
+    dryRun,
+    status,
+    community: communityFilter || null,
+    ...totals,
+  });
+}
+
 (async () => {
   const db = new DataSource({ type: 'postgres', url: databaseUrl });
   await db.initialize();
   try {
+    if (batchGeocode) return await runBatchGeocode(db);
     const candidates = perTown
       ? await db.query(
           `SELECT * FROM (

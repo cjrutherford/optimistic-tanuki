@@ -6,7 +6,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { OverturePrivateSink } from './overture-private-sink';
 import type { OvertureRightsPolicy } from './overture-rights';
 import { DEFAULT_ADDRESS_REVIEW_POLICY } from './address-review';
-import { queryVerifiedBoundary } from './address-strong-match';
+import { D12_POLICY, queryVerifiedBoundary } from './address-strong-match';
 import {
   type BindingKey,
   documentHash,
@@ -15,6 +15,12 @@ import {
   reviewedHash,
   stageContentHash,
 } from './reviewed-binding';
+
+/**
+ * D12 (owner 2026-11-19) publishes an address on an exact Census geocode alone, so the reviewed fields cite the
+ * geocoder as their evidence instead of an official page.
+ */
+export const D12_EVIDENCE_URL = 'https://geocoding.geo.census.gov/geocoder/';
 
 const HEX64 = /^[a-f0-9]{64}$/;
 
@@ -349,6 +355,21 @@ export async function publishAddressReviewCandidate(
       throw Error('Official-page evidence is stale or unavailable');
     }
     evidenceUrl = evidence.url;
+  } else if (
+    input.actorKind === 'auto' &&
+    candidate.status === 'auto_approved' &&
+    candidate.geocode?.status === 'match' &&
+    candidate.geocode?.matchType === 'exact' &&
+    candidate.checks?.d12StrongMatch === 'pass' &&
+    (
+      await db.query(
+        `SELECT 1 FROM "directory_address_review_decision"
+         WHERE "candidateId"=$1 AND "actorKind"='auto' AND "decision"='approve' AND "reason"=$2 LIMIT 1`,
+        [input.candidateId, D12_POLICY]
+      )
+    ).length === 1
+  ) {
+    evidenceUrl = D12_EVIDENCE_URL;
   } else {
     const humanUrl = input.humanEvidenceUrl;
     if (

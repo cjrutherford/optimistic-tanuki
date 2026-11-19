@@ -121,6 +121,212 @@ export function parseCensusResponse(
   };
 }
 
+export const CENSUS_BATCH_URL =
+  'https://geocoding.geo.census.gov/geocoder/locations/addressbatch';
+/** The Census batch endpoint accepts at most 10,000 records per file. */
+export const CENSUS_BATCH_MAX = 10_000;
+
+export interface CensusBatchInput {
+  id: string;
+  address: string;
+  /**
+   * Used only when the address carries no trailing "City, ST zip" of its own. The assigned town's city is NOT
+   * used as a fallback: assigned towns cover neighbouring places, and a wrong city turns a real address into a
+   * no-match. The state alone lets Census find the street; the distance and boundary checks catch a wrong place.
+   */
+  fallbackState?: string;
+}
+
+const csvField = (value: string) =>
+  `"${value.replace(/[\r\n]+/g, ' ').replace(/"/g, '""')}"`;
+
+/**
+ * Splits a freeform US address into the street, city, state and ZIP columns the batch endpoint wants. A trailing
+ * "ST" or "ST 12345" part is the state; the part before it is the city. A freeform with no state falls back to
+ * the state of the town the candidate is assigned to. The geocode-to-source distance and town-boundary checks then guard any
+ * mismatch between the fallback town and where the business really is.
+ */
+export function splitCensusAddress(input: CensusBatchInput): {
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+} | null {
+  const parts = input.address
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (!parts.length) return null;
+  const tail = /^([A-Za-z]{2})(?:\s+(\d{5})(?:-\d{4})?)?$/.exec(
+    parts[parts.length - 1]
+  );
+  if (tail && parts.length >= 3) {
+    return {
+      street: parts.slice(0, -2).join(', '),
+      city: parts[parts.length - 2],
+      state: tail[1].toUpperCase(),
+      zip: tail[2] ?? '',
+    };
+  }
+  if (!input.fallbackState) return null;
+  return {
+    street: parts.join(', '),
+    city: '',
+    state: input.fallbackState,
+    zip: '',
+  };
+}
+
+/** Builds the batch CSV (id, street, city, state, zip, no header). Rows with no usable address are returned apart. */
+export function buildCensusBatchCsv(rows: readonly CensusBatchInput[]): {
+  csv: string;
+  sent: string[];
+  skipped: string[];
+} {
+  const lines: string[] = [];
+  const sent: string[] = [];
+  const skipped: string[] = [];
+  for (const row of rows) {
+    const parts = splitCensusAddress(row);
+    if (!parts || !parts.street) {
+      skipped.push(row.id);
+      continue;
+    }
+    sent.push(row.id);
+    lines.push(
+      [row.id, parts.street, parts.city, parts.state, parts.zip]
+        .map(csvField)
+        .join(',')
+    );
+  }
+  return { csv: lines.join('\n') + '\n', sent, skipped };
+}
+
+/** A small RFC 4180 reader: quoted fields may hold commas and doubled quotes. */
+export function parseCsv(text: string): string[][] {
+  const records: string[][] = [];
+  let record: string[] = [];
+  let field = '';
+  let quoted = false;
+  const endRecord = () => {
+    record.push(field);
+    field = '';
+    if (record.length > 1 || record[0] !== '') records.push(record);
+    record = [];
+  };
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (c === '"') quoted = false;
+      else field += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ',') {
+      record.push(field);
+      field = '';
+    } else if (c === '\n') endRecord();
+    else if (c !== '\r') field += c;
+  }
+  if (field !== '' || record.length) endRecord();
+  return records;
+}
+
+/**
+ * Parses the batch response into one geocode per id. Columns: id, input address, Match|No_Match|Tie,
+ * Exact|Non_Exact, matched address, "lon,lat", tigerline id, side. Only a single `Exact` match is evidence D12 can
+ * release on; a `Non_Exact` match is still recorded as a match, with `matchType: 'non_exact'`, so it holds.
+ * Ids that do not appear in the response are absent from the map, so the caller can retry them.
+ */
+export function parseCensusBatchResponse(
+  text: string,
+  checkedAt = new Date().toISOString()
+): Map<string, GeocodeEvidence> {
+  const out = new Map<string, GeocodeEvidence>();
+  for (const record of parseCsv(text)) {
+    const id = record[0]?.trim();
+    if (!id) continue;
+    const verdict = (record[2] ?? '').trim().toLowerCase();
+    const base = { provider: 'census-batch', checkedAt } as const;
+    if (verdict === 'no_match') {
+      out.set(id, { status: 'no_match', ...base });
+    } else if (verdict === 'tie') {
+      out.set(id, { status: 'ambiguous', ...base });
+    } else if (verdict === 'match') {
+      const [lng, lat] = (record[5] ?? '').split(',').map(Number);
+      const matched = (record[4] ?? '').trim();
+      const exact = (record[3] ?? '').trim().toLowerCase();
+      if (
+        !matched ||
+        !Number.isFinite(lng) ||
+        !Number.isFinite(lat) ||
+        Math.abs(lng) > 180 ||
+        Math.abs(lat) > 90 ||
+        (exact !== 'exact' && exact !== 'non_exact')
+      ) {
+        out.set(id, { status: 'error', ...base });
+      } else {
+        out.set(id, {
+          status: 'match',
+          normalizedAddress: matched,
+          matchType: exact,
+          coordinates: { lat, lng },
+          precision: 'range',
+          ...base,
+        });
+      }
+    } else {
+      out.set(id, { status: 'error', ...base });
+    }
+  }
+  return out;
+}
+
+/** One batch POST with retries and exponential backoff; resolves to the response CSV or throws after the last try. */
+export async function geocodeCensusBatch(input: {
+  csv: string;
+  fetchImpl?: typeof fetch;
+  retries?: number;
+  backoffMs?: number;
+  timeoutMs?: number;
+  sleep?: (ms: number) => Promise<void>;
+  onRetry?: (attempt: number, reason: string) => void;
+}): Promise<string> {
+  const fetchImpl = input.fetchImpl ?? fetch;
+  const retries = input.retries ?? 4;
+  const sleep =
+    input.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
+  let reason = 'unknown';
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    if (attempt > 0) {
+      input.onRetry?.(attempt, reason);
+      await sleep((input.backoffMs ?? 5000) * 2 ** (attempt - 1));
+    }
+    try {
+      const form = new FormData();
+      form.append('benchmark', 'Public_AR_Current');
+      form.append(
+        'addressFile',
+        new Blob([input.csv], { type: 'text/csv' }),
+        'addresses.csv'
+      );
+      const response = await fetchImpl(CENSUS_BATCH_URL, {
+        method: 'POST',
+        body: form,
+        headers: { 'user-agent': DEFAULT_USER_AGENT },
+        signal: AbortSignal.timeout(input.timeoutMs ?? 600_000),
+        redirect: 'error',
+      });
+      if (response.ok) return await response.text();
+      reason = `http ${response.status}`;
+    } catch (error) {
+      reason = error instanceof Error ? error.name : 'error';
+    }
+  }
+  throw Error(`Census batch failed after ${retries + 1} attempts: ${reason}`);
+}
+
 export async function geocodeCensus(input: {
   address: SourceAddress;
   fetchImpl?: typeof fetch;

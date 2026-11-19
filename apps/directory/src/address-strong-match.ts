@@ -8,6 +8,35 @@ import type { AddressReviewDecision, GeocodeEvidence } from './address-review';
  */
 export const D11_POLICY = 'D11 strong match (owner 2026-11-18)';
 
+/**
+ * Owner decision D12 (2026-11-19), amending D11: a business address is released WITHOUT official-website evidence
+ * when the Census geocode is an exact, single match, the geocode point and the source point are both inside the
+ * town's verified boundary, the geocode-to-source distance check passed, and the classifier found the listing
+ * neither residential, residential-unknown, sensitive nor adult. Official evidence that WAS collected and
+ * disagrees still holds the candidate for a reviewer; its absence no longer does.
+ */
+export const D12_POLICY = 'D12 geocode strong match (owner 2026-11-19)';
+
+/** The only reasons D12 tolerates: official evidence was never collected or could not be read. */
+const D12_TOLERATED_REASONS = [
+  'official_evidence_missing',
+  'official_evidence_unavailable',
+];
+/** Checks that must pass for D12; the official-page checks are deliberately absent. */
+const D12_REQUIRED_CHECKS = [
+  'addressPresent',
+  'addressValid',
+  'singleAddress',
+  'rights',
+  'adult',
+  'sensitive',
+  'residential',
+  'sourcePoint',
+  'geocode',
+  'geocodePrecision',
+  'geocodeDistance',
+] as const;
+
 type Q = { query(sql: string, params?: unknown[]): Promise<any[]> };
 type Point = { lat: number; lng: number };
 
@@ -98,11 +127,19 @@ export interface StrongMatchInput {
 export async function applyStrongMatchPolicy(
   q: Q,
   input: StrongMatchInput
-): Promise<{ decision: AddressReviewDecision; released: boolean }> {
+): Promise<{
+  decision: AddressReviewDecision;
+  released: boolean;
+  policy: string | null;
+}> {
   const { decision } = input;
-  if (decision.verdict !== 'auto_approve') return { decision, released: false };
+  if (decision.verdict === 'needs_human' && d12Eligible(input))
+    return releaseD12(q, input);
+  if (decision.verdict !== 'auto_approve')
+    return { decision, released: false, policy: null };
   const hold = (cause: string) => ({
     released: false,
+    policy: null,
     decision: {
       ...decision,
       verdict: 'needs_human' as const,
@@ -135,10 +172,72 @@ export async function applyStrongMatchPolicy(
     return hold('point_outside_town');
   return {
     released: true,
+    policy: D11_POLICY,
     decision: {
       ...decision,
       reasons: [...decision.reasons, 'd11_strong_match'],
       checks: { ...decision.checks, d11StrongMatch: 'pass' },
+    },
+  };
+}
+
+/**
+ * True when the classifier held the candidate only because official evidence is absent: every D12 check passed, the
+ * geocode is an exact single match, and the only reasons are the tolerated official-absence ones. Any official
+ * mismatch, stale or missing-field reason, or any other reason, makes it ineligible and it stays with a reviewer.
+ */
+function d12Eligible(input: StrongMatchInput): boolean {
+  const { decision, geocode } = input;
+  return (
+    geocode?.status === 'match' &&
+    geocode.matchType === 'exact' &&
+    D12_REQUIRED_CHECKS.every((c) => decision.checks[c] === 'pass') &&
+    decision.checks['officialEvidence'] === 'unknown' &&
+    decision.reasons.length > 0 &&
+    decision.reasons.every((r) => D12_TOLERATED_REASONS.includes(r))
+  );
+}
+
+async function releaseD12(
+  q: Q,
+  input: StrongMatchInput
+): Promise<{
+  decision: AddressReviewDecision;
+  released: boolean;
+  policy: string | null;
+}> {
+  const { decision } = input;
+  const hold = (cause: string) => ({
+    released: false,
+    policy: null,
+    decision: { ...decision, reasons: [...decision.reasons, cause] },
+  });
+  const coordinates = input.geocode?.coordinates;
+  if (!finite(coordinates) || !finite(input.point))
+    return hold('town_points_missing');
+  const boundary = await queryVerifiedBoundary(
+    q,
+    input.communityId,
+    coordinates,
+    input.point
+  );
+  if (
+    !boundary ||
+    createHash('sha256')
+      .update(Buffer.from(boundary.geometry, 'hex'))
+      .digest('hex') !== boundary.geometryHash
+  )
+    return hold('town_boundary_unverified');
+  if (!boundary.geocode_inside || !boundary.source_inside)
+    return hold('point_outside_town');
+  return {
+    released: true,
+    policy: D12_POLICY,
+    decision: {
+      ...decision,
+      verdict: 'auto_approve',
+      reasons: [...decision.reasons, 'd12_geocode_strong_match'],
+      checks: { ...decision.checks, d12StrongMatch: 'pass' },
     },
   };
 }

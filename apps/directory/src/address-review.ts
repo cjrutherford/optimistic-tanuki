@@ -35,6 +35,8 @@ export interface AddressReviewCandidate {
 export interface GeocodeEvidence {
   status: 'match' | 'no_match' | 'ambiguous' | 'error';
   normalizedAddress?: string;
+  /** Census batch match quality; D12 releases only `exact`. Absent for single-call evidence. */
+  matchType?: 'exact' | 'non_exact';
   coordinates?: { lat: number; lng: number } | null;
   precision?: GeocodePrecision;
   distanceMeters?: number | null;

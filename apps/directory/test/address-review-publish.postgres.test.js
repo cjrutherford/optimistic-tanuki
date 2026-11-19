@@ -1188,6 +1188,55 @@ test(
 );
 
 test(
+  'publishes a D12 geocode-only approval without official-page evidence',
+  { skip: !url },
+  async () => {
+    const db = new DataSource({ type: 'postgres', url });
+    await db.initialize();
+    try {
+      const candidateId = await seed(db, 'auto_approved');
+      await db.query(
+        `UPDATE "directory_address_review_candidate" SET "officialEvidence"=NULL,
+           "geocode"='{"status":"match","matchType":"exact","coordinates":{"lat":31,"lng":-83}}'::jsonb,
+           "checks"='{"d12StrongMatch":"pass"}'::jsonb WHERE "id"=$1`,
+        [candidateId]
+      );
+      const args = {
+        candidateId,
+        source,
+        policy,
+        actorId: reviewerId,
+        actorKind: 'auto',
+      };
+      // Without the D12 audit decision the candidate is not publishable.
+      await assert.rejects(
+        publishAddressReviewCandidate(db, args),
+        /official-page evidence is required/i
+      );
+      await db.query(
+        `INSERT INTO "directory_address_review_decision"
+          ("candidateId","actorKind","actorId","decision","reason","checks","policyVersion")
+         VALUES ($1,'auto',NULL,'approve','D12 geocode strong match (owner 2026-11-19)','{}'::jsonb,'address-review-v1')`,
+        [candidateId]
+      );
+      const result = await publishAddressReviewCandidate(db, args);
+      assert.equal(result.status, 'published');
+      const rows = await db.query(
+        'SELECT listing FROM "directory_overture_private_row" WHERE "scanId"=$1',
+        [scanId]
+      );
+      assert.equal(rows[0].listing.reviewed.address, '10 Main St');
+      assert.match(
+        rows[0].listing.reviewed.evidenceUrl,
+        /geocoding\.geo\.census\.gov/
+      );
+    } finally {
+      await db.destroy();
+    }
+  }
+);
+
+test(
   'refuses reviewer-supplied evidence without a matching human approval',
   { skip: !url },
   async () => {
