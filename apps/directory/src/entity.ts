@@ -329,6 +329,7 @@ export class DirectoryOverturePrivateCheckpoint {
 }
 
 @Entity({ name: 'directory_overture_private_row' })
+@Index('IDX_directory_overture_private_row_region', ['regionId'])
 export class DirectoryOverturePrivateRow {
   @PrimaryColumn({ type: 'varchar', length: 64 }) scanId!: string;
   @PrimaryColumn('bigint') sourceFileRowNumber!: string;

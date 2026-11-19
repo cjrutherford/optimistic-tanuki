@@ -76,8 +76,14 @@ No operator action was needed for AllThePlaces: once the override was gone, the 
 
 ## Not fixed
 
-- After the Overture San Antonio swap, the public listing route for San Antonio began answering 503 (`Local directory unavailable`) on most requests at about 2.0 s, which is the route's read bound (`statement_timeout='2s'`, "a timeout is a 503, never a short page"). The town answered 200 during the outage. Boston already takes about 1.4 s. `ANALYZE directory_overture_private_row` did not change it. This is a scale limit of the listing query for a town with a large new Overture load, not an outage defect, and it is recorded as an open gap in the runbook.
+- Fixed afterwards: the San Antonio listing 503 (see "San Antonio listing 503" below). The metric above is deployed and `directory_runs_retryable_failures` is live on the ops metrics route.
 - The per-run effect of recreating the worker: the AllThePlaces snapshot cache (`/tmp/directory-atp`) lives in the container, so the first run after a recreate downloads the 3 GB archive again.
+
+## San Antonio listing 503
+
+Cause, from `EXPLAIN (ANALYZE, BUFFERS)` of the real listing statement (read-only, San Antonio and its live change token): the served-row join was planned from default statistics. The small control tables (`directory_overture_private_revocation` is empty and was never analyzed, so autovacuum never touches it) made the planner assume every scan is revoked and estimate one served row for the town. It then chose nested loops against 631 completion rows and 638 membership rows (21.6 M and 11.5 M join-filter rejections) and the read took 6.3 s, over the 2 s bound. `ANALYZE` on the row table could not help, because the bad estimate came from the other tables. With those tables analyzed the join is memoized index lookups and execution drops to 0.37 s, but the plan cost was then high enough to trigger JIT, which added 0.84 s of compilation, 1.2 s in total. Retired scans are not the problem: San Antonio holds 34,336 rows, 17.6 k of them revoked by the swap, and each is rejected by a primary-key probe (about 2 microseconds).
+
+Fix: `apps/directory/src/planner-statistics.ts` analyzes the served-row control tables when the API starts; the API pool sets `jit=off`; `directory_overture_private_row` gets an index on `regionId` (generated migration `1795092881826-DirectoryServedRowRegionIndex`). Live after deploy: San Antonio answered 200 on five consecutive requests at 0.20 to 0.27 s (was 503 at 2.01 s). The five other largest towns answered 200 at 0.08 to 0.95 s (Boston, 87 k rows, the slowest).
 
 ## Restore
 
