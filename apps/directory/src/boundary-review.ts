@@ -40,6 +40,7 @@ export function geographyHash(
     typeof v === 'string' &&
     !!v.trim() &&
     v.length <= n &&
+    // eslint-disable-next-line no-control-regex -- Control characters are matched on purpose.
     !/[\x00-\x1f\x7f]/.test(v);
   if (
     !g ||

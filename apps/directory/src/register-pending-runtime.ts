@@ -1005,6 +1005,7 @@ export function pendingChecks(
     if (
       typeof search !== 'string' ||
       search.length > 100 ||
+      // eslint-disable-next-line no-control-regex -- Control characters are matched on purpose.
       /[\x00-\x1f\x7f]/.test(search)
     )
       throw Error('Invalid search');
@@ -3176,6 +3177,7 @@ export function pendingServer(
             !/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(categories[0]))) ||
         (adults.length && adults[0] !== '1') ||
         (searches.length &&
+          // eslint-disable-next-line no-control-regex -- Control characters are matched on purpose.
           (searches[0].length > 100 || /[\x00-\x1f\x7f]/.test(searches[0]))) ||
         (offsets.length && !/^(0|[1-9][0-9]{0,6})$/.test(offsets[0]))
       ) {

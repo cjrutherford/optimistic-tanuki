@@ -186,9 +186,23 @@ export default [
     },
   },
   {
-    files: ['apps/directory-worker/src/**/*.ts'],
+    files: [
+      'apps/directory/src/**/*.ts',
+      'apps/directory-worker/src/**/*.ts',
+      'apps/social/src/source-epoch-operator.ts',
+      'apps/social/src/app/services/community-directory-activation.postgres.spec.ts',
+      'apps/social/src/app/services/community-directory-epoch.ts',
+      'apps/social/src/app/services/community-directory-register-read.ts',
+      'apps/social/src/app/services/directory-ack-v2.postgres.spec.ts',
+      'apps/social/src/app/services/social-authority-transition.postgres.spec.ts',
+      'apps/social/src/app/services/social-final-activation.postgres.spec.ts',
+      'apps/social/src/app/services/social-final-activation.ts',
+      'apps/social/src/app/services/social-prepared.postgres.spec.ts',
+      'apps/social/src/app/services/social-proof-boundary.postgres.spec.ts',
+    ],
     rules: {
-      // The worker runs the directory app's own domain code against the same database; it ships both from one tree.
+      // The directory, its worker and Social's directory-recovery files share contracts by relative path: their
+      // operator scripts and node --test suites run under plain ts-node, which cannot resolve the workspace aliases.
       '@nx/enforce-module-boundaries': 'off',
     },
   },
