@@ -254,6 +254,72 @@ describe('DirectoryDuplicateCasesController', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
+  it('swaps the kept listing, forwarding expectedKept and rejecting a malformed one', async () => {
+    const fetchMock = reply(200, { replayed: false, state: 'queued' });
+    await controller.decide(
+      town,
+      caseId,
+      {
+        action: 'swap_kept',
+        reason: 'wrong one kept',
+        expectedState: 'queued',
+        expectedKept: { scanId: 'scan-a', sourceFileRowNumber: 1 },
+      },
+      req
+    );
+    expect(
+      JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string)
+    ).toEqual({
+      action: 'swap_kept',
+      reason: 'wrong one kept',
+      expectedState: 'queued',
+      expectedKept: { scanId: 'scan-a', sourceFileRowNumber: '1' },
+      actorId: reviewerId,
+    });
+    await expect(
+      controller.decide(
+        town,
+        caseId,
+        { action: 'swap_kept', reason: 'x', expectedKept: { scanId: 5 } },
+        req
+      )
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('accepts the status filter and projects counts, status and auto rule', async () => {
+    const fetchMock = reply(200, {
+      cases: [
+        {
+          ...row(),
+          state: 'merged',
+          status: 'auto_resolved',
+          autoRule: 'auto_exact_name_colocated',
+        },
+      ],
+      total: 1,
+      limit: 50,
+      offset: 0,
+      counts: { open: 3, autoResolved: 1, stale: 2, reviewed: 4 },
+    });
+    const page = await controller.list(town, { status: 'auto_resolved' }, req);
+    expect(String(fetchMock.mock.calls[0][0])).toContain(
+      'status=auto_resolved'
+    );
+    expect(page.counts).toEqual({
+      open: 3,
+      autoResolved: 1,
+      stale: 2,
+      reviewed: 4,
+    });
+    expect(page.cases[0]).toMatchObject({
+      status: 'auto_resolved',
+      autoRule: 'auto_exact_name_colocated',
+    });
+    await expect(
+      controller.list(town, { status: 'bogus' }, req)
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   const report = {
     sampleSize: 200,
     judged: 10,

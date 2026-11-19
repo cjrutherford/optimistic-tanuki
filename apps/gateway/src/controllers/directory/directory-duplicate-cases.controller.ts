@@ -21,8 +21,9 @@ import { DIRECTORY_PERMISSIONS } from '@optimistic-tanuki/social-contracts';
 import { DirectoryOwnerScopeGuard } from './directory.controller';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const actions = ['keep_separate', 'merge', 'undo'];
-const states = ['queued', 'kept_separate', 'merged'];
+const actions = ['keep_separate', 'merge', 'undo', 'swap_kept'];
+const states = ['queued', 'kept_separate', 'merged', 'stale'];
+const statuses = ['open', 'auto_resolved', 'stale', 'reviewed'];
 const rules = ['same_name_near', 'similar_name'];
 const verdicts = ['duplicate', 'distinct'];
 const round = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
@@ -33,6 +34,7 @@ interface DuplicatePage {
   total: number;
   limit: number;
   offset: number;
+  counts?: Record<string, number>;
 }
 
 /**
@@ -104,9 +106,22 @@ export class DirectoryDuplicateCasesController {
     if (!Array.isArray(rows) || rows.length > 200) throw this.unavailable();
     return {
       ...this.page(result),
+      ...(result.counts === undefined
+        ? {}
+        : { counts: this.counts(result.counts) }),
       cases: rows.map((r: any) => {
         return this.caseRow(r);
       }),
+    };
+  }
+
+  private counts(c: any): Record<string, number> {
+    if (!c || typeof c !== 'object') throw this.unavailable();
+    return {
+      open: this.count(c.open),
+      autoResolved: this.count(c.autoResolved),
+      stale: this.count(c.stale),
+      reviewed: this.count(c.reviewed),
     };
   }
 
@@ -140,7 +155,18 @@ export class DirectoryDuplicateCasesController {
       keptName: this.name(r.keptName),
       hiddenName: this.name(r.hiddenName),
       createdAt: r.createdAt,
+      ...(r.status === undefined
+        ? {}
+        : { status: this.enumValue(r.status, statuses) }),
+      ...(r.autoRule === undefined || r.autoRule === null
+        ? {}
+        : { autoRule: this.name(r.autoRule) }),
     };
+  }
+
+  private enumValue(v: unknown, allowed: string[]): string {
+    if (typeof v !== 'string' || !allowed.includes(v)) throw this.unavailable();
+    return v;
   }
 
   private strings(v: unknown): string[] {
@@ -189,7 +215,7 @@ export class DirectoryDuplicateCasesController {
         if (
           !h ||
           !this.text(h.eventId, 64) ||
-          !this.text(h.kind, 16) ||
+          !this.text(h.kind, 32) ||
           (h.actorId !== null &&
             !(typeof h.actorId === 'string' && uuid.test(h.actorId)))
         )
@@ -198,6 +224,18 @@ export class DirectoryDuplicateCasesController {
           eventId: h.eventId,
           kind: h.kind,
           actorId: h.actorId,
+          ...(h.actorKind === undefined
+            ? {}
+            : {
+                actorKind: this.enumValue(h.actorKind, [
+                  'reviewer',
+                  'auto',
+                  'system',
+                ]),
+              }),
+          ...(h.ruleId === undefined || h.ruleId === null
+            ? {}
+            : { ruleId: this.name(h.ruleId) }),
           note:
             h.note === null || h.note === undefined
               ? null
@@ -349,11 +387,12 @@ export class DirectoryDuplicateCasesController {
       const value = q[key];
       if (
         typeof value !== 'string' ||
-        !['state', 'rule', 'limit', 'offset'].includes(key)
+        !['state', 'status', 'rule', 'limit', 'offset'].includes(key)
       )
         throw new BadRequestException('Invalid duplicate query');
       if (
         (key === 'state' && !states.includes(value)) ||
+        (key === 'status' && !statuses.includes(value)) ||
         (key === 'rule' && !rules.includes(value)) ||
         (key === 'limit' &&
           !(/^[0-9]{1,3}$/.test(value) && +value >= 1 && +value <= 100)) ||
@@ -543,7 +582,15 @@ export class DirectoryDuplicateCasesController {
       typeof body.reason !== 'string' ||
       !body.reason.trim() ||
       body.reason.length > 1024 ||
-      (body.expectedState !== undefined && !states.includes(body.expectedState))
+      (body.expectedState !== undefined &&
+        !states.includes(body.expectedState)) ||
+      (body.expectedKept !== undefined &&
+        !(
+          body.expectedKept &&
+          typeof body.expectedKept === 'object' &&
+          this.text(body.expectedKept.scanId, 64) &&
+          /^[0-9]{1,18}$/.test(String(body.expectedKept.sourceFileRowNumber))
+        ))
     ) {
       throw new BadRequestException('Invalid duplicate decision');
     }
@@ -562,6 +609,16 @@ export class DirectoryDuplicateCasesController {
           ...(body.expectedState === undefined
             ? {}
             : { expectedState: body.expectedState }),
+          ...(body.expectedKept === undefined
+            ? {}
+            : {
+                expectedKept: {
+                  scanId: body.expectedKept.scanId,
+                  sourceFileRowNumber: String(
+                    body.expectedKept.sourceFileRowNumber
+                  ),
+                },
+              }),
           actorId,
         }),
       }

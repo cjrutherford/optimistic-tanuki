@@ -48,6 +48,18 @@
     </otui-button>
     }
   </div>
+  <div class="status-bar" role="group" aria-label="Status">
+    @for (option of statuses; track option.value) {
+    <otui-button
+      size="sm"
+      [tone]="status === option.value ? 'brand' : 'neutral'"
+      [emphasis]="status === option.value ? 'soft' : 'ghost'"
+      (click)="setStatus(option.value)"
+    >
+      {{ option.label }}{{ statusCount(option) }}
+    </otui-button>
+    }
+  </div>
   <div class="status-bar" role="group" aria-label="Reason">
     @for (option of rules; track option.value) {
     <otui-button
@@ -82,6 +94,9 @@
           <p class="case-meta">
             {{ ruleLabel(c.rule) }} · {{ c.distanceMeters }} m apart
           </p>
+          @if (autoLabel(c)) {
+          <p class="case-meta">{{ autoLabel(c) }}</p>
+          }
         </div>
         <otui-badge [tone]="badgeTone(c.state)" size="sm">
           {{ stateLabel(c.state) }}
@@ -159,7 +174,47 @@
             Not a duplicate
           </otui-button>
         </div>
-        }
+        } @if (canSwap(d)) { @if (swapPending === d.caseId) {
+        <lib-text-input
+          #swapReason
+          label="Reason for swapping (required)"
+          placeholder="Why is the hidden listing the better one to keep?"
+        ></lib-text-input>
+        <p class="muted">
+          The kept listing will be hidden and the hidden one will return.
+        </p>
+        <div class="decision-actions">
+          <otui-button
+            size="sm"
+            tone="danger"
+            emphasis="outline"
+            [disabled]="deciding"
+            (click)="swap(d, swapReason.value)"
+          >
+            Confirm swap
+          </otui-button>
+          <otui-button
+            size="sm"
+            tone="neutral"
+            emphasis="ghost"
+            (click)="cancelSwap()"
+          >
+            Cancel
+          </otui-button>
+        </div>
+        } @else {
+        <div class="decision-actions">
+          <otui-button
+            size="sm"
+            tone="neutral"
+            emphasis="outline"
+            [disabled]="deciding"
+            (click)="askSwap(d)"
+          >
+            Swap kept listing
+          </otui-button>
+        </div>
+        } }
         <otui-decision-history
           [entries]="historyEntries(c.caseId)"
           [busy]="deciding"
