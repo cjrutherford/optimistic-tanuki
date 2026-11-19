@@ -63,12 +63,8 @@ const policyPath = value(
 );
 const databaseUrl = process.env.DIRECTORY_REVIEW_DATABASE_URL;
 
-if (!dryRun) {
-  console.error(
-    'Address evidence writes are paused pending the auto-approval precision gate; use --dry-run.'
-  );
-  process.exit(1);
-}
+// Evidence writes reopened under D11 (owner 2026-11-18): the store releases only a strong match from the
+// automatic-approval hold and keeps everything else for a reviewer. This worker never publishes.
 if (!databaseUrl) {
   console.error(
     'DIRECTORY_REVIEW_DATABASE_URL is required. Do not point this at a public serving database.'
