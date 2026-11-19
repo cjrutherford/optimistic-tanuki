@@ -1,3 +1,4 @@
+import { finishRunWithQuality, type QualityLimits } from './run-quality';
 import type { DataSource } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import {
@@ -77,6 +78,8 @@ export interface AtpSnapshot {
 }
 export interface AtpAcquisitionDeps {
   db: DataSource;
+  /** Run quality limits (D28); the environment or the defaults when omitted. */
+  qualityLimits?: QualityLimits;
   policy: AtpRightsPolicy;
   /**
    * The local snapshot of the pinned archive, built on first use. `reserve` is the budget-ledger reservation the build
@@ -326,6 +329,7 @@ export async function acquireAtpTown(
           source: { ...source, sources: ATP_SOURCES },
           releaseId: policy.releaseId,
           rights: policy,
+          provider: 'alltheplaces',
         });
         // The upstream id only ever becomes a keyed hash in the sink; the listing never carries it.
         return typeof source.id === 'string' && outcome.status === 'eligible'
@@ -361,7 +365,12 @@ export async function acquireAtpTown(
       },
       ...counts,
     });
-    const status = await finishRun(db, runId);
+    const status = await finishRunWithQuality(
+      db,
+      runId,
+      town.id,
+      deps.qualityLimits
+    );
     log(`atp acquisition: ${town.name} ${status}`);
     await swapSourcelessAfterRefresh(db, town.id, 'alltheplaces', status);
     await swapSupersededAfterRefresh(db, town.id, 'alltheplaces', status);

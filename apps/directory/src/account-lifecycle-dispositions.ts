@@ -897,6 +897,7 @@ const inventory: DirectoryLifecycleInventory = {
             'budgetReservedCents',
             'budgetUsedCents',
             'lastError',
+            'quality',
           ],
           class: 'history',
           deletion: 'preserve',
@@ -1125,6 +1126,13 @@ const inventory: DirectoryLifecycleInventory = {
       'DirectoryProviderStatus',
       ['provider', 'status', 'detail', 'checkedAt'],
       'Last-known status of an optional provider capability; no listing, account or profile data.',
+      'operational'
+    ),
+    none(
+      'directory_scan_normalization',
+      'DirectoryScanNormalization',
+      ['scanId', 'normalizerVersion', 'rowCount', 'normalizedAt'],
+      'Which normalizer version a staged scan was cleaned with; counts and a version string, no account or profile identifier.',
       'operational'
     ),
     none(

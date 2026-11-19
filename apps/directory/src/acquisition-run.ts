@@ -173,7 +173,7 @@ export function resumeCommand(
 /* ------------------------------ row mapping ------------------------------ */
 
 const RUN_COLUMNS = `id,provider,release,kind,"townIds",status,"blockedReason","startedById",reason,"createdAt","startedAt","heartbeatAt","finishedAt",
-  "observedCount","acceptedCount","rejectedCount","budgetReservedCents","budgetUsedCents","lastError",
+  "observedCount","acceptedCount","rejectedCount","budgetReservedCents","budgetUsedCents","lastError",quality,
   (status IN ('running','cancel_requested') AND ("heartbeatAt" IS NULL OR "heartbeatAt" < clock_timestamp() - make_interval(mins => ${ACQUISITION_STALE_MINUTES}))) AS stale`;
 const JOB_COLUMNS = `"unitKey","townId","scanId",status,"blockedReason",checkpoint,attempt,"observedCount","acceptedCount","rejectedCount","lastError","startedAt","finishedAt","updatedAt"`;
 
@@ -200,6 +200,11 @@ function toSummary(r: any): AcquisitionRunSummary {
     budgetReservedCents: num(r.budgetReservedCents),
     budgetUsedCents: num(r.budgetUsedCents),
     lastError: r.lastError ?? null,
+    quality: r.quality && typeof r.quality === 'object' ? r.quality : null,
+    failureReason:
+      r.status === 'failed_permanent' && r.quality?.passed === false
+        ? 'quality_limit'
+        : null,
   };
 }
 const toJob = (r: any): AcquisitionJobRecord => ({
