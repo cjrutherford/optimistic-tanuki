@@ -61,6 +61,14 @@ const limit = Number(value('--limit', '10'));
 const communityId = value('--community', '');
 const releaseId = value('--release', '');
 const apply = flag('--apply');
+// --skip-file: one candidate id per line, left out of the selection; failed ids are appended to it, so a
+// candidate that cannot publish (stale assignment, unreadable stage row) does not take a slot on every pass.
+const skipFile = value('--skip-file', '');
+const skipIds = new Set(
+  skipFile && fs.existsSync(skipFile)
+    ? fs.readFileSync(skipFile, 'utf8').split('\n').filter(Boolean)
+    : []
+);
 const databaseUrl = process.env.DIRECTORY_REVIEW_DATABASE_URL;
 
 // The pause on --apply is lifted (owner D11/D12): the publisher keeps its own source-identity, containment,
@@ -224,9 +232,10 @@ function sourceFromContact(candidate, listing) {
       `SELECT * FROM "directory_address_review_candidate"
        WHERE "status" IN ('approved','auto_approved')
          AND ($2::uuid IS NULL OR "communityId"=$2)
+         AND NOT ("id"::text = ANY($3::text[]))
        ORDER BY "updatedAt" ASC, "id"
        LIMIT $1`,
-      [limit, communityId || null]
+      [limit, communityId || null, [...skipIds]]
     );
     if (!candidates.length) {
       console.log(
@@ -381,6 +390,7 @@ function sourceFromContact(candidate, listing) {
         summary.failed += 1;
         const why = String(error?.message || error).slice(0, 80);
         summary.failures[why] = (summary.failures[why] || 0) + 1;
+        if (skipFile) fs.appendFileSync(skipFile, candidate.id + '\n');
       }
     }
 

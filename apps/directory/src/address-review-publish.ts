@@ -96,6 +96,25 @@ function samePoint(left: unknown, right: unknown): boolean {
   );
 }
 
+/**
+ * The gateway throttles by client (1,200 requests a minute in the production profile). A bulk publish makes two
+ * calls per candidate, so calls are spaced by DIRECTORY_CONTAINMENT_PACE_MS and a 429 is retried with backoff.
+ */
+async function fetchContainment(url: URL): Promise<Response> {
+  const pace = Number(process.env.DIRECTORY_CONTAINMENT_PACE_MS || 0);
+  for (let attempt = 0; ; attempt += 1) {
+    if (pace > 0) await new Promise((r) => setTimeout(r, pace));
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(5000),
+      redirect: 'error',
+    });
+    if (response.status !== 429 || attempt >= 6) return response;
+    await new Promise((r) =>
+      setTimeout(r, Math.min(60_000, 2000 * 2 ** attempt))
+    );
+  }
+}
+
 /** Verified boundaries take precedence; a pinned Census place is local-only. */
 export async function requireTownContainment(
   candidate: any,
@@ -144,10 +163,7 @@ export async function requireTownContainment(
       longitude: String(point.lng),
       latitude: String(point.lat),
     }).toString();
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(5000),
-      redirect: 'error',
-    });
+    const response = await fetchContainment(url);
     if (!response.ok) throw Error('Town containment is unavailable');
     const result = (await response.json()) as any;
     if (
