@@ -242,7 +242,37 @@
       </tbody>
     </table>
 
-    @if (run.events.length) {
+    @if (run.quality; as quality) {
+    <table class="diff" aria-label="Quality scorecard">
+      <caption>
+        Quality scorecard ({{
+          quality.rows
+        }}
+        rows,
+        {{
+          quality.passed ? 'within limits' : 'past a limit'
+        }})
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Measure</th>
+          <th scope="col">Value</th>
+          <th scope="col">Limit</th>
+          <th scope="col">Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (q of qualityRows(quality); track q.label) {
+        <tr>
+          <th scope="row">{{ q.label }}</th>
+          <td>{{ q.value }}</td>
+          <td>{{ q.limit }}</td>
+          <td>{{ q.breached ? 'Past limit' : 'Ok' }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+    } @if (run.events.length) {
     <ul class="run-facts" aria-label="Operator history">
       @for (e of run.events; track e.id) {
       <li>

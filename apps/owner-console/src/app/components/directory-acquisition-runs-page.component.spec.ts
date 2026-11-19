@@ -124,6 +124,49 @@ describe('DirectoryAcquisitionRunsPageComponent', () => {
     fixture.detectChanges();
   };
 
+  it('shows the quality scorecard of a run and marks the breached limit', () => {
+    http
+      .expectOne(listUrl)
+      .flush({ runs: [summary({ blockedReason: null })], total: 1 });
+    component.select(component.runs[0]);
+    http.expectOne(`${base}/${runId}`).flush(
+      detail({
+        status: 'failed_permanent',
+        failureReason: 'quality_limit',
+        quality: {
+          version: 'quality-v1',
+          normalizerVersion: 'normalize-v1',
+          computedAt: '2026-11-18T00:00:00.000Z',
+          rows: 200,
+          completeness: {
+            name: 1,
+            address: 0,
+            phone: 0,
+            website: 0,
+            category: 1,
+            hours: 0,
+          },
+          invalid: { address: 0, phone: 0, addressRate: 0, phoneRate: 0 },
+          outOfBoundary: { count: 100, rate: 0.5 },
+          duplicates: { count: 2, rate: 0.01 },
+          limits: { maxOutOfBoundaryRate: 0.05, maxDuplicateRate: 0.08 },
+          breaches: ['maxOutOfBoundaryRate'],
+          passed: false,
+        },
+      })
+    );
+    fixture.detectChanges();
+    const table = fixture.nativeElement.querySelector(
+      'table[aria-label="Quality scorecard"]'
+    ) as HTMLElement;
+    expect(table.textContent).toContain('past a limit');
+    const row = Array.from(table.querySelectorAll('tr')).find((r) =>
+      r.textContent?.includes('Outside boundary')
+    ) as HTMLElement;
+    expect(row.textContent).toContain('50.0%');
+    expect(row.textContent).toContain('Past limit');
+  });
+
   it('shows the budget panel and blocked reasons in the list', () => {
     http.expectOne(listUrl).flush({
       runs: [
