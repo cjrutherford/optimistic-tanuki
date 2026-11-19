@@ -1,10 +1,16 @@
 import type { DataSource } from 'typeorm';
 import { isPaused } from '../../directory/src/operating-controls';
 import { queueUncertainDuplicates } from '../../directory/src/duplicate-review';
+import {
+  autoResolveDuplicates,
+  closeStaleDuplicateCases,
+} from '../../directory/src/duplicate-auto';
 
 /**
- * Owner decision D13 sweep: hide the weaker listing of an uncertain duplicate and queue the pair. Bounded per run,
- * idempotent (the queue never re-queues a pair that has a case) and never touches provenance.
+ * Owner decision D13 sweep: hide the weaker listing of an uncertain duplicate and queue the pair. Each run first closes
+ * stale cases (listings no longer live), then queues new pairs, then resolves the obvious same-place pairs of each
+ * examined town automatically (`duplicate-auto`). Bounded per run, idempotent (the queue never re-queues a pair that has
+ * a case, and a closed or resolved case is not selected again) and never touches provenance.
  */
 export interface DuplicateSweepConfig {
   intervalMs: number;
@@ -59,6 +65,8 @@ export interface DuplicateSweepOutcome {
   examined: number;
   queued: number;
   keptSeparateRecorded: number;
+  autoResolved: number;
+  closedStale: number;
   failed: number;
 }
 
@@ -91,11 +99,21 @@ export function createDuplicateSweepRunner(
       examined: 0,
       queued: 0,
       keptSeparateRecorded: 0,
+      autoResolved: 0,
+      closedStale: 0,
       failed: 0,
     };
     if (await isPaused(data, 'provider_acquisition')) {
       out.status = 'paused';
       return out;
+    }
+    try {
+      // Every town, not only the due ones: a town whose scans were all retired is never examined below.
+      out.closedStale = (
+        await closeStaleDuplicateCases(data as never, { limit: 2000 })
+      ).closed;
+    } catch {
+      log('duplicate sweep: stale cleanup failed');
     }
     const towns: Array<{ town: string; scans: string }> = await data.query(
       TOWNS_SQL
@@ -128,6 +146,9 @@ export function createDuplicateSweepRunner(
         });
         out.queued += result.queued;
         out.keptSeparateRecorded += result.keptSeparateRecorded;
+        out.autoResolved += (
+          await autoResolveDuplicates(data as never, { townId: t.town })
+        ).resolved;
         seen.set(t.town, { scans: t.scans, at: now() });
       } catch {
         out.failed += 1;
@@ -209,7 +230,7 @@ export async function runDuplicateSweepLoop(options: {
       options.status.record(run.status, run);
       if (run.examined > 0)
         log(
-          `duplicate sweep: ${run.status} examined=${run.examined} queued=${run.queued} keptSeparate=${run.keptSeparateRecorded} failed=${run.failed}`
+          `duplicate sweep: ${run.status} examined=${run.examined} queued=${run.queued} keptSeparate=${run.keptSeparateRecorded} autoResolved=${run.autoResolved} closedStale=${run.closedStale} failed=${run.failed}`
         );
       if (run.examined >= options.limit && run.failed < run.examined)
         wait = Math.min(wait, 5000);

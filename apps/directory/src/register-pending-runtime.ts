@@ -1493,6 +1493,7 @@ export function pendingChecks(
       reason: string;
       actorId: string;
       expectedState?: string;
+      expectedKept?: { scanId: string; sourceFileRowNumber: string };
     }
   ) {
     if (!uuid.test(town) || !db.transaction)
@@ -1505,6 +1506,7 @@ export function pendingChecks(
       actorId: value.actorId,
       reason: value.reason,
       ...(value.expectedState ? { expectedState: value.expectedState } : {}),
+      ...(value.expectedKept ? { expectedKept: value.expectedKept } : {}),
     });
     await authority(town);
     return result;

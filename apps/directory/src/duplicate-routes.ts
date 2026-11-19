@@ -3,6 +3,7 @@ import {
   DUPLICATE_PAGE_MAX,
   DUPLICATE_RULES,
   DUPLICATE_STATES,
+  DUPLICATE_STATUSES,
   type DuplicateListQuery,
 } from './duplicate-review';
 import { SAMPLE_MAX_SIZE, SAMPLE_VERDICTS } from './duplicate-sample';
@@ -69,6 +70,7 @@ export function parseListQuery(search: string): DuplicateListQuery | null {
   const params = new URLSearchParams(search);
   const out: {
     state?: string;
+    status?: string;
     rule?: string;
     limit?: number;
     offset?: number;
@@ -80,6 +82,9 @@ export function parseListQuery(search: string): DuplicateListQuery | null {
     if (key === 'state') {
       if (!DUPLICATE_STATES.includes(value)) return null;
       out.state = value;
+    } else if (key === 'status') {
+      if (!DUPLICATE_STATUSES.includes(value)) return null;
+      out.status = value;
     } else if (key === 'rule') {
       if (!DUPLICATE_RULES.includes(value)) return null;
       out.rule = value;
@@ -106,11 +111,18 @@ export interface DecideBody {
   reason: string;
   actorId: string;
   expectedState?: string;
+  expectedKept?: { scanId: string; sourceFileRowNumber: string };
 }
 export function parseDecideBody(v: unknown): DecideBody | null {
   if (
     !isObject(v) ||
-    !only(v, ['action', 'reason', 'actorId', 'expectedState']) ||
+    !only(v, [
+      'action',
+      'reason',
+      'actorId',
+      'expectedState',
+      'expectedKept',
+    ]) ||
     typeof v['actorId'] !== 'string' ||
     !UUID.test(v['actorId']) ||
     typeof v['action'] !== 'string' ||
@@ -120,7 +132,16 @@ export function parseDecideBody(v: unknown): DecideBody | null {
     v['reason'].length > 1024 ||
     (v['expectedState'] !== undefined &&
       (typeof v['expectedState'] !== 'string' ||
-        !DUPLICATE_STATES.includes(v['expectedState'])))
+        !DUPLICATE_STATES.includes(v['expectedState']))) ||
+    (v['expectedKept'] !== undefined &&
+      !(
+        isObject(v['expectedKept']) &&
+        only(v['expectedKept'], ['scanId', 'sourceFileRowNumber']) &&
+        typeof v['expectedKept']['scanId'] === 'string' &&
+        v['expectedKept']['scanId'].length <= 64 &&
+        typeof v['expectedKept']['sourceFileRowNumber'] === 'string' &&
+        /^[0-9]{1,18}$/.test(v['expectedKept']['sourceFileRowNumber'])
+      ))
   )
     return null;
   return v as unknown as DecideBody;

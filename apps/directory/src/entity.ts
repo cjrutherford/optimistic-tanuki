@@ -1010,8 +1010,8 @@ export class DirectoryListingSuppression {
   { unique: true }
 )
 @Check(
-  'CHK_directory_duplicate_case_state',
-  `"state" IN ('queued','kept_separate','merged')`
+  'CHK_directory_duplicate_case_state_v2',
+  `"state" IN ('queued','kept_separate','merged','stale')`
 )
 @Check(
   'CHK_directory_duplicate_case_rule',
@@ -1020,6 +1020,10 @@ export class DirectoryListingSuppression {
 @Check(
   'CHK_directory_duplicate_case_basis',
   `"weakerBasis" IN ('sources','confidence','fields','updated','order')`
+)
+@Check(
+  'CHK_directory_duplicate_case_decided_by',
+  `"decidedBy" IS NULL OR "decidedBy" IN ('reviewer','auto','system')`
 )
 export class DirectoryDuplicateCase {
   @PrimaryGeneratedColumn('uuid') id!: string;
@@ -1036,20 +1040,38 @@ export class DirectoryDuplicateCase {
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
   @Column({ type: 'timestamptz', nullable: true }) decidedAt!: Date | null;
+  /** Who closed the case: a reviewer, the automatic same-place rule, or the stale cleanup. Null while open. */
+  @Column({ type: 'varchar', length: 16, nullable: true }) decidedBy!:
+    | string
+    | null;
+  /** The automatic rule that resolved the case (only while `decidedBy` is 'auto'), else null. */
+  @Column({ type: 'varchar', length: 48, nullable: true }) autoRule!:
+    | string
+    | null;
 }
 
 /** Append-only audit of a duplicate case. `actorId` is a reviewer profile id (null for the automatic queue step). */
 @Entity({ name: 'directory_duplicate_case_event' })
 @Index('IDX_directory_duplicate_case_event_case', ['caseId', 'createdAt'])
 @Check(
-  'CHK_directory_duplicate_case_event_kind',
-  `"kind" IN ('queued','kept_separate','merged','undone')`
+  'CHK_directory_duplicate_case_event_kind_v2',
+  `"kind" IN ('queued','kept_separate','merged','undone','auto_merged','closed_stale','swapped')`
+)
+@Check(
+  'CHK_directory_duplicate_case_event_actor_kind',
+  `"actorKind" IN ('reviewer','auto','system')`
 )
 export class DirectoryDuplicateCaseEvent {
   @PrimaryGeneratedColumn('uuid') id!: string;
   @Column('uuid') caseId!: string;
   @Column({ type: 'varchar', length: 16 }) kind!: string;
   @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  /** 'reviewer' (actorId set), 'auto' (an automatic rule, see `ruleId`) or 'system' (queue and cleanup steps). */
+  @Column({ type: 'varchar', length: 16, default: 'system' })
+  actorKind!: string;
+  @Column({ type: 'varchar', length: 48, nullable: true }) ruleId!:
+    | string
+    | null;
   @Column({ type: 'varchar', length: 1024, nullable: true }) note!:
     | string
     | null;
@@ -1664,6 +1686,23 @@ export class DirectoryAcquisitionRun {
   @Column({ type: 'varchar', length: 256, nullable: true }) lastError!:
     | string
     | null;
+  /**
+   * The run's quality scorecard (D28, `run-quality.ts`): completeness, invalid values, out-of-boundary and duplicate
+   * rates, the limits applied and the breaches. NULL for a run that never reached the gate.
+   */
+  @Column({ type: 'jsonb', nullable: true }) quality!: object | null;
+}
+
+/**
+ * The normalizer version a scan's rows carry (D27, `normalize.ts`). A scan with no row here, or an older version, is
+ * re-normalised from its stored rows by `renormalizeScan`; nothing is re-acquired.
+ */
+@Entity({ name: 'directory_scan_normalization' })
+export class DirectoryScanNormalization {
+  @PrimaryColumn({ type: 'varchar', length: 64 }) scanId!: string;
+  @Column({ type: 'varchar', length: 32 }) normalizerVersion!: string;
+  @Column({ type: 'int', default: 0 }) rowCount!: number;
+  @Column({ type: 'timestamptz', default: () => 'now()' }) normalizedAt!: Date;
 }
 
 /** One unit of a run: a town, or a source asset aimed at towns. */
