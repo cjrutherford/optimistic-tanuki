@@ -12,6 +12,7 @@ export const text = (x: unknown): x is string =>
   typeof x === 'string' &&
   x.trim().length > 0 &&
   x.length <= 2000 &&
+  // eslint-disable-next-line no-control-regex -- Control characters are matched on purpose.
   !/[\x00-\x1f\x7f]/.test(x);
 export const textArray = (x: unknown): x is string[] =>
   Array.isArray(x) && x.length <= 50 && x.every(text);

@@ -29,6 +29,7 @@ export function projectLocalAdult(
     typeof row.names?.primary !== 'string' ||
     !row.names.primary.trim() ||
     row.names.primary.length > 200 ||
+    // eslint-disable-next-line no-control-regex -- Control characters are matched on purpose.
     /[\x00-\x1f\x7f]/.test(row.names.primary) ||
     row.taxonomy?.primary !== 'adult_entertainment_venue' ||
     !Array.isArray(row.taxonomy.hierarchy) ||

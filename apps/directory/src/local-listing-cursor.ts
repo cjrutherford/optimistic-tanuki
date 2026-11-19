@@ -25,6 +25,7 @@ const validQuery = (q: Query) =>
   ) &&
   typeof q.search === 'string' &&
   q.search.length <= 100 &&
+  // eslint-disable-next-line no-control-regex -- Control characters are matched on purpose.
   !/[\x00-\x1f\x7f]/.test(q.search) &&
   typeof q.category === 'string' &&
   q.category.length <= 100 &&

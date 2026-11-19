@@ -16,6 +16,7 @@ export const NORMALIZER_VERSION = 'normalize-v1';
 const collapse = (v: string): string =>
   v
     .normalize('NFKC')
+    // eslint-disable-next-line no-control-regex -- Control characters are matched on purpose.
     .replace(/[\u0000-\u001f\u007f]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();

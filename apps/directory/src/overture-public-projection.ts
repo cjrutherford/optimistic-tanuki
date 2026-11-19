@@ -124,6 +124,7 @@ export function projectPublicOverture(
       typeof value === 'string' &&
       value.trim() &&
       value.length <= 300 &&
+      // eslint-disable-next-line no-control-regex -- Control characters are matched on purpose.
       !/[\x00-\x1f\x7f]/.test(value)
     ) {
       listing.address = value.trim();

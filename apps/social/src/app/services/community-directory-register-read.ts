@@ -273,6 +273,7 @@ export async function readCurrentDirectoryGeography(
     typeof value === 'string' &&
     value.trim() &&
     value.length <= limit &&
+    // eslint-disable-next-line no-control-regex -- Control characters are matched on purpose.
     !/[\x00-\x1f\x7f]/.test(value)
       ? value
       : null;
