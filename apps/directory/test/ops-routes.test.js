@@ -241,6 +241,27 @@ test('parseControlUpdate normalises the reason', () => {
   assert.equal(parseControlUpdate(null), null);
 });
 
+test('prometheus exposition reports retryable run failures, the signal of a provider outage', () => {
+  const text = toPrometheus(
+    metrics({
+      runQuality: {
+        failedTotal: 0,
+        failedLast24h: 0,
+        retryableLastHour: 4,
+        retryableLast24h: 9,
+      },
+    })
+  );
+  assert.match(
+    text,
+    /directory_runs_retryable_failures\{window="last1h"\} 4\n/
+  );
+  assert.match(
+    text,
+    /directory_runs_retryable_failures\{window="last24h"\} 9\n/
+  );
+});
+
 test('prometheus exposition: gauges only, fixed labels, nulls omitted', () => {
   const text = toPrometheus(metrics());
   assert.match(

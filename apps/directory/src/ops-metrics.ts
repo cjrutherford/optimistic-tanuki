@@ -324,9 +324,18 @@ async function runQualityMetrics(pool: Pool) {
        FROM directory_acquisition_run
       WHERE status = 'failed_permanent'`
   );
+  // A provider outage ends runs failed_retryable (no data swapped in, no spend charged), so count them separately.
+  const retry = await pool.query(
+    `SELECT count(*) FILTER (WHERE "finishedAt" > now() - interval '1 hour')::int AS hour,
+            count(*) FILTER (WHERE "finishedAt" > now() - interval '24 hours')::int AS day
+       FROM directory_acquisition_run
+      WHERE status = 'failed_retryable'`
+  );
   return {
     failedTotal: Number(rows[0]?.total ?? 0),
     failedLast24h: Number(rows[0]?.recent ?? 0),
+    retryableLastHour: Number(retry[0]?.hour ?? 0),
+    retryableLast24h: Number(retry[0]?.day ?? 0),
   };
 }
 
@@ -547,6 +556,14 @@ export function toPrometheus(m: DirectoryOpsMetrics): string {
     [
       [{ window: 'total' }, m.runQuality?.failedTotal],
       [{ window: 'last24h' }, m.runQuality?.failedLast24h],
+    ]
+  );
+  gauge(
+    'directory_runs_retryable_failures',
+    'Acquisition runs that ended failed_retryable (provider unreachable or worker interrupted), by window.',
+    [
+      [{ window: 'last1h' }, m.runQuality?.retryableLastHour],
+      [{ window: 'last24h' }, m.runQuality?.retryableLast24h],
     ]
   );
   gauge(
