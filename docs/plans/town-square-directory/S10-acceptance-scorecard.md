@@ -1,8 +1,8 @@
 # S10 — Integrated acceptance scorecard
 
-Status: **ready for review, not accepted.** Updated 2026-11-18 after owner decisions D1-D18. This scorecard records the S10 evidence gathered on 2026-11-18 against the live local stack (compose project `optimistic-tanuki`, branch `t3/integrate-business-directory`, latest commit `229f02233`). Public deployment is deferred by the owner, so "live" here means the running local stack. Public listings are on in every town that has them on the local stack (D9); production deployment is a separate gate and nothing here claims it. The first pass ran with acquisition unauthorized; the owner's [S10 decisions](DECISIONS-2026-11-18-S10.md) then authorized automatic Overture and AllThePlaces acquisition and automatic Census TIGER geometry, and the [implementation update](#implementation-update-2026-11-18) below records what that changed.
+Status: **ready for review, not accepted.** Updated 2026-11-19 after owner decisions D1-D30 and the items 1-5 rollout (see the [2026-11-19 update](#update-2026-11-19-items-1-5-and-d27-to-d30)). This scorecard records the S10 evidence gathered on 2026-11-18 against the live local stack (compose project `optimistic-tanuki`, branch `t3/integrate-business-directory`, latest commit `229f02233`). Public deployment is deferred by the owner, so "live" here means the running local stack. Public listings are on in every town that has them on the local stack (D9); production deployment is a separate gate and nothing here claims it. The first pass ran with acquisition unauthorized; the owner's [S10 decisions](DECISIONS-2026-11-18-S10.md) then authorized automatic Overture and AllThePlaces acquisition and automatic Census TIGER geometry, and the [implementation update](#implementation-update-2026-11-18) below records what that changed.
 
-The capability-by-capability disposition is in the [S10 capability ledger](S10-capability-ledger.md): 107 rows, of which 82 are integrated (local scope), 11 are deferred, 14 are open/blocking, 0 are unknown, and 0 are integrated for production (the first draft counted 69, 15, 20 and 3). Under the plan's rule, any deferred or open capability means the full "each source service integrated" objective is **not met** unless the owner changes scope.
+The capability-by-capability disposition is in the [S10 capability ledger](S10-capability-ledger.md): 103 rows, of which 82 are integrated (local scope), 11 are deferred, 10 are open/blocking, 0 are unknown, and 0 are integrated for production (recounted from the rows on 2026-11-19; the first draft counted 69, 15, 20 and 3, and earlier updates quoted 107 rows, which did not match the tables). Under the plan's rule, any deferred or open capability means the full "each source service integrated" objective is **not met** unless the owner changes scope.
 
 No claim is made of "all businesses" or "complete coverage".
 
@@ -73,13 +73,33 @@ Built after the first implementation update and committed on this branch. Live r
 
 Items still open after this update:
 
-- Separate normalize stage (not chosen in D14) and merge-evaluation scoring beyond the D18 sample.
-- A swap-which-listing-is-kept action for duplicates (not built).
-- Real borders for 26 towns: in progress.
+- Merge-evaluation scoring beyond the D18 sample. (The normalize stage, D27, and the swap-kept action are built.)
+- Real borders: done; every eligible town has a ready boundary.
 - D11 exercised by a live refresh; D12 swap finishing (32 towns at the last check); D13 duplicate queue of 6,500+ cases awaiting review.
-- A new Overture release needs a release bump with its rights policy; a same-release refresh is a no-op re-scan.
+- Overture releases are detected automatically (D29); a same-release refresh is a no-op re-scan. Promotion of release `2026-11-18.0` is pending its canary.
 - `/regions` and the fixture/sample provider modes stay deferred (D5, DF-008).
 - The outside synthetic monitor (`public-probe`) and every production item (credentials, secrets, Redis ACL and TLS, encrypted off-host backups, external alerting, invoice reconciliation, outage and retention drills, production-scale qualification). The owner will handle these personally; none is claimed here.
+
+## Update 2026-11-19 (items 1 to 5 and D27 to D30)
+
+Everything here was deployed to the local stack and verified on 2026-11-19 UTC. Production is the owner's own step and has not been done. Commits are in `841f30fbd..61fefd28b`.
+
+1. **PR fixes.** Prettier fixes (`c5d9ea426`), a Redis-gated queue test (`97d9c9241`), a merged-pointer Postgres test (`e1661507d`) and a `.njsscan` config that ignores test folders (`a1a597ea2`).
+2. **Data quality.** 13 seed coordinate fixes plus populations for Edisto Beach (1,031) and Palm Valley (21,827, sourced from Wikipedia) (`7c029ffdf`). The live seed run reported Updated 15, Unchanged 411, Total 426. All 13 towns plus Edisto Beach and Palm Valley show `geometryStatus` ready. Test records: the S6 e2e listing reports are closed as declined (fixture note), not deleted. The D13 duplicate live-check restored itself; its two audit events are retained (append-only).
+3. **Duplicates.** The worker sweep auto-resolves obvious pairs and closes stale cases (`8bd872e8a`, `cee0153e1`), and a swap-kept action exists. Live: 1,240 stale cases closed by the system (closing a case lifts its hiding suppression); 403 auto-resolved so far (`auto_brand_variant_colocated` 370, `auto_exact_name_colocated` 33) and still progressing; about 7,600 still queued for a human.
+4. **Decisions D27 to D30.** D27 normalize stage (`normalize-v1`, `39ecfb24b`) and the re-normalization backfill ran live. D28 per-run quality scorecard with a `quality_limit` failure that keeps the live scan (`50a807753`, `a2e0cb670`, `568844718`). D29 Overture release auto-detect (`8535247c1`): the worker found release `2026-11-18.0` with rights approved and will canary 3 towns; promotion only if all pass. D30 Geoapify daily credit ledger (`ab499903b`): 3,000 credits a day, UTC reset, 1 credit per Place Details request assumed. Details in [S10-normalize-and-quality](S10-normalize-and-quality.md).
+5. **Social schema drift** is fixed in the entity decorators (`e1231ca2a`); `migration:generate` reports no changes.
+6. **Locked towns.** A lock now writes an owner-verified decision and reviewed geometry (`dc5cbe1ce`); the backfill ran live (21 backfilled, rerun 21 unchanged). A follow-up bug appeared live: register reconcile invalidated all 21 lock decisions within a minute, because the lock token never equals the Social token. It is fixed in `61fefd28b`; a register sweep afterwards completed with all 21 still verified. A read-only check of the D11 boundary query on live data returned a verified containing border for all 259 ready towns (238 unlocked, 21 locked).
+7. **Account lifecycle.** Duplicate auto-resolution columns are classified (`e1f00c159`).
+
+### Owner follow-ups
+
+- Canary runs are real acquisitions: their scans go live if they pass the quality scorecard.
+- A changed Overture STAC licence declaration holds the release; approving a new licence needs a code change.
+- `canary_empty` counts as a canary failure.
+- The Geoapify credit cost (1 per request) and the UTC reset time are assumptions; Geoapify does not document them.
+- `DIRECTORY_GEOAPIFY_MONTHLY_LIMIT_CENTS` in the local env file is now unused.
+- The invalid-address and invalid-phone quality ceilings (0.35) are provisional until real refresh scorecards exist.
 
 ## Release-gate checklist
 
@@ -112,11 +132,11 @@ Larger deferred capabilities are recorded as [DF-008 in DEFERRED-FEATURES.md](..
 
 ## Decisions for the owner
 
-Decided on 2026-11-18: D1 to D18 ([DECISIONS-2026-11-18-S10](DECISIONS-2026-11-18-S10.md)), covering acquisition, geometry, AllThePlaces, Geoapify, deferrals, shared-UI regression, TIGER matching, publication, address approval, pilot rows, duplicates, OpenAPI and the operating targets. Still open:
+Decided on 2026-11-18: D1 to D30 ([DECISIONS-2026-11-18-S10](DECISIONS-2026-11-18-S10.md)), covering acquisition, geometry, AllThePlaces, Geoapify, deferrals, shared-UI regression, TIGER matching, publication, address approval, pilot rows, duplicates, OpenAPI and the operating targets. Still open:
 
 1. Accept the local integrated scope as evidenced, or name what is missing.
-2. Whether to choose a separate normalize stage (not chosen in D14), and whether merge-evaluation scoring beyond the D18 sample is wanted.
-3. Whether to build a swap-which-listing-is-kept action for duplicates.
-4. Review the 6,500+ duplicate cases and, after the next refresh, the first D11 auto-approvals.
-5. Real borders for the 26 unmatched towns: in progress.
+2. Whether merge-evaluation scoring beyond the D18 sample is wanted.
+3. Review the roughly 7,600 duplicate cases still queued for a human and, after the next refresh, the first D11 auto-approvals.
+4. Check the owner follow-ups listed in the 2026-11-19 update below.
+5. Production deployment of items 1 to 5 and D27 to D30 (not done).
 6. The outside monitor and all production items: the owner will handle these personally.
