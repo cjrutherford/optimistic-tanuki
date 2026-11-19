@@ -222,6 +222,12 @@ export class DirectoryReconciliationReceipt {
   appliedAt!: Date;
 }
 
+/**
+ * Write-only register bookkeeping: reconciliation stamps a registered town 'blocked' and removes the row when the
+ * town leaves the register. No runtime code reads it, so 'blocked' gates nothing; acquisition is driven by
+ * directory_acquisition_run and the town scan targets. Kept because the lifecycle dispositions and restore fence
+ * still enumerate the table; drop it (entity, writers, those two lists) in one migration if it is ever retired.
+ */
 @Entity({ name: 'directory_provider_work' })
 export class DirectoryProviderWork {
   @PrimaryColumn('uuid') communityId!: string;

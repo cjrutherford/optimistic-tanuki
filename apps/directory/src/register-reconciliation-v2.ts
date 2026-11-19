@@ -112,6 +112,8 @@ async function apply(
       [id]
     );
   } else {
+    // A removal keeps "mergedIntoCommunityId": the merge outlives the town's absence from the register, and only a
+    // return to eligibility (the upsert above) makes the town its own town again.
     await manager.query(
       `UPDATE directory_town SET name='',slug=NULL,"administrativeArea"=NULL,eligible=false,"geometryStatus"=CASE WHEN EXISTS (SELECT 1 FROM directory_boundary_lock l WHERE l."communityId"=directory_town."communityId") THEN "geometryStatus" ELSE 'pending' END WHERE "communityId"=$1`,
       [id]
