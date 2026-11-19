@@ -683,6 +683,46 @@ export function pendingChecks(
     )
       throw Error('Containment unavailable');
     await authority(town);
+    // An owner lock is an owner-verified border. It has no Social candidate, so it is read from its own decision and
+    // binding (which the recovery begin re-creates under each authority) rather than the Social-bound path below.
+    const owner = await db.query(
+      `SELECT b."geometryHash",encode(ST_AsEWKB(g.boundary,'XDR'),'hex') AS "geometryBinary", ST_Covers(g.boundary,ST_SetSRID(ST_MakePoint($2,$3),4326)) AS covers, CASE WHEN $6::boolean THEN ST_AsGeoJSON(g.boundary) ELSE NULL END AS geometry
+      FROM directory_reviewed_geometry b JOIN directory_town t ON t."communityId"=b."communityId"
+      JOIN directory_town_geometry g ON g."communityId"=b."communityId" AND g.version=b.version
+      JOIN directory_boundary_decision d ON d."requestId"=b."requestId" AND d."communityId"=b."communityId" AND d.decision='verified' AND d."invalidatedAt" IS NULL AND d.reason='owner_lock'
+      JOIN directory_boundary_lock l ON l."communityId"=b."communityId" AND l.version=b.version AND l."geometryHash"=b."geometryHash"
+      WHERE b."communityId"=$1 AND t.eligible IS TRUE AND t."geometryVersion"=b.version AND b."changeToken"=d."changeToken" AND b."geographyHash"=d."geographyHash"
+        AND b."recoveryEpoch"=$4 AND b."directoryGeneration"=$5 AND d."recoveryEpoch"=$4 AND d."directoryGeneration"=$5`,
+      [
+        town,
+        longitude,
+        latitude,
+        id.recoveryEpoch,
+        id.directoryGeneration,
+        includeGeometry,
+      ]
+    );
+    if (
+      owner.length === 1 &&
+      typeof owner[0].covers === 'boolean' &&
+      typeof owner[0].geometryBinary === 'string' &&
+      createHash('sha256')
+        .update(Buffer.from(owner[0].geometryBinary, 'hex'))
+        .digest('hex') === owner[0].geometryHash
+    ) {
+      await authority(town);
+      if (!includeGeometry) return { status: 'ready', covers: owner[0].covers };
+      if (
+        typeof owner[0].geometry !== 'string' ||
+        Buffer.byteLength(owner[0].geometry) > 8 * 1024 * 1024
+      )
+        throw Error('Invalid boundary geometry');
+      return {
+        status: 'ready',
+        covers: owner[0].covers,
+        geometry: JSON.parse(owner[0].geometry),
+      };
+    }
     const first = await source.geography(id, town);
     if (
       !first ||

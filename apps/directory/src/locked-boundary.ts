@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { DataSource } from 'typeorm';
 import { AUTO_BOUNDARY_PROMOTE } from './auto-boundary';
+import { ensureOwnerLockBinding } from './locked-boundary-binding';
 import {
   serializeBoundaryGeometry,
   validateBoundaryGeometry,
@@ -33,7 +34,13 @@ export interface LockedBoundaryInput {
   evidence: Record<string, unknown>;
 }
 export interface LockedBoundaryResult {
-  status: 'installed' | 'unchanged' | 'would-install';
+  /** `backfilled`: the lock was already installed; its owner-verified decision and reviewed geometry were written. */
+  status:
+    | 'installed'
+    | 'unchanged'
+    | 'would-install'
+    | 'backfilled'
+    | 'would-backfill';
   version: number;
   geometryHash: string;
   evidenceHash: string;
@@ -165,14 +172,25 @@ export async function installLockedBoundary(
       'SELECT "evidenceHash",version FROM directory_boundary_lock WHERE "communityId"=$1 FOR UPDATE',
       [input.communityId]
     );
-    if (existing[0]?.evidenceHash === evidenceHash)
+    if (existing[0]?.evidenceHash === evidenceHash) {
+      // An installed lock must also carry its owner-verified boundary records (locks made before they existed, or
+      // wiped by a recovery reset, are backfilled here; a lock a reviewer has since replaced is left alone).
+      const ensured = await ensureOwnerLockBinding(manager, input.communityId, {
+        dryRun: options.dryRun,
+      });
       return {
-        status: 'unchanged',
+        status:
+          ensured === 'written'
+            ? 'backfilled'
+            : ensured === 'would-write'
+            ? 'would-backfill'
+            : 'unchanged',
         version: Number(town.geometryVersion),
         geometryHash,
         evidenceHash,
         areaSqKm: area,
       } as LockedBoundaryResult;
+    }
     const version = Number(town.geometryVersion) + 1;
     if (!Number.isSafeInteger(version) || version > 2147483647)
       throw Error('Geometry version exhausted');
@@ -228,6 +246,7 @@ export async function installLockedBoundary(
         JSON.stringify(input.evidence),
       ]
     );
+    await ensureOwnerLockBinding(manager, input.communityId);
     return {
       status: 'installed',
       version,

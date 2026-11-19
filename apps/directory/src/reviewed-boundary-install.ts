@@ -186,6 +186,11 @@ export async function installReviewedBoundary(
         authority.directoryGeneration,
       ]
     );
+    // A reviewer's replacement supersedes the lock's own owner-verified decision (the lock row stays as history).
+    await manager.query(
+      `UPDATE directory_boundary_decision SET "invalidatedAt"=CURRENT_TIMESTAMP WHERE "communityId"=$1 AND "invalidatedAt" IS NULL AND "requestId"<>$2 AND "reason"='owner_lock'`,
+      [request.communityId, request.requestId]
+    );
     return version;
   });
 }

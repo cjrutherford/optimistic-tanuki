@@ -1,4 +1,8 @@
 import { createHash } from 'node:crypto';
+import {
+  KEEP_OWNER_LOCK_DECISIONS,
+  KEEP_OWNER_LOCK_GEOMETRY,
+} from './locked-boundary-binding';
 import { DataSource } from 'typeorm';
 import { DirectoryRecoveryIdentity } from './register-recovery-authority';
 import { lockAuthority } from './register-reconciliation-v2';
@@ -132,11 +136,11 @@ export async function storeBoundaryCandidate(
     )
       throw Error('Stale boundary candidate');
     await manager.query(
-      'UPDATE directory_boundary_decision SET "invalidatedAt"=CURRENT_TIMESTAMP WHERE "communityId"=$1 AND "invalidatedAt" IS NULL',
+      `UPDATE directory_boundary_decision SET "invalidatedAt"=CURRENT_TIMESTAMP WHERE "communityId"=$1 AND "invalidatedAt" IS NULL ${KEEP_OWNER_LOCK_DECISIONS}`,
       [value.communityId]
     );
     await manager.query(
-      'DELETE FROM directory_reviewed_geometry WHERE "communityId"=$1',
+      `DELETE FROM directory_reviewed_geometry WHERE "communityId"=$1 ${KEEP_OWNER_LOCK_GEOMETRY}`,
       [value.communityId]
     );
     await manager.query(
@@ -208,11 +212,11 @@ export async function readCurrentBoundaryCandidate(
       row.geographyHash !== hash
     ) {
       await manager.query(
-        'UPDATE directory_boundary_decision SET "invalidatedAt"=CURRENT_TIMESTAMP WHERE "communityId"=$1 AND "invalidatedAt" IS NULL',
+        `UPDATE directory_boundary_decision SET "invalidatedAt"=CURRENT_TIMESTAMP WHERE "communityId"=$1 AND "invalidatedAt" IS NULL ${KEEP_OWNER_LOCK_DECISIONS}`,
         [communityId]
       );
       await manager.query(
-        'DELETE FROM directory_reviewed_geometry WHERE "communityId"=$1',
+        `DELETE FROM directory_reviewed_geometry WHERE "communityId"=$1 ${KEEP_OWNER_LOCK_GEOMETRY}`,
         [communityId]
       );
       await manager.query(

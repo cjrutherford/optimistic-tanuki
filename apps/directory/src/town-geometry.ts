@@ -1,4 +1,8 @@
 import { DataSource } from 'typeorm';
+import {
+  KEEP_OWNER_LOCK_DECISIONS,
+  KEEP_OWNER_LOCK_GEOMETRY,
+} from './locked-boundary-binding';
 import { DirectoryTown, DirectoryTownGeometry } from './entity';
 
 export interface TownInput {
@@ -29,12 +33,12 @@ export class TownGeometryService {
       );
       if (!input.eligible)
         await manager.query(
-          'UPDATE directory_boundary_decision SET "invalidatedAt"=CURRENT_TIMESTAMP WHERE "communityId"=$1 AND "invalidatedAt" IS NULL',
+          `UPDATE directory_boundary_decision SET "invalidatedAt"=CURRENT_TIMESTAMP WHERE "communityId"=$1 AND "invalidatedAt" IS NULL ${KEEP_OWNER_LOCK_DECISIONS}`,
           [input.communityId]
         );
       if (!input.eligible)
         await manager.query(
-          'DELETE FROM directory_reviewed_geometry WHERE "communityId"=$1',
+          `DELETE FROM directory_reviewed_geometry WHERE "communityId"=$1 ${KEEP_OWNER_LOCK_GEOMETRY}`,
           [input.communityId]
         );
       if (!input.eligible)
@@ -71,11 +75,11 @@ export class TownGeometryService {
         [communityId]
       );
       await manager.query(
-        'UPDATE directory_boundary_decision SET "invalidatedAt"=CURRENT_TIMESTAMP WHERE "communityId"=$1 AND "invalidatedAt" IS NULL',
+        `UPDATE directory_boundary_decision SET "invalidatedAt"=CURRENT_TIMESTAMP WHERE "communityId"=$1 AND "invalidatedAt" IS NULL ${KEEP_OWNER_LOCK_DECISIONS}`,
         [communityId]
       );
       await manager.query(
-        'DELETE FROM directory_reviewed_geometry WHERE "communityId"=$1',
+        `DELETE FROM directory_reviewed_geometry WHERE "communityId"=$1 ${KEEP_OWNER_LOCK_GEOMETRY}`,
         [communityId]
       );
       await manager.query(
