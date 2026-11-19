@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { mkdir, open, rename, unlink } from 'node:fs/promises';
+import { mkdir, open, readdir, rename, unlink } from 'node:fs/promises';
 import type { Readable } from 'node:stream';
 import { join } from 'node:path';
 import {
@@ -311,10 +311,10 @@ async function revokeJobs(
     .map((r) => r.artifactName)
     .filter((n): n is string => typeof n === 'string');
   if (dir && names.length) {
-    await removeExportFiles(dir, names);
+    const gone = await removeExportFiles(dir, names);
     await q.query(
       `UPDATE directory_export_job SET "artifactName"=NULL WHERE status='revoked' AND "artifactName" = ANY($1::text[])`,
-      [names]
+      [gone]
     );
   }
   return rows.length;
@@ -569,21 +569,31 @@ export interface ExportPassOptions {
 }
 
 const artifactNameFor = (id: string) => `${id}.jsonl`;
-const removeFile = async (path: string) => {
+/** True when the file is gone (deleted now or already absent); false when it is still there. */
+const removeFile = async (path: string): Promise<boolean> => {
   try {
     await unlink(path);
-  } catch {
-    // Already gone, or unreadable: the sweep retries while artifactName is set.
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException)?.code === 'ENOENT';
   }
 };
 
-/** Deletes the named artifacts (names are `<uuid>.jsonl`; anything else is ignored). */
+const ARTIFACT_FILE = /^[0-9a-f-]{36}\.jsonl$/;
+
+/**
+ * Deletes the named artifacts (names are `<uuid>.jsonl`; anything else is ignored) and returns the names that are
+ * gone. A name that could not be deleted is left out, so the caller keeps `artifactName` set and the sweep retries it.
+ */
 export async function removeExportFiles(
   dir: string,
   names: readonly string[]
-): Promise<void> {
+): Promise<string[]> {
+  const gone: string[] = [];
   for (const name of names)
-    if (/^[0-9a-f-]{36}\.jsonl$/.test(name)) await removeFile(join(dir, name));
+    if (!ARTIFACT_FILE.test(name) || (await removeFile(join(dir, name))))
+      gone.push(name);
+  return gone;
 }
 
 /**
@@ -606,10 +616,10 @@ export async function withdrawExportArtifacts(
     .map((r) => r.artifactName)
     .filter((n): n is string => typeof n === 'string');
   if (input.dir) {
-    await removeExportFiles(input.dir, artifactNames);
+    const gone = await removeExportFiles(input.dir, artifactNames);
     await q.query(
       `UPDATE directory_export_job SET "artifactName"=NULL WHERE status='withdrawn' AND "artifactName" = ANY($1::text[])`,
-      [artifactNames]
+      [gone]
     );
   }
   return { withdrawn: rows.length, artifactNames };
@@ -884,13 +894,38 @@ async function sweep(db: Q, options: ExportPassOptions, now: Date) {
       `SELECT id,"artifactName" FROM directory_export_job WHERE status IN ('expired','withdrawn','revoked') AND "artifactName" IS NOT NULL LIMIT 100`
     )
   );
+  let failed = 0;
   for (const row of stale) {
-    await removeExportFiles(options.dir, [row.artifactName]);
-    await db.query(
-      `UPDATE directory_export_job SET "artifactName"=NULL WHERE id=$1 AND status IN ('expired','withdrawn','revoked')`,
-      [row.id]
-    );
+    // artifactName is cleared only once the file is really gone, so a failed delete is retried by the next sweep.
+    if ((await removeExportFiles(options.dir, [row.artifactName])).length)
+      await db.query(
+        `UPDATE directory_export_job SET "artifactName"=NULL WHERE id=$1 AND status IN ('expired','withdrawn','revoked')`,
+        [row.id]
+      );
+    else failed++;
   }
+  failed += await removeOrphanArtifacts(db, options.dir);
+  if (failed)
+    throw new Error(`Export sweep could not delete ${failed} artifact file(s)`);
+}
+
+/**
+ * Deletes final-named artifact files whose job is expired, withdrawn or revoked but no longer names the file (an earlier
+ * sweep cleared the name without the file going). Files of queued, running, complete or unknown jobs are left alone.
+ * Returns how many such files could not be deleted.
+ */
+async function removeOrphanArtifacts(db: Q, dir: string): Promise<number> {
+  const files = (await readdir(dir).catch(() => [] as string[])).filter((n) =>
+    ARTIFACT_FILE.test(n)
+  );
+  if (!files.length) return 0;
+  const ids = rowsOf(
+    await db.query(
+      `SELECT id FROM directory_export_job WHERE id = ANY($1::uuid[]) AND status IN ('expired','withdrawn','revoked') AND "artifactName" IS NULL`,
+      [files.map((n) => n.slice(0, -'.jsonl'.length))]
+    )
+  ).map((r) => `${r.id}.jsonl`);
+  return ids.length - (await removeExportFiles(dir, ids)).length;
 }
 
 /**
@@ -902,9 +937,26 @@ export async function runExportPass(
   options: ExportPassOptions
 ): Promise<number> {
   const clock = options.now ?? (() => new Date());
-  await sweep(db, options, clock());
+  // A failed sweep (for example an artifact file that cannot be deleted) must not starve queued jobs: it is reported
+  // after the jobs have run, and the next pass retries it.
+  let sweepError: unknown;
+  try {
+    await sweep(db, options, clock());
+  } catch (error) {
+    sweepError = error;
+  }
+  const ran = await runQueuedJobs(db, options, clock);
+  if (sweepError) throw sweepError;
+  return ran;
+}
+
+async function runQueuedJobs(
+  db: Db,
+  options: ExportPassOptions,
+  clock: () => Date
+): Promise<number> {
   const max = options.maxJobs ?? 5;
-  // Paused: claim nothing new (a job already running finishes under its own lease). The sweep above still runs.
+  // Paused: claim nothing new (a job already running finishes under its own lease). The sweep still runs.
   if (await isPaused(db, 'export_worker')) return 0;
   const seen = new Set<string>();
   let ran = 0;

@@ -261,19 +261,21 @@ export async function collectOpsMetrics(
       if (timer) clearTimeout(timer);
     }
   };
-  const [inf, tw, cov, fr, pol, sp, qs, ft, rq, rel, ctl] = await Promise.all([
-    section('infrastructure', () => infrastructure(pool, env)),
-    section('towns', () => towns(pool)),
-    section('coverage', () => coverage(pool)),
-    section('freshness', () => freshness(pool)),
-    section('policy', () => policy(pool)),
-    section('spend', () => spend(pool, env)),
-    section('queues', () => queues(pool)),
-    section('fillTime', () => fillTimeMetrics(pool)),
-    section('runQuality', () => runQualityMetrics(pool)),
-    section('overtureReleases', () => overtureReleaseMetrics(pool)),
-    section('controls', () => listControls(pool)),
-  ]);
+  const [inf, tw, cov, fr, pol, sp, qs, ft, rq, rel, ctl, xr] =
+    await Promise.all([
+      section('infrastructure', () => infrastructure(pool, env)),
+      section('towns', () => towns(pool)),
+      section('coverage', () => coverage(pool)),
+      section('freshness', () => freshness(pool)),
+      section('policy', () => policy(pool)),
+      section('spend', () => spend(pool, env)),
+      section('queues', () => queues(pool)),
+      section('fillTime', () => fillTimeMetrics(pool)),
+      section('runQuality', () => runQualityMetrics(pool)),
+      section('overtureReleases', () => overtureReleaseMetrics(pool)),
+      section('controls', () => listControls(pool)),
+      section('exportRetention', () => exportRetentionMetrics(pool)),
+    ]);
   return {
     generatedAt: new Date().toISOString(),
     infrastructure: inf,
@@ -287,7 +289,29 @@ export async function collectOpsMetrics(
     runQuality: rq,
     overtureReleases: rel,
     controls: ctl,
+    exportRetention: xr,
     errors: errors.sort(),
+  };
+}
+
+/**
+ * Export artifacts that are past their retention (expired, withdrawn or revoked) but whose file the sweep has not yet
+ * deleted: `artifactName` stays set until the file is really gone. Zero in a healthy system; a count that stays above
+ * zero means the sweep cannot delete files (permissions, read-only or full volume).
+ */
+async function exportRetentionMetrics(pool: Pool) {
+  const rows = await pool.query(
+    `SELECT count(*)::int AS n, EXTRACT(EPOCH FROM now() - min("updatedAt")) AS oldest
+       FROM directory_export_job
+      WHERE status IN ('expired','withdrawn','revoked') AND "artifactName" IS NOT NULL`
+  );
+  const oldest = rows[0]?.oldest;
+  return {
+    pendingDeletion: Number(rows[0]?.n ?? 0),
+    oldestPendingSeconds:
+      oldest === null || oldest === undefined
+        ? null
+        : Math.max(0, Math.round(Number(oldest))),
   };
 }
 
@@ -565,6 +589,16 @@ export function toPrometheus(m: DirectoryOpsMetrics): string {
       [{ window: 'last1h' }, m.runQuality?.retryableLastHour],
       [{ window: 'last24h' }, m.runQuality?.retryableLast24h],
     ]
+  );
+  gauge(
+    'directory_export_artifacts_pending_deletion',
+    'Export artifacts past retention (expired, withdrawn or revoked) whose file is not yet deleted; above zero for long means the sweep cannot delete files.',
+    [[none, m.exportRetention?.pendingDeletion]]
+  );
+  gauge(
+    'directory_export_artifact_oldest_pending_deletion_seconds',
+    'Age of the oldest export artifact waiting for deletion.',
+    [[none, m.exportRetention?.oldestPendingSeconds ?? undefined]]
   );
   gauge(
     'directory_overture_release_candidates',
