@@ -329,6 +329,28 @@ describe('BusinessDirectoryComponent', () => {
     expect(text).toContain('Business directory');
   });
 
+  it('shows one deduplicated Sources section instead of per-card credits', async () => {
+    const component = await create();
+    component.listings.set([
+      listingFixture,
+      {
+        ...listingFixture,
+        id: 'b',
+        reference: 'b',
+        attribution: ['source CREDIT'],
+      },
+    ]);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const items = el.querySelectorAll('[data-testid="source-list"] li');
+    expect(items).toHaveLength(1);
+    expect(items[0].textContent).toContain('Source credit');
+    const link = items[0].querySelector('a') as HTMLAnchorElement;
+    expect(link.textContent).toBe('Required notice');
+    expect(link.getAttribute('href')).toBe('https://example.test/terms');
+    expect(el.querySelectorAll('otd-directory-card .source')).toHaveLength(0);
+  });
+
   it('lists the closest other towns by distance', async () => {
     const component = await create();
     expect(component.nearbyTowns().map((t) => t.slug)).toEqual(['quitman-ga']);

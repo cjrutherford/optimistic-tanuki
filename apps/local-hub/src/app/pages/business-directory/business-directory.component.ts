@@ -34,6 +34,7 @@ import {
   DirectoryStatus,
   DIRECTORY_LIMITATION_TEXT,
   DirectorySourceAttributionComponent,
+  summarizeSources,
   DirectoryNearbyTownsComponent,
   LocalDirectoryCoverage,
   LocalDirectorySourceFreshness,
@@ -171,6 +172,9 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
       ? 'ready'
       : status;
   });
+
+  /** One deduplicated credit list for every listing loaded so far. */
+  sources = computed(() => summarizeSources(this.listings()));
 
   directoryMapLocations = computed(() =>
     this.listings().flatMap((listing) =>

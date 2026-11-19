@@ -11,3 +11,4 @@ export * from './lib/state-panel/directory-state-panel.component';
 export * from './lib/filter-bar/directory-filter-bar.component';
 export * from './lib/detail/directory-detail.component';
 export * from './lib/nearby-towns/directory-nearby-towns.component';
+export * from './lib/source-summary';

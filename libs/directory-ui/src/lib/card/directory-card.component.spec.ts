@@ -27,13 +27,13 @@ describe('DirectoryCardComponent', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('shows name, category, unclaimed badge, address and attribution', () => {
+  it('shows name, category, unclaimed badge, and address, without a per-card credit', () => {
     const el = render();
     expect(el.querySelector('h3')?.textContent).toBe('Pineview Grocery');
     expect(el.textContent).toContain('Convenience Store');
     expect(el.textContent).toContain('Directory listing (not claimed)');
     expect(el.textContent).toContain('1 Main St');
-    expect(el.textContent).toContain('Overture Maps Foundation');
+    expect(el.textContent).not.toContain('Overture Maps Foundation');
     expect(el.querySelector('[data-testid="listing-detail-link"]')).toBeNull();
   });
 
