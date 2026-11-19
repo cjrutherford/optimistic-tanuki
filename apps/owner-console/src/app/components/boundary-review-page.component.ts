@@ -143,7 +143,7 @@ type View = {
         gap: 1.5rem;
       }
       .back-link {
-        color: var(--primary-color, #315b80);
+        color: var(--primary-text, var(--primary));
       }
       header p {
         max-width: 44rem;
