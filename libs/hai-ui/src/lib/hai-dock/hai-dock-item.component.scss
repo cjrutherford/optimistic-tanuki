@@ -1,0 +1,138 @@
+// Sizes come from the `--hai-dock-*` tokens that `hai-dock` publishes on
+// `:root`; the fallbacks keep an item usable on its own.
+:host {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hai-dock-item__control {
+  display: grid;
+  place-items: center;
+  width: var(--hai-dock-icon-size, 2.75rem);
+  height: var(--hai-dock-icon-size, 2.75rem);
+  padding: var(--hai-dock-icon-padding, 0.35rem);
+  border: 0;
+  border-radius: var(--border-radius-lg, 0.9rem);
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  text-decoration: none;
+  // The dock sets `--hai-dock-item-scale` on hover for the magnify effect; the
+  // icon grows upward from the bar so the pill itself never changes size.
+  transform: scale(var(--hai-dock-item-scale, 1));
+  transform-origin: 50% 100%;
+  transition: background-color var(--animation-duration-fast, 150ms)
+      var(--animation-easing, ease),
+    transform var(--animation-duration-fast, 150ms)
+      var(--animation-easing, ease);
+}
+
+// Whatever the dock projects is sized to the control, whether it is an inline
+// SVG, an <img> or another component.
+.hai-dock-item__control > ::ng-deep * {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+:host(:hover) .hai-dock-item__control,
+.hai-dock-item__control:focus-visible {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.hai-dock-item__control:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+// The marker for the current item: a dot under the icon.
+:host(.is-active)::after {
+  content: '';
+  position: absolute;
+  bottom: calc(var(--hai-dock-marker-offset, 0.15rem) * -1);
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+// On wide screens the label is a tooltip above the item, shown on hover and
+// keyboard focus. It is aria-hidden: the control carries the accessible name.
+.hai-dock-item__label {
+  position: absolute;
+  bottom: calc(100% + 0.6rem);
+  left: 50%;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--border-radius-sm, 0.4rem);
+  background: var(--foreground);
+  color: var(--background);
+  font-family: var(--font-body, inherit);
+  font-size: var(--type-small, 0.8rem);
+  line-height: var(--line-height, 1.3);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  // Rides above the icon as it magnifies.
+  transform: translate(
+    -50%,
+    calc(
+      -1 * (var(--hai-dock-item-scale, 1) - 1) * var(--hai-dock-icon-size, 2.75rem)
+    )
+  );
+  transition: opacity var(--animation-duration-fast, 150ms)
+    var(--animation-easing, ease);
+}
+
+:host(:hover) .hai-dock-item__label,
+:host(:focus-within) .hai-dock-item__label {
+  opacity: 1;
+}
+
+// Phones: a tab bar, so every item shows its label under the icon instead of
+// a hover tooltip, and nothing magnifies.
+@media (max-width: 640px) {
+  :host {
+    width: var(--hai-dock-item-min-width, 5rem);
+  }
+
+  .hai-dock-item__control {
+    transform: none;
+  }
+
+  .hai-dock-item__label {
+    position: static;
+    box-sizing: border-box;
+    display: -webkit-box;
+    width: 100%;
+    height: var(--hai-dock-label-block-size, 2.1rem);
+    padding: 0 0.15rem;
+    overflow: hidden;
+    line-height: var(--hai-dock-label-line-height, 1.25);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    background: transparent;
+    color: var(--foreground);
+    text-align: center;
+    opacity: 1;
+    transform: none;
+  }
+
+  :host(.is-active)::after {
+    bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host,
+  .hai-dock-item__control,
+  .hai-dock-item__label {
+    transition: none;
+  }
+}

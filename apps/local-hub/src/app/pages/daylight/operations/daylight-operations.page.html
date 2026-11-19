@@ -18,8 +18,8 @@
     </p>
     @if (pipelineReport(); as report) { @if (!report.configured) {
     <p class="quiet">
-      No towns are scheduled: civic-briefing has no locality registry
-      (CIVIC_LOCALITIES_DIR).
+      No towns are scheduled: the daily schedule is off
+      (DAYLIGHT_SCHEDULE_ENABLED) or no towns have synced from social yet.
     </p>
     } @else {
     <div class="table-wrap">
@@ -124,6 +124,169 @@
     <p class="problem" role="alert">{{ pipelineError() }}</p>
     } @else {
     <p class="quiet" role="status">Loading…</p>
+    }
+  </section>
+  <section aria-labelledby="candidates-heading">
+    <h2 id="candidates-heading">Officials named in agendas</h2>
+    <p class="lede">
+      Names Civic Core read from town agendas. Accept one to add it to the
+      town's roster, with the page where the town publishes it; nothing reaches
+      verification until you do. A rejected name is not suggested again.
+    </p>
+    @if (candidatesError()) {
+    <p class="problem" role="alert">{{ candidatesError() }}</p>
+    } @else if (candidates().status === 'loading') {
+    <p class="quiet" role="status">Loading…</p>
+    } @else { @for (group of candidateGroups(); track group.slug) {
+    <div class="candidate-town">
+      <h3>{{ group.townName }}</h3>
+      @if (!group.townHasOfficials) {
+      <p class="hint">
+        This town has no officials list yet; the first one you accept also needs
+        its government email domains and callback number source.
+      </p>
+      }
+      <ul class="candidates">
+        @for (candidate of group.candidates; track candidate.id) {
+        <li class="candidate">
+          <div class="candidate-line">
+            <strong>{{ candidate.name }}</strong>
+            <span class="role">{{ candidate.role }}</span>
+            <span class="meta"
+              >Last seen {{ candidate.lastSeen | date : 'mediumDate' }}@if
+              (agendaNote(candidate)) { · {{ agendaNote(candidate) }} }</span
+            >
+            <span class="actions">
+              <button
+                type="button"
+                [attr.aria-label]="'Accept ' + candidate.name"
+                [disabled]="candidateBusy()"
+                (click)="openAccept(candidate)"
+              >
+                Accept
+              </button>
+              <button
+                type="button"
+                [attr.aria-label]="'Reject ' + candidate.name"
+                [disabled]="candidateBusy()"
+                (click)="openReject(candidate)"
+              >
+                Reject
+              </button>
+            </span>
+          </div>
+          @if (accepting()?.id === candidate.id) {
+          <form
+            class="candidate-form"
+            [formGroup]="acceptForm"
+            (ngSubmit)="acceptCandidate()"
+            [attr.aria-label]="'Accept ' + candidate.name"
+            novalidate
+          >
+            <label class="field"
+              ><span>Office</span>
+              <input
+                type="text"
+                formControlName="office"
+                [attr.aria-invalid]="fieldInvalid('office')"
+                aria-describedby="office-error"
+              />
+              @if (fieldInvalid('office')) {
+              <span class="problem" id="office-error" role="alert"
+                >Say which office this person holds.</span
+              >
+              }
+            </label>
+            <label class="field"
+              ><span>Source (https page that lists them)</span>
+              <input
+                type="text"
+                inputmode="url"
+                formControlName="source"
+                placeholder="https://"
+                [attr.aria-invalid]="fieldInvalid('source')"
+                aria-describedby="source-error"
+              />
+              @if (fieldInvalid('source')) {
+              <span class="problem" id="source-error" role="alert"
+                >Give an https address, such as the town's council page.</span
+              >
+              }
+            </label>
+            @if (!candidate.townHasOfficials) {
+            <label class="field"
+              ><span>Government email domains</span>
+              <input
+                type="text"
+                formControlName="domains"
+                placeholder="cityofadel.gov, adel.ga.gov"
+                [attr.aria-invalid]="fieldInvalid('domains')"
+                aria-describedby="domains-error"
+              />
+              @if (fieldInvalid('domains')) {
+              <span class="problem" id="domains-error" role="alert"
+                >List at least one domain, separated by commas.</span
+              >
+              }
+            </label>
+            <label class="field"
+              ><span>Callback number source (https)</span>
+              <input
+                type="text"
+                inputmode="url"
+                formControlName="callbackNumberSource"
+                placeholder="https://"
+                [attr.aria-invalid]="fieldInvalid('callbackNumberSource')"
+                aria-describedby="callback-source-error"
+              />
+              @if (fieldInvalid('callbackNumberSource')) {
+              <span class="problem" id="callback-source-error" role="alert"
+                >Give the https page where the town publishes its number.</span
+              >
+              }
+            </label>
+            } @if (candidateError()) {
+            <p class="problem" role="alert">{{ candidateError() }}</p>
+            }
+            <div class="actions">
+              <button type="submit" [disabled]="candidateBusy()">
+                Add to the roster
+              </button>
+              <button type="button" (click)="cancelCandidate()">Cancel</button>
+            </div>
+          </form>
+          } @if (rejecting()?.id === candidate.id) {
+          <div
+            class="candidate-form"
+            role="group"
+            aria-label="Confirm rejection"
+          >
+            <p>
+              Reject {{ candidate.name }}? They will not be suggested again.
+            </p>
+            @if (candidateError()) {
+            <p class="problem" role="alert">{{ candidateError() }}</p>
+            }
+            <div class="actions">
+              <button
+                type="button"
+                [disabled]="candidateBusy()"
+                (click)="confirmReject()"
+              >
+                Yes, reject
+              </button>
+              <button type="button" (click)="cancelCandidate()">Cancel</button>
+            </div>
+          </div>
+          }
+        </li>
+        }
+      </ul>
+    </div>
+    } @empty {
+    <p class="quiet">No names are waiting for review.</p>
+    } } @if (candidateMessage()) {
+    <p role="status">{{ candidateMessage() }}</p>
     }
   </section>
   } @if (canDensity()) {

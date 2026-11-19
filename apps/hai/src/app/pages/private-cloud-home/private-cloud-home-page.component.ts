@@ -15,6 +15,11 @@ import {
   HOME_USE_CASES,
 } from '../../content/private-cloud';
 
+import { RelatedLinksComponent } from '../../components/shared/related-links.component';
+import {
+  LEARN_AND_SUPPORT_LINKS,
+  PRIVATE_CLOUD_RELATED_PROMPT,
+} from '../../content/related-links';
 /** Household private cloud: outcomes first, no product names. */
 @Component({
   selector: 'hai-private-cloud-home-page',
@@ -25,6 +30,7 @@ import {
     ArchitectureDiagramComponent,
     FreedomTeaserComponent,
     CtaPanelComponent,
+    RelatedLinksComponent,
   ],
   template: `
     <hai-page-intro
@@ -57,6 +63,10 @@ import {
       linkLabel="See the open-source stack"
       linkRoute="/private-cloud/open-source-stack"
     ></hai-freedom-teaser>
+    <hai-related-links
+      [prompt]="relatedPrompt"
+      [links]="relatedLinks"
+    ></hai-related-links>
     <hai-cta-panel
       title="Tell us what your household keeps."
       text="Answer a few questions about your photos, files, and devices, and we will recommend a setup. There is no obligation."
@@ -70,6 +80,8 @@ import {
   `,
 })
 export class PrivateCloudHomePageComponent {
+  readonly relatedPrompt = PRIVATE_CLOUD_RELATED_PROMPT;
+  readonly relatedLinks = LEARN_AND_SUPPORT_LINKS;
   readonly hero = HOME_HERO;
   readonly outcomes = HOME_OUTCOMES;
   readonly qualifier = CAPABILITY_QUALIFIER;

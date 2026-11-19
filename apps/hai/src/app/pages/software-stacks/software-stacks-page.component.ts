@@ -10,6 +10,11 @@ import {
   SOFTWARE_STACKS_HERO,
   STACK_QUALIFIER,
 } from '../../content/private-cloud';
+import { RelatedLinksComponent } from '../../components/shared/related-links.component';
+import {
+  LEARN_AND_SUPPORT_LINKS,
+  SOFTWARE_STACKS_RELATED_PROMPT,
+} from '../../content/related-links';
 
 @Component({
   selector: 'hai-software-stacks-page',
@@ -19,6 +24,7 @@ import {
     PricingTermsComponent,
     SolutionsMatrixComponent,
     StackSummaryComponent,
+    RelatedLinksComponent,
   ],
   template: `
     <hai-page-intro
@@ -36,6 +42,10 @@ import {
       [platform]="platform"
       [qualifier]="qualifier"
     ></hai-stack-summary>
+    <hai-related-links
+      [prompt]="relatedPrompt"
+      [links]="relatedLinks"
+    ></hai-related-links>
   `,
 })
 export class SoftwareStacksPageComponent {
@@ -44,4 +54,6 @@ export class SoftwareStacksPageComponent {
   readonly services = CORE_SERVICES;
   readonly platform = PLATFORM_COMPONENTS;
   readonly qualifier = STACK_QUALIFIER;
+  readonly relatedPrompt = SOFTWARE_STACKS_RELATED_PROMPT;
+  readonly relatedLinks = LEARN_AND_SUPPORT_LINKS;
 }

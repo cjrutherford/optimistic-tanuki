@@ -84,6 +84,8 @@ describe('TurnKeyAppliancesPageComponent', () => {
       '/private-cloud',
       '/private-cloud/open-source-stack',
       '/private-cloud/assessment',
+      '/training',
+      '/technical-support',
     ]);
   });
 });

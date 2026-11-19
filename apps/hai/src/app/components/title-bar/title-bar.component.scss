@@ -54,11 +54,9 @@
 
   .brand-logo {
     display: block;
-    // token-exempt: the logo asset is exported at twice this display size
+    // token-exempt: fixed box for the logo SVG
     width: 2.4rem;
-    height: auto;
-    object-fit: contain;
-    border-radius: var(--hai-radius-chip);
+    flex-shrink: 0;
   }
 
   .brand-title {

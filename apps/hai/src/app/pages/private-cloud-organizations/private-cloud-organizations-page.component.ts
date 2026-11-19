@@ -13,6 +13,11 @@ import {
   ORGANIZATION_QUESTIONS,
 } from '../../content/private-cloud';
 
+import { RelatedLinksComponent } from '../../components/shared/related-links.component';
+import {
+  LEARN_AND_SUPPORT_LINKS,
+  PRIVATE_CLOUD_RELATED_PROMPT,
+} from '../../content/related-links';
 /** Private cloud for faith groups, nonprofits, community groups, and small businesses. */
 @Component({
   selector: 'hai-private-cloud-organizations-page',
@@ -22,6 +27,7 @@ import {
     CapabilityGridComponent,
     FreedomTeaserComponent,
     CtaPanelComponent,
+    RelatedLinksComponent,
   ],
   template: `
     <hai-page-intro
@@ -56,6 +62,10 @@ import {
       linkLabel="See the open-source stack"
       linkRoute="/private-cloud/open-source-stack"
     ></hai-freedom-teaser>
+    <hai-related-links
+      [prompt]="relatedPrompt"
+      [links]="relatedLinks"
+    ></hai-related-links>
     <hai-cta-panel
       title="See what your organization would need."
       text="Answer a few questions about the files, accounts, and subscriptions you have today, and we will recommend a setup. There is no obligation."
@@ -66,6 +76,8 @@ import {
   `,
 })
 export class PrivateCloudOrganizationsPageComponent {
+  readonly relatedPrompt = PRIVATE_CLOUD_RELATED_PROMPT;
+  readonly relatedLinks = LEARN_AND_SUPPORT_LINKS;
   readonly hero = ORGANIZATION_HERO;
   readonly audiences = ORGANIZATION_AUDIENCES;
   readonly outcomes = ORGANIZATION_OUTCOMES;

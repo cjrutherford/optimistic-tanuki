@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -57,6 +57,47 @@ export const ARTICLE =
   'next spring when the county issues its revised tax digest and the state releases its figures for the rollback rate.';
 
 /** civic-briefing's corpus views, answered from a small fixed corpus. */
+const LOCALITY_COMMON = {
+  state: 'GA',
+  timezone: 'America/New_York',
+  lat: 31,
+  lon: -83,
+  topics: [],
+  sources: [],
+};
+
+/** What civic-briefing's LIST_LOCALITIES answers in the specs: a county and the town in it. */
+const LOCALITIES_REPLY = [
+  {
+    ...LOCALITY_COMMON,
+    slug: 'county-ga',
+    name: 'County',
+    kind: 'county',
+    parents: [],
+    edition: false,
+  },
+  {
+    ...LOCALITY_COMMON,
+    slug: 'town-ga',
+    name: 'Town',
+    kind: 'town',
+    parents: ['county-ga'],
+    edition: true,
+    cadence: ['daily'],
+    officials: {
+      domains: ['town-ga.gov'],
+      roster: [
+        {
+          name: 'Jane Q. Doe',
+          office: 'City Clerk',
+          source: 'https://town-ga.gov/staff',
+        },
+      ],
+      callbackNumberSource: 'https://town-ga.gov/contact',
+    },
+  },
+];
+
 export class FakeBriefing {
   unavailable = false;
   readonly sent: string[] = [];
@@ -122,6 +163,8 @@ export class FakeBriefing {
       subject?: { kind: string; ref: string | null };
     };
     switch (pattern.cmd) {
+      case CivicBriefingCommands.LIST_LOCALITIES:
+        return of(LOCALITIES_REPLY as T);
       case CivicBriefingCommands.CORPUS_NEWS:
         return of(this.news as T);
       case CivicBriefingCommands.SUBJECTS:
@@ -233,31 +276,12 @@ export interface Harness {
   close(): Promise<void>;
 }
 
-function writeLocalities(scratch: string): string {
-  const dir = join(scratch, 'localities');
-  mkdirSync(dir, { recursive: true });
-  const common =
-    'timezone: America/New_York\nlat: 31\nlon: -83\ntopics: []\nsources: []\n';
-  writeFileSync(
-    join(dir, 'county.yaml'),
-    `slug: county-ga\nname: County\nstate: GA\nkind: county\nparents: []\nedition: false\n${common}`
-  );
-  writeFileSync(
-    join(dir, 'town.yaml'),
-    `slug: town-ga\nname: Town\nstate: GA\nkind: town\nparents: [county-ga]\nedition: true\ncadence: [daily]\n${common}` +
-      'officials:\n  domains: [town-ga.gov]\n  roster:\n    - { name: "Jane Q. Doe", office: City Clerk, source: "https://town-ga.gov/staff" }\n' +
-      '  callbackNumberSource: https://town-ga.gov/contact\n'
-  );
-  return dir;
-}
-
 export async function createHarness(): Promise<Harness> {
   process.env[VAULT_STORAGE_KEK_ENV] = 'civic-contributions-spec-kek';
   const scratch = mkdtempSync(join(tmpdir(), 'civic-contributions-'));
   const config: CommunityConfig = {
     ...loadConfig({ ...process.env }),
     artifactRoot: join(scratch, 'artifacts'),
-    localitiesDir: writeLocalities(scratch),
     promotionDirectory: join(scratch, 'promotions'),
     densityDirectory: join(scratch, 'density'),
     hourlyLimit: 5,

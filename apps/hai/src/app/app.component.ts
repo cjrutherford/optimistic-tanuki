@@ -1,9 +1,10 @@
 import { Component, inject, PLATFORM_ID } from '@angular/core';
 import { ViewportScroller, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
+import { HaiDockComponent } from '@optimistic-tanuki/hai-ui';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { ContactStripComponent } from './components/shared/contact-strip.component';
+import { SiteFooterComponent } from './components/site-footer/site-footer.component';
 import { AnalyticsService } from './services/analytics.service';
 import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
@@ -15,7 +16,8 @@ import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
     RouterModule,
     TitleBarComponent,
     ContactStripComponent,
-    HaiAboutTagComponent,
+    SiteFooterComponent,
+    HaiDockComponent,
     PersonalitySceneComponent,
     PersonalityBackdropComponent,
   ],

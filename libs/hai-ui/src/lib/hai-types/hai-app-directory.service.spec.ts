@@ -53,4 +53,41 @@ describe('HaiAppDirectoryService', () => {
       else request.flush({ success: false });
     }
   );
+
+  describe('getPublicAppUrl', () => {
+    it('gives the URL the registry publishes for the environment', () => {
+      let url: string | undefined;
+      service
+        .getPublicAppUrl('system-configurator')
+        .subscribe((u) => (url = u));
+      http.expectOne('/api/registry/apps').flush({
+        success: true,
+        data: {
+          apps: [
+            {
+              appId: 'system-configurator',
+              uiBaseUrl: 'https://hardware.example.com',
+              visibility: 'public',
+            },
+          ],
+        },
+      });
+      expect(url).toBe('https://hardware.example.com');
+    });
+
+    it.each([false, true])(
+      'gives undefined, not a localhost default, when the registry fails (HTTP error: %s)',
+      (error) => {
+        const seen: (string | undefined)[] = [];
+        service
+          .getPublicAppUrl('system-configurator')
+          .subscribe((u) => seen.push(u));
+        const request = http.expectOne('/api/registry/apps');
+        if (error)
+          request.flush({}, { status: 503, statusText: 'Unavailable' });
+        else request.flush({ success: false });
+        expect(seen).toEqual([undefined]);
+      }
+    );
+  });
 });

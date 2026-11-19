@@ -1,9 +1,11 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   HttpCode,
   Inject,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Post,
@@ -24,10 +26,12 @@ import {
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import {
+  AcceptOfficialCandidateBody,
   ActOnTakedownNoticeBody,
   BackfillRequest,
   type BackfillStatus,
   ConfirmOfficialCallbackBody,
+  type OfficialCandidate,
   type PipelineHealthReport,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
@@ -39,6 +43,8 @@ import { CivicContributionsClient } from './civic-contributions.client';
 import {
   BackfillStatusReply,
   DensityReply,
+  OfficialCandidateListReply,
+  OfficialCandidateReply,
   OfficialStandingReply,
   OutcomeSweepReply,
   PipelineHealthReply,
@@ -130,6 +136,114 @@ export class CivicOperationsController {
         {}
       ),
     };
+  }
+
+  /**
+   * Names Civic Core read from agendas, for the operator to accept into a
+   * town's officials roster or reject (D33). Pending ones unless a status is
+   * given.
+   */
+  @Get('operations/official-candidates')
+  @RequirePermissions('town.configure')
+  @ApiOperation({
+    summary: 'Official candidates from agendas, pending by default',
+  })
+  @ApiQuery({ name: 'slug', required: false })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['pending', 'accepted', 'rejected'],
+  })
+  @ApiResponse({ status: 200, type: OfficialCandidateListReply })
+  async officialCandidates(
+    @Query('slug') slug?: string,
+    @Query('status') status?: string
+  ) {
+    return {
+      data: await this.candidateCall<OfficialCandidate[]>(
+        CivicBriefingCommands.OFFICIAL_CANDIDATES,
+        {
+          ...(slug ? { slug } : {}),
+          ...(status ? { status } : {}),
+        }
+      ),
+    };
+  }
+
+  @Post('operations/official-candidates/:id/accept')
+  @HttpCode(200)
+  @RequirePermissions('town.configure')
+  @ApiOperation({ summary: "Add a candidate to the town's officials roster" })
+  @ApiResponse({ status: 200, type: OfficialCandidateReply })
+  @ApiResponse({ status: 400, description: 'A value was refused' })
+  @ApiResponse({ status: 404, description: 'No such candidate' })
+  async acceptOfficialCandidate(
+    @User() user: UserDetails,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: AcceptOfficialCandidateBody
+  ) {
+    return {
+      data: await this.candidateCall<OfficialCandidate | null>(
+        CivicBriefingCommands.ACCEPT_OFFICIAL_CANDIDATE,
+        {
+          id,
+          office: body.office,
+          source: body.source,
+          decidedBy: user.userId,
+          ...(body.domains ? { domains: body.domains } : {}),
+          ...(body.callbackNumberSource
+            ? { callbackNumberSource: body.callbackNumberSource }
+            : {}),
+        },
+        id
+      ),
+    };
+  }
+
+  @Post('operations/official-candidates/:id/reject')
+  @HttpCode(200)
+  @RequirePermissions('town.configure')
+  @ApiOperation({ summary: 'Reject a candidate; it is not suggested again' })
+  @ApiResponse({ status: 200, type: OfficialCandidateReply })
+  @ApiResponse({ status: 404, description: 'No such candidate' })
+  async rejectOfficialCandidate(
+    @User() user: UserDetails,
+    @Param('id', new ParseUUIDPipe()) id: string
+  ) {
+    return {
+      data: await this.candidateCall<OfficialCandidate | null>(
+        CivicBriefingCommands.REJECT_OFFICIAL_CANDIDATE,
+        { id, decidedBy: user.userId },
+        id
+      ),
+    };
+  }
+
+  /** A refused value is the operator's to fix (400); an unknown id is 404; anything else is the service being away. */
+  private async candidateCall<T>(
+    cmd: string,
+    payload: object,
+    candidateId?: string
+  ): Promise<NonNullable<T>> {
+    let reply: T;
+    try {
+      reply = await firstValueFrom(
+        this.briefings.send<T>({ cmd }, payload).pipe(timeout(10_000))
+      );
+    } catch (error) {
+      const failure = error as { status?: number; message?: string };
+      if (failure?.status === 400)
+        throw new BadRequestException(failure.message);
+      throw new ServiceUnavailableException(
+        'The briefing service is unavailable right now. Try again shortly.'
+      );
+    }
+    if (reply === null || reply === undefined) {
+      if (candidateId)
+        throw new NotFoundException(`No official candidate ${candidateId}.`);
+      return [] as NonNullable<T>;
+    }
+    return reply as NonNullable<T>;
   }
 
   private async briefingCall<T>(cmd: string, payload: object): Promise<T> {

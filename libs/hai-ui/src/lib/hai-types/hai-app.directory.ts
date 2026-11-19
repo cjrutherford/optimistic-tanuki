@@ -4,21 +4,45 @@ import { HaiAppLink } from './hai-app.config';
 const REPOSITORY_ROOT =
   'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps';
 
+/**
+ * Where a product is in its life. `available` needs release evidence;
+ * `planned` products have nothing to open and must not be linked.
+ */
+export type HaiAppStatus =
+  | 'available'
+  | 'early-access'
+  | 'in-development'
+  | 'planned';
+
+export const HAI_APP_STATUS_LABELS: Record<HaiAppStatus, string> = {
+  available: 'Available',
+  'early-access': 'Early access',
+  'in-development': 'In development',
+  planned: 'Planned',
+};
+
 export interface HaiRegistryApp extends HaiAppLink {
   configName: string;
+  /** Optional so existing consumers keep compiling; unset shows no status. */
+  status?: HaiAppStatus;
   category: string;
   appPath: string;
   portfolioSummary: string;
-  repositoryUrl: string;
+  /**
+   * Absent for products that live in a separate repository we do not link
+   * to; such a card renders without a link.
+   */
+  repositoryUrl?: string;
 }
 
 export interface HaiResolvedAppLink extends HaiRegistryApp {
   /**
    * Primary destination for the card. Resolves to the running application URL
    * when one is published, otherwise falls back to the repository URL.
-   * Retained for backward compatibility with single-link consumers.
+   * Retained for backward compatibility with single-link consumers. Undefined
+   * when the product publishes neither an app nor a repository URL.
    */
-  resolvedHref: string;
+  resolvedHref?: string;
   /** True when the registry supplies a valid public app destination; not a health check. */
   isPublic: boolean;
   /**
@@ -31,6 +55,7 @@ export interface HaiResolvedAppLink extends HaiRegistryApp {
 export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   {
     appId: 'optimistic-tanuki',
+    status: 'early-access',
     configName: 'client-interface',
     name: 'Optimistic Tanuki',
     tagline:
@@ -44,6 +69,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'towne-square',
+    status: 'early-access',
     configName: 'local-hub',
     name: 'Towne Square',
     tagline: 'Early-access locality discovery and local community connection.',
@@ -56,6 +82,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'forge-of-will',
+    status: 'in-development',
     configName: 'forgeofwill',
     name: 'Forge of Will',
     tagline: 'Personal project planning for deliberate work.',
@@ -68,6 +95,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'fin-commander',
+    status: 'in-development',
     configName: 'fin-commander',
     name: 'Fin Commander',
     tagline: 'Small personal finance management for everyday clarity.',
@@ -80,6 +108,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'opportunity-compass',
+    status: 'in-development',
     configName: 'opportunity-compass',
     name: 'Opportunity Compass',
     tagline: 'Opportunity discovery from interests, locality, and skills.',
@@ -92,6 +121,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'developer-portal',
+    status: 'in-development',
     configName: 'developer-portal',
     name: 'Developer Portal',
     tagline: 'Docs, onboarding, and developer-facing platform entry.',
@@ -104,6 +134,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'store-client',
+    status: 'in-development',
     configName: 'store',
     name: 'Store',
     tagline: 'Bookings, donations, and storefront flows.',
@@ -116,6 +147,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
   },
   {
     appId: 'video-platform',
+    status: 'in-development',
     configName: 'video-platform',
     name: 'Video Platform',
     tagline: 'Share and discover video content with communities.',
@@ -125,6 +157,30 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
     repositoryUrl: `${REPOSITORY_ROOT}/video-client`,
     portfolioSummary:
       'A video platform spanning upload, playback, visibility, and channel workflows, with product concerns across both creator tooling and audience-facing experiences.',
+  },
+  {
+    appId: 'homestead',
+    status: 'in-development',
+    configName: 'homestead',
+    name: 'Homestead',
+    tagline: 'Private clouds, set up quickly and easily.',
+    href: '/homestead',
+    category: 'Infrastructure',
+    appPath: 'homestead',
+    portfolioSummary:
+      'A private cloud management tool we use to set up private clouds for clients quickly and easily. It lives in its own repository and is distinct from the Digital Homestead site.',
+  },
+  {
+    appId: 'statocyst',
+    status: 'in-development',
+    configName: 'statocyst',
+    name: 'Statocyst',
+    tagline: 'A Jellyfin-powered music player and podcast client.',
+    href: '/statocyst',
+    category: 'Media',
+    appPath: 'statocyst',
+    portfolioSummary:
+      'A Jellyfin-powered music player and podcast client for desktop, Android and iOS, with Android Auto and Apple CarPlay support. It lives in its own repository.',
   },
 ];
 
@@ -157,6 +213,20 @@ export function resolveHaiAppLinks(
       runUrl,
     };
   });
+}
+
+/**
+ * The running URL a registry publishes for one app, or undefined when the app
+ * is missing, not public, or its URL is not a plain HTTP(S) destination. The
+ * registry is the only source: there is no localhost default, so a deployment
+ * that does not publish the app gets no link.
+ */
+export function resolvePublicAppUrl(
+  apps: AppRegistration[],
+  appId: string
+): string | undefined {
+  const app = apps.find((entry) => entry.appId === appId);
+  return app?.visibility === 'public' ? publicAppUrl(app.uiBaseUrl) : undefined;
 }
 
 function isCurrentHaiApp(app: HaiRegistryApp, currentAppId?: string): boolean {

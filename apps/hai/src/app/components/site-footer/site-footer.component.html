@@ -1,0 +1,16 @@
+<footer class="site-footer">
+  <nav class="links" aria-label="Footer">
+    <ul>
+      @for (link of links; track link.route) {
+      <li>
+        <a [routerLink]="link.route">{{ link.label }}</a>
+      </li>
+      }
+    </ul>
+  </nav>
+  <p class="contact">
+    <a [href]="contact.phoneHref">{{ contact.phone }}</a>
+    <a [href]="'mailto:' + contact.email">{{ contact.email }}</a>
+  </p>
+  <p class="copyright">&copy; {{ year }} {{ siteName }}</p>
+</footer>

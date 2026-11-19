@@ -14,6 +14,8 @@ export interface AudiencePath {
   message: string;
   audiences: string[];
   route: string;
+  /** Scrolls to this element id on the target route. */
+  fragment?: string;
   linkLabel: string;
 }
 

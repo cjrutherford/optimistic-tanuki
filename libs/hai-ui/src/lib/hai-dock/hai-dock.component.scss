@@ -1,0 +1,286 @@
+// Published on `:root` so the host page can read the reserved space; the
+// dock's stylesheet is unscoped (see the component) and only present while a
+// dock is on the page.
+//
+//   --hai-dock-reserved-block-size   what the page must keep clear at its foot
+//
+// Every value is plain CSS (no measuring), so a server-rendered page already
+// has the right space and nothing shifts when the app hydrates.
+:root {
+  --hai-dock-icon-size: 2.75rem;
+  --hai-dock-icon-padding: 0.35rem;
+  --hai-dock-bar-padding: 0.45rem;
+  --hai-dock-gap: 0.4rem;
+  --hai-dock-offset: max(0.85rem, env(safe-area-inset-bottom, 0px));
+  --hai-dock-block-size: calc(
+    var(--hai-dock-icon-size) + 2 * var(--hai-dock-bar-padding) + 2px
+  );
+  // The bar, the gap beneath it, and a margin of air above it.
+  --hai-dock-reserved-block-size: calc(
+    var(--hai-dock-offset) + var(--hai-dock-block-size) + 1rem
+  );
+}
+
+@media (max-width: 640px) {
+  // A tab bar: flush with the bottom edge, so it owns the safe area itself.
+  :root {
+    --hai-dock-icon-size: 2.25rem;
+    --hai-dock-bar-padding: 0.4rem;
+    --hai-dock-label-line-height: 1.25;
+    // Two lines of the small type size.
+    --hai-dock-label-block-size: calc(
+      2 * var(--hai-dock-label-line-height) * var(--type-small, 0.8rem)
+    );
+    --hai-dock-item-min-width: 5rem;
+    --hai-dock-offset: 0px;
+    --hai-dock-block-size: calc(
+      var(--hai-dock-icon-size) + var(--hai-dock-label-block-size) + 2 *
+        var(--hai-dock-bar-padding) + env(safe-area-inset-bottom, 0px) + 1px
+    );
+    --hai-dock-reserved-block-size: var(--hai-dock-block-size);
+  }
+}
+
+// The host takes no space: the bar and the picker are fixed to the viewport,
+// and the page reserves room with the property above.
+hai-dock {
+  display: block;
+}
+
+.hai-dock__bar {
+  position: fixed;
+  right: 0;
+  bottom: var(--hai-dock-offset);
+  left: 0;
+  // The Mac look: a centred pill sized to its items.
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--hai-dock-gap);
+  width: fit-content;
+  max-width: calc(100vw - 1.5rem);
+  margin-inline: auto;
+  padding: var(--hai-dock-bar-padding);
+  border: var(--personality-border-width, 1px)
+    var(--personality-border-style, solid)
+    color-mix(in srgb, var(--foreground) 24%, transparent);
+  border-radius: var(--personality-card-radius, 1.5rem);
+  // A translucent surface when the theme provides one, over the plain surface.
+  background-color: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 78%,
+    transparent
+  );
+  background-image: var(--surface-fill, none);
+  backdrop-filter: var(--surface-backdrop-filter, blur(14px) saturate(1.2));
+  box-shadow: var(--personality-card-shadow, var(--shadow-lg, none));
+  color: var(--foreground);
+  // token-exempt: sits above page content and below the modal layer
+  z-index: 1060;
+}
+
+// Magnify: the hovered item grows, and its neighbours follow a little.
+// Pointer devices on wide screens only, and never with reduced motion.
+@media (min-width: 641px) and (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .hai-dock__bar > hai-dock-item:hover {
+    --hai-dock-item-scale: 1.35;
+  }
+
+  .hai-dock__bar > hai-dock-item:hover + hai-dock-item,
+  .hai-dock__bar > hai-dock-item:has(+ hai-dock-item:hover) {
+    --hai-dock-item-scale: 1.15;
+  }
+}
+
+// One label at a time: while the pointer is on the dock, the hovered item's
+// label wins over a focused item's.
+.hai-dock__bar:hover hai-dock-item:not(:hover) .hai-dock-item__label {
+  opacity: 0;
+}
+
+// Phones: full width, scrolls sideways when the items do not fit.
+@media (max-width: 640px) {
+  .hai-dock__bar {
+    width: auto;
+    max-width: none;
+    margin-inline: 0;
+    padding-bottom: calc(
+      var(--hai-dock-bar-padding) + env(safe-area-inset-bottom, 0px)
+    );
+    border-width: var(--personality-border-width, 1px) 0 0;
+    border-radius: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .hai-dock__bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  // Centre the items while they fit; `safe` keeps the first one reachable
+  // when they overflow.
+  .hai-dock__bar {
+    justify-content: safe center;
+  }
+}
+
+.hai-dock__picker {
+  position: fixed;
+  right: 0;
+  bottom: var(--hai-dock-reserved-block-size);
+  left: 0;
+  box-sizing: border-box;
+  width: min(24rem, calc(100vw - 1.5rem));
+  max-height: min(26rem, 60vh);
+  margin-inline: auto;
+  padding: 0.75rem 0.9rem 0.9rem;
+  overflow-y: auto;
+  border: var(--personality-border-width, 1px)
+    var(--personality-border-style, solid)
+    color-mix(in srgb, var(--foreground) 24%, transparent);
+  border-radius: var(--personality-card-radius, 1.25rem);
+  background-color: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 94%,
+    transparent
+  );
+  background-image: var(--surface-fill, none);
+  backdrop-filter: var(--surface-backdrop-filter, blur(14px));
+  box-shadow: var(--personality-card-shadow, var(--shadow-lg, none));
+  color: var(--foreground);
+  font-family: var(--font-body, inherit);
+  font-size: var(--type-body, 1rem);
+  line-height: var(--line-height, 1.5);
+  // token-exempt: sits just above the dock bar
+  z-index: 1061;
+}
+
+.hai-dock__picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.hai-dock__picker-title {
+  margin: 0;
+  font-family: var(--font-heading, inherit);
+  font-size: var(--type-h4, 1.1rem);
+  line-height: var(--heading-line-height, 1.2);
+  letter-spacing: var(--heading-tracking, normal);
+}
+
+.hai-dock__picker-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hai-dock__picker-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0.25rem;
+}
+
+.hai-dock__picker-icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0.25rem;
+  border-radius: var(--border-radius-md, 0.6rem);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.hai-dock__picker-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.hai-dock__picker-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.hai-dock__picker-name {
+  font-weight: var(--personality-button-font-weight, 600);
+  overflow-wrap: anywhere;
+}
+
+.hai-dock__picker-meta {
+  color: color-mix(in srgb, var(--foreground) 72%, transparent);
+  font-size: var(--type-small, 0.8rem);
+}
+
+.hai-dock__picker-empty {
+  margin: 0;
+}
+
+.hai-dock__picker-pin,
+.hai-dock__picker-close {
+  min-height: var(--touch-target, 2.5rem);
+  // Buttons keep a visible edge even where a personality draws no borders.
+  border: max(1px, var(--personality-input-border-width, 1px)) solid
+    color-mix(in srgb, var(--foreground) 45%, transparent);
+  border-radius: var(--personality-button-radius, 999px);
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--personality-button-font-weight, 600);
+}
+
+.hai-dock__picker-pin {
+  min-width: 4.5rem;
+  padding: 0 0.9rem;
+}
+
+.hai-dock__picker-pin.is-pinned {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
+.hai-dock__picker-close {
+  min-width: var(--touch-target, 2.5rem);
+  font-size: var(--type-h4, 1.25rem);
+  line-height: var(--heading-line-height, 1);
+}
+
+.hai-dock__picker-pin:hover,
+.hai-dock__picker-close:hover {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.hai-dock__picker-pin:focus-visible,
+.hai-dock__picker-close:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+// Present to assistive technology, hidden on screen.
+.hai-dock__announce {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  // The picker sits on the tab bar's full width.
+  .hai-dock__picker {
+    width: calc(100vw - 1.5rem);
+  }
+}

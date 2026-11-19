@@ -240,18 +240,26 @@
   min-height: var(--personality-control-height-lg, 3.2rem);
   padding: space(0.85) space(1.6);
   border-radius: var(--hai-radius-pill);
-  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
-  color: var(--foreground);
-  background: color-mix(
-    in srgb,
-    var(--surface, var(--background)) 88%,
-    transparent
-  );
+  // An outline in the brand's text colour, so the button reads as a button
+  // beside the solid primary and keeps its contrast in light and dark. The
+  // style is fixed: personalities that draw no borders would otherwise leave
+  // the button as a bare box.
+  border: var(--hai-border-strong) solid var(--primary-text, var(--primary));
+  color: var(--primary-text, var(--primary));
+  background: var(--surface, var(--background));
   font-weight: var(--personality-button-font-weight, 700);
   letter-spacing: var(--letter-spacing, 0.02em);
   text-transform: var(--personality-button-text-transform, none);
   text-decoration: none;
   @include lift;
+
+  &:hover {
+    background: color-mix(
+      in srgb,
+      var(--surface, var(--background)) 88%,
+      var(--primary-text, var(--primary)) 12%
+    );
+  }
 }
 
 @mixin text-link {

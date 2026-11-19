@@ -30,6 +30,8 @@ describe('TitleBarComponent', () => {
       'Home',
       'Solutions',
       'Cost Comparison',
+      'Training',
+      'Technical Support',
       'How We Work',
       'Contact',
     ]);
@@ -108,7 +110,8 @@ describe('TitleBarComponent', () => {
     expect(compiled.textContent).toContain('HOPEFUL ASPIRATIONS INDUSTRIES');
     expect(links).toEqual([
       ['Private Cloud', '/private-cloud'],
-      ['Cost Comparison', '/cost-comparison'],
+      ['Training', '/training'],
+      ['Technical Support', '/technical-support'],
       ['How We Work', '/how-we-work'],
       ['Contact', '/contact'],
     ]);

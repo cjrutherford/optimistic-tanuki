@@ -6,6 +6,8 @@ export interface PageIntroLink {
   route: string;
   /** In-page anchor on `route`, e.g. a section id. */
   fragment?: string;
+  /** Query string for `route`, e.g. a contact `subject`. */
+  queryParams?: Record<string, string>;
 }
 
 /**

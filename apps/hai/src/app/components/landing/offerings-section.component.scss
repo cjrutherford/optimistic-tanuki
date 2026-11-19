@@ -37,7 +37,7 @@ h2 {
 
 .offerings-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: section.space(1.25);
   margin: section.space(1.5) 0 0;
   padding: 0;
@@ -108,6 +108,12 @@ h2 {
 .comparison-note a {
   font-weight: var(--hai-weight-strong);
   color: var(--primary-text, var(--primary));
+}
+
+@media (max-width: 1200px) {
+  .offerings-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 960px) {

@@ -15,6 +15,7 @@ import { problem, problemCode } from './errors';
  * src/generated/ because orval `clean: true` wipes that directory.
  */
 const METHODS = [
+  'acceptOfficialCandidate',
   'actOnTakedownNotice',
   'applyOfficial',
   'artifact',
@@ -31,10 +32,14 @@ const METHODS = [
   'latest',
   'me',
   'mine',
+  'officialCandidates',
   'pipelineHealth',
+  'rejectOfficialCandidate',
+  'request',
   'rereview',
   'signUpAsContributor',
   'startBackfill',
+  'status',
   'subjects',
   'submit',
   'surface',

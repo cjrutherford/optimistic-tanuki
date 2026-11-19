@@ -35,7 +35,13 @@ import {
 export class ContactFormComponent {
   @Input() title = 'Reach out!';
   @Input() buttonText = 'Subscribe';
-  @Input() subjects: { value: string; label: string }[] = [];
+  @Input() set subjects(subjects: { value: string; label: string }[]) {
+    this._subjects = subjects;
+    this.applyInitialSubject();
+  }
+  get subjects(): { value: string; label: string }[] {
+    return this._subjects;
+  }
   @Input() subjectId = 'contact-subject';
   @Input() subjectLabel = 'Subject';
   /**
@@ -50,6 +56,14 @@ export class ContactFormComponent {
       this.contactForm.patchValue({ message });
     }
   }
+  /**
+   * Preselects a subject. Ignored unless it matches the value of one of the
+   * provided subjects, so an unknown value leaves the form as it was.
+   */
+  @Input() set initialSubject(subject: string | null | undefined) {
+    this._initialSubject = subject ?? null;
+    this.applyInitialSubject();
+  }
   @Output() formSubmit = new EventEmitter<{
     name: string;
     email: string;
@@ -57,6 +71,8 @@ export class ContactFormComponent {
     message: string;
   }>();
   contactForm: FormGroup;
+  private _subjects: { value: string; label: string }[] = [];
+  private _initialSubject: string | null = null;
   private fb = inject(FormBuilder);
 
   constructor() {
@@ -67,6 +83,22 @@ export class ContactFormComponent {
       message: [''],
       website: [''], // Honeypot
     });
+  }
+
+  /** Bound to the subject select so a preselected subject is visible and editable. */
+  get subjectControl(): FormControl<string> {
+    return this.contactForm.get('subject') as FormControl<string>;
+  }
+
+  private applyInitialSubject(): void {
+    const subject = this._initialSubject;
+    if (
+      subject &&
+      this._subjects.some((option) => option.value === subject) &&
+      !this.contactForm?.value.subject
+    ) {
+      this.contactForm.patchValue({ subject });
+    }
   }
 
   onNameChange(name: string) {

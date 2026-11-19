@@ -1,9 +1,5 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import {
   discoverSources,
-  loadLocalityRegistry,
   type HttpClient,
   type HttpRequestInit,
   type HttpResponse,
@@ -1130,93 +1126,5 @@ describe('the sourcing engine', () => {
     expect((agendas!.source.config as { indexUrl: string }).indexUrl).toBe(
       'https://riverton.example.gov/AgendaCenter/City-Council-3'
     );
-  });
-});
-
-describe('adopted sources in the registry', () => {
-  it('merges what the engine adopted beside the hand-written sources, validated the same way', () => {
-    const root = mkdtempSync(join(tmpdir(), 'sources-'));
-    try {
-      mkdirSync(join(root, 'localities'));
-      mkdirSync(join(root, 'discovered'));
-      writeFileSync(
-        join(root, 'localities', 'riverton.yaml'),
-        'slug: riverton-ga\nname: Riverton\nstate: GA\ntimezone: America/New_York\nlat: 31\nlon: -83\nkind: town\nparents: []\nedition: true\ncadence: [daily]\ntopics: []\n' +
-          'sources:\n  - { sourceKey: riverton-news, adapter: rss, name: Riverton, url: "https://riverton.example.gov/feed/", kind: news }\n'
-      );
-      writeFileSync(
-        join(root, 'discovered', 'riverton-ga.json'),
-        JSON.stringify({
-          localitySlug: 'riverton-ga',
-          sources: [
-            {
-              source: {
-                sourceKey: 'riverton-agendas',
-                adapter: 'document',
-                name: 'Agendas',
-                url: 'https://riverton.example.gov/AgendaCenter/City-Council-3',
-                kind: 'meeting',
-                config: {
-                  indexUrl:
-                    'https://riverton.example.gov/AgendaCenter/City-Council-3',
-                },
-              },
-              discoveredAt: '2026-09-22T00:00:00Z',
-              via: 'test',
-              evidence: [],
-            },
-            {
-              source: {
-                sourceKey: 'riverton-dup',
-                adapter: 'rss',
-                name: 'Same feed',
-                url: 'https://www.riverton.example.gov/feed',
-                kind: 'news',
-              },
-              discoveredAt: '2026-09-22T00:00:00Z',
-              via: 'test',
-              evidence: [],
-            },
-          ],
-        })
-      );
-      const without = loadLocalityRegistry(join(root, 'localities'), undefined);
-      expect(
-        without.get('riverton-ga').sources.map((source) => source.sourceKey)
-      ).toStrictEqual(['riverton-news']);
-      const merged = loadLocalityRegistry(
-        join(root, 'localities'),
-        join(root, 'discovered')
-      );
-      expect(
-        merged.get('riverton-ga').sources.map((source) => source.sourceKey)
-      ).toStrictEqual(['riverton-news', 'riverton-agendas']);
-
-      writeFileSync(
-        join(root, 'discovered', 'riverton-ga.json'),
-        JSON.stringify({
-          localitySlug: 'riverton-ga',
-          sources: [
-            {
-              source: {
-                sourceKey: 'bad',
-                adapter: 'rss',
-                name: 'Bad',
-                url: 'not a url',
-                kind: 'news',
-              },
-              discoveredAt: '',
-              via: '',
-              evidence: [],
-            },
-          ],
-        })
-      );
-      expect(() =>
-        loadLocalityRegistry(join(root, 'localities'), join(root, 'discovered'))
-      ).toThrow(/url/u);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
   });
 });

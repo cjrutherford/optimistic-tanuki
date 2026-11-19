@@ -8,7 +8,7 @@ import {
   of,
   shareReplay,
 } from 'rxjs';
-import { AppRegistryService } from '@optimistic-tanuki/app-registry';
+import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
 
 export interface HardwareTier {
   id: string;
@@ -88,10 +88,12 @@ export const DEFAULT_HARDWARE_TIERS: HardwareTier[] = [
   },
 ];
 
+const CONFIGURATOR_APP_ID = 'system-configurator';
+
 @Injectable({ providedIn: 'root' })
 export class HardwareCatalogService {
   private readonly http = inject(HttpClient);
-  private readonly appRegistry = inject(AppRegistryService);
+  private readonly appDirectory = inject(HaiAppDirectoryService);
   private readonly apiUrl = '/api/hardware/tiers';
 
   private readonly rawTiers$ = this.http.get<HardwareTier[]>(this.apiUrl).pipe(
@@ -101,25 +103,26 @@ export class HardwareCatalogService {
     catchError(() => of(DEFAULT_HARDWARE_TIERS))
   );
 
-  private readonly configuratorUrl$ = this.appRegistry
-    .getApp('system-configurator')
-    .pipe(
-      map((app) => app?.uiBaseUrl || 'http://localhost:8091'),
-      catchError(() => of('http://localhost:8091'))
-    );
+  /**
+   * The configurator's URL for this environment, straight from the app
+   * registry. Undefined when the registry does not publish it; callers then
+   * show no link rather than a guess.
+   */
+  private readonly configuratorUrl$ = this.appDirectory
+    .getPublicAppUrl(CONFIGURATOR_APP_ID)
+    .pipe(shareReplay({ bufferSize: 1, refCount: false }));
 
   private readonly tiers$ = combineLatest([
     this.rawTiers$,
     this.configuratorUrl$,
   ]).pipe(
     map(([tiers, configuratorUrl]) =>
-      tiers.map((tier) => {
-        const separator = configuratorUrl.includes('?') ? '&' : '?';
-        return {
-          ...tier,
-          portalUrl: `${configuratorUrl}${separator}preset=${tier.configuratorPreset}`,
-        };
-      })
+      tiers.map((tier) => ({
+        ...tier,
+        portalUrl: configuratorUrl
+          ? withPreset(configuratorUrl, tier.configuratorPreset)
+          : undefined,
+      }))
     ),
     shareReplay({ bufferSize: 1, refCount: false })
   );
@@ -128,12 +131,15 @@ export class HardwareCatalogService {
     return this.tiers$;
   }
 
-  getPortalUrl(preset: string): Observable<string> {
+  /** The configurator link for a preset; undefined when no URL is published. */
+  getPortalUrl(preset: string): Observable<string | undefined> {
     return this.configuratorUrl$.pipe(
-      map((baseUrl) => {
-        const separator = baseUrl.includes('?') ? '&' : '?';
-        return `${baseUrl}${separator}preset=${preset}`;
-      })
+      map((baseUrl) => (baseUrl ? withPreset(baseUrl, preset) : undefined))
     );
   }
+}
+
+function withPreset(baseUrl: string, preset: string): string {
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}preset=${preset}`;
 }

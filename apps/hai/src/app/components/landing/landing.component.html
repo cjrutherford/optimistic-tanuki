@@ -1,17 +1,16 @@
 <div class="landing-shell" data-theme-surface="page">
-  <aside
+  <div
     class="operational-guarantee-banner"
     role="status"
-    aria-label="Operational guarantee"
+    aria-label="Service area"
   >
     <div class="banner-inner">
       <span class="banner-indicator" aria-hidden="true"></span>
       <p class="banner-text">
-        48-Hour Rapid Onboarding. Local On-Site Support in Savannah and South
-        Georgia.
+        On-site in Savannah and South Georgia; remote where the work allows.
       </p>
     </div>
-  </aside>
+  </div>
 
   <section class="hero-panel" data-theme-surface="hero">
     <div class="hero-backdrop" aria-hidden="true">
@@ -36,10 +35,18 @@
     <div class="hero-copy">
       <p class="eyebrow">Hopeful Aspirations Industries</p>
       <h1>Technology you own.</h1>
+      <p class="tagline">
+        Technology that works for you. Knowledge that stays with you.
+      </p>
       <p class="lede">
-        Private cloud systems, turn-key server appliances, open-source software,
-        and custom tools for homes, organizations, and businesses across
-        Savannah and South Georgia. We set it up and support it; you keep it.
+        Technology should help you do what matters—not leave you confused or
+        dependent. We teach practical digital skills, help fix and maintain
+        everyday technology, and build dependable software and systems for
+        households, businesses and communities.
+      </p>
+      <p class="support-line">
+        Learn to do it yourself, ask us to help, or let us manage the technical
+        details. You stay in control.
       </p>
 
       <div class="hero-actions">
@@ -50,17 +57,16 @@
           data-emphasis="solid"
           data-size="lg"
         >
-          Schedule Free Audit
+          Tell us what you need
         </a>
         <a
           class="cta secondary"
-          routerLink="/"
-          fragment="offerings"
+          routerLink="/training"
           data-tone="brand"
           data-emphasis="outline"
           data-size="lg"
         >
-          See What We Offer
+          Explore training
         </a>
       </div>
     </div>
@@ -92,6 +98,15 @@
       </aside>
     </otui-card>
   </section>
+
+  <hai-audience-selector
+    sectionId="pathways"
+    eyebrow="Start here"
+    heading="What brings you here?"
+    [paths]="pathways"
+    [columns]="4"
+    [note]="pathwaysNote"
+  ></hai-audience-selector>
 
   <hai-offerings-section [offerings]="offerings"></hai-offerings-section>
 

@@ -36,12 +36,39 @@ describe('ContactSectionComponent', () => {
   });
 
   it('renders the configured contact lead copy', () => {
-    expect(
-      fixture.nativeElement.querySelector('.eyebrow')?.textContent
-    ).toContain('Build with HAI');
-    expect(fixture.nativeElement.querySelector('h2')?.textContent).toContain(
-      'Let us start a conversation.'
+    expect(fixture.nativeElement.querySelector('h1')?.textContent).toContain(
+      'Build with HAI'
     );
+    expect(
+      fixture.nativeElement.querySelector('.contact-intro')?.textContent
+    ).toContain('Let us start a conversation.');
+  });
+
+  it('states the service area and asks for no credentials', () => {
+    const guidance = fixture.nativeElement.querySelector('.contact-guidance')
+      ?.textContent as string;
+
+    expect(guidance).toContain(
+      'On-site in Savannah and South Georgia; remote where the work allows.'
+    );
+    expect(guidance).toMatch(/passwords/);
+  });
+
+  it('keeps the approved one-business-hour acknowledgement', () => {
+    expect(
+      fixture.nativeElement.querySelector('.sla-notice')?.textContent
+    ).toContain(
+      'within one business hour, counted Monday–Friday, 9 a.m.–5 p.m. Eastern'
+    );
+  });
+
+  it('passes the initial subject to the form', () => {
+    fixture.componentRef.setInput('initialSubject', 'strategy');
+    fixture.detectChanges();
+    const form = fixture.debugElement.query(By.directive(ContactFormComponent))
+      .componentInstance as ContactFormComponent;
+
+    expect(form.contactForm.value.subject).toBe('strategy');
   });
 
   it('preserves contact form presence and input wiring', () => {
@@ -51,7 +78,7 @@ describe('ContactSectionComponent', () => {
     const form = formDebugElement.componentInstance as ContactFormComponent;
 
     expect(formDebugElement).not.toBeNull();
-    expect(form.title).toBe('Start a project with HAI');
+    expect(form.title).toBe('Send HAI a message');
     expect(form.buttonText).toBe('Send Message');
     expect(form.subjects).toEqual([{ value: 'strategy', label: 'Strategy' }]);
   });

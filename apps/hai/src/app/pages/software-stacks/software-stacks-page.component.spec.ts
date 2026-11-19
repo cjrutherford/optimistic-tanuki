@@ -84,4 +84,14 @@ describe('SoftwareStacksPageComponent', () => {
       '/private-cloud/assessment',
     ]);
   });
+
+  it('links onward to training and technical support', () => {
+    expect(hrefs('hai-related-links a')).toEqual([
+      '/training',
+      '/technical-support',
+    ]);
+    expect(
+      element.querySelector('hai-related-links .related-prompt')?.textContent
+    ).toBeTruthy();
+  });
 });

@@ -90,6 +90,20 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'training',
+    loadComponent: () =>
+      import('./pages/training/training-page.component').then(
+        (m) => m.TrainingPageComponent
+      ),
+  },
+  {
+    path: 'technical-support',
+    loadComponent: () =>
+      import('./pages/technical-support/technical-support-page.component').then(
+        (m) => m.TechnicalSupportPageComponent
+      ),
+  },
+  {
     path: 'contact',
     loadComponent: () =>
       import('./pages/contact/contact-page.component').then(

@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 import {
   CommunitySurface,
   ContributionView,
@@ -9,6 +10,7 @@ import {
   OFFICIAL_STANDINGS,
   OfficialApplicationResult,
   BackfillStatus,
+  OfficialCandidate,
   PipelineHealthReport,
   type OfficialStanding,
   PublishedBriefing,
@@ -202,4 +204,47 @@ export class BackfillStatusReply {
 export class PipelineHealthReply {
   @ApiProperty({ type: PipelineHealthReport })
   data!: PipelineHealthReport;
+}
+
+export class OfficialCandidateListReply {
+  @ApiProperty({ type: [OfficialCandidate] })
+  data!: OfficialCandidate[];
+}
+
+export class OfficialCandidateReply {
+  @ApiProperty({ type: OfficialCandidate })
+  data!: OfficialCandidate;
+}
+
+export class SourceStatusReply {
+  @ApiProperty()
+  slug!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  /** has-sources: at least one enabled source. no-sources: discovery ran and found none. not-sourced-yet: discovery has not run. */
+  @ApiProperty({ enum: ['has-sources', 'no-sources', 'not-sourced-yet'] })
+  status!: 'has-sources' | 'no-sources' | 'not-sourced-yet';
+
+  /** How many readers have asked for sources for this town. */
+  @ApiProperty()
+  requestCount!: number;
+}
+
+export class SourceRequestBody {
+  /** Optional context for the operators; trimmed, at most 500 characters. */
+  @ApiPropertyOptional({ maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  note?: string;
+}
+
+export class SourceRequestReply {
+  @ApiProperty()
+  requestCount!: number;
+
+  /** True when this reader had already asked for this town; nothing was added. */
+  @ApiProperty()
+  alreadyRequested!: boolean;
 }

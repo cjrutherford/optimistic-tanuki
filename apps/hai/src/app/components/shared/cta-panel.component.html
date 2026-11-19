@@ -5,7 +5,12 @@
   <p class="text">{{ text }}</p>
   }
   <div class="actions">
-    <a class="primary-action" [routerLink]="action.route">{{ action.label }}</a>
+    <a
+      class="primary-action"
+      [routerLink]="action.route"
+      [queryParams]="action.queryParams"
+      >{{ action.label }}</a
+    >
     @if (secondary) {
     <p class="secondary">
       {{ secondaryPrompt }}

@@ -43,3 +43,4 @@ export * from './coverage.js';
 export * from './freshness.js';
 export * from './synthesis-contract.js';
 export * from './scanning-blob-store.js';
+export * from './registry-render.js';

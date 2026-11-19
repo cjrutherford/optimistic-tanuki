@@ -6,8 +6,12 @@
   data-size="lg"
   id="contact"
 >
-  <p class="eyebrow">{{ contactLead.title }}</p>
-  <h2>{{ contactLead.description }}</h2>
+  <h1>{{ contactLead.title }}</h1>
+  <p class="contact-intro">{{ contactLead.description }}</p>
+  <p class="contact-guidance">
+    {{ serviceArea }} Please don't put passwords or other access credentials in
+    your message.
+  </p>
   <p class="sla-notice" role="note">
     A platform owner will personally acknowledge your message within one
     business hour, counted Monday–Friday, 9 a.m.–5 p.m. Eastern. Service timing
@@ -15,10 +19,11 @@
   </p>
   <lib-contact-form
     [bannerImage]="'assets/contact-office-shelf.webp'"
-    [title]="'Start a project with HAI'"
+    [title]="'Send HAI a message'"
     [buttonText]="submittingContact ? 'Sending…' : 'Send Message'"
     [subjects]="contactSubjects"
     [initialMessage]="contactPrefill"
+    [initialSubject]="initialSubject"
     (formSubmit)="formSubmit.emit($event)"
   ></lib-contact-form>
   @if (contactStatus) {

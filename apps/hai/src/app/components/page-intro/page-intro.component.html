@@ -4,7 +4,12 @@
   @if (summary) {
   <p class="summary">{{ summary }}</p>
   } @if (action) {
-  <a class="intro-action" [routerLink]="action.route">{{ action.label }}</a>
+  <a
+    class="intro-action"
+    [routerLink]="action.route"
+    [queryParams]="action.queryParams"
+    >{{ action.label }}</a
+  >
   } @if (links.length) {
   <nav class="intro-links" [attr.aria-label]="eyebrow + ' pages'">
     @for (link of links; track link.label) {
@@ -12,6 +17,7 @@
       class="intro-link"
       [routerLink]="link.route"
       [fragment]="link.fragment"
+      [queryParams]="link.queryParams"
       >{{ link.label }}</a
     >
     }

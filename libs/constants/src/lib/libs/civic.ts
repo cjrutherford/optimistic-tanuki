@@ -12,3 +12,5 @@ export const CIVIC_BROADCAST_ALERT = 'civic.broadcast_alert';
 export const CIVIC_GET_BROADCASTS = 'civic.get_broadcasts';
 export const CIVIC_GET_TENANTS = 'civic.get_tenants';
 export const CIVIC_REGISTER_TENANT = 'civic.register_tenant';
+/** Officials named in a town's agendas in the last 12 months; payload `{ town?: tenantId }`. */
+export const CIVIC_GET_OFFICIALS = 'civic.get_officials';

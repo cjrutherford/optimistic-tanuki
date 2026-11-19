@@ -36,7 +36,7 @@
   @include section.eyebrow;
 }
 
-h2 {
+h1 {
   @include section.section-heading;
 }
 
@@ -49,6 +49,12 @@ h2 {
   margin: section.space(1) auto 0;
   max-width: var(--hai-measure-narrow);
   color: color-mix(in srgb, var(--foreground) 82%, transparent);
+}
+
+.contact-intro,
+.contact-guidance {
+  margin: 0 auto section.space(1);
+  max-width: var(--hai-measure-narrow);
 }
 
 .sla-notice {

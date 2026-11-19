@@ -5,6 +5,7 @@ import {
   computed,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
@@ -54,6 +55,9 @@ export class CityBriefingComponent {
   readonly cityName = input.required<string>();
   /** A period end (YYYY-MM-DD), or null for the latest edition. */
   readonly date = input<string | null>(null);
+
+  /** Emits when the town has no briefing to show (a 404), so the page can say why. */
+  readonly absent = output<void>();
 
   private readonly state = signal<BriefingState>({ status: 'loading' });
   protected readonly loading = computed(
@@ -105,7 +109,10 @@ export class CityBriefingComponent {
         ),
         takeUntilDestroyed()
       )
-      .subscribe((state) => this.state.set(state));
+      .subscribe((state) => {
+        this.state.set(state);
+        if (state.status === 'missing') this.absent.emit();
+      });
   }
 
   private failure(

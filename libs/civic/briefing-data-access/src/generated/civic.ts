@@ -63,6 +63,32 @@ export interface PublishedBriefingReply {
   data: PublishedBriefing;
 }
 
+export type SourceStatusReplyStatus =
+  (typeof SourceStatusReplyStatus)[keyof typeof SourceStatusReplyStatus];
+
+export const SourceStatusReplyStatus = {
+  'has-sources': 'has-sources',
+  'no-sources': 'no-sources',
+  'not-sourced-yet': 'not-sourced-yet',
+} as const;
+
+export interface SourceStatusReply {
+  slug: string;
+  name: string;
+  status: SourceStatusReplyStatus;
+  requestCount: number;
+}
+
+export interface SourceRequestBody {
+  /** @maxLength 500 */
+  note?: string;
+}
+
+export interface SourceRequestReply {
+  requestCount: number;
+  alreadyRequested: boolean;
+}
+
 export interface LocalHubMembership {
   profileId: string;
   handle: string;
@@ -547,6 +573,8 @@ export interface TownPipelineHealth {
   /** @nullable */
   lastRun: PipelineRunSummary | null;
   problems: PipelineSourceProblem[];
+  noSources?: boolean;
+  requestCount?: number;
 }
 
 export interface PipelineHealthReport {
@@ -590,6 +618,53 @@ export interface BackfillStatus {
 
 export interface BackfillStatusReply {
   data: BackfillStatus;
+}
+
+export type OfficialCandidateStatus =
+  (typeof OfficialCandidateStatus)[keyof typeof OfficialCandidateStatus];
+
+export const OfficialCandidateStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  rejected: 'rejected',
+} as const;
+
+export interface OfficialCandidate {
+  id: string;
+  slug: string;
+  townName: string;
+  name: string;
+  role: string;
+  /** @nullable */
+  sourceAgendaId?: string | null;
+  firstSeen: string;
+  lastSeen: string;
+  status: OfficialCandidateStatus;
+  /** @nullable */
+  decidedBy?: string | null;
+  /** @nullable */
+  decidedAt?: string | null;
+  /** False when the first acceptance must also supply domains and a callback number source. */
+  townHasOfficials: boolean;
+}
+
+export interface OfficialCandidateListReply {
+  data: OfficialCandidate[];
+}
+
+export interface AcceptOfficialCandidateBody {
+  /** The office the person holds. */
+  office: string;
+  /** An https URL where the roster entry is published. */
+  source: string;
+  /** Government email domains; required for a town with no officials yet. */
+  domains?: string[];
+  /** An https URL; required for a town with no officials yet. */
+  callbackNumberSource?: string;
+}
+
+export interface OfficialCandidateReply {
+  data: OfficialCandidate;
 }
 
 export interface TownDensity {
@@ -712,6 +787,20 @@ export interface PromotionExportResult {
 export interface PromotionExportReply {
   data: PromotionExportResult;
 }
+
+export type OfficialCandidatesParams = {
+  slug?: string;
+  status?: OfficialCandidatesStatus;
+};
+
+export type OfficialCandidatesStatus =
+  (typeof OfficialCandidatesStatus)[keyof typeof OfficialCandidatesStatus];
+
+export const OfficialCandidatesStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  rejected: 'rejected',
+} as const;
 
 export type TakedownNoticesParams = {
   state?: string;
@@ -1004,6 +1093,109 @@ export class OptomisitcTanukiAPIService {
 
     return this.http.get<TData>(
       `/api/local-hub/editions/${slug}/briefings/${periodEnd}`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary Whether a town has sources, and how many ask
+   */
+  status<TData = SourceStatusReply>(
+    slug: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  status<TData = SourceStatusReply>(
+    slug: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  status<TData = SourceStatusReply>(
+    slug: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  status<TData = SourceStatusReply>(
+    slug: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(
+        `/api/local-hub/localities/${slug}/source-status`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(
+        `/api/local-hub/localities/${slug}/source-status`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.get<TData>(
+      `/api/local-hub/localities/${slug}/source-status`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary Ask for sources for a town; once per reader
+   */
+  request<TData = SourceRequestReply>(
+    slug: string,
+    sourceRequestBody: SourceRequestBody,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  request<TData = SourceRequestReply>(
+    slug: string,
+    sourceRequestBody: SourceRequestBody,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  request<TData = SourceRequestReply>(
+    slug: string,
+    sourceRequestBody: SourceRequestBody,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  request<TData = SourceRequestReply>(
+    slug: string,
+    sourceRequestBody: SourceRequestBody,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/local-hub/localities/${slug}/source-requests`,
+        sourceRequestBody,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/local-hub/localities/${slug}/source-requests`,
+        sourceRequestBody,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/local-hub/localities/${slug}/source-requests`,
+      sourceRequestBody,
       {
         ...(options as Omit<NonNullable<typeof options>, 'observe'>),
         observe: 'body',
@@ -1663,6 +1855,168 @@ export class OptomisitcTanukiAPIService {
       ...(options as Omit<NonNullable<typeof options>, 'observe'>),
       observe: 'body',
     });
+  }
+
+  /**
+   * @summary Official candidates from agendas, pending by default
+   */
+  officialCandidates<TData = OfficialCandidateListReply>(
+    params?: OfficialCandidatesParams,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  officialCandidates<TData = OfficialCandidateListReply>(
+    params?: OfficialCandidatesParams,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  officialCandidates<TData = OfficialCandidateListReply>(
+    params?: OfficialCandidatesParams,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  officialCandidates<TData = OfficialCandidateListReply>(
+    params?: OfficialCandidatesParams,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    const filteredParams = filterParams(
+      { ...params, ...options?.params },
+      new Set<string>([])
+    );
+
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(
+        `/api/local-hub/operations/official-candidates`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+          params: filteredParams,
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(
+        `/api/local-hub/operations/official-candidates`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+          params: filteredParams,
+        }
+      );
+    }
+
+    return this.http.get<TData>(
+      `/api/local-hub/operations/official-candidates`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+        params: filteredParams,
+      }
+    );
+  }
+
+  /**
+   * @summary Add a candidate to the town's officials roster
+   */
+  acceptOfficialCandidate<TData = OfficialCandidateReply>(
+    id: string,
+    acceptOfficialCandidateBody: AcceptOfficialCandidateBody,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  acceptOfficialCandidate<TData = OfficialCandidateReply>(
+    id: string,
+    acceptOfficialCandidateBody: AcceptOfficialCandidateBody,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  acceptOfficialCandidate<TData = OfficialCandidateReply>(
+    id: string,
+    acceptOfficialCandidateBody: AcceptOfficialCandidateBody,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  acceptOfficialCandidate<TData = OfficialCandidateReply>(
+    id: string,
+    acceptOfficialCandidateBody: AcceptOfficialCandidateBody,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/local-hub/operations/official-candidates/${id}/accept`,
+        acceptOfficialCandidateBody,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/local-hub/operations/official-candidates/${id}/accept`,
+        acceptOfficialCandidateBody,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/local-hub/operations/official-candidates/${id}/accept`,
+      acceptOfficialCandidateBody,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary Reject a candidate; it is not suggested again
+   */
+  rejectOfficialCandidate<TData = OfficialCandidateReply>(
+    id: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  rejectOfficialCandidate<TData = OfficialCandidateReply>(
+    id: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  rejectOfficialCandidate<TData = OfficialCandidateReply>(
+    id: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  rejectOfficialCandidate<TData = OfficialCandidateReply>(
+    id: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/local-hub/operations/official-candidates/${id}/reject`,
+        undefined,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/local-hub/operations/official-candidates/${id}/reject`,
+        undefined,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/local-hub/operations/official-candidates/${id}/reject`,
+      undefined,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
   }
 
   /**

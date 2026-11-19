@@ -11,7 +11,14 @@ describe('HardwareCatalogComponent', () => {
   let fixture: ComponentFixture<HardwareCatalogComponent>;
 
   const catalogServiceMock = {
-    getTiers: jest.fn().mockReturnValue(of(DEFAULT_HARDWARE_TIERS)),
+    getTiers: jest.fn().mockReturnValue(
+      of(
+        DEFAULT_HARDWARE_TIERS.map((tier) => ({
+          ...tier,
+          portalUrl: `https://hardware.example.com?preset=${tier.configuratorPreset}`,
+        }))
+      )
+    ),
     getPortalUrl: jest
       .fn()
       .mockImplementation((preset) =>
@@ -122,6 +129,18 @@ describe('HardwareCatalogComponent', () => {
 
     const button = tier3Card.querySelector('a.portal-btn');
     expect(button.getAttribute('href')).toContain('preset=tier3');
+  });
+
+  it('shows no configurator link when the registry published no URL', () => {
+    catalogServiceMock.getTiers.mockReturnValueOnce(of(DEFAULT_HARDWARE_TIERS));
+    const bare = TestBed.createComponent(HardwareCatalogComponent);
+    bare.detectChanges();
+
+    const element = bare.nativeElement as HTMLElement;
+    expect(element.querySelectorAll('.tier-card')).toHaveLength(3);
+    expect(element.querySelector('a.portal-btn')).toBeNull();
+    expect(element.querySelector('.card-actions')).toBeNull();
+    expect(element.innerHTML).not.toContain('localhost');
   });
 
   it('contains zero em dashes and maintains sentence case headings', () => {

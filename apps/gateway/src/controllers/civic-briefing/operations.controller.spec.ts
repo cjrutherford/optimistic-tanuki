@@ -1,4 +1,8 @@
-import { ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { of, throwError } from 'rxjs';
 import { CivicBriefingCommands } from '@optimistic-tanuki/constants';
 import { CommunityCommands } from '@optimistic-tanuki/civic-community';
@@ -153,5 +157,99 @@ describe('CivicOperationsController', () => {
       permissions: [permission],
     });
     expect(metadata(route, IS_PUBLIC_KEY)).toBeUndefined();
+  });
+
+  describe('official candidates', () => {
+    const candidate = { id, name: 'Jane Doe', status: 'pending' };
+
+    function recording(reply: () => unknown) {
+      const calls: { cmd: string; payload: unknown }[] = [];
+      const f = fixture(() => reply());
+      (
+        f.controller as unknown as { briefings: { send: jest.Mock } }
+      ).briefings.send = jest.fn(
+        (pattern: { cmd: string }, payload: unknown) => {
+          calls.push({ cmd: pattern.cmd, payload });
+          return reply();
+        }
+      );
+      return { ...f, calls };
+    }
+
+    it('lists candidates, passing only the filters given, for town.configure', async () => {
+      const { controller, calls } = recording(() => of([candidate]));
+      expect(await controller.officialCandidates('adel-ga', undefined)).toEqual(
+        {
+          data: [candidate],
+        }
+      );
+      expect(calls).toEqual([
+        {
+          cmd: CivicBriefingCommands.OFFICIAL_CANDIDATES,
+          payload: { slug: 'adel-ga' },
+        },
+      ]);
+      expect(metadata('officialCandidates', PERMISSIONS_KEY)).toMatchObject({
+        permissions: ['town.configure'],
+      });
+    });
+
+    it('accepts as the signed-in operator, taking decidedBy from the account', async () => {
+      const { controller, calls } = recording(() => of(candidate));
+      await controller.acceptOfficialCandidate(operator, id, {
+        office: 'Mayor',
+        source: 'https://adel.example/council',
+        domains: ['adel.example'],
+        callbackNumberSource: 'https://adel.example/contact',
+      });
+      expect(calls[0]).toEqual({
+        cmd: CivicBriefingCommands.ACCEPT_OFFICIAL_CANDIDATE,
+        payload: {
+          id,
+          office: 'Mayor',
+          source: 'https://adel.example/council',
+          decidedBy: 'admin-1',
+          domains: ['adel.example'],
+          callbackNumberSource: 'https://adel.example/contact',
+        },
+      });
+      expect(
+        metadata('acceptOfficialCandidate', PERMISSIONS_KEY)
+      ).toMatchObject({ permissions: ['town.configure'] });
+    });
+
+    it('rejects as the signed-in operator', async () => {
+      const { controller, calls } = recording(() => of(candidate));
+      await controller.rejectOfficialCandidate(operator, id);
+      expect(calls[0]).toEqual({
+        cmd: CivicBriefingCommands.REJECT_OFFICIAL_CANDIDATE,
+        payload: { id, decidedBy: 'admin-1' },
+      });
+      expect(
+        metadata('rejectOfficialCandidate', PERMISSIONS_KEY)
+      ).toMatchObject({ permissions: ['town.configure'] });
+    });
+
+    it('maps a refused value to 400, an unknown candidate to 404, and an outage to 503', async () => {
+      const accept = (reply: () => unknown) =>
+        recording(reply).controller.acceptOfficialCandidate(operator, id, {
+          office: 'Mayor',
+          source: 'http://x',
+        });
+      await expect(
+        accept(() =>
+          throwError(() => ({
+            status: 400,
+            message: 'The source must be https',
+          }))
+        )
+      ).rejects.toBeInstanceOf(BadRequestException);
+      await expect(accept(() => of(null))).rejects.toBeInstanceOf(
+        NotFoundException
+      );
+      await expect(
+        accept(() => throwError(() => new Error('down')))
+      ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    });
   });
 });

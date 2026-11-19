@@ -3,6 +3,8 @@
  * same wherever it is rendered.
  */
 
+import type { AudiencePath } from './private-cloud';
+
 export interface ServicePillar {
   icon: string;
   title: string;
@@ -99,16 +101,23 @@ export const PARTNER_BENEFITS: string[] = [
 ];
 
 export const CONTACT_LEAD = {
-  title: 'Start a Project',
+  title: "Tell us what you're trying to do.",
   description:
-    'Tell us about a project, an infrastructure need, or a partner delivery conversation.',
+    "You don't need to have the solution figured out. Tell us what you'd like to learn, what's not working, or what you're hoping to build. We'll help identify a sensible next step.",
 } as const;
 
+/** Service-area wording (C003). */
+export const SERVICE_AREA =
+  'On-site in Savannah and South Georgia; remote where the work allows.';
+
 export const CONTACT_SUBJECTS: ContactSubject[] = [
-  { value: 'custom-portal', label: 'Custom Portal & Workflow Automation' },
+  { value: 'training', label: 'Training or a class' },
+  { value: 'technical-support', label: 'Technical support / device help' },
   { value: 'infrastructure', label: 'Independent Infrastructure' },
+  { value: 'custom-portal', label: 'Custom Portal & Workflow Automation' },
   { value: 'tailored-software', label: 'Tailored Software' },
   { value: 'partner-inquiry', label: 'Partner Inquiry' },
+  { value: 'other', label: 'Something else' },
 ];
 
 export interface Offering {
@@ -121,6 +130,22 @@ export interface Offering {
 
 /** One card per offering on the homepage; the detail lives on each route. */
 export const OFFERINGS: Offering[] = [
+  {
+    name: 'Training',
+    headline: 'Learn technology with confidence.',
+    summary:
+      'One-on-one guidance at your pace, from basic digital skills to taking more control of your devices and data. Quoted before work begins.',
+    route: '/training',
+    linkLabel: 'Explore training',
+  },
+  {
+    name: 'Technical Support',
+    headline: 'Technology help without the runaround.',
+    summary:
+      'Troubleshooting, setup and moving your files, for homes, small businesses and nonprofits. Scope and charges are agreed before work starts.',
+    route: '/technical-support',
+    linkLabel: 'Get technical support',
+  },
   {
     name: 'Private Cloud',
     headline: 'Your files, on your hardware.',
@@ -157,7 +182,7 @@ export const OFFERINGS: Offering[] = [
     name: 'Support & Migration',
     headline: "Help that doesn't end at install.",
     summary:
-      'Migration, maintenance, security patches, and backups, with direct support from the people who set it up.',
+      'For the infrastructure we set up with you: moving onto it, then maintenance, security patches, and backups from the people who built it.',
     route: '/how-we-work',
     linkLabel: 'See how we work',
   },
@@ -220,3 +245,48 @@ export const PRIVATE_CLOUD_PATHS: PrivateCloudPath[] = [
     route: '/private-cloud/organizations',
   },
 ];
+
+/** The four homepage entry points, in reading order. */
+export const HOME_PATHWAYS: AudiencePath[] = [
+  {
+    eyebrow: '',
+    title: 'Learn',
+    message:
+      'Build confidence with everyday technology, at your own pace or with personal guidance.',
+    audiences: [],
+    route: '/training',
+    linkLabel: 'Explore training',
+  },
+  {
+    eyebrow: '',
+    title: 'Get Help',
+    message:
+      'Troubleshooting, setup, migrations and ongoing support explained in plain language.',
+    audiences: [],
+    route: '/technical-support',
+    linkLabel: 'Get technical help',
+  },
+  {
+    eyebrow: '',
+    title: 'Get Solutions',
+    message:
+      'Private cloud, hardware planning and custom software that fit your actual needs.',
+    audiences: [],
+    route: '/',
+    fragment: 'offerings',
+    linkLabel: 'Explore solutions',
+  },
+  {
+    eyebrow: '',
+    title: 'Explore Apps',
+    message:
+      'Discover independent tools developed around ownership, connection and useful progress.',
+    audiences: [],
+    route: '/',
+    fragment: 'ecosystem',
+    linkLabel: 'Explore apps',
+  },
+];
+
+export const HOME_PATHWAYS_NOTE =
+  'We explain the choices, document the work, and aim to leave you more capable—even when you decide to manage things yourself.';

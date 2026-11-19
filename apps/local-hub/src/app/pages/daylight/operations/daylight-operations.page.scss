@@ -179,3 +179,39 @@ li {
 .source-problem[data-status='failing'] {
   color: var(--error);
 }
+
+.candidates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.candidate {
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.candidate-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.8rem;
+
+  .actions {
+    margin-left: auto;
+  }
+}
+
+.role {
+  font-size: var(--type-small, 0.9rem);
+  color: var(--foreground-muted);
+}
+
+.candidate-form {
+  display: grid;
+  gap: 0.9rem;
+  margin: 0.8rem 0 0.4rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--personality-card-radius, 0.8rem);
+}

@@ -25,7 +25,7 @@ export declare type CivicContributionsConfigType = {
     name?: string;
     database?: string;
   };
-  /** civic-briefing, which serves the corpus over TCP (CIVIC_BRIEFING_HOST/PORT). */
+  /** civic-briefing, which serves the corpus and the localities over TCP (CIVIC_BRIEFING_HOST/PORT). */
   civicBriefing: { host: string; port: number };
   /** Where uploads are kept once scanned (ARTIFACT_ROOT). */
   artifactRoot: string;
@@ -37,8 +37,6 @@ export declare type CivicContributionsConfigType = {
   model: { baseUrl: string; model: string; timeoutMs: number };
   llmTransport: LlmTransport;
   promptProxy: { host: string; port: number };
-  /** The locality files (CIVIC_LOCALITIES_DIR); null leaves the registry empty. */
-  localitiesDir: string | null;
   /** Contributions per contributor per hour. */
   hourlyLimit: number;
   /** Upheld copyright notices before an account is suspended. */
@@ -176,9 +174,6 @@ const loadConfig = (
       host: env['PROMPT_PROXY_HOST'] || 'prompt-proxy',
       port: integer(env, 'PROMPT_PROXY_PORT', 3009),
     },
-    localitiesDir: env['CIVIC_LOCALITIES_DIR']
-      ? path.resolve(process.cwd(), env['CIVIC_LOCALITIES_DIR'])
-      : null,
     hourlyLimit: integer(env, 'CONTRIBUTIONS_PER_HOUR', 12),
     strikeLimit: integer(env, 'COPYRIGHT_STRIKE_LIMIT', 3),
     floor: { minAgeDays: integer(env, 'CORROBORATION_MIN_AGE_DAYS', 7) },

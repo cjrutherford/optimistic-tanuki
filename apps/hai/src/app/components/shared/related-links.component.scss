@@ -1,0 +1,29 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.related-links {
+  margin: section.space(1.5) 0 0;
+}
+
+.related-prompt {
+  margin: 0;
+}
+
+.related-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: section.space(0.75) section.space(1.75);
+  margin: section.space(0.5) 0 0;
+}
+
+.related-actions a {
+  font-weight: var(--hai-weight-strong);
+  color: var(--primary-text, var(--primary));
+}
+
+.related-actions a::after {
+  content: ' →';
+}

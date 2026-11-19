@@ -24,6 +24,12 @@ function lifecyclePhases({
   add('permissions-seed', ['permissions-seed'], {
     completion: 'completed-successfully',
   });
+  // The Daylight towns must exist before civic-briefing boots: its boot-time
+  // sync (and civic-contributions' localities, fed from it) read them from
+  // social's database.
+  add('social-locality-seed', ['social-locality-seed'], {
+    completion: 'completed-successfully',
+  });
   add(
     'dependencies',
     [...backendDependencies].filter(
@@ -42,9 +48,9 @@ function lifecyclePhases({
         ].includes(service)
     )
   );
-  // The local-hub suite's fixtures: the Daylight towns' pages, and their
-  // published briefings, written once the databases are migrated.
-  add('local-hub-seed', ['social-locality-seed', 'civic-briefing-seed'], {
+  // The local-hub suite's published briefings, written once the towns are in
+  // the database and civic-briefing is up.
+  add('local-hub-seed', ['civic-briefing-seed'], {
     completion: 'completed-successfully',
   });
   // store-seed runs against an already-started store, so it needs its own

@@ -1,0 +1,55 @@
+<section class="sources-note" aria-labelledby="sources-note-title">
+  <h2 id="sources-note-title">{{ headline() }}</h2>
+  <p class="explain">
+    Daylight couldn't find public sources for {{ name() }}. You can help: ask us
+    to look again, point us to sources you know of, or partner with us.
+  </p>
+
+  <div class="actions">
+    <button
+      type="button"
+      class="action primary"
+      [attr.aria-expanded]="formOpen()"
+      (click)="openRequest()"
+    >
+      Request sources
+    </button>
+    <a class="action" routerLink="/contact" [queryParams]="{ town: name() }"
+      >Partner with us</a
+    >
+    <a
+      class="action"
+      routerLink="/contribute"
+      [queryParams]="{ returnUrl: returnUrl() }"
+      >Post sources</a
+    >
+  </div>
+
+  @if (formOpen()) {
+  <form class="request-form" (submit)="$event.preventDefault(); submit()">
+    <label class="field">
+      <span
+        >Anything we should know? <span class="optional">(optional)</span></span
+      >
+      <textarea
+        rows="3"
+        [attr.maxlength]="noteMax"
+        [value]="note()"
+        (input)="setNote($event)"
+        aria-describedby="sources-note-count"
+      ></textarea>
+    </label>
+    <p id="sources-note-count" class="count">
+      {{ note().length }} / {{ noteMax }} characters
+    </p>
+    <button type="submit" class="action primary" [disabled]="pending()">
+      {{ pending() ? 'Sending…' : 'Send request' }}
+    </button>
+  </form>
+  }
+
+  <p class="error" role="alert">{{ error() }}</p>
+  <p class="confirmation" role="status" aria-live="polite">
+    {{ confirmation() }}
+  </p>
+</section>

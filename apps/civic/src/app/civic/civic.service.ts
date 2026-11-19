@@ -35,6 +35,7 @@ import { CivicAgenda } from '../entities/civic-agenda.entity';
 import { CivicAgendaItem } from '../entities/civic-agenda-item.entity';
 import { TipProject } from '../entities/tip-project.entity';
 import { EmergencyBroadcast } from '../entities/emergency-broadcast.entity';
+import { CivicOfficialsService } from './civic-officials.service';
 import {
   agendaHtmlToText,
   discoverAgendaLinks,
@@ -301,6 +302,7 @@ export class CivicService implements OnModuleInit, OnModuleDestroy {
   private readonly fetcher: NonNullable<CivicServiceOptions['fetcher']>;
   private readonly agendaPollIntervalMs: number;
   private readonly agendaSourceMaxItems: number;
+  private readonly officials: CivicOfficialsService;
   private pollTimer?: ReturnType<typeof setInterval>;
   private activePoll?: Promise<{
     discovered: number;
@@ -323,6 +325,7 @@ export class CivicService implements OnModuleInit, OnModuleDestroy {
       options?.agendaPollIntervalMs ?? 6 * 60 * 60 * 1000
     );
     this.agendaSourceMaxItems = options?.agendaSourceMaxItems ?? 5;
+    this.officials = new CivicOfficialsService(dataSource);
   }
 
   onModuleInit(): void {
@@ -420,8 +423,19 @@ export class CivicService implements OnModuleInit, OnModuleDestroy {
     if (items.length === 0) {
       this.fail(400, 'No numbered agenda items were found in the document.');
     }
-    return (await this.persistAgendaItems(tenant, input, items, input.fileName))
-      .agenda;
+    const { agenda } = await this.persistAgendaItems(
+      tenant,
+      input,
+      items,
+      input.fileName
+    );
+    await this.officials.record(
+      tenant,
+      agenda.id,
+      text,
+      new Date(agenda.meetingDate)
+    );
+    return agenda;
   }
 
   async importAgendaSource(
@@ -867,13 +881,21 @@ export class CivicService implements OnModuleInit, OnModuleDestroy {
     ].join(':');
     const identityHash = createHash('sha256').update(identity).digest('hex');
     const contentHash = createHash('sha256').update(bytes).digest('hex');
-    return this.persistAgendaItems(
-      this.requireTenantId(tenantId),
+    const tenant = this.requireTenantId(tenantId);
+    const imported = await this.persistAgendaItems(
+      tenant,
       metadata,
       items,
       fileName,
       { identityHash, contentHash }
     );
+    await this.officials.record(
+      tenant,
+      imported.agenda.id,
+      text,
+      new Date(imported.agenda.meetingDate)
+    );
+    return imported;
   }
 
   private async persistAgendaItems(

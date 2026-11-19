@@ -5,13 +5,23 @@
     <p class="kicker">Daylight</p>
     <h1>{{ city.name }}</h1>
   </header>
-  @if (city.localitySlug) {
+  @if (city.localitySlug) { @if (sourcesNote(); as status) {
+  <app-town-sources-note
+    [citySlug]="slug()"
+    [localitySlug]="city.localitySlug"
+    [name]="city.name"
+    [status]="status"
+  />
+  } @else {
   <app-city-briefing
     [citySlug]="slug()"
     [localitySlug]="city.localitySlug"
     [cityName]="city.name"
     [date]="date()"
+    [hidden]="holdAbsentNotice()"
+    (absent)="showNote()"
   />
+  }
   <p class="briefing-actions">
     <a [routerLink]="['/city', slug(), 'report']"
       >Report something from {{ city.name }}</a

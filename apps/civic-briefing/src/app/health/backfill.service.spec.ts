@@ -29,12 +29,12 @@ function fakeSchedule(): FakeSchedule {
 }
 
 describe('BackfillService', () => {
-  it('says so when no town registry is configured', () => {
+  it('says so when no schedule is attached', () => {
     const service = new BackfillService();
     const status = service.start();
     expect(status.configured).toBe(false);
     expect(status.running).toBe(false);
-    expect(status.problem).toContain('CIVIC_LOCALITIES_DIR');
+    expect(status.problem).toContain('not attached');
   });
 
   it('pulls then backfills each town in turn, one backfill at a time', async () => {

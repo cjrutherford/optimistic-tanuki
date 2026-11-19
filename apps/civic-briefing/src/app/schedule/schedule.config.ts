@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { weekdayNumber } from './plan';
 
 /**
@@ -11,12 +11,21 @@ import { weekdayNumber } from './plan';
 export interface ScheduleConfig {
   /** The artifact root: briefings, stories, blobs. */
   artifacts: string;
-  /** The YAML locality registry (CIVIC_LOCALITIES_DIR); null means the schedule does not start. */
-  localitiesDir: string | null;
-  /** Sources the sourcing engine adopted, one file per locality, and its decision log. */
-  discoveredDir: string;
-  discoveryLog: string;
-  /** Where the official directories (the .gov list, Wikidata answers) are cached. */
+  /**
+   * Where the registry YAML is generated from the database: `generated/localities`
+   * beside the artifact root's data directory (`data/live/out` -> `data/generated/localities`).
+   * Disposable and rebuilt on every refresh; not deployment config.
+   */
+  generatedLocalitiesDir: string;
+  /** Kill switch (DAYLIGHT_SCHEDULE_ENABLED, default true): false means no ticks, no pipeline runs. */
+  scheduleEnabled: boolean;
+  /** Most towns one tick runs (PIPELINE_MAX_TOWNS_PER_TICK), least recently run first. */
+  maxTownsPerTick: number;
+  /** Towns run at once within a tick (PIPELINE_CONCURRENCY). */
+  concurrency: number;
+  /** Most towns one tick starts source discovery for (SOURCING_MAX_PER_TICK). */
+  sourcingMaxPerTick: number;
+  /** Where the official directories (the .gov list, Wikidata answers) are cached; regenerable, so losing it only costs a refetch. */
   directoriesDir: string;
   /** Community snapshots to quote from; unset means briefings carry no community material. */
   communityDirectory: string | null;
@@ -89,13 +98,19 @@ export function loadScheduleConfig(
     throw new Error(`PIPELINE_DAILY_AT must be HH:MM, got "${dailyAt}"`);
   return {
     artifacts: path(env['PIPELINE_ARTIFACTS'] ?? 'data/live/out'),
-    localitiesDir: env['CIVIC_LOCALITIES_DIR']
-      ? path(env['CIVIC_LOCALITIES_DIR'])
-      : null,
-    discoveredDir: path(
-      env['CIVIC_DISCOVERED_SOURCES'] ?? 'data/sources/discovered'
+    generatedLocalitiesDir: join(
+      path(env['PIPELINE_ARTIFACTS'] ?? 'data/live/out'),
+      '..',
+      '..',
+      'generated',
+      'localities'
     ),
-    discoveryLog: path(env['SOURCING_LOG'] ?? 'data/sources/decisions.jsonl'),
+    scheduleEnabled: !['false', '0', 'no', 'off'].includes(
+      (env['DAYLIGHT_SCHEDULE_ENABLED'] ?? 'true').trim().toLowerCase()
+    ),
+    maxTownsPerTick: positive(env, 'PIPELINE_MAX_TOWNS_PER_TICK', 6),
+    concurrency: Math.floor(positive(env, 'PIPELINE_CONCURRENCY', 1)),
+    sourcingMaxPerTick: positive(env, 'SOURCING_MAX_PER_TICK', 2),
     directoriesDir: path(
       env['SOURCING_DIRECTORIES'] ?? 'data/sources/directories'
     ),
