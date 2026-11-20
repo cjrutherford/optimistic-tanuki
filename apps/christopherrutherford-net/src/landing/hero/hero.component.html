@@ -1,29 +1,63 @@
-<section class="hero-shell" aria-label="Christopher Rutherford introduction">
-  <div class="hero-stage">
-    <span class="hero-kicker"
-      >Independent systems architect and product engineer</span
-    >
-    <lib-hero
-      [title]="'Christopher Rutherford'"
-      [subtitle]="
-        'I design and build dependable software systems, from product architecture through the details people use every day.'
-      "
-      [description]="
-        'I work with teams to turn complex product and platform problems into clear architecture, useful interfaces, and software that stays understandable as it grows.'
-      "
-      [buttonText]="'Start a project'"
-      [imageUrl]="'assets/images/landing/hero-background.png'"
-    ></lib-hero>
+<otui-public-landing-hero
+  class="hero"
+  headingId="hero-title"
+  [eyebrow]="'Full-stack engineer · platform and Linux systems'"
+  [heading]="'Christopher Rutherford'"
+  [description]="
+    'I build and operate the software behind products: Angular and NestJS applications, the services and data they depend on, and the Linux infrastructure that runs them.'
+  "
+  [primaryAction]="primaryAction"
+  [secondaryAction]="secondaryAction"
+>
+  <div slot="body" class="hero-body">
+    <p class="hero-note">
+      Seven-plus years of software engineering, plus five years of earlier
+      enterprise database and systems work.
+    </p>
+
+    <ul class="hero-proof-strip" aria-label="Core technologies">
+      @for (item of proof; track item) {
+      <li>
+        <otui-badge tone="brand" emphasis="soft">{{ item }}</otui-badge>
+      </li>
+      }
+    </ul>
+
+    <p class="hero-availability">
+      <otui-badge tone="brand" emphasis="solid">Availability</otui-badge>
+      <span>{{ profile.location }} · remote or hybrid</span>
+    </p>
   </div>
 
-  <div class="hero-actions">
-    <a class="hero-cta primary" href="#contact">Start a project</a>
-    <a class="hero-cta secondary" href="#work">Explore work</a>
-  </div>
-
-  <div class="hero-proof-strip">
-    <span>Customer-facing apps</span>
-    <span>Platform and workflow design</span>
-    <span>Architecture and implementation</span>
-  </div>
-</section>
+  <otui-card slot="visual" class="hero-panel">
+    <div class="hero-panel-body">
+      <p class="hero-panel-label">At a glance</p>
+      <dl class="hero-panel-list">
+        <div>
+          <dt>Focus</dt>
+          <dd>
+            Distributed TypeScript platforms, native media clients, and Linux
+            infrastructure
+          </dd>
+        </div>
+        <div>
+          <dt>Looking for</dt>
+          <dd>Full-stack, platform, and implementation roles</dd>
+        </div>
+        <div>
+          <dt>Client work</dt>
+          <dd>{{ profile.b2bAvailability }}</dd>
+        </div>
+      </dl>
+      <div class="hero-panel-links">
+        <a [href]="profile.links.github" rel="me noopener" target="_blank"
+          >GitHub</a
+        >
+        <a [href]="profile.links.linkedin" rel="me noopener" target="_blank"
+          >LinkedIn</a
+        >
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+  </otui-card>
+</otui-public-landing-hero>

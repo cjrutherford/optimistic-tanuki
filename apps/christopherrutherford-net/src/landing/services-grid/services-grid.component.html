@@ -1,18 +1,17 @@
-<div class="section-heading-tile">
-  <span class="section-kicker">What I offer</span>
-  <otui-heading
-    [color]="'var(--foreground)'"
-    [text]="
-      'I help teams sort out product, platform, and delivery work that needs a clearer path'
-    "
-    [size]="'2em'"
-  ></otui-heading>
+<otui-section-heading
+  eyebrow="Client work"
+  heading="Available for project work"
+>
   <p class="section-intro">
-    Sometimes that means building something new. Sometimes it means untangling
-    work that has drifted, stalled, or grown harder to maintain than it should
-    be.
+    I take on product builds, platform and deployment work, and delivery
+    recovery. I work with teams in South Georgia in person where it helps, and
+    remotely everywhere else.
   </p>
-</div>
+  <p class="section-intro">
+    I do not have a client roster to point at yet. The case studies above are
+    what I have built and shipped myself.
+  </p>
+</otui-section-heading>
 <div class="projectGrid">
   @for (service of services; track service.title) {
   <lib-blog-post-card
@@ -29,3 +28,7 @@
   </lib-blog-post-card>
   }
 </div>
+<p class="engagement-note">
+  How it starts: send a short note about the problem and where you want to get
+  to. I reply with next steps and an honest read on fit.
+</p>

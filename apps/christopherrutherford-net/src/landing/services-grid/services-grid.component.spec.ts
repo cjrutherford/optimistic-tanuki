@@ -19,12 +19,14 @@ describe('ServicesGridComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('positions the services grid as outcome-driven consulting', () => {
+  it('positions the services grid as open client work', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
+    expect(compiled.textContent).toContain('Available for project work');
     expect(compiled.textContent).toContain(
-      'I help teams sort out product, platform, and delivery work that needs a clearer path'
+      'I take on product builds, platform and deployment work'
     );
+    expect(compiled.textContent).toContain('How it starts');
     expect(compiled.textContent).toContain('Explore work');
     expect(compiled.textContent).toContain('Start a project');
   });

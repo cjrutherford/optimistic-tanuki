@@ -1,0 +1,72 @@
+<section class="hiring" aria-label="Hiring">
+  <otui-section-heading
+    eyebrow="Hiring"
+    heading="Open to full-stack, platform, and implementation roles"
+  >
+    <p class="section-intro">
+      I split my time between Georgia and New York, so I am set up to work
+      remotely with teams in either place. I am looking for a W-2 role where I
+      own both the application and the system underneath it.
+    </p>
+  </otui-section-heading>
+
+  <div class="hiring-layout">
+    <ol class="hiring-highlights" aria-label="Recent engineering work">
+      @for (highlight of highlights; track highlight.title) {
+      <li class="hiring-highlight">
+        <h3>{{ highlight.title }}</h3>
+        <p>{{ highlight.detail }}</p>
+      </li>
+      }
+    </ol>
+
+    <otui-card class="hiring-card" tone="neutral" emphasis="outline">
+      <p class="hiring-label">Roles</p>
+      <ul class="hiring-targets">
+        @for (target of targets; track target) {
+        <li>{{ target }}</li>
+        }
+      </ul>
+
+      <p class="hiring-label">Location</p>
+      <p class="hiring-fact">{{ profile.location }}</p>
+      <p class="hiring-note">Remote or hybrid, from either state.</p>
+
+      <p class="hiring-label">Links</p>
+      <div class="hiring-links">
+        @if (profile.links.resume) {
+        <a
+          class="hiring-link primary"
+          [href]="profile.links.resume"
+          target="_blank"
+          rel="noopener"
+          type="application/pdf"
+          >Resume</a
+        >
+        } @else {
+        <span class="hiring-pending">Resume available on request</span>
+        }
+        <a
+          class="hiring-link"
+          [href]="profile.links.github"
+          rel="me noopener"
+          target="_blank"
+          >GitHub</a
+        >
+        <a
+          class="hiring-link"
+          [href]="profile.links.linkedin"
+          rel="me noopener"
+          target="_blank"
+          >LinkedIn</a
+        >
+        @if (profile.links.email) {
+        <a class="hiring-link" [href]="'mailto:' + profile.links.email"
+          >Email</a
+        >
+        }
+        <a class="hiring-link" href="#contact">Contact form</a>
+      </div>
+    </otui-card>
+  </div>
+</section>

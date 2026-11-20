@@ -1,7 +1,10 @@
 import { Component, inject } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-import { CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
+import {
+  CardComponent,
+  SectionHeadingComponent,
+} from '@optimistic-tanuki/common-ui';
 import { AppRegistration } from '@optimistic-tanuki/app-registry-backend';
 import { AppRegistryService } from '@optimistic-tanuki/app-registry';
 import { map } from 'rxjs';
@@ -31,7 +34,7 @@ const REPOSITORY_ROOT =
 
 @Component({
   selector: 'app-project-grid',
-  imports: [CommonModule, HeadingComponent, CardComponent],
+  imports: [CommonModule, SectionHeadingComponent, CardComponent],
   templateUrl: './project-grid.component.html',
   styleUrl: './project-grid.component.scss',
 })

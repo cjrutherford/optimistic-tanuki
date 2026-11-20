@@ -1,17 +1,20 @@
 import { Component, inject } from '@angular/core';
 
 import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
-import { HeadingComponent } from '@optimistic-tanuki/common-ui';
+import { SectionHeadingComponent } from '@optimistic-tanuki/common-ui';
 import { ContactService } from '../../app/contact.service';
+import { PROFILE } from '../profile.data';
 
 @Component({
   selector: 'app-contact',
   providers: [ContactService],
-  imports: [ContactFormComponent, HeadingComponent],
+  imports: [ContactFormComponent, SectionHeadingComponent],
   templateUrl: './contact.component.html',
   styleUrl: './contact.component.scss',
 })
 export class ContactComponent {
+  readonly profile = PROFILE;
+
   private contactService = inject(ContactService);
 
   subjects = [

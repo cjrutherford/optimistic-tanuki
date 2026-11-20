@@ -1,16 +1,17 @@
-<div class="contact-heading">
-  <span class="section-kicker">Contact</span>
-  <otui-heading
-    [color]="'var(--foreground)'"
-    [text]="'If the work needs another set of senior hands, reach out'"
-    [size]="'2em'"
-  ></otui-heading>
+<otui-section-heading
+  eyebrow="Contact"
+  heading="If the work needs another set of senior hands, reach out"
+>
   <p class="section-intro">
     If you have a product that needs building, a system that needs cleanup, or
     delivery work that needs a steadier shape, send a note with what is going on
     and where you want to get it.
   </p>
-</div>
+  <p class="section-intro">
+    Prefer email?
+    <a [href]="'mailto:' + profile.links.email">{{ profile.links.email }}</a>
+  </p>
+</otui-section-heading>
 <lib-contact-form
   [buttonText]="'Send message'"
   [subjects]="subjects"

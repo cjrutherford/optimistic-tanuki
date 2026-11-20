@@ -41,13 +41,18 @@ startNodeRuntimeMonitoring({
  */
 
 /**
- * Serve static files from /browser
+ * Serve static files from /browser.
+ *
+ * `index: false` keeps the static middleware from answering `/` with the
+ * client-only shell (`index.csr.html`). The shell leaves `<app-root>` empty,
+ * so crawlers and link previews see no content; falling through to the Angular
+ * engine renders the page on the server instead.
  */
 app.use(
   express.static(browserDistFolder, {
     maxAge: '1y',
     redirect: false,
-    index: 'index.csr.html',
+    index: false,
   })
 );
 

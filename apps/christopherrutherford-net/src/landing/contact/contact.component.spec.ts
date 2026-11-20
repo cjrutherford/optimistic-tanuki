@@ -35,4 +35,14 @@ describe('ContactComponent', () => {
       expect.arrayContaining(['Project Inquiry', 'Consulting', 'Collaboration'])
     );
   });
+
+  it('publishes the owner email alongside the form', () => {
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(
+      element.querySelector<HTMLAnchorElement>(
+        'a[href="mailto:chris@christopherrutherford.net"]'
+      )
+    ).not.toBeNull();
+  });
 });

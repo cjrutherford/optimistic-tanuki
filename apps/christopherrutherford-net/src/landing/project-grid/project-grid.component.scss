@@ -6,25 +6,55 @@
   padding: 0;
 }
 
+.platform-index {
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid
+    color-mix(in srgb, var(--accent) 16%, var(--border, transparent) 84%);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--background) 72%, transparent);
+
+  > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 0.15rem;
+    color: var(--foreground);
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 0.5rem;
+    }
+  }
+
+  &[open] > summary {
+    margin-bottom: 1.2rem;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--accent) 14%, var(--border, transparent) 86%);
+  }
+}
+
+.platform-index-hint {
+  color: var(--primary-text, var(--primary));
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 :host ::ng-deep .projectGrid > .portfolio-card:last-child {
   grid-column: 1 / -1;
   justify-self: center;
   width: min(100%, 42rem);
-}
-
-.section-heading-tile {
-  display: block;
-  margin-bottom: 1rem;
-}
-
-.section-kicker {
-  display: block;
-  margin-bottom: 0.75rem;
-  color: var(--primary-text, var(--primary));
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 .section-intro {

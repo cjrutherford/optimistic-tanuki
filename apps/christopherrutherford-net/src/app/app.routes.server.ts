@@ -18,7 +18,10 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Client,
   },
   {
+    // Render on the server for every request. The marketing page is the
+    // crawler- and link-preview-facing surface, so it must return real HTML
+    // rather than the client-only shell.
     path: '**',
-    renderMode: RenderMode.Prerender,
+    renderMode: RenderMode.Server,
   },
 ];
