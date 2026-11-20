@@ -5,8 +5,8 @@ set -euo pipefail
 export LOCAL_UID="${LOCAL_UID:-$(id -u)}"
 export LOCAL_GID="${LOCAL_GID:-$(id -g)}"
 
-CIVIC_SERVICES=$(
-    clamav civic civic-briefing civic-contributions
+CIVIC_SERVICES=(
+    civic civic-briefing civic-contributions
 )
 
 DRY_RUN=0
@@ -301,8 +301,10 @@ for civic_service in "${CIVIC_SERVICES[@]}"; do
     if selected_service "$civic_service" && ! external_service "$civic_service"; then
         run_phase "Phase 7: Civic service $civic_service" "$PHASE_DELAY" "$civic_service"
     fi
-run_phase "Phase 7: Civic services" "$PHASE_DELAY" "${CIVIC_SERVICES[@]}"
 done
+
+run_phase "Phase 7: ClamAV" "$PHASE_DELAY" clamav
+
 run_phase "Phase 8: Gateway" "$PHASE_DELAY" gateway
 
 run_phase "Phase 9: Client interfaces" 0 "${CLIENT_SERVICES[@]}"
