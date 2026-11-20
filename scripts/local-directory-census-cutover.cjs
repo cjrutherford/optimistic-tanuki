@@ -56,6 +56,39 @@ async function retireOldCohort(q, { oldPolicyId, newPolicyId, held }) {
   };
 }
 
+/**
+ * Revoke rows of other cohorts that duplicate a new-cohort row (same town, name and point), so the new
+ * cohort's row is the only active match. Rows with no counterpart in the new cohort stay active.
+ */
+async function retireSupersededDuplicates(q, { newPolicyId, held }) {
+  const heldIds = [...held];
+  const revoked = await q.query(
+    `INSERT INTO directory_overture_private_row_revocation ("scanId","sourceFileRowNumber")
+     SELECT o."scanId",o."sourceFileRowNumber"
+       FROM directory_overture_private_row o
+       JOIN directory_overture_private_membership om ON om."scanId"=o."scanId" AND om."policyId"<>$1
+       JOIN directory_overture_private_policy op ON op."policyId"=om."policyId" AND op.revoked=false
+       JOIN directory_overture_private_completion oc ON oc."scanId"=o."scanId"
+      WHERE o."regionId" IS NOT NULL AND o."regionId"<>ALL($2::text[])
+        AND NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=o."scanId")
+        AND NOT EXISTS (SELECT 1 FROM directory_overture_private_row_revocation x WHERE x."scanId"=o."scanId" AND x."sourceFileRowNumber"=o."sourceFileRowNumber")
+        AND EXISTS (
+          SELECT 1 FROM directory_overture_private_row n
+            JOIN directory_overture_private_membership nm ON nm."scanId"=n."scanId" AND nm."policyId"=$1
+           WHERE n."regionId"=o."regionId"
+             AND lower(btrim(n.listing->>'name'))=lower(btrim(o.listing->>'name'))
+             AND n.listing->'location'->'coordinates'=o.listing->'location'->'coordinates'
+             AND NOT EXISTS (SELECT 1 FROM directory_overture_private_row_revocation x WHERE x."scanId"=n."scanId" AND x."sourceFileRowNumber"=n."sourceFileRowNumber"))
+     ON CONFLICT DO NOTHING RETURNING "scanId","sourceFileRowNumber"`,
+    [newPolicyId, heldIds]
+  );
+  await q.query(
+    `DELETE FROM directory_reviewed_spatial s USING directory_overture_private_row_revocation x
+      WHERE x."scanId"=s."scanId" AND x."sourceFileRowNumber"=s."sourceFileRowNumber"`
+  );
+  return { revoked: revoked.length };
+}
+
 /** Names holding more than one non-revoked private row at one point within the census cohorts (the invariant after cutover). */
 async function duplicateActiveRows(q, policyIds) {
   return q.query(
@@ -106,6 +139,32 @@ async function run(mode) {
     }
     return;
   }
+  if (mode === '--retire-duplicates-local') {
+    const newPolicyId = process.env.CENSUS_NEW_POLICY_ID;
+    if (!/^[a-f0-9]{64}$/.test(newPolicyId || ''))
+      throw Error('CENSUS_NEW_POLICY_ID (64 hex) is required');
+    const live = new DataSource({
+      type: 'postgres',
+      url: process.env.LOCAL_DIRECTORY_DATABASE_URL,
+    });
+    await live.initialize();
+    const qr = live.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+      const result = await retireSupersededDuplicates(qr, {
+        newPolicyId,
+        held: HELD_REGIONS,
+      });
+      await qr.commitTransaction();
+      console.log(JSON.stringify(result));
+    } finally {
+      if (qr.isTransactionActive) await qr.rollbackTransaction();
+      await qr.release();
+      await live.destroy();
+    }
+    return;
+  }
   await append('--apply-local', {
     skipRegions: HELD_REGIONS,
     beforeCommit: async (lr, { policyId }) => {
@@ -124,7 +183,12 @@ async function run(mode) {
   });
 }
 
-module.exports = { retireOldCohort, duplicateActiveRows, HELD_REGIONS };
+module.exports = {
+  retireOldCohort,
+  retireSupersededDuplicates,
+  duplicateActiveRows,
+  HELD_REGIONS,
+};
 if (require.main === module)
   run(process.argv[2] || '--inspect-local').catch((error) => {
     console.error(error.message);
