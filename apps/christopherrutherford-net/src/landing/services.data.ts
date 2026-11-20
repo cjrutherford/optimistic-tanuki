@@ -43,4 +43,15 @@ export const SERVICE_ENTRIES: ServiceOffer[] = [
       'A release the team can run',
     ],
   },
+  {
+    id: 'direction',
+    title: 'Set the technical direction',
+    summary:
+      'The team can build, but the boundaries, data model, and delivery path keep getting re-litigated. I make the decisions explicit and write them down.',
+    deliverables: [
+      'Architecture and service boundaries',
+      'Sequencing and trade-off notes',
+      'Decision records the team can follow',
+    ],
+  },
 ];
