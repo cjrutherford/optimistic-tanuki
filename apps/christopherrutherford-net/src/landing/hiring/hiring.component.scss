@@ -5,7 +5,7 @@
 .section-intro {
   max-width: 52rem;
   margin: 0.85rem 0 0;
-  line-height: 1.65;
+  line-height: var(--line-height, 1.65);
   color: var(--muted-foreground, var(--foreground));
 }
 
@@ -32,7 +32,7 @@
   flex-direction: column;
   gap: 0.45rem;
   padding: 1.1rem 1.15rem 1.1rem 3.1rem;
-  border-radius: 0.9rem;
+  border-radius: var(--border-radius-md, 0.9rem);
   border: 1px solid
     color-mix(in srgb, var(--accent) 16%, var(--border, transparent) 84%);
   background: color-mix(in srgb, var(--background) 70%, transparent);
@@ -44,21 +44,21 @@
     top: 1.1rem;
     left: 1.15rem;
     color: color-mix(in srgb, var(--accent) 70%, var(--foreground) 30%);
-    font-size: 0.82rem;
+    font-size: var(--font-size-sm, 0.82rem);
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: var(--personality-label-letter-spacing, 0.08em);
   }
 
   h3 {
     margin: 0;
-    font-size: 1rem;
-    line-height: 1.25;
+    font-size: var(--type-body, 1rem);
+    line-height: var(--line-height, 1.25);
     color: var(--foreground);
   }
 
   p {
     margin: 0;
-    line-height: 1.55;
+    line-height: var(--line-height, 1.55);
     color: var(--muted-foreground, var(--foreground));
   }
 }
@@ -70,9 +70,9 @@
 .hiring-label {
   margin: 0.85rem 0 0.15rem;
   color: var(--primary-text, var(--primary));
-  font-size: 0.72rem;
+  font-size: var(--type-small, 0.72rem);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--personality-label-letter-spacing, 0.12em);
   text-transform: uppercase;
 
   &:first-child {
@@ -91,7 +91,7 @@
   li {
     position: relative;
     padding-left: 1rem;
-    line-height: 1.45;
+    line-height: var(--line-height, 1.45);
     color: var(--foreground);
 
     &::before {
@@ -101,7 +101,7 @@
       left: 0;
       width: 0.4rem;
       height: 0.4rem;
-      border-radius: 999px;
+      border-radius: 9999px;
       background: var(--accent);
     }
   }
@@ -116,7 +116,7 @@
 .hiring-note {
   margin: 0;
   color: var(--muted-foreground, var(--foreground));
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm, 0.9rem);
 }
 
 .hiring-links {
@@ -132,11 +132,11 @@
   justify-content: center;
   min-height: 2.5rem;
   padding: 0.55rem 0.95rem;
-  border-radius: 999px;
+  border-radius: 9999px;
   border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
   background: color-mix(in srgb, var(--background) 82%, transparent);
   color: var(--foreground);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm, 0.9rem);
   text-decoration: none;
   transition: transform 160ms ease, border-color 160ms ease;
 
@@ -165,10 +165,10 @@
   justify-content: center;
   min-height: 2.5rem;
   padding: 0.55rem 0.95rem;
-  border-radius: 999px;
+  border-radius: 9999px;
   border: 1px dashed color-mix(in srgb, var(--foreground) 26%, transparent);
   color: var(--muted-foreground, var(--foreground));
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm, 0.9rem);
 }
 
 @media (max-width: 1024px) {

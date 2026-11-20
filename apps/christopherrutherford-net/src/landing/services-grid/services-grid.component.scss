@@ -18,7 +18,7 @@
 .section-intro {
   max-width: 50rem;
   margin: 0.85rem 0 0;
-  line-height: 1.65;
+  line-height: var(--line-height, 1.65);
   color: var(--muted-foreground, var(--foreground));
 }
 
@@ -29,5 +29,5 @@
   border-top: 1px solid
     color-mix(in srgb, var(--accent) 16%, var(--border, transparent) 84%);
   color: var(--muted-foreground, var(--foreground));
-  line-height: 1.65;
+  line-height: var(--line-height, 1.65);
 }
