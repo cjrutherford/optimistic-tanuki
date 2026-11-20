@@ -7,6 +7,8 @@ import { ProjectGridComponent } from './project-grid/project-grid.component';
 import { ServicesGridComponent } from './services-grid/services-grid.component';
 import { ContactComponent } from './contact/contact.component';
 import { SystemsLabComponent } from './systems-lab/systems-lab.component';
+import { HiringComponent } from './hiring/hiring.component';
+import { CaseStudiesComponent } from './case-studies/case-studies.component';
 
 @Component({
   selector: 'app-landing',
@@ -18,6 +20,8 @@ import { SystemsLabComponent } from './systems-lab/systems-lab.component';
     SystemsLabComponent,
     ServicesGridComponent,
     ContactComponent,
+    HiringComponent,
+    CaseStudiesComponent,
   ],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',

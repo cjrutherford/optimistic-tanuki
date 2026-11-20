@@ -19,12 +19,16 @@ describe('HeroComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('renders the editorial hero wrapper and dual CTAs', () => {
+  it('renders the shared public landing hero with dual CTAs', () => {
     const compiled = fixture.nativeElement as HTMLElement;
+    const hero = compiled.querySelector('otui-public-landing-hero.hero');
 
-    expect(compiled.querySelector('.hero-shell')).toBeTruthy();
-    expect(compiled.textContent).toContain('Start a project');
-    expect(compiled.textContent).toContain('Explore work');
+    expect(hero).toBeTruthy();
+    expect(hero?.querySelector('h1')?.textContent).toContain(
+      'Christopher Rutherford'
+    );
+    expect(compiled.textContent).toContain('View experience');
+    expect(compiled.textContent).toContain('Start a conversation');
   });
 
   it('renders the proof strip instead of the old pillar layout', () => {
@@ -34,12 +38,13 @@ describe('HeroComponent', () => {
     expect(compiled.querySelector('.hero-pillars')).toBeFalsy();
   });
 
-  it('introduces Christopher as a systems architect and product engineer', () => {
+  it('introduces Christopher as a full-stack engineer and systems administrator', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.textContent).toContain(
-      'Independent systems architect and product engineer'
+      'Full-stack engineer · platform and Linux systems'
     );
-    expect(compiled.textContent).toContain('clear architecture');
+    expect(compiled.textContent).toContain('Georgia and New York');
+    expect(compiled.textContent).toContain('remote or hybrid');
   });
 });

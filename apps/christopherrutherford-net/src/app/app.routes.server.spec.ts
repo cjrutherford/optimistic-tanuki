@@ -15,4 +15,15 @@ describe('christopherrutherford-net server routes', () => {
       /path: 'oauth\/callback\/:provider',[\s\S]*?renderMode: RenderMode\.Client/
     );
   });
+
+  it('server-renders the marketing fallback so crawlers receive real HTML', () => {
+    const source = readFileSync(
+      join(__dirname, 'app.routes.server.ts'),
+      'utf8'
+    );
+
+    expect(source).toMatch(
+      /path: '\*\*',[\s\S]*?renderMode: RenderMode\.Server/
+    );
+  });
 });

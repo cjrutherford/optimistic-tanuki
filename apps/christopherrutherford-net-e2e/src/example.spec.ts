@@ -28,11 +28,19 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       const viewport = page.locator('meta[name="viewport"]');
       expect(await viewport.count()).toBeGreaterThan(0);
       await expect(page).toHaveTitle(
-        'Christopher Rutherford | Systems Architect & Product Engineer'
+        'Christopher Rutherford | Full-Stack and Systems Engineer'
       );
       await expect(page.locator('meta[name="description"]')).toHaveAttribute(
         'content',
-        /Christopher Rutherford designs and builds dependable software systems/
+        /Full-stack engineer and systems administrator in Georgia and New York/
+      );
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+        'href',
+        'https://christopherrutherford.net/'
+      );
+      await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+        'content',
+        /\/assets\/images\/og-card\.jpg$/
       );
 
       const brandImage = page.locator('otui-app-bar img').first();
@@ -41,6 +49,53 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
         'src',
         /assets\/images\/tanuki\.png/
       );
+    });
+  });
+
+  test.describe('Hiring and case studies', () => {
+    test('presents the hiring path and links the approved profiles', async ({
+      page,
+    }) => {
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+      const hiring = page.locator('#hire');
+      await expect(hiring).toBeVisible();
+      await expect(hiring).toContainText(
+        'Open to full-stack, platform, and implementation roles'
+      );
+      await expect(hiring).toContainText('Georgia and New York');
+      await expect(
+        hiring.locator('a[href="https://github.com/cjrutherford"]')
+      ).toBeVisible();
+      await expect(
+        hiring.locator('a[href="https://www.linkedin.com/in/thecjrutherford"]')
+      ).toBeVisible();
+      await expect(
+        hiring.locator('a[href="mailto:chris@christopherrutherford.net"]')
+      ).toBeVisible();
+      await expect(
+        hiring.locator('a[href="/assets/christopher-rutherford-resume.pdf"]')
+      ).toBeVisible();
+      await expect(hiring).not.toContainText('financial');
+    });
+
+    test('renders four source-linked case studies', async ({ page }) => {
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+      await expect(page.locator('#work .case-study-card')).toHaveCount(4);
+      for (const repo of [
+        'optimistic-tanuki',
+        'statocyst',
+        'epg-manager',
+        'homestead',
+      ]) {
+        await expect(
+          page.locator(
+            `#work a[href="https://github.com/cjrutherford/${repo}"]`
+          )
+        ).toBeVisible();
+      }
+      await expect(page.locator('#work')).toContainText('TunerDaemon');
     });
   });
 
@@ -136,6 +191,10 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       await expect(
         page.locator('#systems-lab .application-index')
       ).not.toContainText(/whitebox|matrix/i);
+      await expect(page.locator('details.platform-index')).not.toHaveAttribute(
+        'open',
+        ''
+      );
       const projectGrid = page.locator('.projectGrid[role="list"]');
       await expect(projectGrid).not.toContainText('Open app');
       await expect(projectGrid.locator('a[href*="localhost"]')).toHaveCount(0);
@@ -152,6 +211,7 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       ]) {
         await page.setViewportSize({ width, height: 1080 });
         await page.goto('/', { waitUntil: 'domcontentloaded' });
+        await page.locator('.platform-index > summary').click();
         const grid = page.locator('.projectGrid[role="list"]');
         const layout = await grid.evaluate((element) => {
           const cards = Array.from(
@@ -209,6 +269,7 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       await expect(page.locator('.projectGrid [role="listitem"]')).toHaveCount(
         18
       );
+      await page.locator('.platform-index > summary').click();
 
       const metrics = await page.evaluate(() => ({
         bodyWidth: document.body.scrollWidth,

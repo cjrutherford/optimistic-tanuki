@@ -1,52 +1,57 @@
-export interface ServiceEntry {
+export interface ServiceOffer {
+  id: string;
   title: string;
-  image: string;
-  excerpt: string;
-  primaryText: string;
-  primaryHref: string;
-  secondaryText: string;
-  secondaryHref: string;
+  summary: string;
+  deliverables: string[];
 }
 
-export const SERVICE_ENTRIES: ServiceEntry[] = [
+/**
+ * Client-facing offers. These are the shapes of work the case studies
+ * demonstrate; keep them scoped to what the repositories and releases support.
+ */
+export const SERVICE_ENTRIES: ServiceOffer[] = [
   {
-    title: 'Product and application delivery',
-    image: 'assets/images/custom-app.png',
-    excerpt:
-      'Build customer-facing software that fits the product, the business behind it, and the team that has to keep shipping it.',
-    primaryText: 'Explore work',
-    primaryHref: '#work',
-    secondaryText: 'Start a project',
-    secondaryHref: '#contact',
+    id: 'build',
+    title: 'Build the product',
+    summary:
+      'A customer-facing application, an internal tool, or a workflow that has to exist. I take it from data model to deployed interface.',
+    deliverables: [
+      'Angular or React interface',
+      'Node, NestJS, or Go service and data model',
+      'Docker and CI delivery',
+    ],
   },
   {
-    title: 'Technical direction and delivery recovery',
-    image: 'assets/images/consulting.png',
-    excerpt:
-      'Step into work that has stalled or lost shape, clarify the path, and help the team get back to shipping with less thrash.',
-    primaryText: 'Explore work',
-    primaryHref: '#work',
-    secondaryText: 'Start a project',
-    secondaryHref: '#contact',
+    id: 'untangle',
+    title: 'Untangle the platform',
+    summary:
+      'Releases are slow, the services have drifted, and nobody wants to touch the deploy. I map the system, then simplify it in steps that ship.',
+    deliverables: [
+      'Service boundaries and shared contracts',
+      'CI/CD and environment cleanup',
+      'Observability, backups, and runbooks',
+    ],
   },
   {
-    title: 'Platform and systems architecture',
-    image: 'assets/images/private-cloud.png',
-    excerpt:
-      'Make application and infrastructure decisions that hold up in practice and do not leave the team stuck with a confusing system later.',
-    primaryText: 'Explore work',
-    primaryHref: '#work',
-    secondaryText: 'Start a project',
-    secondaryHref: '#contact',
+    id: 'recover',
+    title: 'Recover the delivery',
+    summary:
+      'A project has stalled or outgrown its owner. I audit the code and the plan, then rebuild a path to a release the team can repeat.',
+    deliverables: [
+      'Audit with a sequenced plan',
+      'Tests around the risky parts',
+      'A release the team can run',
+    ],
   },
   {
-    title: 'Workflow design for real operations',
-    image: 'assets/images/process-analytics.png',
-    excerpt:
-      'Design internal and customer-facing workflows around how people actually work instead of forcing everyone through generic process theater.',
-    primaryText: 'Explore work',
-    primaryHref: '#work',
-    secondaryText: 'Start a project',
-    secondaryHref: '#contact',
+    id: 'direction',
+    title: 'Set the technical direction',
+    summary:
+      'The team can build, but the boundaries, data model, and delivery path keep getting re-litigated. I make the decisions explicit and write them down.',
+    deliverables: [
+      'Architecture and service boundaries',
+      'Sequencing and trade-off notes',
+      'Decision records the team can follow',
+    ],
   },
 ];

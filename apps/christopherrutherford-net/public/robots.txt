@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# The forum is an authenticated product surface, not marketing content.
+Disallow: /forum
+Disallow: /oauth/
+
+Sitemap: https://christopherrutherford.net/sitemap.xml

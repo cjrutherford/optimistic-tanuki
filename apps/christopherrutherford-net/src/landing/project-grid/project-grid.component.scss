@@ -6,31 +6,61 @@
   padding: 0;
 }
 
+.platform-index {
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid
+    color-mix(in srgb, var(--accent) 16%, var(--border, transparent) 84%);
+  border-radius: var(--border-radius-lg, 1rem);
+  background: color-mix(in srgb, var(--background) 72%, transparent);
+
+  > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 0.15rem;
+    color: var(--foreground);
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: var(--border-radius-md, 0.5rem);
+    }
+  }
+
+  &[open] > summary {
+    margin-bottom: 1.2rem;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--accent) 14%, var(--border, transparent) 86%);
+  }
+}
+
+.platform-index-hint {
+  color: var(--primary-text, var(--primary));
+  font-size: var(--type-small, 0.72rem);
+  font-weight: 700;
+  letter-spacing: var(--personality-label-letter-spacing, 0.12em);
+  text-transform: uppercase;
+}
+
 :host ::ng-deep .projectGrid > .portfolio-card:last-child {
   grid-column: 1 / -1;
   justify-self: center;
   width: min(100%, 42rem);
 }
 
-.section-heading-tile {
-  display: block;
-  margin-bottom: 1rem;
-}
-
-.section-kicker {
-  display: block;
-  margin-bottom: 0.75rem;
-  color: var(--primary-text, var(--primary));
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .section-intro {
   max-width: 52rem;
   margin: 0.85rem 0 0;
-  line-height: 1.65;
+  line-height: var(--line-height, 1.65);
   color: var(--muted-foreground, var(--foreground));
 }
 
@@ -88,7 +118,7 @@
   justify-content: center;
   width: 3.4rem;
   height: 3.4rem;
-  border-radius: 1rem;
+  border-radius: var(--border-radius-lg, 1rem);
   background: color-mix(in srgb, var(--card-accent) 14%, transparent);
   color: var(--card-accent);
   font-weight: 800;
@@ -102,8 +132,8 @@
   }
 
   span {
-    font-size: 1rem;
-    letter-spacing: 0.08em;
+    font-size: var(--type-body, 1rem);
+    letter-spacing: var(--personality-label-letter-spacing, 0.08em);
   }
 }
 
@@ -112,8 +142,8 @@
 
   h3 {
     margin: 0.2rem 0 0.3rem;
-    font-size: 1.25rem;
-    line-height: 1.15;
+    font-size: var(--type-h3, 1.25rem);
+    line-height: var(--line-height, 1.15);
     color: var(--foreground);
   }
 }
@@ -122,9 +152,9 @@
   display: inline-flex;
   margin-bottom: 0.25rem;
   color: color-mix(in srgb, var(--card-accent) 45%, var(--foreground));
-  font-size: 0.78rem;
+  font-size: var(--type-small, 0.78rem);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--personality-label-letter-spacing, 0.12em);
   text-transform: uppercase;
 }
 
@@ -132,7 +162,7 @@
 .portfolio-summary,
 .portfolio-proof {
   margin: 0;
-  line-height: 1.6;
+  line-height: var(--line-height, 1.6);
 }
 
 .portfolio-tagline {
@@ -157,12 +187,12 @@
   justify-self: start;
   display: inline-flex;
   padding: 0.35rem 0.65rem;
-  border-radius: 999px;
+  border-radius: 9999px;
   border: 1px solid color-mix(in srgb, var(--card-accent) 18%, transparent);
   background: color-mix(in srgb, var(--background) 78%, transparent);
   color: var(--foreground);
-  font-size: 0.76rem;
-  letter-spacing: 0.06em;
+  font-size: var(--type-small, 0.76rem);
+  letter-spacing: var(--letter-spacing, 0.06em);
   text-transform: uppercase;
 }
 
@@ -179,7 +209,7 @@
   justify-content: center;
   min-height: 2.65rem;
   padding: 0.65rem 1rem;
-  border-radius: 999px;
+  border-radius: 9999px;
   text-decoration: none;
   transition: transform 160ms ease, background 160ms ease,
     border-color 160ms ease;
