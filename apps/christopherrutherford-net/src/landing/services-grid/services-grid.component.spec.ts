@@ -1,4 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { PROFILE } from '../profile.data';
+import { SERVICE_ENTRIES } from '../services.data';
 import { ServicesGridComponent } from './services-grid.component';
 
 describe('ServicesGridComponent', () => {
@@ -19,15 +22,43 @@ describe('ServicesGridComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('positions the services grid as open client work', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
+  it('states the client offer and ties it to the case studies', () => {
+    const element = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.textContent).toContain('Available for project work');
-    expect(compiled.textContent).toContain(
-      'I take on product builds, platform and deployment work'
+    expect(element.textContent).toContain(
+      'Bring me in to build it, fix it, or get it shipping again'
     );
-    expect(compiled.textContent).toContain('How it starts');
-    expect(compiled.textContent).toContain('Explore work');
-    expect(compiled.textContent).toContain('Start a project');
+    expect(element.textContent).toContain(
+      'The case studies above are the same shape'
+    );
+    expect(element.textContent).toContain('South Georgia');
+  });
+
+  it('renders one card per offer with concrete deliverables', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const cards = element.querySelectorAll('.service-card');
+
+    expect(cards).toHaveLength(SERVICE_ENTRIES.length);
+    for (const service of SERVICE_ENTRIES) {
+      expect(element.textContent).toContain(service.title);
+      for (const item of service.deliverables) {
+        expect(element.textContent).toContain(item);
+      }
+    }
+    expect(element.querySelectorAll('.service-card img')).toHaveLength(0);
+  });
+
+  it('closes with one clear next step and the public email', () => {
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.textContent).toContain('How it starts');
+    expect(
+      element.querySelector<HTMLAnchorElement>('a[href="#contact"]')
+    ).not.toBeNull();
+    expect(
+      element.querySelector<HTMLAnchorElement>(
+        `a[href="mailto:${PROFILE.links.email}"]`
+      )
+    ).not.toBeNull();
   });
 });

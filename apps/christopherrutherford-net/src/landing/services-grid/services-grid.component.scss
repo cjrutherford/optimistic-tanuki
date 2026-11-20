@@ -1,18 +1,5 @@
-.projectGrid {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: stretch;
-  align-items: stretch;
-  gap: 1.5rem;
-  padding: 0;
-
-  > * {
-    flex: 1 1 calc(33% - 1rem);
-    box-sizing: border-box;
-    min-width: 250px;
-    max-width: 400px;
-  }
+.services {
+  display: block;
 }
 
 .section-intro {
@@ -22,12 +9,148 @@
   color: var(--muted-foreground, var(--foreground));
 }
 
-.engagement-note {
-  max-width: 52rem;
-  margin: 1.4rem 0 0;
-  padding-top: 1rem;
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 1.25rem;
+  align-items: start;
+  margin-top: 1.25rem;
+}
+
+.service-card {
+  display: block;
+}
+
+.service-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.service-index {
+  color: var(--primary-text, var(--primary));
+  font-family: var(--font-mono, monospace);
+  font-size: var(--type-small, 0.78rem);
+  font-weight: 700;
+  letter-spacing: var(--personality-label-letter-spacing, 0.12em);
+}
+
+.service-body h3 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: var(--type-h3, 1.25rem);
+  line-height: var(--heading-line-height, 1.2);
+}
+
+.service-summary {
+  margin: 0;
+  color: var(--foreground);
+  line-height: var(--line-height, 1.6);
+}
+
+.service-deliverables {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.9rem 0 0;
+  border-top: 1px solid
+    color-mix(in srgb, var(--accent) 14%, var(--border, transparent) 86%);
+  list-style: none;
+
+  li {
+    position: relative;
+    padding-left: 1rem;
+    color: var(--muted-foreground, var(--foreground));
+    font-size: var(--font-size-sm, 0.9rem);
+    line-height: var(--line-height, 1.45);
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0.55em;
+      left: 0;
+      width: 0.4rem;
+      height: 0.4rem;
+      border-radius: 9999px;
+      background: var(--accent);
+    }
+  }
+}
+
+.engagement {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.4rem;
+  padding-top: 1.1rem;
   border-top: 1px solid
     color-mix(in srgb, var(--accent) 16%, var(--border, transparent) 84%);
+}
+
+.engagement-note {
+  max-width: 46rem;
+  margin: 0;
   color: var(--muted-foreground, var(--foreground));
   line-height: var(--line-height, 1.65);
+
+  strong {
+    color: var(--foreground);
+  }
+}
+
+.services-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.services-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.7rem 1.05rem;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--background-elevated, var(--surface, var(--background)));
+  box-shadow: var(
+    --shadow-inset,
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent)
+  );
+  color: var(--primary-text, var(--primary));
+  font-size: var(--font-size-sm, 0.9rem);
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    background: color-mix(
+      in srgb,
+      var(--background-elevated, var(--surface, var(--background))) 82%,
+      var(--accent) 18%
+    );
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+  }
+}
+
+.services-cta.primary {
+  background: var(--primary);
+  box-shadow: none;
+  color: var(--on-primary, var(--primary-foreground));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .services-cta {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
 }

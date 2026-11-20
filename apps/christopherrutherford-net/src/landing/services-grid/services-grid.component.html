@@ -1,34 +1,52 @@
-<otui-section-heading
-  eyebrow="Client work"
-  heading="Available for project work"
->
-  <p class="section-intro">
-    I take on product builds, platform and deployment work, and delivery
-    recovery. I work with teams in South Georgia in person where it helps, and
-    remotely everywhere else.
-  </p>
-  <p class="section-intro">
-    I do not have a client roster to point at yet. The case studies above are
-    what I have built and shipped myself.
-  </p>
-</otui-section-heading>
-<div class="projectGrid">
-  @for (service of services; track service.title) {
-  <lib-blog-post-card
-    [title]="service.title"
-    [bannerImage]="service.image"
-    [excerpt]="service.excerpt"
-    [readMoreLink]="service.primaryHref"
-    [readMoreText]="service.primaryText"
-    [secondaryButtonText]="service.secondaryText"
-    (secondaryButtonAction)="linkTo(service.secondaryHref)"
-    [authorName]="''"
-    [publishDate]="''"
+<section class="services" aria-label="Client work">
+  <otui-section-heading
+    eyebrow="Client work"
+    heading="Bring me in to build it, fix it, or get it shipping again"
   >
-  </lib-blog-post-card>
-  }
-</div>
-<p class="engagement-note">
-  How it starts: send a short note about the problem and where you want to get
-  to. I reply with next steps and an honest read on fit.
-</p>
+    <p class="section-intro">
+      I take on scoped projects and ongoing part-time work. The case studies
+      above are the same shape: one product, built and shipped end to end.
+    </p>
+    <p class="section-intro">
+      I am in South Georgia and work remotely with teams elsewhere. In-person
+      work is possible around South Georgia when it helps.
+    </p>
+  </otui-section-heading>
+
+  <div class="service-grid" role="list">
+    @for (service of services; track service.id; let index = $index) {
+    <otui-card
+      class="service-card"
+      role="listitem"
+      tone="neutral"
+      emphasis="outline"
+    >
+      <div class="service-body">
+        <span class="service-index" aria-hidden="true">{{
+          (index + 1).toString().padStart(2, '0')
+        }}</span>
+        <h3>{{ service.title }}</h3>
+        <p class="service-summary">{{ service.summary }}</p>
+        <ul class="service-deliverables">
+          @for (item of service.deliverables; track item) {
+          <li>{{ item }}</li>
+          }
+        </ul>
+      </div>
+    </otui-card>
+    }
+  </div>
+
+  <div class="engagement">
+    <p class="engagement-note">
+      <strong>How it starts:</strong> send a short note about the problem and
+      the outcome you need. I reply with next steps and an honest read on fit.
+    </p>
+    <div class="services-actions">
+      <a class="services-cta primary" href="#contact">Start a conversation</a>
+      <a class="services-cta" [href]="'mailto:' + profile.links.email">{{
+        profile.links.email
+      }}</a>
+    </div>
+  </div>
+</section>
