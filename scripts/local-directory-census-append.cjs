@@ -6,8 +6,8 @@ const {
   OVERTURE_RIGHTS_FIELDS_LEGACY_V1,
 } = require('../apps/directory/src/overture-rights');
 const hash = (x) => crypto.createHash('sha256').update(x).digest('hex');
-async function main() {
-  const mode = process.argv.slice(2).join(' ');
+/** `hooks.beforeCommit(lr, { policyId, scans, inserted })` runs in the same live transaction, before it commits. */
+async function main(mode = process.argv.slice(2).join(' '), hooks = {}) {
   if (
     process.env.DIRECTORY_LOCAL_EVALUATION !== 'true' ||
     !['--apply-local', '--inspect-local'].includes(mode)
@@ -202,6 +202,7 @@ async function main() {
         last = rows.at(-1).sourceFileRowNumber;
         const selected = [];
         for (const row of rows) {
+          if (hooks.skipRegions?.has(row.regionId)) continue;
           const l = row.listing;
           if (
             tokens.get(row.regionId) !== l?.assignmentChangeToken ||
@@ -236,6 +237,8 @@ async function main() {
       console.log('Prepared one completed source file for local display.');
     }
     if (!inserted) throw Error('No additional listings');
+    if (hooks.beforeCommit)
+      await hooks.beforeCommit(lr, { policyId, scans, inserted });
     await lr.commitTransaction();
     await sr.commitTransaction();
     console.log(
@@ -250,7 +253,9 @@ async function main() {
     await live.destroy();
   }
 }
-main().catch((error) => {
-  console.error(error.message);
-  process.exitCode = 1;
-});
+module.exports = { main };
+if (require.main === module)
+  main().catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
