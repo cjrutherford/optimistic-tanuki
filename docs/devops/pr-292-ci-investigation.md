@@ -1,5 +1,13 @@
 # PR 292 CI investigation
 
+## PR 298 playground coverage correction
+
+The playground's Jest configuration did not collect unimported source files. Its two suites inspect Storybook files as text, so CI produced an empty coverage summary despite passing tests. The configuration now collects all playground `src` TypeScript, excluding specs and test setup; both the validation board and its story are included.
+
+On `58b3fd35` with this change, `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx test ui-playground --configuration=ci --skip-nx-cache --runInBand` passed 2 suites and 4 tests. Coverage is 0/55 statements, 0/1 branches, 0/10 functions and 0/54 lines (0% each): the component is still untested. The four reported metrics are numeric; Istanbul's unused `branchesTrue` field remains `Unknown` because its total is zero.
+
+At the PR check snapshot before this fix, coverage and quality tests passed; image checks for `ui-playground` and `admin-api` and the digital-homestead Lighthouse check were pending. Earlier image runs reported Docker Hub 429 as documented below; pending checks are not evidence of a new failure.
+
 Snapshot: 2026-11-21 19:21 UTC. Base: `47a8b0fe65ee2bbc7cf88b02300b5d1c9ddac033`; PR head: `ec1165386abe264333cf205daef9cea320549374`. The PR run checked out merge ref `f387eba67ef1e0d1486febcc67fb31625f705468`. Paginated Actions runs and check-runs were inspected for the head, merge ref and merge commit. The merge-ref check-runs endpoint returned no separate checks.
 
 [PR CI/CD run](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057) has 42 failed image jobs and a failed summary. All 42 job logs report Docker Hub HTTP 429 when pushing or checking manifests. The summary is consequential; seven downstream jobs were skipped. Quality, coverage, workflow validation, package validation, security scan and performance workflows reported success. Skipped E2E and staging gates are not evidence of success.
