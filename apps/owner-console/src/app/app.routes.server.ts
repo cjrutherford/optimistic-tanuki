@@ -15,6 +15,44 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Client,
   },
   {
+    path: 'dashboard/directory-link-review/:communityId',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'dashboard/directory-address-review/:communityId',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'dashboard/directory-identity-review/:communityId',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'dashboard/directory-listing-suppressions/:communityId',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'dashboard/directory-listing-reports/:communityId',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'dashboard/directory-duplicates/:communityId',
+    renderMode: RenderMode.Client,
+  },
+  // S7 operator pages need the browser session, so they never render on the server.
+  ...[
+    'dashboard/directory-rights',
+    'dashboard/directory-withdrawals',
+    'dashboard/directory-exports',
+    'dashboard/directory-operations',
+    'dashboard/directory-taxonomy',
+    'dashboard/directory-taxonomy-runs',
+    'dashboard/directory-runs',
+  ].map((path): ServerRoute => ({ path, renderMode: RenderMode.Client })),
+  {
+    path: 'dashboard/boundary-review/:communityId',
+    renderMode: RenderMode.Client,
+  },
+  {
     path: 'dashboard/cities/:id',
     renderMode: RenderMode.Client,
   },

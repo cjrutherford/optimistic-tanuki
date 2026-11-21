@@ -4,6 +4,7 @@ import {
   ConflictException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Inject,
   Logger,
@@ -12,10 +13,11 @@ import {
   Put,
   Query,
   Req,
+  ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -75,17 +77,28 @@ export class CommunitiesController {
   @ApiQuery({ name: 'localityType', required: false })
   async listCommunities(
     @AppScope() appScope: string,
-    @Query('localityType') localityType?: string
+    @Query('localityType') localityType?: string,
+    @Req() request?: { user?: { profileId?: string } }
   ) {
+    if (typeof appScope !== 'string' || !appScope.trim()) return [];
+    const ownerConsole = appScope === 'owner-console';
+    if (ownerConsole) await this.assertOwnerConsole(request);
     try {
-      const scopeForQuery = appScope === 'owner-console' ? undefined : appScope;
+      const scopeForQuery = ownerConsole ? undefined : appScope;
       const community = await firstValueFrom(
         this.socialClient.send(
           { cmd: CommunityCommands.LIST_LOCALITY },
           { appScope: scopeForQuery, localityType }
         )
       );
-      return community;
+      if (!Array.isArray(community)) return [];
+      return ownerConsole
+        ? community
+        : community.filter(
+            (item: { isPrivate?: unknown; appScope?: unknown }) =>
+              item?.isPrivate === false &&
+              (!appScope || item.appScope === appScope)
+          );
     } catch (error) {
       this.logger.error('Failed to list communities:', error);
       return [];
@@ -241,13 +254,40 @@ export class CommunitiesController {
   @Get(':id/sub-communities')
   @ApiOperation({ summary: 'Get sub-communities of a locality community' })
   @ApiResponse({ status: 200, description: 'Array of sub-communities.' })
-  async getSubCommunities(@Param('id') id: string) {
+  async getSubCommunities(
+    @Param('id') id: string,
+    @AppScope() appScope?: string
+  ) {
+    if (
+      typeof appScope !== 'string' ||
+      !appScope.trim() ||
+      appScope === 'owner-console'
+    )
+      return [];
     try {
-      return await firstValueFrom(
-        this.socialClient.send(
-          { cmd: CommunityCommands.GET_SUB_COMMUNITIES },
-          { parentId: id }
-        )
+      const readParent = () =>
+        firstValueFrom(
+          this.socialClient
+            .send({ cmd: CommunityCommands.FIND }, { id })
+            .pipe(timeout(2500))
+        );
+      const eligible = (
+        p: { id?: unknown; isPrivate?: unknown; appScope?: unknown } | null
+      ) =>
+        !!p && p.id === id && p.isPrivate === false && p.appScope === appScope;
+      if (!eligible(await readParent())) return [];
+      const children = await firstValueFrom(
+        this.socialClient
+          .send(
+            { cmd: CommunityCommands.GET_SUB_COMMUNITIES },
+            { parentId: id }
+          )
+          .pipe(timeout(2500))
+      );
+      if (!Array.isArray(children) || !eligible(await readParent())) return [];
+      return children.filter(
+        (child: { isPrivate?: unknown; appScope?: unknown }) =>
+          child?.isPrivate === false && child.appScope === appScope
       );
     } catch (error) {
       this.logger.error('Failed to get sub-communities for %s:', id, error);
@@ -255,30 +295,121 @@ export class CommunitiesController {
     }
   }
 
+  private async assertOwnerConsole(request?: {
+    user?: { profileId?: string };
+  }): Promise<void> {
+    const profileId = request?.user?.profileId;
+    if (!profileId)
+      throw new ForbiddenException('Owner Console access required');
+    let roles: unknown;
+    try {
+      roles = await firstValueFrom(
+        this.permissionsClient
+          .send(
+            { cmd: RoleCommands.GetUserRoles },
+            { profileId, appScope: 'owner-console' }
+          )
+          .pipe(timeout(2500))
+      );
+    } catch {
+      throw new ServiceUnavailableException(
+        'Owner Console authorization unavailable'
+      );
+    }
+    const allowed = new Set([
+      'owner_console_owner',
+      'owner',
+      'global_admin',
+      'system_admin',
+    ]);
+    if (
+      !Array.isArray(roles) ||
+      !roles.some((item: { role?: { name?: string } }) =>
+        allowed.has(item?.role?.name || '')
+      )
+    )
+      throw new ForbiddenException('Owner Console access required');
+  }
+
+  private async readCommunityGovernance(
+    id: string,
+    appScope: string | undefined,
+    request: { user?: { profileId?: string; userId?: string } } | undefined,
+    cmd: string
+  ) {
+    if (typeof appScope !== 'string' || !appScope.trim()) return null;
+    const owner = appScope === 'owner-console';
+    if (owner) await this.assertOwnerConsole(request);
+    try {
+      const readParent = () =>
+        firstValueFrom(
+          this.socialClient
+            .send({ cmd: CommunityCommands.FIND }, { id })
+            .pipe(timeout(2500))
+        );
+      const eligible = async () => {
+        const p = (await readParent()) as {
+          id?: unknown;
+          isPrivate?: unknown;
+          appScope?: unknown;
+        } | null;
+        if (!p || p.id !== id || p.appScope !== appScope) return false;
+        if (p.isPrivate === false) return true;
+        if (p.isPrivate !== true || !request?.user?.userId) return false;
+        return (
+          (await firstValueFrom(
+            this.socialClient
+              .send(
+                { cmd: 'IS_COMMUNITY_MEMBER' },
+                { communityId: id, userId: request.user.userId }
+              )
+              .pipe(timeout(2500))
+          )) === true
+        );
+      };
+      if (!owner && !(await eligible())) return null;
+      const result = await firstValueFrom(
+        this.socialClient.send({ cmd }, { communityId: id }).pipe(timeout(2500))
+      );
+      if (!owner && !(await eligible())) return null;
+      return result ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   @Public()
   @Get(':id/manager')
   @ApiOperation({ summary: 'Get elected manager for a community' })
   @ApiResponse({ status: 200, description: 'Community manager or null.' })
-  getCommunityManager(@Param('id') id: string) {
-    return firstValueFrom(
-      this.socialClient.send(
-        { cmd: CommunityCommands.GET_MANAGER },
-        { communityId: id }
-      )
-    ).catch(() => null);
+  getCommunityManager(
+    @Param('id') id: string,
+    @AppScope() appScope?: string,
+    @Req() request?: { user?: { profileId?: string; userId?: string } }
+  ) {
+    return this.readCommunityGovernance(
+      id,
+      appScope,
+      request,
+      CommunityCommands.GET_MANAGER
+    );
   }
 
   @Public()
   @Get(':id/election')
   @ApiOperation({ summary: 'Get active election for a community' })
   @ApiResponse({ status: 200, description: 'Active election or null.' })
-  getCommunityElection(@Param('id') id: string) {
-    return firstValueFrom(
-      this.socialClient.send(
-        { cmd: CommunityCommands.GET_ELECTION },
-        { communityId: id }
-      )
-    ).catch(() => null);
+  getCommunityElection(
+    @Param('id') id: string,
+    @AppScope() appScope?: string,
+    @Req() request?: { user?: { profileId?: string; userId?: string } }
+  ) {
+    return this.readCommunityGovernance(
+      id,
+      appScope,
+      request,
+      CommunityCommands.GET_ELECTION
+    );
   }
 
   @Delete(':id/membership')

@@ -45,6 +45,7 @@ import { WorkspaceAccountExportSnapshotClient } from './workspace-account-export
 import { AppConfiguratorAccountExportSnapshotClient } from './app-configurator-account-export-snapshot.client';
 import { ClassifiedsAccountExportSnapshotClient } from './classifieds-account-export-snapshot.client';
 import { PaymentsAccountExportSnapshotClient } from './payments-account-export-snapshot.client';
+import { DirectoryAccountExportSnapshotClient } from './directory-account-export-snapshot.client';
 import { AccountExportArtifactService } from './account-export-artifact.service';
 import { ChatAccountExportSnapshotClient } from './chat-account-export-snapshot.client';
 import {
@@ -84,7 +85,8 @@ export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
     private readonly chatCapture: ChatAccountExportSnapshotClient,
     private readonly classifiedsCapture: ClassifiedsAccountExportSnapshotClient,
     private readonly paymentsCapture: PaymentsAccountExportSnapshotClient,
-    private readonly artifacts: AccountExportArtifactService
+    private readonly artifacts: AccountExportArtifactService,
+    private readonly directoryCapture: DirectoryAccountExportSnapshotClient
   ) {}
 
   async create(request: unknown): Promise<AccountExportJobStatus> {
@@ -724,6 +726,9 @@ export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
       let payments:
         | Awaited<ReturnType<PaymentsAccountExportSnapshotClient['capture']>>
         | undefined;
+      let directory:
+        | Awaited<ReturnType<DirectoryAccountExportSnapshotClient['capture']>>
+        | undefined;
       let stage:
         | 'profile'
         | 'assets'
@@ -736,6 +741,7 @@ export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
         | 'chat-collector'
         | 'classifieds'
         | 'payments'
+        | 'directory'
         | 'artifact' = 'profile';
       try {
         if (!claimed.leaseOwner) {
@@ -1055,6 +1061,41 @@ export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
               'payments',
             ],
           };
+          stage = 'directory';
+          directory = await this.directoryCapture.capture(
+            {
+              accountId: input.accountId,
+              token: input.token,
+              appId: input.appId,
+              jobId: claimed.id,
+              attempt: claimed.attempt,
+              leaseOwner: claimed.leaseOwner,
+            },
+            profile.descriptor,
+            async () => {
+              const renewed = await this.renewLease(claimed);
+              if (!renewed) leaseLost = true;
+              return renewed;
+            }
+          );
+          summary = {
+            ...summary,
+            capturedDatabaseOwners: [
+              'authentication',
+              'profile',
+              'assets',
+              'videos',
+              'permissions',
+              'social',
+              'forum',
+              'workspace',
+              'app-configurator',
+              'chat-collector',
+              'classifieds',
+              'payments',
+              'directory',
+            ],
+          };
           const captureCoverage = evaluateAccountExportReleaseCoverage(
             input.appId,
             input.accountId,
@@ -1071,6 +1112,7 @@ export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
               chat?.handle.metadata,
               classifieds?.handle.metadata,
               payments?.handle.metadata,
+              directory?.handle.metadata,
             ].filter((metadata): metadata is NonNullable<typeof metadata> =>
               Boolean(metadata)
             ),
@@ -1109,6 +1151,7 @@ export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
               chat?.handle,
               classifieds?.handle,
               payments?.handle,
+              directory?.handle,
             ];
             const prepared = await this.artifacts.prepare({
               claim: claimed,
@@ -1141,6 +1184,37 @@ export class AccountExportJobService implements OnModuleInit, OnModuleDestroy {
           errorCode = `${stage}-capture-unavailable`;
         }
       } finally {
+        if (directory) {
+          try {
+            await directory.cleanup();
+          } catch {
+            if (!leaseLost) {
+              summary = {
+                ...summary,
+                capturedDatabaseOwners: [
+                  'authentication',
+                  'profile',
+                  'assets',
+                  'videos',
+                  'permissions',
+                  'social',
+                  'forum',
+                  'workspace',
+                  'app-configurator',
+                  'chat-collector',
+                  'classifieds',
+                  'payments',
+                ],
+                blockers: [
+                  ...(Array.isArray(summary.blockers) ? summary.blockers : []),
+                  'directory-capture-unavailable',
+                ],
+              };
+              state = 'failed';
+              errorCode = 'directory-capture-unavailable';
+            }
+          }
+        }
         if (payments) {
           try {
             await payments.cleanup();

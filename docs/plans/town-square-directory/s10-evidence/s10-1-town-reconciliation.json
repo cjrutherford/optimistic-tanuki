@@ -1,0 +1,1844 @@
+{
+  "capturedAt": "2026-11-18T07:15Z (live local stack)",
+  "method": "Social eligible set = community where appScope=local-hub, isPrivate=false, localityType in (city,town), adminArea <> Development fixture (apps/directory/src/social-eligibility.ts). Directory set = directory_town where eligible. Each town probed anonymously at GET /api/directory/towns/:id/local-evaluation-listings and GET /city/:slug/businesses on Local Hub (127.0.0.1:8087).",
+  "socialEligible": 261,
+  "directoryEligible": 261,
+  "socialOnly": [],
+  "directoryOnly": [],
+  "exactSetMatch": true,
+  "api200": 261,
+  "page200": 261,
+  "coverageStates": {
+    "unknown": 124,
+    "available": 137
+  },
+  "towns": [
+    {
+      "id": "001f10a9-4bdd-4081-a3a9-1f4c27af4fd0",
+      "slug": "apalachicola-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "04043111-1980-4b72-839c-cb6b5777ff84",
+      "slug": "castroville-tx",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "05243ac4-9ac1-4f8a-9bf7-ab902331c8bc",
+      "slug": "kill-devil-hills-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "055a9fbf-d213-4adf-aa54-af35a272e52e",
+      "slug": "orlando-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "0568ea84-73c7-44cd-a8d9-42304a06832b",
+      "slug": "andalusia-al",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "08690063-8ef2-419e-851a-5ccee965eaf2",
+      "slug": "frederick-md",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "09f14433-24ee-45e8-a113-167761ec6251",
+      "slug": "greer-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "0b359c1a-6e22-4612-983f-270d5ceb5bb9",
+      "slug": "rincon-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "0e033bd8-56cc-4093-8fcb-f2bf398599c9",
+      "slug": "fort-myers-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "0f81d3a7-5f12-43f4-8fea-ae5eebada5a3",
+      "slug": "greenbelt-md",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "12a0738c-4466-443d-8a54-55a59d9c9c54",
+      "slug": "gainesville-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "13adbabe-74c7-4088-a870-0f2c8c55582b",
+      "slug": "eustis-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "14948dde-55f4-4442-9976-de8a963f9447",
+      "slug": "sumter-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "15082327-d05f-4d4b-96d0-f0f350358288",
+      "slug": "anderson-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "15d40486-a8cb-4330-a67f-58fbee5ce590",
+      "slug": "bowie-md",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "16a60e77-2683-4135-bffb-7a2ed7950856",
+      "slug": "ocilla-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "17ae35a6-92fa-4a87-9641-9d6e605d3a6c",
+      "slug": "atlanta-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "18aa908a-a65f-4677-a2d6-9e9d425c26b7",
+      "slug": "san-marcos-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "1ac28710-f07e-47f7-bc91-9fea5f43b09e",
+      "slug": "pensacola-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "1c0ca5d8-e0ac-4d04-bb4f-afc00e2361cf",
+      "slug": "marineland-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "1c1f08d0-f5e5-4c65-ae3a-d327fad47e28",
+      "slug": "rock-hill-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "1efb9e52-7181-438c-a376-3a478a227787",
+      "slug": "cape-hatteras-nc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "20d6a138-9262-44b0-a804-7d7fc3af4763",
+      "slug": "takoma-park-md",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "2171d014-d79a-42bd-b4a9-0b8e420a8753",
+      "slug": "spotsylvania-va",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "2190b895-9e77-4b15-bd68-44487f663898",
+      "slug": "hickory-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "2248ad0e-f492-4608-8677-a0fd9a2be2ed",
+      "slug": "camilla-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "22f7dced-d609-4203-aa40-8293c8f31d91",
+      "slug": "ponte-vedra-beach-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "24ba6730-3946-4bc0-be49-bf2f2b282823",
+      "slug": "boerne-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "24f5d136-db44-4d71-b275-f0111b16ccb2",
+      "slug": "beaufort-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "268fcd14-141f-4f4f-a3d2-6df24f333b82",
+      "slug": "hilton-head-island-sc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "27395fb4-47de-424c-a885-9a3d9c2280cd",
+      "slug": "scranton-pa",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "2902668e-cb2e-4823-a5d9-67f260e860de",
+      "slug": "st-petersburg-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "29ff21d9-aa72-4ebd-9f72-f25934c5f5cc",
+      "slug": "edisto-island-sc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "2abf8174-c8ac-42da-a383-8d5331de3de1",
+      "slug": "neptune-beach-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "2bd17f9b-bd6b-441d-abb4-8638ee8fcdaa",
+      "slug": "annapolis-md",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "2ca0acf5-4990-49eb-81b6-2fb8f963fbca",
+      "slug": "jekyll-island-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "2def3bb9-a2b5-4719-9172-e5570284fff4",
+      "slug": "moultrie-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "2fe5212f-1f8e-4aba-b314-70cdcf0f760c",
+      "slug": "lancaster-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "30a10b01-9b5e-44f5-910e-b2b9e6097cbc",
+      "slug": "fredericksburg-va",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "312f6748-a409-45db-aa9d-e512fdbb6651",
+      "slug": "waycross-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "3137cd11-82b6-4a6a-acdc-e7dcbe636e67",
+      "slug": "hyattsville-md",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "31cad931-e9b4-4f4b-81be-0b4b7685267e",
+      "slug": "mccormick-sc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "354b24aa-caa7-48d5-9cd6-7da3e74d36bd",
+      "slug": "sarasota-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "35cbb715-2590-46f1-aa4d-efca8fd4241b",
+      "slug": "miami-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "35fdbf71-3aa0-49b3-a938-bb130b96c982",
+      "slug": "new-london-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "36f2cdfa-fa84-4ddc-b3a4-eadb5cd8a7be",
+      "slug": "charleston-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "378fe8aa-6b29-4f64-a07d-4f3e6cfc3d2b",
+      "slug": "pawtucket-ri",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "37bec101-5e07-4748-8b95-16e169bd6a73",
+      "slug": "homerville-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "37dbd6af-2c98-4411-9cd0-6622c131259c",
+      "slug": "newark-nj",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "38a90d59-8626-4315-b6d9-e4f1feb1edc1",
+      "slug": "tybee-island-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "3b20c85e-8683-4add-8792-334c793581ad",
+      "slug": "st-augustine-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "3ead6b06-f7a2-47ed-8b80-7932552ea052",
+      "slug": "wilmington-island-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "3eb38b57-c58c-41bb-87d9-c63fcdc3255a",
+      "slug": "new-braunfels-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "3f00890d-f497-45fc-9d17-aabaa9f5b000",
+      "slug": "oriental-nc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "3f2e0e9d-09ff-41ab-90d3-3774e76f1c72",
+      "slug": "trumbull-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4005981e-8f8e-454e-8a5c-d8f64d05faef",
+      "slug": "richmond-va",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "402f4cf8-971d-4247-928a-8bd2bd9e729b",
+      "slug": "naples-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "40471704-3ed6-47d4-b822-76c4474282a1",
+      "slug": "tallahassee-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "407d29f3-6552-42e8-97d6-57de33eef687",
+      "slug": "pearson-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "415460ae-f011-4aa8-80d1-7e6b2838ab57",
+      "slug": "new-bern-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "42f3a42c-af5d-4f3c-a160-5dd5a992e92a",
+      "slug": "danbury-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "435e27f4-3798-4e2b-9dce-754fbc3155cb",
+      "slug": "vernon-ct",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "444fdbb6-46fa-40a4-a834-f5a45c2fb2d8",
+      "slug": "greenwood-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4472026d-b92d-4b12-a959-b89fb1f8903f",
+      "slug": "edgefield-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "452bd0a9-0f90-4cf9-a034-539e04cc6348",
+      "slug": "macon-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "45c52d66-6dc7-4bc9-aafa-c7bcba54f727",
+      "slug": "easton-pa",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "45ec0c5b-f35c-431a-8038-5b8756bbb2fb",
+      "slug": "bradenton-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4677b6e1-6750-40a0-9900-e7c154078e83",
+      "slug": "milford-ct",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "47d9607a-b3ea-4327-be9d-cf47b8d88ec9",
+      "slug": "duck-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "484f3241-9e29-45b5-a211-030e335de796",
+      "slug": "hondo-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "48db199f-7df0-4853-9fd1-8fb34d8c83d8",
+      "slug": "riverdale-park-md",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "498950f5-5ba3-4614-b65e-cf2715fb72f5",
+      "slug": "lancaster-pa",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "49d6a1de-7101-4d20-9b11-42e61bec96c2",
+      "slug": "west-hartford-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4a05a52e-d538-4c92-afe5-c975716abcde",
+      "slug": "destin-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4a557a06-1327-4bd3-8dc1-5d06d4d34b19",
+      "slug": "kiawah-island-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4a7eba4f-9ca3-4d27-818d-185c46de56f7",
+      "slug": "ocala-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4bbfd1cb-a37e-4705-b87e-81ff16ad13c4",
+      "slug": "hatteras-nc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4c76a07e-b8b1-4b80-be83-5e73f5e82b4b",
+      "slug": "high-point-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4cbf2122-aaf1-4702-ac90-a03ccac7a7f9",
+      "slug": "fort-lauderdale-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4d8f93b9-9662-4e6a-9042-ae308b71ddaa",
+      "slug": "helen-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4ddeddfb-3621-42e1-9b7d-8c81f5ffe411",
+      "slug": "hartford-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4e2ece36-eaf1-4c08-845b-5847e79f1eb7",
+      "slug": "cranston-ri",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4ead76f2-8ac2-423b-b294-68709e008c24",
+      "slug": "allentown-pa",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "4ee14ffe-e366-4853-8f5e-5942041f0b24",
+      "slug": "washington-dc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "50009f20-6d88-429d-9d23-6d208efcc3c6",
+      "slug": "dahlonega-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "51031947-dca9-4615-bfef-0379b0cf811c",
+      "slug": "germantown-md",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "51a63e0f-9c28-4e68-af76-85b3b8e7bc2a",
+      "slug": "winston-salem-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "5242b47b-369f-4a85-9791-afdf026c6f61",
+      "slug": "fernandina-beach-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "542eca8b-416a-4b1e-8c1b-7ba6040e14e1",
+      "slug": "bethesda-md",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "545ac279-a466-4509-b9cf-67b83e11faec",
+      "slug": "crystal-river-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "55beefb6-7003-4a93-ab11-c35daca91711",
+      "slug": "lakeland-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "571fa5c4-4897-449c-ac46-9244c140a285",
+      "slug": "kyle-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "58692cda-68cc-4ef9-b090-88786182a6fe",
+      "slug": "beaufort-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "59f2f57d-6b11-4be7-a775-4bd6f932dc0c",
+      "slug": "rockville-md",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "5a0d8e92-4f5e-4a11-acdf-ef9939fcc661",
+      "slug": "monticello-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "5ae4982e-606d-45e2-ba5f-7da401c146bb",
+      "slug": "sanford-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "5b054667-f54e-4953-965d-0a9b0b596e93",
+      "slug": "fripp-island-sc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "5b1756d6-ea97-469d-a50b-4c5d405fa8b8",
+      "slug": "thomasville-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "5bb6a1fc-a71c-40f7-b041-e0129a15931d",
+      "slug": "savannah-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "60182de6-3dd7-4617-b4d7-79998cdbad81",
+      "slug": "statesboro-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "6117c0c6-da48-4abe-a15e-2b37239ec915",
+      "slug": "manchester-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "615482e8-d72b-4500-989f-5b79ceb32781",
+      "slug": "valdosta-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "61a26403-0ba6-4c76-9d9e-ba13973f0122",
+      "slug": "devine-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "628e019d-30b5-4f1a-a4eb-fed831d25f08",
+      "slug": "corpus-christi-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "654bb7b2-ce03-41bd-be56-bf09a014dcb5",
+      "slug": "medina-tx",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "65945435-d62b-48d7-a3e2-aa24bfb5d725",
+      "slug": "boca-raton-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "66e5f9ea-1683-4ebe-b36e-7a5fcdd5f4d3",
+      "slug": "wilkes-barre-pa",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "67c45baf-2d83-4a7e-8b17-801e52b7a47f",
+      "slug": "martinsburg-wv",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "680db59f-a021-4faa-8b82-5b15488593ed",
+      "slug": "tampa-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "681ddd60-10ba-4824-b52c-3bcd4866de65",
+      "slug": "boone-nc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "6870e976-1833-43c9-9186-497c0c28b937",
+      "slug": "waterbury-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "6a679ce6-6cf0-45f9-b58a-a97019ba5559",
+      "slug": "hillsborough-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "6a91e89f-b564-4f4c-bb76-fb23a80d90a7",
+      "slug": "pottstown-pa",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "6c0bd3f8-9313-44a2-9b37-ed02084e0fd4",
+      "slug": "harrisonburg-va",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "6c44702f-b35a-4d37-a9dc-8fcc7f02b8e9",
+      "slug": "corolla-nc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "6e583505-421e-4050-a1e4-b40b6bd7e3fe",
+      "slug": "austin-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "6ea6c977-0e6c-4f9a-ab17-cb0ba83186b5",
+      "slug": "westerly-ri",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "70e3bc2f-0ce2-482a-8828-3f2ecc7f4fd9",
+      "slug": "york-pa",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "729ad63a-6cad-49a6-9c0a-f59ad0e7d320",
+      "slug": "kissimmee-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "72c401fc-284c-4df6-8811-41cf7e3011a0",
+      "slug": "woodstock-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "76dedf48-42fd-443e-9654-8e2ed079a5a7",
+      "slug": "bainbridge-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "76fdb35c-f2d7-44ae-9add-1095fd488ab5",
+      "slug": "warner-robins-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "79151d11-fbe1-4b64-b4bd-72a86ff9023a",
+      "slug": "fitzgerald-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "79ad4abc-6deb-41cb-bf4a-8f6af46fccd9",
+      "slug": "isle-of-palms-sc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "7bc98caf-9a22-465d-80a6-1c4d941ace4a",
+      "slug": "fairfield-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "7bcee67b-b1c3-4149-a295-e29de76a969b",
+      "slug": "ozark-al",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "7cfd0d29-6a27-46a0-9848-b5842c3fbfb2",
+      "slug": "stamford-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "7d8239cb-7209-4ac6-94d4-99d03f0c89f0",
+      "slug": "san-antonio-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "7deea9df-5b09-40f9-ba9b-8e9d8868f3e4",
+      "slug": "outer-banks-nc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "7fc1bf48-7624-459c-8be1-7080890ba846",
+      "slug": "seat-pleasant-md",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "7fed5565-7d17-4c00-90f2-cd7e12d52190",
+      "slug": "atlantic-beach-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "801cabb6-dddb-4aea-a567-d092ae00568f",
+      "slug": "lockhart-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "81ef4b2a-4070-494d-b089-fbc73af4be44",
+      "slug": "manassas-va",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "82699743-f37c-4064-9023-457ccc09cc4d",
+      "slug": "georgetown-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "830c3ebf-6cdd-4fb9-aed2-172f871fa684",
+      "slug": "fairfax-va",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "83228db6-3a3b-4763-8c2b-92130bb9cadb",
+      "slug": "dublin-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "84458bbf-6317-4f56-8cf0-6e1e360280c1",
+      "slug": "reading-pa",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "857d4280-6f6c-490e-8ae9-3191215a2abb",
+      "slug": "rome-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "860e780a-544b-4c38-913a-28b4f25d46eb",
+      "slug": "columbus-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "8776728e-589a-45b6-b2b5-c0e55e059f25",
+      "slug": "gaffney-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "8a6d8767-8b53-49d2-add3-70c92980a988",
+      "slug": "wethersfield-ct",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "8a9888e0-906f-46f1-a5ae-47e5896cddc3",
+      "slug": "cary-nc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "8aa7ec23-e185-4182-8fee-d409ea48b77d",
+      "slug": "flagler-beach-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "8ab9cc0f-c96e-4966-b3f7-1e8aea122b58",
+      "slug": "wilmington-de",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "8cdecba1-8889-4d43-9452-62feb4815386",
+      "slug": "amelia-island-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "8d0b4cdd-9f32-4f19-90bf-10187975334d",
+      "slug": "south-kingstown-ri",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "8e1c0a5b-10c7-4393-af3b-f66060c68e41",
+      "slug": "sea-island-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "8e82473e-c1bc-4e71-9cae-badc4fa27cc2",
+      "slug": "laurel-md",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "8fe6cfeb-5ce4-4ddb-8d84-13daf34edb4a",
+      "slug": "charlottesville-va",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "8fe7aeef-4f3c-4003-8935-2a61b08af80f",
+      "slug": "greenville-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "90b2209f-cb7f-4386-a3a7-87c8247e463e",
+      "slug": "greenwich-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "920e6109-449d-44bc-b08a-ead9ae8f60b1",
+      "slug": "gonzales-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "924386ab-8c7d-445b-9322-00e1b7c4da67",
+      "slug": "wallington-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "927d0572-e830-43ac-b932-33e278b80ad0",
+      "slug": "douglas-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "94244eb2-7b79-4770-b5ae-69e5bb56abce",
+      "slug": "poteet-tx",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "959a853d-5a8c-4b71-af2a-aa5fb21e11e3",
+      "slug": "panama-city-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "95fa911a-88c5-4f70-833a-d511b04014ed",
+      "slug": "asheville-nc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "973fb2be-4fa9-42d0-b619-852e3e728cb7",
+      "slug": "nags-head-nc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "999debd0-ba55-474e-8b07-0de894808ff7",
+      "slug": "greensboro-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "9b3bbb69-f0ae-4c3e-a8a8-e98a14d21ce1",
+      "slug": "new-haven-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "9b9b0919-a1f2-4b91-ac7b-23643b438db1",
+      "slug": "dripping-springs-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "9fa04647-5bbb-4319-9d0f-4fb212b0738e",
+      "slug": "augusta-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "a057dddf-c80d-4d23-87bd-d5801970f12f",
+      "slug": "camden-sc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "a09ea0ac-3a0c-488d-ad15-c1e968c0f424",
+      "slug": "kitty-hawk-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "a0ed5112-9ad4-4b31-bb45-9b078a16651e",
+      "slug": "providence-ri",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "a12a5772-ab56-4d50-99f7-2ba8c18fb6ba",
+      "slug": "fall-river-ma",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "a2ee686e-2d02-4898-8e49-806bbd47447d",
+      "slug": "uvalde-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "a4198529-c931-4d07-9413-59168201291d",
+      "slug": "cheraw-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "a48e3001-dac4-401d-bfce-cd3781ac2ed0",
+      "slug": "norwich-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "a62ce624-a0be-44d5-8cb6-421c1c04a51d",
+      "slug": "pittsboro-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "a694e28e-6597-40a7-9c4d-78aeab40f01c",
+      "slug": "arlington-va",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "a951989a-18a3-406a-bc1e-7a637235b0a0",
+      "slug": "pooler-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "ab466294-cc15-431f-9182-c2d616a3a232",
+      "slug": "dothan-al",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "abcf0af6-4d5d-49ac-9684-3f7bf3894a02",
+      "slug": "micanopy-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "ad28808f-a34c-48b8-b38e-81ca80110bbf",
+      "slug": "college-park-md",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "ad5f7966-4f9a-425d-acab-948f536e0e68",
+      "slug": "springfield-ma",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "ae8dca93-7fed-4a25-b397-4f6a477d7e43",
+      "slug": "norwalk-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "aeb9813c-7a56-489f-b65b-4bc87f4b0ef5",
+      "slug": "jacksonville-beach-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "afd36fbc-1c6b-41af-bf7d-2325d65e3305",
+      "slug": "milledgeville-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b050dcb3-24a5-4220-bbde-f9b2320d463d",
+      "slug": "jacksonville-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b062eb27-6245-4265-8775-5477647bc9b6",
+      "slug": "st-george-island-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b0ec207f-f7dc-41df-b7d9-fc25a677b64d",
+      "slug": "silver-spring-md",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b19b5daf-8795-4973-9cae-c9c60d623698",
+      "slug": "columbia-md",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b1cf0f7b-b330-4041-abd8-8ce3f2e862ac",
+      "slug": "durham-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b2bb118b-2d44-45a2-9ca6-40d4b55a7c4c",
+      "slug": "groton-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b4123ddf-e623-4df5-9fd5-bccebc113562",
+      "slug": "sullivans-island-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b482a37f-0b59-49a8-a803-d17be652f7ab",
+      "slug": "alexandria-va",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b528a13d-95ec-4e7b-82bd-ef10817bbfe6",
+      "slug": "st-simons-island-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b56d4cb5-cc9e-4e44-b83b-e406317672c1",
+      "slug": "new-york-city-ny",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b5b9fdc5-27f4-4f8b-90cb-71c60d5e8714",
+      "slug": "new-bedford-ma",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b71b1c21-434c-4df0-868b-9c0a5fe614cf",
+      "slug": "pleasanton-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b746bb05-d376-48ef-b912-377257dd6add",
+      "slug": "yorktown-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b77b0add-fb49-47c1-ae6d-6f533c0a4c1b",
+      "slug": "lake-city-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b79f570c-0838-4311-ad2a-55555578770a",
+      "slug": "cuero-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b7e251f3-1757-43f5-ab01-7e0088ea439f",
+      "slug": "bluffton-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "b9a875c7-f293-4ffe-8e87-ead14f41b8eb",
+      "slug": "dalton-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "ba573308-b042-4158-b204-789ed5641cad",
+      "slug": "west-palm-beach-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "bc34ac27-6592-4c52-a3c1-cc1ad8c6d380",
+      "slug": "albany-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "c01a4ac6-dca7-4c0f-960e-6205860479f2",
+      "slug": "richmond-hill-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "c083c8f7-e3fd-4d25-be3a-05d5a454df56",
+      "slug": "hinesville-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "c0930d22-86d8-4c38-9e92-380772a3dcac",
+      "slug": "bald-head-island-nc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "c1995aeb-36dc-413e-b6ae-ac6ac542ec40",
+      "slug": "bethlehem-pa",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "c5404ca1-162d-48a5-b692-e90e5de164f6",
+      "slug": "florence-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "c5c3ea59-7a97-48c1-8cf4-03378a2661f2",
+      "slug": "cambridge-ma",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "c651b923-00b3-438d-81a6-1ed9954a3ede",
+      "slug": "raleigh-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "c6c01f9e-bc08-4a81-9e92-4529d58d2203",
+      "slug": "gaithersburg-md",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "caf065cb-dd38-47a8-852c-01eb98bb55e1",
+      "slug": "southport-nc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "cb2279f4-176a-42fc-83c1-5ebce423feb3",
+      "slug": "newport-ri",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "cb7b5fbf-b724-488f-9d45-dad3da7d5005",
+      "slug": "seguin-tx",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "cbfedab7-9d6d-4206-9530-5f11d0c99f20",
+      "slug": "chester-sc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "cea28f36-206b-47fc-9530-74504d25af76",
+      "slug": "spartanburg-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "cf2f014b-d498-4866-8dbb-f6c486a1fda3",
+      "slug": "chapel-hill-nc",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "cf7c6207-1dc9-4f99-9b08-9ff5b3d28581",
+      "slug": "middletown-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "d106a563-a4d9-4fe5-a117-353904c2b58a",
+      "slug": "columbia-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "d19bba65-da91-4f01-b919-5cef5652f1d0",
+      "slug": "charlotte-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "d277afd3-3a49-4006-b39c-49678f0e065f",
+      "slug": "mount-dora-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "d33d391f-f6b5-4524-975c-a6260f1d4cb3",
+      "slug": "boston-ma",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "d42add11-3764-4af8-9247-253392750c26",
+      "slug": "lagrange-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "d695a36d-79eb-470d-9523-74b017fe9c6c",
+      "slug": "capitol-heights-md",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "d71c19cb-e38a-4baa-8639-5ef773d1b3fa",
+      "slug": "falls-church-va",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "d8b73c9b-80bd-44c3-8c8d-69ac50f4d652",
+      "slug": "wimberley-tx",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "d94cd1be-a5b8-43d7-b061-8eb154ce2231",
+      "slug": "worcester-ma",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "dada0bba-0283-4a5a-8651-349ee0d09e4d",
+      "slug": "bridgeport-ct",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "dbde9efc-fc29-4a47-93ef-791a8e54470c",
+      "slug": "athens-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "dc9431a8-e93d-44ef-8da5-27d3fb8e7c98",
+      "slug": "harrisburg-pa",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "dce721dc-af66-4113-9139-9fc8f6637b47",
+      "slug": "gainesville-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "dcf28b88-a09e-4dc1-8a7c-b99a7de5d451",
+      "slug": "ellijay-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "df745da2-af42-4a6a-8901-fe7e2d4b95be",
+      "slug": "skidaway-island-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "e080c303-70a0-4cd8-936c-219890d4720a",
+      "slug": "cedar-key-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "e59097e1-ac50-4632-823e-3f5c54f7f4a8",
+      "slug": "myrtle-beach-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "e6d3c23e-87a0-4589-9cd9-57dacc0ebcf6",
+      "slug": "winter-garden-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "e7a4c2f7-b010-483d-86ea-6dae8c4c4a40",
+      "slug": "winter-park-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "e932e384-2e66-4dc0-ada8-66b29e6af179",
+      "slug": "cape-coral-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "e9d5d114-c1f5-48b3-a85c-487876e30147",
+      "slug": "key-west-fl",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "ea494d57-8448-4041-994a-7ff687d5d8b7",
+      "slug": "brunswick-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "eaf78424-3844-4bbe-af9d-791bf8dfb1bc",
+      "slug": "warwick-ri",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "eb034a3d-a3a1-4ea6-85ad-b061cccebbec",
+      "slug": "palm-bay-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "eb7e64c7-5f39-40a8-a9fb-7f89934010eb",
+      "slug": "lowell-ma",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "ec0cc2ad-93f6-4a45-b1f0-891d89a889c3",
+      "slug": "tifton-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "ef1f3556-aa6a-4cbb-80a8-5095d5dd902b",
+      "slug": "woodbridge-va",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "ef50208b-9454-4549-a696-59b2d9c77dca",
+      "slug": "wilmington-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "eff036c7-768b-49b0-b944-9590bc131723",
+      "slug": "philadelphia-pa",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "f0027b54-4ab8-448f-9601-d4bb260f26e0",
+      "slug": "kerrville-tx",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "f040810c-1d14-402e-a976-3ac9054ed7ce",
+      "slug": "greenville-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "f0af1169-5afa-403e-afc6-afa9fec09e8c",
+      "slug": "conway-sc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "f17df78c-f683-4134-a3b3-b737715ff67f",
+      "slug": "deland-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "f1aa6d0c-8697-4f29-9ff4-757de63b8caa",
+      "slug": "clearwater-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "f350cc8b-0f8f-423f-adc2-aedac9b73e58",
+      "slug": "melbourne-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "f3965b44-873c-4ef6-a570-e07125d5d98c",
+      "slug": "winchester-va",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "f435da95-39f5-414e-92a5-4a464cfbe185",
+      "slug": "mystic-ct",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "f5ec6f96-7a45-488e-a32f-41fdb38b695d",
+      "slug": "bandera-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "f6cff78c-a75b-4b7f-b5fd-219bd9785768",
+      "slug": "daytona-beach-fl",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "f870f939-9408-447f-ab22-cdc300e8bbac",
+      "slug": "ellicott-city-md",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "f8ce2675-fdd7-4ead-b611-74379da32c4a",
+      "slug": "woodbine-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "fa6739eb-3ffb-4d58-9bd4-f6cfacbb2a49",
+      "slug": "fayetteville-nc",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "fbb30255-1b31-40c2-bc03-0ae3d3c6a5cf",
+      "slug": "madison-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "fc0dc42b-b26b-40d5-89f0-a7998f18739d",
+      "slug": "woonsocket-ri",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "fcd650cb-0e51-4862-9fb4-7514399f1454",
+      "slug": "luling-tx",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "fd385aef-9b5e-4b6c-9039-f6f04e0861e6",
+      "slug": "lake-park-ga",
+      "coverage": "unknown",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "fe6bf74d-481a-462f-b66f-658b5d9a0d57",
+      "slug": "nashville-ga",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    },
+    {
+      "id": "ff40dc8e-7f21-4d59-b107-baf662dfc5cb",
+      "slug": "enterprise-al",
+      "coverage": "available",
+      "api": 200,
+      "page": 200
+    }
+  ]
+}

@@ -15,10 +15,10 @@ describe('Social account export disposition contract', () => {
   });
   const validate = (policy: unknown) =>
     validateSocialDispositions(source.entityMetadatas, policy);
-  it('accounts for all 34 registered entities including the excluded operational fence and the actual junction metadata', () => {
+  it('accounts for all 37 registered entities including the excluded operational fence and the actual junction metadata', () => {
     expect(
       source.entityMetadatas.filter((m) => m.tableType !== 'junction')
-    ).toHaveLength(34);
+    ).toHaveLength(37);
     expect(
       source.entityMetadatas.filter((m) => m.tableType === 'junction')
     ).toHaveLength(1);

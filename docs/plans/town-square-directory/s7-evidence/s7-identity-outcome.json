@@ -1,0 +1,10 @@
+{
+  "health": {
+    "unresolved": 0,
+    "absent": 0,
+    "awaitingOwner": 0,
+    "carryIncomplete": 0,
+    "carriedUnbound": 0
+  },
+  "itemAvailable": false
+}

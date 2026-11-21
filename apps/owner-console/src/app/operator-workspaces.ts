@@ -238,6 +238,55 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
         route: '/dashboard/forum-governance',
         highlight: 'Forum moderation',
       },
+      {
+        title: 'Directory Rights',
+        description:
+          'Work through data-source rights cases and record audited, reversible decisions.',
+        route: '/dashboard/directory-rights',
+        highlight: 'Source terms',
+      },
+      {
+        title: 'Directory Withdrawals',
+        description:
+          'Permanently remove withdrawn data and follow the removal to completion.',
+        route: '/dashboard/directory-withdrawals',
+        highlight: 'Permanent removal',
+      },
+      {
+        title: 'Directory Exports',
+        description:
+          'Request licence-checked directory exports and download the finished files.',
+        route: '/dashboard/directory-exports',
+        highlight: 'Operator export',
+      },
+      {
+        title: 'Directory Operations',
+        description:
+          'Check directory health and spend, and pause or resume background work.',
+        route: '/dashboard/directory-operations',
+        highlight: 'Pause controls',
+      },
+      {
+        title: 'Directory Taxonomy',
+        description:
+          'Correct the category of individual listings with audited, reversible overrides.',
+        route: '/dashboard/directory-taxonomy',
+        highlight: 'Category overrides',
+      },
+      {
+        title: 'Taxonomy Runs',
+        description:
+          'Dry-run, apply, cancel and roll back a mapping version across stored listings.',
+        route: '/dashboard/directory-taxonomy-runs',
+        highlight: 'Reclassification',
+      },
+      {
+        title: 'Acquisition Runs',
+        description:
+          'Follow acquisition progress by town, see budget and blocked reasons, and cancel, resume or retry from a ledger.',
+        route: '/dashboard/directory-runs',
+        highlight: 'Run ledger',
+      },
     ],
   },
 ];

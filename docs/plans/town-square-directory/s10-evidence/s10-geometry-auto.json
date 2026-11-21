@@ -1,0 +1,59 @@
+{
+  "slice": "S10 D2 automatic Census TIGER 2026 geometry",
+  "capturedOn": "2026-11-18",
+  "eligibleTowns": 261,
+  "before": { "geometryStatus": { "pending": 261, "ready": 0 } },
+  "after": { "geometryStatus": { "pending": 90, "ready": 171 } },
+  "autoInstalled": 171,
+  "queuedForReview": 90,
+  "queueReasons": { "no_tiger_match": 90 },
+  "queueByState": {
+    "GA": 27,
+    "FL": 17,
+    "MD": 11,
+    "NC": 11,
+    "SC": 7,
+    "TX": 6,
+    "VA": 4,
+    "CT": 4,
+    "other": 3
+  },
+  "ledgerByStatus": {
+    "installed": 171,
+    "unmatched": 90,
+    "ambiguous": 0,
+    "error": 0,
+    "unsupported": 0
+  },
+  "geometryRows": {
+    "source": "census-tiger",
+    "vintage": "2026",
+    "rights": "public domain",
+    "count": 171
+  },
+  "automaticDecisions": {
+    "activeCount": 171,
+    "reason": "auto: unambiguous TIGER match",
+    "reviewer": null,
+    "note": "Stored in directory_boundary_decision with automatic=true; undoable through the existing review path"
+  },
+  "priorS2Candidates": {
+    "preExistingCandidates": 138,
+    "installedAmongThem": 138,
+    "unmatchedAmongThem": 0
+  },
+  "idempotency": "Register re-reconcile no longer resets geometryStatus for an already eligible town; the sweep also heals a pending status when the automatic geometry is live. Status held at 171 ready across two further worker sweeps.",
+  "sampleTown": {
+    "communityId": "bc34ac27-6592-4c52-a3c1-cc1ad8c6d380",
+    "name": "Albany, GA",
+    "geometryStatus": "ready",
+    "boundaryPoints": 1512,
+    "containmentInsideBoundary": { "status": "ready", "covers": true },
+    "containmentFarAway": { "status": "ready", "covers": false }
+  },
+  "worker": {
+    "mode": "register-pending-v1",
+    "perSweepLimit": 10,
+    "image": "node:24-slim (glibc) with DuckDB spatial extension installed at build"
+  }
+}

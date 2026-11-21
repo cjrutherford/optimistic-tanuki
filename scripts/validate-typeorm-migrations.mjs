@@ -14,6 +14,7 @@ const migrationDirectories = [
   'apps/classifieds/migrations',
   'apps/compliance-audit/migrations',
   'apps/civic/migrations',
+  'apps/directory/migrations',
   'apps/finance/src/migrations',
   'apps/forum/migrations',
   'apps/lead-tracker/migrations',

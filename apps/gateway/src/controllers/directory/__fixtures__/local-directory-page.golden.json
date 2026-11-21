@@ -1,0 +1,41 @@
+{
+  "listings": [
+    {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "name": "Example Hardware",
+      "category": "hardware_store",
+      "attribution": [
+        "Example Source; Overture Maps Foundation (October 2026)"
+      ],
+      "notices": ["CDLA Permissive 2.0"],
+      "termsUrls": ["https://cdla.dev/permissive-2.0/"],
+      "website": "https://example.com/",
+      "phone": "+15555550100",
+      "address": "1 Main Street",
+      "coordinates": { "lat": 37.5, "lng": -122.25 },
+      "reference": "ref_abc-123"
+    },
+    {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "name": "Example Cafe",
+      "category": "restaurant",
+      "attribution": [
+        "Example Source; Overture Maps Foundation (October 2026)"
+      ],
+      "notices": ["CDLA Permissive 2.0"],
+      "termsUrls": ["https://cdla.dev/permissive-2.0/"],
+      "reference": "ref_def-456"
+    }
+  ],
+  "hasMore": true,
+  "nextCursor": "cursor_abc-123",
+  "sourceFreshness": {
+    "state": "fresh",
+    "releaseId": "2026-10-21.0",
+    "sourcePublishedAt": "2026-10-21T00:00:00.000Z",
+    "acquiredAt": "2026-11-01T12:00:00.000Z",
+    "thresholds": { "freshDays": 90, "staleDays": 120 }
+  },
+  "coverage": { "state": "available", "withheldReviewedDetails": 1 },
+  "policyVersion": "574205e24da3cddc"
+}

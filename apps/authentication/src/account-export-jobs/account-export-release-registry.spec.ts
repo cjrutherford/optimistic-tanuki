@@ -3,6 +3,7 @@ import {
   ASSETS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
   CHAT_ACCOUNT_EXPORT_CAPTURE_SOURCES,
   CLASSIFIEDS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+  DIRECTORY_ACCOUNT_EXPORT_CAPTURE_SOURCES,
   FORUM_ACCOUNT_EXPORT_CAPTURE_SOURCES,
   PERMISSIONS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
   PAYMENTS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
@@ -15,7 +16,7 @@ import { AUTHENTICATION_ACCOUNT_EXPORT_SOURCES } from '../account-export-owner/a
 import { ACCOUNT_EXPORT_RELEASE_SOURCE_REGISTRY } from './account-export-release-registry';
 
 describe('account export release source registry', () => {
-  it('contains exactly the twelve release owners using their authoritative sources', () => {
+  it('contains exactly the thirteen release owners using their authoritative sources', () => {
     expect(Object.keys(ACCOUNT_EXPORT_RELEASE_SOURCE_REGISTRY).sort()).toEqual(
       [
         'authentication',
@@ -30,6 +31,7 @@ describe('account export release source registry', () => {
         'chat-collector',
         'classifieds',
         'payments',
+        'directory',
       ].sort()
     );
     expect(ACCOUNT_EXPORT_RELEASE_SOURCE_REGISTRY).toEqual({
@@ -45,6 +47,7 @@ describe('account export release source registry', () => {
       'chat-collector': CHAT_ACCOUNT_EXPORT_CAPTURE_SOURCES,
       classifieds: CLASSIFIEDS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
       payments: PAYMENTS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+      directory: DIRECTORY_ACCOUNT_EXPORT_CAPTURE_SOURCES,
     });
     for (const sources of Object.values(
       ACCOUNT_EXPORT_RELEASE_SOURCE_REGISTRY

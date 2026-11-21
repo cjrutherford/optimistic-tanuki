@@ -115,3 +115,8 @@ export {
 export { getDefaultVariantOptions } from './interfaces/defaultVariantOptions';
 export { DocumentDropZoneComponent } from './document-drop-zone/document-drop-zone.component';
 export { TotpChallengeModalComponent } from './totp-challenge-modal/totp-challenge-modal.component';
+export {
+  DecisionHistoryComponent,
+  type DecisionHistoryEntry,
+  type DecisionUndoRequest,
+} from './decision-history/decision-history.component';

@@ -641,6 +641,8 @@
             "imageUrl",
             "timezone",
             "localitySlug",
+            "mergedIntoId",
+            "formerSlugs",
             "memberCount",
             "bannerAssetId",
             "logoAssetId",
@@ -1885,6 +1887,114 @@
           "handling": "Exclude operational fence identities, hashes, operation references and timestamps from ordinary account exports.",
           "reason": "Permanent deletion enforcement is operational state; exporting it would reveal internal deletion capabilities and identifiers.",
           "evidence": ["libs/storage/src/lib/account-deletion-write-fence.ts"]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "CommunityDirectoryChange",
+      "table": "community_directory_change",
+      "source": "apps/social/src/entities/community-directory-change.entity.ts",
+      "subject": {
+        "kind": "none",
+        "fields": [],
+        "rule": "Internal community reconciliation notification; not an account-owned portable record.",
+        "legacyProvenance": "Historical authorship and consent are unverified; community identity does not establish either.",
+        "evidence": [
+          "apps/social/src/entities/community-directory-change.entity.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "revision",
+            "communityId",
+            "operation",
+            "createdAt",
+            "sourceEpoch",
+            "eventNonce"
+          ],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Exclude internal delivery identities, community references, operations and timestamps from account exports.",
+          "reason": "Operational notifications are not attributable to an account and may reference shared or private communities.",
+          "evidence": [
+            "apps/social/src/entities/community-directory-change.entity.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "CommunityDirectoryRegister",
+      "table": "community_directory_register",
+      "source": "apps/social/src/entities/community-directory-register.entity.ts",
+      "subject": {
+        "kind": "none",
+        "fields": [],
+        "rule": "Internal reconciliation state is not an account-owned portable record.",
+        "legacyProvenance": "Historical authorship and consent are unverified; community identity does not establish either.",
+        "evidence": [
+          "apps/social/src/entities/community-directory-register.entity.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "communityId",
+            "changeToken",
+            "operation",
+            "dirty",
+            "updatedAt"
+          ],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Exclude reconciliation identities, state and timestamps from account exports.",
+          "reason": "Internal operational records may refer to shared or private communities.",
+          "evidence": [
+            "apps/social/src/entities/community-directory-register.entity.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "CommunityDirectoryEpoch",
+      "table": "community_directory_epoch",
+      "source": "apps/social/src/entities/community-directory-epoch.entity.ts",
+      "subject": {
+        "kind": "none",
+        "fields": [],
+        "rule": "Singleton operational authority, not an account-owned record.",
+        "legacyProvenance": "Legacy attribution to an account is unverified.",
+        "evidence": [
+          "apps/social/src/entities/community-directory-epoch.entity.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "sourceEpoch",
+            "registerBaselineEpoch",
+            "directoryRecoveryEpoch",
+            "fenced",
+            "activationId",
+            "owner",
+            "socialGeneration",
+            "directoryGeneration",
+            "phase",
+            "preparedPayload",
+            "initializedAt",
+            "updatedAt"
+          ],
+          "classification": "opaque",
+          "action": "exclude",
+          "handling": "Exclude internal authority state, activation identifiers, owner identity, generations, phase, prepared recovery payload and timestamps from account exports.",
+          "reason": "This singleton governs service recovery; its owner is an operational authority identifier, not an account ownership attribution.",
+          "evidence": [
+            "apps/social/src/entities/community-directory-epoch.entity.ts"
+          ]
         }
       ],
       "relations": []

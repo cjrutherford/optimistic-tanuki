@@ -51,6 +51,26 @@ Replace `common-ui` with the desired library or application name.
 2. **Shared Libraries**: Common functionality is abstracted into libraries under `libs`.
 3. **Nx Workspace**: Use Nx commands for building, testing, and managing dependencies.
 
+## Shared UI composition
+
+Apps must compose screens from the shared UI libraries before adding markup.
+This rule applies to all OpenAI/Copilot-assisted changes.
+
+- Check `libs/common-ui`, `libs/form-ui`, and the relevant domain UI library
+  (`business-ui`, `classified-ui`, `community-ui`, `social-ui`, etc.) first.
+- Use `otui-*` primitives for buttons, cards, badges, chips, icons, modals,
+  section headings and empty/error/loading states.
+- Use `lib-*` form controls (`lib-text-input`, `lib-checkbox`, `lib-select`,
+  `lib-text-area`) instead of raw inputs and labels.
+- Do not hand-roll new `.btn`, `.input`, `.card`, empty-state or error-state
+  markup in an app. Extend a shared component with a backward-compatible input
+  instead of forking it.
+- App-local markup is limited to page structure and layout that is unique to
+  that app; the controls and presentation inside it must still be shared.
+- Match the host page's section rhythm (padding, background bands, heading
+  hierarchy and responsive grid) so a new section does not read as bolted on or
+  duplicate an adjacent heading.
+
 ## Integration Points
 
 - **API Gateway**: The `gateway` service acts as the central API gateway.

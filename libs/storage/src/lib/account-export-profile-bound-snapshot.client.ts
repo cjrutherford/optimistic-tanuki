@@ -21,7 +21,8 @@ export interface AccountExportProfileBoundSnapshotClientOptions {
     | 'app-configurator'
     | 'chat-collector'
     | 'classifieds'
-    | 'payments';
+    | 'payments'
+    | 'directory';
   sources: readonly string[];
   open(payload: unknown, timeoutMs: number): Promise<unknown>;
   read(

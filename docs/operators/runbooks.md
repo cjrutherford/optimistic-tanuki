@@ -95,8 +95,19 @@ Expected result:
 - ArgoCD points at the intended workspace path
 - sync completes without unresolved drift
 
+## Review And Publish Directory Addresses
+
+Use when working the Town Square address-review queue.
+
+1. Open the town queue from **Owner Console → Community Ops → Review Addresses**.
+2. Compare the source address, map point and official page. Approve with an HTTPS evidence URL, or reject / request more information.
+3. Dry-run the policy-gated publisher, then repeat with `--apply` until no approved candidates remain.
+
+Full procedure, exact commands and the blocked-reason guide: [Directory Address Review](./directory-address-review.md).
+
 ## Related Docs
 
+- [Directory Address Review](./directory-address-review.md)
 - [Local Stack Operations](./local-stack.md)
 - [Deployment Environments](./deployment-environments.md)
 - [Troubleshooting](./troubleshooting.md)

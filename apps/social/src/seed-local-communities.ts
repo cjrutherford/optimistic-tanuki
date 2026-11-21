@@ -1,6 +1,7 @@
+import { saveCommunityWithDirectoryChange } from './app/services/community-directory-outbox';
 import { NestFactory } from '@nestjs/core';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ArrayContains, Repository } from 'typeorm';
 import { Logger } from '@nestjs/common';
 import {
   ClientProxy,
@@ -11,7 +12,11 @@ import { firstValueFrom, timeout } from 'rxjs';
 import seedData from './data/seed-cities.json';
 import { AppModule } from './app/app.module';
 import { Community, LocalityType } from './entities/community.entity';
-import { ensureCommunityChatRoom } from './seed-local-communities.helpers';
+import {
+  changedSeedFields,
+  ensureCommunityChatRoom,
+  withFormerSlug,
+} from './seed-local-communities.helpers';
 import { ChatCommands } from '@optimistic-tanuki/constants';
 
 type CityHighlight = {
@@ -35,6 +40,13 @@ type RawLocality = {
   timezone?: string;
   /** The civic-briefing locality this town's page shows briefings for. */
   localitySlug?: string;
+  /**
+   * The slug this community had before it was renamed. The seed then renames the existing community in place (same
+   * id, so the Directory town and its data follow) instead of creating a second one.
+   */
+  formerSlug?: string;
+  /** Slug of the locality that absorbed this one (owner decision); the community is retired as a town. */
+  mergedInto?: string;
 };
 
 type NeighborhoodSeed = {
@@ -61,6 +73,8 @@ type SeedLocality = {
   tags: { id: string; name: string }[];
   localitySlug: string | null;
   parentSlug?: string;
+  formerSlug: string | null;
+  mergedInto: string | null;
 };
 
 const rawLocalities = ((seedData as { localities?: RawLocality[] })
@@ -171,6 +185,8 @@ function toSeedLocality(locality: RawLocality): SeedLocality {
     tags: buildTags(locality),
     localitySlug: locality.localitySlug ?? null,
     parentSlug: neighborhoodParentBySlug.get(locality.slug),
+    formerSlug: locality.formerSlug ?? null,
+    mergedInto: locality.mergedInto ?? null,
   };
 }
 
@@ -235,11 +251,14 @@ async function main() {
     console.log(`Seeding ${COMMUNITIES.length} local communities...`);
     let created = 0;
     let updated = 0;
+    let unchanged = 0;
 
     for (const data of COMMUNITIES) {
-      const existing = await communityRepo.findOne({
-        where: { slug: data.slug },
-      });
+      const existing =
+        (await communityRepo.findOne({ where: { slug: data.slug } })) ??
+        (data.formerSlug
+          ? await communityRepo.findOne({ where: { slug: data.formerSlug } })
+          : null);
 
       const parent =
         data.parentSlug != null
@@ -249,7 +268,7 @@ async function main() {
           : null;
 
       if (existing) {
-        Object.assign(existing, {
+        const updates = {
           name: data.name,
           slug: data.slug,
           description: data.description,
@@ -266,8 +285,26 @@ async function main() {
           tags: data.tags,
           localitySlug: data.localitySlug,
           parentId: parent?.id ?? null,
-        });
-        await communityRepo.save(existing);
+        };
+        const changed = changedSeedFields(existing, updates);
+        if (changed.length > 0) {
+          // Only a real change writes a directory change; an unchanged row would invalidate its town's boundary.
+          Object.assign(existing, updates);
+          await saveCommunityWithDirectoryChange(communityRepo, {
+            id: existing.id,
+            ...updates,
+          } as Community);
+        }
+        // Former slugs are not directory data, so recording them needs no directory change.
+        const formerSlugs = withFormerSlug(
+          existing.formerSlugs,
+          data.formerSlug,
+          data.slug
+        );
+        if (changedSeedFields(existing, { formerSlugs }).length > 0) {
+          await communityRepo.update(existing.id, { formerSlugs });
+          existing.formerSlugs = formerSlugs;
+        }
         if (!SKIP_CHAT_ROOMS)
           await ensureCommunityChatRoom(existing, {
             createCommunityChat: (input) =>
@@ -276,9 +313,17 @@ async function main() {
               await communityRepo.update(communityId, { chatRoomId });
             },
           });
-        updated++;
-        console.log(`  Updated: ${data.name}`);
+        if (changed.length > 0) {
+          updated++;
+          console.log(`  Updated: ${data.name}`);
+        } else unchanged++;
       } else {
+        if (
+          await communityRepo.findOne({
+            where: { formerSlugs: ArrayContains([data.slug]) },
+          })
+        )
+          throw new Error(`${data.slug} is a former slug of another community`);
         const community = communityRepo.create({
           name: data.name,
           slug: data.slug,
@@ -304,7 +349,7 @@ async function main() {
           memberCount: 0,
           isSystemCommunity: true,
         });
-        await communityRepo.save(community);
+        await saveCommunityWithDirectoryChange(communityRepo, community);
         if (!SKIP_CHAT_ROOMS)
           await ensureCommunityChatRoom(community, {
             createCommunityChat: (input) =>
@@ -318,6 +363,29 @@ async function main() {
       }
     }
 
+    // Merges run after every community exists, so the target of a merge is always there.
+    let merged = 0;
+    for (const data of COMMUNITIES.filter((c) => c.mergedInto)) {
+      const source = await communityRepo.findOne({
+        where: { slug: data.slug },
+      });
+      const target = await communityRepo.findOne({
+        where: { slug: data.mergedInto as string },
+      });
+      if (!source || !target || source.id === target.id)
+        throw new Error(`Cannot merge ${data.slug} into ${data.mergedInto}`);
+      if (target.mergedIntoId)
+        throw new Error(`${data.mergedInto} is itself merged`);
+      if (source.mergedIntoId === target.id) continue;
+      await saveCommunityWithDirectoryChange(communityRepo, {
+        id: source.id,
+        mergedIntoId: target.id,
+      } as Community);
+      merged++;
+      console.log(`  Merged: ${data.name} -> ${target.name}`);
+    }
+    if (merged) console.log(`Merged ${merged} communities.`);
+
     const totalByType = COMMUNITIES.reduce<Record<string, number>>(
       (acc, item) => {
         acc[item.localityType] = (acc[item.localityType] || 0) + 1;
@@ -327,7 +395,7 @@ async function main() {
     );
 
     console.log(
-      `\nDone. Created: ${created}, Updated: ${updated}, Total: ${COMMUNITIES.length}`
+      `\nDone. Created: ${created}, Updated: ${updated}, Unchanged: ${unchanged}, Total: ${COMMUNITIES.length}`
     );
     console.log(`Breakdown: ${JSON.stringify(totalByType)}`);
     chatClient.close();

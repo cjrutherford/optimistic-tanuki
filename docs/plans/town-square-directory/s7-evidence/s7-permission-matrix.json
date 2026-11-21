@@ -1,0 +1,245 @@
+{
+  "generatedFor": "S7 operator routes",
+  "rows": [
+    {
+      "case": "anonymous, owner-console scope",
+      "path": "/directory/runs",
+      "session": "none",
+      "scopeHeader": "owner-console",
+      "expected": "401",
+      "status": 401
+    },
+    {
+      "case": "anonymous, owner-console scope",
+      "path": "/directory/rights-cases",
+      "session": "none",
+      "scopeHeader": "owner-console",
+      "expected": "401",
+      "status": 401
+    },
+    {
+      "case": "anonymous, owner-console scope",
+      "path": "/directory/taxonomy/cases",
+      "session": "none",
+      "scopeHeader": "owner-console",
+      "expected": "401",
+      "status": 401
+    },
+    {
+      "case": "anonymous, owner-console scope",
+      "path": "/directory/withdrawals",
+      "session": "none",
+      "scopeHeader": "owner-console",
+      "expected": "401",
+      "status": 401
+    },
+    {
+      "case": "anonymous, owner-console scope",
+      "path": "/directory/towns/615482e8-d72b-4500-989f-5b79ceb32781/business-identity-review",
+      "session": "none",
+      "scopeHeader": "owner-console",
+      "expected": "401",
+      "status": 401
+    },
+    {
+      "case": "anonymous, owner-console scope, direct gateway",
+      "path": "/directory/runs",
+      "session": "none",
+      "scopeHeader": "owner-console",
+      "expected": "401",
+      "status": 401
+    },
+    {
+      "case": "anonymous, owner-console scope, direct gateway",
+      "path": "/directory/rights-cases",
+      "session": "none",
+      "scopeHeader": "owner-console",
+      "expected": "401",
+      "status": 401
+    },
+    {
+      "case": "anonymous, owner-console scope, direct gateway",
+      "path": "/directory/taxonomy/cases",
+      "session": "none",
+      "scopeHeader": "owner-console",
+      "expected": "401",
+      "status": 401
+    },
+    {
+      "case": "anonymous, owner-console scope, direct gateway",
+      "path": "/directory/withdrawals",
+      "session": "none",
+      "scopeHeader": "owner-console",
+      "expected": "401",
+      "status": 401
+    },
+    {
+      "case": "anonymous, owner-console scope, direct gateway",
+      "path": "/directory/towns/615482e8-d72b-4500-989f-5b79ceb32781/business-identity-review",
+      "session": "none",
+      "scopeHeader": "owner-console",
+      "expected": "401",
+      "status": 401
+    },
+    {
+      "case": "no session, local-hub scope",
+      "path": "/directory/runs",
+      "session": "none",
+      "scopeHeader": "local-hub",
+      "expected": "401|403",
+      "status": 401
+    },
+    {
+      "case": "no session, local-hub scope",
+      "path": "/directory/rights-cases",
+      "session": "none",
+      "scopeHeader": "local-hub",
+      "expected": "401|403",
+      "status": 401
+    },
+    {
+      "case": "no session, local-hub scope",
+      "path": "/directory/taxonomy/cases",
+      "session": "none",
+      "scopeHeader": "local-hub",
+      "expected": "401|403",
+      "status": 401
+    },
+    {
+      "case": "no session, local-hub scope",
+      "path": "/directory/withdrawals",
+      "session": "none",
+      "scopeHeader": "local-hub",
+      "expected": "401|403",
+      "status": 401
+    },
+    {
+      "case": "no session, local-hub scope",
+      "path": "/directory/towns/615482e8-d72b-4500-989f-5b79ceb32781/business-identity-review",
+      "session": "none",
+      "scopeHeader": "local-hub",
+      "expected": "401|403",
+      "status": 401
+    },
+    {
+      "case": "owner session, no scope header, direct gateway",
+      "path": "/directory/runs",
+      "session": "owner",
+      "scopeHeader": null,
+      "expected": "401|403",
+      "status": 403
+    },
+    {
+      "case": "owner session, no scope header, direct gateway",
+      "path": "/directory/rights-cases",
+      "session": "owner",
+      "scopeHeader": null,
+      "expected": "401|403",
+      "status": 403
+    },
+    {
+      "case": "owner session, no scope header, direct gateway",
+      "path": "/directory/taxonomy/cases",
+      "session": "owner",
+      "scopeHeader": null,
+      "expected": "401|403",
+      "status": 403
+    },
+    {
+      "case": "owner session, no scope header, direct gateway",
+      "path": "/directory/withdrawals",
+      "session": "owner",
+      "scopeHeader": null,
+      "expected": "401|403",
+      "status": 403
+    },
+    {
+      "case": "owner session, no scope header, direct gateway",
+      "path": "/directory/towns/615482e8-d72b-4500-989f-5b79ceb32781/business-identity-review",
+      "session": "owner",
+      "scopeHeader": null,
+      "expected": "401|403",
+      "status": 403
+    },
+    {
+      "case": "owner session, local-hub scope header, direct gateway",
+      "path": "/directory/runs",
+      "session": "owner",
+      "scopeHeader": "local-hub",
+      "expected": "401|403",
+      "status": 403
+    },
+    {
+      "case": "owner session, local-hub scope header, direct gateway",
+      "path": "/directory/rights-cases",
+      "session": "owner",
+      "scopeHeader": "local-hub",
+      "expected": "401|403",
+      "status": 403
+    },
+    {
+      "case": "owner session, local-hub scope header, direct gateway",
+      "path": "/directory/taxonomy/cases",
+      "session": "owner",
+      "scopeHeader": "local-hub",
+      "expected": "401|403",
+      "status": 403
+    },
+    {
+      "case": "owner session, local-hub scope header, direct gateway",
+      "path": "/directory/withdrawals",
+      "session": "owner",
+      "scopeHeader": "local-hub",
+      "expected": "401|403",
+      "status": 403
+    },
+    {
+      "case": "owner session, local-hub scope header, direct gateway",
+      "path": "/directory/towns/615482e8-d72b-4500-989f-5b79ceb32781/business-identity-review",
+      "session": "owner",
+      "scopeHeader": "local-hub",
+      "expected": "401|403",
+      "status": 403
+    },
+    {
+      "case": "owner session, owner-console scope (control)",
+      "path": "/directory/runs",
+      "session": "owner",
+      "scopeHeader": "owner-console",
+      "expected": "200",
+      "status": 200
+    },
+    {
+      "case": "owner session, owner-console scope (control)",
+      "path": "/directory/rights-cases",
+      "session": "owner",
+      "scopeHeader": "owner-console",
+      "expected": "200",
+      "status": 200
+    },
+    {
+      "case": "owner session, owner-console scope (control)",
+      "path": "/directory/taxonomy/cases",
+      "session": "owner",
+      "scopeHeader": "owner-console",
+      "expected": "200",
+      "status": 200
+    },
+    {
+      "case": "owner session, owner-console scope (control)",
+      "path": "/directory/withdrawals",
+      "session": "owner",
+      "scopeHeader": "owner-console",
+      "expected": "200",
+      "status": 200
+    },
+    {
+      "case": "owner session, owner-console scope (control)",
+      "path": "/directory/towns/615482e8-d72b-4500-989f-5b79ceb32781/business-identity-review",
+      "session": "owner",
+      "scopeHeader": "owner-console",
+      "expected": "200",
+      "status": 200
+    }
+  ]
+}

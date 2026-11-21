@@ -1,6 +1,7 @@
 import {
   MapCoordinates,
   buildAtlasNearbySelection,
+  frameCoordinates,
   isRenderableCoordinate,
 } from './map.utils';
 
@@ -72,7 +73,7 @@ describe('map utils', () => {
         {
           id: 'missing',
           name: 'Missing',
-          coordinates: { lat: 0, lng: 0 },
+          coordinates: undefined,
         },
         {
           id: 'savannah',
@@ -88,9 +89,9 @@ describe('map utils', () => {
     ]);
   });
 
-  it('treats nullish and zero-zero coordinates as non-renderable', () => {
+  it('rejects missing coordinates but permits an actual zero-zero point', () => {
     expect(isRenderableCoordinate(undefined)).toBe(false);
-    expect(isRenderableCoordinate({ lat: 0, lng: 0 })).toBe(false);
+    expect(isRenderableCoordinate({ lat: 0, lng: 0 })).toBe(true);
     expect(isRenderableCoordinate({ lat: 32.0809, lng: -81.0912 })).toBe(true);
   });
 
@@ -106,6 +107,30 @@ describe('map utils', () => {
       expect(isRenderableCoordinate({ lat: 32.0809, lng: -81.0912 })).toBe(
         true
       );
+    });
+  });
+
+  describe('frameCoordinates', () => {
+    it('returns null when no point can be drawn', () => {
+      expect(frameCoordinates([])).toBeNull();
+      expect(
+        frameCoordinates([null, undefined, { lat: 99, lng: 0 }])
+      ).toBeNull();
+    });
+
+    it('centres on the bounding box and zooms in on one point', () => {
+      expect(frameCoordinates([{ lat: 10, lng: 20 }])).toEqual({
+        lat: 10,
+        lng: 20,
+        zoom: 11,
+      });
+      const framed = frameCoordinates([
+        { lat: 30, lng: -84 },
+        { lat: 32, lng: -80 },
+      ]);
+      expect(framed?.lat).toBe(31);
+      expect(framed?.lng).toBe(-82);
+      expect(framed?.zoom).toBeLessThan(11);
     });
   });
 });

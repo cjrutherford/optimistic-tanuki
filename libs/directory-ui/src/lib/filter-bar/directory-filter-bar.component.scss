@@ -1,0 +1,91 @@
+:host {
+  display: block;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  color: var(--foreground);
+  font-family: var(--font-body, inherit);
+  font-size: var(--type-body, 1rem);
+  line-height: var(--line-height, 1.5);
+}
+
+.bar__field {
+  display: grid;
+  gap: 0.25rem;
+  min-width: min(100%, 14rem);
+
+  label {
+    font-size: var(--type-small, 0.8125rem);
+    font-weight: 600;
+    letter-spacing: var(--personality-label-letter-spacing, normal);
+  }
+
+  input,
+  select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(
+      --personality-input-radius,
+      var(--border-radius-md, 0.5rem)
+    );
+    background: var(--background);
+    color: var(--foreground);
+    font: inherit;
+  }
+}
+
+.bar__check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bar__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.bar__submit,
+.bar__clear {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--primary);
+  border-radius: var(
+    --personality-input-radius,
+    var(--border-radius-md, 0.5rem)
+  );
+  background: transparent;
+  color: var(--primary-text, var(--primary));
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bar__announce {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

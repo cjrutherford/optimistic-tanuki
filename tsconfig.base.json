@@ -111,6 +111,7 @@
       ],
       "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
       "@optimistic-tanuki/database": ["libs/database/src/index.ts"],
+      "@optimistic-tanuki/directory-ui": ["libs/directory-ui/src/index.ts"],
       "@optimistic-tanuki/document-text": ["libs/document-text/src/index.ts"],
       "@optimistic-tanuki/email": ["libs/email/src/index.ts"],
       "@optimistic-tanuki/encryption": ["libs/encryption/src/index.ts"],
@@ -205,6 +206,9 @@
       "@optimistic-tanuki/search-ui": ["libs/search-ui/src/index.ts"],
       "@optimistic-tanuki/social-contracts": [
         "libs/social/contracts/src/index.ts"
+      ],
+      "@optimistic-tanuki/social-contracts/directory": [
+        "libs/social/contracts/src/lib/directory.ts"
       ],
       "@optimistic-tanuki/social-data-access": [
         "libs/social-data-access/src/index.ts"

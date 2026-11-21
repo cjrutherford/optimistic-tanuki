@@ -15,18 +15,26 @@ import {
   NgZone,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser, DOCUMENT } from '@angular/common';
-import { City } from '../../services/community.service';
+import {
+  ButtonComponent,
+  ErrorStateComponent,
+} from '@optimistic-tanuki/common-ui';
+import {
+  City,
+  DirectoryBoundaryGeometry,
+} from '../../services/community.service';
 import {
   MapCoordinates,
   MapMode,
   buildAtlasNearbySelection,
+  frameCoordinates,
   isRenderableCoordinate,
 } from './map.utils';
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ButtonComponent, ErrorStateComponent],
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss'],
 })
@@ -34,11 +42,18 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef;
   @Input() mode: MapMode = 'single-location';
   @Input() cities: City[] = [];
-  @Input() centerLat = 31.9;
-  @Input() centerLng = -81.1;
+  @Input() centerLat: number | null = null;
+  @Input() centerLng: number | null = null;
   @Input() zoom = 7;
-  @Input() centerLabel = 'Savannah, GA';
+  @Input() centerLabel = '';
+  @Input() boundary: DirectoryBoundaryGeometry | null = null;
   @Input() userLocation: MapCoordinates | null = null;
+  @Input() directoryLocations: {
+    name: string;
+    category: string;
+    coordinates: MapCoordinates;
+    href?: string;
+  }[] = [];
   @Output() citySelected = new EventEmitter<City>();
 
   private platformId = inject(PLATFORM_ID);
@@ -55,18 +70,22 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private resizeObserver?: ResizeObserver;
   isBrowser = signal(false);
   isLoading = signal(true);
+  mapFailed = signal(false);
+  private destroyed = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (
       !this.map ||
       !this.leaflet ||
-      (!changes['cities'] &&
+      (!changes['boundary'] &&
+        !changes['cities'] &&
         !changes['centerLat'] &&
         !changes['centerLng'] &&
         !changes['centerLabel'] &&
         !changes['zoom'] &&
         !changes['mode'] &&
-        !changes['userLocation'])
+        !changes['userLocation'] &&
+        !changes['directoryLocations'])
     ) {
       return;
     }
@@ -77,36 +96,37 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   ngAfterViewInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.isBrowser.set(true);
-      this.loadLeafletCss().then(() => {
-        this.initMap();
-      });
+      void this.retryMap();
     }
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     if (this.map && isPlatformBrowser(this.platformId)) {
       this.resizeObserver?.disconnect();
       this.map.remove();
     }
   }
 
-  private loadLeafletCss(): Promise<void> {
-    return new Promise((resolve) => {
-      if (this.document.getElementById('leaflet-css')) {
-        resolve();
-        return;
+  async retryMap(): Promise<void> {
+    this.mapFailed.set(false);
+    this.isLoading.set(true);
+    try {
+      await this.initMap();
+    } catch {
+      this.resizeObserver?.disconnect();
+      this.map?.remove();
+      this.map = undefined;
+      if (!this.destroyed) {
+        this.isLoading.set(false);
+        this.mapFailed.set(true);
       }
-      const link = this.document.createElement('link');
-      link.id = 'leaflet-css';
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      link.onload = () => resolve();
-      this.document.head.appendChild(link);
-    });
+    }
   }
 
   private async initMap(): Promise<void> {
     const leafletModule = await import('leaflet');
+    if (this.destroyed) return;
     const L: typeof import('leaflet') =
       (leafletModule as any).default ?? leafletModule;
     this.leaflet = L;
@@ -195,10 +215,55 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
       case 'radius-focus':
         this.renderRadiusFocusMode(this.leaflet);
         break;
+      case 'directory':
+        this.renderDirectoryMode(this.leaflet);
+        break;
       case 'single-location':
       default:
         this.renderSingleLocationMode(this.leaflet);
         break;
+    }
+
+    for (const location of this.directoryLocations) {
+      if (!isRenderableCoordinate(location.coordinates)) continue;
+      const marker = this.createMarker(this.leaflet, {
+        className: 'directory-marker map-marker map-marker--directory',
+        html: '<div class="directory-marker-pin" data-map-marker-role="directory"></div>',
+        coordinates: location.coordinates,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+        title: location.name,
+        alt: location.name,
+      });
+      const label = this.document.createElement('span');
+      label.textContent = `${location.name} · ${location.category
+        .split('_')
+        .join(' ')}`;
+      marker.bindTooltip(label, { direction: 'top', offset: [0, -12] });
+      const popup = this.document.createElement('div');
+      popup.appendChild(label.cloneNode(true));
+      if (location.href) {
+        const link = this.document.createElement('a');
+        link.href = location.href;
+        link.textContent = 'View business details';
+        link.setAttribute('aria-label', `View details for ${location.name}`);
+        popup.appendChild(this.document.createElement('br'));
+        popup.appendChild(link);
+      }
+      marker.bindPopup(popup);
+      const element = marker.getElement?.();
+      if (element) {
+        element.setAttribute('tabindex', '0');
+        element.setAttribute('role', 'button');
+        element.setAttribute('aria-label', label.textContent || location.name);
+        element.addEventListener('keydown', (event: KeyboardEvent) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            marker.openPopup();
+          }
+        });
+      }
+      this.markers.push(marker);
     }
 
     this.attachTileLayerWhenReady();
@@ -248,7 +313,9 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
     const radiusMiles = 250;
     const radiusKm = radiusMiles * 1.60934;
 
-    const outline = L.circle([this.centerLat, this.centerLng], {
+    const center = this.getFocusCoordinates();
+    if (!center) return;
+    const outline = L.circle([center.lat, center.lng], {
       radius: radiusKm * 1000,
       color: primaryColor,
       weight: 2,
@@ -257,7 +324,7 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
       dashArray: '4, 4',
     }).addTo(this.map);
 
-    const fill = L.circle([this.centerLat, this.centerLng], {
+    const fill = L.circle([center.lat, center.lng], {
       radius: radiusKm * 1000,
       fillColor: primaryColor,
       fillOpacity: 0.15,
@@ -299,7 +366,9 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private addLocalityMarkers(L: any, cities: City[]): void {
     cities
-      .filter((city) => isRenderableCoordinate(city.coordinates))
+      .filter((city): city is City & { coordinates: MapCoordinates } =>
+        isRenderableCoordinate(city.coordinates)
+      )
       .forEach((city) => {
         const marker = this.createMarker(L, {
           className: 'locality-marker map-marker map-marker--locality',
@@ -382,18 +451,71 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private renderSingleLocationMode(L: any): void {
+    let boundaryBounds: any;
+    if (this.boundary) {
+      const layer = L.geoJSON(
+        { type: 'Feature', geometry: this.boundary, properties: {} },
+        {
+          style: {
+            color: this.getCssVariable('--primary', '#3b82f6'),
+            weight: 3,
+            fillOpacity: 0.12,
+          },
+        }
+      ).addTo(this.map);
+      this.centerOverlays.push(layer);
+      boundaryBounds = layer.getBounds();
+    }
     this.addFocusMarker(L);
     this.addUserMarker(L);
-    const focusCoordinates = this.getFocusCoordinates();
-    if (!focusCoordinates) {
-      this.scheduleInvalidateSize();
-      return;
+    if (boundaryBounds?.isValid()) {
+      this.map.fitBounds(boundaryBounds, { padding: [18, 18], maxZoom: 12 });
+    } else {
+      const focusCoordinates = this.getFocusCoordinates();
+      if (focusCoordinates)
+        this.map.setView(
+          [focusCoordinates.lat, focusCoordinates.lng],
+          Math.max(this.zoom, 9)
+        );
+    }
+    this.scheduleInvalidateSize();
+  }
+
+  private renderDirectoryMode(L: any): void {
+    let boundaryBounds: any;
+    if (this.boundary) {
+      const layer = L.geoJSON(
+        { type: 'Feature', geometry: this.boundary, properties: {} },
+        {
+          style: {
+            color: this.getCssVariable('--primary', '#3b82f6'),
+            weight: 3,
+            fillOpacity: 0.12,
+          },
+        }
+      ).addTo(this.map);
+      this.centerOverlays.push(layer);
+      boundaryBounds = layer.getBounds();
     }
 
-    this.map.setView(
-      [focusCoordinates.lat, focusCoordinates.lng],
-      Math.max(this.zoom, 9)
-    );
+    const coordinates = this.directoryLocations
+      .filter((location) => isRenderableCoordinate(location.coordinates))
+      .map((location) => location.coordinates);
+
+    if (boundaryBounds?.isValid()) {
+      this.map.fitBounds(boundaryBounds, { padding: [18, 18], maxZoom: 13 });
+    } else if (coordinates.length > 0) {
+      this.fitMapToCoordinates(coordinates, this.userLocation ?? null);
+    } else {
+      const focusCoordinates = this.getFocusCoordinates();
+      if (focusCoordinates) {
+        this.map.setView(
+          [focusCoordinates.lat, focusCoordinates.lng],
+          Math.max(this.zoom, 10)
+        );
+      }
+    }
+
     this.scheduleInvalidateSize();
   }
 
@@ -428,7 +550,8 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
           Math.max(this.zoom, 7)
         );
       } else {
-        this.map.setView([this.centerLat, this.centerLng], this.zoom);
+        const fallback = this.getInitialMapView();
+        this.map.setView([fallback.lat, fallback.lng], fallback.zoom);
       }
       this.scheduleInvalidateSize();
       return;
@@ -454,7 +577,7 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   flyToCity(city: City): void {
-    if (this.map) {
+    if (this.map && isRenderableCoordinate(city.coordinates)) {
       this.map.flyTo([city.coordinates.lat, city.coordinates.lng], 10, {
         duration: 1.5,
       });
@@ -463,6 +586,14 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   resetView(): void {
     if (this.map) {
+      if (this.mode === 'directory') {
+        const coordinates = this.directoryLocations
+          .filter((location) => isRenderableCoordinate(location.coordinates))
+          .map((location) => location.coordinates);
+        this.fitMapToCoordinates(coordinates, this.userLocation ?? null);
+        return;
+      }
+
       if (this.mode === 'single-location' || this.mode === 'radius-focus') {
         const focusCoordinates = this.getFocusCoordinates();
         if (focusCoordinates) {
@@ -540,8 +671,11 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private getFocusCoordinates(): MapCoordinates | null {
-    const focusCoordinates = { lat: this.centerLat, lng: this.centerLng };
-    return isRenderableCoordinate(focusCoordinates) ? focusCoordinates : null;
+    if (this.centerLat !== null && this.centerLng !== null) {
+      const focusCoordinates = { lat: this.centerLat, lng: this.centerLng };
+      return isRenderableCoordinate(focusCoordinates) ? focusCoordinates : null;
+    }
+    return null;
   }
 
   private getInitialMapView(): MapCoordinates & { zoom: number } {
@@ -569,12 +703,13 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     const focusCoordinates = this.getFocusCoordinates();
+    if (focusCoordinates) return { ...focusCoordinates, zoom: this.zoom };
 
-    return {
-      lat: focusCoordinates?.lat ?? 31.9,
-      lng: focusCoordinates?.lng ?? -81.1,
-      zoom: this.zoom,
-    };
+    // No explicit focus: frame the towns we were given, never a fixed region.
+    const framed = frameCoordinates(
+      this.cities.map((city) => city.coordinates)
+    );
+    return framed ?? { lat: 0, lng: 0, zoom: 2 };
   }
 
   private createMarker(

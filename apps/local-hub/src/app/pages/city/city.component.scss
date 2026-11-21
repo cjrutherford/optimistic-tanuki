@@ -272,6 +272,32 @@ app-donation-progress {
   height: 100%;
 }
 
+.city-map-column {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.city-map-notes {
+  color: var(--foreground-muted);
+  font-size: var(--type-small);
+
+  p {
+    margin: 0;
+  }
+
+  a {
+    color: var(--primary-text, var(--primary));
+    font-weight: 600;
+  }
+}
+
+.city-map-empty {
+  margin: 0;
+  padding: 1rem;
+  color: var(--foreground-muted);
+}
+
 .city-overview-copy {
   min-width: 0;
   padding: 0.5rem 0.75rem;
@@ -365,7 +391,7 @@ app-donation-progress {
 
 .businesses-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 20px;
 }
 
@@ -459,6 +485,92 @@ app-donation-progress {
 
   &:hover {
     text-decoration: underline;
+  }
+}
+
+.city-directory-teaser-section {
+  padding: 32px 0 8px;
+}
+
+.city-directory-teaser {
+  display: block;
+}
+
+.city-directory-teaser__inner {
+  display: grid;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.city-directory-teaser__copy {
+  .section-title {
+    margin-bottom: 0.5rem;
+  }
+
+  .section-subtitle {
+    max-width: 70ch;
+    margin: 0;
+  }
+}
+
+.city-directory-teaser__note {
+  margin: 0.5rem 0 0;
+  color: var(--foreground-muted);
+  font-size: var(--type-small);
+}
+
+.city-directory-teaser__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+
+  otui-button {
+    width: auto;
+  }
+}
+
+.city-directory-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.city-directory-preview__item {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.city-directory-preview__name {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.city-directory-preview__meta {
+  color: var(--foreground-muted);
+  font-size: var(--type-small);
+}
+
+.city-directory-preview__mapped {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--primary-text, var(--primary));
+  font-size: var(--type-small);
+  font-weight: 600;
+}
+
+@media (min-width: 900px) {
+  .city-directory-teaser__inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .city-directory-teaser__actions {
+    justify-content: flex-end;
   }
 }
 

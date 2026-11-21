@@ -33,6 +33,7 @@ interface CommunityOpsEntity {
   timestamp: string | Date;
   route: string;
   communityId?: string;
+  localityType?: string;
   communityName?: string;
   memberRole?: CommunityMemberRole;
   managerProfileId?: string | null;
@@ -1071,12 +1072,72 @@ export class CommunityOpsWorkspaceComponent implements OnInit {
           label: 'Manage Members',
           route: ['/dashboard/communities', entity.id, 'members'],
         },
+        ...(['city', 'town'].includes(entity.localityType ?? '')
+          ? [
+              {
+                label: 'Review Boundary',
+                route: ['/dashboard/boundary-review', entity.id],
+              },
+              {
+                label: 'Review Business Links',
+                route: ['/dashboard/directory-link-review', entity.id],
+              },
+              {
+                label: 'Review Addresses',
+                route: ['/dashboard/directory-address-review', entity.id],
+              },
+              {
+                label: 'Review Business Identity',
+                route: ['/dashboard/directory-identity-review', entity.id],
+              },
+              {
+                label: 'Suppress Listings',
+                route: ['/dashboard/directory-listing-suppressions', entity.id],
+              },
+              {
+                label: 'Listing Reports',
+                route: ['/dashboard/directory-listing-reports', entity.id],
+              },
+              {
+                label: 'Review Duplicates',
+                route: ['/dashboard/directory-duplicates', entity.id],
+              },
+            ]
+          : []),
       ];
     }
 
     if (entity.entityType === 'city') {
       return [
         { label: 'Edit City', route: ['/dashboard/cities', entity.id] },
+        {
+          label: 'Review Boundary',
+          route: ['/dashboard/boundary-review', entity.id],
+        },
+        {
+          label: 'Review Business Links',
+          route: ['/dashboard/directory-link-review', entity.id],
+        },
+        {
+          label: 'Review Addresses',
+          route: ['/dashboard/directory-address-review', entity.id],
+        },
+        {
+          label: 'Review Business Identity',
+          route: ['/dashboard/directory-identity-review', entity.id],
+        },
+        {
+          label: 'Suppress Listings',
+          route: ['/dashboard/directory-listing-suppressions', entity.id],
+        },
+        {
+          label: 'Listing Reports',
+          route: ['/dashboard/directory-listing-reports', entity.id],
+        },
+        {
+          label: 'Review Duplicates',
+          route: ['/dashboard/directory-duplicates', entity.id],
+        },
         { label: 'Create Community', route: ['/dashboard/communities/new'] },
       ];
     }
@@ -1101,6 +1162,7 @@ export class CommunityOpsWorkspaceComponent implements OnInit {
     const communityEntities: CommunityOpsEntity[] = snapshots.map(
       ({ community, members, manager }) => ({
         id: community.id,
+        localityType: community.localityType ?? undefined,
         entityType: 'community' as const,
         title: community.name,
         subtitle: community.description || 'No description provided.',

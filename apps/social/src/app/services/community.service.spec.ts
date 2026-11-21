@@ -87,6 +87,21 @@ describe('CommunityService', () => {
       save: jest.fn(),
     } as any;
 
+    (communityRepo as any).manager = {
+      transaction: async (fn: (manager: unknown) => Promise<unknown>) =>
+        fn({
+          queryRunner: { isTransactionActive: true },
+          save: (entity: unknown, value: unknown) =>
+            entity === Community
+              ? communityRepo.save(value as Community)
+              : memberRepo.save(value as CommunityMember),
+          remove: (_entity: unknown, value: unknown) =>
+            communityRepo.remove(value as Community),
+          query: jest.fn().mockResolvedValue([]),
+          insert: jest.fn().mockResolvedValue(undefined),
+        }),
+    };
+
     memberRepo.find.mockResolvedValue([] as any);
     communityRepo.find.mockResolvedValue([] as any);
 
@@ -165,6 +180,51 @@ describe('CommunityService', () => {
       await expect(
         service.create(createDto, 'user-1', 'profile-1')
       ).rejects.toThrow(RpcException);
+    });
+  });
+
+  describe('findBySlug of a merged locality', () => {
+    it('tells the caller which town absorbed it', async () => {
+      communityRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'medina',
+          slug: 'medina-tx',
+          mergedIntoId: 'bandera',
+        } as any)
+        .mockResolvedValueOnce({ slug: 'bandera-tx' } as any);
+      const found = await service.findBySlug('medina-tx');
+      expect((found as any).mergedIntoSlug).toBe('bandera-tx');
+      expect(communityRepo.findOne).toHaveBeenLastCalledWith({
+        where: { id: 'bandera' },
+        select: { slug: true },
+      });
+    });
+
+    it('adds nothing for a locality that was not merged', async () => {
+      communityRepo.findOne.mockResolvedValueOnce({
+        id: 'bandera',
+        slug: 'bandera-tx',
+        mergedIntoId: null,
+      } as any);
+      const found = await service.findBySlug('bandera-tx');
+      expect((found as any).mergedIntoSlug).toBeUndefined();
+    });
+  });
+
+  describe('findBySlug of a renamed locality', () => {
+    it('returns the community with the slug to redirect to', async () => {
+      communityRepo.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        id: 'pv',
+        slug: 'palm-valley-fl',
+        formerSlugs: ['ponte-vedra-beach-fl'],
+      } as any);
+      const found = await service.findBySlug('ponte-vedra-beach-fl');
+      expect((found as any).redirectToSlug).toBe('palm-valley-fl');
+    });
+
+    it('returns null when no slug or former slug matches', async () => {
+      communityRepo.findOne.mockResolvedValue(null);
+      expect(await service.findBySlug('nowhere')).toBeNull();
     });
   });
 
@@ -342,6 +402,20 @@ describe('CommunityService', () => {
       communityRepo.find
         .mockResolvedValueOnce([directChild] as any)
         .mockResolvedValueOnce([legacyCityLinked, duplicateLocality] as any);
+      (communityRepo as any).manager = {
+        transaction: async (fn: (manager: unknown) => Promise<unknown>) =>
+          fn({
+            save: (entity: unknown, value: unknown) =>
+              entity === Community
+                ? communityRepo.save(value as Community)
+                : memberRepo.save(value as CommunityMember),
+            remove: (_entity: unknown, value: unknown) =>
+              communityRepo.remove(value as Community),
+            query: jest.fn().mockResolvedValue([]),
+            insert: jest.fn().mockResolvedValue(undefined),
+          }),
+      };
+
       memberRepo.find.mockResolvedValue([] as any);
 
       const result = await service.getSubCommunities('city-1');

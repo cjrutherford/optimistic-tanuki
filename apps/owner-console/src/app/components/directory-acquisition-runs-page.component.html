@@ -1,0 +1,422 @@
+<section class="runs-page" aria-labelledby="acquisition-runs-title">
+  <header class="page-header">
+    <p class="page-kicker">Directory</p>
+    <h1 id="acquisition-runs-title">Acquisition runs</h1>
+    <p>
+      Every acquisition run is recorded here with its progress per town or
+      source unit. Runs are made by the local stage scripts; this page watches
+      them and records requests. Resuming or retrying never starts work from
+      here: it shows the command to run locally. Real acquisition is not
+      authorised and nothing acquires automatically.
+    </p>
+  </header>
+
+  @if (budget) {
+  <otui-card class="run-form" tone="neutral" emphasis="soft">
+    <h2>Provider budget · {{ budget.period }}</h2>
+    <ul class="run-facts">
+      <li>
+        Reserved {{ budget.reservedCents }} of {{ budget.ceilingCents }} cents ·
+        used {{ budget.usedCents }} · {{ budget.remainingCents }} remaining
+      </li>
+      <li>{{ budget.anonymousAttempts }} anonymous attempts this period</li>
+      @if (budget.geoapifyDailyCreditLimit !== undefined) {
+      <li class="geoapify-credits">
+        Geoapify: {{ budget.geoapifyCreditsToday ?? 0 }} of
+        {{ budget.geoapifyDailyCreditLimit }} credits used today (UTC)
+      </li>
+      }
+      <li>
+        {{
+          budget.hardStop
+            ? 'Hard stop: no further provider reservation succeeds this period.'
+            : 'Within the ceiling.'
+        }}
+      </li>
+      <li>
+        {{
+          budget.acquisitionAuthorized
+            ? 'Acquisition is authorised.'
+            : 'Acquisition is not authorised.'
+        }}
+      </li>
+    </ul>
+  </otui-card>
+  } @if (releases) {
+  <otui-card class="run-form overture-releases" tone="neutral" emphasis="soft">
+    <h2>Overture release · {{ releases.active.release }}</h2>
+    <p class="run-meta">
+      A newer release is run on a few canary towns first and becomes the active
+      release only when every canary succeeds and none fails the quality
+      scorecard.
+    </p>
+    @if (!releases.candidates.length) {
+    <p class="run-meta">No newer release has been found.</p>
+    } @for (c of releases.candidates; track c.release) {
+    <div class="release-candidate">
+      <h3>{{ c.release }} · {{ c.status }}</h3>
+      <ul class="run-facts">
+        <li>Rights check: {{ c.rightsStatus }}</li>
+        @if (c.holdReason) {
+        <li class="release-hold">Held: {{ c.holdReason }}</li>
+        } @if (c.lastError) {
+        <li>Last error: {{ c.lastError }}</li>
+        } @for (k of c.canary; track k.townId) {
+        <li>
+          Canary {{ k.townName || k.townId }}: {{ k.outcome
+          }}{{ k.reason ? ' (' + k.reason + ')' : '' }}
+        </li>
+        }
+      </ul>
+      @if (c.status === 'held') {
+      <lib-text-input
+        #releaseReason
+        label="Reason (required)"
+        placeholder="Why retry or reject this release?"
+      ></lib-text-input>
+      <lib-text-input
+        #releaseConfirm
+        label="Type RETRY or REJECT to confirm"
+        placeholder="RETRY or REJECT"
+      ></lib-text-input>
+      <div class="form-actions">
+        <otui-button
+          tone="brand"
+          emphasis="outline"
+          [disabled]="busy"
+          (click)="
+            decideRelease(
+              c.release,
+              'retry',
+              releaseReason.value,
+              releaseConfirm.value
+            )
+          "
+        >
+          Retry canaries
+        </otui-button>
+        <otui-button
+          tone="warning"
+          emphasis="outline"
+          [disabled]="busy"
+          (click)="
+            decideRelease(
+              c.release,
+              'reject',
+              releaseReason.value,
+              releaseConfirm.value
+            )
+          "
+        >
+          Reject release
+        </otui-button>
+      </div>
+      }
+    </div>
+    }
+  </otui-card>
+  }
+
+  <otui-card class="run-form" tone="neutral" emphasis="soft">
+    <h2>Import history</h2>
+    <p class="run-meta">
+      Adds past town scans and census progress as read-only history runs. Safe
+      to repeat.
+    </p>
+    <lib-text-input
+      #historyReason
+      label="Reason (required)"
+      placeholder="Why import history?"
+    ></lib-text-input>
+    <div class="form-actions">
+      <otui-button
+        tone="brand"
+        emphasis="outline"
+        [disabled]="busy"
+        (click)="importHistory(historyReason.value)"
+      >
+        Import history
+      </otui-button>
+    </div>
+  </otui-card>
+
+  <otui-card class="run-form" tone="neutral" emphasis="soft">
+    <h2>Run a town now</h2>
+    <p class="run-meta">
+      Puts one town first on the next acquisition sweep. The sweep still checks
+      authorization, the budget and the kill switch, and the old listings keep
+      serving until the new scan replaces them. Asking twice is safe.
+    </p>
+    <lib-text-input
+      #townId
+      label="Town id"
+      placeholder="Town UUID"
+    ></lib-text-input>
+    <lib-text-input
+      #townReason
+      label="Reason (required)"
+      placeholder="Why run this town now?"
+    ></lib-text-input>
+    <lib-text-input
+      #townConfirm
+      label="Type RUN to confirm"
+      placeholder="RUN"
+    ></lib-text-input>
+    <div class="form-actions">
+      <otui-button
+        tone="brand"
+        emphasis="outline"
+        [disabled]="busy"
+        (click)="runTownNow(townId.value, townReason.value, townConfirm.value)"
+      >
+        Run this town now
+      </otui-button>
+    </div>
+  </otui-card>
+
+  <div class="form-actions" role="group" aria-label="Status filter">
+    @for (f of filters; track f) {
+    <otui-button
+      size="sm"
+      [tone]="filter === f ? 'brand' : 'neutral'"
+      [emphasis]="filter === f ? 'soft' : 'ghost'"
+      (click)="setFilter(f)"
+    >
+      {{ f ? label(f) : 'All' }}
+    </otui-button>
+    }
+  </div>
+
+  @if (message) {
+  <p class="page-message" role="status">{{ message }}</p>
+  } @if (loading && runs.length === 0) {
+  <otui-loading-state headline="Loading runs…"></otui-loading-state>
+  } @else if (!loading && runs.length === 0) {
+  <otui-empty-state
+    headline="No runs yet"
+    body="Runs recorded by the stage scripts, and imported history, appear here."
+  ></otui-empty-state>
+  }
+
+  <div class="run-list" aria-live="polite">
+    @for (r of runs; track r.id) {
+    <otui-card class="run-card" tone="neutral" emphasis="soft">
+      <div class="run-header">
+        <div>
+          <h3>
+            {{ label(r.kind) }} · {{ r.provider
+            }}{{ r.release ? ' ' + r.release : '' }}
+          </h3>
+          <p class="run-meta">
+            {{ r.observed }} observed · {{ r.accepted }} accepted ·
+            {{ r.rejected }} rejected · {{ r.createdAt }}
+          </p>
+        </div>
+        <otui-badge [tone]="badgeTone(r.status)" size="sm">
+          {{ label(r.status) | titlecase }}
+        </otui-badge>
+      </div>
+      @if (r.blockedReason) {
+      <p class="run-error" role="alert">
+        Blocked: {{ label(r.blockedReason) }}
+      </p>
+      } @if (r.stale) {
+      <p class="run-meta">No heartbeat recently; the run may have stopped.</p>
+      } @if (r.lastError) {
+      <p class="run-error">{{ r.lastError }}</p>
+      }
+      <div class="form-actions">
+        <otui-button
+          tone="brand"
+          emphasis="outline"
+          size="sm"
+          (click)="select(r)"
+        >
+          Open
+        </otui-button>
+      </div>
+    </otui-card>
+    }
+  </div>
+
+  @if (selected; as run) {
+  <otui-card class="run-card detail" tone="neutral" emphasis="soft">
+    <div class="run-header">
+      <div>
+        <h2>Run {{ run.id }}</h2>
+        <p class="run-meta">
+          {{ label(run.kind) }} · {{ run.completeness.done }} of
+          {{ run.completeness.total }} units finished · budget
+          {{ run.budgetUsedCents }} used / {{ run.budgetReservedCents }}
+          reserved cents
+        </p>
+      </div>
+      <otui-badge [tone]="badgeTone(run.status)" size="sm">
+        {{ label(run.status) | titlecase }}
+      </otui-badge>
+    </div>
+    <div
+      class="meter"
+      role="progressbar"
+      [attr.aria-valuenow]="progress(run)"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-label="Units finished"
+    >
+      <span [style.width.%]="progress(run)"></span>
+    </div>
+    @if (run.blockedReason) {
+    <p class="run-error" role="alert">
+      {{ blockedText(run.blockedReason) }}
+    </p>
+    } @if (run.pendingRequest) {
+    <p class="run-meta">
+      A resume or retry request is waiting for the local stage to consume it.
+    </p>
+    }
+
+    <table class="diff">
+      <caption>
+        Progress by unit
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Unit</th>
+          <th scope="col">Status</th>
+          <th scope="col">Attempt</th>
+          <th scope="col">Observed</th>
+          <th scope="col">Accepted</th>
+          <th scope="col">Rejected</th>
+          <th scope="col">Note</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (j of run.jobs; track j.unitKey) {
+        <tr>
+          <td>
+            <code>{{ j.unitKey }}</code>
+          </td>
+          <td>{{ label(j.status) }}</td>
+          <td>{{ j.attempt }}</td>
+          <td>{{ j.observed }}</td>
+          <td>{{ j.accepted }}</td>
+          <td>{{ j.rejected }}</td>
+          <td>{{ j.blockedReason ? label(j.blockedReason) : j.lastError }}</td>
+          <td>
+            @if (canRetry(run, j)) {
+            <otui-button
+              size="sm"
+              tone="warning"
+              emphasis="outline"
+              [disabled]="busy || !confirmed('retry')"
+              (click)="act('retry', reason.value, j.unitKey)"
+            >
+              Retry
+            </otui-button>
+            }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+
+    @if (run.quality; as quality) {
+    <table class="diff" aria-label="Quality scorecard">
+      <caption>
+        Quality scorecard ({{
+          quality.rows
+        }}
+        rows,
+        {{
+          quality.passed ? 'within limits' : 'past a limit'
+        }})
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Measure</th>
+          <th scope="col">Value</th>
+          <th scope="col">Limit</th>
+          <th scope="col">Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (q of qualityRows(quality); track q.label) {
+        <tr>
+          <th scope="row">{{ q.label }}</th>
+          <td>{{ q.value }}</td>
+          <td>{{ q.limit }}</td>
+          <td>{{ q.breached ? 'Past limit' : 'Ok' }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+    } @if (run.events.length) {
+    <ul class="run-facts" aria-label="Operator history">
+      @for (e of run.events; track e.id) {
+      <li>
+        {{ e.createdAt }} · {{ label(e.action) }} ·
+        <code>{{ e.actorId ?? 'erased account' }}</code>
+        @if (e.reason) { · {{ e.reason }} }
+      </li>
+      }
+    </ul>
+    } @if (command) {
+    <div class="command">
+      <p class="run-meta">Run this on the machine that holds the data:</p>
+      <code class="command-text">{{ command }}</code>
+      <div class="form-actions">
+        <otui-button
+          tone="brand"
+          emphasis="outline"
+          size="sm"
+          (click)="copyCommand()"
+        >
+          Copy command
+        </otui-button>
+      </div>
+    </div>
+    } @else if (run.resumeCommand) {
+    <div class="command">
+      <p class="run-meta">Pending request. Run this locally:</p>
+      <code class="command-text">{{ run.resumeCommand }}</code>
+    </div>
+    }
+
+    <div class="run-actions">
+      @if (resumeBlock(run)) {
+      <p class="run-meta">{{ resumeBlock(run) }}</p>
+      }
+      <lib-text-input #reason label="Reason (required)"></lib-text-input>
+      <lib-text-input
+        label="Type CANCEL, RESUME or RETRY to confirm the action you choose"
+        (valueChange)="setTyped($event)"
+      ></lib-text-input>
+      <div class="form-actions">
+        @if (canResume(run) && !resumeBlock(run)) {
+        <otui-button
+          tone="brand"
+          emphasis="solid"
+          [disabled]="busy || !confirmed('resume')"
+          (click)="act('resume', reason.value)"
+        >
+          Resume
+        </otui-button>
+        } @if (canCancel(run)) {
+        <otui-button
+          tone="warning"
+          emphasis="outline"
+          [disabled]="busy || !confirmed('cancel')"
+          (click)="act('cancel', reason.value)"
+        >
+          Cancel run
+        </otui-button>
+        }
+        <otui-button tone="neutral" emphasis="ghost" (click)="close()">
+          Close
+        </otui-button>
+      </div>
+    </div>
+  </otui-card>
+  }
+</section>

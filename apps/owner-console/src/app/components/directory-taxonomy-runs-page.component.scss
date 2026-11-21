@@ -1,0 +1,183 @@
+.taxonomy-page {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  color: var(--primary-text, var(--primary));
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.page-header {
+  display: grid;
+  gap: 0.5rem;
+
+  h1 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--type-h1);
+    line-height: var(--heading-line-height, normal);
+    letter-spacing: var(--heading-tracking, normal);
+  }
+
+  p {
+    max-width: 80ch;
+    margin: 0;
+    color: var(--foreground-muted);
+  }
+}
+
+.page-kicker {
+  margin: 0;
+  color: var(--primary-text, var(--primary));
+  font-size: var(--type-small);
+  font-weight: 700;
+  letter-spacing: var(--personality-label-letter-spacing, normal);
+  text-transform: uppercase;
+}
+
+.kind-bar,
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  otui-button {
+    width: auto;
+  }
+}
+
+.run-form {
+  display: grid;
+  gap: 0.75rem;
+
+  h2 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--type-h4);
+    line-height: var(--heading-line-height, normal);
+  }
+
+  lib-text-input {
+    width: 100%;
+  }
+}
+
+.page-message {
+  margin: 0;
+  color: var(--foreground-muted);
+}
+
+.run-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.run-card {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.run-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  h3 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--type-h4);
+    line-height: var(--heading-line-height, normal);
+  }
+}
+
+.run-meta {
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: var(--type-small);
+  overflow-wrap: anywhere;
+}
+
+.run-error {
+  margin: 0;
+  // Body text keeps full contrast on soft cards; the rule carries the danger colour.
+  color: var(--foreground);
+  border-inline-start: 3px solid var(--danger, var(--foreground));
+  padding-inline-start: 0.5rem;
+  font-size: var(--type-small);
+}
+
+.run-facts {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--foreground-muted);
+  font-size: var(--type-small);
+}
+
+.select-field {
+  display: grid;
+  gap: 0.25rem;
+  font-size: var(--type-small);
+  color: var(--foreground-muted);
+
+  select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--personality-input-radius, var(--border-radius-md));
+    background: var(--surface, transparent);
+    color: var(--foreground);
+    font: inherit;
+  }
+}
+
+.run-actions {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+
+  lib-text-input {
+    width: 100%;
+  }
+}
+
+.diff {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--type-small);
+
+  caption {
+    padding-bottom: 0.5rem;
+    color: var(--foreground-muted);
+    text-align: left;
+  }
+
+  th,
+  td {
+    padding: 0.375rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+}
+
+.sample {
+  display: block;
+}

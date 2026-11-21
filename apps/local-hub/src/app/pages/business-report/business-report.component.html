@@ -1,0 +1,176 @@
+<main class="report-page" aria-labelledby="report-title">
+  @switch (state()) { @case ('loading') {
+  <h1 id="report-title">Report or correct this listing</h1>
+  <p role="status">Loading the listing…</p>
+  } @case ('expired') {
+  <h1 id="report-title">Report or correct this listing</h1>
+  <p>
+    This link has expired, so we can't tell which listing you meant. Go back to
+    the list and open the listing again.
+  </p>
+  <a [routerLink]="['/city', slug, 'businesses']">Back to the directory</a>
+  } @case ('done') {
+  <section aria-labelledby="ack-title">
+    <h1 id="ack-title" #ackHeading tabindex="-1">
+      Thanks — your report was received
+    </h1>
+    <p>
+      A reviewer will look at it. Your report on {{ listingName() }} is filed.
+    </p>
+    <p class="report-page__receipt-label" id="receipt-label">
+      Your receipt code
+    </p>
+    <p class="report-page__receipt">
+      <code aria-labelledby="receipt-label">{{ receipt() }}</code>
+      <button type="button" class="report-page__button" (click)="copyReceipt()">
+        Copy code
+      </button>
+      <span role="status">{{ copied() ? 'Copied' : '' }}</span>
+    </p>
+    <p>
+      Save this code now. It can't be recovered later, and it is the only way to
+      check on your report.
+    </p>
+    <ul class="report-page__links">
+      <li>
+        <a
+          routerLink="/directory/reports/status"
+          [state]="{ receipt: receipt() }"
+          >Check this report's status</a
+        >
+      </li>
+      <li><a [routerLink]="listingLink">Back to the listing</a></li>
+      <li>
+        <a [routerLink]="['/city', slug, 'businesses']"
+          >Back to the directory</a
+        >
+      </li>
+    </ul>
+  </section>
+  } @default {
+  <h1 id="report-title">Report or correct this listing</h1>
+  <p class="report-page__listing">
+    Listing: <strong>{{ listingName() }}</strong>
+  </p>
+  <p>
+    You don't need to sign in or own a page. A reviewer will look at your
+    report. Sending a report doesn't change the listing by itself.
+  </p>
+
+  @if (errorList.length || submitError()) {
+  <div
+    #summary
+    class="report-page__summary"
+    role="alert"
+    tabindex="-1"
+    aria-labelledby="summary-title"
+  >
+    <h2 id="summary-title">
+      {{ errorList.length ? 'Please fix the following' : 'Report not sent' }}
+    </h2>
+    @if (submitError()) {
+    <p>{{ submitError() }}</p>
+    } @if (errorList.length) {
+    <ul>
+      @for (item of errorList; track item.id) {
+      <li>
+        <a [attr.href]="'#' + item.id">{{ item.message }}</a>
+      </li>
+      }
+    </ul>
+    }
+  </div>
+  }
+
+  <form (ngSubmit)="submit()" novalidate>
+    <fieldset
+      id="report-reason"
+      [attr.aria-invalid]="errors().reason ? 'true' : null"
+      [attr.aria-describedby]="errors().reason ? 'reason-error' : null"
+    >
+      <legend>What is the problem?</legend>
+      @for (r of reasons; track r.code) {
+      <label class="report-page__radio">
+        <input
+          type="radio"
+          name="reason"
+          [value]="r.code"
+          [checked]="reason() === r.code"
+          (change)="reason.set(r.code); revalidate()"
+        />
+        <span>{{ r.label }}</span>
+      </label>
+      } @if (errors().reason) {
+      <p class="report-page__error" id="reason-error">{{ errors().reason }}</p>
+      }
+    </fieldset>
+
+    <div class="report-page__field">
+      <label for="report-note">Details (optional)</label>
+      <textarea
+        id="report-note"
+        name="note"
+        rows="5"
+        [ngModel]="note()"
+        (ngModelChange)="note.set($event); revalidate()"
+        [attr.aria-invalid]="errors().note ? 'true' : null"
+        [attr.aria-describedby]="
+          errors().note ? 'note-count note-error' : 'note-count'
+        "
+      ></textarea>
+      <p id="note-count" class="report-page__help">
+        {{ note().length }} of {{ noteMax }} characters
+      </p>
+      @if (errors().note) {
+      <p class="report-page__error" id="note-error">{{ errors().note }}</p>
+      }
+    </div>
+
+    <div class="report-page__field">
+      <label for="report-email">Email (optional)</label>
+      <input
+        id="report-email"
+        name="email"
+        type="email"
+        autocomplete="email"
+        [attr.maxlength]="emailMax"
+        [ngModel]="email()"
+        (ngModelChange)="email.set($event); revalidate()"
+        [attr.aria-invalid]="errors().email ? 'true' : null"
+        [attr.aria-describedby]="
+          errors().email ? 'email-help email-error' : 'email-help'
+        "
+      />
+      <p id="email-help" class="report-page__help">
+        Optional. Only used if a reviewer needs to reach you. Never shown
+        publicly.
+      </p>
+      @if (errors().email) {
+      <p class="report-page__error" id="email-error">{{ errors().email }}</p>
+      }
+    </div>
+
+    <div class="report-page__trap" aria-hidden="true">
+      <label for="report-website">Leave this field empty</label>
+      <input
+        id="report-website"
+        name="website"
+        type="text"
+        tabindex="-1"
+        autocomplete="off"
+        [(ngModel)]="website"
+      />
+    </div>
+
+    <button
+      type="submit"
+      class="report-page__button report-page__button--primary"
+      [disabled]="sending()"
+      [attr.aria-busy]="sending() ? 'true' : 'false'"
+    >
+      {{ sending() ? 'Sending…' : 'Send report' }}
+    </button>
+    <a [routerLink]="listingLink" class="report-page__cancel">Cancel</a>
+  </form>
+  } }
+</main>

@@ -1535,8 +1535,10 @@ test.describe('Business site user stories', () => {
   }) => {
     const tenantSlug = OWNER_ACCOUNTS[0].slug;
     const bookingTitle = uniqueLabel('client-session');
-    const bookingDescription =
-      'A client-booked consultation that should flow through the gateway proxy.';
+    // Unique per run so rows left behind by earlier runs never match.
+    const bookingDescription = uniqueLabel(
+      'A client-booked consultation that should flow through the gateway proxy'
+    );
     const routineTitle = uniqueLabel('four-week-plan');
     const checkInNotes = uniqueLabel('check-in-notes');
 

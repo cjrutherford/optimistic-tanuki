@@ -3561,6 +3561,38 @@
       "resource": "density",
       "action": "read",
       "appScope": "local-hub"
+    },
+    {
+      "name": "directory.review",
+      "description": "Review directory identity, address, link and boundary candidates, listing reports and suppression",
+      "resource": "directory",
+      "action": "review",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "directory.rights",
+      "description": "Handle directory rights cases and policy or row withdrawal",
+      "resource": "directory",
+      "action": "rights",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "directory.operate",
+      "description": "Operate directory runs, taxonomy and reclassification",
+      "resource": "directory",
+      "action": "operate",
+      "targetId": null,
+      "appScope": "owner-console"
+    },
+    {
+      "name": "directory.export",
+      "description": "Request and download directory exports",
+      "resource": "directory",
+      "action": "export",
+      "targetId": null,
+      "appScope": "owner-console"
     }
   ],
   "role_permissions": [
@@ -8173,6 +8205,86 @@
       "role": "local_hub_admin",
       "permission": "community.maintain",
       "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "directory.review",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "directory.review",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "directory.review",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "directory.review",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "directory.rights",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "directory.rights",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "directory.rights",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "directory.rights",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "directory.operate",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "directory.operate",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "directory.operate",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "directory.operate",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "directory.export",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "directory.export",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "directory.export",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "directory.export",
+      "permissionAppScope": "owner-console"
     }
   ]
 }

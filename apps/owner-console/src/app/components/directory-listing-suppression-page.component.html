@@ -1,0 +1,225 @@
+<section class="suppression-page" aria-labelledby="suppression-title">
+  <a class="back-link" routerLink="/dashboard/community-ops">
+    <otui-icon name="arrow-back" [size]="18" stroke="currentColor"></otui-icon>
+    Community operations
+  </a>
+
+  <header class="page-header">
+    <p class="page-kicker">Directory</p>
+    <h1 id="suppression-title">Suppress listings</h1>
+    <p>
+      Hide one listing from every public view. The source record is never
+      changed, and a suppression can be lifted. To correct a listing, suppress
+      it as incorrect details: it is hidden and sent back to address review.
+      Corrected values are not entered here.
+    </p>
+  </header>
+
+  @if (message) {
+  <p class="page-message" role="status">{{ message }}</p>
+  }
+
+  <h2 class="section-title">Find a listing</h2>
+  <form
+    class="search-form"
+    (submit)="$event.preventDefault(); search(term.value)"
+  >
+    <label class="field">
+      <span>Search this town</span>
+      <input #term class="control" type="text" maxlength="100" name="q" />
+    </label>
+    <otui-button
+      size="sm"
+      tone="neutral"
+      emphasis="outline"
+      (click)="search(term.value)"
+    >
+      Search
+    </otui-button>
+  </form>
+  @for (hit of hits; track hit.id) {
+  <p class="row-line">
+    {{ hit.name }}
+    <otui-badge tone="neutral" size="sm">{{ hit.category }}</otui-badge>
+    <code>{{ hit.id }}</code>
+    <otui-button
+      size="sm"
+      tone="neutral"
+      emphasis="ghost"
+      (click)="openSuppress(hit.id)"
+    >
+      Suppress
+    </otui-button>
+  </p>
+  } @if (searched && !hits.length) {
+  <p class="muted">No public listing matched.</p>
+  }
+  <div class="review-actions">
+    <otui-button
+      size="sm"
+      tone="neutral"
+      emphasis="outline"
+      (click)="openSuppress()"
+    >
+      Suppress by listing id
+    </otui-button>
+  </div>
+
+  @if (form; as f) {
+  <otui-card tone="neutral" emphasis="soft">
+    <form class="decision-form" (submit)="$event.preventDefault(); submit()">
+      <p class="form-title">Suppress this listing</p>
+      <label class="field">
+        <span>Listing id</span>
+        <input
+          class="control"
+          type="text"
+          name="listingId"
+          maxlength="36"
+          [value]="f.listingId"
+          (input)="setListing($any($event.target).value)"
+        />
+      </label>
+      <label class="field">
+        <span>Reason</span>
+        <select
+          class="control"
+          name="reason"
+          (change)="setReason($any($event.target).value)"
+        >
+          @for (reason of reasons; track reason) {
+          <option [value]="reason" [selected]="reason === f.reasonCode">
+            {{ reason.split('-').join(' ') }}
+          </option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span>Note (optional, internal)</span>
+        <textarea
+          class="control"
+          rows="3"
+          maxlength="1024"
+          (input)="setNote($any($event.target).value)"
+        ></textarea>
+      </label>
+      <label class="check">
+        <input
+          type="checkbox"
+          name="attested"
+          (change)="setAttested($any($event.target).checked)"
+        />
+        I reviewed this listing and want it hidden from every public view.
+      </label>
+      <div class="review-actions">
+        <otui-button
+          size="sm"
+          tone="brand"
+          emphasis="solid"
+          [disabled]="submitting"
+          (click)="submit()"
+        >
+          Suppress listing
+        </otui-button>
+        <otui-button
+          size="sm"
+          tone="neutral"
+          emphasis="ghost"
+          (click)="cancel()"
+        >
+          Cancel
+        </otui-button>
+      </div>
+    </form>
+  </otui-card>
+  }
+
+  <h2 class="section-title">Suppressions</h2>
+  @if (loading && !suppressions) {
+  <otui-loading-state headline="Loading suppressions…"></otui-loading-state>
+  } @if (suppressions; as list) { @if (!list.length) {
+  <otui-empty-state
+    headline="None"
+    body="No listing in this town has been suppressed."
+  ></otui-empty-state>
+  } @for (item of list; track item.suppressionId) {
+  <otui-card class="suppression-card" tone="neutral" emphasis="soft">
+    <div class="business-header">
+      <h3>{{ item.listingName || 'Unnamed listing' }}</h3>
+      <otui-badge [tone]="isOpen(item) ? 'warning' : 'neutral'" size="sm">
+        {{ isOpen(item) ? 'Suppressed' : 'Lifted' }}
+      </otui-badge>
+    </div>
+    <p class="row-line">
+      <code>{{ item.listingId }}</code>
+      {{ item.reasonCode.split('-').join(' ') }}
+      <span class="muted">{{ item.createdAt | date : 'medium' }}</span>
+    </p>
+    @if (item.note) {
+    <p class="muted">{{ item.note }}</p>
+    } @if (!isOpen(item)) {
+    <p class="muted">
+      Lifted as {{ item.liftReasonCode }} {{ item.liftedAt | date : 'medium' }}
+    </p>
+    } @else {
+    <div class="review-actions">
+      <otui-button
+        size="sm"
+        tone="neutral"
+        emphasis="outline"
+        (click)="openLift(item)"
+      >
+        Lift suppression
+      </otui-button>
+    </div>
+    } @if (liftForm && liftForm.suppressionId === item.suppressionId) {
+    <form
+      class="decision-form"
+      (submit)="$event.preventDefault(); submitLift()"
+    >
+      <label class="field">
+        <span>Lift reason</span>
+        <select
+          class="control"
+          name="liftReason"
+          (change)="setLiftReason($any($event.target).value)"
+        >
+          @for (reason of liftReasons; track reason) {
+          <option [value]="reason" [selected]="reason === liftForm.reasonCode">
+            {{ reason.split('-').join(' ') }}
+          </option>
+          }
+        </select>
+      </label>
+      <label class="check">
+        <input
+          type="checkbox"
+          name="liftAttested"
+          (change)="setAttested($any($event.target).checked)"
+        />
+        I want this listing public again if nothing else hides it.
+      </label>
+      <div class="review-actions">
+        <otui-button
+          size="sm"
+          tone="brand"
+          emphasis="solid"
+          [disabled]="submitting"
+          (click)="submitLift()"
+        >
+          Lift suppression
+        </otui-button>
+        <otui-button
+          size="sm"
+          tone="neutral"
+          emphasis="ghost"
+          (click)="cancel()"
+        >
+          Cancel
+        </otui-button>
+      </div>
+    </form>
+    }
+  </otui-card>
+  } }
+</section>

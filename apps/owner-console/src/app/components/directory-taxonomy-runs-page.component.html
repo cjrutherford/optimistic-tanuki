@@ -1,0 +1,237 @@
+<section class="taxonomy-page" aria-labelledby="taxonomy-runs-title">
+  <a class="back-link" routerLink="/dashboard/directory-taxonomy">
+    <otui-icon name="arrow-back" [size]="18" stroke="currentColor"></otui-icon>
+    Taxonomy cases
+  </a>
+
+  <header class="page-header">
+    <p class="page-kicker">Directory</p>
+    <h1 id="taxonomy-runs-title">Reclassification runs</h1>
+    <p>
+      A run applies a mapping version to stored listings. Start with a dry run:
+      it shows every category change and writes nothing. An apply names the plan
+      of a completed dry run, needs a typed confirmation, and stops with no
+      changes if the data has moved since the plan. A completed apply can be
+      rolled back; rows an operator has since changed by hand are left alone.
+    </p>
+  </header>
+
+  <otui-card class="run-form" tone="neutral" emphasis="soft">
+    <h2>Mapping version</h2>
+    <label class="select-field">
+      <span>Version</span>
+      <select [value]="version" (change)="setVersion($event)">
+        @for (v of mappings.available; track v.id) {
+        <option [value]="v.id">
+          {{ v.id }}{{ v.installed ? ' (installed)' : '' }}
+        </option>
+        }
+      </select>
+    </label>
+    <ul class="run-facts">
+      @for (v of mappings.versions; track v.id) {
+      <li>
+        {{ v.id }} · {{ v.rowCount }} entries ·
+        {{ v.active ? 'active' : 'inactive' }}
+      </li>
+      }
+    </ul>
+    <div class="form-actions">
+      <otui-button
+        tone="brand"
+        emphasis="outline"
+        [disabled]="busy || !version"
+        (click)="install(false)"
+      >
+        Install
+      </otui-button>
+      <otui-button
+        tone="brand"
+        emphasis="solid"
+        [disabled]="busy || !version"
+        (click)="install(true)"
+      >
+        Install and activate
+      </otui-button>
+    </div>
+  </otui-card>
+
+  <otui-card class="run-form" tone="neutral" emphasis="soft">
+    <h2>New dry run</h2>
+    <div class="form-actions" role="group" aria-label="Scope">
+      <otui-button
+        size="sm"
+        [tone]="scope === 'town' ? 'brand' : 'neutral'"
+        [emphasis]="scope === 'town' ? 'soft' : 'ghost'"
+        (click)="setScope('town')"
+      >
+        One town
+      </otui-button>
+      <otui-button
+        size="sm"
+        [tone]="scope === 'all' ? 'brand' : 'neutral'"
+        [emphasis]="scope === 'all' ? 'soft' : 'ghost'"
+        (click)="setScope('all')"
+      >
+        Every town
+      </otui-button>
+    </div>
+    @if (scope === 'town') {
+    <lib-text-input
+      label="Town id"
+      (valueChange)="townInput = $event"
+    ></lib-text-input>
+    }
+    <lib-text-input
+      #why
+      label="Reason (required)"
+      placeholder="Why is this run needed?"
+    ></lib-text-input>
+    <div class="form-actions">
+      <otui-button
+        tone="brand"
+        emphasis="solid"
+        [disabled]="busy"
+        (click)="dryRun(townInput, why.value)"
+      >
+        Start dry run
+      </otui-button>
+    </div>
+  </otui-card>
+
+  @if (message) {
+  <p class="page-message" role="status">{{ message }}</p>
+  } @if (loading && runs.length === 0) {
+  <otui-loading-state headline="Loading runs…"></otui-loading-state>
+  } @else if (!loading && runs.length === 0) {
+  <otui-empty-state
+    headline="No runs yet"
+    body="Runs you start here appear in this list with their progress."
+  ></otui-empty-state>
+  }
+
+  <div class="run-list" aria-live="polite">
+    @for (r of runs; track r.id) {
+    <otui-card class="run-card" tone="neutral" emphasis="soft">
+      <div class="run-header">
+        <div>
+          <h3>
+            {{ r.mode === 'dry_run' ? 'Dry run' : 'Apply' }} ·
+            {{ r.scope === 'all' ? 'every town' : 'one town' }}
+          </h3>
+          <p class="run-meta">
+            <code>{{ r.mappingVersion }}</code> · {{ progressText(r) }}
+          </p>
+        </div>
+        <otui-badge [tone]="badgeTone(r.status)" size="sm">
+          {{ r.status.replace('_', ' ') | titlecase }}
+        </otui-badge>
+      </div>
+      <p class="run-meta">
+        {{ r.phase }} phase · by
+        <code>{{ r.actorId ?? 'erased account' }}</code> at {{ r.createdAt }} ·
+        {{ r.reason }}
+      </p>
+      @if (r.planHash) {
+      <p class="run-meta">
+        Plan <code>{{ r.planHash }}</code>
+      </p>
+      } @if (r.cancelRequested && r.status === 'running') {
+      <p class="run-meta">Cancel requested.</p>
+      } @if (r.lastError) {
+      <p class="run-error" role="alert">{{ r.lastError }}</p>
+      } @if (r.mode === 'dry_run' && r.summary.transitions.length) {
+      <table class="diff">
+        <caption>
+          Planned changes ({{
+            r.summary.unchanged
+          }}
+          unchanged,
+          {{
+            r.summary.unmapped
+          }}
+          keep their stored category,
+          {{
+            r.summary.excluded
+          }}
+          excluded)
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">From</th>
+            <th scope="col">To</th>
+            <th scope="col">Listings</th>
+            <th scope="col">Examples</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of r.summary.transitions; track t.from + t.to) {
+          <tr>
+            <td>{{ t.from }}</td>
+            <td>{{ t.to }}</td>
+            <td>{{ t.count }}</td>
+            <td>
+              @for (s of t.samples; track s.scanId + s.row) {
+              <span class="sample">{{ s.name }}</span>
+              }
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+      @if (r.summary.truncatedTransitions) {
+      <p class="run-meta">
+        {{ r.summary.truncatedTransitions }} more kinds of change are not
+        listed.
+      </p>
+      } } @if (canApply(r) || canCancel(r) || canRollback(r)) {
+      <div class="run-actions">
+        <lib-text-input #reason label="Reason (required)"></lib-text-input>
+        @if (canApply(r)) {
+        <lib-text-input
+          [label]="'Type ' + applyWord + ' to apply this plan'"
+          (valueChange)="setTyped(r.id, $event)"
+        ></lib-text-input>
+        <div class="form-actions">
+          <otui-button
+            tone="danger"
+            emphasis="solid"
+            [disabled]="busy || !confirmed(r, applyWord)"
+            (click)="apply(r, reason.value)"
+          >
+            Apply this plan
+          </otui-button>
+        </div>
+        } @if (canRollback(r)) {
+        <lib-text-input
+          [label]="'Type ' + rollbackWord + ' to roll this run back'"
+          (valueChange)="setTyped(r.id, $event)"
+        ></lib-text-input>
+        <div class="form-actions">
+          <otui-button
+            tone="danger"
+            emphasis="outline"
+            [disabled]="busy || !confirmed(r, rollbackWord)"
+            (click)="rollback(r, reason.value)"
+          >
+            Roll back
+          </otui-button>
+        </div>
+        } @if (canCancel(r)) {
+        <div class="form-actions">
+          <otui-button
+            tone="warning"
+            emphasis="outline"
+            [disabled]="busy"
+            (click)="cancel(r, reason.value)"
+          >
+            Cancel run
+          </otui-button>
+        </div>
+        }
+      </div>
+      }
+    </otui-card>
+    }
+  </div>
+</section>

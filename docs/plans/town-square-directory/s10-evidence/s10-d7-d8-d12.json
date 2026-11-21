@@ -1,0 +1,98 @@
+{
+  "generatedAt": "2026-11-18",
+  "rollback": {
+    "imageTag": "rollback-s10-d7",
+    "images": [
+      "optimistic-tanuki-directory",
+      "optimistic-tanuki-directory-worker",
+      "optimistic-tanuki-directory-migrate"
+    ],
+    "preDeployBackup": "pg_dump of ot_directory taken before the first deploy (46,754,027 bytes, kept outside the repo)"
+  },
+  "d7": {
+    "change": "name normalisation, 2000 m distance tolerance, tiered locality/incorporated/CDP match, single unambiguous match only, SHA-256 pins for missing states; reason versioned no_tiger_match:v2 so old unmatched towns are due again and retry through the sweep",
+    "before": { "installed": 172, "unmatched": 90 },
+    "after": {
+      "installed": 236,
+      "unmatched": 26,
+      "ambiguous": 0,
+      "newlyMatched": 64
+    },
+    "remainingReasons": {
+      "noTigerEntity": [
+        "Amelia Island",
+        "Ponte Vedra Beach",
+        "Sea Island",
+        "St. Simons",
+        "Cape Hatteras",
+        "Corolla"
+      ],
+      "referencePointTooFar": [
+        "Seguin",
+        "Lake Park",
+        "Camilla",
+        "Gainesville GA",
+        "Seat Pleasant",
+        "Takoma Park"
+      ]
+    }
+  },
+  "d12": {
+    "retirement": {
+      "retirementRows": 7,
+      "rowsRevoked": 5105,
+      "actor": "operator:d12",
+      "valdostaScans": 5,
+      "alexandriaScans": 2
+    },
+    "publicExportBefore": { "valdosta-ga": 404, "alexandria-va": 404 },
+    "publicExportAfterRetirement": { "valdosta-ga": 404, "alexandria-va": 404 },
+    "reacquisition": {
+      "valdosta-ga": {
+        "overture": { "observed": 4626, "accepted": 1002 },
+        "alltheplaces": {
+          "observed": 201,
+          "accepted": 58,
+          "note": "earlier run; a newer ATP run was still in progress at capture"
+        }
+      },
+      "alexandria-va": {
+        "overture": { "observed": 10634, "accepted": 1248 },
+        "alltheplaces": { "observed": 177, "accepted": 62 }
+      }
+    },
+    "freshProvenanceRows": { "valdosta-ga": 1002, "alexandria-va": 1248 },
+    "publicExportAfter": {
+      "valdosta-ga": { "status": 200, "rows": 1002 },
+      "alexandria-va": { "status": 200, "rows": 1248 },
+      "fields": ["name", "category", "location"]
+    },
+    "finding": "first Alexandria re-run reacquired 0 rows because scan identity is deterministic and includes the projection version; fixed by bumping AUTO and ATP projection versions to v2",
+    "outOfScope": "207 recorded scans (66,992 rows) from before D12 have no listing.sources, so those towns still return no_public_export 404"
+  },
+  "d8": {
+    "providerStatusBefore": "not_configured",
+    "providerStatusAfter": "ok",
+    "hardStopCents": 2500,
+    "costCentsPerLookup": 1,
+    "costBasis": "conservative integer minimum; the Geoapify pricing page was unreachable (network down), so the price is unverified",
+    "dailyLookupCap": 50,
+    "batch": 5,
+    "retentionDays": 30,
+    "retentionNote": "owner-confirmed",
+    "ledger": { "attempts": 50, "reservedCents": 50 },
+    "privateEnrichmentRows": 50,
+    "enrichmentRowsContainingApiKey": 0,
+    "publicLeakScan": {
+      "publicExports": {
+        "geoapifyMatches": 0,
+        "contactOrHoursKeys": 0,
+        "note": "only business names containing the word Phone matched"
+      },
+      "localEvaluationListingsApi": {
+        "geoapifyMatches": 0,
+        "keysOpeningHoursPhoneWebsiteEmailPlaceId": 0
+      }
+    }
+  }
+}
