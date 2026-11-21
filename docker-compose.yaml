@@ -107,6 +107,7 @@ services:
           memory: 256M
 
   authentication:
+    restart: unless-stopped
     container_name: ot_authentication
     build:
       context: .
@@ -143,6 +144,7 @@ services:
           memory: 256M
 
   ot-client-interface:
+    restart: unless-stopped
     container_name: ot_client_interface # Added
     build:
       context: .
@@ -162,6 +164,7 @@ services:
           memory: 256M
 
   forgeofwill-client-interface:
+    restart: unless-stopped
     container_name: fow_client_interface # Added
     build:
       context: .
@@ -181,6 +184,7 @@ services:
           memory: 256M
 
   digital-homestead-client-interface:
+    restart: unless-stopped
     container_name: dh_client_interface # Added
     build:
       context: .
@@ -192,6 +196,7 @@ services:
       <<: *gateway_client_env
 
   hai-client-interface:
+    restart: unless-stopped
     container_name: hai_client_interface
     build:
       context: .
@@ -203,6 +208,7 @@ services:
       <<: *gateway_client_env
 
   fin-commander:
+    restart: unless-stopped
     container_name: ot_fin_commander
     build:
       context: .
@@ -218,6 +224,7 @@ services:
       - gateway
 
   marketing-generator:
+    restart: unless-stopped
     container_name: ot_marketing_generator
     build:
       context: .
@@ -233,6 +240,7 @@ services:
       - gateway
 
   ui-playground:
+    restart: unless-stopped
     container_name: ot_ui_playground
     build:
       context: .
@@ -248,6 +256,7 @@ services:
       - gateway
 
   business-site:
+    restart: unless-stopped
     container_name: ot_business_site
     build:
       context: .
@@ -272,6 +281,7 @@ services:
       - permissions
 
   crdn-client-interface:
+    restart: unless-stopped
     container_name: crdn_client_interface # Added
     build:
       context: .
@@ -283,6 +293,7 @@ services:
       <<: *gateway_client_env
 
   owner-console:
+    restart: unless-stopped
     container_name: owner_console
     build:
       context: .
@@ -298,6 +309,7 @@ services:
       - admin-api
 
   admin-api:
+    restart: unless-stopped
     container_name: ot_admin_api
     build:
       context: .
@@ -329,6 +341,7 @@ services:
         condition: service_started
 
   leads-app:
+    restart: unless-stopped
     container_name: ot_leads_app
     build:
       context: .
@@ -340,6 +353,7 @@ services:
       <<: *gateway_client_env
 
   business-configurator:
+    restart: unless-stopped
     container_name: ot_business_configurator
     build:
       context: .
@@ -355,6 +369,7 @@ services:
       - gateway
 
   developer-portal:
+    restart: unless-stopped
     container_name: ot_developer_portal
     build:
       context: .
@@ -370,6 +385,7 @@ services:
       - gateway
 
   system-configurator:
+    restart: unless-stopped
     container_name: ot_system_configurator
     build:
       context: .
@@ -386,6 +402,7 @@ services:
       - system-configurator-api
 
   gateway:
+    restart: unless-stopped
     container_name: ot_gateway
     build:
       context: .
@@ -523,6 +540,7 @@ services:
           memory: 256M
 
   civic:
+    restart: unless-stopped
     container_name: ot_civic
     restart: unless-stopped
     build:
@@ -545,6 +563,7 @@ services:
         condition: service_completed_successfully
 
   civic-briefing:
+    restart: unless-stopped
     container_name: ot_civic_briefing
     restart: unless-stopped
     build:
@@ -570,6 +589,16 @@ services:
       # default to social:3003). DAYLIGHT_SCHEDULE_ENABLED=false stops the
       # daily schedule.
       DAYLIGHT_SCHEDULE_ENABLED: ${DAYLIGHT_SCHEDULE_ENABLED:-true}
+      # Source discovery web search (D21: off unless SEARCH_PROVIDER is set).
+      # searxng -> SEARCH_URL (standalone `searxng` on the ot-search network);
+      # brave -> SEARCH_API_KEY. Empty SEARCH_PROVIDER keeps search off.
+      SEARCH_PROVIDER: ${SEARCH_PROVIDER:-}
+      SEARCH_URL: ${SEARCH_URL:-}
+      SEARCH_API_KEY: ${SEARCH_API_KEY:-}
+      # Days between re-searches of a town's sources (default 7).
+      SOURCING_INTERVAL_DAYS: ${SOURCING_INTERVAL_DAYS:-7}
+      # Scheduler cadence in ms; default 10 minutes.
+      PIPELINE_TICK_MS: ${PIPELINE_TICK_MS:-600000}
       # Every fetched document is virus-scanned before it is stored (D22).
       CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
       # Agenda packets are large PDFs: give clamd time to scan them.
@@ -595,8 +624,13 @@ services:
         condition: service_healthy
       social:
         condition: service_started
+    networks:
+      - default
+      # Standalone SearXNG (not a compose service); see networks.ot-search.
+      - ot-search
 
   civic-contributions:
+    restart: unless-stopped
     container_name: ot_civic_contributions
     restart: unless-stopped
     build:
@@ -633,6 +667,7 @@ services:
         condition: service_healthy
 
   lead-tracker:
+    restart: unless-stopped
     container_name: ot_lead_tracker
     build:
       context: .
@@ -667,6 +702,7 @@ services:
         condition: service_started
 
   profile:
+    restart: unless-stopped
     container_name: ot_profile
     build:
       context: .
@@ -684,6 +720,7 @@ services:
     # Command will be inherited from Dockerfile\'s CMD
 
   social:
+    restart: unless-stopped
     container_name: ot_social
     build:
       context: .
@@ -701,6 +738,7 @@ services:
     # Command will be inherited from Dockerfile\'s CMD
 
   workspace:
+    restart: unless-stopped
     container_name: ot_workspace
     build:
       context: .
@@ -720,6 +758,7 @@ services:
         condition: service_completed_successfully
 
   forum:
+    restart: unless-stopped
     container_name: ot_forum
     build:
       context: .
@@ -736,6 +775,7 @@ services:
         condition: service_completed_successfully
 
   finance:
+    restart: unless-stopped
     container_name: ot_finance
     build:
       context: .
@@ -754,6 +794,7 @@ services:
         condition: service_completed_successfully
 
   compliance-audit:
+    restart: unless-stopped
     container_name: ot_compliance_audit
     build:
       context: .
@@ -786,6 +827,7 @@ services:
   #       condition: service_completed_successfully
   #   # Command will be inherited from Dockerfile\'s CMD
   chat-collector:
+    restart: unless-stopped
     container_name: ot_chat_collector
     build:
       context: .
@@ -806,6 +848,7 @@ services:
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
   bug-report:
+    restart: unless-stopped
     container_name: ot_bug_report
     build:
       context: .
@@ -826,6 +869,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
   clamav:
+    restart: unless-stopped
     # Real ClamAV daemon for upload virus scanning. Asset uploads scan
     # fail-closed, so without a scanner no content-bearing upload can
     # succeed; keep this service running wherever assets runs.
@@ -842,6 +886,7 @@ services:
       timeout: 5s
       retries: 30
   assets:
+    restart: unless-stopped
     container_name: ot_assets
     build:
       context: .
@@ -870,6 +915,7 @@ services:
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
   prompt-proxy:
+    restart: unless-stopped
     container_name: ot_prompt_proxy
     build:
       context: .
@@ -891,6 +937,7 @@ services:
       db-setup: # Ensures db-setup is completed before starting prompt-proxy
         condition: service_completed_successfully
   ai-orchestration:
+    restart: unless-stopped
     container_name: ot_ai_orchestration
     build:
       context: .
@@ -924,6 +971,7 @@ services:
           memory: 512M
 
   telos-docs-service:
+    restart: unless-stopped
     container_name: ot_telos_docs_service
     build:
       context: .
@@ -939,6 +987,7 @@ services:
       db-setup: # Ensures db-setup is completed before starting telos_docs_service
         condition: service_completed_successfully
   blogging:
+    restart: unless-stopped
     container_name: ot_blogging
     build:
       context: .
@@ -955,6 +1004,7 @@ services:
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
   permissions:
+    restart: unless-stopped
     container_name: ot_permissions
     build:
       context: .
@@ -974,6 +1024,7 @@ services:
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
   project-planning:
+    restart: unless-stopped
     container_name: ot_project_planning
     build:
       context: .
@@ -989,6 +1040,7 @@ services:
       db-setup: # Ensures db-setup is completed before starting profile
         condition: service_completed_successfully
   store-client:
+    restart: unless-stopped
     container_name: ot_store_client
     build:
       context: .
@@ -1001,6 +1053,7 @@ services:
     depends_on:
       - gateway
   store:
+    restart: unless-stopped
     container_name: ot_store
     build:
       context: .
@@ -1017,6 +1070,7 @@ services:
         condition: service_completed_successfully
 
   app-configurator:
+    restart: unless-stopped
     container_name: ot_app_configurator
     build:
       context: .
@@ -1038,6 +1092,7 @@ services:
         condition: service_completed_successfully
 
   system-configurator-api:
+    restart: unless-stopped
     container_name: ot_system_configurator_api
     build:
       context: .
@@ -1058,6 +1113,7 @@ services:
         condition: service_completed_successfully
 
   configurable-client:
+    restart: unless-stopped
     container_name: ot_configurable_client
     build:
       context: .
@@ -1072,6 +1128,7 @@ services:
       - app-configurator
 
   wellness:
+    restart: unless-stopped
     container_name: ot_wellness
     build:
       context: .
@@ -1088,6 +1145,7 @@ services:
         condition: service_completed_successfully
 
   classifieds:
+    restart: unless-stopped
     container_name: ot_classifieds
     build:
       context: .
@@ -1107,6 +1165,7 @@ services:
         condition: service_started
 
   payments:
+    restart: unless-stopped
     container_name: ot_payments
     build:
       context: .
@@ -1126,6 +1185,7 @@ services:
         condition: service_completed_successfully
 
   local-hub-client-interface:
+    restart: unless-stopped
     container_name: ot_local_hub
     build:
       context: .
@@ -1139,6 +1199,7 @@ services:
       - gateway
 
   d6:
+    restart: unless-stopped
     container_name: ot_d6
     build:
       context: .
@@ -1152,6 +1213,7 @@ services:
       - gateway
 
   videos:
+    restart: unless-stopped
     container_name: ot_videos
     build:
       context: .
@@ -1184,6 +1246,7 @@ services:
         condition: service_started
 
   video-transcoder-worker:
+    restart: unless-stopped
     container_name: ot_video_transcoder_worker
     build:
       context: .
@@ -1200,6 +1263,7 @@ services:
       - video-processing-data:/tmp/video-processing
 
   video-client:
+    restart: unless-stopped
     container_name: ot_video_client
     build:
       context: .
@@ -1216,6 +1280,7 @@ services:
       - videos
 
   learning-service:
+    restart: unless-stopped
     container_name: ot_learning_service
     build:
       context: .
@@ -1244,6 +1309,7 @@ services:
         condition: service_started
     networks: [default, learning-runner-control]
   learning-runner-relay:
+    restart: unless-stopped
     image: nginx:1.27-alpine
     user: '101:101'
     volumes:
@@ -1258,6 +1324,7 @@ services:
     security_opt:
       - no-new-privileges:true
   learning-runner:
+    restart: unless-stopped
     container_name: ot_learning_runner
     build:
       context: .
@@ -1292,6 +1359,7 @@ services:
     mem_limit: 256m
 
   learning:
+    restart: unless-stopped
     container_name: ot_learning
     build:
       context: .
@@ -1319,3 +1387,7 @@ networks:
     internal: true
   learning-runner-sandbox:
     internal: true
+  # Shared with the standalone `searxng` container (docker run --network
+  # ot-search), so a `docker compose down` does not take search with it.
+  ot-search:
+    external: true

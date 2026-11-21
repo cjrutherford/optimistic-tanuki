@@ -1,0 +1,1317 @@
+x-service-db-env: &service_db_env
+  DATABASE_HOST: ${POSTGRES_HOST:-db}
+  DATABASE_PORT: ${POSTGRES_PORT:-5432}
+  DATABASE_USER: ${POSTGRES_USER:-postgres}
+  DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+  DB_HOST: ${POSTGRES_HOST:-db}
+  DB_PORT: ${POSTGRES_PORT:-5432}
+  DB_USER: ${POSTGRES_USER:-postgres}
+  DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+  POSTGRES_HOST: ${POSTGRES_HOST:-db}
+  POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+  POSTGRES_USER: ${POSTGRES_USER:-postgres}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+
+x-gateway-client-env: &gateway_client_env
+  GATEWAY_URL: ${GATEWAY_URL:-http://gateway:3000}
+  GATEWAY_WS_URL: ${GATEWAY_WS_URL:-http://gateway:3300}
+  SOCKET_URL: ${SOCKET_URL:-}
+  SOCKET_PATH: ${SOCKET_PATH:-/socket.io}
+  # Explicit SSR host allow-list (comma-separated, supports `*.example.com`).
+  # Empty falls back to `*_UI_BASE_URL` hosts + localhost/127.0.0.1.
+  # Derive production values from the deploy app-registry `uiBaseUrl` hosts.
+  SSR_ALLOWED_HOSTS: ${SSR_ALLOWED_HOSTS:-}
+  # Trust reverse-proxy `x-forwarded-*` headers (default true; set false to opt out).
+  SSR_TRUST_PROXY: ${SSR_TRUST_PROXY:-true}
+  # Per-app public base URLs; the SSR helper derives allowed hosts from any
+  # `*_UI_BASE_URL` value when `SSR_ALLOWED_HOSTS` is empty.
+  CLIENT_INTERFACE_UI_BASE_URL: ${CLIENT_INTERFACE_UI_BASE_URL:-}
+  OWNER_CONSOLE_UI_BASE_URL: ${OWNER_CONSOLE_UI_BASE_URL:-}
+  FORGE_OF_WILL_UI_BASE_URL: ${FORGE_OF_WILL_UI_BASE_URL:-}
+  DIGITAL_HOMESTEAD_UI_BASE_URL: ${DIGITAL_HOMESTEAD_UI_BASE_URL:-}
+  CHRISTOPHERRUTHERFORD_NET_UI_BASE_URL: ${CHRISTOPHERRUTHERFORD_NET_UI_BASE_URL:-}
+  BUSINESS_SITE_UI_BASE_URL: ${BUSINESS_SITE_UI_BASE_URL:-}
+  LOCAL_HUB_UI_BASE_URL: ${LOCAL_HUB_UI_BASE_URL:-}
+  D6_UI_BASE_URL: ${D6_UI_BASE_URL:-}
+
+services:
+  postgres:
+    image: postgres:17
+    restart: always
+    container_name: db # Changed back from ot_postgres
+    user: '1000:1000'
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - ${POSTGRES_DATA_DIR:-postgres_data}:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+  db-setup:
+    build:
+      context: .
+      dockerfile: ./docker/db-setup/Dockerfile
+    container_name: db-setup
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      ADDITIONAL_DBS: ${ADDITIONAL_DBS:-}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: /bin/sh -c "command -v pg_isready && sh ./scripts/setup-and-migrate.sh"
+    restart: 'no'
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    restart: always
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  authentication:
+    container_name: ot_authentication
+    build:
+      context: .
+      dockerfile: ./apps/authentication/Dockerfile
+    image: cjrutherford/optimistic_tanuki_authentication:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${AUTHENTICATION_PORT:-3001}:3001'
+    environment:
+      <<: *service_db_env
+      JWT_SECRET: ${JWT_SECRET:-}
+      ACCOUNT_DELETION_PROOF_KEY: ${ACCOUNT_DELETION_PROOF_KEY:-}
+      VAULT_STORAGE_KEK: ${VAULT_STORAGE_KEK:-}
+      # Email addresses stay unverified unless the recipient consumes a
+      # verification action token. Development may override this explicitly.
+      AUTH_AUTO_VERIFY_EMAILS: ${AUTH_AUTO_VERIFY_EMAILS:-false}
+      SMTP_HOST: ${SMTP_HOST:-mail.christopherrutherford.net}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@christopherrutherford.net}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting authentication
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  ot-client-interface:
+    container_name: ot_client_interface # Added
+    build:
+      context: .
+      dockerfile: ./apps/client-interface/Dockerfile
+    image: cjrutherford/optimistic_tanuki_client-interface:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CLIENT_INTERFACE_PORT:-8080}:4000'
+    environment:
+      <<: *gateway_client_env
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  forgeofwill-client-interface:
+    container_name: fow_client_interface # Added
+    build:
+      context: .
+      dockerfile: ./apps/forgeofwill/Dockerfile
+    image: cjrutherford/optimistic_tanuki_forgeofwill:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${FORGE_OF_WILL_PORT:-8081}:4000'
+    environment:
+      <<: *gateway_client_env
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  digital-homestead-client-interface:
+    container_name: dh_client_interface # Added
+    build:
+      context: .
+      dockerfile: ./apps/digital-homestead/Dockerfile
+    image: cjrutherford/optimistic_tanuki_digital-homestead:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${DIGITAL_HOMESTEAD_PORT:-8082}:4000'
+    environment:
+      <<: *gateway_client_env
+
+  hai-client-interface:
+    container_name: hai_client_interface
+    build:
+      context: .
+      dockerfile: ./apps/hai/Dockerfile
+    image: cjrutherford/optimistic_tanuki_hai:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${HAI_PORT:-8088}:4000'
+    environment:
+      <<: *gateway_client_env
+
+  fin-commander:
+    container_name: ot_fin_commander
+    build:
+      context: .
+      dockerfile: ./apps/fin-commander/Dockerfile
+    image: cjrutherford/optimistic_tanuki_fin-commander:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${FIN_COMMANDER_PORT:-8089}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+
+  marketing-generator:
+    container_name: ot_marketing_generator
+    build:
+      context: .
+      dockerfile: ./apps/marketing-generator/Dockerfile
+    image: cjrutherford/optimistic_tanuki_marketing-generator:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${MARKETING_GENERATOR_PORT:-8092}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+
+  ui-playground:
+    container_name: ot_ui_playground
+    build:
+      context: .
+      dockerfile: ./apps/ui-playground/Dockerfile
+    image: cjrutherford/optimistic_tanuki_ui-playground:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${UI_PLAYGROUND_PORT:-4310}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+
+  business-site:
+    container_name: ot_business_site
+    build:
+      context: .
+      dockerfile: ./apps/business-site/Dockerfile
+    image: cjrutherford/optimistic_tanuki_business-site:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${BUSINESS_SITE_PORT:-8094}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      EVALUATOR_GUIDE_PATH: /app/docs/guides/business-site-evaluator-guide.html
+      RUN_BUSINESS_SITE_SEED_ON_STARTUP: ${RUN_BUSINESS_SITE_SEED_ON_STARTUP:-false}
+      <<: *gateway_client_env
+      POSTGRES_DB: ot_permissions
+      PERMISSIONS_DB: ot_permissions
+    depends_on:
+      - gateway
+      - permissions
+
+  crdn-client-interface:
+    container_name: crdn_client_interface # Added
+    build:
+      context: .
+      dockerfile: ./apps/christopherrutherford-net/Dockerfile
+    image: cjrutherford/optimistic_tanuki_christopherrutherford-net:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CHRISTOPHERRUTHERFORD_NET_PORT:-8083}:4000'
+    environment:
+      <<: *gateway_client_env
+
+  owner-console:
+    container_name: owner_console
+    build:
+      context: .
+      dockerfile: ./apps/owner-console/Dockerfile
+    ports:
+      - '${OWNER_CONSOLE_PORT:-8084}:4000'
+    image: cjrutherford/optimistic_tanuki_owner-console:${PRODUCTION_IMAGE_TAG:-latest}
+    environment:
+      <<: *gateway_client_env
+      ADMIN_API_URL: ${ADMIN_API_URL:-http://admin-api:8098}
+      OWNER_CONSOLE_JWT_SECRET: ${JWT_SECRET:-}
+    depends_on:
+      - admin-api
+
+  admin-api:
+    container_name: ot_admin_api
+    build:
+      context: .
+      dockerfile: ./apps/admin-api/Dockerfile
+    image: cjrutherford/optimistic_tanuki_admin-api:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '127.0.0.1:${ADMIN_API_PORT:-8098}:8098'
+    environment:
+      ADMIN_API_DEPLOYMENT_PATH: /app/ops/deployments/production.yaml
+      ADMIN_API_SECRETS_PATH: /app/.secrets
+      ADMIN_API_WORKSPACE_ROOT: /workspace
+      ADMIN_API_PORT: 8098
+      ADMIN_API_JWT_SECRET: ${JWT_SECRET:-}
+      ADMIN_API_BOOTSTRAP_TOKEN: ${ADMIN_API_BOOTSTRAP_TOKEN:-}
+      PRODUCTION_IMAGE_TAG: ${PRODUCTION_IMAGE_TAG:-latest}
+    volumes:
+      - ./ops:/app/ops
+      - ./.secrets:/app/.secrets
+      - ./:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      gateway:
+        condition: service_healthy
+      authentication:
+        condition: service_started
+
+  leads-app:
+    container_name: ot_leads_app
+    build:
+      context: .
+      dockerfile: ./apps/leads-app/Dockerfile
+    ports:
+      - '${LEADS_APP_PORT:-8095}:4000'
+    image: cjrutherford/optimistic_tanuki_leads-app:${PRODUCTION_IMAGE_TAG:-latest}
+    environment:
+      <<: *gateway_client_env
+
+  business-configurator:
+    container_name: ot_business_configurator
+    build:
+      context: .
+      dockerfile: ./apps/business-configurator/Dockerfile
+    image: cjrutherford/optimistic_tanuki_business-configurator:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${BUSINESS_CONFIGURATOR_PORT:-8096}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+
+  developer-portal:
+    container_name: ot_developer_portal
+    build:
+      context: .
+      dockerfile: ./apps/developer-portal/Dockerfile
+    image: cjrutherford/optimistic_tanuki_developer-portal:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${DEVELOPER_PORTAL_PORT:-8097}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+
+  system-configurator:
+    container_name: ot_system_configurator
+    build:
+      context: .
+      dockerfile: ./apps/system-configurator/Dockerfile
+    image: cjrutherford/optimistic_tanuki_system-configurator:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${SYSTEM_CONFIGURATOR_PORT:-8091}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+      - system-configurator-api
+
+  gateway:
+    container_name: ot_gateway
+    build:
+      context: .
+      dockerfile: ./apps/gateway/Dockerfile
+    image: cjrutherford/optimistic_tanuki_gateway:${PRODUCTION_IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      THROTTLER_PROFILE: ${THROTTLER_PROFILE:-production}
+      THROTTLE_SHORT_LIMIT: ${THROTTLE_SHORT_LIMIT:-}
+      THROTTLE_MEDIUM_LIMIT: ${THROTTLE_MEDIUM_LIMIT:-}
+      THROTTLE_LONG_LIMIT: ${THROTTLE_LONG_LIMIT:-}
+      THROTTLE_SOCIAL_POST_LIMIT: ${THROTTLE_SOCIAL_POST_LIMIT:-}
+      THROTTLE_SOCIAL_COMMENT_LIMIT: ${THROTTLE_SOCIAL_COMMENT_LIMIT:-}
+      THROTTLE_SOCIAL_VOTE_LIMIT: ${THROTTLE_SOCIAL_VOTE_LIMIT:-}
+      THROTTLE_SOCIAL_REACTION_LIMIT: ${THROTTLE_SOCIAL_REACTION_LIMIT:-}
+      THROTTLE_FORUM_WRITE_LIMIT: ${THROTTLE_FORUM_WRITE_LIMIT:-}
+      THROTTLE_CLASSIFIED_CREATE_LIMIT: ${THROTTLE_CLASSIFIED_CREATE_LIMIT:-}
+      THROTTLE_PRIVACY_WRITE_LIMIT: ${THROTTLE_PRIVACY_WRITE_LIMIT:-}
+      THROTTLE_REPORT_LIMIT: ${THROTTLE_REPORT_LIMIT:-}
+      THROTTLE_CHAT_WRITE_LIMIT: ${THROTTLE_CHAT_WRITE_LIMIT:-}
+      <<: *service_db_env
+      PORT: 3000
+      # Invitations use the same environment-controlled transport as auth mail.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@christopherrutherford.net}
+      LISTEN_PORT: ${GATEWAY_PORT:-3000}
+      SOCKET_PORT: ${GATEWAY_CHAT_SOCKET_PORT:-3300}
+      SOCIAL_SOCKET_PORT: ${GATEWAY_SOCIAL_SOCKET_PORT:-3301}
+      GATEWAY_REQUEST_TIMEOUT_MS: ${GATEWAY_REQUEST_TIMEOUT_MS:-30000}
+      ASSETS_INTERNAL_MEDIA_URL: ${ASSETS_INTERNAL_MEDIA_URL:-http://assets:3006}
+      ASSETS_INTERNAL_MEDIA_TOKEN: ${ASSETS_INTERNAL_MEDIA_TOKEN:-}
+      SERVICE_COMPLIANCE_AUDIT_HOST: ${SERVICE_COMPLIANCE_AUDIT_HOST:-compliance-audit}
+      SERVICE_COMPLIANCE_AUDIT_PORT: ${SERVICE_COMPLIANCE_AUDIT_PORT:-3025}
+      JWT_SECRET: ${JWT_SECRET:-}
+      # Keys the corroboration origin hashes (sock-puppet checks); unset sends no origin.
+      CIVIC_FINGERPRINT_KEY: ${CIVIC_FINGERPRINT_KEY:-}
+      OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET:-}
+      LEMON_SQUEEZY_WEBHOOK_SECRET: ${LEMON_SQUEEZY_WEBHOOK_SECRET:-}
+      APP_REGISTRY_PATH: ${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_REDIRECT_URI: ${MICROSOFT_REDIRECT_URI:-}
+      FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
+      FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
+      FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8084,https://optimistic-tanuki.com,https://forgeofwill.com,https://christopherrutherford.net,https://hopefulaspirationsindustries.com,https://towne-square.com,https://digital-homestead.christopherrutherford.net,https://experiments.christopherrutherford.net,https://business.experiments.christopherrutherford.net,https://fin-commander.experiments.christopherrutherford.net,https://hardware.hopefulaspirationsindustries.com,https://store.hopefulaspirationsindustries.com,https://lead-tracker.experiments.christopherrutherford.net,https://video.experiments.christopherrutherford.net,https://letsgo.experiments.christopherrutherford.net}
+      BUG_REPORT_SERVICE_URL: ${BUG_REPORT_SERVICE_URL:-http://bug-report:3027}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    volumes:
+      - ${APP_REGISTRY_HOST_PATH:-./libs/app-registry/src/lib/default-registry.json}:${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}:ro
+    ports:
+      - '${GATEWAY_PORT:-3000}:3000'
+      - '${GATEWAY_CHAT_SOCKET_PORT:-3300}:3300' # Chat WebSocket
+      - '${GATEWAY_SOCIAL_SOCKET_PORT:-3301}:3301' # Social WebSocket
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "require(''http'').get(''http://localhost:3000/api-docs'', (res) => { if (res.statusCode === 200) process.exit(0); else process.exit(1); }).on(''error'', (err) => process.exit(1));"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      postgres: # Ensures postgres (db) is healthy
+        condition: service_healthy
+      authentication:
+        condition: service_started
+      ot-client-interface:
+        condition: service_started
+      forgeofwill-client-interface:
+        condition: service_started
+      digital-homestead-client-interface:
+        condition: service_started
+      hai-client-interface:
+        condition: service_started
+      profile:
+        condition: service_started
+      social:
+        condition: service_started
+      workspace:
+        condition: service_started
+      chat-collector:
+        condition: service_started
+      assets:
+        condition: service_started
+      prompt-proxy:
+        condition: service_started
+      ai-orchestration:
+        condition: service_started
+      telos-docs-service:
+        condition: service_started
+      blogging:
+        condition: service_started
+      permissions:
+        condition: service_started
+      project-planning:
+        condition: service_started
+      forum:
+        condition: service_started
+      finance:
+        condition: service_started
+      compliance-audit:
+        condition: service_started
+      civic:
+        condition: service_started
+      wellness:
+        condition: service_started
+      classifieds:
+        condition: service_started
+      payments:
+        condition: service_started
+      lead-tracker:
+        condition: service_started
+      leads-app:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  civic:
+    container_name: ot_civic
+    build:
+      context: .
+      dockerfile: ./apps/civic/Dockerfile
+    image: cjrutherford/optimistic_tanuki_civic:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CIVIC_PORT:-3026}:3026'
+    environment:
+      <<: *service_db_env
+      POSTGRES_DB: ot_civic
+      LISTEN_PORT: 3026
+      CIVIC_AGENDA_SOURCES: ${CIVIC_AGENDA_SOURCES:-}
+      CIVIC_TENANT_ID: ${CIVIC_TENANT_ID:-}
+      CIVIC_AGENDA_POLL_INTERVAL_MS: ${CIVIC_AGENDA_POLL_INTERVAL_MS:-21600000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  civic-briefing:
+    container_name: ot_civic_briefing
+    build:
+      context: .
+      dockerfile: ./apps/civic-briefing/Dockerfile
+    image: cjrutherford/optimistic_tanuki_civic-briefing:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CIVIC_BRIEFING_PORT:-3028}:3028'
+    environment:
+      <<: *service_db_env
+      POSTGRES_DB: ot_civic_briefing
+      LISTEN_PORT: 3028
+      LLM_TRANSPORT: ${CIVIC_LLM_TRANSPORT:-prompt-proxy}
+      PROMPT_PROXY_HOST: prompt-proxy
+      PROMPT_PROXY_PORT: 3009
+      # The model host is prompt-proxy's OLLAMA_HOST (set it in .env). These
+      # pick the models; empty means the code's defaults (P5.2).
+      LLM_PLANNER_MODEL: ${LLM_PLANNER_MODEL:-}
+      LLM_WRITER_MODEL: ${LLM_WRITER_MODEL:-}
+      LLM_PRIMARY_MODEL: ${LLM_PRIMARY_MODEL:-}
+      LLM_FALLBACK_MODEL: ${LLM_FALLBACK_MODEL:-}
+      # The towns are synced from social's communities (SOCIAL_HOST/PORT
+      # default to social:3003). DAYLIGHT_SCHEDULE_ENABLED=false stops the
+      # daily schedule.
+      DAYLIGHT_SCHEDULE_ENABLED: ${DAYLIGHT_SCHEDULE_ENABLED:-true}
+      # Every fetched document is virus-scanned before it is stored (D22).
+      CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      # Agenda packets are large PDFs: give clamd time to scan them.
+      CLAMAV_SOCKET_TIMEOUT_MS: ${CIVIC_CLAMAV_SOCKET_TIMEOUT_MS:-30000}
+      CLAMAV_SCAN_DEADLINE_MS: ${CIVIC_CLAMAV_SCAN_DEADLINE_MS:-120000}
+      # Pipeline alerts (P5.2): new failed runs and failing or quiet sources.
+      DAYLIGHT_ALERT_EMAIL: ${DAYLIGHT_ALERT_EMAIL:-}
+      SMTP_HOST: ${SMTP_HOST:-mail.christopherrutherford.net}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@christopherrutherford.net}
+    volumes:
+      # Fetched documents (blobs) outlive the container.
+      - civic_briefing_data:/usr/src/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      clamav:
+        condition: service_healthy
+      social:
+        condition: service_started
+
+  civic-contributions:
+    container_name: ot_civic_contributions
+    build:
+      context: .
+      dockerfile: ./apps/civic-contributions/Dockerfile
+    image: cjrutherford/optimistic_tanuki_civic-contributions:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CIVIC_CONTRIBUTIONS_PORT:-3029}:3029'
+    environment:
+      <<: *service_db_env
+      POSTGRES_DB: ot_civic_contributions
+      LISTEN_PORT: 3029
+      # Uploads are scanned fail-closed and stored envelope-encrypted.
+      CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      # Agenda packets are large PDFs: give clamd time to scan them.
+      CLAMAV_SOCKET_TIMEOUT_MS: ${CIVIC_CLAMAV_SOCKET_TIMEOUT_MS:-30000}
+      CLAMAV_SCAN_DEADLINE_MS: ${CIVIC_CLAMAV_SCAN_DEADLINE_MS:-120000}
+      VAULT_STORAGE_KEK: ${VAULT_STORAGE_KEK:-}
+      CIVIC_BRIEFING_HOST: civic-briefing
+      CIVIC_BRIEFING_PORT: 3028
+      LLM_TRANSPORT: ${CIVIC_LLM_TRANSPORT:-prompt-proxy}
+      PROMPT_PROXY_HOST: prompt-proxy
+      PROMPT_PROXY_PORT: 3009
+      REVIEW_MODEL: ${REVIEW_MODEL:-}
+    volumes:
+      # Contributed artifacts, promotions and density reports outlive the container.
+      - civic_contributions_data:/usr/src/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      clamav:
+        condition: service_healthy
+
+  lead-tracker:
+    container_name: ot_lead_tracker
+    build:
+      context: .
+      dockerfile: ./apps/lead-tracker/Dockerfile
+    image: cjrutherford/optimistic_tanuki_lead-tracker:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${LEAD_TRACKER_PORT:-3020}:3020'
+    environment:
+      <<: *service_db_env
+      SMTP_HOST: ${SMTP_HOST:-mail.christopherrutherford.net}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@christopherrutherford.net}
+      OLLAMA_HOST: ${OLLAMA_HOST:-prompt-proxy}
+      OLLAMA_PORT: ${OLLAMA_PORT:-11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-granite4:tiny-h}
+      OLLAMA_FALLBACK_MODEL: ${OLLAMA_FALLBACK_MODEL:-qwen3.5:4b-q8_0}
+      OLLAMA_CONVERSATIONAL_MODEL: ${OLLAMA_CONVERSATIONAL_MODEL:-qwen3.5:4b-q8_0}
+      OLLAMA_TIMEOUT_MS: ${OLLAMA_TIMEOUT_MS:-600000}
+      LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY: ${LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY:-}
+      LEAD_DISCOVERY_SEARCH_GOOGLE_CX: ${LEAD_DISCOVERY_SEARCH_GOOGLE_CX:-}
+      LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY: ${LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY:-}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      finance:
+        condition: service_started
+
+  profile:
+    container_name: ot_profile
+    build:
+      context: .
+      dockerfile: ./apps/profile/Dockerfile
+    image: cjrutherford/optimistic_tanuki_profile:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${PROFILE_PORT:-3002}:3002'
+    environment:
+      <<: *service_db_env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting profile
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+
+  social:
+    container_name: ot_social
+    build:
+      context: .
+      dockerfile: ./apps/social/Dockerfile
+    image: cjrutherford/optimistic_tanuki_social:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${SOCIAL_PORT:-3003}:3003'
+    environment:
+      <<: *service_db_env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting social
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+
+  workspace:
+    container_name: ot_workspace
+    build:
+      context: .
+      dockerfile: ./apps/workspace/Dockerfile
+    image: cjrutherford/optimistic_tanuki_workspace:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${WORKSPACE_PORT:-3024}:3024'
+    environment:
+      <<: *service_db_env
+      DATABASE_NAME: ot_workspace
+      DB_NAME: ot_workspace
+      POSTGRES_DB: ot_workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  forum:
+    container_name: ot_forum
+    build:
+      context: .
+      dockerfile: ./apps/forum/Dockerfile
+    image: cjrutherford/optimistic_tanuki_forum:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${FORUM_PORT:-3015}:3015'
+    environment:
+      <<: *service_db_env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  finance:
+    container_name: ot_finance
+    build:
+      context: .
+      dockerfile: ./apps/finance/Dockerfile
+    image: cjrutherford/optimistic_tanuki_finance:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${FINANCE_PORT:-3016}:3016'
+    environment:
+      <<: *service_db_env
+      SERVICE_COMPLIANCE_AUDIT_HOST: ${SERVICE_COMPLIANCE_AUDIT_HOST:-compliance-audit}
+      SERVICE_COMPLIANCE_AUDIT_PORT: ${SERVICE_COMPLIANCE_AUDIT_PORT:-3025}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  compliance-audit:
+    container_name: ot_compliance_audit
+    build:
+      context: .
+      dockerfile: ./apps/compliance-audit/Dockerfile
+    image: cjrutherford/optimistic_tanuki_compliance-audit:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${COMPLIANCE_AUDIT_PORT:-3025}:3025'
+    environment:
+      <<: *service_db_env
+      POSTGRES_DB: ot_compliance_audit
+      LISTEN_PORT: 3025
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile's CMD
+
+  # tasks:
+  #   container_name: ot_tasks
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/tasks/Dockerfile
+  #   ports:
+  #     - "3004:3004"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     db-setup: # Ensures db-setup is completed before starting tasks
+  #       condition: service_completed_successfully
+  #   # Command will be inherited from Dockerfile\'s CMD
+  chat-collector:
+    container_name: ot_chat_collector
+    build:
+      context: .
+      dockerfile: ./apps/chat-collector/Dockerfile
+    image: cjrutherford/optimistic_tanuki_chat-collector:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CHAT_COLLECTOR_PORT:-3007}:3007'
+    environment:
+      <<: *service_db_env
+      SOCIAL_HOST: social
+      SOCIAL_PORT: 3003
+      PROJECT_PLANNING_HOST: project-planning
+      PROJECT_PLANNING_PORT: 3006
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting chat-collector
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+  bug-report:
+    container_name: ot_bug_report
+    build:
+      context: .
+      dockerfile: ./apps/bug-report/Dockerfile
+    image: cjrutherford/optimistic_tanuki_bug-report:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${BUG_REPORT_PORT:-3027}:3027'
+    environment:
+      BUG_REPORT_PORT: 3027
+      BUG_REPORT_OWNER_EMAIL: ${BUG_REPORT_OWNER_EMAIL:-}
+      BUG_REPORT_GITHUB_REPO: ${BUG_REPORT_GITHUB_REPO:-}
+      BUG_REPORT_GITHUB_TOKEN: ${BUG_REPORT_GITHUB_TOKEN:-}
+      BUG_REPORT_ALLOWED_ORIGINS: ${BUG_REPORT_ALLOWED_ORIGINS:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+  clamav:
+    # Real ClamAV daemon for upload virus scanning. Asset uploads scan
+    # fail-closed, so without a scanner no content-bearing upload can
+    # succeed; keep this service running wherever assets runs.
+    container_name: ot_clamav
+    image: clamav/clamav:stable
+    ports:
+      - '${CLAMAV_PORT:-3310}:3310'
+    volumes:
+      - clamav-db:/var/lib/clamav
+    healthcheck:
+      test: ['CMD', 'clamdcheck.sh']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  assets:
+    container_name: ot_assets
+    build:
+      context: .
+      dockerfile: ./apps/assets/Dockerfile
+    ports:
+      - '${ASSETS_PORT:-3005}:3005'
+    image: cjrutherford/optimistic_tanuki_assets:${PRODUCTION_IMAGE_TAG:-latest}
+    volumes:
+      - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
+    environment:
+      <<: *service_db_env
+      STORAGE_STRATEGY: ${STORAGE_STRATEGY:-local}
+      LOCAL_STORAGE_PATH: /usr/src/app/storage
+      ASSETS_INTERNAL_MEDIA_PORT: ${ASSETS_INTERNAL_MEDIA_PORT:-3006}
+      ASSETS_INTERNAL_MEDIA_TOKEN: ${ASSETS_INTERNAL_MEDIA_TOKEN:-}
+      CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      CLAMAV_PORT: ${CLAMAV_PORT:-3310}
+      VAULT_STORAGE_KEK: ${VAULT_STORAGE_KEK:-}
+      VAULT_STORAGE_KEK_ID: ${VAULT_STORAGE_KEK_ID:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clamav:
+        condition: service_started
+      db-setup: # Ensures db-setup is completed before starting asset
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+  prompt-proxy:
+    container_name: ot_prompt_proxy
+    build:
+      context: .
+      dockerfile: ./apps/prompt-proxy/Dockerfile
+    image: cjrutherford/optimistic_tanuki_prompt-proxy:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${PROMPT_PROXY_PORT:-3009}:3009'
+    environment:
+      <<: *service_db_env
+      OLLAMA_HOST: ${OLLAMA_HOST:-127.0.0.1}
+      OLLAMA_PORT: ${OLLAMA_PORT:-11434}
+      # civic-briefing's model calls take up to 300 s; the proxy must outlast them.
+      PROMPT_PROXY_TIMEOUT_MS: ${PROMPT_PROXY_TIMEOUT_MS:-360000}
+    volumes:
+      - ./apps/prompt-proxy/src/assets/config.yaml:/usr/src/assets/config.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting prompt-proxy
+        condition: service_completed_successfully
+  ai-orchestration:
+    container_name: ot_ai_orchestration
+    build:
+      context: .
+      dockerfile: ./apps/ai-orchestrator/Dockerfile
+    image: cjrutherford/optimistic_tanuki_ai-orchestrator:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${AI_ORCHESTRATION_PORT:-3010}:3010'
+    environment:
+      <<: *service_db_env
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      OLLAMA_HOST: ${OLLAMA_HOST:-prompt-proxy}
+      OLLAMA_PORT: ${OLLAMA_PORT:-11434}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting ai-orchestration
+        condition: service_completed_successfully
+      prompt-proxy:
+        condition: service_started
+      telos-docs-service:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  telos-docs-service:
+    container_name: ot_telos_docs_service
+    build:
+      context: .
+      dockerfile: ./apps/telos-docs-service/Dockerfile
+    image: cjrutherford/optimistic_tanuki_telos-docs-service:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${TELOS_DOCS_PORT:-3008}:3008'
+    environment:
+      <<: *service_db_env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting telos_docs_service
+        condition: service_completed_successfully
+  blogging:
+    container_name: ot_blogging
+    build:
+      context: .
+      dockerfile: ./apps/blogging/Dockerfile
+    image: cjrutherford/optimistic_tanuki_blogging:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${BLOGGING_PORT:-3011}:3011'
+    environment:
+      <<: *service_db_env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting blogging
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+  permissions:
+    container_name: ot_permissions
+    build:
+      context: .
+      dockerfile: ./apps/permissions/Dockerfile
+    image: cjrutherford/optimistic_tanuki_permissions:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${PERMISSIONS_PORT:-3012}:3012'
+    environment:
+      <<: *service_db_env
+      DATABASE_NAME: ot_permissions
+      DB_NAME: ot_permissions
+      POSTGRES_DB: ot_permissions
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting permissions
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile\'s CMD
+  project-planning:
+    container_name: ot_project_planning
+    build:
+      context: .
+      dockerfile: ./apps/project-planning/Dockerfile
+    image: cjrutherford/optimistic_tanuki_project-planning:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${PROJECT_PLANNING_PORT:-3006}:3006'
+    environment:
+      <<: *service_db_env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup: # Ensures db-setup is completed before starting profile
+        condition: service_completed_successfully
+  store-client:
+    container_name: ot_store_client
+    build:
+      context: .
+      dockerfile: ./apps/store-client/Dockerfile
+    image: cjrutherford/optimistic_tanuki_store-client:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${STORE_CLIENT_PORT:-8085}:4000'
+    environment:
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+  store:
+    container_name: ot_store
+    build:
+      context: .
+      dockerfile: ./apps/store/Dockerfile
+    image: cjrutherford/optimistic_tanuki_store:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${STORE_PORT:-3013}:3013'
+    environment:
+      <<: *service_db_env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  app-configurator:
+    container_name: ot_app_configurator
+    build:
+      context: .
+      dockerfile: ./apps/app-configurator/Dockerfile
+    image: cjrutherford/optimistic_tanuki_app-configurator:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${APP_CONFIGURATOR_PORT:-3014}:3014'
+    environment:
+      <<: *service_db_env
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  system-configurator-api:
+    container_name: ot_system_configurator_api
+    build:
+      context: .
+      dockerfile: ./apps/system-configurator-api/Dockerfile
+    image: cjrutherford/optimistic_tanuki_system-configurator-api:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${SYSTEM_CONFIGURATOR_API_PORT:-3021}:3021'
+    environment:
+      <<: *service_db_env
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3021
+      DB_NAME: ot_system_configurator
+      PCPARTPICKER_SYNC_ON_START: 'false'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  configurable-client:
+    container_name: ot_configurable_client
+    build:
+      context: .
+      dockerfile: ./apps/configurable-client/Dockerfile
+    image: cjrutherford/optimistic_tanuki_configurable-client:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CONFIGURABLE_CLIENT_PORT:-8090}:4000'
+    environment:
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+      - app-configurator
+
+  wellness:
+    container_name: ot_wellness
+    build:
+      context: .
+      dockerfile: ./apps/wellness/Dockerfile
+    image: cjrutherford/optimistic_tanuki_wellness:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${WELLNESS_PORT:-3018}:3018'
+    environment:
+      <<: *service_db_env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  classifieds:
+    container_name: ot_classifieds
+    build:
+      context: .
+      dockerfile: ./apps/classifieds/Dockerfile
+    image: cjrutherford/optimistic_tanuki_classifieds:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CLASSIFIEDS_PORT:-3017}:3017'
+    environment:
+      <<: *service_db_env
+      POSTGRES_DB: ${CLASSIFIEDS_POSTGRES_DB:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      social:
+        condition: service_started
+
+  payments:
+    container_name: ot_payments
+    build:
+      context: .
+      dockerfile: ./apps/payments/Dockerfile
+    image: cjrutherford/optimistic_tanuki_payments:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${PAYMENTS_PORT:-3004}:3004'
+    environment:
+      <<: *service_db_env
+      LEMON_SQUEEZY_API_KEY: ${LEMON_SQUEEZY_API_KEY:-}
+      LEMON_SQUEEZY_STORE_ID: ${LEMON_SQUEEZY_STORE_ID:-}
+      LEMON_SQUEEZY_WEBHOOK_SECRET: ${LEMON_SQUEEZY_WEBHOOK_SECRET:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  local-hub-client-interface:
+    container_name: ot_local_hub
+    build:
+      context: .
+      dockerfile: ./apps/local-hub/Dockerfile
+    image: cjrutherford/optimistic_tanuki_local-hub:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${LOCAL_HUB_PORT:-8087}:4000'
+    environment:
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+
+  d6:
+    container_name: ot_d6
+    build:
+      context: .
+      dockerfile: ./apps/d6/Dockerfile
+    image: cjrutherford/optimistic_tanuki_d6:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${D6_PORT:-8086}:4000'
+    environment:
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+
+  videos:
+    container_name: ot_videos
+    build:
+      context: .
+      dockerfile: ./apps/videos/Dockerfile
+    image: cjrutherford/optimistic_tanuki_videos:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${VIDEOS_PORT:-3022}:3022'
+    environment:
+      <<: *service_db_env
+      POSTGRES_DB: ot_videos
+      PORT: 3022
+      VIDEO_SEED_SOURCE_DIR: ${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}
+      ASSETS_HOST: ${ASSETS_HOST:-assets}
+      ASSETS_PORT: ${ASSETS_PORT:-3005}
+      LOCAL_STORAGE_PATH: /usr/src/app/storage
+      VIDEO_TRANSCODER_HOST: ${VIDEO_TRANSCODER_HOST:-video-transcoder-worker}
+      VIDEO_TRANSCODER_PORT: ${VIDEO_TRANSCODER_PORT:-3023}
+    volumes:
+      - ${VIDEO_SEED_SOURCE_HOST_PATH:-/mnt/valhalla/media/TV}:${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}:ro
+      - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
+      - video-processing-data:/tmp/video-processing
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      assets:
+        condition: service_started
+      video-transcoder-worker:
+        condition: service_started
+
+  video-transcoder-worker:
+    container_name: ot_video_transcoder_worker
+    build:
+      context: .
+      dockerfile: ./apps/video-transcoder-worker/Dockerfile
+    image: cjrutherford/optimistic_tanuki_video-transcoder-worker:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${VIDEO_TRANSCODER_PORT:-3023}:3023'
+    environment:
+      - PORT=3023
+      - HOST=0.0.0.0
+      - VIDEO_TRANSCODER_OUTPUT_ROOT=/tmp/video-processing
+    volumes:
+      - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
+      - video-processing-data:/tmp/video-processing
+
+  video-client:
+    container_name: ot_video_client
+    build:
+      context: .
+      dockerfile: ./apps/video-client/Dockerfile
+    image: cjrutherford/optimistic_tanuki_video-client:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${VIDEO_CLIENT_PORT:-8093}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+      - videos
+
+  learning-service:
+    container_name: ot_learning_service
+    build:
+      context: .
+      dockerfile: ./apps/learning-service/Dockerfile
+    image: cjrutherford/optimistic_tanuki_learning-service:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${LEARNING_SERVICE_PORT:-3026}:3024'
+    environment:
+      # Shared credentials, so a production deployment picks up the real
+      # POSTGRES_* values instead of the hardcoded local defaults this
+      # service used to carry.
+      <<: *service_db_env
+      DATABASE_NAME: ot_learning_service
+      DB_NAME: ot_learning_service
+      POSTGRES_DB: ot_learning_service
+      # Marking written answers against an author's rubric.
+      LEARNING_OLLAMA_URL: ${LEARNING_OLLAMA_URL:-http://shangrila:11434}
+      LEARNING_GRADING_MODEL: ${LEARNING_GRADING_MODEL:-nemotron-3-nano:4b-q8_0}
+      LEARNING_RUNNER_URL: ${LEARNING_RUNNER_URL:-http://learning-runner-relay:3025}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      learning-runner-relay:
+        condition: service_started
+    networks: [default, learning-runner-control]
+  learning-runner-relay:
+    image: nginx:1.27-alpine
+    user: '101:101'
+    volumes:
+      - ./apps/learning-runner/relay.nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - learning-runner
+    networks: [learning-runner-control, learning-runner-sandbox]
+    read_only: true
+    tmpfs:
+      - /tmp:size=4m,noexec,nosuid,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+  learning-runner:
+    container_name: ot_learning_runner
+    build:
+      context: .
+      dockerfile: ./apps/learning-runner/Dockerfile
+    image: cjrutherford/optimistic_tanuki_learning-runner:${PRODUCTION_IMAGE_TAG:-latest}
+    # Deliberately no `ports:` — the runner executes submitted code and is
+    # reachable only from learning-service over the internal network.
+    environment:
+      - LEARNING_SCRATCH_DIR=/scratch
+      - PORT=3025
+      - LEARNING_RUNNER_PROCESS_LIMIT=32
+      - LEARNING_RUNNER_CPU_LIMIT_SECONDS=10
+      - LEARNING_RUNNER_GO_CONCURRENCY=1
+      - LEARNING_RUNNER_COMPILE_TIMEOUT_MS=30000
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+      # C++ and Rust compile a binary and then run it, so the working
+      # directory has to allow exec. /tmp stays noexec; this is the only
+      # place execution is possible, and it is wiped between runs.
+      # The container memory ceiling is authoritative; the scratch size leaves
+      # room for the process and /tmp within the 256 MiB contract.
+      - /scratch:size=192m,exec,nosuid,nodev,mode=1777
+    # The relay is the only shared hop. The sandbox has no network in common
+    # with learning-service, so submitted code cannot reach its unauthenticated
+    # TCP listener directly.
+    networks: [learning-runner-sandbox]
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    mem_limit: 256m
+
+  learning:
+    container_name: ot_learning
+    build:
+      context: .
+      dockerfile: ./apps/learning/Dockerfile
+    image: cjrutherford/optimistic_tanuki_learning:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${LEARNING_PORT:-8099}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+      - learning-service
+
+volumes:
+  postgres_data:
+  video-processing-data:
+  clamav-db:
+  civic_briefing_data:
+  civic_contributions_data:
+
+networks:
+  learning-runner-control:
+    internal: true
+  learning-runner-sandbox:
+    internal: true
