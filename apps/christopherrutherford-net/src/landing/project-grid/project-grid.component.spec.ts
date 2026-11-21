@@ -167,7 +167,7 @@ describe('ProjectGridComponent', () => {
   it('renders the platform intro and descriptive proof for each registered app', () => {
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-    expect(text).toContain('case studies above are the deepest examples');
+    expect(text).toContain('registered web apps share the same workspace');
     expect(text).toContain('internal workspace for registry');
     expect(text).toContain('View source');
   });

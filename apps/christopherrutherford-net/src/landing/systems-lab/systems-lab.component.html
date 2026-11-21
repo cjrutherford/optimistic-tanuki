@@ -1,24 +1,23 @@
-<section id="systems-lab" aria-labelledby="systems-lab-title">
+<section aria-labelledby="systems-lab-title">
   <header class="systems-lab-heading">
-    <p class="systems-lab-kicker">How it is built</p>
-    <h2 id="systems-lab-title">Systems Lab</h2>
+    <p class="systems-lab-kicker">Repository layout</p>
+    <h3 id="systems-lab-title">Where each layer lives</h3>
     <p class="systems-lab-intro">
-      The platform behind the case studies: Angular clients, a NestJS service
-      layer, shared contract and UI libraries, and Docker and Kubernetes
-      delivery. Each layer has one home in the Nx workspace.
+      A map of the Optimistic Tanuki workspace for readers who want to go beyond
+      the case study.
     </p>
   </header>
 
   <ol class="systems-lab-layers">
     <li>
-      <h3>Application experiences</h3>
+      <h4>Application experiences</h4>
       <p>
         Angular clients live in <code>apps/</code>. They bring together the
         screens and workflows for each product.
       </p>
     </li>
     <li>
-      <h3>Shared Angular libraries</h3>
+      <h4>Shared Angular libraries</h4>
       <p>
         Reusable components come from libraries such as <code>common-ui</code>.
         Theme models and styles provide shared tokens, while model and contract
@@ -26,22 +25,21 @@
       </p>
     </li>
     <li>
-      <h3>Gateway and NestJS services</h3>
+      <h4>Gateway and NestJS services</h4>
       <p>
-        The Gateway handles HTTP, SSE, and WebSocket entry points. It routes
-        work to NestJS services, which communicate with one another over TCP
-        message patterns.
+        The Gateway handles HTTP, SSE, and WebSocket entry points and routes
+        work to the services.
       </p>
     </li>
     <li>
-      <h3>Data and security</h3>
+      <h4>Data and security</h4>
       <p>
         Service-owned persistence sits alongside shared database, storage,
         encryption, authentication, and permission libraries.
       </p>
     </li>
     <li>
-      <h3>Nx and Docker delivery</h3>
+      <h4>Nx and Docker delivery</h4>
       <p>
         Nx organizes projects and build tasks. Docker Compose supports local
         stacks, and the repository also contains Kubernetes deployment

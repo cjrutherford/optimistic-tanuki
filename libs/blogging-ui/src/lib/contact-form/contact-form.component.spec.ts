@@ -161,4 +161,19 @@ describe('ContactFormComponent', () => {
     fixture.detectChanges();
     expect(image.getAttribute('alt')).toBe('A small office server on a shelf');
   });
+
+  describe('disabled', () => {
+    it('does not emit formSubmit while disabled and emits again when enabled', () => {
+      const emitted: unknown[] = [];
+      component.formSubmit.subscribe((value) => emitted.push(value));
+
+      component.disabled = true;
+      component.onSubscribe();
+      expect(emitted).toHaveLength(0);
+
+      component.disabled = false;
+      component.onSubscribe();
+      expect(emitted).toHaveLength(1);
+    });
+  });
 });

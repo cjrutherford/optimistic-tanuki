@@ -17,20 +17,25 @@ import { PROFILE } from '../profile.data';
 export class HeroComponent {
   readonly profile = PROFILE;
 
+  /**
+   * The shared hero renders these as plain anchors. `external` opens the PDF
+   * in a new tab, which is how every browser handles an inline PDF anyway.
+   */
   readonly primaryAction: DiscoveryAction = {
-    label: 'View experience',
-    href: '#hire',
+    label: 'Download résumé (PDF)',
+    href: PROFILE.links.resume,
+    external: true,
   };
 
   readonly secondaryAction: DiscoveryAction = {
-    label: 'Start a conversation',
-    href: '#contact',
+    label: 'Explore engineering work',
+    href: '#work',
   };
 
   readonly proof = [
-    'Angular · NestJS · TypeScript',
+    'TypeScript · Angular · NestJS',
     'Linux · Docker · Kubernetes',
-    'Electron · Android · iOS',
     'Go · PostgreSQL · SQLite',
+    'Electron · Capacitor · Native integration',
   ];
 }

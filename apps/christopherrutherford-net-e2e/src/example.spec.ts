@@ -28,11 +28,11 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       const viewport = page.locator('meta[name="viewport"]');
       expect(await viewport.count()).toBeGreaterThan(0);
       await expect(page).toHaveTitle(
-        'Christopher Rutherford | Full-Stack and Systems Engineer'
+        'Christopher Rutherford — Full-Stack & Systems Engineer'
       );
       await expect(page.locator('meta[name="description"]')).toHaveAttribute(
         'content',
-        /Full-stack engineer and systems administrator in Georgia and New York/
+        /Based in Georgia, open to relocation to New York City/
       );
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
         'href',
@@ -52,37 +52,89 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
     });
   });
 
-  test.describe('Hiring and case studies', () => {
-    test('presents the hiring path and links the approved profiles', async ({
+  test.describe('Hero and recruiter path', () => {
+    test('states the role, availability and a working resume CTA', async ({
       page,
+      request,
     }) => {
       await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-      const hiring = page.locator('#hire');
-      await expect(hiring).toBeVisible();
-      await expect(hiring).toContainText(
-        'Open to full-stack, platform, and implementation roles'
+      const hero = page.locator('#home');
+      await expect(hero.locator('h1')).toContainText('Christopher Rutherford');
+      await expect(hero).toContainText('Full-Stack & Systems Engineer');
+      await expect(hero).toContainText(
+        'Based in Georgia · Open to relocation to New York City · Remote, hybrid, or on-site'
       );
-      await expect(hiring).toContainText('Georgia and New York');
+      const resume = hero.getByRole('link', { name: /Download résumé/ });
+      await expect(resume).toBeVisible();
+      await expect(resume).toHaveAttribute(
+        'href',
+        '/assets/christopher-rutherford-resume.pdf'
+      );
       await expect(
-        hiring.locator('a[href="https://github.com/cjrutherford"]')
+        hero.getByRole('link', { name: 'Contact' }).first()
       ).toBeVisible();
-      await expect(
-        hiring.locator('a[href="https://www.linkedin.com/in/thecjrutherford"]')
-      ).toBeVisible();
-      await expect(
-        hiring.locator('a[href="mailto:chris@christopherrutherford.net"]')
-      ).toBeVisible();
-      await expect(
-        hiring.locator('a[href="/assets/christopher-rutherford-resume.pdf"]')
-      ).toBeVisible();
-      await expect(hiring).not.toContainText('financial');
+      await expect(page.locator('body')).not.toContainText(
+        'Georgia and New York'
+      );
+
+      const response = await request.get(
+        '/assets/christopher-rutherford-resume.pdf'
+      );
+      expect(response.status()).toBe(200);
+      expect(response.headers()['content-type']).toContain('application/pdf');
     });
 
+    test('Explore engineering work lands on the work section', async ({
+      page,
+    }) => {
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+      await page
+        .getByRole('link', { name: 'Explore engineering work' })
+        .click();
+
+      await expect(page).toHaveURL(/#work$/);
+      await expect(page.locator('#work')).toBeInViewport();
+    });
+
+    test('links the approved profiles from the hero', async ({ page }) => {
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+      const hero = page.locator('#home');
+
+      await expect(
+        hero.locator('a[href="https://github.com/cjrutherford"]')
+      ).toBeVisible();
+      await expect(
+        hero.locator('a[href="https://www.linkedin.com/in/thecjrutherford"]')
+      ).toBeVisible();
+      await expect(
+        hero.locator('a[href="mailto:chris@christopherrutherford.net"]')
+      ).toBeVisible();
+    });
+
+    test('lists the contact subjects', async ({ page }) => {
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+      await expect(page.locator('#contact select option')).toHaveText([
+        'Employment opportunity',
+        'Contract engineering',
+        'Consulting project',
+        'Collaboration / open source',
+        'General inquiry',
+      ]);
+    });
+  });
+
+  test.describe('Case studies', () => {
     test('renders four source-linked case studies', async ({ page }) => {
       await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-      await expect(page.locator('#work .case-study-card')).toHaveCount(4);
+      await expect(
+        page.locator('#work .case-study-card:not(.compact)')
+      ).toHaveCount(4);
+      await expect(page.locator('#work .case-study-card.compact')).toHaveCount(
+        1
+      );
       for (const repo of [
         'optimistic-tanuki',
         'statocyst',
@@ -107,13 +159,53 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       expect(page.url()).toBeTruthy();
     });
 
-    test('opens Systems Lab from the navigation menu', async ({ page }) => {
-      await page.goto('/', { waitUntil: 'domcontentloaded' });
-      await page.locator('otui-app-bar otui-button').click();
-      await page.getByRole('button', { name: 'Systems Lab' }).click();
+    const sections: [string, string][] = [
+      ['Work', '#work'],
+      ['Experience', '#experience'],
+      ['About', '#about'],
+      ['Consulting', '#work-together'],
+      ['Contact', '#contact'],
+    ];
 
-      await expect(page).toHaveURL(/#systems-lab$/);
-      await expect(page.locator('#systems-lab')).toBeVisible();
+    for (const [label, hash] of sections) {
+      for (const [device, size] of [
+        ['desktop', { width: 1280, height: 900 }],
+        ['mobile', { width: 390, height: 844 }],
+      ] as const) {
+        test(`${label} navigation reaches its section on ${device}`, async ({
+          page,
+        }) => {
+          await page.setViewportSize(size);
+          await page.goto('/', { waitUntil: 'domcontentloaded' });
+          await page.locator('otui-app-bar otui-button').click();
+          await page.getByRole('button', { name: label, exact: true }).click();
+
+          await expect(page).toHaveURL(new RegExp(`${hash}$`));
+          await expect(page.locator(hash)).toBeInViewport();
+          await expect(
+            page.getByRole('button', { name: label, exact: true })
+          ).toBeHidden();
+        });
+      }
+    }
+
+    test('direct load of an anchor lands on the section', async ({ page }) => {
+      await page.goto('/#experience', { waitUntil: 'domcontentloaded' });
+
+      await expect(page.locator('#experience')).toBeInViewport();
+    });
+
+    test('direct load of /#systems-lab opens its details', async ({ page }) => {
+      await page.goto('/#systems-lab', { waitUntil: 'domcontentloaded' });
+
+      await expect(page.locator('details#systems-lab')).toHaveAttribute(
+        'open',
+        ''
+      );
+      await expect(page.locator('details#platform')).not.toHaveAttribute(
+        'open',
+        ''
+      );
     });
 
     test('should handle page reload', async ({ page }) => {
@@ -169,6 +261,7 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       await expect(page.locator('.projectGrid [role="listitem"]')).toHaveCount(
         18
       );
+      await page.locator('details#systems-lab > summary').click();
       await expect(page.locator('#systems-lab .catalog-card')).toHaveCount(18);
       await expect(page.locator('#systems-lab .catalog-card a')).toHaveCount(
         18
@@ -191,7 +284,7 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       await expect(
         page.locator('#systems-lab .application-index')
       ).not.toContainText(/whitebox|matrix/i);
-      await expect(page.locator('details.platform-index')).not.toHaveAttribute(
+      await expect(page.locator('details#platform')).not.toHaveAttribute(
         'open',
         ''
       );
@@ -211,7 +304,7 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       ]) {
         await page.setViewportSize({ width, height: 1080 });
         await page.goto('/', { waitUntil: 'domcontentloaded' });
-        await page.locator('.platform-index > summary').click();
+        await page.locator('details#platform > summary').click();
         const grid = page.locator('.projectGrid[role="list"]');
         const layout = await grid.evaluate((element) => {
           const cards = Array.from(
@@ -248,8 +341,9 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
 
     test('expands grouped app lists with the keyboard', async ({ page }) => {
       await page.goto('/', { waitUntil: 'domcontentloaded' });
+      await page.locator('details#systems-lab > summary').click();
       const internalTools = page
-        .locator('#systems-lab details')
+        .locator('#systems-lab details.catalog-group')
         .filter({ hasText: 'Internal tools' });
       const summary = internalTools.locator('summary');
 
@@ -269,7 +363,7 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       await expect(page.locator('.projectGrid [role="listitem"]')).toHaveCount(
         18
       );
-      await page.locator('.platform-index > summary').click();
+      await page.locator('details#platform > summary').click();
 
       const metrics = await page.evaluate(() => ({
         bodyWidth: document.body.scrollWidth,

@@ -5,7 +5,7 @@ import {
   Injectable,
   inject,
 } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { appRoutes } from './app.routes';
 import {
   provideHttpClient,
@@ -56,7 +56,12 @@ export const appConfig: ApplicationConfig = {
     provideProductTheme('christopherrutherford-net'),
     provideClientHydration(withEventReplay()),
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(appRoutes),
+    provideRouter(
+      appRoutes,
+      // The page scrolls inside body, so anchor scrolling is handled by
+      // SectionScrollService rather than the window-based router scroller.
+      withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })
+    ),
     provideHttpClient(withInterceptorsFromDi()),
     {
       provide: HTTP_INTERCEPTORS,

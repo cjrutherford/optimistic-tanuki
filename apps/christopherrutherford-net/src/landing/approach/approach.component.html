@@ -1,0 +1,15 @@
+<section class="approach" aria-label="Approach">
+  <otui-section-heading
+    eyebrow="Approach"
+    heading="How I approach engineering"
+  ></otui-section-heading>
+
+  <ol class="principles">
+    @for (principle of principles; track principle.title) {
+    <li class="principle">
+      <h3>{{ principle.title }}</h3>
+      <p>{{ principle.detail }}</p>
+    </li>
+    }
+  </ol>
+</section>

@@ -19,12 +19,24 @@ describe('AboutComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('renders capability groups instead of the old biography wall', () => {
+  it('is personal prose rather than a capability list', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.textContent).toContain('Capabilities');
-    expect(compiled.textContent).toContain('Application delivery');
-    expect(compiled.textContent).toContain('Platform and operations');
-    expect(compiled.textContent).toContain('Data and workflow systems');
+    expect(compiled.textContent).toContain('About me');
+    expect(compiled.textContent).toContain(
+      'how complicated systems fit together'
+    );
+    expect(compiled.textContent).toContain(
+      'more control over their digital lives'
+    );
+    expect(compiled.textContent).not.toContain('Capabilities');
+  });
+
+  it('links Hopeful Aspirations Industries', () => {
+    const link = (fixture.nativeElement as HTMLElement).querySelector(
+      'a[href="https://hopefulaspirationsindustries.com"]'
+    );
+
+    expect(link?.textContent).toContain('Hopeful Aspirations Industries');
   });
 });

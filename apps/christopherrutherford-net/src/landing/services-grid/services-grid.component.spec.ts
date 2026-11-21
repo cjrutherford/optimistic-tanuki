@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { PROFILE } from '../profile.data';
-import { SERVICE_ENTRIES } from '../services.data';
+import { SERVICE_ENTRIES, WORK_MODES } from '../services.data';
 import { ServicesGridComponent } from './services-grid.component';
 
 describe('ServicesGridComponent', () => {
@@ -22,16 +21,30 @@ describe('ServicesGridComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('states the client offer and ties it to the case studies', () => {
+  it('presents ways to work together with consulting as one of them', () => {
     const element = fixture.nativeElement as HTMLElement;
+    const modes = Array.from(element.querySelectorAll('.mode h3')).map(
+      (heading) => heading.textContent?.trim()
+    );
 
+    expect(element.textContent).toContain('Ways to work together');
     expect(element.textContent).toContain(
-      'Bring me in to build it, fix it, or get it shipping again'
+      'Available for full-time engineering roles, conventional contracts, and selected independent engagements.'
     );
+    expect(modes).toEqual(WORK_MODES.map((mode) => mode.title));
+    expect(modes.slice(0, 2)).toEqual([
+      'Full-time employment',
+      'Contract engineering',
+    ]);
     expect(element.textContent).toContain(
-      'The case studies above are the same shape'
+      'Independent engineering and technical consulting'
     );
-    expect(element.textContent).toContain('South Georgia');
+    expect(element.textContent).toContain('South Georgia and remote');
+    expect(
+      element.querySelector(
+        'a[href="https://hopefulaspirationsindustries.com"]'
+      )
+    ).not.toBeNull();
   });
 
   it('renders one card per offer with concrete deliverables', () => {
@@ -48,17 +61,9 @@ describe('ServicesGridComponent', () => {
     expect(element.querySelectorAll('.service-card img')).toHaveLength(0);
   });
 
-  it('closes with one clear next step and the public email', () => {
+  it('closes with one clear next step', () => {
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.textContent).toContain('How it starts');
-    expect(
-      element.querySelector<HTMLAnchorElement>('a[href="#contact"]')
-    ).not.toBeNull();
-    expect(
-      element.querySelector<HTMLAnchorElement>(
-        `a[href="mailto:${PROFILE.links.email}"]`
-      )
-    ).not.toBeNull();
+    expect(element.querySelectorAll('a[href="#contact"]')).toHaveLength(1);
   });
 });

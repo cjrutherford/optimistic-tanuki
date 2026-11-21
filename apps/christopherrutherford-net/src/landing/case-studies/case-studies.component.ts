@@ -14,5 +14,6 @@ import { CASE_STUDIES } from './case-studies.data';
   styleUrl: './case-studies.component.scss',
 })
 export class CaseStudiesComponent {
-  readonly studies = CASE_STUDIES;
+  readonly featured = CASE_STUDIES.filter((study) => study.featured);
+  readonly supporting = CASE_STUDIES.filter((study) => !study.featured);
 }

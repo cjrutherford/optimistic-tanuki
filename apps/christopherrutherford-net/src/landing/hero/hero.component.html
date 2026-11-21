@@ -1,54 +1,60 @@
 <otui-public-landing-hero
   class="hero"
   headingId="hero-title"
-  [eyebrow]="'Full-stack engineer · platform and Linux systems'"
-  [heading]="'Christopher Rutherford'"
+  [eyebrow]="profile.role"
+  [heading]="profile.name"
   [description]="
-    'I build and operate the software behind products: Angular and NestJS applications, the services and data they depend on, and the Linux infrastructure that runs them.'
+    'Building reliable software, from the interface to the infrastructure.'
   "
   [primaryAction]="primaryAction"
   [secondaryAction]="secondaryAction"
 >
   <div slot="body" class="hero-body">
-    <p class="hero-note">
-      Seven-plus years of software engineering, plus five years of earlier
-      enterprise database and systems work.
+    <p class="hero-copy">
+      I develop distributed applications, native products, and the Linux systems
+      that support them. My work focuses on simplifying complexity, improving
+      reliability, and turning useful ideas into working software.
     </p>
-
-    <ul class="hero-proof-strip" aria-label="Core technologies">
-      @for (item of proof; track item) {
-      <li>
-        <otui-badge tone="brand" emphasis="soft">{{ item }}</otui-badge>
-      </li>
-      }
-    </ul>
 
     <p class="hero-availability">
-      <otui-badge tone="brand" emphasis="solid">Availability</otui-badge>
-      <span>{{ profile.location }} · remote or hybrid</span>
+      <otui-badge tone="brand" emphasis="solid">Available</otui-badge>
+      <span>{{ profile.availabilityNote }} · {{ profile.location }}</span>
     </p>
   </div>
+
+  <a slot="actions" class="hero-contact" href="#contact">Contact</a>
 
   <otui-card slot="visual" class="hero-panel">
     <div class="hero-panel-body">
       <p class="hero-panel-label">At a glance</p>
       <dl class="hero-panel-list">
         <div>
-          <dt>Focus</dt>
+          <dt>Looking for</dt>
           <dd>
-            Distributed TypeScript platforms, native media clients, and Linux
-            infrastructure
+            Full-time engineering roles, conventional contracts, and selected
+            independent engagements
           </dd>
         </div>
         <div>
-          <dt>Looking for</dt>
-          <dd>Full-stack, platform, and implementation roles</dd>
+          <dt>Experience</dt>
+          <dd>
+            Seven-plus years of software engineering, built on earlier
+            enterprise database and systems work
+          </dd>
         </div>
         <div>
-          <dt>Client work</dt>
-          <dd>{{ profile.b2bAvailability }}</dd>
+          <dt>Location</dt>
+          <dd>{{ profile.availability }}</dd>
         </div>
       </dl>
+
+      <ul class="hero-proof-strip" aria-label="Core technologies">
+        @for (item of proof; track item) {
+        <li>
+          <otui-badge tone="brand" emphasis="soft">{{ item }}</otui-badge>
+        </li>
+        }
+      </ul>
       <div class="hero-panel-links">
         <a [href]="profile.links.github" rel="me noopener" target="_blank"
           >GitHub</a
@@ -56,6 +62,7 @@
         <a [href]="profile.links.linkedin" rel="me noopener" target="_blank"
           >LinkedIn</a
         >
+        <a [href]="'mailto:' + profile.links.email">Email</a>
         <a href="#contact">Contact</a>
       </div>
     </div>

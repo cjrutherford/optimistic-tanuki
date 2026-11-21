@@ -29,14 +29,14 @@ describe('SystemsLabComponent', () => {
 
   it('explains the repository architecture as a labeled section with linked layers', () => {
     const section = (fixture.nativeElement as HTMLElement).querySelector(
-      'section#systems-lab'
+      'section[aria-labelledby="systems-lab-title"]'
     );
 
     expect(section).toBeTruthy();
     expect(section?.getAttribute('aria-labelledby')).toBe('systems-lab-title');
-    expect(
-      section?.querySelector('h2#systems-lab-title')?.textContent
-    ).toContain('Systems Lab');
+    expect(section?.querySelector('#systems-lab-title')?.textContent).toContain(
+      'Where each layer lives'
+    );
 
     const layers = Array.from(section?.querySelectorAll('ol > li') ?? []);
     expect(layers).toHaveLength(5);
@@ -58,7 +58,9 @@ describe('SystemsLabComponent', () => {
 
   it('shows only registered web apps with repository links', () => {
     const element = fixture.nativeElement as HTMLElement;
-    const section = element.querySelector('section#systems-lab');
+    const section = element.querySelector(
+      'section[aria-labelledby="systems-lab-title"]'
+    );
     const cards = Array.from(
       section?.querySelectorAll<HTMLElement>('.catalog-card') ?? []
     );

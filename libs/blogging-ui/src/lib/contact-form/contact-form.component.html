@@ -46,9 +46,12 @@
       </div>
 
       <div class="row">
-        <otui-button style="flex: 1" (click)="onSubscribe()">{{
-          buttonText
-        }}</otui-button>
+        <otui-button
+          style="flex: 1"
+          [disabled]="disabled"
+          (click)="onSubscribe()"
+          >{{ buttonText }}</otui-button
+        >
         <!-- <otui-button style="flex: 1;"(click)="onClose()">Close</otui-button> -->
       </div>
     </div>

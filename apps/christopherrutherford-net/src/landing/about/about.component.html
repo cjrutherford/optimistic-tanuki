@@ -1,45 +1,27 @@
-<div class="about-layout">
-  <otui-card class="about-left-card">
-    <otui-heading
-      [color]="'var(--foreground)'"
-      [text]="'Capabilities'"
-      [size]="'2rem'"
-    ></otui-heading>
-    <p class="about-intro">
-      I work across product delivery, architecture, and implementation. The
-      through-line is pretty simple: build things that are useful, and build
-      them in a way people can actually work with later.
-    </p>
-    <div class="about-paragraphs">
-      <p>
-        My background covers customer-facing apps, workflow-heavy business
-        tools, platform work, and the in-between space where product decisions
-        and technical decisions keep affecting each other.
-      </p>
-      <p>
-        I’m most useful when a team needs to turn a messy situation into
-        something workable: clearer structure, better tradeoffs, and a delivery
-        path that doesn’t fall apart the moment it leaves the whiteboard.
-      </p>
-    </div>
-  </otui-card>
+<section class="about" aria-label="About me">
+  <otui-section-heading
+    eyebrow="About"
+    heading="About me"
+  ></otui-section-heading>
 
-  <div class="about-right-cards">
-    @for (group of capabilityGroups; track group.title) {
-    <otui-card class="capability-card">
-      <otui-heading
-        [color]="'var(--foreground)'"
-        [text]="group.title"
-        [size]="'1.5rem'"
-      ></otui-heading>
-      <div class="capability-list">
-        @for (item of group.items; track item) {
-        <div class="capability-item">
-          <p>{{ item }}</p>
-        </div>
-        }
-      </div>
-    </otui-card>
-    }
+  <div class="about-prose">
+    <p>
+      I enjoy understanding how complicated systems fit together, identifying
+      where they become fragile or inefficient, and finding ways to make them
+      simpler and more dependable.
+    </p>
+    <p>
+      Outside traditional engineering roles, I build software aimed at giving
+      people more control over their digital lives. I believe useful technology
+      should expand what people can do rather than leave them dependent on
+      systems they cannot understand or maintain.
+    </p>
+    <p>
+      That includes helping people who are not technical use technology with
+      confidence, and publishing open-source tools. My independent work lives at
+      <a [href]="profile.links.company" target="_blank" rel="noopener"
+        >Hopeful Aspirations Industries</a
+      >.
+    </p>
   </div>
-</div>
+</section>

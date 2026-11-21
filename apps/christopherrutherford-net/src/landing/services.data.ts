@@ -6,7 +6,7 @@ export interface ServiceOffer {
 }
 
 /**
- * Client-facing offers. These are the shapes of work the case studies
+ * Independent consulting offers. These are the shapes of work the case studies
  * demonstrate; keep them scoped to what the repositories and releases support.
  */
 export const SERVICE_ENTRIES: ServiceOffer[] = [
@@ -53,5 +53,38 @@ export const SERVICE_ENTRIES: ServiceOffer[] = [
       'Sequencing and trade-off notes',
       'Decision records the team can follow',
     ],
+  },
+];
+
+export interface WorkMode {
+  id: string;
+  title: string;
+  summary: string;
+}
+
+/** Ordered by preference: employment and contracts first. */
+export const WORK_MODES: WorkMode[] = [
+  {
+    id: 'full-time',
+    title: 'Full-time employment',
+    summary:
+      'Engineering roles where I can own both the application and the system underneath it.',
+  },
+  {
+    id: 'contract',
+    title: 'Contract engineering',
+    summary: 'Conventional contracts with a defined scope and a team to join.',
+  },
+  {
+    id: 'consulting',
+    title: 'Independent consulting',
+    summary:
+      'Selected engagements through Hopeful Aspirations Industries, described below.',
+  },
+  {
+    id: 'open-source',
+    title: 'Open-source collaboration',
+    summary:
+      'Contributing to and publishing tools that give people more control over their software.',
   },
 ];
