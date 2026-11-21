@@ -1,0 +1,105 @@
+{
+  "capturedAt": "2026-11-18T09:35:00Z",
+  "decision": "D1: automatic acquisition, Overture only, release 2026-10-21.0",
+  "deployed": {
+    "images": [
+      "optimistic-tanuki-directory",
+      "optimistic-tanuki-directory-worker"
+    ],
+    "rollbackTags": [":rollback-s10-acq"],
+    "migration": "none (kind overture-stage reused; blockedReason geometry_pending needs no schema change)",
+    "backup": "pg_dump -Fc of ot_directory taken before deploy (scratchpad s10/ot_directory_pre_acq.dump)"
+  },
+  "eligibleTowns": {
+    "eligible": 261,
+    "geometryReady": 171,
+    "geometryPending": 90
+  },
+  "runLedgerAfterSweeps": {
+    "autoRunsTotal": 34,
+    "blocked_geometry_pending": 18,
+    "failed_retryable": 16,
+    "succeeded": 0,
+    "succeeded_empty": 0,
+    "partial": 0,
+    "failedRetryableCauses": {
+      "Remote source HEAD mismatch: 502": 15,
+      "terminated": 1
+    },
+    "budgetReservedCentsByAutoRuns": 0,
+    "anonymousOvertureAttemptsSince0900Utc": 17,
+    "autoJobRows": 16
+  },
+  "retryBackoff": {
+    "town": "Alexandria, VA",
+    "firstFailureFinishedAt": "2026-11-18T09:13:35Z",
+    "retryStartedAt": "2026-11-18T09:31:09Z",
+    "configuredBackoffMs": 900000
+  },
+  "killSwitch": {
+    "key": "provider_acquisition",
+    "pausedWindowSeconds": 160,
+    "autoRunsBefore": 31,
+    "autoRunsDuringPause": 31,
+    "newRunAfterClearingAt": "2026-11-18T09:31:09Z",
+    "restoredTo": {
+      "paused": false,
+      "reason": null,
+      "version": 4
+    }
+  },
+  "liveAcquisitionBlocker": {
+    "summary": "Host and container egress to the Overture S3 bucket (and example.com, github.com) timed out for the whole verification window; the npm registry stayed reachable. The extractor's pinned range proxy therefore got a 502 on its HEAD request and the runs ended failed_retryable.",
+    "consequence": "No town went unknown to available, and no succeeded_empty or partial town was observed live. Those transitions are covered by postgres tests against a scratch database with a fake extractor.",
+    "publicListingsRoute": "The listings route is /internal/local-evaluation/towns/:id/listings (gateway: directory/towns/:id/local-evaluation-listings). It reads staged rows and does not depend on publication, which stays paused."
+  },
+  "afterEgressRecovery": {
+    "capturedAt": "2026-11-18T10:30:00Z",
+    "note": "Host egress to the Overture S3 bucket returned at about 10:10 UTC; the worker resumed the backlog with no operator action.",
+    "towns": [
+      {
+        "slug": "cambridge-ma",
+        "communityId": "c5c3ea59-7a97-48c1-8cf4-03378a2661f2",
+        "before": "unknown",
+        "run": "succeeded 10:14:19-10:19:28 UTC",
+        "after": "available",
+        "firstPageListings": 25,
+        "hasMore": true
+      },
+      {
+        "slug": "charlottesville-va",
+        "communityId": "8fe6cfeb-5ce4-4ddb-8d84-13daf34edb4a",
+        "before": "unknown",
+        "run": "succeeded 10:19:28-10:22:23 UTC",
+        "after": "available",
+        "firstPageListings": 25,
+        "hasMore": true
+      }
+    ],
+    "publicListingKeys": [
+      "attribution",
+      "category",
+      "name",
+      "notices",
+      "termsUrls"
+    ],
+    "attributionsSeen": [
+      "BrightQuery; Overture Maps Foundation (October 2026)",
+      "Microsoft; Overture Maps Foundation (October 2026)",
+      "meta; Overture Maps Foundation (October 2026)",
+      "AllThePlaces contributors, CC0"
+    ],
+    "ledgerAtCapture": {
+      "overture": {
+        "succeeded": 2,
+        "running": 2,
+        "failed_retryable": 35,
+        "blocked_geometry_pending": 62
+      },
+      "alltheplaces": {
+        "succeeded": 116,
+        "failed_retryable": 1
+      }
+    }
+  }
+}

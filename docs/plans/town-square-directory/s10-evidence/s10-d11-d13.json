@@ -1,0 +1,50 @@
+{
+  "deployedAt": "2026-11-18",
+  "commits": ["f5ebbc8e5", "57d9ffb87"],
+  "rollback": {
+    "dump": "ot_directory_pre_d13.dump (pg_dump -Fc, scratchpad s10)",
+    "imageTags": "optimistic-tanuki-directory, -directory-worker, -directory-migrate, cjrutherford/optimistic_tanuki_gateway: rollback-s10-d13"
+  },
+  "migration": "1795011346582-DirectoryDuplicateCases applied by directory-migrate; directory_duplicate_case empty before the first sweep",
+  "unitSuites": {
+    "directory": "272 pass, 0 fail (DB-backed suites skipped without DIRECTORY_TEST_DATABASE_URL)",
+    "directoryWorker": "all pass except queue.test.js, which needs disposable Redis (environmental)",
+    "gateway": "150 suites, 2366 tests pass including directory controllers, scope matrix and OpenAPI drift"
+  },
+  "d13Sweep": {
+    "config": "DIRECTORY_AUTO_DUPLICATES=on|off, _INTERVAL_MS=300000, _LIMIT=5 towns per run; provider_acquisition pause also stops it",
+    "casesQueuedAtCheck": 6573,
+    "townsWithCases": 153,
+    "townsWithScanTargets": 177,
+    "openDuplicateSuppressions": 6573,
+    "rules": { "same_name_near": "see queue", "similar_name": "see queue" },
+    "note": "the sweep was still draining towns at the time of the check; counts grow until every town was examined once"
+  },
+  "liveCase": {
+    "town": "407d29f3-6552-42e8-97d6-57de33eef687",
+    "case": "82c526fd-4d6b-4730-a4d1-066e86a90fc9",
+    "rule": "same_name_near, 176 m, weaker by sources",
+    "publicListingsAndExportRowsMatching": {
+      "queued": 1,
+      "afterKeepSeparate": 2,
+      "afterUndo": 1
+    },
+    "keepSeparateReplay": "replayed=true, state unchanged",
+    "finalState": "queued (policy state restored)"
+  },
+  "d11": {
+    "candidateStatus": {
+      "needs_human": 179002,
+      "published": 48,
+      "rejected": 169,
+      "revoked": 5,
+      "archived": 23,
+      "auto_approved": 0
+    },
+    "heldByCause": "none recorded: no candidate carries the auto_approval_paused or d11_strong_match reasons",
+    "note": "The strong-match gate runs when a candidate is stored or refreshed. Nothing refreshed after deploy (newest candidate update 2026-11-18T02:27Z, before the gate), so counts are unchanged and no refresh was forced."
+  },
+  "ownerPermission": "owner and owner_console_owner roles both contain directory.review; the owner called the duplicate routes through the gateway",
+  "payloadPrivacyScan": "261 towns, 4294 listings, keys limited to name/category/attribution/notices/termsUrls, 0 forbidden hits, 0 errors",
+  "outOfScope": "Owner Console UI for duplicate cases"
+}

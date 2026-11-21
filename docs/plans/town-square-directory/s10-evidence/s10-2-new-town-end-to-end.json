@@ -1,0 +1,53 @@
+{
+  "slice": "S10-2 new town end to end, newest never-attempted first",
+  "recordedAt": "2026-11-18T13:12Z",
+  "orderingChange": {
+    "overtureAndAllThePlacesAcquisition": "ORDER BY (provider has any auto run for the town and release) ASC, live geometry createdAt DESC, name, id. Never-attempted towns come first, newest-ready first; towns due a backoff retry follow in the same newest-first order. Backoff and max-attempt gating is unchanged.",
+    "geometrySweep": "never-tried towns first, directory_town.registeredAt DESC; towns with an attempt follow, oldest attempt first. registeredAt is a new column (default now()); migration 1795005158010-DirectoryTownRegisteredAt generated with the TypeORM CLI. There was no usable registration time before: directory_reconciliation_receipt is empty under register v2.",
+    "tests": "overture-auto-acquisition.postgres (selection order incl. a newer retried town), auto-boundary.postgres (registration order, attempted town drops back), alltheplaces-geoapify.postgres, auto-boundary unit, tsc. All pass on scratch databases cloned from the live schema, dropped afterwards.",
+    "rollback": "docker images optimistic-tanuki-directory:rollback-s10-order and optimistic-tanuki-directory-worker:rollback-s10-order; pre-change dump s10/ot_directory_pre_order.dump (scratchpad)"
+  },
+  "town": {
+    "name": "Elkin, NC",
+    "slug": "elkin-nc",
+    "communityId": "2cadb972-18e5-4911-b3bd-14ab8feaec16",
+    "state": "NC",
+    "approxPopulation": 4000,
+    "createdVia": "Social CREATE_COMMUNITY over TCP (appScope local-hub, localityType town, isPrivate false, owner system)",
+    "leftInPlace": true
+  },
+  "timelineUtc": {
+    "socialCreated": "2026-11-18T12:29:08Z",
+    "directoryTownRegisteredEligible": "before 12:30:58 (picked up by the geometry sweep; exact register time not recorded, the registeredAt column did not exist yet)",
+    "geometryReady": "2026-11-18T12:30:58.556Z (census-tiger 2026, version 1; attempt status installed)",
+    "overtureRun1": "started 12:36:45, closed failed_retryable 12:48:59: I restarted the worker container during deploy, killing the run; the stale-run closer marked it retryable",
+    "overtureRun2": "started 13:05:26 after the 15 minute backoff, succeeded 13:09:19",
+    "allThePlacesRun": "started 13:10:53, succeeded 13:10:54",
+    "publicApiAvailable": "13:09:19 onward: coverage.state available, 25 listings on the first page, hasMore true, source freshness fresh (release 2026-10-21.0)",
+    "localHubPage": "http://127.0.0.1:8087/city/elkin-nc/businesses HTTP 200; all 25 API listing names render on the page (Playwright check); screenshot s10-2-elkin-nc-businesses.png"
+  },
+  "selectionEvidence": "Elkin was ready at 12:30:58 and was the first town acquired by the restarted worker at 12:36:45, ahead of a backlog of roughly 165 ready towns that earlier waited hours at 2 towns per sweep.",
+  "result": "Populated public listings were reached with no operator action. The 40 minute total includes about 12 minutes lost to my own worker restart and the 15 minute retry backoff; an undisturbed run would have been about the 4 minute Overture run after selection.",
+  "providerCompletedNoListings": {
+    "succeeded_empty": {
+      "town": "Marineland, FL",
+      "communityId": "1c0ca5d8-e0ac-4d04-bb4f-afc00e2361cf",
+      "runs": "overture succeeded 11:02-11:05Z; alltheplaces succeeded_empty 11:05:25Z",
+      "publicCoverage": "state empty, 0 listings, hasMore false"
+    },
+    "partial": "none seen"
+  },
+  "autoRunCounts": {
+    "alltheplaces": {
+      "succeeded": 169,
+      "succeeded_empty": 1,
+      "failed_retryable": 2
+    },
+    "overture": {
+      "succeeded": 33,
+      "blocked": 90,
+      "failed_retryable": 39,
+      "running": 1
+    }
+  }
+}

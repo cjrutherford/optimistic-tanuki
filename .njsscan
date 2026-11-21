@@ -1,0 +1,7 @@
+---
+# njsscan config read by .github/workflows/njsscan.yml (`-c .njsscan`).
+# Test folders hold fixture secrets, fake keys and deliberately odd regexes; they never ship.
+- ignore-paths:
+    - node_modules
+    - test
+    - __tests__

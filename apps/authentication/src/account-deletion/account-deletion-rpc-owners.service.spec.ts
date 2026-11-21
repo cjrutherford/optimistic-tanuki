@@ -215,3 +215,123 @@ it('rejects an unsafe source diagnostic environment before issuing a mutation RP
   expect(mutated).toBe(false);
   f.service.onModuleDestroy();
 });
+
+describe('directory owner over HTTP', () => {
+  interface FakeDirectory {
+    environment: jest.Mock;
+    deletion: jest.Mock;
+    purgeSnapshots: jest.Mock;
+    runtimeReadback: jest.Mock;
+  }
+  const directoryGrant = (action: string) =>
+    ({
+      owner: 'directory',
+      action,
+      accountId: randomUUID(),
+      operationId: randomUUID(),
+    } as never);
+  const environment = {
+    owner: 'directory',
+    logging: { policyVersion: 1, active: true },
+    databaseLogging: { policyVersion: 1, active: true },
+  };
+  const build = (overrides: Partial<FakeDirectory> = {}) => {
+    const directory: FakeDirectory = {
+      environment: jest.fn(async () => environment),
+      deletion: jest.fn(async () => ({
+        verified: true,
+        remaining: 2,
+        blocked: 0,
+      })),
+      purgeSnapshots: jest.fn(async () => ({ purged: true, remaining: 0 })),
+      runtimeReadback: jest.fn(async () => ({
+        owner: 'directory',
+        instanceId: randomUUID(),
+        remaining: 0,
+        logging: { policyVersion: 1, active: true },
+        databaseLogging: { policyVersion: 1, active: true },
+      })),
+      ...overrides,
+    };
+    const service = new AccountDeletionRpcOwnersService(
+      { get: () => undefined } as never,
+      {} as never,
+      directory as never
+    );
+    return { service, directory };
+  };
+
+  it('checks the environment first, then fences and purges snapshots', async () => {
+    const { service, directory } = build();
+    await expect(
+      service.ports.get('directory')!(directoryGrant('fence'))
+    ).resolves.toEqual({ verified: true, remaining: 2 });
+    expect(directory.environment).toHaveBeenCalledTimes(1);
+    expect(directory.deletion).toHaveBeenCalledWith('fence', expect.anything());
+    expect(directory.purgeSnapshots).toHaveBeenCalledTimes(1);
+    expect(directory.environment.mock.invocationCallOrder[0]).toBeLessThan(
+      directory.deletion.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('does not erase when the logging environment is unverified', async () => {
+    const { service, directory } = build({
+      environment: jest.fn(async () => ({
+        ...environment,
+        databaseLogging: { policyVersion: 1, active: false },
+      })),
+    });
+    await expect(
+      service.ports.get('directory')!(directoryGrant('erase'))
+    ).rejects.toThrow('DELETION_ENVIRONMENT_UNVERIFIED');
+    expect(directory.deletion).not.toHaveBeenCalled();
+  });
+
+  it('never reports complete when Directory is blocked or not verified', async () => {
+    const blocked = build({
+      deletion: jest.fn(async () => {
+        throw Error('DELETION_DIRECTORY_BLOCKED');
+      }),
+    });
+    await expect(
+      blocked.service.ports.get('directory')!(directoryGrant('erase'))
+    ).rejects.toThrow('DELETION_DIRECTORY_BLOCKED');
+    const unverified = build({
+      deletion: jest.fn(async () => ({
+        verified: false,
+        remaining: 1,
+        blocked: 0,
+      })),
+    });
+    await expect(
+      unverified.service.ports.get('directory')!(directoryGrant('readback'))
+    ).rejects.toThrow('DELETION_DIRECTORY_BLOCKED');
+    const ambiguous = build({
+      deletion: jest.fn(async () => ({
+        verified: true,
+        remaining: 0,
+        blocked: 1,
+      })),
+    });
+    await expect(
+      ambiguous.service.ports.get('directory')!(directoryGrant('fence'))
+    ).rejects.toThrow('DELETION_DIRECTORY_BLOCKED');
+  });
+
+  it('refuses actions Directory does not have', async () => {
+    const { service, directory } = build();
+    await expect(
+      service.ports.get('directory')!(directoryGrant('finalize'))
+    ).rejects.toThrow('DELETION_OWNER_ACTION_INVALID');
+    expect(directory.environment).not.toHaveBeenCalled();
+  });
+
+  it('reads the runtime through the HTTP route after purging snapshots', async () => {
+    const { service, directory } = build();
+    const result = await service.runtimeReadbacks(directoryGrant('readback'));
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ owner: 'directory', remaining: 0 });
+    expect(directory.purgeSnapshots).toHaveBeenCalledTimes(1);
+    expect(directory.runtimeReadback).toHaveBeenCalledTimes(1);
+  });
+});

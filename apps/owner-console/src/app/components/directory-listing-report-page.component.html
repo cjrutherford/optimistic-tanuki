@@ -1,0 +1,131 @@
+<section class="report-page" aria-labelledby="report-title">
+  <a class="back-link" routerLink="/dashboard/community-ops">
+    <otui-icon name="arrow-back" [size]="18" stroke="currentColor"></otui-icon>
+    Community operations
+  </a>
+
+  <header class="page-header">
+    <p class="page-kicker">Directory</p>
+    <h1 id="report-title">Listing reports</h1>
+    <p>
+      Reports from the public about a listing. Nothing is hidden automatically.
+      Safety and rights requests are listed first. Reporters are anonymous and
+      their contact details are never shown here.
+    </p>
+  </header>
+
+  @if (message) {
+  <p class="page-message" role="status">{{ message }}</p>
+  }
+
+  <div class="filters" role="group" aria-label="Filter reports">
+    @for (f of filters; track f) {
+    <otui-button
+      size="sm"
+      tone="neutral"
+      [emphasis]="f === filter ? 'solid' : 'outline'"
+      (click)="setFilter(f)"
+    >
+      {{ filterLabel(f) }}
+    </otui-button>
+    }
+  </div>
+
+  @if (loading && !reports) {
+  <otui-loading-state headline="Loading reports…"></otui-loading-state>
+  } @if (reports; as list) { @if (!list.length) {
+  <otui-empty-state
+    headline="No reports"
+    body="No reports match this filter."
+  ></otui-empty-state>
+  } @for (item of list; track item.reportId) {
+  <otui-card class="report-card" tone="neutral" emphasis="soft">
+    <div class="report-header">
+      @if (item.priority) {
+      <otui-badge tone="danger" size="sm">Priority</otui-badge>
+      }
+      <h3>{{ item.listingName || 'Unnamed listing' }}</h3>
+      <otui-badge [tone]="isOpen(item) ? 'warning' : 'neutral'" size="sm">
+        {{ statusLabel(item.status) }}
+      </otui-badge>
+    </div>
+    <p class="row-line">
+      <span class="reason">{{ reasonLabel(item.reasonCode) }}</span>
+      <code>{{ item.listingId }}</code>
+      <span class="muted">{{ item.createdAt | date : 'medium' }}</span>
+    </p>
+    @if (item.note) {
+    <p class="note">{{ item.note }}</p>
+    } @if (item.decisionNote) {
+    <p class="muted">Decision: {{ item.decisionNote }}</p>
+    } @if (isOpen(item)) {
+    <div class="review-actions">
+      @if (item.status === 'received') {
+      <otui-button
+        size="sm"
+        tone="neutral"
+        emphasis="outline"
+        [disabled]="submitting"
+        (click)="markUnderReview(item)"
+      >
+        Mark under review
+      </otui-button>
+      }
+      <otui-button
+        size="sm"
+        tone="brand"
+        emphasis="solid"
+        [disabled]="submitting"
+        (click)="openSuppression(item)"
+      >
+        Open suppression
+      </otui-button>
+      <otui-button
+        size="sm"
+        tone="neutral"
+        emphasis="ghost"
+        [disabled]="submitting"
+        (click)="openDecline(item)"
+      >
+        Decline
+      </otui-button>
+    </div>
+    } @if (declineFor === item.reportId) {
+    <form
+      class="decision-form"
+      (submit)="$event.preventDefault(); submitDecline(item)"
+    >
+      <label class="field">
+        <span>Decline note (required)</span>
+        <textarea
+          class="control"
+          name="declineNote"
+          rows="3"
+          maxlength="1000"
+          (input)="setDeclineNote($any($event.target).value)"
+        ></textarea>
+      </label>
+      <div class="review-actions">
+        <otui-button
+          size="sm"
+          tone="brand"
+          emphasis="solid"
+          [disabled]="submitting"
+          (click)="submitDecline(item)"
+        >
+          Decline report
+        </otui-button>
+        <otui-button
+          size="sm"
+          tone="neutral"
+          emphasis="ghost"
+          (click)="cancel()"
+        >
+          Cancel
+        </otui-button>
+      </div>
+    </form>
+    }
+  </otui-card>
+  } }
+</section>

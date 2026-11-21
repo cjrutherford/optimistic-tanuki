@@ -246,8 +246,8 @@
       "localityType": "city",
       "city": "Gainesville",
       "state": "GA",
-      "lat": 34.2979,
-      "lng": -83.9879,
+      "lat": 34.2901,
+      "lng": -83.8291,
       "population": 42000,
       "imageUrl": "https://picsum.photos/seed/1416/800/600",
       "description": "Georgia's Gainesville offers a unique blend of Southern charm, rich history, and modern amenities. From historic downtown districts to beautiful natural surroundings, this city has something for everyone.",
@@ -2399,7 +2399,8 @@
           "imageUrl": "https://picsum.photos/seed/2795/800/600"
         }
       ],
-      "timezone": "UTC"
+      "timezone": "UTC",
+      "mergedInto": "st-simons-island-ga"
     },
     {
       "name": "Dahlonega, GA",
@@ -2669,6 +2670,37 @@
           "imageUrl": "https://picsum.photos/seed/3242/800/600"
         }
       ],
+      "timezone": "UTC",
+      "mergedInto": "edisto-beach-sc"
+    },
+    {
+      "name": "Edisto Beach, SC",
+      "slug": "edisto-beach-sc",
+      "localityType": "town",
+      "city": "Edisto Beach",
+      "state": "SC",
+      "lat": 32.4986,
+      "lng": -80.3137,
+      "population": 1031,
+      "imageUrl": "https://picsum.photos/seed/1587/800/600",
+      "description": "Edisto Beach, South Carolina is a small oceanfront town on Edisto Island, known for its quiet beaches, marshes and relaxed coastal community.",
+      "highlights": [
+        {
+          "headline": "Historic Downtown",
+          "link": "https://example.com/edisto-beach-sc/historic-downtown",
+          "imageUrl": "https://picsum.photos/seed/3365/800/600"
+        },
+        {
+          "headline": "Waterfront Views",
+          "link": "https://example.com/edisto-beach-sc/waterfront-views",
+          "imageUrl": "https://picsum.photos/seed/3259/800/600"
+        },
+        {
+          "headline": "Southern Cuisine",
+          "link": "https://example.com/edisto-beach-sc/southern-cuisine",
+          "imageUrl": "https://picsum.photos/seed/3242/800/600"
+        }
+      ],
       "timezone": "UTC"
     },
     {
@@ -2767,8 +2799,8 @@
       "localityType": "town",
       "city": "Fripp Island",
       "state": "SC",
-      "lat": 32.3468,
-      "lng": -80.5632,
+      "lat": 32.3203,
+      "lng": -80.484,
       "population": 650,
       "imageUrl": "https://picsum.photos/seed/1484/800/600",
       "description": "Fripp Island, South Carolina is a charming coastal town with a rich maritime heritage, beautiful beaches, and a welcoming community.",
@@ -2857,8 +2889,8 @@
       "localityType": "town",
       "city": "McCormick",
       "state": "SC",
-      "lat": 33.978,
-      "lng": -82.294,
+      "lat": 33.9124,
+      "lng": -82.289,
       "population": 2500,
       "imageUrl": "https://picsum.photos/seed/1211/800/600",
       "description": "McCormick, South Carolina is a charming coastal town with a rich maritime heritage, beautiful beaches, and a welcoming community.",
@@ -2977,8 +3009,8 @@
       "localityType": "town",
       "city": "Cedar Key",
       "state": "FL",
-      "lat": 29.1464,
-      "lng": -82.8023,
+      "lat": 29.1503,
+      "lng": -83.0374,
       "population": 700,
       "imageUrl": "https://picsum.photos/seed/1140/800/600",
       "description": "Cedar Key, Florida is a beloved coastal town known for its pristine beaches, water activities, and laid-back Florida lifestyle.",
@@ -3452,34 +3484,35 @@
       "timezone": "UTC"
     },
     {
-      "name": "Ponte Vedra Beach, FL",
-      "slug": "ponte-vedra-beach-fl",
+      "name": "Palm Valley, FL",
+      "slug": "palm-valley-fl",
       "localityType": "town",
-      "city": "Ponte Vedra Beach",
+      "city": "Palm Valley",
       "state": "FL",
-      "lat": 30.2408,
-      "lng": -81.3895,
-      "population": 26000,
+      "lat": 30.2033,
+      "lng": -81.3985,
+      "population": 21827,
       "imageUrl": "https://picsum.photos/seed/1924/800/600",
-      "description": "Ponte Vedra Beach, Florida is a beloved coastal town known for its pristine beaches, water activities, and laid-back Florida lifestyle.",
+      "description": "Palm Valley, Florida is a coastal community between the Intracoastal Waterway and the Atlantic, known for its waterfront, marshes and laid-back Florida lifestyle.",
       "highlights": [
         {
           "headline": "Beautiful Beaches",
-          "link": "https://example.com/ponte-vedra-beach-fl/beautiful-beaches",
+          "link": "https://example.com/palm-valley-fl/beautiful-beaches",
           "imageUrl": "https://picsum.photos/seed/3613/800/600"
         },
         {
           "headline": "Water Sports",
-          "link": "https://example.com/ponte-vedra-beach-fl/water-sports",
+          "link": "https://example.com/palm-valley-fl/water-sports",
           "imageUrl": "https://picsum.photos/seed/3168/800/600"
         },
         {
           "headline": "Fresh Seafood",
-          "link": "https://example.com/ponte-vedra-beach-fl/fresh-seafood",
+          "link": "https://example.com/palm-valley-fl/fresh-seafood",
           "imageUrl": "https://picsum.photos/seed/3212/800/600"
         }
       ],
-      "timezone": "UTC"
+      "timezone": "UTC",
+      "formerSlug": "ponte-vedra-beach-fl"
     },
     {
       "name": "Amelia Island, FL",
@@ -3509,7 +3542,8 @@
           "imageUrl": "https://picsum.photos/seed/2840/800/600"
         }
       ],
-      "timezone": "UTC"
+      "timezone": "UTC",
+      "mergedInto": "fernandina-beach-fl"
     },
     {
       "name": "Kitty Hawk, NC",
@@ -3667,8 +3701,8 @@
       "localityType": "town",
       "city": "Hatteras",
       "state": "NC",
-      "lat": 35.6935,
-      "lng": -75.6902,
+      "lat": 35.2212,
+      "lng": -75.6849,
       "population": 600,
       "imageUrl": "https://picsum.photos/seed/1114/800/600",
       "description": "Hatteras, North Carolina is a scenic town nestled in the mountains or along the coast, offering outdoor adventures and small-town charm.",
@@ -3719,7 +3753,8 @@
           "imageUrl": "https://picsum.photos/seed/2651/800/600"
         }
       ],
-      "timezone": "UTC"
+      "timezone": "UTC",
+      "mergedInto": "hatteras-nc"
     },
     {
       "name": "Beaufort, NC",
@@ -9037,8 +9072,8 @@
       "localityType": "city",
       "city": "Kerrville",
       "state": "TX",
-      "lat": 30.0375,
-      "lng": -98.9012,
+      "lat": 30.0383,
+      "lng": -99.1311,
       "population": 24620,
       "imageUrl": "https://picsum.photos/seed/6171/800/600",
       "description": "Kerrville, Texas is a Hill Country city on the Guadalupe with arts and festivals.",
@@ -9697,8 +9732,8 @@
       "localityType": "city",
       "city": "Seat Pleasant",
       "state": "MD",
-      "lat": 38.8143,
-      "lng": -76.9122,
+      "lat": 38.8947,
+      "lng": -76.8995,
       "population": 4649,
       "imageUrl": "https://picsum.photos/seed/5191/800/600",
       "description": "Seat Pleasant, Maryland is a small city with community roots.",
@@ -9727,8 +9762,8 @@
       "localityType": "city",
       "city": "Falls Church",
       "state": "VA",
-      "lat": 38.8855,
-      "lng": -77.3001,
+      "lat": 38.8847,
+      "lng": -77.1756,
       "population": 14281,
       "imageUrl": "https://picsum.photos/seed/5231/800/600",
       "description": "Falls Church, Virginia is a small independent city with a downtown village.",
@@ -10927,8 +10962,8 @@
       "localityType": "town",
       "city": "Wethersfield",
       "state": "CT",
-      "lat": 41.5832,
-      "lng": -72.6508,
+      "lat": 41.7026,
+      "lng": -72.6697,
       "population": 13068,
       "imageUrl": "https://picsum.photos/seed/6081/800/600",
       "description": "Wethersfield, Connecticut is a historic town known for its old houses.",
@@ -11347,8 +11382,8 @@
       "localityType": "city",
       "city": "Seguin",
       "state": "TX",
-      "lat": 29.5689,
-      "lng": -77.945,
+      "lat": 29.5902,
+      "lng": -97.9686,
       "population": 29912,
       "imageUrl": "https://picsum.photos/seed/6161/800/600",
       "description": "Seguin, Texas is a historic town with the biggest free GNU in the world.",
@@ -11437,8 +11472,8 @@
       "localityType": "city",
       "city": "Poteet",
       "state": "TX",
-      "lat": 29.0369,
-      "lng": -98.6285,
+      "lat": 29.038,
+      "lng": -98.5714,
       "population": 3636,
       "imageUrl": "https://picsum.photos/seed/6191/800/600",
       "description": "Poteet, Texas is famous for the Poteet Strawberry Festival.",
@@ -11789,7 +11824,8 @@
           "imageUrl": "https://picsum.photos/seed/6304/800/600"
         }
       ],
-      "timezone": "UTC"
+      "timezone": "UTC",
+      "mergedInto": "bandera-tx"
     },
     {
       "name": "Bexar County, TX",
@@ -12037,8 +12073,8 @@
       "localityType": "city",
       "city": "Camilla",
       "state": "GA",
-      "lat": 31.1355,
-      "lng": -84.192,
+      "lat": 31.2341,
+      "lng": -84.2096,
       "population": 4971,
       "imageUrl": "https://picsum.photos/seed/6491/800/600",
       "description": "Camilla, Georgia is a Mitchell County seat in Southwest Georgia.",
@@ -12321,8 +12357,8 @@
       "localityType": "city",
       "city": "Lake Park",
       "state": "GA",
-      "lat": 30.6838,
-      "lng": -82.9961,
+      "lat": 30.6856,
+      "lng": -83.1877,
       "population": 677,
       "imageUrl": "https://picsum.photos/seed/6581/800/600",
       "description": "Lake Park, Georgia is a small Lowndes County city near the Florida line.",

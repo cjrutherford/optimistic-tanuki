@@ -32,6 +32,34 @@ This is a large project and needs to be handled with care or there will be a lon
 
 - Do not create or use Git worktrees for this repository. Work in the current checkout unless the user explicitly changes this instruction.
 
+## Shared UI composition (required for all agents)
+
+This rule applies to every agent and model, including OpenAI/Codex and GitHub
+Copilot models. Apps compose shared platform components; they must not
+reinvent controls or presentation locally.
+
+- Before writing markup or styles for an app screen, inspect the UI libraries
+  first: `libs/common-ui`, `libs/form-ui`, and the relevant domain UI library
+  (`business-ui`, `classified-ui`, `community-ui`, `social-ui`, and so on).
+- Use `@optimistic-tanuki/common-ui` primitives for buttons, cards, badges,
+  chips, icons, modals, section headings and state messages. Use
+  `@optimistic-tanuki/form-ui` controls (`lib-text-input`, `lib-checkbox`,
+  `lib-select`, `lib-text-area`) for forms.
+- Do not add raw `.btn`, `.input`, `.card` or hand-rolled empty/error/loading
+  markup for new UI. Do not duplicate an existing shared component inside an
+  app.
+- App-local markup is acceptable only for page structure and layout that is
+  unique to that app. The controls, cards, badges, icons and states inside that
+  structure must still be shared components.
+- Match the host page's section rhythm (padding, background bands, heading
+  hierarchy and responsive grid) so a new section does not read as bolted on or
+  duplicate an adjacent heading.
+- If a shared component lacks an input the screen needs, extend the library
+  with a backward-compatible input rather than forking the component into the
+  app.
+- In review, treat a new app-local control as a defect unless the change
+  explains why no shared component fits.
+
 ## TypeORM migrations
 
 - Schema changes must use the owning service's Nx `typeorm:migration:generate` target. Do not hand-create migration files or timestamps.

@@ -1,0 +1,44 @@
+{
+  "capturedAt": "2026-11-18T07:20Z",
+  "stack": "live local compose project optimistic-tanuki; directory-worker mode register-pending-v1, register sweep 60 s",
+  "path": "Social TCP CREATE_COMMUNITY (the owning service's create command; the gateway create DTO cannot set localityType). No seed edit, per-town config, manifest staging or operator run.",
+  "town": {
+    "id": "494e5a47-39b5-4cca-ba3d-59a4fe5118c6",
+    "slug": "s10-acceptance-town-tx",
+    "name": "S10 Acceptance Town",
+    "localityType": "town",
+    "appScope": "local-hub",
+    "synthetic": true
+  },
+  "missedEventAndRestart": {
+    "workerStoppedAt": "2026-11-18T07:20:25.14Z",
+    "socialCreatedAt": "2026-11-18T07:20:25.23Z",
+    "workerStartedAt": "2026-11-18T07:20:30Z",
+    "providerWorkBlockedAt": "2026-11-18T07:20:38.78Z",
+    "secondsFromCreate": 13.6,
+    "secondsFromWorkerStart": 8.8,
+    "directoryTown": { "eligible": true, "geometryStatus": "pending" },
+    "providerWork": "blocked",
+    "scanTargets": 0,
+    "acquisitionOutcome": "blocked: real acquisition is not authorized (ACQUISITION_AUTHORIZED=false), so no provider call; this is the designed outcome, not a provider result",
+    "publicApi": { "status": 200, "coverage": "unknown", "listings": 0 },
+    "localHubPage": {
+      "path": "/city/s10-acceptance-town-tx/businesses",
+      "status": 200
+    }
+  },
+  "reversal": {
+    "socialDeletedAt": "2026-11-18T07:20:53Z",
+    "secondsToDirectoryWithdrawal": 51.7,
+    "directoryTown": { "eligible": false },
+    "providerWork": "removed",
+    "publicApi": {
+      "status": 200,
+      "coverage": "blocked",
+      "reason": "town-ineligible"
+    },
+    "socialRowRemaining": 0,
+    "residue": "one directory_town row with eligible=false (the designed withdrawal tombstone) and the Social change-log tombstone"
+  },
+  "notMeasured": "geometry mapping (no automatic geometry; all towns pending), live acquisition and live UI with listings, both blocked by unapproved acquisition and paused publication"
+}

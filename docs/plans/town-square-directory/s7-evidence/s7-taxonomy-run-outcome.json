@@ -1,0 +1,13 @@
+{
+  "planHash": "576f8ace6f3cec40a527bf2438f6f67fe9dfbc2abbd8de275d28ef6c7aaf963a",
+  "transitions": 0,
+  "changedRows": 0,
+  "mappingActive": true,
+  "sample": {
+    "name": null,
+    "transition": null,
+    "before": null,
+    "afterApply": null,
+    "publicCategoryChanged": false
+  }
+}

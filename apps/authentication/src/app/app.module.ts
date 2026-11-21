@@ -20,6 +20,7 @@ import {
   DELETION_OWNER_PORTS,
 } from '../account-deletion/account-deletion-runner.service';
 import { AccountDeletionRpcOwnersService } from '../account-deletion/account-deletion-rpc-owners.service';
+import { DirectoryOwnerHttpClient } from '../account-deletion/directory-owner-http.client';
 import { AccountDeletionOwnerController } from '../account-deletion/account-deletion-owner.controller';
 import { AccountDeletionOwnerService } from '../account-deletion/account-deletion-owner.service';
 import { AccountDeletionController } from '../account-deletion/account-deletion.controller';
@@ -92,6 +93,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ClassifiedsAccountExportSnapshotClient } from '../account-export-jobs/classifieds-account-export-snapshot.client';
 import { PaymentsAccountExportSnapshotClient } from '../account-export-jobs/payments-account-export-snapshot.client';
+import { DirectoryAccountExportSnapshotClient } from '../account-export-jobs/directory-account-export-snapshot.client';
 import { ChatAccountExportSnapshotClient } from '../account-export-jobs/chat-account-export-snapshot.client';
 import { AccountExportJobEntity } from '../account-export-jobs/entities/account-export-job.entity';
 import { AccountDeletionPublicController } from '../account-deletion/account-deletion-public.controller';
@@ -165,6 +167,7 @@ import {
     AccountDeletionRuntimeService,
     AccountDeletionFinalizerService,
     AccountDeletionRunnerService,
+    DirectoryOwnerHttpClient,
     AccountDeletionRpcOwnersService,
     AccountDeletionProviderGrantsAdapter,
     AccountDeletionGatewayAdapter,
@@ -261,6 +264,7 @@ import {
     ChatAccountExportSnapshotClient,
     ClassifiedsAccountExportSnapshotClient,
     PaymentsAccountExportSnapshotClient,
+    DirectoryAccountExportSnapshotClient,
     AccountExportArtifactService,
     AccountExportDownloadService,
     AccountExportArtifactRetentionService,

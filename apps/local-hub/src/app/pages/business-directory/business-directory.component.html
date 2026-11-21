@@ -1,0 +1,291 @@
+<div class="directory-page">
+  @if (loading()) {
+  <div class="directory-page__container directory-page__state">
+    <otui-loading-state
+      headline="Loading business directory…"
+    ></otui-loading-state>
+  </div>
+  } @else if (!city()) {
+  <div class="directory-page__container directory-page__state">
+    <otui-error-state
+      headline="Town not found"
+      body="We could not find that locality."
+    >
+      <otui-button
+        slot="actions"
+        tone="brand"
+        emphasis="outline"
+        (click)="navigateToCities()"
+      >
+        Browse all cities
+      </otui-button>
+    </otui-error-state>
+  </div>
+  } @else {
+  <header class="directory-page__header">
+    <div class="directory-page__container">
+      <a class="directory-page__back" [routerLink]="['/city', city()!.slug]">
+        {{ city()!.name }}
+      </a>
+      <p class="section-kicker">Local directory</p>
+      <h1 #pageHeading class="directory-page__title" tabindex="-1">
+        Business directory
+      </h1>
+      <p class="directory-page__subtitle">
+        Discover local businesses in {{ city()!.name }}. {{ limitation }}
+      </p>
+    </div>
+  </header>
+
+  <main
+    class="directory-page__container directory-page__content"
+    aria-label="Business directory for {{ city()!.name }}"
+  >
+    <section
+      class="directory-page__search"
+      aria-labelledby="directory-search-title"
+    >
+      <h2 class="directory-page__section-title" id="directory-search-title">
+        Search the directory
+      </h2>
+      <otd-directory-filter-bar
+        [value]="filters()"
+        [categories]="categories()"
+        (filtersSubmit)="submitFilters($event)"
+      ></otd-directory-filter-bar>
+    </section>
+
+    @if (mapCenter(); as coordinates) {
+    <section class="directory-page__map-section">
+      <div class="directory-page__map-heading">
+        <h2 class="directory-page__section-title">Business locations</h2>
+        @if (directoryMapLocations().length > 0) {
+        <otui-badge tone="neutral" size="sm">
+          {{ directoryMapLocations().length }} reviewed
+          {{ directoryMapLocations().length === 1 ? 'location' : 'locations' }}
+        </otui-badge>
+        }
+      </div>
+      <app-map
+        mode="directory"
+        [cities]="[city()!]"
+        [boundary]="
+          directoryBoundary().status === 'ready'
+            ? $any(directoryBoundary()).geometry
+            : null
+        "
+        [centerLat]="coordinates.lat"
+        [centerLng]="coordinates.lng"
+        [centerLabel]="city()!.name"
+        [zoom]="11"
+        [directoryLocations]="directoryMapLocations()"
+      ></app-map>
+      @if (directoryMapLocations().length > 0) {
+      <p class="directory-page__map-note">
+        @if (directoryBoundary().status === 'ready') { Verified Census boundary.
+        } @else if (directoryBoundary().status === 'unavailable') { Town
+        boundary verification is unavailable. } The map shows public locations
+        from the currently loaded results. More businesses may appear as you
+        load more results, and some have no public location.
+      </p>
+      } @else if (status() === 'failed') {
+      <p class="directory-page__map-note">
+        Business locations are temporarily unavailable. Please try again.
+      </p>
+      } @else if (status() === 'loading') {
+      <p class="directory-page__map-note">Loading business locations…</p>
+      } @else {
+      <p class="directory-page__map-note">
+        No reviewed locations are in the currently loaded results. More may
+        appear as you load more businesses.
+      </p>
+      }
+    </section>
+    } @else {
+    <otui-error-state
+      headline="Map unavailable"
+      body="No town or business location is available for these results."
+    ></otui-error-state>
+    }
+
+    <section
+      class="directory-page__listings"
+      aria-labelledby="directory-results-title"
+    >
+      <h2 class="directory-page__section-title" id="directory-results-title">
+        Directory results
+      </h2>
+
+      <otd-directory-state-panel
+        [status]="panelStatus()"
+        [coverage]="coverage()"
+        [listingsShown]="listings().length"
+        [filtersActive]="filtersActive()"
+        [autoFocus]="true"
+        (retry)="retry()"
+      ></otd-directory-state-panel>
+
+      @if (startedMidway()) {
+      <p class="directory-page__midway" data-testid="directory-midway">
+        These are later results.
+        <button
+          type="button"
+          class="directory-page__link-button"
+          (click)="startOver()"
+        >
+          Start from the first results
+        </button>
+      </p>
+      } @if (listings().length > 0) {
+      <otd-directory-list
+        heading="Businesses"
+        [listings]="listings()"
+        [loading]="moreLoading()"
+        [hasMore]="hasMore()"
+        [detailLinkFor]="detailLinkFor"
+        [detailQueryParams]="detailQueryParams()"
+        [detailState]="detailState()"
+        [businessPageFor]="businessPageFor"
+        [cardExtras]="claim"
+        (loadMore)="loadMore()"
+      ></otd-directory-list>
+      }
+
+      <otd-directory-source-attribution
+        class="directory-page__source"
+        ariaLabel="About this directory"
+        [freshness]="sourceFreshness()"
+        [sources]="sources()"
+      ></otd-directory-source-attribution>
+      <section
+        class="directory-page__download"
+        aria-labelledby="download-heading"
+      >
+        <h2 id="download-heading" class="directory-page__download-title">
+          Download listings
+        </h2>
+        <p class="directory-page__download-note">
+          Only fields the data sources allow us to share are included, with
+          attribution. Adult, withdrawn and private listings are never included.
+        </p>
+        <div class="directory-page__download-actions">
+          <otui-button
+            tone="brand"
+            emphasis="outline"
+            size="sm"
+            ariaLabel="Download listings as CSV"
+            (click)="downloadListings('csv')"
+          >
+            CSV
+          </otui-button>
+          <otui-button
+            tone="brand"
+            emphasis="outline"
+            size="sm"
+            ariaLabel="Download listings as JSON Lines"
+            (click)="downloadListings('jsonl')"
+          >
+            JSON Lines
+          </otui-button>
+        </div>
+      </section>
+      <p class="directory-page__report-status">
+        <a routerLink="/directory/reports/status">Check a report status</a>
+      </p>
+    </section>
+
+    <div class="directory-page__aside">
+      <otd-directory-nearby-towns
+        [towns]="nearbyTowns()"
+      ></otd-directory-nearby-towns>
+      <app-town-locator
+        [towns]="towns()"
+        [currentSlug]="city()!.slug"
+      ></app-town-locator>
+    </div>
+  </main>
+  }
+</div>
+
+<ng-template #claim let-listing>
+  @if (listing.id; as listingId) {
+  <div class="directory-link">
+    @if (businessLinks()[listingId]; as businessLink) { @switch
+    (businessLink.state) { @case ('loading') {
+    <p class="directory-link__status" role="status">Checking business page…</p>
+    } @case ('requesting') {
+    <p class="directory-link__status" role="status">Checking business page…</p>
+    } @case ('linked') { @if (businessLink.link; as page) {
+    <a class="business-link" [routerLink]="['/c', page.slug]">
+      <otui-icon name="link" [size]="16" stroke="currentColor"></otui-icon>
+      View {{ page.name }}
+    </a>
+    } } @case ('requested') {
+    <p class="directory-link__status" role="status">Request sent for review.</p>
+    } @case ('error') {
+    <otui-error-state
+      headline="Business page information is unavailable"
+      [body]="businessLink.message ?? 'Please try again.'"
+    >
+      <otui-button
+        slot="actions"
+        tone="brand"
+        emphasis="outline"
+        size="sm"
+        (click)="checkBusinessPage(listing)"
+      >
+        Try again
+      </otui-button>
+    </otui-error-state>
+    } @case ('unlinked') {
+    <p class="directory-link__status">No business page is linked yet.</p>
+    @if (businessLink.message) {
+    <p class="directory-link__message">
+      {{ businessLink.message }}
+    </p>
+    } @if (isAuthenticated() && !(businessLink.requests?.length)) {
+    <lib-text-input
+      #businessPageAddress
+      class="directory-link__input"
+      label="Town Square business page URL or page name"
+      placeholder="https://…/c/your-business"
+    ></lib-text-input>
+    <otui-button
+      tone="brand"
+      emphasis="outline"
+      size="sm"
+      (click)="requestBusinessPageLink(listing, businessPageAddress.value)"
+    >
+      Request a link
+    </otui-button>
+    } } } @if (businessLink.state !== 'loading' && businessLink.state !==
+    'requesting') { @for (request of businessLink.requests ?? []; track
+    request.requestId) {
+    <div class="directory-link__request">
+      <span>{{
+        request.status === 'pending'
+          ? 'Your request is awaiting review.'
+          : 'Your page is linked.'
+      }}</span>
+      <otui-button
+        tone="brand"
+        emphasis="outline"
+        size="sm"
+        (click)="revokeBusinessPageLink(listing, request.requestId)"
+      >
+        {{ request.status === 'pending' ? 'Withdraw request' : 'Remove link' }}
+      </otui-button>
+    </div>
+    } } } @else {
+    <otui-button
+      tone="brand"
+      emphasis="outline"
+      size="sm"
+      (click)="checkBusinessPage(listing)"
+    >
+      Check for a business page
+    </otui-button>
+    }
+  </div>
+  }
+</ng-template>

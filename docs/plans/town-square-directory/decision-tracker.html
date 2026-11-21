@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Town Square directory • decision tracker</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #17302b;
+        --muted: #526761;
+        --line: #cddbd3;
+        --paper: #f5f6ef;
+        --white: #fff;
+        --accent: #176e54;
+        --gold: #efd79c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font: 16px/1.55 system-ui, -apple-system, sans-serif;
+      }
+      main {
+        max-width: 1080px;
+        margin: auto;
+        padding: 36px 24px 90px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: Georgia, serif;
+        line-height: 1.12;
+      }
+      h1 {
+        font-size: clamp(2.4rem, 6vw, 4.7rem);
+        letter-spacing: -0.045em;
+        margin: 12px 0 18px;
+      }
+      h2 {
+        font-size: 2rem;
+        margin: 0 0 12px;
+      }
+      h3 {
+        font-size: 1.3rem;
+        margin: 0 0 8px;
+      }
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: var(--accent);
+      }
+      .lead {
+        max-width: 780px;
+        font-size: 1.13rem;
+      }
+      .banner {
+        border-left: 5px solid var(--accent);
+        padding: 12px 20px;
+        background: #e4efe7;
+        margin: 25px 0;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+        gap: 12px;
+      }
+      .tile,
+      .slice,
+      .decision,
+      .export {
+        background: var(--white);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 19px;
+      }
+      .tile b {
+        display: block;
+      }
+      .muted,
+      small {
+        color: var(--muted);
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 28px 0;
+      }
+      nav a {
+        color: var(--ink);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        border-radius: 99px;
+        padding: 5px 12px;
+        background: white;
+        font-size: 0.9rem;
+      }
+      .section {
+        margin-top: 48px;
+      }
+      .slice {
+        margin: 12px 0;
+      }
+      .slice header {
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+        flex-wrap: wrap;
+      }
+      .badge {
+        background: #e5efe9;
+        color: #18543f;
+        padding: 3px 9px;
+        border-radius: 20px;
+        font-size: 0.74rem;
+        font-weight: 800;
+      }
+      .pending {
+        background: #fff0cc;
+        color: #654c16;
+      }
+      .slice p {
+        margin: 8px 0;
+      }
+      .slice ul {
+        margin: 8px 0;
+        padding-left: 22px;
+      }
+      .definition {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 12px 16px;
+        margin: 7px 0;
+      }
+      .definition summary {
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .decision-context {
+        background: #f1f6f2;
+        border-left: 4px solid var(--accent);
+        padding: 12px 16px;
+        margin: 12px 0;
+      }
+      .decision-context p {
+        margin: 6px 0;
+      }
+      .choice-explanations {
+        padding-left: 22px;
+      }
+      .choice-explanations li {
+        margin: 6px 0;
+      }
+      .decision {
+        margin: 12px 0;
+      }
+      .decision label {
+        font-weight: 700;
+        display: block;
+        margin-bottom: 5px;
+      }
+      .decision select,
+      .decision textarea,
+      textarea#result {
+        font: inherit;
+        width: 100%;
+        border: 1px solid #92aaa0;
+        border-radius: 6px;
+        padding: 10px;
+        color: var(--ink);
+        background: #fff;
+      }
+      .decision textarea {
+        min-height: 68px;
+        margin-top: 8px;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 14px 0;
+      }
+      button {
+        font: inherit;
+        font-weight: 700;
+        background: var(--accent);
+        color: white;
+        border: 0;
+        border-radius: 6px;
+        padding: 11px 15px;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: #e5efe9;
+        color: var(--ink);
+      }
+      button:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible,
+      a:focus-visible {
+        outline: 3px solid #bf8b20;
+        outline-offset: 2px;
+      }
+      textarea#result {
+        min-height: 220px;
+      }
+      .fine {
+        font-size: 0.88rem;
+      }
+      .counter {
+        font-weight: 700;
+      }
+      .warn {
+        background: #fff6df;
+        border-left: 4px solid #c49b42;
+        padding: 12px 16px;
+      }
+      .footer {
+        margin-top: 32px;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      @media (max-width: 600px) {
+        main {
+          padding: 22px 14px 70px;
+        }
+        .slice,
+        .decision,
+        .tile,
+        .export {
+          padding: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">
+        Town Square · working decision record · 7 November 2026
+      </div>
+      <h1>From proof of concept<br />to a clear path forward.</h1>
+      <p class="lead">
+        The proof of concept works and you have approved it for your purposes.
+        This tracker separates that decision from the specific work, risks and
+        permissions that would be needed for a broader release. Choose what
+        matters to you; your answers become instructions you can paste back into
+        this conversation.
+      </p>
+      <div class="banner">
+        <strong>Decisions recorded 7 November:</strong> Your submitted responses
+        are recorded in
+        <a href="DECISIONS-2026-11-07.md">the decision record</a>. This guide
+        remains available for further directions; existing saved answers are
+        preserved. <strong>You set the scope.</strong> You can accept a local
+        milestone as complete, direct us to finish a missing item, or defer a
+        production concern. Acceptance is recorded with its scope and known
+        limitations; it does not turn untested behavior into tested behavior.
+      </div>
+      <div class="grid">
+        <div class="tile">
+          <b>Approved by you</b
+          ><span class="muted"
+            >The working proof of concept. S3's isolated, pending-only local
+            scope was separately accepted.</span
+          >
+        </div>
+        <div class="tile">
+          <b>Underway</b
+          ><span class="muted"
+            >S4a.2 private projection and quality pilot. Policy-wide withdrawal
+            has initial implementation and disposable-database evidence;
+            authorization, safe rollback, operational limits and fuller review
+            remain open.</span
+          >
+        </div>
+        <div class="tile">
+          <b>Still needs a decision</b
+          ><span class="muted"
+            >Which local milestones to close, what is deferred, and which source
+            uses and release steps you authorize.</span
+          >
+        </div>
+      </div>
+      <nav aria-label="Page sections">
+        <a href="#how">How to close S0–S3</a
+        ><a href="#map">All slices and sub-slices</a
+        ><a href="#decisions">Your decisions</a
+        ><a href="#export">Export response</a>
+      </nav>
+      <section class="section" id="recent-decisions">
+        <div class="eyebrow">Decisions received · 7 November 2026</div>
+        <h2>Directions already given</h2>
+        <p>
+          The first proposed private Overture pilot covers Douglas, Tifton,
+          Valdosta and Waycross. Plan the quality review around 400 randomly
+          selected records and two reviewers. Where a verified town boundary is
+          unavailable, show a clearly labeled approximate location if a usable
+          point is available, and keep boundary-dependent searches pending until
+          verification.
+        </p>
+        <p>
+          These decisions do not approve acquiring records, sampling, a final
+          quality protocol, public release or export. An approximate location
+          must still pass the privacy and lifecycle checks. Existing form
+          answers saved in this browser have not been changed.
+        </p>
+      </section>
+      <section id="how" class="section">
+        <div class="eyebrow">Why the labels linger</div>
+        <h2>How to recognize a slice as complete</h2>
+        <p>
+          The original plan combined a working local implementation with review,
+          operational and production evidence. The register kept the larger
+          original scope open even where local work was useful or accepted. You
+          can change the scope: say what you accept, and what should remain an
+          explicit follow-up. We should then update the register and acceptance
+          record to match, with evidence and limits—not keep moving the
+          goalposts.
+        </p>
+        <div class="slice">
+          <header>
+            <h3>S0 · Inventory and ownership</h3>
+            <span class="badge pending">partial</span>
+          </header>
+          <p>
+            <strong>Why:</strong> The inventory exists, but the original
+            acceptance asked for a reviewed capability ledger, ownership
+            decisions, a census established as authoritative for its intended
+            deployment, and operating targets. You identified local ot_social as
+            the intended Social source; the current eligible count is 261 after
+            excluding the explicitly marked development fixture. Directory will
+            have its own database.
+          </p>
+          <p>
+            <strong>Close it by:</strong> Accept the existing inventory for
+            local/POC scope and explicitly defer the production census and
+            remaining ownership or budget decisions; or request those decisions
+            and evidence first. We should identify the exact deferred entries
+            and update the S0 record.
+          </p>
+        </div>
+        <div class="slice">
+          <header>
+            <h3>S1 · Infrastructure foundation</h3>
+            <span class="badge">local scope accepted</span>
+          </header>
+          <p>
+            <strong>Why:</strong> Disposable local migration and access-control
+            checks have been performed. The broader plan also called for
+            representative upgrades, credentials and permission review,
+            backup/restore, deployment and rollback evidence. Those production
+            obligations are not all demonstrated.
+          </p>
+          <p>
+            <strong>Close it by:</strong> You accepted the local foundation;
+            production operations and recovery are tracked in S9. Schema and
+            migration limitations remain visible.
+          </p>
+        </div>
+        <div class="slice">
+          <header>
+            <h3>S2 · Town mapping and geography</h3>
+            <span class="badge pending">partial</span>
+          </header>
+          <p>
+            <strong>Why:</strong> The pending-only mapping and privacy boundary
+            have bounded approval. Ready-to-use geographic boundaries,
+            containment and the full privacy lifecycle were not accepted in the
+            original scope.
+          </p>
+          <p>
+            <strong>Close it by:</strong> Accept pending-only mapping as the
+            completed local milestone and explicitly put boundaries, containment
+            and full lifecycle into a named follow-up; or ask for those features
+            before declaring the full original S2 complete.
+          </p>
+        </div>
+        <div class="slice">
+          <header>
+            <h3>S3 · Onboarding and repair</h3>
+            <span class="badge">local scope accepted</span>
+          </header>
+          <p>
+            <strong>Why it may look partial:</strong> S3 is already accepted for
+            the isolated local pending-only environment. Its production-grade
+            fence, scale and operational recovery remain separate. Earlier text
+            describing partial foundations does not undo that acceptance.
+          </p>
+          <p>
+            <strong>Close it by:</strong> Confirm the existing local acceptance,
+            and direct us to label production work as a separate follow-up; or
+            broaden the acceptance scope and specify the evidence you need.
+            Local observations do not by themselves prove production
+            performance.
+          </p>
+        </div>
+        <p class="fine">
+          If you choose to defer a requirement, the exported instruction asks us
+          to name its owner, consequences and destination. Deferral is not a
+          claim that the requirement was completed.
+        </p>
+      </section>
+      <section id="map" class="section">
+        <div class="eyebrow">Nothing hidden behind a slice number</div>
+        <h2>The complete work map</h2>
+        <p>
+          S4a.1–S4a.3, S4b and S4c are explicit milestones in the plan. Other
+          lettered or bullet items below are
+          <strong>work areas and gates</strong> made visible for discussion;
+          they are not new approval requirements or additional promises. Status
+          reflects the known local snapshot, not a release decision.
+        </p>
+        <div id="slices"></div>
+      </section>
+      <section id="decisions" class="section">
+        <div class="eyebrow">Your instructions</div>
+        <h2>Decide as much or as little as you want</h2>
+        <p>
+          Leave anything unanswered to keep it open. Notes can give a different
+          instruction from the suggested choices. Choices are saved in this
+          browser on this device where storage is available. No answer is
+          submitted automatically.
+        </p>
+        <p class="warn">
+          Source-use choices below request a review or state your direction.
+          They do not invent a license or authorize uses that the actual source
+          terms prohibit. You can approve acquisition or specific uses
+          explicitly after the relevant terms, notices and limitations are
+          identified.
+        </p>
+        <div id="questions"></div>
+      </section>
+      <section id="export" class="section export">
+        <div class="eyebrow">Take this back to the conversation</div>
+        <h2>Export your response</h2>
+        <p>
+          Generate an instruction, review it, then copy and paste it into chat.
+          Unanswered fields are listed as open so they cannot be mistaken for
+          permission. You can also download a text file.
+        </p>
+        <div class="actions">
+          <button type="button" id="generate">Generate response</button
+          ><button type="button" class="secondary" id="copy">
+            Copy response</button
+          ><button type="button" class="secondary" id="download">
+            Download .txt</button
+          ><button type="button" class="secondary" id="reset">
+            Clear saved answers
+          </button>
+        </div>
+        <p id="message" role="status" aria-live="polite"></p>
+        <label for="result"><strong>Editable response</strong></label
+        ><textarea
+          id="result"
+          placeholder="Select any decisions, then select Generate response."
+        ></textarea>
+      </section>
+      <p class="footer">
+        <strong>Underlying records:</strong>
+        <a href="SLICE-STATUS.md">slice register</a> ·
+        <a href="S0-inventory-and-adr.md">S0 inventory</a> ·
+        <a href="S1-foundation.md">S1 foundation</a> ·
+        <a href="S2-town-geometry-contract.md">S2 mapping</a> ·
+        <a href="S4a1-fresh-release-proposal.md">Overture proposal</a> ·
+        <a href="S4a2-quality-protocol.md">draft quality protocol</a> ·
+        <a href="S4a2-private-extraction-evidence.md"
+          >private extraction evidence</a
+        >.
+      </p>
+      <p class="footer">
+        Snapshot based on the current local slice register and S4 planning
+        records. If work finishes after this snapshot, ask for a refreshed
+        tracker. Opening this file or making selections does not send data,
+        change the project, or authorize external actions.
+      </p>
+    </main>
+    <script>
+      const slices = [
+        [
+          'S0',
+          'Partial',
+          'Provenance and source inventory; ownership and capability ledger; eligible-town census; operating targets and budget; business-page ownership boundary.',
+        ],
+        [
+          'S1',
+          'Accepted for local scope',
+          'Directory service and worker foundation; PostgreSQL/PostGIS and Redis isolation; migrations and upgrade path; failure readiness; credentials, deployment and rollback.',
+        ],
+        [
+          'S2',
+          'Pending-only scope approved',
+          'Community-to-town mapping and eligibility; pending status and privacy; ready boundaries and containment; privacy changes, removal and lifecycle.',
+        ],
+        [
+          'S3',
+          'Accepted: isolated local pending-only',
+          'Automatic onboarding and reconciliation; durable pending intent; missed-event repair and restart; production fence, scale, recovery and service-level guarantees remain separate.',
+        ],
+        [
+          'S4a.1',
+          'Draft in review',
+          'Choose and fingerprint the release; map contributors, fields, licenses and notices; decide ingestion, retention, private display, public display and export separately; record unknowns and a reviewer decision.',
+        ],
+        [
+          'S4a.2',
+          'In progress',
+          'Fail-closed rights and minimal projection; privacy/classifier policy; extraction and private persistence; scan completion and withdrawal; policy-wide withdrawal (initial implementation; authorization, safe rollback and fuller review remain); approved sampling protocol; authorized real-data quality pilot and uncertainty analysis. Synthetic evidence is not a real-data quality pass.',
+        ],
+        [
+          'S4a.3',
+          'Gated',
+          'Review results and public-display rights; approve the rollout, attribution, privacy and withdrawal behavior; enable public access only under the resulting decision.',
+        ],
+        [
+          'S4b · Geoapify',
+          'Pending',
+          'Individually evaluate Places and reverse-enrichment terms, operation restrictions, attribution, retention and budget before any activation.',
+        ],
+        [
+          'S4c · AllThePlaces',
+          'Pending',
+          'Individually evaluate source coverage, provenance, applicable terms, attribution and operational integration before activation.',
+        ],
+        [
+          'S5',
+          'Pending',
+          'Town-scoped search, detail, map and region API; safe public projection and provenance; business-page linkage without transferring ownership. Fixture work can proceed before public clearance.',
+        ],
+        [
+          'S6',
+          'Pending',
+          'Reusable shared town UI; discovery and location selection; empty, pending, blocked and failure states; app integration and accessible mobile/desktop validation.',
+        ],
+        [
+          'S7',
+          'Pending',
+          'Run controls; review and correction; withdrawal and rights; taxonomy/classification; restricted roles and audit. Essential correction and withdrawal controls precede public rollout.',
+        ],
+        [
+          'S8',
+          'Pending',
+          'Source- and field-specific export decisions; authorization; generated artifacts and retention; revocation and failure behavior.',
+        ],
+        [
+          'S9',
+          'Pending',
+          'Deployment and upgrades; secrets and ACLs; provider and cost controls; monitoring; backups, restore and coordinated fencing; operational runbook.',
+        ],
+        [
+          'S10',
+          'Pending',
+          'Integrated town coverage and onboarding; populated and empty/failure flows; operator workflows; rights, privacy and ownership; cross-app evidence; final capability dispositions and acceptance.',
+        ],
+      ];
+      const q = [
+        [
+          'poc',
+          'POC acceptance',
+          'Record your approval of the working POC and tell us what it covers.',
+          [
+            'Accept POC as complete for local evaluation',
+            'Accept POC as complete for a broader scope described in notes',
+            'Keep open; explain concerns in notes',
+          ],
+        ],
+        [
+          's0',
+          'S0 inventory and ownership',
+          'Choose whether the existing local inventory is enough for this milestone.',
+          [
+            'Accept local S0; defer production census and remaining operating decisions with named follow-ups',
+            'Finish original S0 acceptance before closing',
+            'Explain the remaining gaps and recommend a scope',
+          ],
+        ],
+        [
+          's1',
+          'S1 infrastructure',
+          'Choose the scope for recognizing the foundation as complete.',
+          [
+            'Accept local S1; move production operations and recovery to S9',
+            'Finish original S1 acceptance before closing',
+            'Review specific infrastructure items in notes',
+          ],
+        ],
+        [
+          's2',
+          'S2 mapping and geography',
+          'Choose whether pending-only mapping is the milestone you want closed.',
+          [
+            'Accept pending-only S2; defer ready boundaries and full lifecycle explicitly',
+            'Complete boundaries and lifecycle before closing full S2',
+            'Describe a different scope in notes',
+          ],
+        ],
+        [
+          's3',
+          'S3 onboarding',
+          'S3 local pending-only scope was already accepted.',
+          [
+            'Confirm local S3 is complete; track production work separately',
+            'Expand S3 scope as described in notes',
+            'Revisit the current local acceptance',
+          ],
+        ],
+        [
+          'priority',
+          'Priority and autonomy',
+          'Choose how we should proceed after receiving this response.',
+          [
+            'Continue independently through authorized work and report milestones',
+            'Finish S4a.2 engineering first, then proceed to fixture API and UI',
+            'Prioritize the specific slices in notes',
+            'Pause for review at the checkpoints specified in notes',
+          ],
+        ],
+        [
+          'source',
+          'S4a.1 source review',
+          'Choose how to handle licensing and source limitations.',
+          [
+            'Prepare a clear operation-by-operation limitations and notice matrix for my decision',
+            'Proceed with source review and propose compliant alternatives for restricted uses',
+            'Use the specific source-use instructions in notes',
+          ],
+        ],
+        [
+          'acquisition',
+          'Real source acquisition',
+          'A separate, explicit decision is needed for new real provider records.',
+          [
+            'Do not acquire yet; prepare the concrete release and cost proposal',
+            'I authorize acquisition only within the exact scope stated in notes',
+            'I authorize private pilot acquisition subject to the limits and source terms stated in notes',
+          ],
+        ],
+        [
+          'pilot',
+          'S4a.2 private quality pilot',
+          'Select your preferred review path.',
+          [
+            'Prepare a short protocol and proposed thresholds for my approval before sampling',
+            'Use the existing proposed protocol only after I approve its final frozen version',
+            'Follow the sampling and reviewer instructions in notes',
+          ],
+        ],
+        [
+          'privacy',
+          'Privacy, sensitive locations and withdrawal',
+          'State any specific protection or withdrawal requirements.',
+          [
+            'Keep residential and sensitive records blocked pending review; adult records require explicit opt-in',
+            'Apply the additional rules in notes',
+            'Explain the proposed protections and trade-offs before proceeding',
+          ],
+        ],
+        [
+          'public',
+          'S4a.3 public release',
+          'Choose a rollout direction.',
+          [
+            'Keep public release gated until source terms and the pilot are reviewed',
+            'Prepare a bounded public rollout proposal for my review',
+            'Use the explicit public-release scope and conditions in notes',
+          ],
+        ],
+        [
+          'providers',
+          'S4b/S4c other providers',
+          'Choose the scope for Geoapify and AllThePlaces.',
+          [
+            'Defer both until Overture is working and reviewed',
+            'Review each provider’s limitations and present options',
+            'Follow the provider priorities in notes',
+          ],
+        ],
+        [
+          's5s6',
+          'S5/S6 API and UI',
+          'Choose the next product work.',
+          [
+            'Proceed with synthetic/fixture API and reusable UI while source review continues',
+            'Wait until the private pilot is accepted',
+            'Follow the API and UI priorities in notes',
+          ],
+        ],
+        [
+          's7',
+          'S7 operator controls',
+          'Choose when to build withdrawal and correction controls.',
+          [
+            'Build essential private operator controls before public rollout',
+            'Defer controls with the exact limits described in notes',
+            'Propose the minimum operator workflow for review',
+          ],
+        ],
+        [
+          's8',
+          'S8 export',
+          'Export has separate source and field restrictions.',
+          [
+            'Defer export until source-specific rights are reviewed',
+            'Prepare a restricted export proposal for review',
+            'Follow the export scope described in notes',
+          ],
+        ],
+        [
+          's9',
+          'S9 production and recovery',
+          'Set the operational scope.',
+          [
+            'Defer production deployment and recovery proof until the local milestone is complete',
+            'Start a production-readiness plan alongside implementation',
+            'Follow the operational constraints in notes',
+          ],
+        ],
+        [
+          's10',
+          'S10 final acceptance',
+          'Choose the intended finish line.',
+          [
+            'Produce a scorecard distinguishing complete, deferred and unknown capabilities',
+            'Target full original scope including every provider',
+            'Use the narrower final scope described in notes',
+          ],
+        ],
+        [
+          'boundaries',
+          'Town boundaries and fallbacks',
+          'Choose how to identify a town’s businesses when an official boundary is not available.',
+          [
+            'Use verified boundaries where available; show a clearly labeled fallback where needed',
+            'Require verified boundaries before a town can be public',
+            'Propose practical alternatives before I decide',
+          ],
+        ],
+        [
+          'terms',
+          'How to honor source conditions',
+          'Decide how the team should handle source-specific notices or restrictions.',
+          [
+            'Identify each condition and implement it; exclude or ask about uses we cannot support',
+            'Present the specific conditions and alternatives to me before implementation',
+            'Follow the detailed conditions in notes',
+          ],
+        ],
+        [
+          'budget',
+          'Cost and transfer limits',
+          'Choose the financial limit for any future provider operation.',
+          [
+            'Keep paid provider calls disabled; propose expected costs first',
+            'Use the budget and hard-stop instructions in notes',
+            'Review the prior proposed $25 per month ceiling before I decide',
+          ],
+        ],
+        [
+          'reviewers',
+          'People and acceptance',
+          'Choose who makes source, quality and correction decisions.',
+          [
+            'Propose a simple role-based process for my approval',
+            'I will review; use additional reviewer roles described in notes',
+            'Use the named roles and process in notes',
+          ],
+        ],
+        [
+          'withdrawal',
+          'Corrections and withdrawal',
+          'Choose a practical way to remove a listing or stop using a source.',
+          [
+            'Implement an authenticated operator workflow and verify removal from every visible surface',
+            'Prepare a minimal process and explain the cost and limitations',
+            'Use the correction and removal process in notes',
+          ],
+        ],
+        [
+          'scope',
+          'Other decisions or constraints',
+          'Add any remaining request, exception, owner, deadline or question.',
+          ['Follow the notes below'],
+        ],
+      ];
+      const esc = (s) =>
+        s.replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              '"': '&quot;',
+              "'": '&#39;',
+            }[c])
+        );
+      const definitions = [
+        [
+          'Proof of concept (POC)',
+          'The existing working business-directory prototype. It demonstrated the approach with four Georgia towns. You approved the POC for your purposes; that approval is meaningful. Moving it into the larger application is a separate integration job.',
+        ],
+        [
+          'Slice and sub-slice',
+          'A slice is a chapter of the migration work. A sub-slice is a smaller piece of a chapter. These labels are planning tools, not features you need to know in advance. S4a.1, S4a.2, S4a.3, S4b and S4c are named in the plan; other groupings on this page describe work, not newly invented approval gates.',
+        ],
+        [
+          'Complete for a scope',
+          'A statement that the agreed result has been delivered for a named environment and use, such as the local POC. You can accept that result while moving production work to a named follow-up. It does not mean untested production behavior was tested.',
+        ],
+        [
+          'Open / blocked / deferred',
+          'Open means unfinished or undecided. Blocked means a particular next action cannot safely or legitimately proceed until a specified prerequisite is met. Deferred means you decide to handle it later, with the consequence written down. An open production item does not automatically block local fixture work.',
+        ],
+        [
+          'Provider / source / contributor',
+          'A provider supplies data; Overture is a source of place records. A contributor supplies some of the information inside that source. Different contributors may attach different notices or restrictions to individual fields.',
+        ],
+        [
+          'Release / fingerprint',
+          'A release is a dated version of a dataset. A fingerprint is a computed identifier that helps us confirm we used the intended file. October 2026 was proposed; availability and current source terms must be checked again before any actual acquisition.',
+        ],
+        [
+          'License / attribution / notice',
+          'A license sets conditions for use. Attribution credits a source; a notice is a required statement that may need to accompany data. The practical question is which conditions apply to each source and each use: storing, showing, exporting or enriching information.',
+        ],
+        [
+          'Source-use matrix',
+          'A readable table that lists each known source or contributor, what fields it supplies, allowed and uncertain uses, required credit, and the evidence for each conclusion. It is a decision aid, not a claim that every unknown source has already been reviewed.',
+        ],
+        [
+          'Ingestion / retention / projection',
+          'Ingestion means bringing records into the system. Retention means keeping them. A projection is the smaller set of fields the application chooses to show. For example, the proposed listing may show a business name and location while leaving out phone numbers.',
+        ],
+        [
+          'Private pilot / public release',
+          'A private pilot is a limited test available only to authorized reviewers. A public release makes information available to users. They can have different source permissions, privacy needs and consequences.',
+        ],
+        [
+          'Fixture / synthetic data / real data',
+          'A fixture or synthetic record is made for testing, such as “Example Bakery”; it avoids using actual provider records. Real data describes actual places and is needed to judge real-world quality.',
+        ],
+        [
+          'Town identity / census / eligibility',
+          'Town identity is the stable ID tying a directory to a community. The census is the list of communities that should have directories. Eligibility is the rule for which communities qualify. A local database count is not automatically the authoritative list for a later deployment.',
+        ],
+        [
+          'Boundary / containment / tiles',
+          'A boundary is the outline of a town. Containment decides whether a business falls inside that outline. Map tiles are the background images used to draw a map; they may have their own source and usage conditions, separate from business data.',
+        ],
+        [
+          'Pending / ready / blocked / empty',
+          'Pending means setup or acquisition has not finished. Ready means the directory is available under the agreed rules. Blocked means something specific prevents progress, such as missing source permission. Empty should mean a completed search found no results—not that a service is broken or data was never loaded.',
+        ],
+        [
+          'Onboarding / reconciliation / recovery fence',
+          'Onboarding creates a directory context when a qualifying town appears. Reconciliation periodically compares the community list with directory state to repair missed changes. A recovery fence prevents an old restored process or database from overwriting newer decisions.',
+        ],
+        [
+          'Classifier / sensitive place / adult opt-in',
+          'A classifier determines whether a record falls into a category needing special treatment, such as a sensitive location. The proposal blocks residential and sensitive records pending review and requires explicit opt-in for adult listings; these are product-policy choices, not conclusions supplied by the provider alone.',
+        ],
+        [
+          'Withdrawal / suppression / rollback',
+          'Withdrawal removes or stops using information after permission is withdrawn. Suppression hides a record from serving. Rollback reverts software or database changes. A safe rollback must not restore information whose use has been withdrawn.',
+        ],
+        [
+          'Sampling protocol / threshold / uncertainty',
+          'A sampling protocol says which real records reviewers will check and how. A threshold is an agreed limit, such as an acceptable duplicate rate. Uncertainty expresses how much a sample might differ from the whole dataset. The draft thresholds are proposals, not a judgment that the POC failed.',
+        ],
+        [
+          'Operator / role / audit trail',
+          'An operator is a person authorized to run or correct the directory. A role defines what they may do. An audit trail records who made a decision, when and why. The current private code assumes trusted callers; it does not yet establish a real operator-permission boundary.',
+        ],
+        [
+          'Migration / fresh database / upgrade',
+          'A migration changes the database structure. A fresh-database test starts empty. An upgrade test starts with existing data. A successful migration does not alone prove that an older deployment upgrades or rolls back safely.',
+        ],
+        [
+          'Export / portability / enrichment',
+          'Export creates a file or feed for another destination. Portability lets someone take their own information elsewhere. Enrichment adds information from another source. Permission to display a record does not necessarily include permission to export or enrich it.',
+        ],
+        [
+          'Quality issue / duplicate / junk',
+          'A duplicate is more than one record for the same real business location. Junk is a record that does not reasonably represent a distinct business in the selected town. These are known categories to measure, not a statement of the failure rate in your POC.',
+        ],
+      ];
+      const details = {
+        poc: {
+          why: 'The prototype demonstrated data collection and a private sample. The prior records describe 20,811 staged observations across Douglas, Tifton, Valdosta and Waycross and a separate private 100-observation sample. You have said the POC works and is approved. The disagreement is about whether that also closes each target-integration and production obligation in the original plan.',
+          blocks:
+            'Nothing about accepting your POC requires another POC demonstration. Target-app integration, new data use and public deployment still require the specific work or scope decision you choose.',
+          choices: [
+            'Accept the POC for local evaluation and record that decision. This closes the POC milestone; migration work remains separately tracked.',
+            'Accept it for the wider scope you name. We will compare that scope against what exists, then document any outstanding work rather than silently reclassifying it.',
+            'Keep POC acceptance open and describe what you want reconsidered.',
+          ],
+        },
+        s0: {
+          why: 'The architecture decisions were approved; the inventory and a local census exist. The original plan additionally asks to review excluded source files and ownership, confirm the target deployment’s complete town list, and settle remaining operating targets. You identified local ot_social as the intended Social source. Its current count is 261 after excluding the explicitly marked development fixture; Directory owns separate persistence.',
+          blocks:
+            'The source is identified, but a current exact comparison with a deployed Directory database and ongoing reconciliation still need evidence. It does not stop local development or erase your POC approval.',
+          choices: [
+            'Close S0 for local/POC scope now; list production census and any remaining ownership or budgets as named follow-ups.',
+            'Keep original S0 open until the outstanding ledger, authoritative census and targets are resolved.',
+            'Ask for the exact remaining ledger entries and a recommendation before deciding.',
+          ],
+        },
+        s1: {
+          why: 'The Directory service foundation and isolated database/queue checks exist, including fresh migration tests. The original slice also expected an upgrade from a representative existing installation, production credentials and access review, backups, deployment and rollback. Those broader checks were not all demonstrated.',
+          blocks:
+            'This blocks claiming the full infrastructure is production-ready. It does not mean the POC or local database foundation failed.',
+          choices: [
+            'Close the local foundation and move production upgrades, credentials and recovery to S9.',
+            'Keep the full S1 scope open until those checks are done.',
+            'Name the specific infrastructure checks you want before accepting it.',
+          ],
+        },
+        s2: {
+          why: 'The local pending-only path can associate eligible communities with Directory contexts. The original goal also included real town boundary sources, points on borders or in holes, overlapping boundaries, updates, and actual public route validation for towns beyond the four examples. Some early contract code was not wired into the server; later S3 work covers the pending path, not all public geography.',
+          blocks:
+            'We cannot yet claim arbitrary towns have correct, public, boundary-based business searches. Pending-only local onboarding can be accepted separately.',
+          choices: [
+            'Close the local pending-only mapping milestone and put boundary-based public geography in a named follow-up.',
+            'Keep full S2 open until boundary sources, containment and lifecycle behavior work and are verified.',
+            'Describe another acceptance boundary in notes.',
+          ],
+        },
+        s3: {
+          why: 'You already accepted S3 for the isolated local pending-only environment. In one local Compose observation, a new town reached pending status in 46.2 seconds under a normal 60-second sweep. That was not a production-scale guarantee; production fencing and recovery were left open.',
+          blocks:
+            'The remaining concerns block a claim of production-grade automatic onboarding, not the previously accepted local milestone.',
+          choices: [
+            'Keep S3 marked complete for its accepted local scope and track production concerns separately.',
+            'Expand S3 and identify the additional target or evidence you want.',
+            'Revisit the local acceptance and explain the issue.',
+          ],
+        },
+        priority: {
+          why: 'Several threads can proceed without provider records: local engineering, fixture API/UI and review of limitations. Real-data acquisition and public release have different consequences.',
+          blocks:
+            'No priority choice by itself grants permission for real acquisition, public release or spending.',
+          choices: [
+            'Continue through work already authorized, communicate milestones and keep going until a real decision is required.',
+            'Finish the private engineering path first, then fixture API/UI.',
+            'Use the order written in notes.',
+            'Pause only at the specific checkpoints you name.',
+          ],
+        },
+        source: {
+          why: 'The fresh-release proposal identifies Overture Places and sources such as Foursquare, but the actual contributor and field combinations for the selected towns are not yet inventoried. Some prior references are stale or unmapped. This does not mean all Overture use is prohibited; it means we should state conditions and unknowns for the intended use.',
+          blocks:
+            'The current record lacks an accepted, release-specific decision for which real fields may be acquired, retained, displayed or exported and what credit is required. Synthetic work is not blocked.',
+          choices: [
+            'Prepare a plain-English table of limitations and proposed ways to honor them; bring it to you for a decision.',
+            'Investigate current terms and propose compliant alternatives where an operation is restricted.',
+            'Follow the source-handling directions in notes; identify any condition that cannot be determined.',
+          ],
+        },
+        acquisition: {
+          why: 'The October proposal covers Douglas, Tifton, Valdosta and Waycross. Its metadata has 16 source assets; the conservative scan may read much more than the earlier POC approach because bounding metadata is not trusted to exclude records safely. The total object sizes are about 11.08 GiB; actual transfer and cost are not established. No October business records were acquired under that proposal.',
+          blocks:
+            'Real acquisition is waiting for a concrete source/use decision, current availability, boundaries and a practical cost/transfer plan. Selecting a release for investigation was not recorded as permission to acquire it.',
+          choices: [
+            'Prepare a concrete plan and estimate without downloading real records.',
+            'Authorize only the scope and limits you write in notes.',
+            'Authorize a private pilot within the limits and source conditions you specify in notes; unresolved limits still need to be identified.',
+          ],
+        },
+        pilot: {
+          why: 'The draft suggests a reproducible sample across towns and contributors, two reviewers and measures such as duplicates, junk and missing required fields. Its suggested thresholds have not been approved. The POC already proves the approach works; the pilot asks a different question: how representative and usable real records are for the intended directory.',
+          blocks:
+            'There is no accepted real-data quality result until there is an agreed method and a sample that can lawfully be evaluated. This does not block synthetic engineering.',
+          choices: [
+            'Request a short plain-English proposal, including who reviews, sample size, cost and pass/fail consequences.',
+            'Use the current draft only after you review and approve its final version.',
+            'Specify a simpler or different method in notes; we will identify what conclusions that method supports.',
+          ],
+        },
+        privacy: {
+          why: 'Place records may describe a home, an adult business, or a sensitive location. The current proposal blocks residential and sensitive records until reviewed and requires adult opt-in. It is a proposed operating rule, not a conclusion about every record.',
+          blocks:
+            'Public exposure of categories without an agreed treatment remains unapproved; ordinary synthetic records can still be used in development.',
+          choices: [
+            'Use the conservative proposed treatment.',
+            'Write different rules or an approval process in notes.',
+            'Ask for examples and practical trade-offs before choosing.',
+          ],
+        },
+        public: {
+          why: 'A public directory exposes names and locations to people beyond the pilot reviewers. It also creates a need to respond when information is wrong, sensitive or withdrawn. The target public API and operator corrections are not yet fully implemented.',
+          blocks:
+            'Public activation remains unapproved until you choose the rollout scope and the team knows the applicable use conditions and can honor the promised corrections and removals.',
+          choices: [
+            'Keep public launch waiting while conditions and pilot results are reviewed.',
+            'Ask for a small, concrete launch proposal, with visible limitations and an operator plan.',
+            'Describe the public scope and conditions you want; we will identify any incompatibility or missing work.',
+          ],
+        },
+        providers: {
+          why: 'Geoapify and AllThePlaces were included as separate potential sources. Each has its own coverage, terms, costs and technical work. The existing Overture POC does not prove those integrations.',
+          blocks:
+            'Other providers do not have to block an initial Overture milestone unless you want them included.',
+          choices: [
+            'Defer both explicitly until the Overture milestone is established.',
+            'Review their uses and limitations so you can compare them.',
+            'Name which providers and features matter in notes.',
+          ],
+        },
+        s5s6: {
+          why: 'S5 is the application interface that returns town businesses; S6 is the reusable screen people see. Both can be developed with made-up examples while real-source decisions are pending. The final screens must distinguish a truly empty town from one still loading or blocked.',
+          blocks:
+            'Real public listings need approved source use and completed serving behavior. Fixture development need not wait for that approval.',
+          choices: [
+            'Build fixture-based API and shared UI now, with public real-data activation remaining a later decision.',
+            'Wait for the real private pilot before starting these pieces.',
+            'Specify the target apps or user flows in notes.',
+          ],
+        },
+        s7: {
+          why: 'Someone needs a way to correct or remove a listing, review ambiguous records and see what happened. The current private withdrawal code is not yet a complete operator interface or authenticated permission system.',
+          blocks:
+            'A public rollout that promises corrections and removals needs a practical way to carry them out; lack of a full operator UI does not block a private fixture prototype.',
+          choices: [
+            'Build a minimal authorized correction and withdrawal workflow before launch.',
+            'Defer controls for the limited use you specify and state the consequence.',
+            'Ask for a minimal workflow and staffing proposal before deciding.',
+          ],
+        },
+        s8: {
+          why: 'A downloadable list can redistribute records beyond the application. Sources may permit display while putting different conditions on bulk export. The POC’s private sample blocked export.',
+          blocks:
+            'Real-source export stays undecided until its source and field restrictions are understood; viewing synthetic fixtures is unaffected.',
+          choices: [
+            'Defer real-data export until its conditions are reviewed.',
+            'Prepare a restricted export proposal showing exactly what could be included.',
+            'Specify the export use and recipients in notes so its conditions can be assessed.',
+          ],
+        },
+        s9: {
+          why: 'This is the work to run the system reliably outside an isolated local test: deployment, access credentials, recovery from failures, budget controls and a person-readable runbook. For example, a database rollback must not resurrect a withdrawn record.',
+          blocks:
+            'Claims of production readiness require an agreed operating scope and evidence. You may accept local milestones without requiring all S9 work now.',
+          choices: [
+            'Treat production operations as a later milestone and continue local work.',
+            'Plan production readiness in parallel while implementation continues.',
+            'Describe the intended environment, budget and recovery needs in notes.',
+          ],
+        },
+        s10: {
+          why: 'The original finish line asks for an end-to-end scorecard covering every eligible town, new-town onboarding, actual UI and API behavior, operator workflows, rights and each provider. This is broader than the working POC.',
+          blocks:
+            'The full original objective remains open until its named capabilities are delivered or you explicitly narrow the objective and record deferred capabilities.',
+          choices: [
+            'Use a scorecard that clearly distinguishes delivered, deferred and unknown work.',
+            'Keep the original full scope, including all planned providers.',
+            'Describe a narrower final milestone in notes.',
+          ],
+        },
+        scope: {
+          why: 'Use this space for decisions not represented above: intended users, locations, budget, timeline, staffing, what you consider done, or instructions about how often to pause.',
+          blocks:
+            'An unanswered item stays open. Notes can override suggested wording; we will flag an actual conflict instead of inventing consent.',
+          choices: ['Follow the instruction you write in the notes.'],
+        },
+      };
+      Object.assign(details, {
+        boundaries: {
+          why: 'The POC used four town areas, but the target needs a repeatable way to decide whether a business belongs to any eligible town. Real boundary sources may be missing, overlap or have their own terms. Guessing silently could put a business in the wrong town.',
+          blocks:
+            'Full boundary-based public search for arbitrary towns is not established; a clearly labeled local fallback can be considered separately.',
+          choices: [
+            'Use an established outline when available and make any fallback clear to users; the fallback still needs a defined rule.',
+            'Do not publish a town directory until its outline has been verified.',
+            'Ask for examples of alternatives, accuracy and source conditions first.',
+          ],
+        },
+        terms: {
+          why: 'For some data, the conditions may require a particular source credit, a notice, restrictions on reuse, or keeping certain fields out of a downloadable export. The current release-specific source-by-field inventory is incomplete; these are possible conditions, not a conclusion that each one applies.',
+          blocks:
+            'We should not silently assume an unknown condition is satisfied or present an unsupported legal conclusion. Work to identify and implement conditions can proceed.',
+          choices: [
+            'Record the actual condition and build the corresponding credit or restriction; if it cannot be honored, exclude that use or return it to you.',
+            'Show you each identified condition and available options before applying the policy.',
+            'Apply the specific directions in notes while documenting any incompatible source terms.',
+          ],
+        },
+        budget: {
+          why: 'You set a $25-per-month ceiling shared across all providers and retries. A $20 alert was previously proposed, and we have not proved that every provider can enforce a hard stop. The conservative Overture read also has an unknown actual transfer cost.',
+          blocks:
+            'Paid provider calls and an unbounded acquisition remain disabled under the current record; researching an estimate and working with synthetic data can continue.',
+          choices: [
+            'Keep spending at zero until a cost estimate and controls are reviewed.',
+            'Specify a dollar amount, period, whether it includes retries, and what must happen at the limit.',
+            'Review whether the old $25 proposal still fits and whether it can actually be enforced.',
+          ],
+        },
+        reviewers: {
+          why: 'The plan mentions source-use, quality and correction reviewers. You volunteered to review source use, but the final decision record has not named the exact decision or reviewer process. A two-reviewer quality proposal is not automatically a requirement you have approved.',
+          blocks:
+            'The pilot cannot honestly claim that a reviewer approved an unapproved protocol. Preparing the materials and proposing a practical review method can continue.',
+          choices: [
+            'Ask for a concrete proposal describing what each reviewer actually does and the work involved.',
+            'Act as reviewer yourself and explain in notes whether another person is available for disagreements.',
+            'Name the roles or individuals and decision process you want.',
+          ],
+        },
+        withdrawal: {
+          why: 'The private code can record individual and policy withdrawal, but its policy identity is supplied by the caller and a complete authenticated operator interface is not established. A generated database rollback can discard withdrawal records, so successful rollback alone does not prove withdrawn data stays withdrawn.',
+          blocks:
+            'We cannot yet promise an authorized public removal process or safe recovery from a rollback. The proof of concept and synthetic work remain usable within their stated scope.',
+          choices: [
+            'Build and verify operator access, durable removal and propagation to each actual serving surface before public use.',
+            'Ask for the smallest practical process, including who handles requests and its limitations.',
+            'Describe who can request and perform removals, expected timing and any appeal process in notes.',
+          ],
+        },
+      });
+      const glossaryHTML = `<section id="glossary" class="section"><div class="eyebrow">Definitions bank</div><h2>Words used in this tracker</h2><p>No prior directory or licensing knowledge is assumed. Open a term to see its meaning and a practical example.</p>${definitions
+        .map(
+          ([term, definition]) =>
+            `<details class="definition"><summary>${esc(
+              term
+            )}</summary><p>${esc(definition)}</p></details>`
+        )
+        .join('')}</section>`;
+      document
+        .querySelector('#how')
+        .insertAdjacentHTML('beforebegin', glossaryHTML);
+      document
+        .querySelector('nav')
+        .insertAdjacentHTML(
+          'afterbegin',
+          '<a href="#glossary">Definitions bank</a>'
+        );
+
+      document.querySelector('#slices').innerHTML = slices
+        .map(
+          ([id, status, description]) =>
+            `<article class="slice"><header><h3>${esc(
+              id
+            )}</h3><span class="badge ${
+              /Pending|Partial|Gated|review/i.test(status) ? 'pending' : ''
+            }">${esc(status)}</span></header><p>${esc(
+              description
+            )}</p></article>`
+        )
+        .join('');
+      document.querySelector('#questions').innerHTML = q
+        .map(
+          ([id, title, description, opts]) =>
+            `<div class="decision"><label for="${id}">${esc(
+              title
+            )}</label><p class="fine muted">${esc(
+              description
+            )}</p><div class="decision-context"><p><strong>What is happening and why:</strong> ${esc(
+              details[id].why
+            )}</p><p><strong>What is actually blocked:</strong> ${esc(
+              details[id].blocks
+            )}</p><details><summary>What each choice means — open for a plain-English explanation</summary><ol class="choice-explanations">${details[
+              id
+            ].choices
+              .map((x) => `<li>${esc(x)}</li>`)
+              .join(
+                ''
+              )}</ol></details></div><select id="${id}" data-field="choice"><option value="">No decision yet</option>${opts
+              .map((o) => `<option>${esc(o)}</option>`)
+              .join(
+                ''
+              )}</select><label class="fine" for="${id}-note">Notes or a different instruction</label><textarea id="${id}-note" data-field="note" placeholder="Optional details, scope, conditions or questions"></textarea></div>`
+        )
+        .join('');
+      const key = 'town-square-decisions-v1';
+      let saved = {};
+      try {
+        saved = JSON.parse(localStorage.getItem(key) || '{}');
+      } catch (e) {}
+      for (const el of document.querySelectorAll('[data-field]')) {
+        if (typeof saved[el.id] === 'string') el.value = saved[el.id];
+        el.addEventListener('input', () => {
+          const state = {};
+          document
+            .querySelectorAll('[data-field]')
+            .forEach((x) => (state[x.id] = x.value));
+          try {
+            localStorage.setItem(key, JSON.stringify(state));
+          } catch (e) {
+            document.querySelector('#message').textContent =
+              'Browser storage is unavailable; export your response before closing this page.';
+          }
+        });
+      }
+      function generate() {
+        let out =
+          'Town Square directory — decisions and instructions\n\nThe working proof of concept is approved for my purposes. Record decisions with their explicit scope and remaining limitations; do not equate deferral with verified completion. Continue work within the instructions below.\n\nPreviously recorded: Prepare a private Overture pilot for Douglas, Tifton, Valdosta and Waycross; plan for 400 randomly selected records and two reviewers. Where no boundary is verified, show a clearly labeled approximate location if available and keep boundary-dependent searches pending until verification. Acquisition, sampling, public release and export remain separate decisions. New instructions below can revise these directions.\n\n';
+        for (const [id, title] of q) {
+          const choice = document.getElementById(id).value,
+            note = document.getElementById(id + '-note').value.trim();
+          out +=
+            `- ${title}: ${choice || 'No decision yet'}.` +
+            (note ? `\n  Notes: ${note.replace(/\n/g, '\n  ')}` : '') +
+            '\n';
+        }
+        out +=
+          '\nFor undecided items, explain what remains open. Update the slice register and record deferred work with its scope and consequences. Do not treat an unanswered source-use, acquisition, public-release or export item as authorization.\n';
+        document.querySelector('#result').value = out;
+        return out;
+      }
+      document.querySelector('#generate').onclick = () => {
+        generate();
+        document.querySelector('#message').textContent =
+          'Response generated. Review or edit it before copying.';
+      };
+      document.querySelector('#copy').onclick = async () => {
+        const el = document.querySelector('#result');
+        if (!el.value) generate();
+        try {
+          await navigator.clipboard.writeText(el.value);
+          document.querySelector('#message').textContent =
+            'Copied. Paste it into the conversation.';
+        } catch (e) {
+          el.focus();
+          el.select();
+          document.querySelector('#message').textContent =
+            'Clipboard access is unavailable. The response is selected; copy it manually.';
+        }
+      };
+      document.querySelector('#download').onclick = () => {
+        const t = document.querySelector('#result').value || generate(),
+          a = document.createElement('a');
+        a.href = URL.createObjectURL(
+          new Blob([t], { type: 'text/plain;charset=utf-8' })
+        );
+        a.download = 'town-square-decisions.txt';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      };
+      document.querySelector('#reset').onclick = () => {
+        if (!confirm('Clear the answers saved in this browser?')) return;
+        document
+          .querySelectorAll('[data-field]')
+          .forEach((x) => (x.value = ''));
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {}
+        document.querySelector('#result').value = '';
+        document.querySelector('#message').textContent =
+          'Saved answers cleared.';
+      };
+    </script>
+  </body>
+</html>

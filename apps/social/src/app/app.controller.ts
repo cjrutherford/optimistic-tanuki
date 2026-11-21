@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { Controller, Get, Logger } from '@nestjs/common';
 
 import { PostService } from './services/post.service';
@@ -37,7 +38,19 @@ import {
   ProfileCommands,
   GuardianContentCommands,
 } from '@optimistic-tanuki/constants';
-import { BusinessContentCommands } from '@optimistic-tanuki/social-contracts';
+import {
+  BusinessContentCommands,
+  DirectoryCensusRead,
+  DirectoryMembershipRead,
+  DirectorySnapshotRead,
+  DirectoryRegisterScanRead,
+  DirectoryRegisterExactRead,
+  DirectoryRegisterScanV2,
+  DirectoryRegisterReadV2,
+  DirectoryRegisterCurrentV2,
+  DirectorySourceCensusV2,
+  DirectorySourceRepairV2,
+} from '@optimistic-tanuki/social-contracts';
 import {
   CreatePollDto,
   UpdatePollDto,
@@ -1027,6 +1040,272 @@ export class AppController {
     @Payload('requestingProfileId') requestingProfileId?: string
   ) {
     return await this.communityService.findOne(id, requestingProfileId);
+  }
+
+  private authorizeDirectory(secret: unknown): void {
+    const expected = process.env.DIRECTORY_SOCIAL_SECRET;
+    if (
+      !expected ||
+      typeof secret !== 'string' ||
+      !secret ||
+      !timingSafeEqual(
+        createHash('sha256').update(secret).digest(),
+        createHash('sha256').update(expected).digest()
+      )
+    ) {
+      throw new RpcException('Directory service authentication failed');
+    }
+  }
+
+  private authorizeDirectoryRecovery(secret: unknown): void {
+    const expected = process.env.DIRECTORY_RECOVERY_READ_SECRET;
+    if (
+      !expected ||
+      Buffer.byteLength(expected) < 32 ||
+      [
+        process.env.DIRECTORY_SOCIAL_SECRET,
+        process.env.DIRECTORY_ELIGIBILITY_SECRET,
+        process.env.DIRECTORY_RECEIPT_SIGNING_SECRET,
+      ].includes(expected) ||
+      typeof secret !== 'string' ||
+      !secret ||
+      !timingSafeEqual(
+        createHash('sha256').update(secret).digest(),
+        createHash('sha256').update(expected).digest()
+      )
+    ) {
+      throw new RpcException('Directory service authentication failed');
+    }
+  }
+
+  private authorizeDirectoryRegisterRead(secret: unknown): void {
+    const expected = process.env.DIRECTORY_REGISTER_READ_SECRET;
+    if (
+      !expected ||
+      Buffer.byteLength(expected) < 32 ||
+      [
+        process.env.DIRECTORY_SOCIAL_SECRET,
+        process.env.DIRECTORY_ELIGIBILITY_SECRET,
+        process.env.DIRECTORY_RECOVERY_READ_SECRET,
+        process.env.DIRECTORY_RECEIPT_SIGNING_SECRET,
+        process.env.DIRECTORY_REGISTER_REPAIR_SECRET,
+      ].includes(expected) ||
+      typeof secret !== 'string' ||
+      !secret ||
+      !timingSafeEqual(
+        createHash('sha256').update(secret).digest(),
+        createHash('sha256').update(expected).digest()
+      )
+    ) {
+      throw new RpcException('Directory service authentication failed');
+    }
+  }
+
+  private authorizeDirectoryRegisterRepair(secret: unknown): void {
+    const expected = process.env.DIRECTORY_REGISTER_REPAIR_SECRET;
+    if (
+      !expected ||
+      Buffer.byteLength(expected) < 32 ||
+      [
+        process.env.DIRECTORY_SOCIAL_SECRET,
+        process.env.DIRECTORY_ELIGIBILITY_SECRET,
+        process.env.DIRECTORY_RECOVERY_READ_SECRET,
+        process.env.DIRECTORY_REGISTER_READ_SECRET,
+        process.env.DIRECTORY_RECEIPT_SIGNING_SECRET,
+      ].includes(expected) ||
+      typeof secret !== 'string' ||
+      !secret ||
+      !timingSafeEqual(
+        createHash('sha256').update(secret).digest(),
+        createHash('sha256').update(expected).digest()
+      )
+    ) {
+      throw new RpcException('Directory service authentication failed');
+    }
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.DIRECTORY_SOURCE_CENSUS_V2 })
+  async directorySourceCensusV2(@Payload() data: DirectorySourceCensusV2) {
+    this.authorizeDirectoryRegisterRead(data?.secret);
+    return this.communityService.scanSourceCommunities(
+      data.identity,
+      data.afterCommunityId,
+      data.limit
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.DIRECTORY_SOURCE_REPAIR_V2 })
+  async directorySourceRepairV2(@Payload() data: DirectorySourceRepairV2) {
+    this.authorizeDirectoryRegisterRepair(data?.secret);
+    return this.communityService.repairSourceCommunityRegister(
+      data.identity,
+      data.communityId
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.DIRECTORY_REGISTER_SCAN_V2 })
+  async directoryRegisterScanV2(@Payload() data: DirectoryRegisterScanV2) {
+    this.authorizeDirectoryRegisterRead(data?.secret);
+    return this.communityService.scanDirectoryRegisterV2(
+      data.identity,
+      data.afterCommunityId,
+      data.limit
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.DIRECTORY_REGISTER_READ_V2 })
+  async directoryRegisterReadV2(@Payload() data: DirectoryRegisterReadV2) {
+    this.authorizeDirectoryRegisterRead(data?.secret);
+    return this.communityService.readDirectoryRegisterSnapshotV2(
+      data.identity,
+      data.communityId,
+      data.changeToken
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.DIRECTORY_REGISTER_CURRENT_V2 })
+  async directoryRegisterCurrentV2(
+    @Payload() data: DirectoryRegisterCurrentV2
+  ) {
+    this.authorizeDirectoryRegisterRead(data?.secret);
+    return this.communityService.readCurrentDirectoryRegister(
+      data.identity,
+      data.communityId
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.DIRECTORY_GEOGRAPHY_CURRENT_V2 })
+  async directoryGeographyCurrentV2(
+    @Payload() data: DirectoryRegisterCurrentV2
+  ) {
+    this.authorizeDirectoryRegisterRead(data?.secret);
+    return this.communityService.readCurrentDirectoryGeography(
+      data.identity,
+      data.communityId
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.DIRECTORY_REGISTER_SCAN })
+  async directoryRegisterScan(@Payload() data: DirectoryRegisterScanRead) {
+    this.authorizeDirectoryRegisterRead(data?.secret);
+    return this.communityService.scanDirectoryRegister(
+      data.sourceEpoch,
+      data.afterCommunityId,
+      data.limit
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.DIRECTORY_REGISTER_READ })
+  async directoryRegisterRead(@Payload() data: DirectoryRegisterExactRead) {
+    this.authorizeDirectoryRegisterRead(data?.secret);
+    return this.communityService.readDirectoryRegisterSnapshot(
+      data.sourceEpoch,
+      data.communityId,
+      data.changeToken
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.RECOVERY_DIRECTORY_CENSUS })
+  async recoveryDirectoryCensus(@Payload() data: DirectoryCensusRead) {
+    this.authorizeDirectoryRecovery(data?.secret);
+    return this.communityService.recoveryDirectoryCensus(
+      data?.expectedSourceEpoch,
+      data?.cursor,
+      data?.limit
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.RECOVERY_DIRECTORY_SNAPSHOT })
+  async recoveryDirectorySnapshot(@Payload() data: DirectorySnapshotRead) {
+    this.authorizeDirectoryRecovery(data?.secret);
+    return this.communityService.recoveryDirectorySnapshot(
+      data?.id,
+      data?.expectedSourceEpoch
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.FIND_DIRECTORY_ELIGIBLE })
+  async findDirectoryEligible(
+    @Payload() data: { id: string; secret?: string }
+  ) {
+    const expected = process.env.DIRECTORY_ELIGIBILITY_SECRET;
+    if (
+      !expected ||
+      Buffer.byteLength(expected) < 32 ||
+      expected === process.env.DIRECTORY_SOCIAL_SECRET ||
+      expected === process.env.DIRECTORY_RECEIPT_SIGNING_SECRET ||
+      typeof data?.secret !== 'string' ||
+      !data.secret ||
+      !timingSafeEqual(
+        createHash('sha256').update(data.secret).digest(),
+        createHash('sha256').update(expected).digest()
+      )
+    ) {
+      throw new RpcException('Directory service authentication failed');
+    }
+    await this.communityService.assertDirectoryReady();
+    return this.communityService.findDirectoryEligible(data.id);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.FIND_DIRECTORY_SNAPSHOT })
+  async directorySnapshot(@Payload() data: DirectorySnapshotRead) {
+    this.authorizeDirectory(data?.secret);
+    await this.communityService.assertDirectoryReady();
+    return this.communityService.directorySnapshot(
+      data?.id,
+      data?.expectedSourceEpoch
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.DIRECTORY_MEMBERSHIP })
+  async directoryMembership(@Payload() data: DirectoryMembershipRead) {
+    this.authorizeDirectory(data?.secret);
+    await this.communityService.assertDirectoryReady();
+    return this.communityService.directoryMembership(
+      data?.revision,
+      data?.communityId,
+      data?.expectedSourceEpoch,
+      data?.expectedEventNonce
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.DIRECTORY_UNREAD })
+  async directoryUnread(@Payload() data: { after?: string; secret?: string }) {
+    this.authorizeDirectory(data?.secret);
+    await this.communityService.assertDirectoryReady();
+    return this.communityService.directoryUnread(data?.after);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.DIRECTORY_ACK })
+  async directoryAck(
+    @Payload()
+    data: {
+      revision: string;
+      communityId: string;
+      eventNonce?: string;
+      sourceEpoch?: string;
+      recoveryEpoch?: string;
+      attestation: string;
+      secret?: string;
+    }
+  ) {
+    this.authorizeDirectory(data?.secret);
+    // V1 identities can recur after an independent restore. Keep all ACKs
+    // disabled until the epoch-bound v2 recovery protocol is operational.
+    throw new RpcException(
+      'Directory acknowledgements are fenced pending restore protocol v2'
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.FIND_DIRECTORY_CENSUS })
+  async findDirectoryCensus(@Payload() data: DirectoryCensusRead) {
+    this.authorizeDirectory(data?.secret);
+    await this.communityService.assertDirectoryReady();
+    return this.communityService.findDirectoryCensus(
+      data?.expectedSourceEpoch,
+      data?.cursor,
+      data?.limit
+    );
   }
 
   @MessagePattern({ cmd: CommunityCommands.FIND_BY_SLUG })

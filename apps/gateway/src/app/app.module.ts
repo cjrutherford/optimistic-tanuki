@@ -95,6 +95,28 @@ import {
 import { VideosController } from '../controllers/videos/videos.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
 import { CommunityController } from '../controllers/social/community/community.controller';
+import { DirectoryController } from '../controllers/directory/directory.controller';
+import {
+  DirectoryBusinessLinkController,
+  DirectoryBusinessLinkQueueController,
+} from '../controllers/directory/directory-business-link.controller';
+import { DirectoryAddressReviewController } from '../controllers/directory/directory-address-review.controller';
+import { DirectoryBusinessIdentityReviewController } from '../controllers/directory/directory-business-identity-review.controller';
+import { DirectoryListingSuppressionController } from '../controllers/directory/directory-listing-suppression.controller';
+import { DirectoryDuplicateCasesController } from '../controllers/directory/directory-duplicate-cases.controller';
+import {
+  DirectoryRightsCasesController,
+  DirectoryWithdrawalsController,
+} from '../controllers/directory/directory-rights.controller';
+import { DirectoryExportsController } from '../controllers/directory/directory-exports.controller';
+import { DirectoryPublicExportController } from '../controllers/directory/directory-public-export.controller';
+import { DirectoryOperationsController } from '../controllers/directory/directory-operations.controller';
+import { DirectoryTaxonomyController } from '../controllers/directory/directory-taxonomy.controller';
+import { DirectoryRunsController } from '../controllers/directory/directory-runs.controller';
+import {
+  DirectoryListingReportController,
+  DirectoryListingReportReviewController,
+} from '../controllers/directory/directory-listing-report.controller';
 import { WellnessController } from '../controllers/wellness/wellness.controller';
 import { ClassifiedsController } from '../controllers/classifieds/classifieds.controller';
 import { CommunitiesController } from '../controllers/communities/communities.controller';
@@ -208,6 +230,91 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         value: ProfileController,
       },
       { id: 'social', requiredServices: ['social'], value: SocialController },
+      {
+        id: 'directory',
+        requiredServices: ['social'],
+        value: DirectoryController,
+      },
+      {
+        id: 'directory-business-link',
+        requiredServices: [
+          'social',
+          'payments',
+          'authentication',
+          'permissions',
+        ],
+        value: DirectoryBusinessLinkController,
+      },
+      {
+        id: 'directory-business-link-queue',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryBusinessLinkQueueController,
+      },
+      {
+        id: 'directory-address-review',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryAddressReviewController,
+      },
+      {
+        id: 'directory-business-identity-review',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryBusinessIdentityReviewController,
+      },
+      {
+        id: 'directory-listing-suppression',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryListingSuppressionController,
+      },
+      {
+        id: 'directory-duplicate-cases',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryDuplicateCasesController,
+      },
+      {
+        id: 'directory-rights-cases',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryRightsCasesController,
+      },
+      {
+        id: 'directory-withdrawals',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryWithdrawalsController,
+      },
+      {
+        id: 'directory-exports',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryExportsController,
+      },
+      {
+        id: 'directory-public-export',
+        requiredServices: [],
+        value: DirectoryPublicExportController,
+      },
+      {
+        id: 'directory-operations',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryOperationsController,
+      },
+      {
+        id: 'directory-taxonomy',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryTaxonomyController,
+      },
+      {
+        id: 'directory-runs',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryRunsController,
+      },
+      {
+        id: 'directory-listing-report',
+        requiredServices: ['social'],
+        value: DirectoryListingReportController,
+      },
+      {
+        id: 'directory-listing-report-review',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryListingReportReviewController,
+      },
       {
         id: 'social-components',
         requiredServices: ['social', 'profile'],

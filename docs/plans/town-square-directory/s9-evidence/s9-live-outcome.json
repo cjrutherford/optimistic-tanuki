@@ -1,0 +1,125 @@
+{
+  "authorization": {
+    "anonymous": {
+      "/directory/operations/metrics": 401,
+      "/directory/operations/metrics/prometheus": 401,
+      "/directory/operations/controls": 401
+    },
+    "anonymousWrite": 401,
+    "ownerMetrics": 200,
+    "ownerMetricsCacheControl": "no-store",
+    "prometheusGauges": 42,
+    "bodyActorIdRefused": 400,
+    "withdrawalPauseRefused": 404
+  },
+  "metricsBefore": {
+    "infrastructure": {
+      "database": "ok",
+      "postgis": true,
+      "migrationsApplied": 47,
+      "latestMigration": "DirectoryOperatingControls1794971660195",
+      "exportStorage": "configured"
+    },
+    "towns": {
+      "total": 261,
+      "onboarded": 0,
+      "byStatus": {
+        "pending": 261
+      }
+    },
+    "coverage": {
+      "townsWithListings": 69,
+      "publishedListings": 1688
+    },
+    "freshness": {
+      "refreshDueListings": 0,
+      "staleListings": 0,
+      "unknownFreshnessListings": 1688,
+      "oldestListingAgeDays": null
+    },
+    "policy": {
+      "activePolicies": 10,
+      "revokedPolicies": 4,
+      "publicationPaused": false,
+      "openRightsCases": 6,
+      "openTaxonomyCases": 1
+    },
+    "spend": {
+      "period": "2026-11",
+      "reservedCents": 1224,
+      "limitCents": 2500,
+      "alertCents": 2000,
+      "alert": false,
+      "exhausted": false
+    },
+    "queues": {
+      "export": {
+        "queued": 0,
+        "running": 0,
+        "failedLast24h": 4,
+        "oldestQueuedSeconds": null
+      },
+      "taxonomy": {
+        "queued": 0,
+        "running": 0,
+        "failedLast24h": 0,
+        "oldestQueuedSeconds": null
+      },
+      "withdrawal": {
+        "queued": 0,
+        "running": 0,
+        "failedLast24h": 5,
+        "oldestQueuedSeconds": null
+      }
+    }
+  },
+  "backlogDrill": {
+    "jobsQueuedWhilePaused": 2,
+    "heldForSeconds": 14,
+    "metricsWhilePaused": {
+      "queued": 2,
+      "running": 0,
+      "failedLast24h": 4,
+      "oldestQueuedSeconds": 12
+    },
+    "drainedAfterResumeMs": 2710,
+    "terminal": [
+      {
+        "status": "failed",
+        "errorCode": "export_not_granted"
+      },
+      {
+        "status": "failed",
+        "errorCode": "export_not_granted"
+      }
+    ],
+    "metricsAfter": {
+      "queued": 0,
+      "running": 0,
+      "failedLast24h": 6,
+      "oldestQueuedSeconds": null
+    }
+  },
+  "killSwitch": {
+    "pauseStatus": 201,
+    "staleVersionStatus": 409,
+    "staleVersionCode": "stale_version",
+    "metricsShowedPaused": true,
+    "resumeStatus": 201,
+    "versions": [2, 3, 4]
+  },
+  "controlsAfter": [
+    {
+      "key": "provider_acquisition",
+      "paused": false
+    },
+    {
+      "key": "export_worker",
+      "paused": false
+    },
+    {
+      "key": "taxonomy_worker",
+      "paused": false
+    }
+  ]
+}

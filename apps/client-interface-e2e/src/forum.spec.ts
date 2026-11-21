@@ -58,7 +58,26 @@ test.describe('Forum access', () => {
 
     expect(threadsResponse.status()).toBe(200);
     await expect(page).toHaveURL(/\/forum\/topic\/[0-9a-f-]+$/);
-    await expect(page.getByText('No threads in this topic yet.')).toBeVisible();
+
+    // The shared dev database may already hold real threads in this topic, so
+    // assert on whatever the API returned rather than assuming it is empty.
+    const threads = (await threadsResponse.json()) as Array<{ title?: string }>;
+    expect(Array.isArray(threads)).toBe(true);
+    if (threads.length === 0) {
+      await expect(
+        page.getByText('No threads in this topic yet.')
+      ).toBeVisible();
+    } else {
+      await expect(page.getByText('No threads in this topic yet.')).toHaveCount(
+        0
+      );
+      const firstTitle = threads.find((thread) => thread.title)?.title;
+      if (firstTitle) {
+        await expect(
+          page.getByText(firstTitle, { exact: true }).first()
+        ).toBeVisible();
+      }
+    }
   });
 
   test('renders the forum shell for an authenticated profile', async ({

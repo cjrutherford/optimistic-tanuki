@@ -52,6 +52,80 @@ describe('MapComponent', () => {
   let fixture: ComponentFixture<MapComponent>;
   let component: MapComponent;
 
+  it('renders reviewed directory locations as map markers with text-only labels', () => {
+    const element = document.createElement('span');
+    const marker = {
+      addTo: jest.fn(),
+      bindTooltip: jest.fn(),
+      bindPopup: jest.fn(),
+      getElement: jest.fn(() => element),
+      openPopup: jest.fn(),
+      remove: jest.fn(),
+    };
+    marker.addTo.mockReturnValue(marker);
+    const divIcon = jest.fn((options) => options);
+    const leaflet = { divIcon, marker: jest.fn(() => marker) };
+    (component as any).map = {};
+    (component as any).leaflet = leaflet;
+    jest
+      .spyOn(component as any, 'renderSingleLocationMode')
+      .mockImplementation(() => undefined);
+    jest
+      .spyOn(component as any, 'attachTileLayerWhenReady')
+      .mockImplementation(() => undefined);
+    component.directoryLocations = [
+      {
+        name: '<Fixture>',
+        category: 'food_store',
+        coordinates: { lat: 31, lng: -83 },
+        href: '/city/example/businesses/ref',
+      },
+    ];
+    (component as any).refreshMapContent();
+    expect(leaflet.marker).toHaveBeenCalledWith(
+      [31, -83],
+      expect.objectContaining({ icon: expect.anything() })
+    );
+    const label = marker.bindTooltip.mock.calls[0][0] as HTMLElement;
+    expect(label.textContent).toBe('<Fixture> · food store');
+    expect(label.children.length).toBe(0);
+    expect(marker.bindPopup).toHaveBeenCalled();
+    const popup = marker.bindPopup.mock.calls[0][0] as HTMLElement;
+    expect(popup.querySelector('a')?.getAttribute('href')).toBe(
+      '/city/example/businesses/ref'
+    );
+    expect(popup.querySelector('a')?.getAttribute('aria-label')).toBe(
+      'View details for <Fixture>'
+    );
+    expect(element.getAttribute('role')).toBe('button');
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    expect(marker.openPopup).toHaveBeenCalled();
+  });
+
+  it('fits the map to reviewed directory pins in directory mode', () => {
+    const map = {
+      fitBounds: jest.fn(),
+      invalidateSize: jest.fn(),
+      setView: jest.fn(),
+    };
+    (component as any).leaflet = mockLeaflet;
+    (component as any).map = map;
+    component.mode = 'directory';
+    component.centerLat = 31;
+    component.centerLng = -83;
+    component.directoryLocations = [
+      { name: 'A', category: 'shop', coordinates: { lat: 31, lng: -83 } },
+      { name: 'B', category: 'shop', coordinates: { lat: 31.1, lng: -83.1 } },
+    ];
+    jest
+      .spyOn(component as any, 'scheduleInvalidateSize')
+      .mockImplementation(() => undefined);
+
+    (component as any).renderDirectoryMode(mockLeaflet);
+
+    expect(map.fitBounds).toHaveBeenCalled();
+  });
+
   beforeEach(async () => {
     jest.clearAllMocks();
     mockLeafletTileLayer.addTo.mockReturnValue(mockLeafletTileLayer);
@@ -230,8 +304,8 @@ describe('MapComponent', () => {
     expect(mockLeaflet.map).toHaveBeenCalledWith(
       component.mapContainer.nativeElement,
       expect.objectContaining({
-        center: [31.9, -81.1],
-        zoom: 6,
+        center: [0, 0],
+        zoom: 2,
       })
     );
   });

@@ -1,0 +1,26 @@
+{
+  "recoveredInterruptedRun": {
+    "caseId": "664802e8-09cd-43b2-acc1-ce529285687d"
+  },
+  "listing": {
+    "anonymousList": 401,
+    "anonymousDismiss": 401,
+    "ownerListStatus": 200,
+    "casesReturned": 1,
+    "dismissibleCaseFound": true
+  },
+  "staleToken": {
+    "caseId": "664802e8-09cd-43b2-acc1-ce529285687d",
+    "status": 409,
+    "code": "stale_decision",
+    "caseUnchanged": true
+  },
+  "dismissRoundTrip": {
+    "caseId": "664802e8-09cd-43b2-acc1-ce529285687d",
+    "startStatus": "open",
+    "afterDismiss": "dismissed",
+    "afterReopen": "open",
+    "note": "restored to the starting status",
+    "historyEntries": 15
+  }
+}

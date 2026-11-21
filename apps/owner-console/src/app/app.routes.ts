@@ -39,6 +39,104 @@ export const appRoutes: Route[] = [
     canActivate: [authGuard],
     children: [
       {
+        path: 'directory-link-review/:communityId',
+        loadComponent: () =>
+          import('./components/directory-link-review-page.component').then(
+            (m) => m.DirectoryLinkReviewPageComponent
+          ),
+      },
+      {
+        path: 'directory-address-review/:communityId',
+        loadComponent: () =>
+          import('./components/directory-address-review-page.component').then(
+            (m) => m.DirectoryAddressReviewPageComponent
+          ),
+      },
+      {
+        path: 'directory-identity-review/:communityId',
+        loadComponent: () =>
+          import('./components/directory-identity-review-page.component').then(
+            (m) => m.DirectoryIdentityReviewPageComponent
+          ),
+      },
+      {
+        path: 'directory-listing-suppressions/:communityId',
+        loadComponent: () =>
+          import(
+            './components/directory-listing-suppression-page.component'
+          ).then((m) => m.DirectoryListingSuppressionPageComponent),
+      },
+      {
+        path: 'directory-listing-reports/:communityId',
+        loadComponent: () =>
+          import('./components/directory-listing-report-page.component').then(
+            (m) => m.DirectoryListingReportPageComponent
+          ),
+      },
+      {
+        path: 'directory-duplicates/:communityId',
+        loadComponent: () =>
+          import('./components/directory-duplicate-review-page.component').then(
+            (m) => m.DirectoryDuplicateReviewPageComponent
+          ),
+      },
+      {
+        path: 'directory-rights',
+        loadComponent: () =>
+          import('./components/directory-rights-page.component').then(
+            (m) => m.DirectoryRightsPageComponent
+          ),
+      },
+      {
+        path: 'directory-withdrawals',
+        loadComponent: () =>
+          import('./components/directory-withdrawals-page.component').then(
+            (m) => m.DirectoryWithdrawalsPageComponent
+          ),
+      },
+      {
+        path: 'directory-exports',
+        loadComponent: () =>
+          import('./components/directory-exports-page.component').then(
+            (m) => m.DirectoryExportsPageComponent
+          ),
+      },
+      {
+        path: 'directory-operations',
+        loadComponent: () =>
+          import('./components/directory-operations-page.component').then(
+            (m) => m.DirectoryOperationsPageComponent
+          ),
+      },
+      {
+        path: 'directory-taxonomy',
+        loadComponent: () =>
+          import('./components/directory-taxonomy-cases-page.component').then(
+            (m) => m.DirectoryTaxonomyCasesPageComponent
+          ),
+      },
+      {
+        path: 'directory-taxonomy-runs',
+        loadComponent: () =>
+          import('./components/directory-taxonomy-runs-page.component').then(
+            (m) => m.DirectoryTaxonomyRunsPageComponent
+          ),
+      },
+      {
+        path: 'directory-runs',
+        loadComponent: () =>
+          import('./components/directory-acquisition-runs-page.component').then(
+            (m) => m.DirectoryAcquisitionRunsPageComponent
+          ),
+      },
+      {
+        path: 'boundary-review/:communityId',
+        loadComponent: () =>
+          import('./components/boundary-review-page.component').then(
+            (m) => m.BoundaryReviewPageComponent
+          ),
+      },
+      {
         path: 'community-ops',
         loadComponent: () =>
           import('./components/community-ops-workspace.component').then(

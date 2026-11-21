@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 import {
   LocalHubCommunity,
   expectPageLoads,
-  findCity,
   getCommunities,
 } from './helpers/local-hub-api';
 
@@ -136,8 +135,21 @@ test.describe('Map rendering', () => {
     page,
     request,
   }) => {
-    const city = findCity(await getCommunities(request));
-    test.skip(!city?.slug, 'No seeded city is available');
+    const communities = (await getCommunities(request)) as Array<
+      CommunityWithCoordinates & { lat?: unknown; lng?: unknown }
+    >;
+    // Pick a city that can actually be focused: the first city may be a
+    // coordinate-less review fixture.
+    const city = communities.find(
+      (community) =>
+        community.localityType === 'city' &&
+        Boolean(community.slug) &&
+        isRenderableCoordinate({
+          lat: Number(community.lat ?? community.coordinates?.lat),
+          lng: Number(community.lng ?? community.coordinates?.lng),
+        })
+    );
+    test.skip(!city?.slug, 'No seeded city with coordinates is available');
 
     await expectPageLoads(page, `/city/${city.slug}`);
     await expect(page.locator('.map-marker--focus')).toHaveCount(1);

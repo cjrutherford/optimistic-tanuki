@@ -118,6 +118,9 @@ services:
       <<: *service_db_env
       JWT_SECRET: ${JWT_SECRET:-}
       ACCOUNT_DELETION_PROOF_KEY: ${ACCOUNT_DELETION_PROOF_KEY:-}
+      # Directory account lifecycle owner; set both or neither (unset blocks deletion and export while Directory is enabled).
+      DIRECTORY_ACCOUNT_LIFECYCLE_URL: ${DIRECTORY_ACCOUNT_LIFECYCLE_URL:-}
+      DIRECTORY_ACCOUNT_LIFECYCLE_SECRET: ${DIRECTORY_ACCOUNT_DELETION_SECRET:-}
       VAULT_STORAGE_KEK: ${VAULT_STORAGE_KEK:-}
       # Email addresses stay unverified unless the recipient consumes a
       # verification action token. Development may override this explicitly.
@@ -392,6 +395,15 @@ services:
       dockerfile: ./apps/gateway/Dockerfile
     image: cjrutherford/optimistic_tanuki_gateway:${PRODUCTION_IMAGE_TAG:-latest}
     environment:
+      DIRECTORY_INTERNAL_URL: ${DIRECTORY_INTERNAL_URL:-}
+      DIRECTORY_ELIGIBILITY_SECRET: ${DIRECTORY_ELIGIBILITY_SECRET:-}
+      DIRECTORY_BOUNDARY_REVIEW_SECRET: ${DIRECTORY_BOUNDARY_REVIEW_SECRET:-}
+      DIRECTORY_BOUNDARY_DECISION_SECRET: ${DIRECTORY_BOUNDARY_DECISION_SECRET:-}
+      DIRECTORY_PENDING_READ_SECRET: ${DIRECTORY_PENDING_READ_SECRET:-}
+      DIRECTORY_CONTAINMENT_READ_SECRET: ${DIRECTORY_CONTAINMENT_READ_SECRET:-}
+      DIRECTORY_LOCAL_EVALUATION: ${DIRECTORY_LOCAL_EVALUATION:-}
+      DIRECTORY_LOCAL_EVALUATION_SECRET: ${DIRECTORY_LOCAL_EVALUATION_SECRET:-}
+      DIRECTORY_BUSINESS_LINK_SECRET: ${DIRECTORY_BUSINESS_LINK_SECRET:-}
       NODE_ENV: ${NODE_ENV:-production}
       THROTTLER_PROFILE: ${THROTTLER_PROFILE:-production}
       THROTTLE_SHORT_LIMIT: ${THROTTLE_SHORT_LIMIT:-}
@@ -448,9 +460,9 @@ services:
     volumes:
       - ${APP_REGISTRY_HOST_PATH:-./libs/app-registry/src/lib/default-registry.json}:${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}:ro
     ports:
-      - '${GATEWAY_PORT:-3000}:3000'
-      - '${GATEWAY_CHAT_SOCKET_PORT:-3300}:3300' # Chat WebSocket
-      - '${GATEWAY_SOCIAL_SOCKET_PORT:-3301}:3301' # Social WebSocket
+      - '${GATEWAY_BIND_ADDRESS:-0.0.0.0}:${GATEWAY_PORT:-3000}:3000'
+      - '${GATEWAY_BIND_ADDRESS:-0.0.0.0}:${GATEWAY_CHAT_SOCKET_PORT:-3300}:3300' # Chat WebSocket
+      - '${GATEWAY_BIND_ADDRESS:-0.0.0.0}:${GATEWAY_SOCIAL_SOCKET_PORT:-3301}:3301' # Social WebSocket
     healthcheck:
       test:
         [
@@ -680,6 +692,46 @@ services:
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
 
+  social-directory-migrate:
+    profiles: [directory]
+    build:
+      context: .
+      dockerfile: apps/social/Dockerfile
+      target: builder
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ot_social
+      NX_DAEMON: 'false'
+      NX_ISOLATE_PLUGINS: 'false'
+    command: ['pnpm', 'exec', 'nx', 'run', 'social:typeorm:migration:run']
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+    restart: 'no'
+
+  directory-migrate:
+    extends:
+      file: apps/directory/compose.yaml
+      service: directory-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+      social-directory-migrate:
+        condition: service_completed_successfully
+  directory:
+    extends:
+      file: apps/directory/compose.yaml
+      service: directory
+  directory-worker:
+    extends:
+      file: apps/directory/compose.yaml
+      service: directory-worker
+
   social:
     container_name: ot_social
     build:
@@ -687,8 +739,21 @@ services:
       dockerfile: ./apps/social/Dockerfile
     image: cjrutherford/optimistic_tanuki_social:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '${SOCIAL_PORT:-3003}:3003'
+      - '${SOCIAL_BIND_ADDRESS:-0.0.0.0}:${SOCIAL_PORT:-3003}:3003'
     environment:
+      POSTGRES_DB: ${SOCIAL_DATABASE_NAME:-ot_social}
+      DATABASE_NAME: ${SOCIAL_DATABASE_NAME:-ot_social}
+      POSTGRES_USER: ${SOCIAL_DATABASE_USER:-${POSTGRES_USER:-postgres}}
+      DATABASE_USER: ${SOCIAL_DATABASE_USER:-${POSTGRES_USER:-postgres}}
+      POSTGRES_PASSWORD: ${SOCIAL_DATABASE_PASSWORD:-${POSTGRES_PASSWORD:-postgres}}
+      DATABASE_PASSWORD: ${SOCIAL_DATABASE_PASSWORD:-${POSTGRES_PASSWORD:-postgres}}
+      SOCIAL_DIRECTORY_MODE: ${SOCIAL_DIRECTORY_MODE:-inactive}
+      DIRECTORY_REGISTER_READ_SECRET: ${DIRECTORY_REGISTER_READ_SECRET:-}
+      DIRECTORY_REGISTER_REPAIR_SECRET: ${DIRECTORY_REGISTER_REPAIR_SECRET:-}
+      DIRECTORY_RECOVERY_READ_SECRET: ${DIRECTORY_RECOVERY_READ_SECRET:-}
+      DIRECTORY_SOCIAL_SECRET: ${DIRECTORY_SOCIAL_SECRET:-}
+      DIRECTORY_ELIGIBILITY_SECRET: ${DIRECTORY_ELIGIBILITY_SECRET:-}
+      DIRECTORY_RECEIPT_SIGNING_SECRET: ${DIRECTORY_RECEIPT_SIGNING_SECRET:-}
       <<: *service_db_env
     depends_on:
       postgres:
@@ -1128,7 +1193,7 @@ services:
       dockerfile: ./apps/local-hub/Dockerfile
     image: cjrutherford/optimistic_tanuki_local-hub:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '${LOCAL_HUB_PORT:-8087}:4000'
+      - '${LOCAL_HUB_BIND_ADDRESS:-0.0.0.0}:${LOCAL_HUB_PORT:-8087}:4000'
     environment:
       <<: *gateway_client_env
     depends_on:
@@ -1309,6 +1374,7 @@ volumes:
   clamav-db:
   civic_briefing_data:
   civic_contributions_data:
+  directory_exports:
 
 networks:
   learning-runner-control:

@@ -55,6 +55,14 @@ const rootCommunityFixture: LocalCommunity = {
 
 const communityServiceMock = {
   getCityBySlug: jest.fn().mockResolvedValue(cityFixture),
+  getDirectoryBoundary: jest.fn().mockResolvedValue({ status: 'pending' }),
+  getLocalDirectoryListings: jest
+    .fn()
+    .mockResolvedValue({ listings: [], hasMore: false }),
+  getDirectoryBusinessLink: jest.fn().mockResolvedValue(null),
+  requestDirectoryBusinessLink: jest.fn().mockResolvedValue(undefined),
+  getMyDirectoryBusinessLinks: jest.fn().mockResolvedValue([]),
+  revokeDirectoryBusinessLink: jest.fn().mockResolvedValue(undefined),
   getCommunitiesForCity: jest.fn().mockResolvedValue([rootCommunityFixture]),
   getPostsForRootCommunity: jest.fn().mockResolvedValue([]),
   getCommunityManager: jest.fn().mockResolvedValue(null),
@@ -124,6 +132,325 @@ describe('CityComponent', () => {
       fixture.detectChanges();
     });
 
+    it('links to the full business directory page', async () => {
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const router = TestBed.inject(Router);
+      const navigate = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+      fixture.componentInstance.city.set(cityFixture);
+      fixture.componentInstance.navigateToBusinessDirectory();
+      expect(navigate).toHaveBeenCalledWith([
+        '/city',
+        cityFixture.slug,
+        'businesses',
+      ]);
+      expect(fixture.nativeElement.textContent).toContain(
+        'View business directory'
+      );
+      navigate.mockRestore();
+    });
+
+    it('shows a compact preview of the first directory listings', async () => {
+      await fixture.whenStable();
+      const component = fixture.componentInstance;
+      component.localDirectoryListings.set([
+        {
+          name: 'One',
+          category: 'bakery',
+          attribution: ['Source'],
+          notices: [],
+        },
+        { name: 'Two', category: 'shop', attribution: ['Source'], notices: [] },
+        {
+          name: 'Three',
+          category: 'restaurant',
+          attribution: ['Source'],
+          notices: [],
+        },
+        {
+          name: 'Four',
+          category: 'service',
+          attribution: ['Source'],
+          notices: [],
+        },
+      ]);
+      fixture.detectChanges();
+
+      const preview = fixture.nativeElement.querySelector(
+        '.city-directory-preview'
+      ) as HTMLElement | null;
+      expect(preview).not.toBeNull();
+      expect(preview?.textContent).toContain('One');
+      expect(preview?.textContent).toContain('Two');
+      expect(preview?.textContent).toContain('Three');
+      expect(preview?.textContent).not.toContain('Four');
+    });
+
+    it('maps only listings with reviewed coordinates', async () => {
+      await fixture.whenStable();
+      const component = fixture.componentInstance;
+      component.localDirectoryListings.set([
+        {
+          name: 'Reviewed',
+          category: 'restaurant',
+          attribution: ['Source'],
+          notices: [],
+          coordinates: { lat: 31, lng: -83 },
+        },
+        {
+          name: 'Unreviewed',
+          category: 'shop',
+          attribution: ['Source'],
+          notices: [],
+        },
+      ]);
+      expect(component.directoryMapLocations()).toEqual([
+        {
+          name: 'Reviewed',
+          category: 'restaurant',
+          coordinates: { lat: 31, lng: -83 },
+        },
+      ]);
+    });
+
+    it('labels source freshness near the map notes and omits it when absent', async () => {
+      await fixture.whenStable();
+      const component = fixture.componentInstance;
+      const sel = '[data-testid="source-freshness"]';
+      const sf = {
+        state: 'stale',
+        releaseId: '2026-10-21.0',
+        sourcePublishedAt: '2026-10-22T03:00:00Z',
+        acquiredAt: null,
+        thresholds: { freshDays: 90, staleDays: 120 },
+      };
+      component.localDirectorySourceFreshness.set(sf as never);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector(sel)?.textContent).toContain(
+        '2026-10-22 (release 2026-10-21.0), may be out of date'
+      );
+      component.localDirectorySourceFreshness.set({
+        ...sf,
+        state: 'unknown',
+        releaseId: null,
+        sourcePublishedAt: null,
+      } as never);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector(sel)?.textContent).toContain(
+        'Source date unknown'
+      );
+      component.localDirectorySourceFreshness.set(null);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector(sel)).toBeNull();
+    });
+
+    describe('directory coverage states', () => {
+      const q = (sel: string) =>
+        fixture.nativeElement.querySelector(sel) as HTMLElement | null;
+      const load = async (page: unknown) => {
+        communityServiceMock.getLocalDirectoryListings.mockResolvedValueOnce(
+          page
+        );
+        await fixture.componentInstance.loadCity('savannah-ga');
+        await settle();
+      };
+      const settle = async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        fixture.detectChanges();
+      };
+      const bakery = {
+        name: 'Bakery',
+        category: 'bakery',
+        attribution: ['Source'],
+        notices: [],
+      };
+
+      it('shows an error with retry, not an empty town, when the read fails', async () => {
+        communityServiceMock.getLocalDirectoryListings.mockRejectedValueOnce(
+          new Error('offline')
+        );
+        await fixture.componentInstance.loadCity('savannah-ga');
+        await settle();
+        expect(q('[data-testid="city-directory-error"]')).not.toBeNull();
+        expect(q('[data-testid="city-directory-coverage"]')).toBeNull();
+        expect(fixture.nativeElement.textContent).not.toContain(
+          'No businesses are listed'
+        );
+        communityServiceMock.getLocalDirectoryListings.mockResolvedValueOnce({
+          listings: [],
+          hasMore: false,
+          coverage: { state: 'empty', withheldReviewedDetails: 0 },
+        });
+        (q('[data-testid="city-directory-retry"]') as HTMLElement).click();
+        await settle();
+        expect(q('[data-testid="city-directory-error"]')).toBeNull();
+        expect(
+          q('[data-testid="city-directory-coverage"]')?.textContent
+        ).toContain('No businesses are listed for this town yet.');
+      });
+
+      it('says empty only for proven-empty coverage', async () => {
+        await load({
+          listings: [],
+          hasMore: false,
+          coverage: { state: 'empty', withheldReviewedDetails: 0 },
+        });
+        expect(
+          q('[data-testid="city-directory-coverage"]')?.textContent
+        ).toContain('No businesses are listed for this town yet.');
+      });
+
+      it('renders a blocked town without an error', async () => {
+        await load({
+          listings: [],
+          hasMore: false,
+          coverage: {
+            state: 'blocked',
+            reason: 'town-ineligible',
+            withheldReviewedDetails: 0,
+          },
+        });
+        expect(q('[data-testid="city-directory-error"]')).toBeNull();
+        expect(
+          q('[data-testid="city-directory-coverage"]')?.textContent
+        ).toContain("isn't available for this town");
+      });
+
+      it('does not claim no businesses when coverage is unknown or absent', async () => {
+        await load({ listings: [], hasMore: false });
+        const text = q('[data-testid="city-directory-coverage"]')?.textContent;
+        expect(text).toContain("We can't tell yet");
+        expect(text).not.toMatch(/no businesses/i);
+      });
+
+      it('keeps listings visible with partial and withheld notes', async () => {
+        await load({
+          listings: [bakery],
+          hasMore: false,
+          coverage: { state: 'partial', withheldReviewedDetails: 2 },
+        });
+        expect(q('.city-directory-preview')?.textContent).toContain('Bakery');
+        expect(
+          q('[data-testid="city-directory-coverage"]')?.textContent
+        ).toContain('More listings are still being gathered.');
+        expect(
+          q('[data-testid="city-directory-withheld"]')?.textContent
+        ).toContain('re-checked');
+      });
+    });
+
+    it('does not restore listings from a previous town after navigation', async () => {
+      await fixture.whenStable();
+      const component = fixture.componentInstance;
+      let release!: (value: any) => void;
+      communityServiceMock.getLocalDirectoryListings.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            release = resolve;
+          })
+      );
+      component.city.set(cityFixture);
+      const old = component.loadLocalDirectoryPage(cityFixture.id, 0);
+      await component.loadCity('savannah-ga');
+      component.city.set({ ...cityFixture, id: 'other-town' });
+      release({
+        listings: [
+          {
+            name: 'Old business',
+            category: 'shop',
+            attribution: ['Source'],
+            notices: [],
+          },
+        ],
+        hasMore: false,
+      });
+      await old;
+      expect(
+        component
+          .localDirectoryListings()
+          .some((row) => row.name === 'Old business')
+      ).toBe(false);
+    });
+
+    it('labels the mapped point as approximate and does not invent a map when coordinates are absent', async () => {
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain(
+        'Approximate town location'
+      );
+      fixture.componentInstance.city.set({
+        ...cityFixture,
+        coordinates: undefined,
+      });
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain(
+        'No approximate town location is available'
+      );
+      expect(
+        fixture.nativeElement.querySelector('.city-map-card app-map')
+      ).toBeNull();
+    });
+
+    it('labels a reviewed boundary and passes it to the map', async () => {
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const geometry = {
+        type: 'Polygon' as const,
+        coordinates: [
+          [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 0],
+          ],
+        ],
+      };
+      const map = fixture.debugElement.query(By.directive(MapComponent))
+        .componentInstance as MapComponent;
+      const leafletMap = (map as any).map;
+      (map as any).map = undefined;
+      fixture.componentInstance.directoryBoundary.set({
+        status: 'ready',
+        geometry,
+      });
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain(
+        'Verified Census boundary'
+      );
+      expect(map.boundary).toEqual(geometry);
+      fixture.componentInstance.directoryBoundary.set({ status: 'pending' });
+      fixture.detectChanges();
+      (map as any).map = leafletMap;
+    });
+
+    it('does not restore an old boundary when a newer privacy check finishes first', async () => {
+      await fixture.whenStable();
+      let finishOld!: (value: any) => void, finishNew!: (value: any) => void;
+      communityServiceMock.getDirectoryBoundary
+        .mockImplementationOnce(
+          () => new Promise((resolve) => (finishOld = resolve))
+        )
+        .mockImplementationOnce(
+          () => new Promise((resolve) => (finishNew = resolve))
+        );
+      const old = fixture.componentInstance.refreshDirectoryBoundary(
+        cityFixture.id
+      );
+      const latest = fixture.componentInstance.refreshDirectoryBoundary(
+        cityFixture.id
+      );
+      finishNew({ status: 'pending' });
+      await latest;
+      finishOld({
+        status: 'ready',
+        geometry: { type: 'Polygon', coordinates: [] },
+      });
+      await old;
+      expect(fixture.componentInstance.directoryBoundary()).toEqual({
+        status: 'pending',
+      });
+    });
+
     it('uses single-location mode for the city detail map', async () => {
       await fixture.whenStable();
       fixture.detectChanges();
@@ -136,8 +463,20 @@ describe('CityComponent', () => {
       expect(mapComponent?.mode).toBe('single-location');
     });
 
-    it('passes browser geolocation to the city detail map', async () => {
+    it('does not ask for the browser location until the visitor chooses to', async () => {
       await fixture.whenStable();
+      fixture.detectChanges();
+      expect(geolocation.getCurrentPosition).not.toHaveBeenCalled();
+    });
+
+    it('passes browser geolocation to the city detail map after an explicit request', async () => {
+      await fixture.whenStable();
+      fixture.detectChanges();
+      (
+        fixture.nativeElement.querySelector(
+          '[data-testid="show-my-location"]'
+        ) as HTMLButtonElement
+      ).click();
       fixture.detectChanges();
 
       const mapComponent = fixture.debugElement.query(
@@ -257,6 +596,12 @@ describe('CityComponent', () => {
       messages = { addMessage: jest.fn() };
       community = {
         getCityBySlug: jest.fn().mockResolvedValue(cityFixture),
+        getDirectoryBoundary: jest
+          .fn()
+          .mockResolvedValue({ status: 'pending' }),
+        getLocalDirectoryListings: jest
+          .fn()
+          .mockResolvedValue({ listings: [], hasMore: false }),
         getCommunitiesForCity: jest
           .fn()
           .mockResolvedValue([rootCommunityFixture]),
@@ -476,6 +821,14 @@ describe('CityComponent', () => {
 
         expect(component.businesses()).toEqual([]);
         expect(component.error()).toBeNull();
+      });
+
+      it('does not wait for optional business and classified services during server rendering', async () => {
+        (component as any).platformId = 'server';
+        await component.loadCity('savannah-ga');
+        expect(component.city()).toEqual(cityFixture);
+        expect(payments['getCityBusinesses']).not.toHaveBeenCalled();
+        expect(classifieds['findByCommunity']).not.toHaveBeenCalled();
       });
 
       it('keeps rendering when the classifieds lookup fails', async () => {

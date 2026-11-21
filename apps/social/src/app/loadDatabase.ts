@@ -9,6 +9,9 @@ import { Comment } from '../entities/comment.entity';
 import { SocialComponent } from '../entities/social-component.entity';
 import FollowEntity from '../entities/Follow.entity';
 import { Community } from '../entities/community.entity';
+import { CommunityDirectoryChange } from '../entities/community-directory-change.entity';
+import { CommunityDirectoryEpoch } from '../entities/community-directory-epoch.entity';
+import { CommunityDirectoryRegister } from '../entities/community-directory-register.entity';
 import {
   CommunityMember,
   CommunityMemberRole,
@@ -50,6 +53,9 @@ const loadDatabase = (config: ConfigService) => {
     FollowEntity,
     SocialComponent,
     Community,
+    CommunityDirectoryChange,
+    CommunityDirectoryEpoch,
+    CommunityDirectoryRegister,
     CommunityMember,
     CommunityMembershipAudit,
     GuardianContentAudit,

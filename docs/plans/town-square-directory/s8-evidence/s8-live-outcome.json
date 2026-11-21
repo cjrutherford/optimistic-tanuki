@@ -1,0 +1,94 @@
+{
+  "rightsSync": {
+    "historyImport": {
+      "replayed": false,
+      "created": 0,
+      "existing": 12
+    },
+    "before": {
+      "resolved": 6
+    },
+    "first": {
+      "created": 0,
+      "existing": 0,
+      "lineages": 10,
+      "resolved": 0
+    },
+    "after": {
+      "resolved": 6
+    },
+    "second": {
+      "created": 0,
+      "existing": 0,
+      "lineages": 10,
+      "resolved": 0
+    }
+  },
+  "authorization": {
+    "anonymousList": 401,
+    "anonymousDownload": 401,
+    "ownerList": 200,
+    "ownerListCacheControl": "no-store",
+    "ownerDownloadUnknownId": 404
+  },
+  "granted": {
+    "jobId": "eadd589a-00af-4952-93b2-c42a28282fed",
+    "releaseId": "2026-10-21.0",
+    "status": "complete",
+    "sha256": "12e7e9d088d0d27872a192305acf144edac4a97ec6130b36aa4d441749c063de",
+    "recomputedSha256": "12e7e9d088d0d27872a192305acf144edac4a97ec6130b36aa4d441749c063de",
+    "byteCount": 160729102,
+    "rowCount": 182277,
+    "excludedRows": 4850,
+    "headerFields": [
+      "name",
+      "category",
+      "location",
+      "address",
+      "phone",
+      "website"
+    ],
+    "attributions": [
+      "AllThePlaces; Overture Maps Foundation (October 2026)",
+      "BrightQuery; Overture Maps Foundation (October 2026)",
+      "DAC; Overture Maps Foundation (October 2026)",
+      "Microsoft; Overture Maps Foundation (October 2026)",
+      "meta; Overture Maps Foundation (October 2026)"
+    ],
+    "expiresAt": "2026-11-19T07:01:59.279Z",
+    "uiDownloadFilename": "directory-export-eadd589a-00af-4952-93b2-c42a28282fed.jsonl"
+  },
+  "idempotency": {
+    "jobId": "a70b55bc-a4d0-4b0f-8469-b766e5ab4dbf",
+    "releaseId": "2026-10-21.0",
+    "status": "complete",
+    "sha256": "4a7e416d66be60a7856e09ccb0126e238880609e5735c388fb4ee54cecaf15ef",
+    "recomputedSha256": "4a7e416d66be60a7856e09ccb0126e238880609e5735c388fb4ee54cecaf15ef",
+    "byteCount": 160729102,
+    "rowCount": 182277,
+    "excludedRows": 4850,
+    "headerFields": [
+      "name",
+      "category",
+      "location",
+      "address",
+      "phone",
+      "website"
+    ],
+    "attributions": [
+      "AllThePlaces; Overture Maps Foundation (October 2026)",
+      "BrightQuery; Overture Maps Foundation (October 2026)",
+      "DAC; Overture Maps Foundation (October 2026)",
+      "Microsoft; Overture Maps Foundation (October 2026)",
+      "meta; Overture Maps Foundation (October 2026)"
+    ],
+    "expiresAt": "2026-11-19T07:02:16.796Z",
+    "firstStatus": 201,
+    "replaySameId": true,
+    "replayAfterCompleteSameChecksum": true,
+    "mismatchStatus": 409,
+    "mismatchCode": "idempotency_mismatch",
+    "retryUnknownId": 404
+  },
+  "revocationLive": "not exercised: needs a rights field exclusion that would change live rights state; covered by export-rights-public.postgres.test.js"
+}

@@ -5,6 +5,7 @@ import {
   signal,
   OnInit,
   OnDestroy,
+  NgZone,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -17,21 +18,35 @@ import { takeUntil } from 'rxjs/operators';
 import {
   CommunityService,
   City,
+  DirectoryBoundary,
+  LocalDirectoryListing,
   LocalCommunity,
   CityPost,
   CommunityManager,
   CommunityElection,
 } from '../../services/community.service';
+import {
+  describeSourceFreshness,
+  LocalDirectorySourceFreshness,
+} from '../../services/source-freshness';
+import {
+  describeCoverage,
+  LocalDirectoryCoverage,
+} from '../../services/coverage';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { MapComponent } from '../../components/map/map.component';
 import { CityBriefingComponent } from '../../components/city-briefing/city-briefing.component';
 import { DonationProgressComponent } from '../../components/donation-progress/donation-progress.component';
 import {
-  CardComponent,
-  ModalComponent,
   BadgeComponent,
+  ButtonComponent,
+  CardComponent,
+  EmptyStateComponent,
+  ErrorStateComponent,
   IconComponent,
+  ModalComponent,
+  StateMessageComponent,
 } from '@optimistic-tanuki/common-ui';
 import {
   PostComponent,
@@ -75,10 +90,14 @@ interface CommunityTreeNode {
     MapComponent,
     DonationProgressComponent,
     FormsModule,
-    CardComponent,
-    ModalComponent,
     BadgeComponent,
+    ButtonComponent,
+    CardComponent,
     IconComponent,
+    EmptyStateComponent,
+    ErrorStateComponent,
+    StateMessageComponent,
+    ModalComponent,
     PostComponent,
     ReportDialogComponent,
     ClassifiedListComponent,
@@ -101,6 +120,10 @@ export class CityComponent implements OnInit, OnDestroy {
   private meta = inject(Meta);
   private title = inject(Title);
   private platformId = inject(PLATFORM_ID);
+  private zone = inject(NgZone);
+  private boundaryTimer?: ReturnType<typeof setInterval>;
+  private boundaryRequest = 0;
+  private localDirectoryRequest = 0;
   private destroy$ = new Subject<void>();
   private classifiedService = inject(ClassifiedService);
   private http = inject(HttpClient);
@@ -108,6 +131,39 @@ export class CityComponent implements OnInit, OnDestroy {
   private apiBaseUrl = inject(API_BASE_URL);
 
   city = signal<City | null>(null);
+  directoryBoundary = signal<DirectoryBoundary>({ status: 'pending' });
+  localDirectoryListings = signal<LocalDirectoryListing[]>([]);
+  localDirectoryHasMore = signal(false);
+  localDirectorySourceFreshness = signal<LocalDirectorySourceFreshness | null>(
+    null
+  );
+  sourceFreshnessLabel = computed(() =>
+    describeSourceFreshness(this.localDirectorySourceFreshness())
+  );
+  localDirectoryLoading = signal(false);
+  localDirectoryFailed = signal(false);
+  localDirectoryCoverage = signal<LocalDirectoryCoverage | null>(null);
+  coverageView = computed(() =>
+    describeCoverage(
+      this.localDirectoryCoverage(),
+      this.localDirectoryListings().length,
+      false
+    )
+  );
+  directoryMapLocations = computed(() =>
+    this.localDirectoryListings().flatMap((listing) =>
+      listing.coordinates
+        ? [
+            {
+              name: listing.name,
+              category: listing.category,
+              coordinates: listing.coordinates,
+            },
+          ]
+        : []
+    )
+  );
+  directoryPreview = computed(() => this.localDirectoryListings().slice(0, 3));
   communities = signal<LocalCommunity[]>([]);
   /** Only the user-created sub-communities (interest groups, etc.) */
   interestCommunities = signal<LocalCommunity[]>([]);
@@ -201,14 +257,85 @@ export class CityComponent implements OnInit, OnDestroy {
         this.isAuthenticated.set(auth);
       });
 
+    if (isPlatformBrowser(this.platformId))
+      this.zone.runOutsideAngular(() => {
+        this.boundaryTimer = setInterval(
+          () =>
+            this.zone.run(() => {
+              const id = this.city()?.id;
+              if (id) void this.refreshDirectoryBoundary(id);
+            }),
+          60000
+        );
+      });
     const slug = this.route.snapshot.paramMap.get('slug') ?? '';
-    this.loadUserLocation();
     await this.loadCity(slug);
   }
 
   ngOnDestroy(): void {
+    if (this.boundaryTimer) clearInterval(this.boundaryTimer);
+    this.boundaryRequest++;
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  async refreshDirectoryBoundary(id: string): Promise<void> {
+    const generation = ++this.boundaryRequest;
+    this.directoryBoundary.set({ status: 'unavailable' });
+    let result: DirectoryBoundary;
+    try {
+      result = await this.communityService.getDirectoryBoundary(id);
+    } catch {
+      result = { status: 'unavailable' };
+    }
+    if (generation === this.boundaryRequest && this.city()?.id === id)
+      this.directoryBoundary.set(result);
+  }
+
+  async loadLocalDirectoryPage(id: string, offset: number): Promise<void> {
+    if (this.localDirectoryLoading()) return;
+
+    const request = ++this.localDirectoryRequest;
+    this.localDirectoryLoading.set(true);
+    this.localDirectoryFailed.set(false);
+
+    try {
+      const page = await this.communityService.getLocalDirectoryListings(
+        id,
+        offset
+      );
+      if (request === this.localDirectoryRequest && this.city()?.id === id) {
+        this.localDirectoryListings.update((previous) =>
+          offset === 0 ? page.listings : [...previous, ...page.listings]
+        );
+        this.localDirectoryHasMore.set(page.hasMore);
+        if (page.sourceFreshness || offset === 0) {
+          this.localDirectorySourceFreshness.set(page.sourceFreshness ?? null);
+        }
+        if (page.coverage || offset === 0) {
+          this.localDirectoryCoverage.set(page.coverage ?? null);
+        }
+      }
+    } catch {
+      // A failed read must not look like an empty town: surface it with a retry.
+      if (request === this.localDirectoryRequest && this.city()?.id === id) {
+        this.localDirectoryFailed.set(true);
+      }
+    } finally {
+      if (request === this.localDirectoryRequest) {
+        this.localDirectoryLoading.set(false);
+      }
+    }
+  }
+
+  retryLocalDirectory(): void {
+    const id = this.city()?.id;
+    if (id) void this.loadLocalDirectoryPage(id, 0);
+  }
+
+  navigateToBusinessDirectory(): void {
+    const city = this.city();
+    if (city) void this.router.navigate(['/city', city.slug, 'businesses']);
   }
 
   async loadCity(slug: string): Promise<void> {
@@ -222,6 +349,15 @@ export class CityComponent implements OnInit, OnDestroy {
       }
 
       this.city.set(cityData);
+      void this.refreshDirectoryBoundary(cityData.id);
+      this.localDirectoryListings.set([]);
+      this.localDirectoryHasMore.set(false);
+      this.localDirectorySourceFreshness.set(null);
+      this.localDirectoryCoverage.set(null);
+      this.localDirectoryFailed.set(false);
+      this.localDirectoryRequest++;
+      this.localDirectoryLoading.set(false);
+      void this.loadLocalDirectoryPage(cityData.id, 0);
       this.updateMetaTags(cityData);
 
       const communitiesData = await this.communityService.getCommunitiesForCity(
@@ -256,35 +392,36 @@ export class CityComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Load businesses for this city (non-fatal)
-      try {
-        const allCommunityIds = communitiesData.map((c) => c.id);
-        const businessesData = await this.paymentService.getCityBusinesses(
-          cityData.id,
-          allCommunityIds
-        );
-        this.businesses.set(businessesData);
-      } catch {
-        // Non-fatal - businesses are optional
-      }
-
-      // Load classifieds for the root community (non-fatal)
-      if (rootLocality) {
-        this.classifiedsLoading.set(true);
+      // These optional services load in the browser. They must not hold the
+      // initial town response while an unrelated service is unavailable.
+      if (isPlatformBrowser(this.platformId)) {
         try {
-          const classifiedsData = await this.classifiedService.findByCommunity(
-            rootLocality.id,
-            { pageSize: 12 }
+          const allCommunityIds = communitiesData.map((c) => c.id);
+          const businessesData = await this.paymentService.getCityBusinesses(
+            cityData.id,
+            allCommunityIds
           );
-          this.classifieds.set(
-            await this.enrichClassifiedSellerProfiles(
-              classifiedsData.data ?? []
-            )
-          );
+          this.businesses.set(businessesData);
         } catch {
-          // Non-fatal - classifieds are optional
-        } finally {
-          this.classifiedsLoading.set(false);
+          // Non-fatal - businesses are optional
+        }
+        if (rootLocality) {
+          this.classifiedsLoading.set(true);
+          try {
+            const classifiedsData =
+              await this.classifiedService.findByCommunity(rootLocality.id, {
+                pageSize: 12,
+              });
+            this.classifieds.set(
+              await this.enrichClassifiedSellerProfiles(
+                classifiedsData.data ?? []
+              )
+            );
+          } catch {
+            // Non-fatal - classifieds are optional
+          } finally {
+            this.classifiedsLoading.set(false);
+          }
         }
       }
 
@@ -823,6 +960,11 @@ export class CityComponent implements OnInit, OnDestroy {
       (community) =>
         !community.parentId && community.localityType !== 'neighborhood'
     );
+  }
+
+  /** Explicit, user-initiated only: the browser prompt is never raised on page load. */
+  showMyLocation(): void {
+    this.loadUserLocation();
   }
 
   private loadUserLocation(): void {

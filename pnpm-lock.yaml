@@ -50,6 +50,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1141.0
         version: 3.1143.0
+      '@duckdb/node-api':
+        specifier: 1.4.5-r.1
+        version: 1.4.5-r.1
       '@excalidraw/excalidraw':
         specifier: ^0.18.0
         version: 0.18.1(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -206,6 +209,9 @@ importers:
       '@types/leaflet':
         specifier: ^1.9.22
         version: 1.9.22
+      '@zip.js/zip.js':
+        specifier: 2.16.1
+        version: 2.16.1
       ag-grid-angular:
         specifier: ^35.3.1
         version: 35.3.1(@angular/common@20.3.32(@angular/core@20.3.32(@angular/compiler@20.3.32)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.32(@angular/compiler@20.3.32)(rxjs@7.8.2)(zone.js@0.15.1))
@@ -2780,6 +2786,42 @@ packages:
   '@discoveryjs/json-ext@0.6.3':
     resolution: {integrity: sha512-4B4OijXeVNOPZlYA2oEwWOTkzyltLao+xbotHQeqN++Rv27Y6s818+n2Qkp8q+Fxhn0t/5lA5X1Mxktud8eayQ==}
     engines: {node: '>=14.17.0'}
+
+  '@duckdb/node-api@1.4.5-r.1':
+    resolution: {integrity: sha512-lXPfeJclmhTGhBBnfVXy4siuGNpa8QaUIQGAWlDirC92Dq5fELdITI/LihiFDh5Gz7aM8AN9stCGIH891uv1oQ==}
+
+  '@duckdb/node-bindings-darwin-arm64@1.4.5-r.1':
+    resolution: {integrity: sha512-daWqehxIQX5Fnlbkp+yTX2A7rrlXWzfMYNLqil+kZXI7zKG7D/EmT+gWcgSL8N9Jo0fR9RBo8CtzUlR/AaRL5Q==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@duckdb/node-bindings-darwin-x64@1.4.5-r.1':
+    resolution: {integrity: sha512-iTtnNyVXF8zbdlxOe+Rgjcbbv+4WCkWYGfK3ejCwhaqBc8DH07fWPP5ZGtSbUDs/LDOvV/4k3IGD9hXaNTBmPw==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@duckdb/node-bindings-linux-arm64@1.4.5-r.1':
+    resolution: {integrity: sha512-hDGBZDU5fum/4VDa/PFXUReZKb6ijOx63n10CZUKyY7tnZUV3K3/VpGdCpFyv+jwGuB2M27HpTwMtFYulRmGPQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@duckdb/node-bindings-linux-x64@1.4.5-r.1':
+    resolution: {integrity: sha512-/0lEDmIx3crdopnz9snXnJGm1tvf6pqowX/LvycMnKYMAfpeXiQDLjAqgCJ4+95O4Y6An+Fgy6e4m7WW7ZYxVg==}
+    cpu: [x64]
+    os: [linux]
+
+  '@duckdb/node-bindings-win32-arm64@1.4.5-r.1':
+    resolution: {integrity: sha512-j+2s9yYlQW1lkGydObiZCPfmW6GzvqgYF42IPY0b9laENFvGz6tD5dwfZ8E41L5vwFSaK1AhjOZ6NFcCMQEPtg==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@duckdb/node-bindings-win32-x64@1.4.5-r.1':
+    resolution: {integrity: sha512-4a1FmopqCbJgtUwDswEAzozCbSOR+waiJyAl4K9LHfACV897e72w/XZQT9kHEw36GJE03uWJIyqHlcV+WA+tXA==}
+    cpu: [x64]
+    os: [win32]
+
+  '@duckdb/node-bindings@1.4.5-r.1':
+    resolution: {integrity: sha512-yIXjn8PcB/twK5qzlGyAYflWS7SOc+Pw2GSDzXOszL2uDWthozMj44c3kCWFVLx8P1lfjXw7N9Fjca+uBQpn6Q==}
 
   '@egjs/hammerjs@2.0.17':
     resolution: {integrity: sha512-XQsZgjm2EcVUiZQf11UBJQfmZeEmOW8DpI1gsFeln6w0ae0ii4dMQEQ0kjl6DspdWX1aGY1/loyXnP0JS06e/A==}
@@ -7752,6 +7794,10 @@ packages:
   '@yarnpkg/parsers@3.0.2':
     resolution: {integrity: sha512-/HcYgtUSiJiot/XWGLOlGxPYUG65+/31V8oqk17vZLW1xlCoR4PampyePljOxY2n8/3jz9+tIFzICsyGujJZoA==}
     engines: {node: '>=18.12.0'}
+
+  '@zip.js/zip.js@2.16.1':
+    resolution: {integrity: sha512-ohYjEczZigvNWcRLMkf+KNLo63WtSneKC6xLD9f3sasy1/zQ9pSQlBukwjb50g1RL4oNnAKlnSDzClaZ82X/uQ==}
+    engines: {bun: '>=0.7.0', deno: '>=1.0.0', node: '>=18.0.0'}
 
   '@zkochan/js-yaml@0.0.7':
     resolution: {integrity: sha512-nrUSn7hzt7J6JWgWGz78ZYI8wj+gdIJdk0Ynjpp8l+trkn58Uqsf6RYrYkEK+3X18EX+TNdtJI0WxAtc+L84SQ==}
@@ -18405,6 +18451,37 @@ snapshots:
 
   '@discoveryjs/json-ext@0.6.3': {}
 
+  '@duckdb/node-api@1.4.5-r.1':
+    dependencies:
+      '@duckdb/node-bindings': 1.4.5-r.1
+
+  '@duckdb/node-bindings-darwin-arm64@1.4.5-r.1':
+    optional: true
+
+  '@duckdb/node-bindings-darwin-x64@1.4.5-r.1':
+    optional: true
+
+  '@duckdb/node-bindings-linux-arm64@1.4.5-r.1':
+    optional: true
+
+  '@duckdb/node-bindings-linux-x64@1.4.5-r.1':
+    optional: true
+
+  '@duckdb/node-bindings-win32-arm64@1.4.5-r.1':
+    optional: true
+
+  '@duckdb/node-bindings-win32-x64@1.4.5-r.1':
+    optional: true
+
+  '@duckdb/node-bindings@1.4.5-r.1':
+    optionalDependencies:
+      '@duckdb/node-bindings-darwin-arm64': 1.4.5-r.1
+      '@duckdb/node-bindings-darwin-x64': 1.4.5-r.1
+      '@duckdb/node-bindings-linux-arm64': 1.4.5-r.1
+      '@duckdb/node-bindings-linux-x64': 1.4.5-r.1
+      '@duckdb/node-bindings-win32-arm64': 1.4.5-r.1
+      '@duckdb/node-bindings-win32-x64': 1.4.5-r.1
+
   '@egjs/hammerjs@2.0.17':
     dependencies:
       '@types/hammerjs': 2.0.46
@@ -24024,6 +24101,8 @@ snapshots:
     dependencies:
       js-yaml: 3.14.2
       tslib: 2.8.1
+
+  '@zip.js/zip.js@2.16.1': {}
 
   '@zkochan/js-yaml@0.0.7':
     dependencies:

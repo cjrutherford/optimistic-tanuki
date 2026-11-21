@@ -1,0 +1,234 @@
+.duplicate-page {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  color: var(--primary-text, var(--primary));
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.page-header {
+  display: grid;
+  gap: 0.5rem;
+
+  h1 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--type-h1);
+    line-height: var(--heading-line-height, normal);
+    letter-spacing: var(--heading-tracking, normal);
+  }
+
+  p {
+    max-width: 80ch;
+    margin: 0;
+    color: var(--foreground-muted);
+  }
+}
+
+.page-kicker {
+  margin: 0;
+  color: var(--primary-text, var(--primary));
+  font-size: var(--type-small);
+  font-weight: 700;
+  letter-spacing: var(--personality-label-letter-spacing, normal);
+  text-transform: uppercase;
+}
+
+.raise-form {
+  display: grid;
+  gap: 0.75rem;
+
+  h2 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--type-h4);
+    line-height: var(--heading-line-height, normal);
+  }
+
+  lib-text-input {
+    width: 100%;
+  }
+}
+
+.status-bar,
+.decision-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  otui-button {
+    width: auto;
+  }
+}
+
+.page-message {
+  margin: 0;
+  color: var(--foreground-muted);
+}
+
+.case-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.case-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.case-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  h2 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--type-h4);
+    line-height: var(--heading-line-height, normal);
+  }
+}
+
+.case-meta,
+.muted {
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: var(--type-small);
+}
+
+.case-badges {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.case-facts {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--foreground-muted);
+  font-size: var(--type-small);
+}
+
+.case-decision {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+
+  lib-text-input {
+    width: 100%;
+  }
+}
+
+.load-more {
+  display: flex;
+  justify-content: center;
+}
+
+.select-field {
+  display: grid;
+  gap: 0.25rem;
+  font-size: var(--type-small);
+  color: var(--foreground-muted);
+
+  select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--personality-input-radius, var(--border-radius-md));
+    background: var(--surface, transparent);
+    color: var(--foreground);
+    font: inherit;
+  }
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.pair-side {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--personality-card-radius, var(--border-radius-md));
+
+  &.is-hidden {
+    border-style: dashed;
+  }
+
+  h3 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--type-body);
+    line-height: var(--heading-line-height, normal);
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.25rem 0.75rem;
+    margin: 0;
+    font-size: var(--type-small);
+  }
+
+  dt {
+    color: var(--foreground-muted);
+  }
+
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.side-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--foreground-muted);
+  font-size: var(--type-small);
+  font-weight: 700;
+  letter-spacing: var(--personality-label-letter-spacing, normal);
+  text-transform: uppercase;
+}
+
+.sample-items {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.sample-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  .case-meta {
+    display: block;
+  }
+}

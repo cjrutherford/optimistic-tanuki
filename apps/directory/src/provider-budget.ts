@@ -1,0 +1,423 @@
+import { DataSource } from 'typeorm';
+import { KeyObject } from 'node:crypto';
+import { createHash } from 'node:crypto';
+import { isPaused, ProviderPausedError } from './operating-controls';
+import { isAcquisitionAuthorized } from './acquisition-authorization';
+import {
+  ProviderAttempt,
+  SignedProviderGrant,
+  verifyProviderGrant,
+} from './provider-policy-authority';
+
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const label = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+export const MONTHLY_LIMIT_CENTS = 2500;
+export const GEOAPIFY_BUDGET_PROVIDER = 'geoapify';
+
+/**
+ * Ledger scope. Geoapify is metered against its own ceiling (owner decision D8) and every other provider against the
+ * shared one, so neither can use up the other's budget.
+ */
+export const budgetScopeSql = (provider: string): string =>
+  provider === GEOAPIFY_BUDGET_PROVIDER
+    ? `provider='${GEOAPIFY_BUDGET_PROVIDER}'`
+    : `provider<>'${GEOAPIFY_BUDGET_PROVIDER}'`;
+
+/**
+ * Geoapify is metered in credits per UTC day, not cents (owner decision D30: free plan, 3,000 credits a day). The
+ * limit is DIRECTORY_GEOAPIFY_DAILY_CREDITS; a missing value means the plan's 3,000, it can never be set above that,
+ * and an unusable one means nothing may be used. Geoapify documents the allowance as daily but not the reset time or
+ * time zone, so the ledger resets at UTC midnight.
+ */
+export const GEOAPIFY_DAILY_CREDITS = 3000;
+export function geoapifyDailyCreditLimit(
+  env: NodeJS.ProcessEnv = process.env
+): number {
+  const raw = env['DIRECTORY_GEOAPIFY_DAILY_CREDITS'];
+  if (raw === undefined || raw.trim() === '') return GEOAPIFY_DAILY_CREDITS;
+  const value = Number(raw);
+  return Number.isSafeInteger(value) && value >= 0
+    ? Math.min(value, GEOAPIFY_DAILY_CREDITS)
+    : 0;
+}
+
+type Q = { query(sql: string, params?: unknown[]): Promise<any[]> };
+
+/**
+ * Credits used so far this UTC day. Also counts calls the retired cent ledger recorded today for Geoapify (one
+ * credit each), so the day the credit ledger was introduced cannot be overspent; those rows age out at midnight.
+ */
+export async function geoapifyCreditsToday(db: Q): Promise<number> {
+  const [r] = await db.query(
+    `SELECT
+       (SELECT COALESCE(SUM(credits),0) FROM directory_provider_credit_attempt
+         WHERE provider=$1 AND day=(clock_timestamp() AT TIME ZONE 'UTC')::date)::int
+     + (SELECT count(*) FROM directory_provider_budget_attempt
+         WHERE provider=$1 AND "createdAt" >= date_trunc('day', clock_timestamp() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')::int AS used`,
+    [GEOAPIFY_BUDGET_PROVIDER]
+  );
+  return Number(r?.used ?? 0);
+}
+
+export type CreditAttempt = {
+  attemptId: string;
+  provider: string;
+  operation: string;
+  credits: number;
+};
+
+/**
+ * Counts a credit-metered request before it is made. Refuses at the daily limit, while the kill switch is on, and for
+ * a reused attempt ID. Credits are counted once per request (Geoapify documents a credit cost per endpoint but returns
+ * no usage header); an attempt is never released, so a failed call still counts.
+ */
+export async function reserveProviderCredits(
+  db: DataSource,
+  input: CreditAttempt
+): Promise<{
+  attemptId: string;
+  day: string;
+  usedToday: number;
+  remaining: number;
+}> {
+  if (
+    !input ||
+    !uuid.test(input.attemptId || '') ||
+    input.provider !== GEOAPIFY_BUDGET_PROVIDER ||
+    !label.test(input.operation || '') ||
+    !Number.isSafeInteger(input.credits) ||
+    input.credits < 1 ||
+    input.credits > GEOAPIFY_DAILY_CREDITS
+  )
+    throw Error('Invalid credit attempt');
+  const attempt = { ...input };
+  const limit = geoapifyDailyCreditLimit();
+  return db.transaction(async (manager) => {
+    await manager.query("SET LOCAL lock_timeout = '2s'");
+    await manager.query("SET LOCAL statement_timeout = '10s'");
+    await manager.query(
+      "SELECT pg_advisory_xact_lock(hashtextextended('directory-provider-budget-v1',0))"
+    );
+    if (await isPaused(manager, 'provider_acquisition'))
+      throw new ProviderPausedError();
+    if (
+      (
+        await manager.query(
+          'SELECT 1 FROM directory_provider_credit_attempt WHERE "attemptId"=$1',
+          [attempt.attemptId]
+        )
+      ).length
+    )
+      throw Error('Credit attempt ID already used');
+    const used = await geoapifyCreditsToday(manager);
+    if (used + attempt.credits > limit)
+      throw Error('Daily provider credits exhausted');
+    const [{ day }] = await manager.query(
+      `INSERT INTO directory_provider_credit_attempt ("attemptId",day,provider,operation,credits)
+       VALUES ($1,(clock_timestamp() AT TIME ZONE 'UTC')::date,$2,$3,$4) RETURNING to_char(day,'YYYY-MM-DD') AS day`,
+      [attempt.attemptId, attempt.provider, attempt.operation, attempt.credits]
+    );
+    return {
+      attemptId: attempt.attemptId,
+      day,
+      usedToday: used + attempt.credits,
+      remaining: limit - used - attempt.credits,
+    };
+  });
+}
+export type BudgetAttempt = {
+  attemptId: string;
+  provider: string;
+  operation: string;
+  maxCostCents: number;
+};
+
+/**
+ * Local reservation only. A replay is never permission to dispatch again.
+ * Every provider attempt, including retries, needs a new ID and an independently
+ * established conservative maximum. Reservations are never automatically released.
+ */
+export async function reserveProviderBudget(
+  db: DataSource,
+  input: BudgetAttempt,
+  authorization?: { policyId: string; revalidate: () => void }
+): Promise<{
+  state: 'reserved' | 'replay';
+  attemptId: string;
+  period: string;
+  remainingCents: number;
+}> {
+  if (
+    !input ||
+    !uuid.test(input.attemptId || '') ||
+    !label.test(input.provider || '') ||
+    !label.test(input.operation || '')
+  )
+    throw Error('Invalid budget attempt');
+  if (
+    !Number.isSafeInteger(input.maxCostCents) ||
+    input.maxCostCents < 1 ||
+    input.maxCostCents > MONTHLY_LIMIT_CENTS
+  )
+    throw Error('Known positive maximum cost required');
+  if (input.provider === GEOAPIFY_BUDGET_PROVIDER)
+    throw Error('Geoapify is metered in credits: use reserveProviderCredits');
+  const attempt = { ...input };
+  const limit = MONTHLY_LIMIT_CENTS;
+  const scope = budgetScopeSql(attempt.provider);
+  return db.transaction(async (manager) => {
+    await manager.query("SET LOCAL lock_timeout = '2s'");
+    await manager.query("SET LOCAL statement_timeout = '10s'");
+    if (authorization) {
+      const policy = await manager.query(
+        'SELECT revoked FROM directory_overture_private_policy WHERE "policyId"=$1 FOR UPDATE',
+        [authorization.policyId]
+      );
+      if (policy.length !== 1 || policy[0].revoked !== false)
+        throw Error('Private policy unavailable or revoked');
+      authorization.revalidate();
+    }
+    await manager.query(
+      "SELECT pg_advisory_xact_lock(hashtextextended('directory-provider-budget-v1',0))"
+    );
+    authorization?.revalidate();
+    // Fail closed while an operator has paused provider acquisition; checked under the budget lock.
+    if (await isPaused(manager, 'provider_acquisition'))
+      throw new ProviderPausedError();
+    if (
+      (
+        await manager.query(
+          'SELECT 1 FROM directory_anonymous_overture_attempt WHERE "attemptId"=$1',
+          [attempt.attemptId]
+        )
+      ).length
+    )
+      throw Error('Budget attempt ID already used');
+    const existing = await manager.query(
+      'SELECT * FROM directory_provider_budget_attempt WHERE "attemptId"=$1',
+      [attempt.attemptId]
+    );
+    if (existing.length) {
+      const row = existing[0];
+      if (
+        row.provider !== attempt.provider ||
+        row.operation !== attempt.operation ||
+        row.reservedCents !== attempt.maxCostCents
+      )
+        throw Error('Budget attempt ID already used');
+      const totals = await manager.query(
+        `SELECT COALESCE(SUM("reservedCents"),0)::int AS total FROM directory_provider_budget_attempt WHERE period=$1 AND ${scope}`,
+        [row.period]
+      );
+      return {
+        state: 'replay' as const,
+        attemptId: attempt.attemptId,
+        period: row.period,
+        remainingCents: Math.max(0, limit - totals[0].total),
+      };
+    }
+    const [{ period }] = await manager.query(
+      `SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM') AS period`
+    );
+    if (typeof period !== 'string' || !/^\d{4}-\d{2}$/.test(period))
+      throw Error('Budget period unavailable');
+    const [{ total }] = await manager.query(
+      `SELECT COALESCE(SUM("reservedCents"),0)::int AS total FROM directory_provider_budget_attempt WHERE period=$1 AND ${scope}`,
+      [period]
+    );
+    if (
+      !Number.isSafeInteger(total) ||
+      total < 0 ||
+      total + attempt.maxCostCents > limit
+    )
+      throw Error('Monthly provider budget exhausted');
+    await manager.query(
+      'INSERT INTO directory_provider_budget_attempt ("attemptId",period,provider,operation,"reservedCents") VALUES ($1,$2,$3,$4,$5)',
+      [
+        attempt.attemptId,
+        period,
+        attempt.provider,
+        attempt.operation,
+        attempt.maxCostCents,
+      ]
+    );
+    return {
+      state: 'reserved' as const,
+      attemptId: attempt.attemptId,
+      period,
+      remainingCents: limit - total - attempt.maxCostCents,
+    };
+  });
+}
+
+/** Private prototype: the signer and key must be provisioned independently of callers. */
+export function createBudgetedProviderAttempts(
+  db: DataSource,
+  publicKey: KeyObject | string | Buffer,
+  token: SignedProviderGrant,
+  policyId: string
+) {
+  const signedToken = Object.freeze({ ...token });
+  return (attempt: ProviderAttempt) => {
+    const request = Object.freeze({ ...attempt });
+    const grant = verifyProviderGrant(publicKey, signedToken, request);
+    if (grant.policyId !== policyId) throw Error('Grant policy mismatch');
+    return reserveProviderBudget(
+      db,
+      {
+        attemptId: request.attemptId,
+        provider: 'overture',
+        operation: `range.${request.method.toLowerCase()}`,
+        maxCostCents: grant.maxCostCents,
+      },
+      {
+        policyId,
+        revalidate: () => {
+          verifyProviderGrant(publicKey, signedToken, request);
+        },
+      }
+    );
+  };
+}
+
+type AnonymousProviderGate = {
+  provider: string;
+  validAsset: (url: URL) => boolean;
+};
+
+const OVERTURE_GATE: AnonymousProviderGate = {
+  provider: 'overture',
+  validAsset: (url) =>
+    url.hostname === 'overturemaps-us-west-2.s3.us-west-2.amazonaws.com' &&
+    /^\/release\/\d{4}-\d{2}-\d{2}\.\d+\/theme=places\/type=place\/[^/]+\.parquet$/.test(
+      url.pathname
+    ),
+};
+const ALLTHEPLACES_GATE: AnonymousProviderGate = {
+  provider: 'alltheplaces',
+  validAsset: (url) =>
+    url.hostname === 'alltheplaces-data.openaddresses.io' &&
+    /^\/runs\/\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\/output\.zip$/.test(
+      url.pathname
+    ),
+};
+
+/** Local-only receipt for anonymous HTTPS reads of the public Overture S3 bucket. */
+export function authorizeAnonymousOvertureAttempt(
+  db: DataSource,
+  publicKey: KeyObject | string | Buffer,
+  token: SignedProviderGrant,
+  attempt: ProviderAttempt,
+  options: { automatic?: boolean } = {}
+) {
+  return authorizeAnonymousAttempt(
+    db,
+    publicKey,
+    token,
+    attempt,
+    options,
+    OVERTURE_GATE
+  );
+}
+
+/**
+ * Receipt for the anonymous HTTPS read of the pinned AllThePlaces archive (owner decision D3). Same ledger, kill switch
+ * and policy-row checks as Overture; the worker's automatic sweep is allowed only while AllThePlaces is authorised.
+ */
+export function authorizeAnonymousAllThePlacesAttempt(
+  db: DataSource,
+  publicKey: KeyObject | string | Buffer,
+  token: SignedProviderGrant,
+  attempt: ProviderAttempt,
+  options: { automatic?: boolean } = {}
+) {
+  return authorizeAnonymousAttempt(
+    db,
+    publicKey,
+    token,
+    attempt,
+    options,
+    ALLTHEPLACES_GATE
+  );
+}
+
+async function authorizeAnonymousAttempt(
+  db: DataSource,
+  publicKey: KeyObject | string | Buffer,
+  token: SignedProviderGrant,
+  attempt: ProviderAttempt,
+  options: { automatic?: boolean },
+  gate: AnonymousProviderGate
+): Promise<{ state: 'authorized-free'; attemptId: string; period: string }> {
+  // Operator-local scripts opt in with DIRECTORY_LOCAL_EVALUATION; the worker's automatic sweep is allowed only while
+  // the provider is authorised (owner decisions D1, D3). The kill switch and policy row are checked below either way.
+  if (
+    process.env.DIRECTORY_LOCAL_EVALUATION !== 'true' &&
+    !(options.automatic === true && isAcquisitionAuthorized(gate.provider))
+  )
+    throw Error('Local evaluation is not enabled');
+  const signedToken = Object.freeze({ ...token }),
+    request = Object.freeze({ ...attempt });
+  const grant = verifyProviderGrant(publicKey, signedToken, request);
+  let url: URL;
+  try {
+    url = new URL(request.asset);
+  } catch {
+    throw Error('Invalid anonymous asset');
+  }
+  if (
+    url.protocol !== 'https:' ||
+    !gate.validAsset(url) ||
+    url.port ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  )
+    throw Error('Invalid anonymous asset');
+  return db.transaction(async (manager) => {
+    await manager.query("SET LOCAL lock_timeout = '2s'");
+    await manager.query("SET LOCAL statement_timeout = '10s'");
+    const rows = await manager.query(
+      'SELECT revoked FROM directory_overture_private_policy WHERE "policyId"=$1 FOR UPDATE',
+      [grant.policyId]
+    );
+    if (rows.length !== 1 || rows[0].revoked !== false)
+      throw Error('Private policy unavailable or revoked');
+    verifyProviderGrant(publicKey, signedToken, request);
+    await manager.query(
+      "SELECT pg_advisory_xact_lock(hashtextextended('directory-provider-budget-v1',0))"
+    );
+    verifyProviderGrant(publicKey, signedToken, request);
+    if (await isPaused(manager, 'provider_acquisition'))
+      throw new ProviderPausedError();
+    if (
+      (
+        await manager.query(
+          'SELECT 1 FROM directory_provider_budget_attempt WHERE "attemptId"=$1',
+          [request.attemptId]
+        )
+      ).length
+    )
+      throw Error('Anonymous attempt replay');
+    const [{ period }] = await manager.query(
+      `SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM') AS period`
+    );
+    const inserted = await manager.query(
+      'INSERT INTO directory_anonymous_overture_attempt ("attemptId",period,"policyId","assetSha256",method) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING RETURNING "attemptId"',
+      [
+        request.attemptId,
+        period,
+        grant.policyId,
+        createHash('sha256').update(request.asset).digest('hex'),
+        request.method,
+      ]
+    );
+    if (inserted.length !== 1) throw Error('Anonymous attempt replay');
+    return {
+      state: 'authorized-free' as const,
+      attemptId: request.attemptId,
+      period,
+    };
+  });
+}

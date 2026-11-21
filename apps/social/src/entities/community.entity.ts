@@ -57,6 +57,21 @@ export class Community {
   @Column({ type: 'varchar', length: 64, nullable: true, unique: true })
   localitySlug: string | null;
 
+  /**
+   * Set when the owner merged this locality into another one (S10 D19-D25). A merged community keeps its row, slug
+   * and members so old links resolve, but it is not a town of its own: the Directory register reports it ineligible,
+   * locality lists omit it, and slug lookups tell the caller which town absorbed it.
+   */
+  @Column({ type: 'uuid', nullable: true })
+  mergedIntoId: string | null;
+
+  /**
+   * Slugs this community used before it was renamed in place. They are never reused for another community, and a
+   * slug lookup that finds only a former slug tells the caller the current slug to redirect to.
+   */
+  @Column({ type: 'text', array: true, default: () => "'{}'" })
+  formerSlugs: string[];
+
   /** When set, this community represents a real-world locality. */
   @Column({ type: 'varchar', length: 50, nullable: true })
   localityType: LocalityType | null;

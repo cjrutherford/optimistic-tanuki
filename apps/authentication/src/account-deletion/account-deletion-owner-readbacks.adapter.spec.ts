@@ -136,7 +136,9 @@ it('checks transient custody across every owner rather than substituting stored 
   const f = fullFixture();
   const adapter = f.service.forFamily('jobs-and-spools');
   await adapter.purge(subject);
-  expect(f.runtimeReadbacks).toHaveBeenCalledTimes(12);
+  expect(f.runtimeReadbacks).toHaveBeenCalledTimes(
+    ACCOUNT_DELETION_OWNERS.length
+  );
   expect(
     new Set(
       f.runtimeReadbacks.mock.calls.map(([capability]) => capability.owner)

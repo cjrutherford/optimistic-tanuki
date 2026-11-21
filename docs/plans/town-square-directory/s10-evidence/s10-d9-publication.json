@@ -1,0 +1,79 @@
+{
+  "capturedAt": "2026-11-18T14:52Z",
+  "decision": "D9 (2026-11-18): public listings on everywhere, in every town that has them. Local stack only; production is a separate gate.",
+  "recordedReason": "owner decision D9 (2026-11-18)",
+  "whatPublicationGates": {
+    "finding": "Publication is not a runtime switch. Every public surface serves while an active private source policy exists and a town has a live, completed, unrevoked, unretired scan under it. ops-metrics `publicationPaused` means 'no active policy', and the docs' 'publication paused' was a statement of release status.",
+    "operatingControls": {
+      "keys": ["provider_acquisition", "export_worker", "taxonomy_worker"],
+      "state": "none paused (provider_acquisition v4, export_worker v6); none gates publication, so none was changed"
+    },
+    "activePrivatePolicies": 7,
+    "revokedPrivatePolicies": 3,
+    "noEnvFlag": "no environment flag or approval table gates publication (searched src, compose and schema)",
+    "approvalMechanism": "None exists for S4a.3 cohorts, fields, notices, geography or ceiling. D9 is recorded in DECISIONS-2026-11-18-S10, the S10 scorecard, the S9 runbook and the S5 public contract."
+  },
+  "surfacesConfirmedLive": {
+    "localEvaluationListings": "261 of 261 eligible towns answer 200, no errors (5 big towns returned 503 at 2 s before the refresh-swap shrank their row sets; all answer now). 171 towns serve listings, 1 partial, 85 unknown (no scan yet), 3 acquiring, 1 empty.",
+    "publicExport": "141 towns 200; 120 towns 404 no_public_export = 85 with no scan yet, 4 scans with no rows, 31 still holding sourceless scans (refresh in progress).",
+    "boundsAndDetail": "served by the same live joins as the listings route",
+    "addressReviewPublisher": "unchanged and not part of D9: all 48 reviewed bindings are suspended, and address auto-approval is a separate owner decision"
+  },
+  "noGapInServing": {
+    "townsServingListingsBefore": 170,
+    "townsServingListingsAfter": 172,
+    "townsThatLostListings": 0
+  },
+  "payloadPrivacyScan": {
+    "towns": 261,
+    "listingRows": 4295,
+    "responseKeys": [
+      "listings",
+      "hasMore",
+      "sourceFreshness",
+      "coverage",
+      "policyVersion"
+    ],
+    "listingKeys": ["name", "category", "attribution", "notices", "termsUrls"],
+    "forbiddenKeyHits": 0,
+    "emailShapedValues": 0,
+    "geoapifyMentions": 0,
+    "errors": 0
+  },
+  "e2e": {
+    "s6Evidence": "21 passed (the 'never scanned' spec now stubs the coverage fact, because every live town has been scanned)",
+    "s8bExportEvidence": "5 passed",
+    "ocrForEmailsOnNewScreenshots": "none found (tesseract)"
+  },
+  "sourcelessScanRefresh": {
+    "policy": "Refresh first, swap after. A town holding only sourceless scans is due; its old scans keep serving until a fresh sourced scan from a succeeded run of the same provider exists, then they are retired and audited (actor system:refresh-swap).",
+    "code": "town-retirement.ts swapSourcelessForTown/swapPendingSourceless; overture-auto-acquisition.ts and alltheplaces-acquisition.ts selection",
+    "tests": "town-retirement.postgres.test.js (5 pass), overture-auto-acquisition.postgres 7 pass, alltheplaces-geoapify.postgres 9 pass",
+    "legacyTownsAtStart": 167,
+    "legacyScansAtStart": 206,
+    "samples": [
+      { "at": "14:23Z", "townsRemaining": 167 },
+      { "at": "14:33Z", "townsRemaining": 103 },
+      { "at": "14:42Z", "townsRemaining": 33 },
+      { "at": "14:49Z", "townsRemaining": 32 }
+    ],
+    "converted": 135,
+    "auditRows": 141,
+    "rowsRetired": 27346,
+    "remaining": {
+      "towns": 32,
+      "bottleneck": "Overture runs, one town at a time (average 292 s a run, about 6.5 min between towns, about 9 towns an hour). AllThePlaces towns convert in about a minute each but only after Overture has refreshed the town.",
+      "projectedHoursToFinish": 3.6
+    }
+  },
+  "deploy": {
+    "images": ["directory-worker", "directory-migrate"],
+    "note": "built from a clean `git archive HEAD` snapshot because another agent had uncommitted apps/directory edits; the directory API image was byte-identical, so it was not recreated",
+    "rollbackTags": [
+      "optimistic-tanuki-directory:rollback-s10-d9",
+      "optimistic-tanuki-directory-worker:rollback-s10-d9",
+      "optimistic-tanuki-directory-migrate:rollback-s10-d9"
+    ],
+    "dump": "s10/ot_directory_pre_d9.dump in the session scratchpad (48 MB)"
+  }
+}

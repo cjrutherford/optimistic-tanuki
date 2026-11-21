@@ -1,0 +1,546 @@
+{
+  "name": "directory",
+  "projectType": "application",
+  "sourceRoot": "apps/directory/src",
+  "tags": ["type:app", "platform:server", "visibility:internal"],
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "options": {
+        "webpackConfig": "apps/directory/webpack.config.js",
+        "outputPath": "dist/apps/directory"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/directory/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node apps/directory/test/run-isolated.cjs"
+      }
+    },
+    "duplicate-cleanup": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/directory-duplicate-cleanup.mjs"
+      }
+    },
+    "install-reviewed-boundary": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/census-boundary-install.mjs"
+      }
+    },
+    "test-overture-local-evaluation": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/overture-local-evaluation.test.js"
+      }
+    },
+    "test-local-overture-contact-capture": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/local-overture-contact-capture.test.js"
+      }
+    },
+    "test-local-directory-contact-listings": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node --test apps/directory/test/local-directory-contact-listings.test.js"
+      }
+    },
+    "test-local-directory-contact-listings-postgres": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_CONTACT_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 60s node -r ts-node/register/transpile-only --test apps/directory/test/local-directory-contact-listings.postgres.test.js"
+      }
+    },
+    "test-local-listing-cursor": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/local-listing-cursor.test.js"
+      }
+    },
+    "test-local-listing-bounds": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/local-listing-bounds.test.js"
+      }
+    },
+    "test-local-listing-reference": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/local-listing-reference.test.js"
+      }
+    },
+    "test-local-listing-cursor-concurrency": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_CURSOR_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 120s node -r ts-node/register/transpile-only --test apps/directory/test/local-listing-cursor.concurrent.postgres.test.js"
+      }
+    },
+    "test-overture-public-projection": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/overture-public-projection.test.js"
+      }
+    },
+    "test-address-review": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/address-review.test.js"
+      }
+    },
+    "review-address-readiness": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node scripts/local-directory-address-review.mjs"
+      }
+    },
+    "test-address-review-store": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/address-review-store.postgres.test.js"
+      }
+    },
+    "review-address-import": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_REVIEW_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only scripts/local-directory-address-review-import.cjs"
+      }
+    },
+    "test-address-evidence": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/address-evidence.test.js"
+      }
+    },
+    "review-address-evidence": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_REVIEW_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only scripts/local-directory-address-review-evidence.cjs"
+      }
+    },
+    "test-reviewed-binding": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/reviewed-binding.test.js"
+      }
+    },
+    "test-reviewed-binding-read": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_BINDING_READ_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 60s node -r ts-node/register/transpile-only --test apps/directory/test/reviewed-binding-read.postgres.test.js"
+      }
+    },
+    "test-reviewed-binding-revalidate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_BINDING_LIVE_TEST_DATABASE_URL\" && test -n \"$S5_BINDING_STAGE_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 180s node -r ts-node/register/transpile-only --test apps/directory/test/reviewed-binding-revalidate.postgres.test.js"
+      }
+    },
+    "test-reviewed-binding-race": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_BINDING_LIVE_TEST_DATABASE_URL\" && test -n \"$S5_BINDING_STAGE_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 180s node -r ts-node/register/transpile-only --test apps/directory/test/reviewed-binding-race.postgres.test.js"
+      }
+    },
+    "test-reviewed-binding-legacy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_BINDING_LIVE_TEST_DATABASE_URL\" && test -n \"$S5_BINDING_STAGE_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 120s node -r ts-node/register/transpile-only --test apps/directory/test/reviewed-binding-legacy.postgres.test.js"
+      }
+    },
+    "test-reviewed-binding-schema": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/reviewed-binding-schema.postgres.test.js"
+      }
+    },
+    "test-reviewed-spatial": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/reviewed-spatial.test.js"
+      }
+    },
+    "test-reviewed-spatial-lifecycle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_SPATIAL_TEST_DATABASE_URL\" && test -n \"$S5_SPATIAL_STAGE_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 120s node -r ts-node/register/transpile-only --test apps/directory/test/reviewed-spatial-lifecycle.postgres.test.js"
+      }
+    },
+    "test-reviewed-spatial-reconcile": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_SPATIAL_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 120s node -r ts-node/register/transpile-only --test apps/directory/test/reviewed-spatial-reconcile.postgres.test.js"
+      }
+    },
+    "test-reviewed-spatial-bounds": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_SPATIAL_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 180s node -r ts-node/register/transpile-only --test apps/directory/test/reviewed-spatial-bounds.postgres.test.js"
+      }
+    },
+    "test-reviewed-spatial-perf": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_SPATIAL_PERF_DATABASE_URL\" && S5_SPATIAL_PERF=1 TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 600s node -r ts-node/register/transpile-only --test --test-name-pattern=performance apps/directory/test/local-listing-cursor.concurrent.postgres.test.js"
+      }
+    },
+    "test-address-review-publish": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/address-review-publish.postgres.test.js"
+      }
+    },
+    "review-address-publish": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_REVIEW_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only scripts/local-directory-address-review-publish.cjs"
+      }
+    },
+    "review-address-active-seed": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_REVIEW_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only scripts/local-directory-address-review-active-seed.cjs"
+      }
+    },
+    "overture-contact-capture": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$DIRECTORY_LOCAL_EVALUATION\" = true && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only scripts/local-directory-overture-contact-capture.cjs"
+      }
+    },
+    "review-address-report": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_REVIEW_DATABASE_URL\" && node scripts/local-directory-address-review-queue-report.cjs"
+      }
+    },
+    "test-s4a2-review-coverage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test scripts/s4a2-review-coverage.test.mjs"
+      }
+    },
+    "test-s4a2-sampling": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test scripts/s4a2-sampling.test.mjs"
+      }
+    },
+    "test-provider-policy-authority": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/provider-policy-authority.test.js"
+      }
+    },
+    "test-provider-budget": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S4_BUDGET_DISPOSABLE\" = yes && test -n \"$S4_BUDGET_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/provider-budget.postgres.test.js"
+      }
+    },
+    "test-census-boundary-postgres": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S2_BOUNDARY_DISPOSABLE\" = yes && test -n \"$S2_BOUNDARY_TEST_DATABASE_URL\" && test -n \"$S2_CENSUS_ARCHIVE\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/census-boundary.postgres.test.js"
+      }
+    },
+    "test-boundary-review": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S2_REVIEW_DATABASE_URL\" != \"\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/boundary-review.postgres.test.js"
+      }
+    },
+    "test-census-boundary-social": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test scripts/census-boundary-social.test.mjs"
+      }
+    },
+    "test-census-boundary-reader": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test scripts/census-boundary-reader.test.mjs"
+      }
+    },
+    "test-social-eligibility": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/social-eligibility.test.js"
+      }
+    },
+    "test-overture-inventory": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test scripts/overture-rights-inventory.test.mjs"
+      }
+    },
+    "test-overture-preflight": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test scripts/overture-release-preflight.test.mjs"
+      }
+    },
+    "test-overture-range-proxy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test scripts/overture-range-proxy.test.mjs"
+      }
+    },
+    "test-overture-rights": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/overture-rights.test.js"
+      }
+    },
+    "test-overture-private-projection": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/overture-private-projection.test.js"
+      }
+    },
+    "test-overture-private-extractor": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test scripts/overture-private-extractor.test.mjs"
+      }
+    },
+    "test-overture-private-sink": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$OVERTURE_TEST_DISPOSABLE\" = yes && test -n \"$OVERTURE_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/overture-private-sink.postgres.test.js"
+      }
+    },
+    "test-overture-private-sink-unit": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/overture-private-sink.test.js"
+      }
+    },
+    "typecheck-overture": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p apps/directory/tsconfig.json"
+      }
+    },
+    "test-source-freshness": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/source-freshness.test.js"
+      }
+    },
+    "test-source-evidence-schema": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/source-evidence-schema.postgres.test.js"
+      }
+    },
+    "test-source-freshness-read": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/source-freshness-read.postgres.test.js"
+      }
+    },
+    "test-source-freshness-attach": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/source-freshness-attach.test.js"
+      }
+    },
+    "test-source-freshness-cutover": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/source-freshness-cutover.postgres.test.js"
+      }
+    },
+    "test-s4a2-private-pilot": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test scripts/s4a2-private-pilot.test.mjs"
+      }
+    },
+    "test-register-authority": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_RECOVERY_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 90s node -r ts-node/register/transpile-only --test apps/directory/test/register-recovery-authority.postgres.test.js"
+      }
+    },
+    "test-register-sweep-authority": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$DIRECTORY_RECOVERY_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 90s node -r ts-node/register/transpile-only --test apps/directory/test/register-sweep-authority.postgres.test.js"
+      }
+    },
+    "test-register-pair": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S3_REGISTER_PAIR_TEST\" = disposable && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 90s node -r ts-node/register/transpile-only --test apps/directory/test/register-reconciliation.postgres.test.js"
+      }
+    },
+    "test-register-concurrent": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S3_CONCURRENCY_PROOF\" = disposable && test -n \"$S3_CONCURRENCY_SOCIAL_URL\" && test -n \"$S3_CONCURRENCY_DIRECTORY_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 40s node -r ts-node/register/transpile-only --test apps/directory/test/register-concurrent.postgres.test.js"
+      }
+    },
+    "test-register-bootstrap-pair": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S3_REGISTER_PAIR_TEST\" = disposable && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 90s node -r ts-node/register/transpile-only --test apps/directory/test/register-bootstrap.postgres.test.js"
+      }
+    },
+    "test-register-wire": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S3_REGISTER_PAIR_TEST\" = disposable && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 100s node -r ts-node/register/transpile-only --test apps/directory/test/register-wire.postgres.test.js"
+      }
+    },
+    "test-register-pending-runtime": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 90s node -r ts-node/register/transpile-only --test apps/directory/test/register-pending-runtime.test.js"
+      }
+    },
+    "test-compose-proof": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S3_COMPOSE_PROOF\" = disposable && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 240s node -r ts-node/register/transpile-only --test apps/directory/test/register-compose.postgres.test.js"
+      }
+    },
+    "typeorm:migration:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/directory",
+        "command": "TS_NODE_PROJECT=tsconfig.json node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:generate migrations/DirectoryFoundation -d src/data-source.ts"
+      }
+    },
+    "typeorm:migration:run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/directory",
+        "command": "test -n \"$DIRECTORY_DATABASE_URL\" && TS_NODE_PROJECT=tsconfig.json node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:run -d src/data-source.ts"
+      }
+    },
+    "typeorm:migration:show": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/directory",
+        "command": "TS_NODE_PROJECT=tsconfig.json node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:show -d src/data-source.ts"
+      }
+    },
+    "test-restore-refence": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S3_RESTORE_DRILL\" = disposable && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 100s node -r ts-node/register/transpile-only --test apps/directory/test/restore-refence.postgres.test.js"
+      }
+    },
+    "test-business-identity": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/business-identity.test.js"
+      }
+    },
+    "test-business-identity-census": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_IDENTITY_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 120s node -r ts-node/register/transpile-only --test apps/directory/test/business-identity-census.postgres.test.js"
+      }
+    },
+    "test-listing-identity": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/listing-identity.test.js"
+      }
+    },
+    "test-listing-business-link": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/listing-business-link.test.js"
+      }
+    },
+    "test-listing-business-link-postgres": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S5_LINK_DISPOSABLE\" = yes && test -n \"$S5_LINK_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/listing-business-link.postgres.test.js"
+      }
+    },
+    "test-account-lifecycle": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/account-lifecycle.test.js apps/directory/test/account-export-sources.test.js"
+      }
+    },
+    "test-account-lifecycle-postgres": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S5_LIFECYCLE_DISPOSABLE\" = yes && test -n \"$S5_LIFECYCLE_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json node -r ts-node/register/transpile-only --test apps/directory/test/account-lifecycle.postgres.test.js"
+      }
+    },
+    "test-account-lifecycle-http-postgres": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S5_LIFECYCLE_DISPOSABLE\" = yes && test -n \"$S5_LIFECYCLE_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/gateway/tsconfig.spec.json timeout 120s node -r ts-node/register/transpile-only -r tsconfig-paths/register --test apps/directory/test/account-lifecycle-http.postgres.test.js"
+      }
+    },
+    "test-business-link-compose": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test \"$S5_LINK_DISPOSABLE\" = yes && test -n \"$S5_LINK_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/gateway/tsconfig.spec.json node -r ts-node/register/transpile-only -r tsconfig-paths/register --test apps/directory/test/business-link-compose.postgres.test.js"
+      }
+    },
+    "test-business-identity-anchor": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_ANCHOR_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 180s node -r ts-node/register/transpile-only --test apps/directory/test/business-identity-anchor.postgres.test.js"
+      }
+    },
+    "test-business-identity-reread": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_REREAD_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 180s node -r ts-node/register/transpile-only --test apps/directory/test/business-identity-reread.postgres.test.js"
+      }
+    },
+    "test-business-identity-carry": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_CARRY_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 180s node -r ts-node/register/transpile-only --test apps/directory/test/business-identity-carry.postgres.test.js"
+      }
+    },
+    "test-business-identity-read": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_READ_IDENTITY_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 180s node -r ts-node/register/transpile-only --test apps/directory/test/business-identity-read.postgres.test.js"
+      }
+    },
+    "test-business-identity-race": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_BINDING_LIVE_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 180s node -r ts-node/register/transpile-only --test apps/directory/test/business-identity-race.postgres.test.js"
+      }
+    },
+    "test-business-link-carry": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_LINKCARRY_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 180s node -r ts-node/register/transpile-only --test apps/directory/test/business-link-carry.postgres.test.js"
+      }
+    },
+    "test-business-identity-decision": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_DECISION_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 180s node -r ts-node/register/transpile-only --test apps/directory/test/business-identity-decision.postgres.test.js"
+      }
+    },
+    "test-business-identity-queue": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -n \"$S5_QUEUE_TEST_DATABASE_URL\" && TS_NODE_PROJECT=apps/directory/tsconfig.json timeout 180s node -r ts-node/register/transpile-only --test apps/directory/test/business-identity-queue.postgres.test.js"
+      }
+    }
+  }
+}
