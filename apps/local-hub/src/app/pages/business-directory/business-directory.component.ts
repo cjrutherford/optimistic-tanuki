@@ -88,6 +88,7 @@ export function readDirectoryQuery(params: ParamMap): DirectoryQuery {
     category:
       category.trim() &&
       category.length <= 2000 &&
+      // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted categories.
       !/[\x00-\x1f\x7f]/.test(category)
         ? category
         : '',

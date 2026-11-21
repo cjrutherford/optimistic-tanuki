@@ -144,6 +144,7 @@ export class DirectoryService {
             typeof c === 'string' &&
             !!c.trim() &&
             c.length <= 2000 &&
+            // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted categories.
             !/[\x00-\x1f\x7f]/.test(c)
         )
           ? result.categories

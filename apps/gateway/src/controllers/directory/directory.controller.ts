@@ -298,6 +298,7 @@ export class DirectoryController {
       (typeof category !== 'string' ||
         category.length > 2000 ||
         !category.trim() ||
+        // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted categories.
         /[\x00-\x1f\x7f]/.test(category))
     )
       throw new BadRequestException('Invalid category');
@@ -378,6 +379,7 @@ export class DirectoryController {
               typeof c === 'string' &&
               !!c.trim() &&
               c.length <= 2000 &&
+              // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted categories.
               !/[\x00-\x1f\x7f]/.test(c)
           ))
       )

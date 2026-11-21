@@ -30,7 +30,9 @@ const validQuery = (q: Query) =>
   typeof q.category === 'string' &&
   q.category.length <= 2000 &&
   (q.category === '' ||
-    (!!q.category.trim() && !/[\x00-\x1f\x7f]/.test(q.category))) &&
+    (!!q.category.trim() &&
+      // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted categories.
+      !/[\x00-\x1f\x7f]/.test(q.category))) &&
   typeof q.adult === 'boolean' &&
   (q.bounds === undefined ||
     (typeof q.bounds === 'string' && q.bounds.length <= 160)) &&

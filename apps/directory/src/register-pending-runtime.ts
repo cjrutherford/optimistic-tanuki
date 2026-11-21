@@ -1015,7 +1015,9 @@ export function pendingChecks(
       typeof category !== 'string' ||
       category.length > 2000 ||
       (category !== '' &&
-        (!category.trim() || /[\x00-\x1f\x7f]/.test(category)))
+        (!category.trim() ||
+          // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted categories.
+          /[\x00-\x1f\x7f]/.test(category)))
     )
       throw Error('Invalid category');
     if (
@@ -1227,6 +1229,7 @@ export function pendingChecks(
               typeof row.category === 'string' &&
               row.category.trim() &&
               row.category.length <= 2000 &&
+              // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted categories.
               !/[\x00-\x1f\x7f]/.test(row.category)
           )
         )
@@ -3207,6 +3210,7 @@ export function pendingServer(
         (categories.length &&
           (categories[0].length > 2000 ||
             !categories[0].trim() ||
+            // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted categories.
             /[\x00-\x1f\x7f]/.test(categories[0]))) ||
         (adults.length && adults[0] !== '1') ||
         (searches.length &&
