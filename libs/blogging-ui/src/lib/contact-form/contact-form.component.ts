@@ -42,6 +42,8 @@ export class ContactFormComponent {
   get subjects(): { value: string; label: string }[] {
     return this._subjects;
   }
+  /** Disables the submit button and ignores submits (e.g. while sending). */
+  @Input() disabled = false;
   @Input() subjectId = 'contact-subject';
   @Input() subjectLabel = 'Subject';
   /**
@@ -129,6 +131,9 @@ export class ContactFormComponent {
   }
 
   onSubscribe() {
+    if (this.disabled) {
+      return;
+    }
     if (this.contactForm.value.website) {
       console.log('Spam detected');
       return;

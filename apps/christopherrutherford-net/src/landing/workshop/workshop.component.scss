@@ -1,0 +1,45 @@
+:host {
+  display: block;
+}
+
+.section-intro {
+  max-width: 70ch;
+  margin: 0.85rem 0 0;
+  color: var(--muted-foreground, var(--foreground));
+  line-height: var(--line-height, 1.65);
+}
+
+.workshop-details {
+  margin-top: 1rem;
+  padding: 0 1rem;
+  border: 1px solid
+    color-mix(in srgb, var(--accent) 16%, var(--border, transparent) 84%);
+  border-radius: var(--border-radius-lg, 1rem);
+  scroll-margin-top: var(--anchor-offset, 6rem);
+
+  > summary {
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.5rem 0;
+    color: var(--foreground);
+    font-size: var(--type-body, 1.05rem);
+    font-weight: 600;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+  }
+
+  &[open] > summary {
+    margin-bottom: 1rem;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--accent) 14%, var(--border, transparent) 86%);
+  }
+
+  &[open] {
+    padding-bottom: 1rem;
+  }
+}

@@ -52,10 +52,25 @@
   box-shadow: none;
 }
 
+/* Case studies and contact are the cards; every other section sits directly
+   on the page under a rule, so the work reads as the primary content. */
+.landing-container.personality-shell > .plain {
+  padding: 1.5rem 0.5rem;
+  border: none;
+  border-top: 1px solid
+    color-mix(in srgb, var(--accent) 16%, var(--border, transparent) 84%);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* Anchor targets clear the app bar. */
+.landing-container > [id] {
+  scroll-margin-top: var(--anchor-offset, 6rem);
+}
+
 @media (min-width: 1200px) {
-  .landing-container.personality-shell > app-services-grid,
-  .landing-container.personality-shell > app-project-grid,
-  .landing-container.personality-shell > app-hiring,
   .landing-container.personality-shell > app-case-studies,
   .landing-container.personality-shell > app-contact {
     padding: 1.5rem;
@@ -70,5 +85,9 @@
   .landing-container.personality-shell > :not(app-title-bar) {
     width: min(100%, calc(100% - 0.5rem));
     padding: 0.85rem;
+  }
+
+  .landing-container.personality-shell > .plain {
+    padding: 1.25rem 0.25rem;
   }
 }

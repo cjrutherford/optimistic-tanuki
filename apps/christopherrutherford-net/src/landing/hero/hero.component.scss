@@ -11,16 +11,40 @@
   box-shadow: 0 24px 60px color-mix(in srgb, black 22%, transparent);
 }
 
+// The shared hero centres its columns; top-align them so the résumé CTA
+// stays in the first viewport beside the taller at-a-glance panel, and trim
+// the top padding for the same reason.
+:host ::ng-deep .public-landing-hero .public-landing-hero__inner {
+  align-items: start;
+  padding-block: 3rem;
+}
+
 .hero-body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
 }
 
-.hero-note {
+.hero-copy {
+  max-width: 70ch;
   margin: 0;
   color: var(--muted-foreground, var(--foreground));
   line-height: var(--line-height, 1.6);
+}
+
+.hero-contact {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.5rem;
+  color: var(--primary-text, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+
+  &:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+  }
 }
 
 .hero-proof-strip {
@@ -106,7 +130,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 2.4rem;
+    min-height: 2.75rem;
     padding: 0.45rem 0.85rem;
     border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
     border-radius: 9999px;

@@ -1,91 +1,140 @@
-<section class="case-studies" aria-label="Selected work">
+<section class="case-studies" aria-label="Selected engineering work">
   <otui-section-heading
-    eyebrow="Selected work"
-    heading="Four systems, built and shipped end to end"
+    eyebrow="Case studies"
+    heading="Selected engineering work"
   >
     <p class="section-intro">
-      Each case study is a public repository. The claims below are limited to
-      what the source, tests and release notes support.
+      Each case study links to a public repository. The claims below are limited
+      to what the source, tests and release notes support, and each card states
+      its current status.
     </p>
   </otui-section-heading>
 
   <div class="case-study-grid" role="list">
-    @for (study of studies; track study.id) {
-    <otui-card
-      class="case-study-card"
-      role="listitem"
-      tone="neutral"
-      emphasis="outline"
-      [ngClass]="'tone-' + study.tone"
-    >
-      <div class="case-study-body">
-        <header class="case-study-header">
-          <div class="case-study-mark">
-            @if (study.logoSrc) {
-            <img [src]="study.logoSrc" [alt]="study.name + ' mark'" />
-            } @else {
-            <span>{{ study.initials }}</span>
-            }
-          </div>
-          <div class="case-study-heading">
-            <span class="case-study-category">{{ study.category }}</span>
-            <h3>{{ study.name }}</h3>
-            <p class="case-study-tagline">{{ study.tagline }}</p>
-          </div>
-        </header>
-
-        @if (study.imageSrc) {
-        <figure class="case-study-figure">
-          <img
-            [src]="study.imageSrc"
-            [alt]="study.imageAlt"
-            loading="lazy"
-            decoding="async"
-          />
-        </figure>
-        }
-
-        <ul class="case-study-stack" [attr.aria-label]="study.name + ' stack'">
-          @for (item of study.stack; track item) {
-          <li>{{ item }}</li>
-          }
-        </ul>
-
-        <div class="case-study-blocks">
-          <div class="case-study-block">
-            <h4>The problem</h4>
-            <p>{{ study.problem }}</p>
-          </div>
-          <div class="case-study-block">
-            <h4>What I built</h4>
-            <p>{{ study.build }}</p>
-          </div>
-          <div class="case-study-block">
-            <h4>Evidence</h4>
-            <p>{{ study.evidence }}</p>
-          </div>
-        </div>
-
-        <div class="case-study-actions">
-          <a
-            class="case-study-link primary"
-            [href]="study.repoHref"
-            target="_blank"
-            rel="noopener"
-            >Source <span aria-hidden="true">↗</span></a
-          >
-          @if (study.releaseHref) {
-          <a
-            class="case-study-link"
-            [href]="study.releaseHref"
-            target="_blank"
-            rel="noopener"
-            >Releases <span aria-hidden="true">↗</span></a
-          >
-          }
-        </div>
-      </div>
-    </otui-card>
+    @for (study of featured; track study.id) {
+    <ng-container
+      *ngTemplateOutlet="card; context: { $implicit: study }"
+    ></ng-container>
     }
   </div>
+
+  @if (supporting.length) {
+  <h3 class="also-built-heading">Also built</h3>
+  <div class="case-study-grid supporting" role="list">
+    @for (study of supporting; track study.id) {
+    <ng-container
+      *ngTemplateOutlet="card; context: { $implicit: study }"
+    ></ng-container>
+    }
+  </div>
+  }
 </section>
+
+<ng-template #card let-study>
+  <otui-card
+    class="case-study-card"
+    [class.compact]="!study.featured"
+    role="listitem"
+    tone="neutral"
+    emphasis="outline"
+    [ngClass]="'tone-' + study.tone"
+  >
+    <article class="case-study-body">
+      <header class="case-study-header">
+        <div class="case-study-mark" aria-hidden="true">
+          @if (study.logoSrc) {
+          <img [src]="study.logoSrc" alt="" />
+          } @else {
+          <span>{{ study.initials }}</span>
+          }
+        </div>
+        <div class="case-study-heading">
+          <p class="case-study-category">{{ study.category }}</p>
+          <h3 class="case-study-title">{{ study.name }}</h3>
+          <p class="case-study-tagline">{{ study.tagline }}</p>
+        </div>
+      </header>
+
+      @if (study.imageSrc) {
+      <figure class="case-study-figure">
+        <img
+          [src]="study.imageSrc"
+          [alt]="study.imageAlt"
+          loading="lazy"
+          decoding="async"
+        />
+      </figure>
+      }
+
+      <ul class="case-study-stack" [attr.aria-label]="study.name + ' stack'">
+        @for (item of study.stack; track item) {
+        <li>{{ item }}</li>
+        }
+      </ul>
+
+      <div class="case-study-blocks">
+        <div class="case-study-block" data-block="problem">
+          <p class="case-study-label">Problem</p>
+          <p>{{ study.problem }}</p>
+        </div>
+        @if (study.featured) {
+        <div class="case-study-block" data-block="decision">
+          <p class="case-study-label">Architecture and decisions</p>
+          <p>{{ study.decision }}</p>
+          <p class="case-study-rationale">
+            <strong>Why:</strong> {{ study.rationale }}
+          </p>
+        </div>
+        <details class="case-study-details">
+          <summary>Constraints and trade-offs</summary>
+          <p><strong>Constraints:</strong> {{ study.constraints }}</p>
+          <p><strong>Trade-offs:</strong> {{ study.tradeoffs }}</p>
+        </details>
+        } @else {
+        <div class="case-study-block" data-block="decision">
+          <p class="case-study-label">Decision</p>
+          <p>{{ study.decision }}</p>
+        </div>
+        }
+        <div class="case-study-block" data-block="evidence">
+          <p class="case-study-label">Evidence</p>
+          <p>{{ study.evidence }}</p>
+        </div>
+      </div>
+
+      <p class="case-study-status">
+        <span class="case-study-label">Status</span> {{ study.status }}
+      </p>
+
+      <div class="case-study-actions">
+        <a
+          class="case-study-link primary"
+          [href]="study.repoHref"
+          target="_blank"
+          rel="noopener"
+          [attr.aria-label]="'View source: ' + study.name + ' on GitHub'"
+          >View source <span aria-hidden="true">↗</span></a
+        >
+        @if (study.releaseHref) {
+        <a
+          class="case-study-link"
+          [href]="study.releaseHref"
+          target="_blank"
+          rel="noopener"
+          [attr.aria-label]="'View release: ' + study.name + ' on GitHub'"
+          >View release <span aria-hidden="true">↗</span></a
+        >
+        } @if (study.architectureHref) {
+        <a
+          class="case-study-link"
+          [href]="study.architectureHref"
+          target="_blank"
+          rel="noopener"
+          [attr.aria-label]="'Read architecture: ' + study.name + ' on GitHub'"
+          >Read architecture <span aria-hidden="true">↗</span></a
+        >
+        }
+      </div>
+    </article>
+  </otui-card>
+</ng-template>

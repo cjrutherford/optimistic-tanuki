@@ -3,7 +3,7 @@
 }
 
 .section-intro {
-  max-width: 52rem;
+  max-width: 70ch;
   margin: 0.85rem 0 0;
   line-height: var(--line-height, 1.65);
   color: var(--muted-foreground, var(--foreground));
@@ -14,6 +14,20 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
   gap: 1.5rem;
   align-items: start;
+  min-width: 0;
+}
+
+.also-built-heading {
+  margin: 2.5rem 0 1rem;
+  color: var(--foreground);
+  font-family: var(--font-heading, inherit);
+  font-size: var(--type-h4, 1.15rem);
+  line-height: var(--heading-line-height, 1.2);
+  letter-spacing: var(--heading-tracking, inherit);
+}
+
+.supporting {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .case-study-card {
@@ -39,7 +53,7 @@
   justify-content: center;
   width: 3.4rem;
   height: 3.4rem;
-  border-radius: var(--border-radius-lg, 1rem);
+  border-radius: var(--personality-card-radius, 1rem);
   background: color-mix(in srgb, var(--case-accent) 14%, transparent);
   color: var(--case-accent);
   font-weight: 800;
@@ -62,17 +76,21 @@
 
 .case-study-heading {
   min-width: 0;
+}
 
-  h3 {
-    margin: 0.15rem 0 0.25rem;
-    font-size: var(--type-h3, 1.35rem);
-    line-height: var(--line-height, 1.15);
-    color: var(--foreground);
-  }
+.case-study-title {
+  margin: 0.15rem 0 0.25rem;
+  font-family: var(--font-heading, inherit);
+  font-size: var(--type-h3, 1.35rem);
+  line-height: var(--heading-line-height, 1.15);
+  letter-spacing: var(--heading-tracking, inherit);
+  color: var(--foreground);
+  overflow-wrap: anywhere;
 }
 
 .case-study-category {
   display: inline-flex;
+  margin: 0;
   color: color-mix(in srgb, var(--case-accent) 55%, var(--foreground));
   font-size: var(--type-small, 0.74rem);
   font-weight: 700;
@@ -82,6 +100,7 @@
 
 .case-study-tagline {
   margin: 0;
+  max-width: 70ch;
   color: var(--muted-foreground, var(--foreground));
   line-height: var(--line-height, 1.5);
 }
@@ -89,7 +108,7 @@
 .case-study-figure {
   margin: 0;
   overflow: hidden;
-  border-radius: var(--border-radius-md, 0.8rem);
+  border-radius: var(--personality-card-radius, 0.8rem);
   border: 1px solid
     color-mix(in srgb, var(--case-accent) 16%, var(--border, transparent) 84%);
   aspect-ratio: 16 / 10;
@@ -117,7 +136,7 @@
     border: 1px solid color-mix(in srgb, var(--case-accent) 20%, transparent);
     background: color-mix(in srgb, var(--background) 82%, transparent);
     color: var(--foreground);
-    font-size: var(--type-small, 0.76rem);
+    font-size: var(--font-size-sm, 0.8rem);
     letter-spacing: var(--letter-spacing, 0.02em);
   }
 }
@@ -127,21 +146,86 @@
   gap: 0.8rem;
 }
 
-.case-study-block {
-  h4 {
-    margin: 0 0 0.2rem;
-    color: color-mix(in srgb, var(--case-accent) 45%, var(--foreground));
-    font-size: var(--type-small, 0.72rem);
-    font-weight: 700;
-    letter-spacing: var(--personality-label-letter-spacing, 0.12em);
-    text-transform: uppercase;
+.case-study-block p,
+.case-study-details p,
+.case-study-status {
+  margin: 0;
+  max-width: 70ch;
+  font-size: var(--type-body, 1rem);
+  line-height: var(--line-height, 1.6);
+  color: var(--foreground);
+}
+
+.case-study-block p + p,
+.case-study-details p + p {
+  margin-top: 0.5rem;
+}
+
+.case-study-label {
+  margin: 0 0 0.2rem;
+  color: color-mix(in srgb, var(--case-accent) 45%, var(--foreground));
+  font-size: var(--type-small, 0.72rem);
+  font-weight: 700;
+  letter-spacing: var(--personality-label-letter-spacing, 0.12em);
+  text-transform: uppercase;
+}
+
+.case-study-block .case-study-label {
+  margin: 0 0 0.2rem;
+  font-size: var(--type-small, 0.72rem);
+  line-height: var(--line-height, 1.4);
+  color: color-mix(in srgb, var(--case-accent) 45%, var(--foreground));
+}
+
+.case-study-rationale {
+  color: var(--muted-foreground, var(--foreground));
+}
+
+.case-study-details {
+  border-top: 1px solid var(--border, transparent);
+  border-bottom: 1px solid var(--border, transparent);
+  padding: 0.6rem 0;
+
+  summary {
+    cursor: pointer;
+    color: var(--foreground);
+    font-size: var(--type-body, 1rem);
+    font-weight: 600;
+    line-height: var(--line-height, 1.5);
+
+    &:focus-visible {
+      outline: 3px solid var(--case-accent);
+      outline-offset: 4px;
+    }
   }
 
   p {
-    margin: 0;
-    line-height: var(--line-height, 1.6);
-    color: var(--foreground);
+    margin-top: 0.6rem;
   }
+}
+
+.case-study-status {
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--case-accent);
+  font-size: var(--font-size-sm, 0.88rem);
+
+  .case-study-label {
+    display: block;
+    margin: 0;
+  }
+}
+
+.compact .case-study-body {
+  gap: 0.8rem;
+}
+
+.compact .case-study-figure {
+  aspect-ratio: 21 / 9;
+  max-width: 28rem;
+}
+
+.compact .case-study-block p {
+  font-size: var(--font-size-sm, 0.92rem);
 }
 
 .case-study-actions {

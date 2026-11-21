@@ -11,7 +11,10 @@ import { loadPredefinedPalettes } from './theme-palettes';
 import { TestBed, fakeAsync, tick, flush } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { ThemeService } from './theme.service';
-import { FontLoadingService } from './font-loading.service';
+import {
+  FontLoadingService,
+  personalityFontVariables,
+} from './font-loading.service';
 import {
   getPersonalityById,
   PREDEFINED_PERSONALITIES,
@@ -235,6 +238,48 @@ describe('ThemeService', () => {
 
   // Workstream C3: integration tests asserting real emitted CSS variables
   // after setPersonality(), not just that a mock was invoked.
+  describe('getRootSnapshot()', () => {
+    it('matches what the browser writes onto the document', fakeAsync(() => {
+      const root = document.documentElement;
+      root.removeAttribute('style');
+      // FontLoadingService is mocked in this suite; let it write the real
+      // font variables so the comparison covers them.
+      jest
+        .mocked(TestBed.inject(FontLoadingService).applyFontVariables)
+        .mockImplementation((personality) =>
+          Object.entries(personalityFontVariables(personality)).forEach(
+            ([property, value]) => root.style.setProperty(property, value)
+          )
+        );
+
+      service.setPersonality('elegant');
+      tick(100);
+      flush();
+
+      const snapshot = service.getRootSnapshot();
+      expect(snapshot).toBeTruthy();
+      if (!snapshot) return;
+
+      const applied: Record<string, string> = {};
+      for (let i = 0; i < root.style.length; i++) {
+        const property = root.style.item(i);
+        if (property.startsWith('--')) {
+          applied[property] = root.style.getPropertyValue(property).trim();
+        }
+      }
+      const expected = Object.fromEntries(
+        Object.entries(snapshot.variables).map(([k, v]) => [k, v.trim()])
+      );
+      expect(applied).toEqual(expected);
+
+      Object.entries(snapshot.attributes).forEach(([name, value]) =>
+        expect(root.getAttribute(name)).toBe(value)
+      );
+      expect(snapshot.bodyClass).toBe('personality-elegant');
+      expect(document.body.classList).toContain(snapshot.bodyClass);
+    }));
+  });
+
   describe('setPersonality() CSS variable integration', () => {
     it('agrees on --font-heading and --personality-font-family for a personality whose curated heading font differs from the default', fakeAsync(() => {
       const bold = getPersonalityById('bold');

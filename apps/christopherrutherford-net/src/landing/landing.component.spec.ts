@@ -39,13 +39,23 @@ describe('LandingComponent', () => {
     ).toBeTruthy();
   });
 
-  it('renders the updated landing section anchors', () => {
+  it('renders the landing section anchors in order', () => {
     const compiled = fixture.nativeElement as HTMLElement;
+    const ids = Array.from(
+      compiled.querySelectorAll('.landing-container > [id]')
+    ).map((element) => element.id);
 
-    expect(compiled.querySelector('#offer')).toBeTruthy();
-    expect(compiled.querySelector('#work')).toBeTruthy();
-    expect(compiled.querySelector('#capabilities')).toBeTruthy();
-    expect(compiled.querySelector('#systems-lab')).toBeTruthy();
-    expect(compiled.querySelector('#contact')).toBeTruthy();
+    expect(ids).toEqual([
+      'home',
+      'work',
+      'approach',
+      'experience',
+      'about',
+      'work-together',
+      'workshop',
+      'contact',
+    ]);
+    expect(compiled.querySelector('details#systems-lab')).toBeTruthy();
+    expect(compiled.querySelector('details#platform')).toBeTruthy();
   });
 });

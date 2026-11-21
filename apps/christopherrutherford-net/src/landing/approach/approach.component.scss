@@ -1,0 +1,38 @@
+:host {
+  display: block;
+}
+
+.principles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem 2rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.principle {
+  padding-left: 1rem;
+  border-left: 2px solid
+    color-mix(in srgb, var(--accent) 40%, var(--border, transparent) 60%);
+
+  h3 {
+    margin: 0 0 0.4rem;
+    color: var(--foreground);
+    font-size: var(--type-h4, 1.15rem);
+    line-height: var(--heading-line-height, 1.25);
+  }
+
+  p {
+    max-width: 70ch;
+    margin: 0;
+    color: var(--muted-foreground, var(--foreground));
+    line-height: var(--line-height, 1.6);
+  }
+}
+
+@media (max-width: 768px) {
+  .principles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

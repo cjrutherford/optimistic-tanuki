@@ -5,7 +5,7 @@ import {
   SectionHeadingComponent,
 } from '@optimistic-tanuki/common-ui';
 import { PROFILE } from '../profile.data';
-import { SERVICE_ENTRIES } from '../services.data';
+import { SERVICE_ENTRIES, WORK_MODES } from '../services.data';
 
 @Component({
   selector: 'app-services-grid',
@@ -15,5 +15,6 @@ import { SERVICE_ENTRIES } from '../services.data';
 })
 export class ServicesGridComponent {
   readonly profile = PROFILE;
+  readonly modes = WORK_MODES;
   readonly services = SERVICE_ENTRIES;
 }

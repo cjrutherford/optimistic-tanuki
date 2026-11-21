@@ -14,3 +14,29 @@
     }
   }
 }
+
+.contact-status {
+  max-width: 48rem;
+  margin: 0.85rem 0 0;
+
+  .status {
+    margin: 0;
+    font-size: var(--type-body, 1rem);
+    line-height: var(--line-height, 1.65);
+    color: var(--foreground);
+  }
+
+  .status-error {
+    color: var(--danger, var(--foreground));
+  }
+
+  a {
+    color: var(--primary-text, var(--primary));
+    text-underline-offset: 0.2em;
+
+    &:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+    }
+  }
+}

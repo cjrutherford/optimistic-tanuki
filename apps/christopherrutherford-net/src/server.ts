@@ -5,6 +5,7 @@ import {
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import compression from 'compression';
 import express from 'express';
 import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import { dirname, resolve } from 'node:path';
@@ -39,6 +40,17 @@ startNodeRuntimeMonitoring({
  * });
  * ```
  */
+
+/**
+ * Compress static assets and rendered pages. `/api` is left alone so proxied
+ * streams (SSE, websockets) are passed through unbuffered.
+ */
+app.use(
+  compression({
+    filter: (req, res) =>
+      !req.originalUrl.startsWith('/api') && compression.filter(req, res),
+  })
+);
 
 /**
  * Serve static files from /browser.

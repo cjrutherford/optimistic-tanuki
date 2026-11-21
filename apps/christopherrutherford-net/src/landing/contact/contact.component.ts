@@ -1,9 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 
 import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import { SectionHeadingComponent } from '@optimistic-tanuki/common-ui';
 import { ContactService } from '../../app/contact.service';
 import { PROFILE } from '../profile.data';
+
+export type ContactStatus = 'idle' | 'pending' | 'success' | 'error';
 
 @Component({
   selector: 'app-contact',
@@ -17,12 +19,15 @@ export class ContactComponent {
 
   private contactService = inject(ContactService);
 
+  readonly status = signal<ContactStatus>('idle');
+
   subjects = [
-    { value: 'project', label: 'Project Inquiry' },
-    { value: 'consulting', label: 'Consulting' },
-    { value: 'collaboration', label: 'Collaboration' },
-    { value: 'other', label: 'Other' },
-  ];
+    'Employment opportunity',
+    'Contract engineering',
+    'Consulting project',
+    'Collaboration / open source',
+    'General inquiry',
+  ].map((label) => ({ value: label, label }));
 
   onContactFormSubmit($event: {
     name: string;
@@ -30,15 +35,16 @@ export class ContactComponent {
     subject: string;
     message: string;
   }) {
-    console.log('Contact form submission event:', $event);
-    // Handle form submission logic here
-    console.log('Contact form submitted', $event);
+    if (this.status() === 'pending') {
+      return;
+    }
+    this.status.set('pending');
     this.contactService.postContact($event).subscribe({
-      next: (response) => {
-        console.log('Form submission successful', response);
-      },
-      error: (error) => {
-        console.error('Form submission error', error);
+      next: () => this.status.set('success'),
+      error: () => {
+        // Deliberately generic: never log the payload or error body (PII).
+        console.error('Contact form submission failed');
+        this.status.set('error');
       },
     });
   }

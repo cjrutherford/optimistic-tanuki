@@ -1,52 +1,59 @@
-<section class="services" aria-label="Client work">
-  <otui-section-heading
-    eyebrow="Client work"
-    heading="Bring me in to build it, fix it, or get it shipping again"
-  >
+<section class="services" aria-label="Ways to work together">
+  <otui-section-heading eyebrow="Work together" heading="Ways to work together">
     <p class="section-intro">
-      I take on scoped projects and ongoing part-time work. The case studies
-      above are the same shape: one product, built and shipped end to end.
-    </p>
-    <p class="section-intro">
-      I am in South Georgia and work remotely with teams elsewhere. In-person
-      work is possible around South Georgia when it helps.
+      Available for full-time engineering roles, conventional contracts, and
+      selected independent engagements.
     </p>
   </otui-section-heading>
 
-  <div class="service-grid" role="list">
-    @for (service of services; track service.id; let index = $index) {
-    <otui-card
-      class="service-card"
-      role="listitem"
-      tone="neutral"
-      emphasis="outline"
-    >
-      <div class="service-body">
-        <span class="service-index" aria-hidden="true">{{
-          (index + 1).toString().padStart(2, '0')
-        }}</span>
-        <h3>{{ service.title }}</h3>
-        <p class="service-summary">{{ service.summary }}</p>
-        <ul class="service-deliverables">
-          @for (item of service.deliverables; track item) {
-          <li>{{ item }}</li>
-          }
-        </ul>
-      </div>
-    </otui-card>
+  <ul class="modes">
+    @for (mode of modes; track mode.id) {
+    <li class="mode">
+      <h3>{{ mode.title }}</h3>
+      <p>{{ mode.summary }}</p>
+    </li>
     }
+  </ul>
+
+  <div class="consulting">
+    <h3 class="consulting-heading">
+      Independent engineering and technical consulting
+    </h3>
+    <p class="section-intro">
+      Through
+      <a [href]="profile.links.company" target="_blank" rel="noopener"
+        >Hopeful Aspirations Industries</a
+      >
+      I take on scoped projects. I work from {{ profile.b2bAvailability }}.
+    </p>
+
+    <div class="service-grid" role="list">
+      @for (service of services; track service.id) {
+      <otui-card
+        class="service-card"
+        role="listitem"
+        tone="neutral"
+        emphasis="outline"
+      >
+        <div class="service-body">
+          <h4>{{ service.title }}</h4>
+          <p class="service-summary">{{ service.summary }}</p>
+          <ul class="service-deliverables">
+            @for (item of service.deliverables; track item) {
+            <li>{{ item }}</li>
+            }
+          </ul>
+        </div>
+      </otui-card>
+      }
+    </div>
   </div>
 
   <div class="engagement">
     <p class="engagement-note">
-      <strong>How it starts:</strong> send a short note about the problem and
-      the outcome you need. I reply with next steps and an honest read on fit.
+      Send a short note about the role, the problem, or the outcome you need,
+      and I will reply with next steps.
     </p>
-    <div class="services-actions">
-      <a class="services-cta primary" href="#contact">Start a conversation</a>
-      <a class="services-cta" [href]="'mailto:' + profile.links.email">{{
-        profile.links.email
-      }}</a>
-    </div>
+    <a class="services-cta primary" href="#contact">Get in touch</a>
   </div>
 </section>

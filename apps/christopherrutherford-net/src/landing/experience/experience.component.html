@@ -1,0 +1,31 @@
+<section class="experience" aria-label="Experience">
+  <otui-section-heading eyebrow="Experience" heading="Professional background">
+    <p class="section-intro">{{ intro }}</p>
+  </otui-section-heading>
+
+  <ol class="timeline">
+    @for (entry of entries; track entry.organization) {
+    <li class="timeline-entry">
+      <p class="timeline-period">{{ entry.period }}</p>
+      <div class="timeline-body">
+        <h3>{{ entry.organization }}</h3>
+        <p class="timeline-role">
+          {{ entry.role }}@if (entry.location) { · {{ entry.location }} }
+        </p>
+        <p class="timeline-summary">{{ entry.summary }}</p>
+      </div>
+    </li>
+    }
+  </ol>
+
+  @if (profile.links.resume) {
+  <a
+    class="resume-link"
+    [href]="profile.links.resume"
+    target="_blank"
+    rel="noopener"
+    type="application/pdf"
+    >Download full résumé (PDF)</a
+  >
+  }
+</section>

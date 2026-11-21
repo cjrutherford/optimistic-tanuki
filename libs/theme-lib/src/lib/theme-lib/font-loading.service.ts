@@ -104,6 +104,31 @@ export function googleFontWeights(
   return [...new Set(weights.map(Number))].sort((a, b) => a - b).join(';');
 }
 
+/**
+ * The font custom properties a personality sets on the document root.
+ */
+export function personalityFontVariables(
+  personality: Personality
+): Record<string, string> {
+  const fonts = personality.fonts;
+  const variables: Record<string, string> = {};
+
+  if (fonts.heading) {
+    variables['--font-heading'] = fonts.heading.family;
+  }
+  variables['--font-body'] = fonts.body.family;
+  if (fonts.mono) {
+    variables['--font-mono'] = fonts.mono.family;
+  }
+  if (fonts.accent) {
+    variables['--font-accent'] = fonts.accent.family;
+  }
+  // Default font for the body.
+  variables['--font-family-base'] = fonts.body.family;
+
+  return variables;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -286,23 +311,10 @@ export class FontLoadingService {
    * Apply font CSS variables for a personality
    */
   applyFontVariables(personality: Personality): void {
-    const fonts = personality.fonts;
     const root = document.documentElement;
-
-    // Apply font families
-    if (fonts.heading) {
-      root.style.setProperty('--font-heading', fonts.heading.family);
-    }
-    root.style.setProperty('--font-body', fonts.body.family);
-    if (fonts.mono) {
-      root.style.setProperty('--font-mono', fonts.mono.family);
-    }
-    if (fonts.accent) {
-      root.style.setProperty('--font-accent', fonts.accent.family);
-    }
-
-    // Apply default font to body
-    root.style.setProperty('--font-family-base', fonts.body.family);
+    Object.entries(personalityFontVariables(personality)).forEach(
+      ([property, value]) => root.style.setProperty(property, value)
+    );
   }
 
   /**

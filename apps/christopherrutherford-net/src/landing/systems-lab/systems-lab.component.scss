@@ -3,10 +3,6 @@
   color: var(--foreground, inherit);
 }
 
-#systems-lab {
-  padding: clamp(1.25rem, 3vw, 2.5rem);
-}
-
 .systems-lab-heading {
   max-width: 48rem;
   margin-bottom: 2rem;
@@ -21,7 +17,7 @@
   text-transform: uppercase;
 }
 
-h2 {
+.systems-lab-heading h3 {
   margin: 0;
   color: var(--foreground, inherit);
   font-size: clamp(2rem, 4vw, 3rem);
@@ -71,7 +67,7 @@ h2 {
   letter-spacing: 0.1em;
 }
 
-.systems-lab-layers h3 {
+.systems-lab-layers h4 {
   margin: 0 0 0.55rem;
   color: var(--foreground, inherit);
   font-size: 1.1rem;

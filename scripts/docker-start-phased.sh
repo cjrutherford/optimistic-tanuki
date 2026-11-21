@@ -297,13 +297,11 @@ run_phase "Phase 5: Feature services" "$PHASE_DELAY" \
     "${FEATURE_SERVICES[@]}"
 run_phase "Phase 6: Heavy services" "$PHASE_DELAY" \
     "${HEAVY_SERVICES[@]}"
-for civic_service in "${CIVIC_SERVICES[@]}"; do
-    if selected_service "$civic_service" && ! external_service "$civic_service"; then
-        run_phase "Phase 7: Civic service $civic_service" "$PHASE_DELAY" "$civic_service"
-    fi
-done
-
+# civic-briefing and civic-contributions depend on ClamAV, so it starts first.
 run_phase "Phase 7: ClamAV" "$PHASE_DELAY" clamav
+for civic_service in "${CIVIC_SERVICES[@]}"; do
+    run_phase "Phase 7: Civic service $civic_service" "$PHASE_DELAY" "$civic_service"
+done
 
 run_phase "Phase 8: Gateway" "$PHASE_DELAY" gateway
 

@@ -1,61 +1,46 @@
-<otui-section-heading
-  eyebrow="Also in the platform"
-  heading="The workspace also carries these products and internal tools"
->
-  <p class="section-intro">
-    The four case studies above are the deepest examples. Everything here shares
-    the same workspace, platforms and deployment path, and each card links to
-    its source.
-  </p>
-</otui-section-heading>
-
 @if (projects$ | async; as projects) {
-<details class="platform-index">
-  <summary>
-    <span>Browse all {{ projects.length }} apps in the workspace</span>
-    <span class="platform-index-hint" aria-hidden="true">Expand</span>
-  </summary>
-  <div class="projectGrid" role="list" aria-label="Registered web apps">
-    @for (project of projects; track project.id) {
-    <otui-card
-      class="portfolio-card"
-      role="listitem"
-      [ngClass]="'tone-' + project.tone"
-    >
-      <div class="portfolio-card-header">
-        <div class="portfolio-mark">
-          @if (project.logoSrc) {
-          <img [src]="project.logoSrc" [alt]="project.name + ' logo'" />
-          } @else {
-          <span>{{ project.initials }}</span>
-          }
-        </div>
-        <div class="portfolio-meta">
-          <span class="portfolio-category">{{ project.category }}</span>
-          <h3>{{ project.name }}</h3>
-          <p class="portfolio-tagline">{{ project.tagline }}</p>
-        </div>
-        <span class="portfolio-state">Source in workspace</span>
-      </div>
-
-      <div class="portfolio-copy">
-        <p class="portfolio-summary">{{ project.summary }}</p>
-        <p class="portfolio-proof">{{ project.proof }}</p>
-      </div>
-
-      <div class="portfolio-actions">
-        @if (project.liveHref) {
-        <a class="portfolio-link primary" [href]="project.liveHref"
-          >Visit site</a
-        >
-        } @if (project.repoHref) {
-        <a class="portfolio-link secondary" [href]="project.repoHref"
-          >View source</a
-        >
+<p class="section-intro">
+  {{ projects.length }} registered web apps share the same workspace and
+  deployment path. Each card links to its source.
+</p>
+<div class="projectGrid" role="list" aria-label="Registered web apps">
+  @for (project of projects; track project.id) {
+  <otui-card
+    class="portfolio-card"
+    role="listitem"
+    [ngClass]="'tone-' + project.tone"
+  >
+    <div class="portfolio-card-header">
+      <div class="portfolio-mark">
+        @if (project.logoSrc) {
+        <img [src]="project.logoSrc" [alt]="project.name + ' logo'" />
+        } @else {
+        <span>{{ project.initials }}</span>
         }
       </div>
-    </otui-card>
-    }
-  </div>
-</details>
+      <div class="portfolio-meta">
+        <span class="portfolio-category">{{ project.category }}</span>
+        <h3>{{ project.name }}</h3>
+        <p class="portfolio-tagline">{{ project.tagline }}</p>
+      </div>
+      <span class="portfolio-state">Source in workspace</span>
+    </div>
+
+    <div class="portfolio-copy">
+      <p class="portfolio-summary">{{ project.summary }}</p>
+      <p class="portfolio-proof">{{ project.proof }}</p>
+    </div>
+
+    <div class="portfolio-actions">
+      @if (project.liveHref) {
+      <a class="portfolio-link primary" [href]="project.liveHref">Visit site</a>
+      } @if (project.repoHref) {
+      <a class="portfolio-link secondary" [href]="project.repoHref"
+        >View source</a
+      >
+      }
+    </div>
+  </otui-card>
+  }
+</div>
 }
