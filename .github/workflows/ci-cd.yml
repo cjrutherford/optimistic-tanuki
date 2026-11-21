@@ -270,7 +270,8 @@ jobs:
             scripts/tests/e2e-environment-manifest.test.mjs \
             scripts/tests/wait-for-e2e-readiness.test.mjs \
             scripts/tests/resolve-e2e-images.test.mjs \
-            scripts/tests/ui-e2e-ci-contract.test.mjs
+            scripts/tests/ui-e2e-ci-contract.test.mjs \
+            scripts/tests/registry-workflow-contract.test.mjs
           for target in \
             client-interface-e2e \
             forgeofwill-e2e \
@@ -527,7 +528,8 @@ jobs:
     timeout-minutes: 45
     strategy:
       fail-fast: false
-      max-parallel: 4
+      # Limit concurrent registry traffic without dropping any matrix entries.
+      max-parallel: 2
       matrix: ${{ fromJson(needs.plan.outputs.image_check_matrix) }}
     steps:
       - uses: actions/checkout@v7
@@ -536,6 +538,8 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           buildkitd-config-inline: |
+            [worker.oci]
+              max-parallelism = 2
             [registry."docker.io"]
               mirrors = ["mirror.gcr.io"]
 
@@ -586,7 +590,8 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      max-parallel: 4
+      # Limit concurrent registry traffic without dropping any matrix entries.
+      max-parallel: 2
       matrix: ${{ fromJson(needs.plan.outputs.full_matrix) }}
     steps:
       - uses: actions/checkout@v7

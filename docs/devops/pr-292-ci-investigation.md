@@ -1,0 +1,104 @@
+# PR 292 CI investigation
+
+## PR 298 playground coverage correction
+
+The playground's Jest configuration did not collect unimported source files. Its two suites inspect Storybook files as text, so CI produced an empty coverage summary despite passing tests. The configuration now collects all playground `src` TypeScript, excluding specs and test setup; both the validation board and its story are included.
+
+On `58b3fd35` with this change, `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx test ui-playground --configuration=ci --skip-nx-cache --runInBand` passed 2 suites and 4 tests. Coverage is 0/55 statements, 0/1 branches, 0/10 functions and 0/54 lines (0% each): the component is still untested. The four reported metrics are numeric; Istanbul's unused `branchesTrue` field remains `Unknown` because its total is zero.
+
+At the PR check snapshot before this fix, coverage and quality tests passed; image checks for `ui-playground` and `admin-api` and the digital-homestead Lighthouse check were pending. Earlier image runs reported Docker Hub 429 as documented below; pending checks are not evidence of a new failure.
+
+Snapshot: 2026-11-21 19:21 UTC. Base: `47a8b0fe65ee2bbc7cf88b02300b5d1c9ddac033`; PR head: `ec1165386abe264333cf205daef9cea320549374`. The PR run checked out merge ref `f387eba67ef1e0d1486febcc67fb31625f705468`. Paginated Actions runs and check-runs were inspected for the head, merge ref and merge commit. The merge-ref check-runs endpoint returned no separate checks.
+
+[PR CI/CD run](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057) has 42 failed image jobs and a failed summary. All 42 job logs report Docker Hub HTTP 429 when pushing or checking manifests. The summary is consequential; seven downstream jobs were skipped. Quality, coverage, workflow validation, package validation, security scan and performance workflows reported success. Skipped E2E and staging gates are not evidence of success.
+
+[Main CI/CD run](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44934874601) was still running: eight image jobs had failed with the same 429, with further jobs queued or in progress. Other main workflows visible at the snapshot succeeded. These results are provisional.
+
+## Follow-up: registry pressure mitigation
+
+The failed [representative image job](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936522913) used `docker/login-action@v4` and logged `Login Succeeded`; `docker/build-push-action@v6` then failed on a registry manifest digest HEAD with `429 Too Many Requests`. Buildx did not expose response headers, a response body, or `Retry-After`. Both Docker Hub secret names exist; their values were not examined. Docker documents a bare 429 as consistent with its [abuse rate limit](https://docs.docker.com/docker-hub/troubleshoot/), and distinguishes it from the explicit [pull quota message](https://docs.docker.com/docker-hub/usage/pulls/). The exact limit and scope cannot be proven without the missing response details; push quota or another registry condition cannot be excluded.
+
+The workflow already limited each matrix to four concurrent jobs; PRs push SHA images for E2E and main separately builds and publishes images. Overlapping runs can therefore multiply traffic. This change reduces both image build and promotion matrices to two and limits each image builder to two concurrent BuildKit operations. It retains every matrix entry, login, image push, and downstream gate. It does not serialize separate workflow runs; GitHub concurrency groups can cancel pending runs and would compromise required gates. No retry was added: the action does not expose the registry response headers needed to honor Retry-After, and retrying a full build blindly would amplify persistent failures. These limits reduce pressure, but do not guarantee recovery from an external limit.
+
+| Evidence                                                                                      | Result                                                                                                                                                   |
+| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [PR CI/CD jobs](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057)   | Paginated: 42 image failures, consequential summary failure, seven skips, 17 successes; no canceled jobs. Other head workflows succeeded.                |
+| [Main CI/CD jobs](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44934874601) | Paginated follow-up: eight image failures, 33 successes, four in progress and 14 queued; run remains incomplete. Other visible main workflows succeeded. |
+| Local registry workflow contract                                                              | `node --test scripts/tests/registry-workflow-contract.test.mjs` passed; checks matrix limits and failure propagation to gates.                           |
+
+The main inventory remains provisional while jobs are running. Fresh CI must establish whether the registry accepts all images and whether the previously skipped E2E and staging gates pass. No account settings, secrets, or registry contents were changed during this investigation.
+
+## Failed PR jobs
+
+- [Image Check - christopherrutherford-net](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936522913) — failure
+- [Image Check - civic](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936522948) — failure
+- [Image Check - civic-contributions](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936523113) — failure
+- [Image Check - civic-briefing](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936523166) — failure
+- [Image Check - client-interface](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936524162) — failure
+- [Image Check - classifieds](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936524200) — failure
+- [Image Check - compliance-audit](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936524220) — failure
+- [Image Check - configurable-client](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936524227) — failure
+- [Image Check - developer-portal](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936524234) — failure
+- [Image Check - d6](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936524267) — failure
+- [Image Check - digital-homestead](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936524302) — failure
+- [Image Check - finance](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936524369) — failure
+- [Image Check - fin-commander](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936524431) — failure
+- [Image Check - forgeofwill](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936524492) — failure
+- [Image Check - forum](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936525166) — failure
+- [Image Check - gateway](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936525294) — failure
+- [Image Check - leads-app](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936525388) — failure
+- [Image Check - lead-tracker](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936525415) — failure
+- [Image Check - hai](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936525416) — failure
+- [Image Check - learning](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936525467) — failure
+- [Image Check - learning-runner](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936525507) — failure
+- [Image Check - local-hub](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936525512) — failure
+- [Image Check - learning-service](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936525538) — failure
+- [Image Check - marketing-generator](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936525757) — failure
+- [Image Check - owner-console](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936526518) — failure
+- [Image Check - payments](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936526606) — failure
+- [Image Check - profile](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936526617) — failure
+- [Image Check - permissions](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936526648) — failure
+- [Image Check - prompt-proxy](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936526694) — failure
+- [Image Check - social](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936526726) — failure
+- [Image Check - project-planning](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936526738) — failure
+- [Image Check - store](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936526821) — failure
+- [Image Check - store-client](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936526933) — failure
+- [Image Check - system-configurator](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936526984) — failure
+- [Image Check - telos-docs-service](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936527693) — failure
+- [Image Check - system-configurator-api](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936527707) — failure
+- [Image Check - video-client](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936527750) — failure
+- [Image Check - video-transcoder-worker](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936527771) — failure
+- [Image Check - ui-playground](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936527817) — failure
+- [Image Check - videos](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936527863) — failure
+- [Image Check - wellness](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936527954) — failure
+- [Image Check - workspace](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136936528079) — failure
+- [Summary](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057/job/136950224891) — failure
+
+## Failed main jobs at snapshot
+
+- [Image Check - assets](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44934874601/job/136948621213) — failure, Docker Hub 429
+- [Image Check - blogging](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44934874601/job/136948621242) — failure, Docker Hub 429
+- [Image Check - admin-api](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44934874601/job/136948621256) — failure, Docker Hub 429
+- [Image Check - app-configurator](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44934874601/job/136948621262) — failure, Docker Hub 429
+- [Image Check - authentication](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44934874601/job/136948621264) — failure, Docker Hub 429
+- [Image Check - ai-orchestrator](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44934874601/job/136948621272) — failure, Docker Hub 429
+- [Image Check - bug-report](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44934874601/job/136948621282) — failure, Docker Hub 429
+- [Image Check - business-configurator](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44934874601/job/136948621325) — failure, Docker Hub 429
+
+## PR 298 coverage follow-up (2026-11-21)
+
+At head `486a738c54be8c0d56429ed3c73f77ab18410193`, the two existing playground suites read story files as text and never imported app code. The production TypeScript coverage scope therefore correctly reported 0/55 statements, 0/1 branches, 0/10 functions and 0/54 lines. A component suite now renders the real validation board and checks library previews, editing its workspace field, initial messages without duplication, and case-insensitive sample search including no matches. It supplies the API URL dependency needed by the social preview. Coverage remains over both production component and story files; the story remains uncovered.
+
+`NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx run ui-playground:test -c ci --runInBand --outputStyle=static` (using the locally cached pnpm 11.0.9 entry point because the shell has no pnpm executable) passed: 3 suites, 7 tests. Total coverage: 45/55 statements (81.81%), 1/1 branches (100%), 7/10 functions (70%), 44/54 lines (81.48%). Component coverage is 45/48 statements and 44/47 lines; story coverage is 0/7. No coverage threshold was changed. Nx Cloud reported its remote cache disabled (401); local task succeeded.
+
+At the single checks snapshot, the latest head's Workflow Validation succeeded; CI/CD, Code Coverage, Performance Testing and njsscan were in progress. The preceding head `58b3fd35aeb2afdc1b2719e09a32e041c827f6cd` had successful coverage and all four Lighthouse jobs; its CI/CD run was queued/in progress and its Publish Images matrix job was skipped. No image push success is established for either PR head. The previously recorded main [assets image job](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44934874601/job/136948621213) failed pushing a manifest to Docker Hub with `429 Too Many Requests`; concurrency reduction is unproven against that external limit. Downstream skipped publishing needs a subsequent completed run to assess. No failed Lighthouse log existed at this snapshot; do not infer a Lighthouse failure from pending jobs.
+
+## Registry evidence and check inventory (2026-11-21 19:36 UTC)
+
+The 42-image PR failure above was not a Dockerfile build failure: the representative job built the image and uploaded layers, then BuildKit reported HTTP 429 on a `HEAD` for a digest manifest during push. Login had succeeded. The same sequence appears in the main assets job; BuildKit output gives neither response body nor headers, so neither `Retry-After` nor the actual limiting policy is known. Error repetitions in the log are summaries of the same failed HEAD, not proof of multiple HTTP requests. Docker documents a bare 429 as consistent with its [abuse limit](https://docs.docker.com/docker-hub/usage/), which applies per IPv4 address or IPv6 /64 across account tiers; the separate [pull-limit response](https://docs.docker.com/docker-hub/usage/pulls/) has a descriptive message. BuildKit's abbreviated error does not prove which response body was returned or whether the runner shares an egress address. These logs cannot establish account quota, a bad token, or the number of requests issued across runners.
+
+At this snapshot, [head 45de7ec CI/CD](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44941708295) had Plan and PostgreSQL integration queued; downstream jobs had not yet materialized. Workflow validation and security scanning succeeded; coverage and one Lighthouse job were running and three Lighthouse jobs queued. [Previous head 486a738 CI/CD](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44941392769) had Plan and PostgreSQL integration successful, validation and staging credential checks queued; coverage, workflow validation and security succeeded, two Lighthouse jobs succeeded, and two were running. These are paginated check/job snapshots, not final results.
+
+[Head 58b3fd35 CI/CD](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44940787255) had two successful image checks, 15 E2E jobs running, seven E2E jobs queued and PR-only image promotion skipped; nine jobs had succeeded. The [ui-playground](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44940787255/job/136958517695) and [admin-api](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44940787255/job/136958517726) logs explicitly show successful login and manifest pushes. This proves two pushes at reduced concurrency, not that 42 simultaneous image builds will succeed. The earlier [42-image PR run](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44931051057) had 42 failed image checks plus failed summary, 17 successes and seven skipped downstream jobs; the [main run](https://github.com/cjrutherford/optimistic-tanuki/actions/runs/44934874601) had eight failed image checks, 48 successes and three queued image checks. Both runs' complete job pages link the individual logs.
+
+No additional workflow change is justified by this evidence: retrying the build would rebuild and repush layers, and response headers needed to honor Retry-After are unavailable to the build action. Removing attestations or other manifest traffic would alter image metadata without proving it fixes the external limit. Existing image, E2E, staging and promotion gates remain intact. If 429s recur, collect sanitized registry response headers from the affected runner and correlate runner egress and request volume before choosing a scoped retry or registry-side remedy; do not expose registry credentials. The latest head's full gate results remain pending.
