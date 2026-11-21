@@ -45,7 +45,10 @@ import {
   resolveShadowOpacity,
   generatePageBackgroundPattern,
 } from './color-harmony';
-import { FontLoadingService } from './font-loading.service';
+import {
+  FontLoadingService,
+  personalityFontVariables,
+} from './font-loading.service';
 import { GradientFactory } from './gradient-factory';
 import { THEME_DEFAULTS } from './theme-defaults.token';
 import { PERSONALITY_EXTENSIONS_ENABLED } from './personality-extensions.token';
@@ -288,6 +291,13 @@ function generatePlayfulDropShadows(
   };
 }
 
+/** See {@link ThemeService.getRootSnapshot}. */
+export interface ThemeRootSnapshot {
+  variables: Record<string, string>;
+  attributes: Record<string, string>;
+  bodyClass: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -504,6 +514,54 @@ export class ThemeService {
 
   getAppThemeVariables(): Record<string, string> {
     return { ...this.appThemeVariables };
+  }
+
+  /**
+   * What the current theme writes onto the document: root custom properties,
+   * root attributes and the body personality class. The browser applies these
+   * itself; server rendering can use the snapshot to emit the same theme in
+   * the initial HTML, so the page does not re-lay out when the app boots.
+   */
+  getRootSnapshot(): ThemeRootSnapshot | undefined {
+    const theme = this.generatedTheme.value;
+    if (!theme) {
+      return undefined;
+    }
+
+    const variables: Record<string, string> = {
+      ...theme.cssVariables,
+      ...generateDesignTokenCSSVariables(theme.tokens),
+      ...this.appThemeVariables,
+    };
+    Object.entries(resolveReadableText(variables)).forEach(
+      ([property, value]) => {
+        if (!(property in this.appThemeVariables)) {
+          variables[property] = value;
+        }
+      }
+    );
+    Object.assign(variables, personalityFontVariables(theme.personality));
+    // An empty value removes the property in the browser, so leave it out.
+    Object.keys(variables).forEach((property) => {
+      if (variables[property] === '') {
+        delete variables[property];
+      }
+    });
+
+    const composition =
+      theme.personality.presentation?.composition ??
+      getPersonalityComposition(theme.personality.id);
+
+    return {
+      variables,
+      attributes: {
+        'data-mode': this._theme,
+        'data-theme': this._theme,
+        'data-animation-speed': theme.personality.animations.speed,
+        ...compositionDataAttributes(composition),
+      },
+      bodyClass: `personality-${theme.personality.id}`,
+    };
   }
 
   /**
