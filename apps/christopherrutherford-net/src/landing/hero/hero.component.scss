@@ -12,9 +12,11 @@
 }
 
 // The shared hero centres its columns; top-align them so the résumé CTA
-// stays in the first viewport beside the taller at-a-glance panel.
-:host ::ng-deep .public-landing-hero__inner {
+// stays in the first viewport beside the taller at-a-glance panel, and trim
+// the top padding for the same reason.
+:host ::ng-deep .public-landing-hero .public-landing-hero__inner {
   align-items: start;
+  padding-block: 3rem;
 }
 
 .hero-body {

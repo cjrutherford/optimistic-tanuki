@@ -1,3 +1,9 @@
+// Keep the bar short so the hero and its résumé CTA land in the first
+// viewport on 1366x768 laptops. The shared tile pads its content by 2rem.
+:host ::ng-deep otui-app-bar otui-tile .tile > .filter.filter {
+  padding: 0.5rem 1rem;
+}
+
 .row {
   display: flex;
   flex-direction: row;

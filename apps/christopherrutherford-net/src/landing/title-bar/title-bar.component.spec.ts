@@ -37,7 +37,9 @@ describe('TitleBarComponent', () => {
       'otui-app-bar'
     );
 
-    expect(logo?.getAttribute('logosrc')).toBe('assets/images/tanuki.png');
+    expect(logo?.getAttribute('logosrc')).toBe(
+      'assets/images/tanuki-mark.webp'
+    );
   });
 
   it('offers the recruiter-oriented primary navigation', () => {

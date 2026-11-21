@@ -47,7 +47,7 @@ test.describe('Christopher Rutherford Net E2E Tests', () => {
       await expect(brandImage).toBeVisible();
       await expect(brandImage).toHaveAttribute(
         'src',
-        /assets\/images\/tanuki\.png/
+        /assets\/images\/tanuki-mark\.webp/
       );
     });
   });

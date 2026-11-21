@@ -112,7 +112,7 @@
           [href]="study.repoHref"
           target="_blank"
           rel="noopener"
-          [attr.aria-label]="'View ' + study.name + ' source on GitHub'"
+          [attr.aria-label]="'View source: ' + study.name + ' on GitHub'"
           >View source <span aria-hidden="true">↗</span></a
         >
         @if (study.releaseHref) {
@@ -121,7 +121,7 @@
           [href]="study.releaseHref"
           target="_blank"
           rel="noopener"
-          [attr.aria-label]="'View ' + study.name + ' release on GitHub'"
+          [attr.aria-label]="'View release: ' + study.name + ' on GitHub'"
           >View release <span aria-hidden="true">↗</span></a
         >
         } @if (study.architectureHref) {
@@ -130,7 +130,7 @@
           [href]="study.architectureHref"
           target="_blank"
           rel="noopener"
-          [attr.aria-label]="'Read ' + study.name + ' architecture on GitHub'"
+          [attr.aria-label]="'Read architecture: ' + study.name + ' on GitHub'"
           >Read architecture <span aria-hidden="true">↗</span></a
         >
         }

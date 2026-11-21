@@ -78,7 +78,7 @@ describe('CaseStudiesComponent', () => {
       cardFor('Homestead')
         .querySelector('.case-study-link.primary')
         ?.getAttribute('aria-label')
-    ).toBe('View Homestead source on GitHub');
+    ).toBe('View source: Homestead on GitHub');
   });
 
   it('renders release and architecture links only when set', () => {
