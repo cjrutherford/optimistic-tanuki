@@ -153,6 +153,31 @@ describe('MapComponent', () => {
     expect(container?.classList.contains('hidden')).toBe(false);
   });
 
+  it('initializes without waiting for a second external Leaflet stylesheet', async () => {
+    const init = jest
+      .spyOn(component as any, 'initMap')
+      .mockResolvedValue(undefined);
+    (component as any).platformId = 'browser';
+    component.ngAfterViewInit();
+    await Promise.resolve();
+    expect(init).toHaveBeenCalled();
+    expect(document.getElementById('leaflet-css')).toBeNull();
+  });
+
+  it('shows a recoverable error when map initialization fails', async () => {
+    const init = jest
+      .spyOn(component as any, 'initMap')
+      .mockRejectedValueOnce(new Error('Leaflet failed'))
+      .mockImplementationOnce(async () => component.isLoading.set(false));
+    await component.retryMap();
+    fixture.detectChanges();
+    expect(component.isLoading()).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain('Map unavailable');
+    await component.retryMap();
+    expect(component.mapFailed()).toBe(false);
+    expect(init).toHaveBeenCalledTimes(2);
+  });
+
   it('does not override Leaflet marker icon absolute positioning', () => {
     const styles = readFileSync(join(__dirname, 'map.component.scss'), 'utf8');
 

@@ -73,6 +73,8 @@ export interface LocalDirectoryCoverage {
 
 export interface LocalDirectoryPage {
   listings: LocalDirectoryListing[];
+  /** Complete town-wide category choices for the selected adult visibility, when available. */
+  categories?: string[];
   hasMore: boolean;
   /** Optional so older gateway and Local Hub builds ignore it. */
   sourceFreshness?: LocalDirectorySourceFreshness;

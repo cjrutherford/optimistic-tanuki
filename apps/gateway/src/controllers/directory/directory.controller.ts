@@ -296,8 +296,9 @@ export class DirectoryController {
     if (
       category !== undefined &&
       (typeof category !== 'string' ||
-        category.length > 100 ||
-        !/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(category))
+        category.length > 2000 ||
+        !category.trim() ||
+        /[\x00-\x1f\x7f]/.test(category))
     )
       throw new BadRequestException('Invalid category');
     if (
@@ -367,6 +368,20 @@ export class DirectoryController {
         typeof result.hasMore !== 'boolean'
       )
         throw Error('Invalid listings');
+      const categories = result.categories;
+      if (
+        categories !== undefined &&
+        (!Array.isArray(categories) ||
+          categories.length > 1000 ||
+          !categories.every(
+            (c: unknown) =>
+              typeof c === 'string' &&
+              !!c.trim() &&
+              c.length <= 2000 &&
+              !/[\x00-\x1f\x7f]/.test(c)
+          ))
+      )
+        throw Error('Invalid categories');
       const listings = result.listings.map((entry: any) =>
         this.projectLocalListing(entry, adult, pagination === 'cursor')
       );
@@ -379,6 +394,7 @@ export class DirectoryController {
           throw Error('Invalid cursor response');
         return {
           listings,
+          ...(categories ? { categories } : {}),
           hasMore: result.hasMore,
           nextCursor: result.nextCursor,
           ...this.projectSourceFreshness(result.sourceFreshness),
@@ -388,6 +404,7 @@ export class DirectoryController {
       }
       return {
         listings,
+        ...(categories ? { categories } : {}),
         hasMore: result.hasMore,
         ...this.projectSourceFreshness(result.sourceFreshness),
         ...this.projectCoverage(result.coverage),

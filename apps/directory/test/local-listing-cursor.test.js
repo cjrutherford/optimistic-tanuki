@@ -63,3 +63,18 @@ test('cursor binds the serving generation', () => {
     sealListingCursor(key, { ...query, generation: 'short' }, position, 1000)
   );
 });
+
+test('long legacy categories remain cursor-bound within the token limit', () => {
+  const legacy = { ...query, category: 'é'.repeat(1500) };
+  const token = sealListingCursor(key, legacy, position, 1000);
+  assert.ok(token.length <= 2048);
+  assert.deepEqual(openListingCursor(key, legacy, token, 1001), position);
+  assert.throws(() =>
+    openListingCursor(
+      key,
+      { ...legacy, category: legacy.category + 'x' },
+      token,
+      1001
+    )
+  );
+});

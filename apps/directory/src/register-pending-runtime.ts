@@ -1013,8 +1013,9 @@ export function pendingChecks(
     if (typeof adult !== 'boolean') throw Error('Invalid adult choice');
     if (
       typeof category !== 'string' ||
-      category.length > 100 ||
-      (category !== '' && !/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(category))
+      category.length > 2000 ||
+      (category !== '' &&
+        (!category.trim() || /[\x00-\x1f\x7f]/.test(category)))
     )
       throw Error('Invalid category');
     if (
@@ -1206,6 +1207,34 @@ export function pendingChecks(
           businesses.get(`${item.scanId}:${item.row}`) ??
           bySource.get(`${item.scanId}:${item.row}`);
     }
+    // Aggregate through exactly the same rights and suppression joins as the page.
+    // Failure or an oversized result omits the facet rather than returning partial choices.
+    let categories: string[] | undefined;
+    if (!detail) {
+      try {
+        const facet = await db.query(
+          `SELECT DISTINCT ${EFFECTIVE_CATEGORY_SQL} AS category FROM ${SERVED_ROW_FROM}
+           WHERE ${servedRowWhere('$1', '$2')}
+           AND (NOT (r.listing ? 'adult') OR r.listing->'adult'='false'::jsonb OR ($3::boolean AND r.listing->'adult'='true'::jsonb))
+           ORDER BY category LIMIT 1001`,
+          [town, before.changeToken, adult]
+        );
+        if (
+          Array.isArray(facet) &&
+          facet.length <= 1000 &&
+          facet.every(
+            (row: any) =>
+              typeof row.category === 'string' &&
+              row.category.trim() &&
+              row.category.length <= 2000 &&
+              !/[\x00-\x1f\x7f]/.test(row.category)
+          )
+        )
+          categories = facet.map((row: any) => row.category);
+      } catch {
+        /* Listings remain usable when the facet is unavailable. */
+      }
+    }
     const after = await source.current(id, town);
     if (
       after?.status !== 'current' ||
@@ -1241,6 +1270,7 @@ export function pendingChecks(
             })
           : null,
         sourceFreshness,
+        ...(categories ? { categories } : {}),
         ...(coverage ? { coverage } : {}),
         ...(policyVersion ? { policyVersion } : {}),
       };
@@ -1249,6 +1279,7 @@ export function pendingChecks(
       listings,
       hasMore,
       sourceFreshness,
+      ...(categories ? { categories } : {}),
       ...(coverage ? { coverage } : {}),
       ...(policyVersion ? { policyVersion } : {}),
     };
@@ -3174,8 +3205,9 @@ export function pendingServer(
             !/^[A-Za-z0-9_-]{1,2048}$/.test(cursors[0]))) ||
         (paginations.length && offsets.length && offsets[0] !== '0') ||
         (categories.length &&
-          (categories[0].length > 100 ||
-            !/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(categories[0]))) ||
+          (categories[0].length > 2000 ||
+            !categories[0].trim() ||
+            /[\x00-\x1f\x7f]/.test(categories[0]))) ||
         (adults.length && adults[0] !== '1') ||
         (searches.length &&
           // eslint-disable-next-line no-control-regex -- Control characters are matched on purpose.

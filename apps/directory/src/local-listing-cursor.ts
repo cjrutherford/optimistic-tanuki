@@ -28,8 +28,9 @@ const validQuery = (q: Query) =>
   // eslint-disable-next-line no-control-regex -- Control characters are matched on purpose.
   !/[\x00-\x1f\x7f]/.test(q.search) &&
   typeof q.category === 'string' &&
-  q.category.length <= 100 &&
-  (q.category === '' || /^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(q.category)) &&
+  q.category.length <= 2000 &&
+  (q.category === '' ||
+    (!!q.category.trim() && !/[\x00-\x1f\x7f]/.test(q.category))) &&
   typeof q.adult === 'boolean' &&
   (q.bounds === undefined ||
     (typeof q.bounds === 'string' && q.bounds.length <= 160)) &&
@@ -46,7 +47,9 @@ const validPosition = (p: Position) =>
 const normalized = (q: Query) => [
   q.town.toLowerCase(),
   q.search.trim(),
-  q.category,
+  q.category.length > 100
+    ? { sha256: createHash('sha256').update(q.category).digest('hex') }
+    : q.category,
   q.adult,
   q.changeToken.toLowerCase(),
   q.bounds || '',

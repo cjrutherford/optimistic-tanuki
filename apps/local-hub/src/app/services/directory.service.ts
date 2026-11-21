@@ -25,6 +25,7 @@ export interface DirectoryQuery {
 export interface DirectoryPage {
   listings: LocalDirectoryListing[];
   hasMore: boolean;
+  categories?: string[];
   nextCursor: string | null;
   sourceFreshness: LocalDirectorySourceFreshness | null;
   coverage: LocalDirectoryCoverage | null;
@@ -135,6 +136,18 @@ export class DirectoryService {
       listings: result.listings
         .map(readListing)
         .filter((l): l is LocalDirectoryListing => l !== null),
+      categories:
+        Array.isArray(result.categories) &&
+        result.categories.length <= 1000 &&
+        result.categories.every(
+          (c) =>
+            typeof c === 'string' &&
+            !!c.trim() &&
+            c.length <= 2000 &&
+            !/[\x00-\x1f\x7f]/.test(c)
+        )
+          ? result.categories
+          : undefined,
       hasMore: result.hasMore === true,
       nextCursor:
         typeof result.nextCursor === 'string' && result.nextCursor

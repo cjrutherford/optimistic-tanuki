@@ -82,10 +82,15 @@ const NEARBY_LIMIT = 6;
 
 /** Reads the directory filters and cursor out of the URL. Anything malformed is treated as absent. */
 export function readDirectoryQuery(params: ParamMap): DirectoryQuery {
-  const category = (params.get('category') ?? '').trim();
+  const category = params.get('category') ?? '';
   return {
     q: (params.get('q') ?? '').trim().slice(0, 100),
-    category: /^[a-z0-9_]{1,100}$/.test(category) ? category : '',
+    category:
+      category.trim() &&
+      category.length <= 2000 &&
+      !/[\x00-\x1f\x7f]/.test(category)
+        ? category
+        : '',
     adult: params.get('adult') === '1',
     cursor: params.get('cursor') ?? '',
   };
@@ -153,10 +158,8 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
     const f = this.filters();
     return !!(f.q || f.category || f.adult);
   });
-  /** Categories seen so far in loaded results; there is no category-list endpoint. */
-  categories = computed(() =>
-    Array.from(new Set(this.listings().map((l) => l.category))).sort()
-  );
+  categories = signal<string[]>([]);
+  categoriesUnavailable = signal(false);
   nearbyTowns = computed<DirectoryNearbyTown[]>(() => {
     const city = this.city();
     return city
@@ -252,6 +255,8 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
       this.appliedKey = null;
       this.loading.set(true);
       this.city.set(null);
+      this.categories.set([]);
+      this.categoriesUnavailable.set(false);
       try {
         const city = await this.communityService.getCityBySlug(slug);
         if (slug !== this.slug) return;
@@ -362,6 +367,7 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
   private show(
     page: {
       listings: LocalDirectoryListing[];
+      categories?: string[];
       hasMore: boolean;
       nextCursor: string | null;
       sourceFreshness: LocalDirectorySourceFreshness | null;
@@ -369,6 +375,8 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
     },
     midway: boolean
   ): void {
+    this.categories.set(page.categories ?? []);
+    this.categoriesUnavailable.set(page.categories === undefined);
     this.listings.set(page.listings);
     this.hasMore.set(page.hasMore && page.nextCursor !== null);
     this.nextCursor.set(page.nextCursor);

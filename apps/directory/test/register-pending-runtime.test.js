@@ -714,6 +714,7 @@ test('adult listings require an explicit visitor choice', async () => {
   let query;
   const db = {
     query: async (sql, params) => {
+      if (sql.includes('SELECT DISTINCT')) return [];
       if (
         sql.includes('directory_overture_private_row') &&
         !sql.includes('directory_town_scan_target') &&
@@ -733,10 +734,49 @@ test('adult listings require an explicit visitor choice', async () => {
   assert.equal(query.params[3], true);
   await assert.rejects(checks.localListings(town, 0, '', 'true'), /adult/i);
 });
+test('category facet uses public serving predicates and ignores page filters', async () => {
+  let facet;
+  const db = {
+    query: async (sql, params) => {
+      if (sql.includes('SELECT DISTINCT')) {
+        facet = { sql, params };
+        return [{ category: 'legacy_shop' }, { category: 'restaurant' }];
+      }
+      if (
+        sql.includes('directory_overture_private_row') &&
+        !sql.includes('directory_town_scan_target') &&
+        !sql.includes('directory_overture_source_evidence')
+      )
+        return [];
+      return [row()];
+    },
+  };
+  const page = await pendingChecks(db, source(), id).localListings(
+    town,
+    0,
+    'search',
+    false,
+    'restaurant'
+  );
+  assert.deepEqual(page.categories, ['legacy_shop', 'restaurant']);
+  assert.deepEqual(facet.params, [town, town, false]);
+  for (const part of [
+    'directory_listing_suppression',
+    'directory_overture_private_revocation',
+    'directory_overture_private_row_revocation',
+    'revoked=false',
+    'excluded',
+    'assignmentChangeToken',
+    "r.listing->'adult'",
+  ])
+    assert.ok(facet.sql.includes(part), part);
+  assert.ok(!facet.sql.includes('position(lower'));
+});
 test('directory category filtering uses an exact category and validates input', async () => {
   let query;
   const db = {
     query: async (sql, params) => {
+      if (sql.includes('SELECT DISTINCT')) return [];
       if (
         sql.includes('directory_overture_private_row') &&
         !sql.includes('directory_town_scan_target') &&
@@ -753,7 +793,7 @@ test('directory category filtering uses an exact category and validates input', 
   assert.match(query.sql, /listing->>'category'/);
   assert.equal(query.params[5], 'restaurant');
   await assert.rejects(
-    checks.localListings(town, 0, '', false, 'restaurant OR true'),
+    checks.localListings(town, 0, '', false, 'restaurant\ninvalid'),
     /category/i
   );
 });
@@ -770,6 +810,7 @@ test('cursor pagination binds the next page to the same town and filters', async
   };
   const db = {
     query: async (sql, params) => {
+      if (sql.includes('SELECT DISTINCT')) return [];
       if (
         sql.includes('directory_overture_private_row') &&
         !sql.includes('directory_town_scan_target') &&
@@ -910,6 +951,7 @@ test('unverified Census assignments are bound to the current town change token',
   let query;
   const db = {
     query: async (sql, params) => {
+      if (sql.includes('SELECT DISTINCT')) return [];
       if (
         sql.includes('directory_overture_private_row') &&
         !sql.includes('directory_town_scan_target') &&
@@ -980,6 +1022,7 @@ test('local directory search passes a bounded literal term to the database', asy
   let query;
   const db = {
     query: async (sql, params) => {
+      if (sql.includes('SELECT DISTINCT')) return [];
       if (
         sql.includes('directory_overture_private_row') &&
         !sql.includes('directory_town_scan_target') &&
@@ -1780,6 +1823,7 @@ test('cursors and references minted for one town and query never replay elsewher
   const pageSizes = [];
   const db = {
     query: async (sql, params) => {
+      if (sql.includes('SELECT DISTINCT')) return [];
       if (
         sql.includes('directory_overture_private_row') &&
         !sql.includes('directory_town_scan_target') &&

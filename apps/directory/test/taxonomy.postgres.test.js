@@ -706,6 +706,15 @@ test(
       );
       assert.equal(assignEntry.reversible, true);
       const plain = await call('GET', `${L}/listings?pagination=cursor`);
+      // A filtered page still exposes all eligible effective categories, including an unclassified source label.
+      const filtered = await call(
+        'GET',
+        `${L}/listings?pagination=cursor&category=activities`
+      );
+      assert.deepEqual(filtered.json.categories, plain.json.categories);
+      assert.ok(plain.json.categories.includes('activities'));
+      assert.ok(plain.json.categories.includes('weird_unknown_category'));
+      assert.ok(!plain.json.categories.includes('adult_entertainment_venue'));
       const ref = plain.json.listings.find(
         (l) => l.name === 'Corner Diner'
       ).reference;

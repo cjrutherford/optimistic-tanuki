@@ -4,6 +4,15 @@
     <div class="loading-spinner"></div>
     <p>Loading map...</p>
   </div>
+  } @if (mapFailed()) {
+  <div class="map-loading">
+    <otui-error-state
+      headline="Map unavailable"
+      body="The directory list is still available. Try loading the map again."
+    >
+      <otui-button slot="actions" (action)="retryMap()">Try again</otui-button>
+    </otui-error-state>
+  </div>
   }
   <div #mapContainer class="map-container"></div>
 

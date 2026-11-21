@@ -177,6 +177,48 @@ describe('BusinessDirectoryComponent', () => {
     jest.spyOn(router, 'navigate').mockResolvedValue(true);
   });
 
+  it('keeps town-wide categories after filtering and loading another page', async () => {
+    directory.getPage.mockResolvedValue(
+      page({
+        categories: ['bakery', 'restaurant', 'legacy_shop'],
+        hasMore: true,
+        nextCursor: 'next',
+      })
+    );
+    const component = await create({ category: 'restaurant' });
+    expect(component.categories()).toEqual([
+      'bakery',
+      'restaurant',
+      'legacy_shop',
+    ]);
+    directory.getPage.mockResolvedValue(
+      page({
+        categories: ['bakery', 'restaurant', 'legacy_shop'],
+        listings: [],
+        hasMore: false,
+      })
+    );
+    await component.loadMore();
+    expect(component.categories()).toEqual([
+      'bakery',
+      'restaurant',
+      'legacy_shop',
+    ]);
+  });
+
+  it('keeps a selected filter and reports an unavailable facet', async () => {
+    const component = await create({ category: 'restaurant' });
+    fixture.detectChanges();
+    const select = fixture.nativeElement.querySelector(
+      '#otd-category'
+    ) as HTMLSelectElement;
+    expect(select.value).toBe('restaurant');
+    expect(component.categoriesUnavailable()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain(
+      'Category choices unavailable'
+    );
+  });
+
   it('renders the directory map with reviewed listing locations', async () => {
     await create();
     const map = fixture.debugElement.query(By.directive(MapComponent))

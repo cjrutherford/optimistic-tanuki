@@ -476,6 +476,36 @@ describe('local directory evaluation gateway', () => {
     process.env = original;
     jest.restoreAllMocks();
   });
+  it('passes through bounded town-wide categories and rejects malformed facets', async () => {
+    const controller = new DirectoryController({ send: jest.fn() } as any);
+    process.env.DIRECTORY_INTERNAL_URL = 'http://directory:3120';
+    process.env.DIRECTORY_LOCAL_EVALUATION = 'true';
+    process.env.DIRECTORY_LOCAL_EVALUATION_SECRET =
+      'local-evaluation-secret-1234567890';
+    const fetcher = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        listings: [],
+        hasMore: false,
+        categories: ['restaurant', 'legacy_shop'],
+      }),
+    } as Response);
+    expect(
+      (await controller.localListings(id, '0', '', undefined, 'restaurant'))
+        .categories
+    ).toEqual(['restaurant', 'legacy_shop']);
+    fetcher.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        listings: [],
+        hasMore: false,
+        categories: ['bad\ncategory'],
+      }),
+    } as Response);
+    await expect(controller.localListings(id)).rejects.toMatchObject({
+      status: 503,
+    });
+  });
   it('only forwards adult listings after an explicit visitor choice', async () => {
     const controller = new DirectoryController({ send: jest.fn() } as any);
     process.env.DIRECTORY_INTERNAL_URL = 'http://directory:3120';
@@ -525,7 +555,7 @@ describe('local directory evaluation gateway', () => {
       expect.anything()
     );
     await expect(
-      controller.localListings(id, '0', '', undefined, 'restaurant OR true')
+      controller.localListings(id, '0', '', undefined, 'restaurant\ninvalid')
     ).rejects.toMatchObject({ status: 400 });
   });
   it('forwards cursor pagination and preserves the next cursor', async () => {

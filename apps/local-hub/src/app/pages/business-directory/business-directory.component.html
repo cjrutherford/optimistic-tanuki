@@ -53,6 +53,12 @@
         [categories]="categories()"
         (filtersSubmit)="submitFilters($event)"
       ></otd-directory-filter-bar>
+      @if (categoriesUnavailable()) {
+      <otui-error-state
+        headline="Category choices unavailable"
+        body="You can still search, clear your filter, or try again later."
+      ></otui-error-state>
+      }
     </section>
 
     @if (mapCenter(); as coordinates) {

@@ -16,6 +16,10 @@ import {
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser, DOCUMENT } from '@angular/common';
 import {
+  ButtonComponent,
+  ErrorStateComponent,
+} from '@optimistic-tanuki/common-ui';
+import {
   City,
   DirectoryBoundaryGeometry,
 } from '../../services/community.service';
@@ -30,7 +34,7 @@ import {
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ButtonComponent, ErrorStateComponent],
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss'],
 })
@@ -66,6 +70,8 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private resizeObserver?: ResizeObserver;
   isBrowser = signal(false);
   isLoading = signal(true);
+  mapFailed = signal(false);
+  private destroyed = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (
@@ -90,36 +96,37 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   ngAfterViewInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.isBrowser.set(true);
-      this.loadLeafletCss().then(() => {
-        this.initMap();
-      });
+      void this.retryMap();
     }
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     if (this.map && isPlatformBrowser(this.platformId)) {
       this.resizeObserver?.disconnect();
       this.map.remove();
     }
   }
 
-  private loadLeafletCss(): Promise<void> {
-    return new Promise((resolve) => {
-      if (this.document.getElementById('leaflet-css')) {
-        resolve();
-        return;
+  async retryMap(): Promise<void> {
+    this.mapFailed.set(false);
+    this.isLoading.set(true);
+    try {
+      await this.initMap();
+    } catch {
+      this.resizeObserver?.disconnect();
+      this.map?.remove();
+      this.map = undefined;
+      if (!this.destroyed) {
+        this.isLoading.set(false);
+        this.mapFailed.set(true);
       }
-      const link = this.document.createElement('link');
-      link.id = 'leaflet-css';
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      link.onload = () => resolve();
-      this.document.head.appendChild(link);
-    });
+    }
   }
 
   private async initMap(): Promise<void> {
     const leafletModule = await import('leaflet');
+    if (this.destroyed) return;
     const L: typeof import('leaflet') =
       (leafletModule as any).default ?? leafletModule;
     this.leaflet = L;
