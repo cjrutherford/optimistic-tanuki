@@ -42,6 +42,7 @@ import {
 } from '@optimistic-tanuki/directory-ui';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MapComponent } from '../../components/map/map.component';
+import { isRenderableCoordinate } from '../../components/map/map.utils';
 import { TownLocatorComponent } from '../../components/town-locator/town-locator.component';
 import {
   BadgeComponent,
@@ -178,17 +179,32 @@ export class BusinessDirectoryComponent implements OnInit, OnDestroy {
 
   directoryMapLocations = computed(() =>
     this.listings().flatMap((listing) =>
-      listing.coordinates
+      isRenderableCoordinate(listing.coordinates)
         ? [
             {
               name: listing.name,
               category: listing.category,
               coordinates: listing.coordinates,
+              ...(this.city()?.slug && listing.reference
+                ? {
+                    href: `/city/${encodeURIComponent(
+                      this.city()!.slug
+                    )}/businesses/${encodeURIComponent(listing.reference)}${
+                      this.filters().adult ? '?adult=1' : ''
+                    }`,
+                  }
+                : {}),
             },
           ]
         : []
     )
   );
+  mapCenter = computed(() => {
+    const town = this.city()?.coordinates;
+    return isRenderableCoordinate(town)
+      ? town
+      : this.directoryMapLocations()[0]?.coordinates ?? null;
+  });
   detailState = computed(() => ({
     directoryMeta: {
       freshness: this.sourceFreshness(),

@@ -22,7 +22,9 @@ import { humanizeCategory } from '../state';
       @if (listing().address || listing().phone) {
       <ul class="card__details">
         @if (listing().address) {
-        <li>{{ listing().address }}</li>
+        <li>
+          <address>{{ listing().address }}</address>
+        </li>
         } @if (listing().phone) {
         <li>{{ listing().phone }}</li>
         }

@@ -187,6 +187,7 @@ describe('BusinessDirectoryComponent', () => {
         name: listingFixture.name,
         category: listingFixture.category,
         coordinates: listingFixture.coordinates,
+        href: '/city/valdosta-ga/businesses/ref-101',
       },
     ]);
   });
@@ -460,6 +461,13 @@ describe('BusinessDirectoryComponent', () => {
         category: 'shop',
         attribution: ['Source'],
         notices: [],
+      },
+      {
+        name: 'Invalid',
+        category: 'shop',
+        attribution: [],
+        notices: [],
+        coordinates: { lat: 999, lng: -83 },
       },
     ]);
     expect(component.directoryMapLocations()).toEqual([
