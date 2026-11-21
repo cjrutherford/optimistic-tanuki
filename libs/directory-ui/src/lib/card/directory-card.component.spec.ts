@@ -33,6 +33,7 @@ describe('DirectoryCardComponent', () => {
     expect(el.textContent).toContain('Convenience Store');
     expect(el.textContent).toContain('Directory listing (not claimed)');
     expect(el.textContent).toContain('1 Main St');
+    expect(el.querySelector('address')?.textContent).toBe('1 Main St');
     expect(el.textContent).not.toContain('Overture Maps Foundation');
     expect(el.querySelector('[data-testid="listing-detail-link"]')).toBeNull();
   });

@@ -48,6 +48,7 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
     name: string;
     category: string;
     coordinates: MapCoordinates;
+    href?: string;
   }[] = [];
   @Output() citySelected = new EventEmitter<City>();
 
@@ -232,7 +233,17 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
         .split('_')
         .join(' ')}`;
       marker.bindTooltip(label, { direction: 'top', offset: [0, -12] });
-      marker.bindPopup(label.cloneNode(true));
+      const popup = this.document.createElement('div');
+      popup.appendChild(label.cloneNode(true));
+      if (location.href) {
+        const link = this.document.createElement('a');
+        link.href = location.href;
+        link.textContent = 'View business details';
+        link.setAttribute('aria-label', `View details for ${location.name}`);
+        popup.appendChild(this.document.createElement('br'));
+        popup.appendChild(link);
+      }
+      marker.bindPopup(popup);
       const element = marker.getElement?.();
       if (element) {
         element.setAttribute('tabindex', '0');

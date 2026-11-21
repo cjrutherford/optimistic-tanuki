@@ -69,6 +69,7 @@
 }
 
 .directory-page__map-section,
+.directory-page__search,
 .directory-page__listings {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -93,6 +94,28 @@
 .directory-page__map-section app-map {
   display: block;
   height: 450px;
+}
+
+.directory-page__search {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(
+    --personality-card-radius,
+    var(--border-radius-md, 0.5rem)
+  );
+  background: color-mix(in srgb, var(--primary) 3%, var(--background));
+}
+
+@media (max-width: 600px) {
+  .directory-page__container {
+    padding-inline: 16px;
+  }
+  .directory-page__header {
+    padding-block: 32px 24px;
+  }
+  .directory-page__map-section app-map {
+    height: 320px;
+  }
 }
 
 .directory-page__map-note {

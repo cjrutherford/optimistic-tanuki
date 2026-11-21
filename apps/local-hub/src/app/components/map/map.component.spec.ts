@@ -78,6 +78,7 @@ describe('MapComponent', () => {
         name: '<Fixture>',
         category: 'food_store',
         coordinates: { lat: 31, lng: -83 },
+        href: '/city/example/businesses/ref',
       },
     ];
     (component as any).refreshMapContent();
@@ -89,6 +90,13 @@ describe('MapComponent', () => {
     expect(label.textContent).toBe('<Fixture> · food store');
     expect(label.children.length).toBe(0);
     expect(marker.bindPopup).toHaveBeenCalled();
+    const popup = marker.bindPopup.mock.calls[0][0] as HTMLElement;
+    expect(popup.querySelector('a')?.getAttribute('href')).toBe(
+      '/city/example/businesses/ref'
+    );
+    expect(popup.querySelector('a')?.getAttribute('aria-label')).toBe(
+      'View details for <Fixture>'
+    );
     expect(element.getAttribute('role')).toBe('button');
     element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     expect(marker.openPopup).toHaveBeenCalled();
