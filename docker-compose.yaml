@@ -542,7 +542,6 @@ services:
   civic:
     restart: unless-stopped
     container_name: ot_civic
-    restart: unless-stopped
     build:
       context: .
       dockerfile: ./apps/civic/Dockerfile
@@ -565,7 +564,6 @@ services:
   civic-briefing:
     restart: unless-stopped
     container_name: ot_civic_briefing
-    restart: unless-stopped
     build:
       context: .
       dockerfile: ./apps/civic-briefing/Dockerfile
@@ -632,7 +630,6 @@ services:
   civic-contributions:
     restart: unless-stopped
     container_name: ot_civic_contributions
-    restart: unless-stopped
     build:
       context: .
       dockerfile: ./apps/civic-contributions/Dockerfile
@@ -874,7 +871,6 @@ services:
     # fail-closed, so without a scanner no content-bearing upload can
     # succeed; keep this service running wherever assets runs.
     container_name: ot_clamav
-    restart: unless-stopped
     image: clamav/clamav:stable
     ports:
       - '${CLAMAV_PORT:-3310}:3310'
