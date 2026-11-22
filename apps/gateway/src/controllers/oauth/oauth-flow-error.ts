@@ -169,3 +169,27 @@ registerSafeEventCatalogue({
     appScope: /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/,
   },
 });
+
+/**
+ * Apps that run the date-of-birth / guardian step. Only these may create an
+ * `age_verification` pending intent or send a guardian permission email.
+ * Each maps to the route that reads `#token=` into `guardianResumeToken`
+ * (client-interface and local-hub both serve it at `/register`).
+ */
+export const GUARDIAN_RETURN_PATHS = {
+  'client-interface': '/register',
+  'local-hub': '/register',
+} as const;
+
+export const isAgeGatedApp = (
+  appScope: string
+): appScope is keyof typeof GUARDIAN_RETURN_PATHS =>
+  Object.prototype.hasOwnProperty.call(GUARDIAN_RETURN_PATHS, appScope);
+
+/** Explicit failure for an app with no guardian return route; never a default. */
+export const guardianReturnPathFor = (appScope: string): string => {
+  if (!isAgeGatedApp(appScope)) {
+    throw new Error(`No guardian return path is defined for app ${appScope}`);
+  }
+  return GUARDIAN_RETURN_PATHS[appScope];
+};

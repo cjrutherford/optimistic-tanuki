@@ -54,8 +54,10 @@ export const OAUTH_ERROR_COPY: Readonly<Record<string, OAuthErrorCopy>> = {
   },
   owner_not_provisioned: {
     title: 'No owner set up yet',
-    message: 'This console has no provisioned owner account.',
-    action: 'Ask the person who runs this deployment to finish owner setup.',
+    message:
+      'This console has no owner account yet, so nobody can sign in with a provider.',
+    action:
+      'The deployment bootstrap must provision the owner: set OWNER_BOOTSTRAP_NAME, OWNER_BOOTSTRAP_EMAIL and OWNER_BOOTSTRAP_PASSWORD, then run the seed step.',
   },
   not_authorized_for_app: {
     title: 'No access to this app',

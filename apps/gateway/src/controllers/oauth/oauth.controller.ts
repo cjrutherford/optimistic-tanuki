@@ -35,7 +35,7 @@ import {
   RegisterRequest,
   UnlinkProviderRequest,
 } from '@optimistic-tanuki/models';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import {
   AuthCommands,
   ProfileCommands,
@@ -69,6 +69,8 @@ import {
   OAuthErrorCode,
   OAuthFlowError,
   OAuthStep,
+  guardianReturnPathFor,
+  isAgeGatedApp,
 } from './oauth-flow-error';
 
 type GatewayOAuthProviderConfig = {
@@ -131,6 +133,7 @@ export class OAuthController {
   private readonly pendingMaxAttempts = 5;
   private readonly linkCodeCooldownMs = 60 * 1000;
   private readonly providerRequestTimeoutMs = 10 * 1000;
+  private readonly ownerCheckTimeoutMs = 3 * 1000;
 
   constructor(
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
@@ -648,9 +651,7 @@ export class OAuthController {
       if (!userId && loginResult?.data?.needsRegistration) {
         tracker.step = 'register';
         this.requireUsableOAuthEmail(identity.email);
-        const ageGateApp =
-          statePayload.appScope === 'client-interface' ||
-          statePayload.appScope === 'local-hub';
+        const ageGateApp = isAgeGatedApp(statePayload.appScope);
         if (
           ageGateApp &&
           (statePayload.registrationAllowed === false ||
@@ -1129,6 +1130,7 @@ export class OAuthController {
           if (!guardianEmail || !validator.isEmail(guardianEmail)) {
             throw this.oauthHttpError('age_ineligible');
           }
+          const returnPath = guardianReturnPathFor(intent.appScope);
           const app = this.resolveAuthEmailApp(intent.appScope);
           const requested = await firstValueFrom(
             this.authClient.send(
@@ -1143,7 +1145,7 @@ export class OAuthController {
                   uiBaseUrl: app.uiBaseUrl,
                   from: app.authEmail!.from,
                   replyTo: app.authEmail!.replyTo,
-                  returnPath: '/register',
+                  returnPath,
                 },
               }
             )
@@ -1504,6 +1506,13 @@ export class OAuthController {
       hasPassword?: boolean;
     }
   ): Promise<string> {
+    if (
+      context.kind === 'age_verification' &&
+      !isAgeGatedApp(context.appScope)
+    ) {
+      // Only age-gated apps have a guardian flow; anything else is a bug.
+      throw new OAuthFlowError('registration_closed', 'register');
+    }
     const code = `${context.stateId}.${randomBytes(32).toString('base64url')}`;
     await this.oauthStateStore.createPendingIntent(code, {
       kind: context.kind,
@@ -1571,6 +1580,9 @@ export class OAuthController {
     const { binding, nonce } = this.pendingBinding(request, code);
     const intent = await this.oauthStateStore.getPendingIntent(code, binding);
     if (!intent || (kind && intent.kind !== kind)) {
+      throw this.oauthHttpError('state_invalid');
+    }
+    if (intent.kind === 'age_verification' && !isAgeGatedApp(intent.appScope)) {
       throw this.oauthHttpError('state_invalid');
     }
     return { intent, binding, nonce };
@@ -2373,7 +2385,12 @@ export class OAuthController {
     guardianResumeToken?: string
   ): Promise<{ userId: string; emailVerified: boolean }> {
     if (appScope === 'owner-console' && process.env.NODE_ENV === 'production') {
-      throw new OAuthFlowError('registration_closed', 'register');
+      throw new OAuthFlowError(
+        (await this.ownerNotProvisioned())
+          ? 'owner_not_provisioned'
+          : 'registration_closed',
+        'register'
+      );
     }
 
     this.requireUsableOAuthEmail(identity.email);
@@ -2454,7 +2471,38 @@ export class OAuthController {
         allowedRoleNames.has(assignment.role?.name || '')
       )
     ) {
-      throw new OAuthFlowError('not_authorized_for_app', 'access');
+      throw new OAuthFlowError(
+        (await this.ownerNotProvisioned(profileId))
+          ? 'owner_not_provisioned'
+          : 'not_authorized_for_app',
+        'access'
+      );
+    }
+  }
+
+  /**
+   * True only when the owner console provably has no owner yet: no global
+   * profile exists other than `exceptProfileId`. This is the same signal that
+   * closes owner-console registration (RegisterAccountBootstrapService), so the
+   * two can never disagree. A failed or slow check returns false so the
+   * original failure code is reported unchanged.
+   */
+  private async ownerNotProvisioned(
+    exceptProfileId?: string
+  ): Promise<boolean> {
+    try {
+      const global = (await firstValueFrom(
+        this.profileClient
+          .send(
+            { cmd: ProfileCommands.GetAll },
+            { where: [{ appScope: 'global' }, { appScope: null }] }
+          )
+          .pipe(timeout(this.ownerCheckTimeoutMs))
+      )) as Array<{ id?: string }>;
+      if (!Array.isArray(global)) return false;
+      return global.every((profile) => profile.id === exceptProfileId);
+    } catch {
+      return false;
     }
   }
 

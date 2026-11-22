@@ -7,6 +7,7 @@ import {
   RedisOAuthStateStore,
   StoredOAuthCallbackGrant,
   StoredOAuthState,
+  StoredPendingOAuthIntent,
 } from './oauth-state.store';
 
 const account = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -96,6 +97,137 @@ describe('D25 local OAuth account purge', () => {
   });
 });
 
+const pendingBinding = { stateId: 'state', nonceHash: 'nonce' };
+const pendingLink = (userId: string): StoredPendingOAuthIntent => ({
+  kind: 'link_account',
+  provider: 'google',
+  providerUserId: 'g-1',
+  email: 'a@example.com',
+  emailVerified: true,
+  displayName: 'A',
+  firstName: 'A',
+  lastName: 'B',
+  appScope: 'client-interface',
+  returnTo: 'https://ot.example.test/',
+  userId,
+  hasPassword: true,
+  ...pendingBinding,
+  expiresAt: Date.now() + 60_000,
+});
+
+interface FakeRedisCall {
+  command: string[];
+}
+interface FakeRedisClient {
+  sendCommand(command: string[]): Promise<unknown>;
+}
+
+describe('local OAuth store pending link intents and account deletion', () => {
+  it('purge removes the account link intents, counts them in readback and fences new ones', async () => {
+    const store = new LocalOAuthStateStore();
+    await store.createPendingIntent('mine', pendingLink(account));
+    await store.createPendingIntent('theirs', pendingLink(other));
+    await expect(store.purgeAccount(account.toUpperCase())).resolves.toEqual({
+      remaining: 0,
+    });
+    expect(
+      await store.getPendingIntent('mine', pendingBinding)
+    ).toBeUndefined();
+    expect(
+      await store.getPendingIntent('theirs', pendingBinding)
+    ).toBeDefined();
+    expect(await store.readbackAccount(account)).toBe(0);
+    await expect(
+      store.createPendingIntent('late', pendingLink(account))
+    ).rejects.toThrow('OAUTH_ACCOUNT_DELETION_FENCED');
+  });
+});
+
+describe('Redis OAuth store pending link intents (command wiring)', () => {
+  /** Stands in for Redis: records commands and answers the pending scripts. */
+  function redisWith(reply: (command: string[]) => unknown) {
+    const store = new RedisOAuthStateStore('127.0.0.1', 1);
+    const calls: FakeRedisCall[] = [];
+    const fake: FakeRedisClient = {
+      sendCommand: async (command) => {
+        calls.push({ command });
+        return reply(command);
+      },
+    };
+    const internals = store as unknown as {
+      client: FakeRedisClient & { quit?: () => Promise<void> };
+      connected: boolean;
+    };
+    void internals.client; // the real client is replaced below
+    Object.assign(internals, { client: fake, connected: true });
+    return { store, calls };
+  }
+
+  it('indexes a link intent in a per-account set atomically with the fence check', async () => {
+    const { store, calls } = redisWith(() => 1);
+    await store.createPendingIntent(
+      'code-1',
+      pendingLink(account.toUpperCase())
+    );
+    const [, script, , key, fences, set, , ttl, fenceField, id] =
+      calls[0].command;
+    expect(script).toContain('HEXISTS');
+    expect(script).toContain('SADD');
+    expect(key).toBe('gateway:oauth-pending:code-1');
+    expect(fences).toBe('gateway:oauth-deletion:fences');
+    expect(set).toBe(`gateway:oauth-pending-user:${account}`);
+    expect(Number(ttl)).toBeGreaterThan(0);
+    expect(fenceField).toHaveLength(64);
+    expect(id).toBe('code-1');
+  });
+
+  it('does not index an intent that has no account', async () => {
+    const { store, calls } = redisWith(() => 1);
+    await store.createPendingIntent('code-2', {
+      ...pendingLink(account),
+      kind: 'age_verification',
+      userId: undefined,
+    });
+    expect(calls[0].command[8]).toBe('');
+  });
+
+  it('refuses to create a link intent behind the deletion fence', async () => {
+    const { store } = redisWith(() => -1);
+    await expect(
+      store.createPendingIntent('code-3', pendingLink(account))
+    ).rejects.toThrow('OAUTH_ACCOUNT_DELETION_FENCED');
+  });
+
+  it('purge removes the account pending intents after the fenced cleanup, and readback counts them', async () => {
+    const { store, calls } = redisWith((command) =>
+      command[1].includes('SMEMBERS') ? 0 : 0
+    );
+    await store.purgeAccount(account);
+    const pending = calls.filter((c) => c.command[1].includes('SMEMBERS'));
+    expect(pending.length).toBeGreaterThan(0);
+    expect(pending[0].command).toEqual(
+      expect.arrayContaining([
+        `gateway:oauth-pending-user:${account}`,
+        'gateway:oauth-pending:',
+        'purge',
+      ])
+    );
+    const readbackCalls = redisWith((command) =>
+      command[1].includes('SMEMBERS') ? 2 : 0
+    );
+    await expect(readbackCalls.store.readbackAccount(account)).resolves.toBe(2);
+    await expect(readbackCalls.store.purgeAccount(account)).rejects.toThrow(
+      'OAUTH_DELETION_READBACK'
+    );
+  });
+
+  it('ordinary invalidation also drops pending intents', async () => {
+    const { store, calls } = redisWith(() => 1);
+    await store.invalidateAccount(account);
+    expect(calls.some((c) => c.command[1].includes('SMEMBERS'))).toBe(true);
+  });
+});
+
 const privateDescribe =
   process.env.D25_PRIVATE_REDIS === 'd25-private-redis'
     ? describe
@@ -147,6 +279,27 @@ privateDescribe('D25 real Redis OAuth account purge', () => {
     ).toBe(0);
     expect(await inspector.zCard('gateway:oauth-state:index')).toBe(0);
     expect(await inspector.zCard('gateway:oauth-callback-grant:index')).toBe(0);
+  });
+  it('removes pending link intents with the account and fences new ones', async () => {
+    const mine = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+    const live = await replica();
+    await live.createPendingIntent('p-mine', pendingLink(mine));
+    await live.createPendingIntent('p-other', pendingLink(other));
+    expect(
+      await inspector.sMembers(`gateway:oauth-pending-user:${mine}`)
+    ).toEqual(['p-mine']);
+    expect(
+      await inspector.pTTL(`gateway:oauth-pending-user:${mine}`)
+    ).toBeGreaterThan(0);
+    await expect(live.purgeAccount(mine)).resolves.toEqual({ remaining: 0 });
+    expect(await inspector.exists('gateway:oauth-pending:p-mine')).toBe(0);
+    expect(await inspector.exists(`gateway:oauth-pending-user:${mine}`)).toBe(
+      0
+    );
+    expect(await inspector.exists('gateway:oauth-pending:p-other')).toBe(1);
+    await expect(
+      live.createPendingIntent('p-late', pendingLink(mine))
+    ).rejects.toThrow('OAUTH_ACCOUNT_DELETION_FENCED');
   });
   it('retains deletion fence after the original clients close and a new client connects', async () => {
     await a.onModuleDestroy();

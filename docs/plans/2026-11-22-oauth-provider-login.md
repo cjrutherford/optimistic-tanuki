@@ -228,3 +228,19 @@ Each step in the callback sets a step label: `state`, `exchange`, `login`,
 `oauth.callback.failed` together with `{ step, code }`, using only
 allow-listed values, through a per-module event catalogue in
 `libs/logger` (O1b).
+
+## Follow-ups closed before merge (PR #299)
+
+- **`owner_not_provisioned`.** The gateway sends this code when an
+  owner-console sign-in is refused, or fails its access check, and no global
+  profile exists yet. The signal is the same one that closes owner-console
+  registration. If the check fails or times out after 3 seconds, the original
+  code is reported instead.
+- **Guardian return path.** `GUARDIAN_RETURN_PATHS` maps each age-gated app
+  to its return path: client-interface and local-hub both use `/register`. An
+  app missing from the map gets an error rather than a default. Only
+  age-gated apps can create an `age_verification` intent or send a guardian
+  email.
+- **Account deletion.** Link intents are indexed per account in Redis, in the
+  same Lua script as the fence check. Purge and invalidation remove them, and
+  readback counts them. The private-Redis spec passes against a real Redis 7.

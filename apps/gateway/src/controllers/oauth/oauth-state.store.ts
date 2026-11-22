@@ -407,6 +407,9 @@ export class LocalOAuthStateStore implements OAuthStateStore {
       ).length +
       [...this.callbackGrants.values()].filter(
         (g) => g.userId.toLowerCase() === id
+      ).length +
+      [...this.pending.values()].filter(
+        (e) => e.intent.userId?.toLowerCase() === id
       ).length
     );
   }
@@ -430,6 +433,37 @@ export class LocalOAuthStateStore implements OAuthStateStore {
   }
 }
 
+/**
+ * KEYS: intent key, fence hash, per-account set. ARGV: json, ttl ms, fence
+ * field ('' for intents without an account), intent id. Returns -1 when fenced.
+ */
+const PENDING_CREATE_SCRIPT = `
+if ARGV[3] ~= '' and redis.call('HEXISTS', KEYS[2], ARGV[3]) == 1 then return -1 end
+if not redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2], 'NX') then return 0 end
+if ARGV[3] ~= '' then
+  redis.call('SADD', KEYS[3], ARGV[4])
+  if redis.call('PTTL', KEYS[3]) < tonumber(ARGV[2]) then
+    redis.call('PEXPIRE', KEYS[3], ARGV[2])
+  end
+end
+return 1
+`;
+
+/** KEYS: per-account set. ARGV: pending key prefix, mode. Returns the count left. */
+const PENDING_ACCOUNT_CLEANUP_SCRIPT = `
+local remaining = 0
+for _,id in ipairs(redis.call('SMEMBERS', KEYS[1])) do
+  local key = ARGV[1] .. id
+  if ARGV[2] == 'purge' then
+    redis.call('DEL', key, key .. ':attempts', key .. ':linkcode')
+  elseif redis.call('EXISTS', key) == 1 then
+    remaining = remaining + 1
+  end
+end
+if ARGV[2] == 'purge' then redis.call('DEL', KEYS[1]) end
+return remaining
+`;
+
 export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
   private readonly logger = new Logger(RedisOAuthStateStore.name);
   private readonly client: RedisClientType;
@@ -437,6 +471,8 @@ export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
   private readonly prefix = 'gateway:oauth-state:';
   private readonly callbackGrantPrefix = 'gateway:oauth-callback-grant:';
   private readonly pendingPrefix = 'gateway:oauth-pending:';
+  /** Per-account set of pending intent ids, so deletion can find them. */
+  private readonly pendingUserPrefix = 'gateway:oauth-pending-user:';
   private readonly indexKey = 'gateway:oauth-state:index';
   private readonly grantIndexKey = 'gateway:oauth-callback-grant:index';
   private readonly deletionFenceKey = 'gateway:oauth-deletion:fences';
@@ -483,15 +519,24 @@ export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
     const ttl = Math.max(1, intent.expiresAt - Date.now());
     const [key] = this.pendingKeys(code);
     // The key expires on its own; NX keeps an id from ever being replaced.
+    // Link intents (userId set) are also indexed in a per-account set with the
+    // same TTL, created atomically with the deletion-fence check, so account
+    // deletion can find and remove them and nothing is created after a purge.
+    const account = intent.userId?.toLowerCase() ?? '';
     const result = await this.client.sendCommand([
-      'SET',
+      'EVAL',
+      PENDING_CREATE_SCRIPT,
+      '3',
       key,
+      this.deletionFenceKey,
+      account ? `${this.pendingUserPrefix}${account}` : key,
       JSON.stringify(intent),
-      'PX',
       String(ttl),
-      'NX',
+      account ? accountFenceKey(account) : '',
+      code,
     ]);
-    if (String(result) !== 'OK')
+    if (Number(result) === -1) throw new Error('OAUTH_ACCOUNT_DELETION_FENCED');
+    if (Number(result) !== 1)
       throw new HttpException(
         'OAuth is temporarily busy',
         HttpStatus.TOO_MANY_REQUESTS
@@ -742,6 +787,14 @@ export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
       this.callbackGrantPrefix,
       accountId,
     ]);
+    await this.client.sendCommand([
+      'EVAL',
+      PENDING_ACCOUNT_CLEANUP_SCRIPT,
+      '1',
+      `${this.pendingUserPrefix}${accountId}`,
+      this.pendingPrefix,
+      'purge',
+    ]);
   }
 
   async purgeAccount(accountId: string): Promise<{ remaining: 0 }> {
@@ -782,7 +835,23 @@ export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
       result < 0
     )
       throw new Error('OAUTH_DELETION_UNVERIFIED');
-    return result;
+    // The fence is set by now (a missing fence returned -2 above), so no new
+    // pending intent can be indexed while these are removed or counted.
+    const pending = await this.client.sendCommand([
+      'EVAL',
+      PENDING_ACCOUNT_CLEANUP_SCRIPT,
+      '1',
+      `${this.pendingUserPrefix}${accountId.toLowerCase()}`,
+      this.pendingPrefix,
+      mode,
+    ]);
+    if (
+      typeof pending !== 'number' ||
+      !Number.isSafeInteger(pending) ||
+      pending < 0
+    )
+      throw new Error('OAUTH_DELETION_UNVERIFIED');
+    return result + pending;
   }
 
   async onModuleDestroy(): Promise<void> {
