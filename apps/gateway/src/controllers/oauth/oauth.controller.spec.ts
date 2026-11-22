@@ -4,7 +4,7 @@ import { OAuthController } from './oauth.controller';
 import { ClientProxy } from '@nestjs/microservices';
 import { HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
-import { of } from 'rxjs';
+import { NEVER, of, throwError } from 'rxjs';
 import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 import { AuthCommands } from '@optimistic-tanuki/constants';
 import { RegisterAccountBootstrapService } from '@optimistic-tanuki/auth-feature-account-bootstrap';
@@ -181,6 +181,9 @@ describe('OAuthController', () => {
   });
 
   it('rejects production OAuth registration for owner-console', async () => {
+    (controller as any).profileClient.send.mockReturnValue(
+      of([{ id: 'owner-profile' }])
+    );
     const previousNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
     try {
@@ -193,7 +196,7 @@ describe('OAuthController', () => {
           firstName: 'Owner',
           lastName: 'User',
         })
-      ).rejects.toThrow('Owner Console accounts must be provisioned');
+      ).rejects.toThrow('registration_closed');
     } finally {
       if (previousNodeEnv === undefined) {
         delete process.env.NODE_ENV;
@@ -839,7 +842,7 @@ describe('OAuthController', () => {
       );
       const callbackUrl = new URL(response.redirect.mock.calls[0][0]);
       expect(callbackUrl.searchParams.get('error')).toBe(
-        'oauth_callback_failed'
+        'provider_exchange_failed'
       );
       expect(callbackUrl.searchParams.has('callbackCode')).toBe(false);
       expect(callbackUrl.searchParams.has('token')).toBe(false);
@@ -887,7 +890,7 @@ describe('OAuthController', () => {
       expect(registerOAuthUser).not.toHaveBeenCalled();
       expect(
         new URL(response.redirect.mock.calls[0][0]).searchParams.get('error')
-      ).toBe('oauth_callback_failed');
+      ).toBe('provider_email_missing');
     });
 
     it('allows existing-account OAuth login from server-marked existing-only state', async () => {
@@ -1091,9 +1094,11 @@ describe('OAuthController', () => {
         { cmd: AuthCommands.OAuthLogin },
         expect.objectContaining({ appId: 'client-interface' })
       );
-      expect(
-        new URL(response.redirect.mock.calls[0][0]).searchParams.get('error')
-      ).toBe('oauth_callback_failed');
+      const ageUrl = new URL(response.redirect.mock.calls[0][0]);
+      expect(ageUrl.searchParams.get('pending')).toBe('age_verification');
+      expect(ageUrl.searchParams.get('pendingCode')).toBeTruthy();
+      expect(ageUrl.searchParams.get('email')).toBe('t***@example.invalid');
+      expect(ageUrl.searchParams.has('error')).toBe(false);
     });
 
     it('continues a teen OAuth callback only with the matching approved applicant resume state', async () => {
@@ -1213,6 +1218,11 @@ describe('OAuthController', () => {
             userId: 'member-user',
             appScope: 'global',
           },
+          {
+            id: 'owner-global-profile',
+            userId: 'owner-user',
+            appScope: 'global',
+          },
         ])
       );
       const response = { redirect: jest.fn() } as any;
@@ -1229,7 +1239,7 @@ describe('OAuthController', () => {
 
       expect(
         new URL(response.redirect.mock.calls[0][0]).searchParams.get('error')
-      ).toBe('oauth_callback_failed');
+      ).toBe('not_authorized_for_app');
       expect(authClient.send).not.toHaveBeenCalledWith(
         { cmd: AuthCommands.Issue },
         expect.anything()
@@ -1558,7 +1568,8 @@ describe('OAuthController', () => {
       );
       expect(replayResponse.json).toHaveBeenCalledWith({
         error: 'invalid_oauth_callback',
-        error_description: 'OAuth callback could not be validated.',
+        error_description:
+          'This sign-in attempt has expired or was already used. Close this window and start sign-in again.',
       });
     });
 
@@ -1586,7 +1597,8 @@ describe('OAuthController', () => {
       expect(response.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
       expect(response.json).toHaveBeenCalledWith({
         error: 'invalid_oauth_callback',
-        error_description: 'OAuth callback could not be validated.',
+        error_description:
+          'This sign-in attempt has expired or was already used. Close this window and start sign-in again.',
       });
       expect(response.redirect).not.toHaveBeenCalled();
     });
@@ -1680,10 +1692,10 @@ describe('OAuthController', () => {
 
       const callbackUrl = new URL(response.redirect.mock.calls[0][0]);
       expect(callbackUrl.searchParams.get('error')).toBe(
-        'oauth_callback_failed'
+        'provider_exchange_failed'
       );
       expect(callbackUrl.searchParams.get('error_description')).toBe(
-        'OAuth authentication could not be completed.'
+        'The sign-in provider did not complete the request. Please try again.'
       );
       expect(response.redirect.mock.calls[0][0]).not.toContain('secret-token');
       expect(callbackUrl.searchParams.has('callbackCode')).toBe(false);
@@ -2106,5 +2118,658 @@ describe('OAuthController', () => {
     );
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(authClient.send).not.toHaveBeenCalled();
+  });
+
+  describe('owner console without a provisioned owner', () => {
+    const identity = {
+      providerUserId: 'google-owner',
+      email: 'owner@example.com',
+      emailVerified: true,
+      displayName: 'Owner User',
+      firstName: 'Owner',
+      lastName: 'User',
+    };
+    let previousNodeEnv: string | undefined;
+
+    beforeEach(() => {
+      previousNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+    });
+    afterEach(() => {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previousNodeEnv;
+    });
+
+    const registerCode = () =>
+      (controller as any)
+        .registerOAuthUser('owner-console', 'google', identity)
+        .then(
+          () => 'registered',
+          (failure: { code?: string }) => failure.code
+        );
+
+    it('emits owner_not_provisioned when no global profile exists', async () => {
+      (controller as any).profileClient.send.mockReturnValue(of([]));
+      await expect(registerCode()).resolves.toBe('owner_not_provisioned');
+    });
+
+    it('keeps registration_closed once an owner profile exists', async () => {
+      (controller as any).profileClient.send.mockReturnValue(
+        of([{ id: 'owner-profile' }])
+      );
+      await expect(registerCode()).resolves.toBe('registration_closed');
+    });
+
+    it('keeps registration_closed when the owner check fails', async () => {
+      (controller as any).profileClient.send.mockReturnValue(
+        throwError(() => new Error('profile service down'))
+      );
+      await expect(registerCode()).resolves.toBe('registration_closed');
+    });
+
+    it('keeps registration_closed when the owner check times out', async () => {
+      (controller as any).ownerCheckTimeoutMs = 10;
+      (controller as any).profileClient.send.mockReturnValue(NEVER);
+      await expect(registerCode()).resolves.toBe('registration_closed');
+    });
+
+    it('emits owner_not_provisioned for access when the caller is the only global profile', async () => {
+      (controller as any).permissionsClient.send.mockReturnValue(of([]));
+      (controller as any).profileClient.send.mockReturnValue(
+        of([{ id: 'sole-profile' }])
+      );
+      await expect(
+        (controller as any).assertOwnerConsoleAccess(
+          'owner-console',
+          'sole-profile'
+        )
+      ).rejects.toMatchObject({ code: 'owner_not_provisioned' });
+    });
+
+    it('keeps not_authorized_for_app for access when another global profile exists', async () => {
+      (controller as any).permissionsClient.send.mockReturnValue(of([]));
+      (controller as any).profileClient.send.mockReturnValue(
+        of([{ id: 'sole-profile' }, { id: 'owner-profile' }])
+      );
+      await expect(
+        (controller as any).assertOwnerConsoleAccess(
+          'owner-console',
+          'sole-profile'
+        )
+      ).rejects.toMatchObject({ code: 'not_authorized_for_app' });
+    });
+
+    it('keeps not_authorized_for_app for access when the owner check fails', async () => {
+      (controller as any).permissionsClient.send.mockReturnValue(of([]));
+      (controller as any).profileClient.send.mockReturnValue(
+        throwError(() => new Error('down'))
+      );
+      await expect(
+        (controller as any).assertOwnerConsoleAccess(
+          'owner-console',
+          'sole-profile'
+        )
+      ).rejects.toMatchObject({ code: 'not_authorized_for_app' });
+    });
+  });
+
+  describe('pending OAuth intents', () => {
+    const USER_ID = '61d9334f-61bd-5af6-882d-7d63bbbf046c';
+    const PROFILE_ID = 'eeb3151e-e115-5418-941a-1f01caa76d52';
+
+    interface PendingFixture {
+      pendingCode: string;
+      request: (code?: string) => { cookies: Record<string, string> };
+      url: URL;
+    }
+
+    function sendByCommand(
+      handlers: Record<string, unknown>
+    ): (command: { cmd: string }) => unknown {
+      return (command) => of(handlers[command.cmd] ?? { data: {} });
+    }
+
+    async function startPending(
+      loginData: Record<string, unknown>,
+      appScope = 'client-interface'
+    ): Promise<PendingFixture> {
+      const issued = await (controller as any).signState({
+        provider: 'google',
+        returnTo: 'https://optimistic-tanuki.example/login',
+        appScope,
+        issuedAt: Date.now(),
+      });
+      jest.spyOn(controller as any, 'exchangeProviderCode').mockResolvedValue({
+        providerUserId: 'google-user-1',
+        email: 'jane@example.com',
+        emailVerified: true,
+        displayName: 'Jane',
+        firstName: 'Jane',
+        lastName: 'Doe',
+      });
+      (authClient.send as jest.Mock).mockImplementation(
+        sendByCommand({ [AuthCommands.OAuthLogin]: { data: loginData } })
+      );
+      const cookies = {
+        oauth_state_nonce: JSON.stringify([
+          { id: issued.stateId, nonce: issued.nonce },
+        ]),
+      };
+      const response = { redirect: jest.fn() } as any;
+      await controller.oauthRedirectCallback(
+        {
+          params: { provider: 'google' },
+          query: { code: 'provider-code', state: issued.state },
+          cookies,
+        } as any,
+        response,
+        'google'
+      );
+      const url = new URL(response.redirect.mock.calls[0][0]);
+      return {
+        pendingCode: url.searchParams.get('pendingCode') as string,
+        request: () => ({ cookies }),
+        url,
+      };
+    }
+
+    function signedInHandlers(): Record<string, unknown> {
+      (controller as any).profileClient.send.mockReturnValue(
+        of([{ id: PROFILE_ID, userId: USER_ID, appScope: 'client-interface' }])
+      );
+      return {
+        [AuthCommands.OAuthLogin]: { data: { userId: USER_ID } },
+        [AuthCommands.CreateOAuthCallbackSession]: {
+          data: {
+            sessionId: '22222222-2222-4222-8222-222222222222',
+            userId: USER_ID,
+            profileId: PROFILE_ID,
+            appId: 'client-interface',
+          },
+        },
+      };
+    }
+
+    async function httpFailure(
+      action: Promise<unknown>
+    ): Promise<{ status: number; body: Record<string, unknown> }> {
+      try {
+        await action;
+      } catch (failure) {
+        const exception = failure as HttpException;
+        return {
+          status: exception.getStatus(),
+          body: exception.getResponse() as Record<string, unknown>,
+        };
+      }
+      throw new Error('expected the request to fail');
+    }
+
+    it('redirects an email match to a link intent with a masked email and never links', async () => {
+      const pending = await startPending({
+        needsLink: true,
+        userId: USER_ID,
+        hasPassword: true,
+      });
+
+      expect(pending.url.searchParams.get('pending')).toBe('link_account');
+      expect(pending.url.searchParams.get('provider')).toBe('google');
+      expect(pending.url.searchParams.get('email')).toBe('j***@example.com');
+      expect(pending.url.searchParams.has('callbackCode')).toBe(false);
+      expect(pending.pendingCode).toEqual(expect.any(String));
+      expect(authClient.send).not.toHaveBeenCalledWith(
+        { cmd: AuthCommands.LinkProvider },
+        expect.anything()
+      );
+      await expect(
+        controller.getPendingOAuth(
+          pending.request() as any,
+          pending.pendingCode
+        )
+      ).resolves.toEqual({
+        kind: 'link_account',
+        provider: 'google',
+        maskedEmail: 'j***@example.com',
+        appScope: 'client-interface',
+        methods: ['password', 'email_code'],
+      });
+    });
+
+    it('offers the email code method when the account has no password', async () => {
+      const pending = await startPending({
+        needsLink: true,
+        userId: USER_ID,
+        hasPassword: false,
+      });
+      const described = await controller.getPendingOAuth(
+        pending.request() as any,
+        pending.pendingCode
+      );
+      expect(described.methods).toEqual(['email_code']);
+    });
+
+    it('rejects a pending lookup without the matching nonce cookie', async () => {
+      const pending = await startPending({
+        needsLink: true,
+        userId: USER_ID,
+        hasPassword: true,
+      });
+      const failure = await httpFailure(
+        controller.getPendingOAuth({ cookies: {} } as any, pending.pendingCode)
+      );
+      expect(failure.status).toBe(401);
+      expect(failure.body['error']).toBe('state_invalid');
+    });
+
+    it('links with the right password then issues a callback code', async () => {
+      const pending = await startPending({
+        needsLink: true,
+        userId: USER_ID,
+        hasPassword: true,
+      });
+      (authClient.send as jest.Mock).mockImplementation(
+        sendByCommand({
+          ...signedInHandlers(),
+          [AuthCommands.VerifyUserPassword]: { data: { valid: true } },
+        })
+      );
+
+      const result = (await controller.linkPendingOAuth(
+        pending.request() as any,
+        pending.pendingCode,
+        { password: 'correct horse' }
+      )) as { callbackCode: string; returnTo: string };
+
+      expect(result.callbackCode).toEqual(expect.any(String));
+      expect(result.returnTo).toBe('https://optimistic-tanuki.example/login');
+      expect(authClient.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.LinkProvider },
+        expect.objectContaining({
+          userId: USER_ID,
+          provider: 'google',
+          providerUserId: 'google-user-1',
+        })
+      );
+      // single use
+      const replay = await httpFailure(
+        controller.linkPendingOAuth(
+          pending.request() as any,
+          pending.pendingCode,
+          { password: 'correct horse' }
+        )
+      );
+      expect(replay.body['error']).toBe('state_invalid');
+    });
+
+    it('counts wrong passwords and burns the intent on the fifth', async () => {
+      const pending = await startPending({
+        needsLink: true,
+        userId: USER_ID,
+        hasPassword: true,
+      });
+      (authClient.send as jest.Mock).mockImplementation(
+        sendByCommand({
+          [AuthCommands.VerifyUserPassword]: { data: { valid: false } },
+        })
+      );
+      const attempt = () =>
+        httpFailure(
+          controller.linkPendingOAuth(
+            pending.request() as any,
+            pending.pendingCode,
+            { password: 'nope' }
+          )
+        );
+
+      const first = await attempt();
+      expect(first.status).toBe(401);
+      expect(first.body).toMatchObject({
+        error: 'link_credentials_invalid',
+        attemptsRemaining: 4,
+      });
+      for (let i = 0; i < 3; i++) await attempt();
+      const fifth = await attempt();
+      expect(fifth.body['error']).toBe('link_attempts_exhausted');
+      const after = await attempt();
+      expect(after.body['error']).toBe('state_invalid');
+      expect(authClient.send).not.toHaveBeenCalledWith(
+        { cmd: AuthCommands.LinkProvider },
+        expect.anything()
+      );
+    });
+
+    it('rejects a password when the account has none, and rejects an unissued email code for a password account', async () => {
+      const noPassword = await startPending({
+        needsLink: true,
+        userId: USER_ID,
+        hasPassword: false,
+      });
+      const unavailable = await httpFailure(
+        controller.linkPendingOAuth(
+          noPassword.request() as any,
+          noPassword.pendingCode,
+          { password: 'hunter2' }
+        )
+      );
+      expect(unavailable.status).toBe(400);
+      expect(unavailable.body['error']).toBe('link_method_unavailable');
+
+      const withPassword = await startPending({
+        needsLink: true,
+        userId: USER_ID,
+        hasPassword: true,
+      });
+      const unissued = await httpFailure(
+        controller.linkPendingOAuth(
+          withPassword.request() as any,
+          withPassword.pendingCode,
+          { emailCode: '123456' }
+        )
+      );
+      expect(unissued.status).toBe(401);
+      expect(unissued.body['error']).toBe('link_credentials_invalid');
+    });
+
+    it('emails a link code once per cooldown and links with it', async () => {
+      const pending = await startPending({
+        needsLink: true,
+        userId: USER_ID,
+        hasPassword: false,
+      });
+      (authClient.send as jest.Mock).mockImplementation(
+        sendByCommand({
+          ...signedInHandlers(),
+          [AuthCommands.SendOAuthLinkCode]: {
+            data: { sent: true, codeHash: 'hash-1' },
+          },
+          [AuthCommands.VerifyOAuthLinkCode]: { data: { valid: true } },
+        })
+      );
+
+      await expect(
+        controller.sendPendingLinkCode(
+          pending.request() as any,
+          pending.pendingCode
+        )
+      ).resolves.toEqual({ sent: true });
+      const cooldown = await httpFailure(
+        controller.sendPendingLinkCode(
+          pending.request() as any,
+          pending.pendingCode
+        )
+      );
+      expect(cooldown.status).toBe(429);
+      expect(cooldown.body['error']).toBe('link_code_cooldown');
+
+      const result = (await controller.linkPendingOAuth(
+        pending.request() as any,
+        pending.pendingCode,
+        { emailCode: '123456' }
+      )) as { callbackCode: string };
+      expect(result.callbackCode).toEqual(expect.any(String));
+      expect(authClient.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.VerifyOAuthLinkCode },
+        { userId: USER_ID, code: '123456', codeHash: 'hash-1' }
+      );
+    });
+
+    it('cancels idempotently and the intent is gone afterwards', async () => {
+      const pending = await startPending({
+        needsLink: true,
+        userId: USER_ID,
+        hasPassword: true,
+      });
+      await expect(
+        controller.cancelPendingOAuth(
+          pending.request() as any,
+          pending.pendingCode
+        )
+      ).resolves.toEqual({ cancelled: true });
+      await expect(
+        controller.cancelPendingOAuth(
+          pending.request() as any,
+          pending.pendingCode
+        )
+      ).resolves.toEqual({ cancelled: true });
+      const failure = await httpFailure(
+        controller.getPendingOAuth(
+          pending.request() as any,
+          pending.pendingCode
+        )
+      );
+      expect(failure.body['error']).toBe('state_invalid');
+    });
+
+    describe('age verification', () => {
+      async function startAge(): Promise<PendingFixture> {
+        return startPending({ needsRegistration: true });
+      }
+
+      it('rejects an under-13 date of birth and keeps no account', async () => {
+        const pending = await startAge();
+        expect(pending.url.searchParams.get('pending')).toBe(
+          'age_verification'
+        );
+        const young = new Date();
+        young.setFullYear(young.getFullYear() - 10);
+        const failure = await httpFailure(
+          controller.completePendingAge(
+            pending.request() as any,
+            pending.pendingCode,
+            { dateOfBirth: young.toISOString().slice(0, 10) }
+          )
+        );
+        expect(failure.status).toBe(403);
+        expect(failure.body['error']).toBe('age_ineligible');
+        expect(
+          (controller as any).registerBootstrap.register
+        ).not.toHaveBeenCalled();
+      });
+
+      it('rejects a missing date of birth', async () => {
+        const pending = await startAge();
+        const failure = await httpFailure(
+          controller.completePendingAge(
+            pending.request() as any,
+            pending.pendingCode,
+            {}
+          )
+        );
+        expect(failure.status).toBe(400);
+        expect(failure.body['error']).toBe('age_invalid');
+      });
+
+      it('requests guardian permission for a teen and keeps the intent', async () => {
+        const pending = await startAge();
+        jest.spyOn(controller as any, 'resolveAuthEmailApp').mockReturnValue({
+          appId: 'client-interface',
+          name: 'Optimistic Tanuki',
+          uiBaseUrl: 'https://optimistic-tanuki.example',
+          authEmail: {
+            from: 'no-reply@example.com',
+            replyTo: 'help@example.com',
+          },
+        });
+        (authClient.send as jest.Mock).mockImplementation(
+          sendByCommand({
+            [AuthCommands.RequestGuardianPermission]: {
+              id: 'request-1',
+              sent: true,
+            },
+          })
+        );
+        const teen = new Date();
+        teen.setFullYear(teen.getFullYear() - 15);
+        const failure = await httpFailure(
+          controller.completePendingAge(
+            pending.request() as any,
+            pending.pendingCode,
+            {
+              dateOfBirth: teen.toISOString().slice(0, 10),
+              guardianEmail: 'parent@example.com',
+            }
+          )
+        );
+        expect(failure.status).toBe(403);
+        expect(failure.body).toMatchObject({
+          error: 'guardian_consent_required',
+          data: { guardianConsentPending: true },
+        });
+        await expect(
+          controller.getPendingOAuth(
+            pending.request() as any,
+            pending.pendingCode
+          )
+        ).resolves.toMatchObject({ kind: 'age_verification', methods: [] });
+      });
+
+      it.each([
+        ['client-interface', '/register'],
+        ['local-hub', '/register'],
+      ])(
+        'sends the %s guardian email with return path %s',
+        async (appScope, path) => {
+          const pending = await startPending(
+            { needsRegistration: true },
+            appScope
+          );
+          jest.spyOn(controller as any, 'resolveAuthEmailApp').mockReturnValue({
+            appId: appScope,
+            name: 'App',
+            uiBaseUrl: 'https://app.example',
+            authEmail: {
+              from: 'no-reply@example.com',
+              replyTo: 'h@example.com',
+            },
+          });
+          (authClient.send as jest.Mock).mockImplementation(
+            sendByCommand({
+              [AuthCommands.RequestGuardianPermission]: { id: 'r', sent: true },
+            })
+          );
+          const teen = new Date();
+          teen.setFullYear(teen.getFullYear() - 15);
+          await httpFailure(
+            controller.completePendingAge(
+              pending.request() as any,
+              pending.pendingCode,
+              {
+                dateOfBirth: teen.toISOString().slice(0, 10),
+                guardianEmail: 'parent@example.com',
+              }
+            )
+          );
+          expect(authClient.send).toHaveBeenCalledWith(
+            { cmd: AuthCommands.RequestGuardianPermission },
+            expect.objectContaining({
+              context: expect.objectContaining({ returnPath: path }),
+            })
+          );
+        }
+      );
+
+      it('never creates an age_verification intent for an app without an age gate', async () => {
+        const store = (controller as any).oauthStateStore;
+        const create = jest.spyOn(store, 'createPendingIntent');
+        const pending = await startPending(
+          { needsRegistration: true },
+          'forgeofwill'
+        );
+        expect(pending.url.searchParams.get('pending')).toBeNull();
+        expect(create).not.toHaveBeenCalled();
+        expect(authClient.send).not.toHaveBeenCalledWith(
+          { cmd: AuthCommands.RequestGuardianPermission },
+          expect.anything()
+        );
+        await expect(
+          (controller as any).createPendingIntent({
+            kind: 'age_verification',
+            appScope: 'forgeofwill',
+            provider: 'google',
+            identity: {
+              providerUserId: 'g',
+              email: 'jane@example.com',
+              emailVerified: true,
+              displayName: 'J',
+              firstName: 'J',
+              lastName: 'D',
+            },
+            returnTo: 'https://x.example',
+            stateId: 'state',
+            nonce: 'nonce',
+          })
+        ).rejects.toMatchObject({ code: 'registration_closed' });
+        expect(create).not.toHaveBeenCalled();
+      });
+
+      it('refuses the age endpoint and sends no guardian email for a non age-gated intent', async () => {
+        const pending = await startAge();
+        const store = (controller as any).oauthStateStore;
+        const original = store.getPendingIntent.bind(store);
+        jest
+          .spyOn(store, 'getPendingIntent')
+          .mockImplementation(async (...args: unknown[]) => {
+            const intent = await original(...args);
+            return intent && { ...intent, appScope: 'forgeofwill' };
+          });
+        const teen = new Date();
+        teen.setFullYear(teen.getFullYear() - 15);
+        const failure = await httpFailure(
+          controller.completePendingAge(
+            pending.request() as any,
+            pending.pendingCode,
+            {
+              dateOfBirth: teen.toISOString().slice(0, 10),
+              guardianEmail: 'parent@example.com',
+            }
+          )
+        );
+        expect(failure.body['error']).toBe('state_invalid');
+        expect(authClient.send).not.toHaveBeenCalledWith(
+          { cmd: AuthCommands.RequestGuardianPermission },
+          expect.anything()
+        );
+      });
+
+      it('registers an adult and issues a callback code', async () => {
+        const pending = await startAge();
+        const registerBootstrap = (controller as any).registerBootstrap;
+        registerBootstrap.register.mockResolvedValue({
+          data: {
+            user: { id: USER_ID, emailVerifiedAt: new Date('2026-01-01') },
+          },
+        });
+        (authClient.send as jest.Mock).mockImplementation(
+          sendByCommand(signedInHandlers())
+        );
+        const result = (await controller.completePendingAge(
+          pending.request() as any,
+          pending.pendingCode,
+          { dateOfBirth: '1990-01-01' }
+        )) as { callbackCode: string };
+        expect(result.callbackCode).toEqual(expect.any(String));
+        expect(registerBootstrap.register).toHaveBeenCalledWith(
+          expect.objectContaining({ email: 'jane@example.com' }),
+          'client-interface',
+          'adult'
+        );
+      });
+
+      it('refuses the age endpoint for a link intent', async () => {
+        const pending = await startPending({
+          needsLink: true,
+          userId: USER_ID,
+          hasPassword: true,
+        });
+        const failure = await httpFailure(
+          controller.completePendingAge(
+            pending.request() as any,
+            pending.pendingCode,
+            { dateOfBirth: '1990-01-01' }
+          )
+        );
+        expect(failure.body['error']).toBe('state_invalid');
+      });
+    });
   });
 });

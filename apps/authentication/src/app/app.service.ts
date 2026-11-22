@@ -22,7 +22,7 @@ import * as qrcode from 'qrcode';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { KeyService } from './key.service';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
-import { randomBytes } from 'crypto';
+import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import { authenticator } from 'otplib';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 import { ProfileOwnershipVerifier } from './profile-ownership-verifier.service';
@@ -760,6 +760,104 @@ export class AppService {
       if (e instanceof RpcException) throw e;
       throw new RpcException(e.message || e);
     }
+  }
+
+  /**
+   * Proves control of an existing local account by password, by user id. Used
+   * by the OAuth link step. Shares the login lockout counters and MFA check so
+   * it cannot be used to guess passwords faster than sign-in allows.
+   */
+  async verifyUserPassword(userId: string, password: string, mfa?: string) {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['keyData'],
+    });
+    if (!user) throw new RpcException('User not found');
+    await this.accountDeletionFence.assertActiveAccount(user.id);
+    this.assertNotLocked(user);
+    if (!user.password) {
+      return {
+        message: 'Account has no password',
+        code: 0,
+        data: { valid: false },
+      };
+    }
+    const valid = await this.saltedHashService.validateHash(
+      password,
+      user.password,
+      user.keyData?.salt
+    );
+    if (!valid) {
+      await this.registerFailedLogin(user);
+      return { message: 'Invalid password', code: 0, data: { valid: false } };
+    }
+    try {
+      this.mfaService.assertLoginToken(user.totpSecret, mfa);
+    } catch {
+      await this.registerFailedLogin(user);
+      return { message: 'Invalid MFA token', code: 0, data: { valid: false } };
+    }
+    await this.clearFailedLogins(user);
+    return { message: 'Password verified', code: 0, data: { valid: true } };
+  }
+
+  private oauthLinkCodeHash(userId: string, code: string): string {
+    return createHmac('sha256', this.jwtSecret)
+      .update(`oauth-link-code:${userId}:${code}`)
+      .digest('hex');
+  }
+
+  /**
+   * Emails a 6-digit link code to the account address. Nothing is persisted
+   * here: the caller (gateway) keeps the returned HMAC with its own expiry and
+   * single-use bookkeeping, so the plaintext code exists only in the email.
+   */
+  async sendOAuthLinkCode(userId: string, appName?: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new RpcException('User not found');
+    await this.accountDeletionFence.assertActiveAccount(user.id);
+    const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+    const label = appName?.trim() || 'Optimistic Tanuki';
+    const template = this.renderSecurityEmail(
+      'Confirm linking a sign-in provider',
+      [
+        `Hello ${user.firstName || ''},`,
+        `Use this code to link a sign-in provider to your ${label} account: ${code}`,
+        'The code expires in 10 minutes.',
+      ],
+      'If you did not request this, you can ignore this email. No provider is linked without the code.'
+    );
+    const result = await this.emailService.sendEmail({
+      to: user.email,
+      subject: `Your ${label} link code`,
+      text: template.text,
+      html: template.html,
+    });
+    return {
+      message: 'OAuth link code issued',
+      code: 0,
+      data: {
+        sent: result.success === true,
+        codeHash: this.oauthLinkCodeHash(user.id, code),
+      },
+    };
+  }
+
+  async verifyOAuthLinkCode(userId: string, code: string, codeHash: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new RpcException('User not found');
+    await this.accountDeletionFence.assertActiveAccount(user.id);
+    const expected = Buffer.from(this.oauthLinkCodeHash(user.id, String(code)));
+    const supplied = Buffer.from(String(codeHash));
+    const valid =
+      /^\d{6}$/.test(String(code)) &&
+      expected.length === supplied.length &&
+      timingSafeEqual(expected, supplied);
+    return {
+      message: valid ? 'OAuth link code valid' : 'OAuth link code invalid',
+      code: 0,
+      data: { valid },
+    };
   }
 
   private renderSecurityEmail(heading: string, body: string[], note: string) {

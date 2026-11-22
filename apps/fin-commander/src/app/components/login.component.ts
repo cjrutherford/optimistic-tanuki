@@ -26,6 +26,7 @@ import { tenantOverviewRoute } from '../tenant-routes';
       description="Authenticate to access your finance command surfaces."
       (submitEvent)="onSubmit($event)"
       (oauthProviderSelected)="onOAuthProvider($event)"
+      [errorMessage]="oauthError"
     />
   `,
 })
@@ -94,7 +95,10 @@ export class LoginComponent implements OnInit {
     );
   }
 
+  oauthError = '';
+
   async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
+    this.oauthError = '';
     const result = await this.oauthService.initiateOAuthLogin(
       event.provider,
       'finance',
@@ -125,6 +129,8 @@ export class LoginComponent implements OnInit {
         await this.handlePostLogin();
       }
     }
+
+    if (!result.success && result.error) this.oauthError = result.error;
   }
 
   private async handlePostLogin(): Promise<void> {

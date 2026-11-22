@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, fromEvent, Subscription } from 'rxjs';
 import { filter, take, timeout } from 'rxjs/operators';
+import { oauthErrorMessage } from '../oauth-callback/oauth-errors';
 
 export interface OAuthProviderConfig {
   clientId: string;
@@ -38,6 +39,8 @@ export interface OAuthLoginResult {
     displayName: string;
   };
   error?: string;
+  /** The callback's error code, when the failure came from the callback. */
+  errorCode?: string;
 }
 
 export interface OAuthUserInfo {
@@ -286,10 +289,10 @@ export class OAuthService {
 
             finish({
               success: false,
-              error:
-                result.errorDescription ||
-                result.error ||
-                'OAuth authentication failed',
+              error: result.error
+                ? oauthErrorMessage(result.error, result.errorDescription)
+                : result.errorDescription || 'OAuth authentication failed',
+              ...(result.error ? { errorCode: result.error } : {}),
             });
           },
           error: () => {

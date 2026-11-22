@@ -178,7 +178,7 @@ export class LoginPageComponent {
         }
       }
 
-      this.error = 'OAuth login failed. Please try again.';
+      this.error = result.error || 'OAuth login failed. Please try again.';
     } catch (err: any) {
       this.error = err?.message || 'OAuth login failed. Please try again.';
     }

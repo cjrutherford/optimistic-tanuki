@@ -614,6 +614,66 @@ export class AppController {
     }
   }
 
+  @MessagePattern({ cmd: AuthCommands.VerifyUserPassword })
+  async verifyUserPassword(
+    @Payload() data: { userId: string; password: string; mfa?: string }
+  ) {
+    try {
+      const missing = validateRequiredFields(data, ['userId', 'password']);
+      if (missing.length > 0) {
+        throw new RpcException(`Missing required fields: ${missing.join(' ')}`);
+      }
+      return await this.appService.verifyUserPassword(
+        data.userId,
+        data.password,
+        data.mfa
+      );
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e);
+    }
+  }
+
+  @MessagePattern({ cmd: AuthCommands.SendOAuthLinkCode })
+  async sendOAuthLinkCode(
+    @Payload() data: { userId: string; appName?: string }
+  ) {
+    try {
+      const missing = validateRequiredFields(data, ['userId']);
+      if (missing.length > 0) {
+        throw new RpcException(`Missing required fields: ${missing.join(' ')}`);
+      }
+      return await this.appService.sendOAuthLinkCode(data.userId, data.appName);
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e);
+    }
+  }
+
+  @MessagePattern({ cmd: AuthCommands.VerifyOAuthLinkCode })
+  async verifyOAuthLinkCode(
+    @Payload() data: { userId: string; code: string; codeHash: string }
+  ) {
+    try {
+      const missing = validateRequiredFields(data, [
+        'userId',
+        'code',
+        'codeHash',
+      ]);
+      if (missing.length > 0) {
+        throw new RpcException(`Missing required fields: ${missing.join(' ')}`);
+      }
+      return await this.appService.verifyOAuthLinkCode(
+        data.userId,
+        data.code,
+        data.codeHash
+      );
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e);
+    }
+  }
+
   @MessagePattern({ cmd: AuthCommands.UnlinkProvider })
   async unlinkProvider(@Payload() data: UnlinkProviderRequest) {
     try {

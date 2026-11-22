@@ -80,6 +80,38 @@ wait_for_gateway() {
   return 1
 }
 
+# Fail loudly when the owner bootstrap is only partly configured, or when the
+# env file spells one of its keys wrong (for example OWNER_BOOTSRAP_EMAIL).
+# A silent skip here leaves the deployment without an owner.
+OWNER_BOOTSTRAP_CONFIGURED_COUNT=0
+OWNER_BOOTSTRAP_MISSING=""
+for owner_key in OWNER_BOOTSTRAP_NAME OWNER_BOOTSTRAP_EMAIL OWNER_BOOTSTRAP_PASSWORD; do
+  eval "owner_value=\${${owner_key}:-}"
+  if [ -n "$owner_value" ]; then
+    OWNER_BOOTSTRAP_CONFIGURED_COUNT=$((OWNER_BOOTSTRAP_CONFIGURED_COUNT + 1))
+  else
+    OWNER_BOOTSTRAP_MISSING="${OWNER_BOOTSTRAP_MISSING} ${owner_key}"
+  fi
+done
+
+if [ -n "$COMPOSE_ENV_FILE" ] && [ -r "$COMPOSE_ENV_FILE" ]; then
+  OWNER_BOOTSTRAP_NEAR_MISSES="$(
+    sed -n 's/^[[:space:]]*\(export[[:space:]][[:space:]]*\)\{0,1\}\(OWNER_BOOT[A-Za-z0-9]*_[A-Za-z0-9_]*\)[[:space:]]*=.*/\2/p' "$COMPOSE_ENV_FILE" |
+      grep -v -x -e OWNER_BOOTSTRAP_NAME -e OWNER_BOOTSTRAP_EMAIL -e OWNER_BOOTSTRAP_PASSWORD |
+      sort -u | tr '\n' ' ' || true
+  )"
+  if [ -n "${OWNER_BOOTSTRAP_NEAR_MISSES% }" ]; then
+    echo "Owner bootstrap key(s) in ${COMPOSE_ENV_FILE} look misspelled: ${OWNER_BOOTSTRAP_NEAR_MISSES% }" >&2
+    echo "Expected exactly: OWNER_BOOTSTRAP_NAME, OWNER_BOOTSTRAP_EMAIL, OWNER_BOOTSTRAP_PASSWORD." >&2
+    exit 1
+  fi
+fi
+
+if [ "${OWNER_BOOTSTRAP_CONFIGURED_COUNT}" != "0" ] && [ "${OWNER_BOOTSTRAP_CONFIGURED_COUNT}" != "3" ]; then
+  echo "Owner bootstrap is partly configured; missing:${OWNER_BOOTSTRAP_MISSING}" >&2
+  exit 1
+fi
+
 echo "=========================================="
 echo "Production Seed Script"
 echo "=========================================="
@@ -96,13 +128,11 @@ restart_service gateway
 wait_for_gateway
 sleep 5
 
-if [ -n "${OWNER_BOOTSTRAP_NAME:-}" ] && \
-  [ -n "${OWNER_BOOTSTRAP_EMAIL:-}" ] && \
-  [ -n "${OWNER_BOOTSTRAP_PASSWORD:-}" ]; then
+if [ "${OWNER_BOOTSTRAP_CONFIGURED_COUNT}" = "3" ]; then
   echo "Reconciling configured platform owner..."
   pnpm run bootstrap:owner -- --api-base-url "${ADMIN_API_BASE_URL}"
 else
-  echo "Skipping platform owner bootstrap; OWNER_BOOTSTRAP_* values are not fully configured."
+  echo "Skipping platform owner bootstrap: none of OWNER_BOOTSTRAP_NAME, OWNER_BOOTSTRAP_EMAIL, OWNER_BOOTSTRAP_PASSWORD are set."
 fi
 
 run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js

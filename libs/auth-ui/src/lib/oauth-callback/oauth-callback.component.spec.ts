@@ -150,7 +150,9 @@ describe('OAuthCallbackComponent', () => {
     );
     component.ngOnInit();
 
-    expect(component.error).toBe('Verify the Microsoft account email first.');
+    expect(component.error).toBe(
+      'This email address has to be verified before you can sign in.'
+    );
   });
 
   it('relays the one-time callback code without redeeming it on the callback host', async () => {

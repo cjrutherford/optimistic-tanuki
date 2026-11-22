@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -15,7 +15,13 @@ import { TenantContextService } from '../tenant-context.service';
   standalone: true,
   template: '',
 })
-class StubLoginBlockComponent {}
+class StubLoginBlockComponent {
+  @Input() errorMessage = '';
+}
+
+interface OAuthInitiator {
+  initiateOAuthLogin: jest.Mock;
+}
 
 describe('LoginComponent', () => {
   const profileService = {
@@ -185,5 +191,20 @@ describe('LoginComponent', () => {
       'tenant-1',
       'overview',
     ]);
+  });
+
+  it('shows the OAuth failure message from the provider flow', async () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+    const initiator = (
+      fixture.componentInstance as unknown as { oauthService: OAuthInitiator }
+    ).oauthService;
+    initiator.initiateOAuthLogin = jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'Sign-in cancelled' });
+
+    await fixture.componentInstance.onOAuthProvider({ provider: 'github' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.oauthError).toBe('Sign-in cancelled');
   });
 });

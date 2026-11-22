@@ -24,3 +24,14 @@ export type {
   OAuthProviderConfig,
   OAuthUserInfo,
 } from './lib/services/oauth.service';
+export {
+  OAUTH_ERROR_COPY,
+  describeOAuthError,
+  oauthErrorMessage,
+} from './lib/oauth-callback/oauth-errors';
+export type {
+  DescribedOAuthError,
+  OAuthErrorCopy,
+} from './lib/oauth-callback/oauth-errors';
+export { DateOfBirthStepComponent } from './lib/age-gate/date-of-birth-step.component';
+export { ageFromDateOfBirth } from './lib/age-gate/age';
