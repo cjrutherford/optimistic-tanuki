@@ -91,9 +91,37 @@ test.describe('OAuth cookie session', () => {
       new URL(page.url()).origin
     );
 
+    // The provider's email matches the local account created above, so the
+    // gateway never auto-links it: the popup stops at the explicit link step
+    // and the user proves ownership with the local password. The browser
+    // projects share one database, so once an earlier project has linked the
+    // provider the callback signs straight in and this step is skipped.
+    const signedIn = /\/(feed|settings)(?:\?|$)/;
+    const linkHeading = popup.getByRole('heading', {
+      name: 'Link your Google account',
+    });
+    const outcome = await Promise.race([
+      linkHeading
+        .waitFor({ state: 'visible', timeout: 30_000 })
+        .then(() => 'link' as const)
+        .catch(() => new Promise<never>(() => undefined)),
+      page
+        .waitForURL(signedIn, { timeout: 30_000 })
+        .then(() => 'signed-in' as const),
+    ]);
+    if (outcome === 'link') {
+      await expect(
+        popup.getByText('An account already exists for')
+      ).toBeVisible();
+      await popup.getByLabel('Password').fill(password);
+      await popup
+        .getByRole('button', { name: 'Link Google', exact: true })
+        .click();
+    }
+
     // The opener receives only a session-success signal, restores via the
     // protected session endpoint, and then completes the normal login route.
-    await expect(page).toHaveURL(/\/(feed|settings)(?:\?|$)/);
+    await expect(page).toHaveURL(signedIn);
     await expect.poll(() => popup.isClosed()).toBe(true);
 
     const appOrigin = new URL(page.url()).origin;
