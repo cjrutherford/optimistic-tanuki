@@ -252,3 +252,63 @@ Most of these were introduced by #283 (`f1a96856d`, 2026-10-27) and
 - **O4.** Owner console, System → OAuth health: surface admin-api's unused
   `oauth/validate` and `oauth/test`, the per-domain redirect URIs, and recent
   callback failures counted by step label. This belongs in slice S3 (health).
+
+### Findings on production (2026-11-22, read-only over SSH)
+
+- Production runs `sha-21291f1` (#298). All containers were recreated at
+  about 03:10 UTC on 2026-11-22.
+- **The Postgres cluster was created fresh at 2026-11-06 03:55 UTC.** Every
+  database has that creation time, and the bind mount is `/opt/postgres_data`.
+  `ot_authentication` contains 0 `user_entity` rows, 0 `oauth_provider` rows
+  and 0 `token` rows. `ot_profile` contains 0 `profile` rows. Their
+  `n_tup_ins` counters are all 0, so no insert has been attempted since then.
+  Social (426 communities) and permissions (62 roles) hold seed data only.
+- Each login attempt produces the same three log events:
+
+  1. The gateway logs the start.
+  2. About 10 seconds later, the authentication service logs one debug line,
+     `OAuth login attempt`.
+  3. 23 ms after that, the gateway logs an error.
+
+  The authentication service never logs `Registering user`, and the profile
+  service logs nothing.
+
+- **What that means.** The authentication service finds no linked account
+  and returns `needsRegistration`. The gateway then throws in the registration
+  branch before it calls Register. That can only happen at one of these
+  points:
+
+  - **Owner console:** OAuth sign-up is refused in production by design. The
+    owner account has to come from the deployment bootstrap, which has not
+    run since the rebuild.
+  - **client-interface and local-hub:** a new account needs an age check
+    first, so these throw `AGE_CHECK_REQUIRED`.
+  - **Any app:** `requireUsableOAuthEmail` throws if the provider returns no
+    public email. GitHub does this when the user keeps their email private.
+
+  The browser is shown the generic "OAuth authentication could not be
+  completed" for all of these.
+
+- **Logging regression (#283, `libs/logger/src/lib/payload-free-logging.ts`).**
+  Every backend's logs become `{"event":"diagnostic.rejected"}`, and there is
+  no way to switch it off. Production cannot record any operational detail.
+
+### Revised fix plan
+
+- **O0 (operations).** Confirm the 2026-11-06 rebuild was intended. Then run
+  the owner bootstrap (`admin-api` `bootstrap/owner`) so an owner account
+  exists.
+- **O1.** Turn the internal failure codes into reasons the user can act on,
+  passing an allow-listed `error` code to the callback page:
+
+  - `age_check_required`: send the user to the age gate, then retry.
+  - `owner_not_provisioned`
+  - `provider_email_missing`
+
+  Add an allow-list of safe event codes for the OAuth steps, so production
+  logs show which step failed.
+
+- **O1b.** Revisit the payload-free logger. Keep payloads out, but allow a
+  per-module catalogue of event codes. Today every message is rejected, which
+  hides every failure in production, not only OAuth.
+- O2–O4 as above.
