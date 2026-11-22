@@ -120,7 +120,13 @@ export class ConfigurableClientLoginComponent implements OnInit {
         CONFIGURABLE_CLIENT_APP_SCOPE,
         true
       );
-      if (!result.success || !(await this.auth.restoreSession())) {
+      if (!result.success) {
+        this.error =
+          result.error ||
+          'We could not restore your session. Please try again.';
+        return;
+      }
+      if (!(await this.auth.restoreSession())) {
         this.error = 'We could not restore your session. Please try again.';
         return;
       }

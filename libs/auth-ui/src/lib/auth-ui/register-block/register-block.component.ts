@@ -1,3 +1,4 @@
+import { ageFromDateOfBirth } from '../../age-gate/age';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -84,18 +85,8 @@ export class RegisterBlockComponent extends Themeable {
   }
 
   continueFromAge(): void {
-    const value = this.registerForm.get('dateOfBirth')?.value;
-    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
-    const dob = new Date(`${value}T00:00:00.000Z`);
-    if (Number.isNaN(dob.getTime()) || dob.toISOString().slice(0, 10) !== value)
-      return;
-    const today = new Date();
-    let age = today.getUTCFullYear() - dob.getUTCFullYear();
-    const beforeBirthday =
-      today.getUTCMonth() < dob.getUTCMonth() ||
-      (today.getUTCMonth() === dob.getUTCMonth() &&
-        today.getUTCDate() < dob.getUTCDate());
-    if (beforeBirthday) age -= 1;
+    const age = ageFromDateOfBirth(this.registerForm.get('dateOfBirth')?.value);
+    if (age === null) return;
     if (age < 13) {
       this.registrationStep = 'blocked';
       return;

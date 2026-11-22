@@ -412,4 +412,49 @@ describe('OAuthService', () => {
       error: 'OAuth callback origin mismatch',
     });
   });
+
+  it.each([
+    ['provider_email_missing', undefined, /Make your email visible/],
+    [
+      'totally_new_code',
+      'Odd failure.',
+      /Odd failure\. \(code: totally_new_code\)/,
+    ],
+  ])(
+    'reports the mapped message and code for callback error %s',
+    async (code, description, expected) => {
+      const popup = { closed: false, close: jest.fn() } as unknown as Window;
+      jest.spyOn(window, 'open').mockReturnValue(popup);
+      await TestBed.configureTestingModule({
+        providers: [
+          provideHttpClient(),
+          OAuthService,
+          { provide: 'API_BASE_URL', useValue: '/api' },
+        ],
+      }).compileComponents();
+      const service = TestBed.inject(OAuthService);
+      service.configureProviders({ google: { clientId: 'google-client-id' } });
+
+      const login = service.initiateOAuthLogin('google');
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: window.location.origin,
+          source: popup,
+          data: {
+            type: 'oauth-callback',
+            payload: {
+              success: false,
+              error: code,
+              errorDescription: description,
+            },
+          },
+        })
+      );
+
+      const result = await login;
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe(code);
+      expect(result.error).toMatch(expected);
+    }
+  );
 });

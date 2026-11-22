@@ -27,6 +27,7 @@ import { tenantOverviewRoute } from '../tenant-routes';
       callToAction="Create an account for your finance workspace."
       (submitEvent)="onSubmit($event)"
       (oauthProviderSelected)="onOAuthProvider($event)"
+      [errorMessage]="oauthError"
     />
   `,
 })
@@ -74,7 +75,10 @@ export class RegisterComponent {
       });
   }
 
+  oauthError = '';
+
   async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
+    this.oauthError = '';
     const result = await this.oauthService.initiateOAuthLogin(
       event.provider,
       'finance',
@@ -105,6 +109,8 @@ export class RegisterComponent {
         await this.handlePostLogin();
       }
     }
+
+    if (!result.success && result.error) this.oauthError = result.error;
   }
 
   private async handlePostLogin(): Promise<void> {

@@ -53,7 +53,23 @@ import { RegisterAccountBootstrapService } from '@optimistic-tanuki/auth-feature
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import validator from 'validator';
 import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
-import { OAUTH_STATE_STORE, OAuthStateStore } from './oauth-state.store';
+import {
+  OAUTH_STATE_STORE,
+  OAuthStateStore,
+  PendingOAuthBinding,
+  PendingOAuthKind,
+  StoredPendingOAuthIntent,
+} from './oauth-state.store';
+import { emitSafeDiagnostic } from '@optimistic-tanuki/logger';
+import {
+  DEFAULT_CODE_FOR_STEP,
+  isDeletionFenceError,
+  OAUTH_ERROR_DESCRIPTIONS,
+  OAUTH_ERROR_STATUS,
+  OAuthErrorCode,
+  OAuthFlowError,
+  OAuthStep,
+} from './oauth-flow-error';
 
 type GatewayOAuthProviderConfig = {
   clientId?: string;
@@ -86,6 +102,17 @@ type OAuthStatePayload = {
   guardianApplicantEmail?: string;
 };
 
+/** What a sign-in needs once the provider identity is known. */
+type OAuthSignInContext = {
+  provider: string;
+  identity: OAuthIdentity;
+  appScope: string;
+  returnTo: string;
+  stateId: string;
+  nonce: string;
+  cookieSession: boolean;
+};
+
 type OAuthIdentity = {
   providerUserId: string;
   email: string;
@@ -101,6 +128,8 @@ export class OAuthController {
   private readonly providers = ['google', 'github', 'microsoft', 'facebook'];
   private readonly oauthStateTtlMs = 10 * 60 * 1000;
   private readonly callbackGrantTtlMs = 60 * 1000;
+  private readonly pendingMaxAttempts = 5;
+  private readonly linkCodeCooldownMs = 60 * 1000;
   private readonly providerRequestTimeoutMs = 10 * 1000;
 
   constructor(
@@ -449,6 +478,7 @@ export class OAuthController {
     >;
     if (!state || state.length > 512 || (code && code.length > 4096)) {
       this.logger.warn('Rejected OAuth callback: missing state');
+      this.emitCallbackFailure('state', 'state_invalid', provider);
       this.respondInvalidOAuthCallback(response);
       return;
     }
@@ -460,12 +490,8 @@ export class OAuthController {
     let statePayload: OAuthStatePayload;
     try {
       statePayload = await this.verifyAndConsumeState(state, provider, nonce);
-    } catch (callbackStateError: any) {
-      this.logger.warn(
-        `Rejected OAuth callback state: ${
-          callbackStateError?.message || callbackStateError
-        }`
-      );
+    } catch {
+      this.emitCallbackFailure('state', 'state_invalid', provider);
       this.respondInvalidOAuthCallback(response);
       return;
     }
@@ -480,45 +506,63 @@ export class OAuthController {
       statePayload.providerRedirectUri &&
       statePayload.providerRedirectUri !== expectedProviderRedirectUri
     ) {
-      this.logger.warn('Rejected OAuth callback with mismatched redirect URI');
+      this.emitCallbackFailure(
+        'state',
+        'state_invalid',
+        provider,
+        statePayload.appScope
+      );
       this.respondInvalidOAuthCallback(response);
       return;
     }
     const providerRedirectUri =
       statePayload.providerRedirectUri || expectedProviderRedirectUri;
 
-    if (error) {
+    const redirectError = (errorCode: OAuthErrorCode) =>
       response.redirect(
         this.withQuery(finalCallbackUrl, {
-          error,
-          error_description: 'OAuth sign-in was cancelled or declined.',
+          error: errorCode,
+          error_description: OAUTH_ERROR_DESCRIPTIONS[errorCode],
           returnTo: statePayload.returnTo,
         })
       );
-      return;
-    }
 
-    if (!code) {
-      response.redirect(
-        this.withQuery(finalCallbackUrl, {
-          error: 'missing_code',
-          error_description: 'No authorization code received',
-          returnTo: statePayload.returnTo,
-        })
+    if (error || !code) {
+      // Only an explicit user refusal is "denied"; anything else the provider
+      // reports, or a missing code, means the exchange could not happen.
+      const errorCode: OAuthErrorCode =
+        error === 'access_denied'
+          ? 'provider_denied'
+          : 'provider_exchange_failed';
+      this.emitCallbackFailure(
+        'exchange',
+        errorCode,
+        provider,
+        statePayload.appScope
       );
+      redirectError(errorCode);
       return;
     }
 
+    const tracker: { step: OAuthStep } = { step: 'exchange' };
     try {
-      const identity = this.validateProviderIdentity(
-        await this.exchangeProviderCode(
-          provider,
-          code,
-          callbackDomain,
-          statePayload.codeVerifier,
-          providerRedirectUri
-        )
-      );
+      let identity: OAuthIdentity;
+      try {
+        identity = this.validateProviderIdentity(
+          await this.exchangeProviderCode(
+            provider,
+            code,
+            callbackDomain,
+            statePayload.codeVerifier,
+            providerRedirectUri
+          )
+        );
+      } catch (exchangeError) {
+        throw new OAuthFlowError('provider_exchange_failed', 'exchange', {
+          cause: exchangeError,
+        });
+      }
+      tracker.step = 'login';
       if (statePayload.linkUserId) {
         await firstValueFrom(
           this.authClient.send(
@@ -556,6 +600,40 @@ export class OAuthController {
         )
       );
 
+      const pendingContext = {
+        provider,
+        identity,
+        appScope: statePayload.appScope,
+        returnTo: statePayload.returnTo,
+        stateId,
+        nonce: nonce!,
+        cookieSession: statePayload.cookieSession === true,
+      };
+
+      // D-O1: a matching local account is never linked automatically.
+      if (loginResult?.data?.needsLink) {
+        const matchedUserId = loginResult.data.userId;
+        if (typeof matchedUserId !== 'string' || !matchedUserId) {
+          throw new Error('OAuth login did not resolve a link target');
+        }
+        const pendingCode = await this.createPendingIntent({
+          ...pendingContext,
+          kind: 'link_account',
+          userId: matchedUserId,
+          hasPassword: loginResult.data.hasPassword === true,
+        });
+        response.redirect(
+          this.withQuery(finalCallbackUrl, {
+            pending: 'link_account',
+            pendingCode,
+            provider,
+            email: this.maskEmail(identity.email),
+            returnTo: statePayload.returnTo,
+          })
+        );
+        return;
+      }
+
       let userId = loginResult?.data?.userId as string | undefined;
       if (loginResult?.data?.verificationRequired) {
         await this.sendOAuthVerificationEmail(
@@ -563,18 +641,13 @@ export class OAuthController {
           identity.email,
           statePayload.returnTo
         );
-        response.redirect(
-          this.withQuery(finalCallbackUrl, {
-            error: 'email_verification_required',
-            error_description:
-              'Check your email to verify your account before signing in.',
-            returnTo: statePayload.returnTo,
-          })
-        );
+        redirectError('email_verification_required');
         return;
       }
+      let callbackCode: string | undefined;
       if (!userId && loginResult?.data?.needsRegistration) {
-        this.requireUsableOAuthEmail(identity.email, provider);
+        tracker.step = 'register';
+        this.requireUsableOAuthEmail(identity.email);
         const ageGateApp =
           statePayload.appScope === 'client-interface' ||
           statePayload.appScope === 'local-hub';
@@ -584,102 +657,76 @@ export class OAuthController {
             (!statePayload.ageEligibilityStatus &&
               !statePayload.guardianResumeToken))
         ) {
-          throw new Error('AGE_CHECK_REQUIRED');
+          // D-O2: resume with an age check instead of failing.
+          const pendingCode = await this.createPendingIntent({
+            ...pendingContext,
+            kind: 'age_verification',
+          });
+          response.redirect(
+            this.withQuery(finalCallbackUrl, {
+              pending: 'age_verification',
+              pendingCode,
+              provider,
+              email: this.maskEmail(identity.email),
+              returnTo: statePayload.returnTo,
+            })
+          );
+          return;
         }
         if (
           statePayload.guardianResumeToken &&
           statePayload.guardianApplicantEmail?.trim().toLowerCase() !==
             identity.email.trim().toLowerCase()
         ) {
-          throw new Error(
-            'Guardian permission belongs to a different applicant.'
-          );
+          throw new OAuthFlowError('guardian_mismatch', 'register');
         }
-        const registeredUser = await this.registerOAuthUser(
-          statePayload.appScope,
-          provider,
-          identity,
+        const completed = await this.completeRegistration(
+          pendingContext,
           statePayload.ageEligibilityStatus,
-          statePayload.guardianResumeToken
+          statePayload.guardianResumeToken,
+          tracker
         );
-        userId = registeredUser.userId;
-        if (!registeredUser.emailVerified) {
-          await this.sendOAuthVerificationEmail(
-            statePayload.appScope,
-            identity.email,
-            statePayload.returnTo
-          );
-          response.redirect(
-            this.withQuery(finalCallbackUrl, {
-              error: 'email_verification_required',
-              error_description:
-                'Check your email to verify your account before signing in.',
-              returnTo: statePayload.returnTo,
-            })
-          );
+        if ('verificationRequired' in completed) {
+          redirectError('email_verification_required');
           return;
         }
+        callbackCode = completed.callbackCode;
       }
 
-      if (!userId) {
-        throw new Error('OAuth login did not resolve a user id');
-      }
-
-      const profile = await this.getOrCreateAppScopedProfile(
-        userId,
-        statePayload.appScope,
-        identity.displayName || identity.email,
-        identity.email
-      );
-      await this.assertOwnerConsoleAccess(statePayload.appScope, profile.id);
-      const callbackSession = await firstValueFrom(
-        this.authClient.send(
-          { cmd: AuthCommands.CreateOAuthCallbackSession },
-          { userId, profileId: profile.id, appId: statePayload.appScope }
-        )
-      );
-      const session = callbackSession?.data || callbackSession;
-      const isUUID = (value: unknown): value is string =>
-        typeof value === 'string' &&
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-          value
-        );
-      if (
-        !isUUID(session?.sessionId) ||
-        session.userId !== userId ||
-        session.profileId !== profile.id ||
-        session.appId !== statePayload.appScope
-      ) {
-        throw new Error(
-          'Authentication service returned an invalid callback session'
+      if (!callbackCode) {
+        if (!userId) {
+          throw new Error('OAuth login did not resolve a user id');
+        }
+        callbackCode = await this.finishSignIn(
+          { ...pendingContext, userId },
+          tracker
         );
       }
-
-      const callbackCode = await this.createCallbackGrant(
-        session,
-        statePayload.returnTo,
-        statePayload.appScope,
-        stateId,
-        nonce!,
-        statePayload.cookieSession === true
-      );
       response.redirect(
         this.withQuery(finalCallbackUrl, {
           callbackCode,
           returnTo: statePayload.returnTo,
         })
       );
-    } catch (error: any) {
-      // OAuth provider errors can contain response details or, in malformed
-      // errors, credentials. Keep callback diagnostics deliberately generic.
-      this.logger.error('OAuth callback failed');
-      response.redirect(
-        this.withQuery(finalCallbackUrl, {
-          error: 'oauth_callback_failed',
-          error_description: 'OAuth authentication could not be completed.',
-          returnTo: statePayload.returnTo,
-        })
+    } catch (failure: unknown) {
+      // Provider and RPC errors can carry response details or credentials, so
+      // they are never logged or matched on; only the typed code and step are.
+      const flow = this.toFlowError(failure, tracker.step);
+      this.emitCallbackFailure(
+        flow.step,
+        flow.code,
+        provider,
+        statePayload.appScope
       );
+      if (flow.code === 'oauth_callback_failed') {
+        emitSafeDiagnostic(
+          this.logger,
+          'oauth.callback.unexpected',
+          { step: flow.step, provider, appScope: statePayload.appScope },
+          'error'
+        );
+      }
+      redirectError(flow.code);
     }
   }
 
@@ -780,6 +827,370 @@ export class OAuthController {
       return { session: true, returnOrigin: grant.returnOrigin };
     }
     return { token, returnOrigin: grant.returnOrigin };
+  }
+
+  @Get('pending/:code')
+  @Public()
+  @Throttle({ short: { limit: 30, ttl: 60_000 } })
+  @ApiOperation({
+    summary: 'Describe a pending OAuth intent without consuming it',
+  })
+  async getPendingOAuth(
+    @Req() request: Request,
+    @Param('code') code: string
+  ): Promise<{
+    kind: PendingOAuthKind;
+    provider: string;
+    maskedEmail: string;
+    appScope: string;
+    methods: Array<'password' | 'email_code'>;
+  }> {
+    const { intent } = await this.requirePending(request, code);
+    return {
+      kind: intent.kind,
+      provider: intent.provider,
+      maskedEmail: this.maskEmail(intent.email),
+      appScope: intent.appScope,
+      methods: intent.kind === 'link_account' ? this.linkMethods(intent) : [],
+    };
+  }
+
+  @Post('pending/:code/link/email-code')
+  @Public()
+  @Throttle({ short: { limit: 5, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Email a 6-digit code to confirm an account link' })
+  async sendPendingLinkCode(
+    @Req() request: Request,
+    @Param('code') code: string
+  ): Promise<{ sent: true }> {
+    const { intent, binding } = await this.requirePending(
+      request,
+      code,
+      'link_account'
+    );
+    if (!this.linkMethods(intent).includes('email_code')) {
+      throw this.oauthHttpError('link_method_unavailable');
+    }
+    const existing = await this.oauthStateStore.getPendingLinkCode(
+      code,
+      binding
+    );
+    if (
+      existing &&
+      existing.expiresAt - this.oauthStateTtlMs + this.linkCodeCooldownMs >
+        Date.now()
+    ) {
+      throw this.oauthHttpError('link_code_cooldown');
+    }
+    const tracker: { step: OAuthStep } = { step: 'link' };
+    try {
+      const issued = (await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.SendOAuthLinkCode },
+          { userId: intent.userId, appName: this.appDisplayName(intent) }
+        )
+      )) as { data?: { sent?: boolean; codeHash?: string } };
+      const codeHash = issued?.data?.codeHash;
+      if (!issued?.data?.sent || typeof codeHash !== 'string') {
+        throw new OAuthFlowError('email_code_send_failed', 'link');
+      }
+      const stored = await this.oauthStateStore.setPendingLinkCode(
+        code,
+        binding,
+        { codeHash, expiresAt: Date.now() + this.oauthStateTtlMs }
+      );
+      if (!stored) throw this.oauthHttpError('state_invalid');
+      return { sent: true };
+    } catch (failure) {
+      return this.failPending(
+        failure,
+        tracker,
+        intent,
+        'email_code_send_failed'
+      );
+    }
+  }
+
+  @Post('pending/:code/link')
+  @Public()
+  @Throttle({ short: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({
+    summary: 'Prove ownership of the matched account and link the provider',
+  })
+  async linkPendingOAuth(
+    @Req() request: Request,
+    @Param('code') code: string,
+    @Body() body: { password?: unknown; emailCode?: unknown; mfa?: unknown }
+  ): Promise<
+    { callbackCode: string; returnTo: string } | { verificationRequired: true }
+  > {
+    const { intent, binding, nonce } = await this.requirePending(
+      request,
+      code,
+      'link_account'
+    );
+    const password =
+      typeof body?.password === 'string' && body.password.length <= 1024
+        ? body.password
+        : undefined;
+    const emailCode =
+      typeof body?.emailCode === 'string' ? body.emailCode.trim() : undefined;
+    if (!!password === !!emailCode) {
+      throw this.oauthHttpError('link_credentials_invalid');
+    }
+    const method = password ? 'password' : 'email_code';
+    if (!this.linkMethods(intent).includes(method)) {
+      throw this.oauthHttpError('link_method_unavailable');
+    }
+
+    const tracker: { step: OAuthStep } = { step: 'link' };
+    try {
+      let valid: boolean;
+      try {
+        valid = await this.verifyLinkCredential(
+          code,
+          binding,
+          intent,
+          password,
+          emailCode,
+          typeof body?.mfa === 'string' ? body.mfa : undefined
+        );
+      } catch (credentialError) {
+        if (isDeletionFenceError(credentialError)) {
+          await this.oauthStateStore.consumePendingIntent(code, binding);
+          throw new OAuthFlowError('account_deleted', 'link');
+        }
+        valid = false;
+      }
+      if (!valid) {
+        const attempts = await this.oauthStateStore.recordPendingAttempt(
+          code,
+          binding,
+          this.pendingMaxAttempts
+        );
+        if (attempts === undefined) throw this.oauthHttpError('state_invalid');
+        if (attempts >= this.pendingMaxAttempts) {
+          throw this.oauthHttpError('link_attempts_exhausted');
+        }
+        throw this.oauthHttpError('link_credentials_invalid', {
+          attemptsRemaining: this.pendingMaxAttempts - attempts,
+        });
+      }
+
+      const consumed = await this.oauthStateStore.consumePendingIntent(
+        code,
+        binding
+      );
+      if (!consumed?.userId) throw this.oauthHttpError('state_invalid');
+      await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.LinkProvider },
+          {
+            userId: consumed.userId,
+            provider: consumed.provider,
+            providerUserId: consumed.providerUserId,
+            providerEmail: consumed.email,
+            providerDisplayName: consumed.displayName,
+            providerEmailVerified: consumed.emailVerified,
+          }
+        )
+      );
+      // The provider is now linked, so this resolves the user through the
+      // normal linked-account path (age eligibility, verification state).
+      tracker.step = 'login';
+      const context = this.contextFromIntent(consumed, nonce);
+      const loginResult = await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.OAuthLogin },
+          {
+            provider: consumed.provider,
+            providerUserId: consumed.providerUserId,
+            email: consumed.email,
+            emailVerified: consumed.emailVerified,
+            displayName: consumed.displayName,
+            appId: consumed.appScope,
+          }
+        )
+      );
+      if (loginResult?.data?.verificationRequired) {
+        await this.sendOAuthVerificationEmail(
+          consumed.appScope,
+          consumed.email,
+          consumed.returnTo
+        );
+        return { verificationRequired: true };
+      }
+      const userId = loginResult?.data?.userId as string | undefined;
+      if (!userId) throw new Error('OAuth login did not resolve a user id');
+      const callbackCode = await this.finishSignIn(
+        { ...context, userId },
+        tracker
+      );
+      emitSafeDiagnostic(
+        this.logger,
+        'oauth.pending.completed',
+        {
+          kind: 'link_account',
+          provider: consumed.provider,
+          appScope: consumed.appScope,
+        },
+        'log'
+      );
+      return { callbackCode, returnTo: consumed.returnTo };
+    } catch (failure) {
+      return this.failPending(failure, tracker, intent);
+    }
+  }
+
+  @Post('pending/:code/cancel')
+  @Public()
+  @Throttle({ short: { limit: 20, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Abandon a pending OAuth intent' })
+  async cancelPendingOAuth(
+    @Req() request: Request,
+    @Param('code') code: string
+  ): Promise<{ cancelled: true }> {
+    const { binding } = this.pendingBinding(request, code);
+    const removed = await this.oauthStateStore.consumePendingIntent(
+      code,
+      binding
+    );
+    if (removed) {
+      emitSafeDiagnostic(
+        this.logger,
+        'oauth.pending.cancelled',
+        { kind: removed.kind },
+        'log'
+      );
+    }
+    return { cancelled: true };
+  }
+
+  @Post('pending/:code/age')
+  @Public()
+  @Throttle({ short: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({
+    summary: 'Run the age check for a pending OAuth sign-up and finish it',
+  })
+  async completePendingAge(
+    @Req() request: Request,
+    @Param('code') code: string,
+    @Body()
+    body: {
+      dateOfBirth?: unknown;
+      guardianResumeToken?: unknown;
+      guardianEmail?: unknown;
+    }
+  ): Promise<
+    { callbackCode: string; returnTo: string } | { verificationRequired: true }
+  > {
+    const { intent, binding, nonce } = await this.requirePending(
+      request,
+      code,
+      'age_verification'
+    );
+    const tracker: { step: OAuthStep } = { step: 'age' };
+    try {
+      let ageEligibilityStatus: 'adult' | undefined;
+      let guardianResumeToken: string | undefined;
+      if (
+        typeof body?.guardianResumeToken === 'string' &&
+        body.guardianResumeToken
+      ) {
+        let resumedEmail: string;
+        try {
+          const resumed = (await firstValueFrom(
+            this.authClient.send(
+              { cmd: AuthCommands.ValidateGuardianResume },
+              { token: body.guardianResumeToken }
+            )
+          )) as { valid: true; email: string };
+          resumedEmail = resumed.email;
+        } catch {
+          throw this.oauthHttpError('guardian_token_invalid');
+        }
+        if (
+          resumedEmail.trim().toLowerCase() !==
+          intent.email.trim().toLowerCase()
+        ) {
+          throw new OAuthFlowError('guardian_mismatch', 'age');
+        }
+        guardianResumeToken = body.guardianResumeToken;
+      } else {
+        // Same evaluation as password sign-up in the authentication controller.
+        const age = this.ageAtRegistration(
+          typeof body?.dateOfBirth === 'string' ? body.dateOfBirth : undefined
+        );
+        if (age === null) throw this.oauthHttpError('age_invalid');
+        if (age < 13) throw this.oauthHttpError('age_ineligible');
+        if (age < 18) {
+          const guardianEmail =
+            typeof body?.guardianEmail === 'string' ? body.guardianEmail : '';
+          if (!guardianEmail || !validator.isEmail(guardianEmail)) {
+            throw this.oauthHttpError('age_ineligible');
+          }
+          const app = this.resolveAuthEmailApp(intent.appScope);
+          const requested = await firstValueFrom(
+            this.authClient.send(
+              { cmd: AuthCommands.RequestGuardianPermission },
+              {
+                dateOfBirth: body.dateOfBirth,
+                applicantEmail: intent.email,
+                guardianEmail,
+                context: {
+                  appId: app.appId,
+                  appName: app.name,
+                  uiBaseUrl: app.uiBaseUrl,
+                  from: app.authEmail!.from,
+                  replyTo: app.authEmail!.replyTo,
+                  returnPath: '/register',
+                },
+              }
+            )
+          );
+          throw this.oauthHttpError('guardian_consent_required', {
+            message:
+              (requested as { sent?: boolean })?.sent === false
+                ? 'Guardian permission request is pending, but the email could not be sent.'
+                : 'Guardian permission request sent.',
+            data: { guardianConsentPending: true, request: requested },
+          });
+        }
+        ageEligibilityStatus = 'adult';
+      }
+
+      const consumed = await this.oauthStateStore.consumePendingIntent(
+        code,
+        binding
+      );
+      if (!consumed) throw this.oauthHttpError('state_invalid');
+      tracker.step = 'register';
+      const completed = await this.completeRegistration(
+        this.contextFromIntent(consumed, nonce),
+        ageEligibilityStatus,
+        guardianResumeToken,
+        tracker
+      );
+      emitSafeDiagnostic(
+        this.logger,
+        'oauth.pending.completed',
+        {
+          kind: 'age_verification',
+          provider: consumed.provider,
+          appScope: consumed.appScope,
+        },
+        'log'
+      );
+      if ('verificationRequired' in completed) {
+        return { verificationRequired: true };
+      }
+      return {
+        callbackCode: completed.callbackCode,
+        returnTo: consumed.returnTo,
+      };
+    } catch (failure) {
+      return this.failPending(failure, tracker, intent);
+    }
   }
 
   // Not @Public(): this mutates account state, so AuthGuard MUST reject an
@@ -967,11 +1378,312 @@ export class OAuthController {
     return parsed.toString();
   }
 
-  private async sendOAuthVerificationEmail(
-    appId: string,
-    email: string,
-    returnTo: string
-  ): Promise<void> {
+  private emitCallbackFailure(
+    step: OAuthStep,
+    code: OAuthErrorCode,
+    provider: string,
+    appScope?: string
+  ): void {
+    emitSafeDiagnostic(
+      this.logger,
+      'oauth.callback.failed',
+      { step, code, provider, appScope },
+      'warn'
+    );
+  }
+
+  private toFlowError(failure: unknown, step: OAuthStep): OAuthFlowError {
+    if (failure instanceof OAuthFlowError) return failure;
+    if (isDeletionFenceError(failure)) {
+      return new OAuthFlowError('account_deleted', step, { cause: failure });
+    }
+    return new OAuthFlowError(DEFAULT_CODE_FOR_STEP[step], step, {
+      cause: failure,
+    });
+  }
+
+  private oauthHttpError(
+    code: OAuthErrorCode,
+    extra: Record<string, unknown> = {}
+  ): HttpException {
+    return new HttpException(
+      {
+        error: code,
+        error_description: OAUTH_ERROR_DESCRIPTIONS[code],
+        ...extra,
+      },
+      OAUTH_ERROR_STATUS[code]
+    );
+  }
+
+  /** Rethrows deliberate HTTP errors; maps anything else to a named code. */
+  private failPending(
+    failure: unknown,
+    tracker: { step: OAuthStep },
+    intent: StoredPendingOAuthIntent,
+    fallback?: OAuthErrorCode
+  ): never {
+    if (failure instanceof HttpException) throw failure;
+    const flow = this.toFlowError(failure, tracker.step);
+    const code =
+      fallback && flow.code === DEFAULT_CODE_FOR_STEP[flow.step]
+        ? fallback
+        : flow.code;
+    emitSafeDiagnostic(
+      this.logger,
+      'oauth.pending.failed',
+      {
+        kind: intent.kind,
+        step: flow.step,
+        code,
+        provider: intent.provider,
+        appScope: intent.appScope,
+      },
+      'warn'
+    );
+    if (code === 'oauth_callback_failed') {
+      emitSafeDiagnostic(
+        this.logger,
+        'oauth.callback.unexpected',
+        {
+          step: flow.step,
+          provider: intent.provider,
+          appScope: intent.appScope,
+        },
+        'error'
+      );
+    }
+    throw this.oauthHttpError(code);
+  }
+
+  private maskEmail(email: string): string {
+    const [local, domain] = email.split('@');
+    if (!local || !domain) return '***';
+    return `${local[0]}***@${domain}`;
+  }
+
+  private linkMethods(
+    intent: StoredPendingOAuthIntent
+  ): Array<'password' | 'email_code'> {
+    // OAuth-registered users hold a random password hash, so a password is
+    // offered only as a convenience; the emailed code always works.
+    return intent.hasPassword ? ['password', 'email_code'] : ['email_code'];
+  }
+
+  private appDisplayName(intent: StoredPendingOAuthIntent): string | undefined {
+    return this.registry.apps.find((entry) => entry.appId === intent.appScope)
+      ?.name;
+  }
+
+  private contextFromIntent(
+    intent: StoredPendingOAuthIntent,
+    nonce: string
+  ): OAuthSignInContext {
+    return {
+      provider: intent.provider,
+      identity: {
+        providerUserId: intent.providerUserId,
+        email: intent.email,
+        emailVerified: intent.emailVerified,
+        displayName: intent.displayName,
+        firstName: intent.firstName,
+        lastName: intent.lastName,
+      },
+      appScope: intent.appScope,
+      returnTo: intent.returnTo,
+      stateId: intent.stateId,
+      nonce,
+      cookieSession: intent.cookieSession === true,
+    };
+  }
+
+  private async createPendingIntent(
+    context: OAuthSignInContext & {
+      kind: PendingOAuthKind;
+      userId?: string;
+      hasPassword?: boolean;
+    }
+  ): Promise<string> {
+    const code = `${context.stateId}.${randomBytes(32).toString('base64url')}`;
+    await this.oauthStateStore.createPendingIntent(code, {
+      kind: context.kind,
+      provider: context.provider,
+      providerUserId: context.identity.providerUserId,
+      email: context.identity.email,
+      emailVerified: context.identity.emailVerified,
+      displayName: context.identity.displayName,
+      firstName: context.identity.firstName,
+      lastName: context.identity.lastName,
+      appScope: context.appScope,
+      returnTo: context.returnTo,
+      cookieSession: context.cookieSession,
+      ...(context.userId
+        ? { userId: context.userId, hasPassword: context.hasPassword === true }
+        : {}),
+      stateId: context.stateId,
+      nonceHash: this.hashNonce(context.nonce),
+      expiresAt: Date.now() + this.oauthStateTtlMs,
+    });
+    emitSafeDiagnostic(
+      this.logger,
+      'oauth.pending.created',
+      {
+        kind: context.kind,
+        provider: context.provider,
+        appScope: context.appScope,
+      },
+      'log'
+    );
+    return code;
+  }
+
+  /** Same binding as callback grants: id prefix selects the nonce cookie entry. */
+  private pendingBinding(
+    request: Request,
+    code: string
+  ): { binding: PendingOAuthBinding; nonce: string } {
+    const [stateId, secret] = typeof code === 'string' ? code.split('.') : [];
+    const nonce = stateId
+      ? this.parseNonceCookie(request.cookies?.oauth_state_nonce).find(
+          (entry) => entry.id === stateId
+        )?.nonce
+      : undefined;
+    if (
+      code.length > 512 ||
+      !/^[A-Za-z0-9_-]{32,128}$/.test(stateId || '') ||
+      !/^[A-Za-z0-9_-]{32,128}$/.test(secret || '') ||
+      !nonce
+    ) {
+      throw this.oauthHttpError('state_invalid');
+    }
+    return { binding: { stateId, nonceHash: this.hashNonce(nonce) }, nonce };
+  }
+
+  private async requirePending(
+    request: Request,
+    code: string,
+    kind?: PendingOAuthKind
+  ): Promise<{
+    intent: StoredPendingOAuthIntent;
+    binding: PendingOAuthBinding;
+    nonce: string;
+  }> {
+    const { binding, nonce } = this.pendingBinding(request, code);
+    const intent = await this.oauthStateStore.getPendingIntent(code, binding);
+    if (!intent || (kind && intent.kind !== kind)) {
+      throw this.oauthHttpError('state_invalid');
+    }
+    return { intent, binding, nonce };
+  }
+
+  private async verifyLinkCredential(
+    code: string,
+    binding: PendingOAuthBinding,
+    intent: StoredPendingOAuthIntent,
+    password: string | undefined,
+    emailCode: string | undefined,
+    mfa: string | undefined
+  ): Promise<boolean> {
+    if (password) {
+      const result = (await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.VerifyUserPassword },
+          { userId: intent.userId, password, ...(mfa ? { mfa } : {}) }
+        )
+      )) as { data?: { valid?: boolean } };
+      return result?.data?.valid === true;
+    }
+    const stored = await this.oauthStateStore.getPendingLinkCode(code, binding);
+    if (!stored || stored.expiresAt <= Date.now() || !emailCode) return false;
+    const result = (await firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.VerifyOAuthLinkCode },
+        { userId: intent.userId, code: emailCode, codeHash: stored.codeHash }
+      )
+    )) as { data?: { valid?: boolean } };
+    return result?.data?.valid === true;
+  }
+
+  /** Profile, access check, session and grant: shared by every sign-in path. */
+  private async finishSignIn(
+    context: OAuthSignInContext & { userId: string },
+    tracker: { step: OAuthStep }
+  ): Promise<string> {
+    const { userId, identity } = context;
+    tracker.step = 'profile';
+    const profile = await this.getOrCreateAppScopedProfile(
+      userId,
+      context.appScope,
+      identity.displayName || identity.email,
+      identity.email
+    );
+    tracker.step = 'access';
+    await this.assertOwnerConsoleAccess(context.appScope, profile.id);
+    tracker.step = 'session';
+    const callbackSession = await firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.CreateOAuthCallbackSession },
+        { userId, profileId: profile.id, appId: context.appScope }
+      )
+    );
+    const session = callbackSession?.data || callbackSession;
+    const isUUID = (value: unknown): value is string =>
+      typeof value === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        value
+      );
+    if (
+      !isUUID(session?.sessionId) ||
+      session.userId !== userId ||
+      session.profileId !== profile.id ||
+      session.appId !== context.appScope
+    ) {
+      throw new Error(
+        'Authentication service returned an invalid callback session'
+      );
+    }
+    tracker.step = 'grant';
+    return this.createCallbackGrant(
+      session,
+      context.returnTo,
+      context.appScope,
+      context.stateId,
+      context.nonce,
+      context.cookieSession
+    );
+  }
+
+  private async completeRegistration(
+    context: OAuthSignInContext,
+    ageEligibilityStatus: 'adult' | undefined,
+    guardianResumeToken: string | undefined,
+    tracker: { step: OAuthStep }
+  ): Promise<{ callbackCode: string } | { verificationRequired: true }> {
+    tracker.step = 'register';
+    const registered = await this.registerOAuthUser(
+      context.appScope,
+      context.provider,
+      context.identity,
+      ageEligibilityStatus,
+      guardianResumeToken
+    );
+    if (!registered.emailVerified) {
+      await this.sendOAuthVerificationEmail(
+        context.appScope,
+        context.identity.email,
+        context.returnTo
+      );
+      return { verificationRequired: true };
+    }
+    return {
+      callbackCode: await this.finishSignIn(
+        { ...context, userId: registered.userId },
+        tracker
+      ),
+    };
+  }
+
+  private resolveAuthEmailApp(appId: string): AppRegistration {
     const canonicalAppId =
       (
         {
@@ -991,6 +1703,15 @@ export class OAuthController {
         `Email sender for ${appId} must use an approved root domain`
       );
     }
+    return app;
+  }
+
+  private async sendOAuthVerificationEmail(
+    appId: string,
+    email: string,
+    returnTo: string
+  ): Promise<void> {
+    const app = this.resolveAuthEmailApp(appId);
     const parsedReturn = new URL(returnTo);
     await firstValueFrom(
       this.authClient.send(
@@ -1350,7 +2071,8 @@ export class OAuthController {
   private respondInvalidOAuthCallback(response: Response): void {
     response.status(HttpStatus.BAD_REQUEST).json({
       error: 'invalid_oauth_callback',
-      error_description: 'OAuth callback could not be validated.',
+      error_description:
+        'This sign-in attempt has expired or was already used. Close this window and start sign-in again.',
     });
   }
 
@@ -1637,11 +2359,9 @@ export class OAuthController {
     };
   }
 
-  private requireUsableOAuthEmail(email: string, provider: string): void {
+  private requireUsableOAuthEmail(email: string): void {
     if (!email || !validator.isEmail(email)) {
-      throw new Error(
-        `${provider} OAuth did not return a usable email address`
-      );
+      throw new OAuthFlowError('provider_email_missing', 'register');
     }
   }
 
@@ -1653,12 +2373,10 @@ export class OAuthController {
     guardianResumeToken?: string
   ): Promise<{ userId: string; emailVerified: boolean }> {
     if (appScope === 'owner-console' && process.env.NODE_ENV === 'production') {
-      throw new Error(
-        'Owner Console accounts must be provisioned by the deployment bootstrap.'
-      );
+      throw new OAuthFlowError('registration_closed', 'register');
     }
 
-    this.requireUsableOAuthEmail(identity.email, provider);
+    this.requireUsableOAuthEmail(identity.email);
 
     const { firstName, lastName } = this.splitDisplayName(
       identity.firstName,
@@ -1736,9 +2454,7 @@ export class OAuthController {
         allowedRoleNames.has(assignment.role?.name || '')
       )
     ) {
-      throw new Error(
-        'This account is not authorized for Owner Console access.'
-      );
+      throw new OAuthFlowError('not_authorized_for_app', 'access');
     }
   }
 

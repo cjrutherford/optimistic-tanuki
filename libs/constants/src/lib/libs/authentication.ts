@@ -40,6 +40,10 @@ const AuthCommands = {
   LinkProvider: 'LinkProvider',
   UnlinkProvider: 'UnlinkProvider',
   GetLinkedProviders: 'GetLinkedProviders',
+  // Explicit OAuth link step: prove ownership of the matched local account
+  VerifyUserPassword: 'VerifyUserPassword',
+  SendOAuthLinkCode: 'SendOAuthLinkCode',
+  VerifyOAuthLinkCode: 'VerifyOAuthLinkCode',
   // Email commands for MFA verification
   SendMfaSetupEmail: 'SendMfaSetupEmail',
   SendMfaVerificationEmail: 'SendMfaVerificationEmail',

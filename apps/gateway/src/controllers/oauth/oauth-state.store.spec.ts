@@ -1,6 +1,7 @@
 import {
   assertOAuthStateEnvironment,
   LocalOAuthStateStore,
+  StoredPendingOAuthIntent,
   selectOAuthStateStore,
 } from './oauth-state.store';
 
@@ -111,5 +112,95 @@ describe('LocalOAuthStateStore account invalidation', () => {
         'nonce-hash'
       )
     ).toBeDefined();
+  });
+});
+
+describe('LocalOAuthStateStore pending intents', () => {
+  const binding = { stateId: 'state-1', nonceHash: 'nonce-hash' };
+  const intent = (
+    overrides: Partial<StoredPendingOAuthIntent> = {}
+  ): StoredPendingOAuthIntent => ({
+    kind: 'link_account',
+    provider: 'google',
+    providerUserId: 'g-1',
+    email: 'a@example.com',
+    emailVerified: true,
+    displayName: 'A',
+    firstName: 'A',
+    lastName: 'B',
+    appScope: 'client-interface',
+    returnTo: 'https://app.example.com/',
+    userId: 'b2222222-b222-4222-8222-b22222222222',
+    hasPassword: true,
+    ...binding,
+    expiresAt: Date.now() + 60_000,
+    ...overrides,
+  });
+
+  it('reads without consuming, then consumes exactly once', async () => {
+    const store = new LocalOAuthStateStore();
+    await store.createPendingIntent('p1', intent());
+    expect(await store.getPendingIntent('p1', binding)).toBeDefined();
+    expect(await store.getPendingIntent('p1', binding)).toBeDefined();
+    expect(await store.consumePendingIntent('p1', binding)).toBeDefined();
+    expect(await store.consumePendingIntent('p1', binding)).toBeUndefined();
+  });
+
+  it('is bound to the nonce cookie and never leaks to another browser', async () => {
+    const store = new LocalOAuthStateStore();
+    await store.createPendingIntent('p1', intent());
+    const other = { ...binding, nonceHash: 'someone-else' };
+    expect(await store.getPendingIntent('p1', other)).toBeUndefined();
+    expect(await store.consumePendingIntent('p1', other)).toBeUndefined();
+    expect(await store.recordPendingAttempt('p1', other, 5)).toBeUndefined();
+    expect(await store.getPendingIntent('p1', binding)).toBeDefined();
+  });
+
+  it('expires and deletes after the attempt limit', async () => {
+    const store = new LocalOAuthStateStore();
+    await store.createPendingIntent(
+      'old',
+      intent({ expiresAt: Date.now() - 1 })
+    );
+    expect(await store.getPendingIntent('old', binding)).toBeUndefined();
+    await store.createPendingIntent('p1', intent());
+    for (const expected of [1, 2, 3, 4])
+      expect(await store.recordPendingAttempt('p1', binding, 5)).toBe(expected);
+    expect(await store.recordPendingAttempt('p1', binding, 5)).toBe(5);
+    expect(await store.getPendingIntent('p1', binding)).toBeUndefined();
+  });
+
+  it('keeps an email link code only while the intent is bound and alive', async () => {
+    const store = new LocalOAuthStateStore();
+    await store.createPendingIntent('p1', intent());
+    expect(
+      await store.setPendingLinkCode('p1', binding, {
+        codeHash: 'h',
+        expiresAt: 1,
+      })
+    ).toBe(true);
+    expect(await store.getPendingLinkCode('p1', binding)).toEqual({
+      codeHash: 'h',
+      expiresAt: 1,
+    });
+    await store.consumePendingIntent('p1', binding);
+    expect(await store.getPendingLinkCode('p1', binding)).toBeUndefined();
+  });
+
+  it('refuses intents that carry provider tokens', async () => {
+    const store = new LocalOAuthStateStore();
+    await expect(
+      store.createPendingIntent('p1', {
+        ...intent(),
+        accessToken: 'x',
+      } as StoredPendingOAuthIntent)
+    ).rejects.toThrow();
+  });
+
+  it('drops link intents when the account is invalidated', async () => {
+    const store = new LocalOAuthStateStore();
+    await store.createPendingIntent('p1', intent());
+    await store.invalidateAccount('b2222222-b222-4222-8222-b22222222222');
+    expect(await store.getPendingIntent('p1', binding)).toBeUndefined();
   });
 });

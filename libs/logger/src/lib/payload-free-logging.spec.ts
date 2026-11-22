@@ -1,4 +1,5 @@
 import { PayloadFreeLogger } from './payload-free-logging';
+import { registerSafeEventCatalogue } from './safe-diagnostic';
 
 describe('Payload-free Nest logging boundary', () => {
   it('rejects raw messages, errors, contexts and formatting arguments at every level', () => {
@@ -78,5 +79,23 @@ it('attests only the currently installed console boundary and detects its replac
       Object.defineProperties(console, originals);
       override.mockRestore();
     }
+  });
+});
+
+it('passes registered catalogue events with only allow-listed fields', () => {
+  registerSafeEventCatalogue({
+    'pfl.catalogue.failed': { step: ['state', 'exchange'] },
+  });
+  const write = jest.fn();
+  const logger = new PayloadFreeLogger(write);
+  logger.error({
+    event: 'pfl.catalogue.failed',
+    step: 'state',
+    email: 'PRIVATE_SENTINEL@example.test',
+  });
+  expect(write).toHaveBeenCalledWith({
+    level: 'error',
+    event: 'pfl.catalogue.failed',
+    step: 'state',
   });
 });

@@ -120,7 +120,9 @@ export class LoginComponent {
         }
       }
 
-      this.errorMessage = `Signing in with ${event.provider} did not complete. Try again or use your email and password.`;
+      this.errorMessage =
+        result.error ||
+        `Signing in with ${event.provider} did not complete. Try again or use your email and password.`;
     } catch {
       this.errorMessage = `Signing in with ${event.provider} did not complete. Try again or use your email and password.`;
     } finally {

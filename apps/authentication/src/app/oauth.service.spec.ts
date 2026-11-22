@@ -238,96 +238,74 @@ describe('OAuthService', () => {
       );
     });
 
-    it('should auto-link when email matches an existing user and provider email is verified', async () => {
-      (oauthRepo.findOne as jest.Mock).mockResolvedValue(null);
-      const mockUser = {
-        id: 'user-1',
-        firstName: 'Test',
-        lastName: 'User',
-        email: 'test@example.com',
-        emailVerifiedAt: new Date(),
-        password: 'hash',
-        keyData: null,
-      };
-      (userRepo.findOne as jest.Mock).mockResolvedValue(mockUser);
-      (oauthRepo.save as jest.Mock).mockResolvedValue({});
-      (tokenRepo.save as jest.Mock).mockResolvedValue({});
+    it.each([true, false])(
+      'returns needsLink and links nothing when the email matches an existing user (provider verified=%s)',
+      async (providerVerified) => {
+        (oauthRepo.findOne as jest.Mock).mockResolvedValue(null);
+        (userRepo.findOne as jest.Mock).mockResolvedValue({
+          id: 'user-1',
+          email: 'test@example.com',
+          emailVerifiedAt: new Date(),
+          password: 'hash',
+        });
 
-      const result = await service.oauthLogin(
-        'google',
-        'google-123',
-        'test@example.com',
-        'Test User',
-        undefined,
-        true // provider asserts the email is verified
-      );
-
-      expect(result.code).toBe(0);
-      expect((result.data as any).newToken).toBe('mock-jwt-token');
-      expect(oauthRepo.save).toHaveBeenCalledWith({
-        provider: 'google',
-        providerUserId: 'google-123',
-        providerEmail: 'test@example.com',
-        providerDisplayName: 'Test User',
-        userId: 'user-1',
-      });
-    });
-
-    it('refuses to auto-link when the provider email is not verified', async () => {
-      (oauthRepo.findOne as jest.Mock).mockResolvedValue(null);
-      const mockUser = {
-        id: 'user-1',
-        firstName: 'Test',
-        lastName: 'User',
-        email: 'test@example.com',
-        emailVerifiedAt: new Date(),
-        password: 'hash',
-        keyData: null,
-      };
-      (userRepo.findOne as jest.Mock).mockResolvedValue(mockUser);
-
-      await expect(
-        service.oauthLogin(
+        const result = await service.oauthLogin(
           'google',
           'google-123',
           'test@example.com',
           'Test User',
           undefined,
-          false // provider did NOT verify the email
-        )
-      ).rejects.toThrow(RpcException);
+          providerVerified
+        );
 
-      // No account was linked and no session issued for the takeover attempt.
-      expect(oauthRepo.save).not.toHaveBeenCalled();
-      expect(tokenRepo.save).not.toHaveBeenCalled();
-    });
+        expect(result.code).toBe(1);
+        expect(result.data).toEqual({
+          needsLink: true,
+          userId: 'user-1',
+          hasPassword: true,
+        });
+        expect(oauthRepo.save).not.toHaveBeenCalled();
+        expect(tokenRepo.save).not.toHaveBeenCalled();
+      }
+    );
 
-    it('does not persist a verified OAuth auto-link when age eligibility blocks the account', async () => {
+    it('reports hasPassword false for an account without a password', async () => {
       (oauthRepo.findOne as jest.Mock).mockResolvedValue(null);
       (userRepo.findOne as jest.Mock).mockResolvedValue({
-        id: 'pending-user',
-        email: 'teen@example.invalid',
-        ageEligibilityStatus: 'minor-pending',
+        id: 'user-2',
+        email: 'x@example.com',
+        password: '',
       });
-      const guardianPermissions = (service as any).guardianPermissions;
-      guardianPermissions.assertAccountAccess.mockRejectedValue(
-        new RpcException({ code: 'GUARDIAN_PERMISSION_REQUIRED' })
+      const result = await service.oauthLogin(
+        'github',
+        'gh-1',
+        'x@example.com',
+        'X'
       );
+      expect((result.data as any).hasPassword).toBe(false);
+    });
 
+    it('asserts the deletion fence before offering a link', async () => {
+      (oauthRepo.findOne as jest.Mock).mockResolvedValue(null);
+      (userRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 'user-1',
+        email: 'test@example.com',
+        password: 'hash',
+      });
+      accountDeletionFence.assertActiveAccount.mockRejectedValueOnce(
+        new RpcException({ code: 'ACCOUNT_DELETED' })
+      );
       await expect(
         service.oauthLogin(
           'google',
-          'google-teen',
-          'teen@example.invalid',
-          'Teen User',
+          'g',
+          'test@example.com',
+          'T',
           undefined,
-          true,
-          'client-interface',
-          'adult'
+          true
         )
-      ).rejects.toThrow();
+      ).rejects.toThrow(RpcException);
       expect(oauthRepo.save).not.toHaveBeenCalled();
-      expect(tokenRepo.save).not.toHaveBeenCalled();
     });
 
     it('should return needsRegistration when no matching user found', async () => {

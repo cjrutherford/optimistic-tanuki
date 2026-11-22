@@ -75,7 +75,10 @@ export class OAuthService {
         return await this.issueTokenForUser(linked.user, profileId, appId);
       }
 
-      // Try to find user by email and auto-link
+      // A matching email is never enough to attach a provider, even when the
+      // provider verified it. The gateway runs an explicit link step in which
+      // the user proves they own the account; linking then goes through
+      // linkProvider. Nothing is persisted here.
       if (email) {
         const existingUser = await this.userRepo.findOne({
           where: { email: email.toLowerCase() },
@@ -83,44 +86,15 @@ export class OAuthService {
 
         if (existingUser) {
           await this.accountDeletionFence.assertActiveAccount(existingUser.id);
-          // Account-takeover guard: only auto-link when the provider asserts
-          // the email is verified. Otherwise an attacker who controls an
-          // unverified provider account with a victim's email could seize the
-          // existing platform account.
-          if (!emailVerified) {
-            const providerLabel = this.getProviderDisplayName(provider);
-            this.l.warn(
-              `Refused OAuth auto-link: provider=${provider} did not verify email for an existing account`
-            );
-            throw new RpcException(
-              `We found an existing account for ${email}, but ${providerLabel} did not confirm you own this email address. Please sign in with your password, then link ${providerLabel} from your account settings.`
-            );
-          }
-
-          // Evaluate age eligibility before persisting the provider binding.
-          // A denied pending/revoked account must not retain a new identity.
-          await this.applyEligibility(
-            existingUser,
-            appId,
-            ageEligibilityStatus,
-            guardianResumeToken
-          );
-
-          // Auto-link the provider to the existing user
-          await this.oauthRepo.save({
-            provider,
-            providerUserId,
-            providerEmail: email,
-            providerDisplayName: displayName,
-            userId: existingUser.id,
-          });
-
-          // Audit trail: a verified-email auto-link just occurred.
-          this.l.log(
-            `OAuth auto-link: linked verified ${provider} identity to an existing account`
-          );
-
-          return await this.issueTokenForUser(existingUser, profileId, appId);
+          return {
+            message: 'Existing account requires explicit link',
+            code: 1,
+            data: {
+              needsLink: true,
+              userId: existingUser.id,
+              hasPassword: Boolean(existingUser.password),
+            },
+          };
         }
       }
 

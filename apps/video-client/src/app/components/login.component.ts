@@ -42,6 +42,7 @@ import { ProfileService } from '../services/profile.service';
           heroAlt="Video Client studio splash"
           (submitEvent)="onSubmit($event)"
           (oauthProviderSelected)="onOAuthProvider($event)"
+          [errorMessage]="oauthError"
         ></lib-login-block>
       </div>
     </section>
@@ -187,7 +188,10 @@ export class LoginComponent implements OnDestroy, OnInit {
     }
   }
 
+  oauthError = '';
+
   async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
+    this.oauthError = '';
     const result = await this.oauthService.initiateOAuthLogin(
       event.provider,
       'video-client',
@@ -218,6 +222,8 @@ export class LoginComponent implements OnDestroy, OnInit {
         await this.handlePostLogin();
       }
     }
+
+    if (!result.success && result.error) this.oauthError = result.error;
   }
 
   private async handlePostLogin(): Promise<void> {

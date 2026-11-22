@@ -305,6 +305,63 @@ describe('AppService', () => {
     });
   });
 
+  describe('OAuth link step', () => {
+    const user = {
+      id: 'user-1',
+      email: 'test@example.com',
+      firstName: 'John',
+      password: 'hashedPassword',
+      totpSecret: null,
+      keyData: { salt: 'someSalt' },
+    };
+
+    it('verifies a password by user id and reports validity without throwing', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue({ ...user } as any);
+      const ok = await service.verifyUserPassword('user-1', 'pw');
+      expect(ok.data.valid).toBe(true);
+      jest
+        .spyOn(saltedHashService, 'validateHash')
+        .mockReturnValue(false as any);
+      const bad = await service.verifyUserPassword('user-1', 'wrong');
+      expect(bad.data.valid).toBe(false);
+      expect(userRepo.update).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({ failedLoginCount: 1 })
+      );
+    });
+
+    it('issues a 6-digit code by email and only returns an HMAC of it', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue({ ...user } as any);
+      const emailService = (service as any).emailService;
+      const issued = await service.sendOAuthLinkCode('user-1', 'Towne Square');
+      const text: string = emailService.sendEmail.mock.calls[0][0].text;
+      const code = /: (\d{6})/.exec(text)?.[1] as string;
+      expect(code).toMatch(/^\d{6}$/);
+      expect(issued.data.sent).toBe(true);
+      expect(issued.data.codeHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(JSON.stringify(issued)).not.toContain(code);
+
+      const good = await service.verifyOAuthLinkCode(
+        'user-1',
+        code,
+        issued.data.codeHash
+      );
+      expect(good.data.valid).toBe(true);
+      const wrong = await service.verifyOAuthLinkCode(
+        'user-1',
+        code === '000000' ? '000001' : '000000',
+        issued.data.codeHash
+      );
+      expect(wrong.data.valid).toBe(false);
+      const otherUser = await service.verifyOAuthLinkCode(
+        'user-1',
+        'abcdef',
+        issued.data.codeHash
+      );
+      expect(otherUser.data.valid).toBe(false);
+    });
+  });
+
   describe('login', () => {
     const mockUser = {
       id: 'someUserId',

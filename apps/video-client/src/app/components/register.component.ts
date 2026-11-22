@@ -35,6 +35,7 @@ import { ProfileService } from '../services/profile.service';
           heroSource="assets/register-splash.png"
           (submitEvent)="onSubmit($event)"
           (oauthProviderSelected)="onOAuthProvider($event)"
+          [errorMessage]="oauthError"
         ></lib-register-block>
       </div>
     </section>
@@ -148,7 +149,10 @@ export class RegisterComponent {
     });
   }
 
+  oauthError = '';
+
   async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
+    this.oauthError = '';
     const result = await this.oauthService.initiateOAuthLogin(
       event.provider,
       'video-client',
@@ -179,6 +183,8 @@ export class RegisterComponent {
         await this.handlePostLogin();
       }
     }
+
+    if (!result.success && result.error) this.oauthError = result.error;
   }
 
   private async handlePostLogin(): Promise<void> {

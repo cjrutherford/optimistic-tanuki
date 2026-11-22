@@ -100,7 +100,7 @@ export class LoginComponent implements OnInit {
       }
 
       this.messageService.addMessage({
-        content: 'OAuth login failed. Please try again.',
+        content: result.error || 'OAuth login failed. Please try again.',
         type: 'error',
       });
     } catch (error) {

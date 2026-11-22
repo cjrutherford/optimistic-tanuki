@@ -1,4 +1,7 @@
-import { emitSafeDiagnostic } from './safe-diagnostic';
+import {
+  emitSafeDiagnostic,
+  registerSafeEventCatalogue,
+} from './safe-diagnostic';
 
 describe('Safe diagnostic projection', () => {
   it('emits only closed event fields, excluding account/content/credential sentinels', () => {
@@ -57,5 +60,66 @@ describe('Safe diagnostic projection', () => {
         'profile.operation'
       )
     ).not.toThrow();
+  });
+});
+
+describe('Safe event catalogues', () => {
+  const sentinel = 'person@example.test token=SECRET';
+
+  beforeAll(() => {
+    registerSafeEventCatalogue({
+      'catalogue.test.failed': {
+        step: ['state', 'exchange'],
+        scope: /^[a-z][a-z0-9-]{0,31}$/,
+      },
+    });
+  });
+
+  it('emits only allow-listed fields with allow-listed values', () => {
+    const records: unknown[] = [];
+    emitSafeDiagnostic(
+      { log: (r: unknown) => records.push(r) },
+      'catalogue.test.failed',
+      {
+        step: 'exchange',
+        scope: 'owner-console',
+        email: sentinel,
+        message: sentinel,
+        outcome: 'failed',
+      }
+    );
+    expect(records).toEqual([
+      {
+        event: 'catalogue.test.failed',
+        outcome: 'failed',
+        step: 'exchange',
+        scope: 'owner-console',
+      },
+    ]);
+  });
+
+  it('drops values outside the rule, including emails and long strings', () => {
+    const log = jest.fn();
+    emitSafeDiagnostic({ log }, 'catalogue.test.failed', {
+      step: sentinel,
+      scope: 'x'.repeat(200),
+    });
+    expect(log).toHaveBeenCalledWith({ event: 'catalogue.test.failed' });
+  });
+
+  it('still rejects unregistered codes and refuses unsafe registrations', () => {
+    const log = jest.fn();
+    emitSafeDiagnostic({ log }, 'catalogue.unregistered', { step: 'state' });
+    expect(log).toHaveBeenCalledWith({ event: 'diagnostic.rejected' });
+    expect(() =>
+      registerSafeEventCatalogue({ 'profile.operation': {} })
+    ).toThrow();
+    expect(() => registerSafeEventCatalogue({ 'Bad Code': {} })).toThrow();
+    expect(() =>
+      registerSafeEventCatalogue({ 'catalogue.test.x': { event: ['a'] } })
+    ).toThrow();
+    expect(() =>
+      registerSafeEventCatalogue({ 'catalogue.test.failed': { step: ['x'] } })
+    ).toThrow();
   });
 });
