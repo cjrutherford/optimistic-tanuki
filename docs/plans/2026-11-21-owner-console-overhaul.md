@@ -312,3 +312,95 @@ Most of these were introduced by #283 (`f1a96856d`, 2026-10-27) and
   per-module catalogue of event codes. Today every message is rejected, which
   hides every failure in production, not only OAuth.
 - O2–O4 as above.
+
+### Root cause and owner decisions (2026-11-22)
+
+- **Root cause.** On the production host the env file spells the key
+  `OWNER_BOOTSRAP_EMAIL`, with a T missing. `scripts/prod-seed.sh` therefore
+  skips the owner bootstrap on every deploy, printing only a one-line echo, so
+  the database has never held a user. The owner has fixed the key; it takes
+  effect on the next deploy.
+- **D-O1. Linking is explicit.** When a provider identity matches an existing
+  local account by email, nothing is linked automatically, even when the
+  provider has verified the email. The user sees a link step and has to prove
+  they own the local account before the provider is attached.
+- **D-O2. The age gate resumes instead of failing.** If OAuth sign-up on an
+  age-gated app (client-interface, local-hub) arrives without an age check,
+  the callback runs the age-verification step, including the guardian path
+  where it applies, and then completes sign-up.
+- **D-O3. Every failure has a name.** Each failure in the callback reaches
+  the user as a specific, allow-listed code and a sentence they can act on.
+  It is logged as a safe event code together with the step that failed. Deploy
+  scripts fail loudly when the owner bootstrap is only partly configured.
+
+### Contract: pending OAuth intents
+
+Some callbacks cannot finish in one pass: they need a link confirmation or an
+age check first. In those cases the gateway stores a **pending intent** in
+Redis. The intent is single-use, expires after 10 minutes, is keyed by an
+opaque 32-byte random id, and is bound to the `oauth_state_nonce` browser
+cookie, using the same binding as the callback grant. It holds the provider
+identity (provider, providerUserId, email, emailVerified, displayName), the
+appScope, returnTo, cookieSession and the matched userId (link only). Nothing
+from the provider token goes into it.
+
+The callback redirects to the final callback URL with
+`pending=<kind>&pendingCode=<id>&returnTo=…`, where `kind` is `link_account`
+or `age_verification`. A link redirect also carries `email` (masked, for
+example `j***@example.com`) and `provider`.
+
+Gateway endpoints, all `@Public()`, need the nonce cookie and are rate
+limited:
+
+- `GET /api/oauth/pending/:code` returns `{ kind, provider, maskedEmail,
+appScope, methods }` without consuming the intent. For a link intent,
+  `methods` is `['password']` when the account has a password, otherwise
+  `['email_code']`.
+- `POST /api/oauth/pending/:code/link/email-code` sends a 6-digit code to the
+  account email. It is used only when `methods` includes `email_code`.
+- `POST /api/oauth/pending/:code/link` takes `{ password }` or
+  `{ emailCode }`. The gateway verifies the credential through the
+  authentication service, links the provider (`LinkProvider`), issues the
+  callback session and grant, and returns `{ callbackCode, returnTo }`. A
+  wrong credential returns `401 { error: 'link_credentials_invalid' }`, and
+  the intent stays usable for up to 5 attempts. After that it is consumed and
+  the response is `link_attempts_exhausted`.
+- `POST /api/oauth/pending/:code/cancel` deletes the intent.
+- `POST /api/oauth/pending/:code/age` takes `{ dateOfBirth }` or
+  `{ guardianResumeToken }`. It runs the same age-eligibility evaluation as
+  password sign-up. When the user is eligible, it registers the user and
+  returns `{ callbackCode, returnTo }`, or `{ verificationRequired: true }`
+  when email verification is still outstanding. If guardian consent is
+  needed, it returns `{ error: 'guardian_consent_required', … }` with the same
+  shape that password sign-up uses, so the existing guardian UI can take
+  over. Signing up underage with no guardian returns `age_ineligible`.
+
+In the authentication service, `OAuthLogin` no longer auto-links. When the
+email matches an existing user, it returns `{ code: 1, data: { needsLink:
+true, userId, hasPassword } }` and leaves the provider unlinked.
+
+**Error codes.** The callback `error` value is always one of the following.
+Each has a fixed `error_description` that the UI may override with its own
+copy.
+
+| Code                          | Meaning                                                                     |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| `provider_denied`             | The user cancelled at the provider.                                         |
+| `provider_exchange_failed`    | The code exchange or the profile fetch failed.                              |
+| `provider_email_missing`      | The provider returned no usable email.                                      |
+| `state_invalid`               | The state or nonce is missing, expired or mismatched.                       |
+| `account_deleted`             | The account is behind the deletion fence.                                   |
+| `registration_closed`         | The app refuses OAuth sign-up, for example the owner console in production. |
+| `owner_not_provisioned`       | The owner console has no provisioned owner.                                 |
+| `not_authorized_for_app`      | The user lacks access to the app, for example the owner console.            |
+| `guardian_mismatch`           | The guardian permission belongs to another applicant.                       |
+| `email_verification_required` | The address must be verified first (existing).                              |
+| `session_issue_failed`        | Creating the session or grant failed.                                       |
+| `profile_setup_failed`        | The app-scoped profile could not be created.                                |
+| `oauth_callback_failed`       | Unexpected; also logs `oauth.callback.unexpected` with the step.            |
+
+Each step in the callback sets a step label: `state`, `exchange`, `login`,
+`register`, `profile`, `access`, `session` or `grant`. A failure logs
+`oauth.callback.failed` together with `{ step, code }`, using only
+allow-listed values, through a per-module event catalogue in
+`libs/logger` (O1b).
