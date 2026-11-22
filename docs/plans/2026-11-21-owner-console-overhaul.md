@@ -176,3 +176,79 @@ The recommended order is S0 → S1 → S2 → S3. Those four slices fix findabil
 orientation and trust, the three lowest scores, with no new backend work
 except the summary endpoint in S3. S4–S7 can follow in any order, once the
 decisions above are made.
+
+## 5. Provider login regression (production, reported 2026-11-22)
+
+### What production does today
+
+These were probed from outside on 2026-11-22.
+
+- `GET /api/oauth/start/google` returns a 302 to Google on optimistic-tanuki.com,
+  forgeofwill.com and hopefulaspirationsindustries.com. Each response has the
+  correct `redirect_uri=https://<domain>/api/oauth/callback/google`, PKCE, and
+  sets the `oauth_state_nonce` cookie (`Path=/api/oauth; Secure; SameSite=Lax`).
+- `GET /api/oauth/config` returns 200. `GET /api/oauth/providers` returns 401,
+  which is by design: it lists the providers linked to a signed-in user.
+
+The first half of the flow, from the button to the provider, therefore works.
+The failure is somewhere between the provider calling back and the session
+being issued.
+
+### Why the cause can't be seen
+
+The callback handler (`oauth.controller.ts`, the `catch` after
+`createCallbackGrant`) logs only `OAuth callback failed` and sends the browser
+to `error=oauth_callback_failed`. More than ten steps can throw inside that
+`try`, and they all end up looking the same.
+
+### Candidates, ranked
+
+Most of these were introduced by #283 (`f1a96856d`, 2026-10-27) and
+`50854d5eb` (N02, 2026-10-23).
+
+1. **A schema that wasn't migrated.** Every login now calls
+   `AccountDeletionFenceService.assertActiveAccount`, which queries
+   `account_deletion_operations` (migration `AccountDeletionControl1792886267140`).
+   Rolling sessions read the columns added by `RollingSessionActivity1793105343107`.
+   Migrations run only through `db-setup` or `OT_RUN_MIGRATIONS_ON_START=true`.
+   If production was deployed without running `db-setup`, the query fails, and
+   both password and provider login would break.
+2. **Strict checks on the callback session** (N02). The gateway rejects the
+   session unless `sessionId` is a UUID and `userId`, `profileId` and `appId`
+   all match exactly. The authentication service also requires `appId` to
+   match `^[a-z][a-z0-9_-]*$`. A start request with no `appScope`, or one with
+   a scope that maps to a different canonical id, fails here.
+3. **The callback-code exchange.** It needs the `oauth_state_nonce` cookie
+   (scoped to `/api/oauth`) and an `Origin` that exactly equals the grant's
+   `returnOrigin`. A `www.` origin against an apex origin, or a popup on another
+   origin, fails with 401 "Invalid OAuth callback code".
+4. **New sign-ups on client-interface and local-hub.** These now require an age
+   check (`AGE_CHECK_REQUIRED`). This blocks first-time provider sign-ups only,
+   not returning users.
+5. **Guardian account access** (`guardianPermissionService.assertAccountAccess`
+   inside `validateToken`). Accounts whose legacy age-eligibility backfill left
+   them blocked would fail at the exchange.
+
+### Evidence needed to pick one
+
+- The URL or error the browser ends on after consent: `oauth_callback_failed`,
+  `email_verification_required`, a provider page such as
+  `redirect_uri_mismatch`, or a 401 from `/api/oauth/callback/exchange`.
+- Whether email and password login works in production. If it fails too, the
+  cause is #1.
+- Gateway and authentication logs around one attempt.
+- Which commit production runs, and whether `db-setup` ran after the last
+  deploy.
+
+### Fix plan
+
+- **O1.** Log a step label in the callback `catch` (`state`, `token_exchange`,
+  `login`, `register`, `profile`, `owner_access`, `callback_session`, `grant`)
+  without the error content, so production shows which step failed. Do the same
+  for the exchange's 401 branches.
+- **O2.** Fix the step that fails, and add a regression spec for it.
+- **O3.** Add a full provider-login e2e test using a stub OAuth provider, so a
+  regression fails CI instead of production.
+- **O4.** Owner console, System → OAuth health: surface admin-api's unused
+  `oauth/validate` and `oauth/test`, the per-domain redirect URIs, and recent
+  callback failures counted by step label. This belongs in slice S3 (health).
