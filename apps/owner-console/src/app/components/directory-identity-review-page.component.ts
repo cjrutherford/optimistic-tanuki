@@ -1,8 +1,8 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import type {
   BusinessIdentityHistoryEntry,
   BusinessIdentityReviewDetail,
@@ -84,9 +84,8 @@ export const REFUSED_MESSAGE =
   styleUrls: ['./directory-identity-review-page.component.scss'],
 })
 export class DirectoryIdentityReviewPageComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly admin = inject(DirectoryAdminService);
   private readonly route = inject(ActivatedRoute);
-  private readonly api = inject(API_BASE_URL).replace(/\/$/, '');
 
   readonly actions: IdentityAction[] = ['confirm', 'retire', 'merge', 'split'];
   town = '';
@@ -110,10 +109,6 @@ export class DirectoryIdentityReviewPageComponent implements OnInit {
     });
   }
 
-  private get url(): string {
-    return `${this.api}/directory/towns/${this.town}/business-identity-review`;
-  }
-
   load(): void {
     if (!UUID.test(this.town)) {
       this.message = 'This town is unavailable.';
@@ -121,7 +116,7 @@ export class DirectoryIdentityReviewPageComponent implements OnInit {
     }
     const town = this.town;
     this.loading = true;
-    this.http.get<IdentityQueue>(this.url).subscribe({
+    this.admin.getIdentityQueue<IdentityQueue>(this.town).subscribe({
       next: (result) => {
         if (this.town !== town) return;
         this.loading = false;
@@ -262,13 +257,13 @@ export class DirectoryIdentityReviewPageComponent implements OnInit {
     const town = this.town;
     this.message = '';
     this.submitting = true;
-    this.http
-      .post<{
+    this.admin
+      .recordIdentityDecision<{
         recorded: boolean;
         replayed: boolean;
         businesses: number;
         restoredLinks: number;
-      }>(`${this.url}/decisions`, body)
+      }>(this.town, body)
       .subscribe({
         next: (result) => {
           if (this.town !== town) return;
@@ -305,8 +300,8 @@ export class DirectoryIdentityReviewPageComponent implements OnInit {
 
   private loadHistory(businessId: string): void {
     const town = this.town;
-    this.http
-      .get<BusinessIdentityReviewDetail>(`${this.url}/${businessId}`)
+    this.admin
+      .getIdentityDetail<BusinessIdentityReviewDetail>(this.town, businessId)
       .subscribe({
         next: (detail) => {
           if (this.town !== town) return;
@@ -357,9 +352,10 @@ export class DirectoryIdentityReviewPageComponent implements OnInit {
     const town = this.town;
     this.message = '';
     this.undoing = true;
-    this.http
-      .post<{ recorded: boolean; replayed: boolean }>(
-        `${this.url}/${businessId}/undo`,
+    this.admin
+      .undoIdentityDecision<{ recorded: boolean; replayed: boolean }>(
+        this.town,
+        businessId,
         {
           decisionId: crypto.randomUUID(),
           undoOf: request.entry.id,

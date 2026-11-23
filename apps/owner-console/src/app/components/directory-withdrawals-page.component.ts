@@ -1,8 +1,8 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import {
   WITHDRAWAL_CONFIRMATION,
   type WithdrawalKind,
@@ -12,11 +12,13 @@ import {
   BadgeComponent,
   ButtonComponent,
   CardComponent,
-  EmptyStateComponent,
   IconComponent,
-  LoadingStateComponent,
 } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
+import {
+  OwnerPageHeaderComponent,
+  OwnerStateComponent,
+} from '@optimistic-tanuki/owner-page-ui';
 
 export const POLL_MS = 3000;
 
@@ -34,17 +36,16 @@ export const POLL_MS = 3000;
     BadgeComponent,
     ButtonComponent,
     CardComponent,
-    EmptyStateComponent,
     IconComponent,
-    LoadingStateComponent,
+    OwnerPageHeaderComponent,
+    OwnerStateComponent,
     TextInputComponent,
   ],
   templateUrl: './directory-withdrawals-page.component.html',
   styleUrls: ['./directory-withdrawals-page.component.scss'],
 })
 export class DirectoryWithdrawalsPageComponent implements OnInit, OnDestroy {
-  private readonly http = inject(HttpClient);
-  private readonly api = inject(API_BASE_URL).replace(/\/$/, '');
+  private readonly admin = inject(DirectoryAdminService);
 
   readonly confirmation = WITHDRAWAL_CONFIRMATION;
   readonly kinds: Array<{
@@ -59,6 +60,7 @@ export class DirectoryWithdrawalsPageComponent implements OnInit, OnDestroy {
   kind: WithdrawalKind = 'row';
   requests: WithdrawalRecord[] = [];
   loading = false;
+  loadFailed = false;
   submitting = false;
   message = '';
   typed = '';
@@ -99,24 +101,22 @@ export class DirectoryWithdrawalsPageComponent implements OnInit, OnDestroy {
     this.typed = value;
   }
 
-  private load(initial = false): void {
+  load(initial = false): void {
     if (initial) this.loading = true;
-    this.http
-      .get<{ requests: WithdrawalRecord[] }>(
-        `${this.api}/directory/withdrawals?limit=50`
-      )
-      .subscribe({
-        next: (result) => {
-          this.loading = false;
-          this.requests = result.requests ?? [];
-          this.schedule();
-        },
-        error: () => {
-          this.loading = false;
-          this.message = 'Withdrawals are unavailable. Retrying.';
-          this.schedule();
-        },
-      });
+    this.admin.listWithdrawals<{ requests: WithdrawalRecord[] }>(50).subscribe({
+      next: (result) => {
+        this.loading = false;
+        this.loadFailed = false;
+        this.requests = result.requests ?? [];
+        this.schedule();
+      },
+      error: () => {
+        this.loading = false;
+        this.loadFailed = true;
+        this.message = 'Withdrawals are unavailable. Retrying.';
+        this.schedule();
+      },
+    });
   }
 
   private schedule(): void {
@@ -139,18 +139,15 @@ export class DirectoryWithdrawalsPageComponent implements OnInit, OnDestroy {
     this.message = '';
     this.requestId ??= crypto.randomUUID();
     const linked = rightsCaseId.trim();
-    this.http
-      .post<{ replayed: boolean; request: WithdrawalRecord }>(
-        `${this.api}/directory/withdrawals`,
-        {
-          id: this.requestId,
-          kind: this.kind,
-          target: target.trim(),
-          reason: reason.trim(),
-          confirm: this.typed,
-          ...(linked ? { rightsCaseId: linked } : {}),
-        }
-      )
+    this.admin
+      .requestWithdrawal<{ replayed: boolean; request: WithdrawalRecord }>({
+        id: this.requestId,
+        kind: this.kind,
+        target: target.trim(),
+        reason: reason.trim(),
+        confirm: this.typed,
+        ...(linked ? { rightsCaseId: linked } : {}),
+      })
       .subscribe({
         next: () => {
           this.submitting = false;

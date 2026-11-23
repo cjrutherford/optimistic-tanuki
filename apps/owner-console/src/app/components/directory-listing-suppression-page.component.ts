@@ -1,8 +1,8 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import {
   BadgeComponent,
   ButtonComponent,
@@ -79,9 +79,8 @@ export const REFUSED_MESSAGE =
   styleUrls: ['./directory-listing-suppression-page.component.scss'],
 })
 export class DirectoryListingSuppressionPageComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly admin = inject(DirectoryAdminService);
   private readonly route = inject(ActivatedRoute);
-  private readonly api = inject(API_BASE_URL).replace(/\/$/, '');
 
   readonly reasons = SUPPRESSION_REASONS;
   readonly liftReasons = LIFT_REASONS;
@@ -106,10 +105,6 @@ export class DirectoryListingSuppressionPageComponent implements OnInit {
     });
   }
 
-  private get url(): string {
-    return `${this.api}/directory/towns/${this.town}/listing-suppressions`;
-  }
-
   load(): void {
     if (!UUID.test(this.town)) {
       this.message = 'This town is unavailable.';
@@ -117,18 +112,21 @@ export class DirectoryListingSuppressionPageComponent implements OnInit {
     }
     const town = this.town;
     this.loading = true;
-    this.http.get<{ suppressions: Suppression[] }>(this.url).subscribe({
-      next: (result) => {
-        if (this.town !== town) return;
-        this.loading = false;
-        this.suppressions = result.suppressions;
-      },
-      error: () => {
-        if (this.town !== town) return;
-        this.loading = false;
-        this.message = 'The suppression list is unavailable. Please try again.';
-      },
-    });
+    this.admin
+      .listListingSuppressions<{ suppressions: Suppression[] }>(this.town)
+      .subscribe({
+        next: (result) => {
+          if (this.town !== town) return;
+          this.loading = false;
+          this.suppressions = result.suppressions;
+        },
+        error: () => {
+          if (this.town !== town) return;
+          this.loading = false;
+          this.message =
+            'The suppression list is unavailable. Please try again.';
+        },
+      });
   }
 
   isOpen(item: Suppression): boolean {
@@ -141,26 +139,21 @@ export class DirectoryListingSuppressionPageComponent implements OnInit {
     if (!q || q.length > 100 || !UUID.test(this.town)) return;
     const town = this.town;
     this.searched = false;
-    this.http
-      .get<{ listings: SearchHit[] }>(
-        `${this.api}/directory/towns/${town}/local-evaluation-listings`,
-        { params: { q, identities: '1' } }
-      )
-      .subscribe({
-        next: (result) => {
-          if (this.town !== town) return;
-          this.hits = (result.listings ?? []).filter(
-            (h) => typeof h.id === 'string' && UUID.test(h.id)
-          );
-          this.searched = true;
-        },
-        error: () => {
-          if (this.town !== town) return;
-          this.hits = [];
-          this.searched = true;
-          this.message = 'Listing search is unavailable. Paste a listing id.';
-        },
-      });
+    this.admin.searchListings<{ listings: SearchHit[] }>(town, q).subscribe({
+      next: (result) => {
+        if (this.town !== town) return;
+        this.hits = (result.listings ?? []).filter(
+          (h) => typeof h.id === 'string' && UUID.test(h.id)
+        );
+        this.searched = true;
+      },
+      error: () => {
+        if (this.town !== town) return;
+        this.hits = [];
+        this.searched = true;
+        this.message = 'Listing search is unavailable. Paste a listing id.';
+      },
+    });
   }
 
   /** One suppressionId per opened form: a retry after a network error replays instead of duplicating. */
@@ -228,14 +221,17 @@ export class DirectoryListingSuppressionPageComponent implements OnInit {
     const town = this.town;
     this.message = '';
     this.submitting = true;
-    this.http
-      .post<{ replayed: boolean; sentToReview: boolean }>(this.url, {
-        suppressionId: form.suppressionId,
-        listingId: form.listingId,
-        reasonCode: form.reasonCode,
-        ...(note ? { note } : {}),
-        attested: true,
-      })
+    this.admin
+      .suppressListing<{ replayed: boolean; sentToReview: boolean }>(
+        this.town,
+        {
+          suppressionId: form.suppressionId,
+          listingId: form.listingId,
+          reasonCode: form.reasonCode,
+          ...(note ? { note } : {}),
+          attested: true,
+        }
+      )
       .subscribe({
         next: (result) => {
           if (this.town !== town) return;
@@ -265,11 +261,15 @@ export class DirectoryListingSuppressionPageComponent implements OnInit {
     const town = this.town;
     this.message = '';
     this.submitting = true;
-    this.http
-      .post<{ replayed: boolean }>(`${this.url}/${form.suppressionId}/lift`, {
-        reasonCode: form.reasonCode,
-        attested: true,
-      })
+    this.admin
+      .liftListingSuppression<{ replayed: boolean }>(
+        this.town,
+        form.suppressionId,
+        {
+          reasonCode: form.reasonCode,
+          attested: true,
+        }
+      )
       .subscribe({
         next: (result) => {
           if (this.town !== town) return;

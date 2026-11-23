@@ -1,9 +1,8 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { Subject, combineLatest, of } from 'rxjs';
 import { catchError, map, startWith, switchMap } from 'rxjs/operators';
@@ -214,10 +213,9 @@ type View = {
   ],
 })
 export class BoundaryReviewPageComponent {
-  private readonly http = inject(HttpClient);
+  private readonly admin = inject(DirectoryAdminService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly api = inject(API_BASE_URL);
   private readonly refreshes = new Subject<void>();
   view: View = { state: 'loading' };
   submitting = false;
@@ -239,13 +237,8 @@ export class BoundaryReviewPageComponent {
             )
           )
             return of<View>({ state: 'error' });
-          return this.http
-            .get<{ candidate: Candidate | null }>(
-              `${this.api.replace(
-                /\/$/,
-                ''
-              )}/directory/towns/${id}/boundary-candidate`
-            )
+          return this.admin
+            .getBoundaryCandidate<{ candidate: Candidate | null }>(id)
             .pipe(
               map((result) =>
                 result.candidate
@@ -288,19 +281,14 @@ export class BoundaryReviewPageComponent {
     }
     this.submitting = true;
     this.message = 'Recording review…';
-    this.http
-      .post<{ recorded: boolean }>(
-        `${this.api.replace(/\/$/, '')}/directory/towns/${
-          c.communityId
-        }/boundary-decisions`,
-        {
-          requestId: this.pendingRequest.id,
-          decision: 'verified',
-          attested: true,
-          sourceUrl,
-          candidate,
-        }
-      )
+    this.admin
+      .recordBoundaryDecision<{ recorded: boolean }>(c.communityId, {
+        requestId: this.pendingRequest.id,
+        decision: 'verified',
+        attested: true,
+        sourceUrl,
+        candidate,
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {

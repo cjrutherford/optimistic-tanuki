@@ -1,8 +1,8 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import {
   TAXONOMY_APPLY_CONFIRMATION,
   type TaxonomyMappingList,
@@ -46,8 +46,7 @@ const ACTIVE = ['pending', 'running', 'rolling_back'];
   styleUrls: ['./directory-taxonomy-runs-page.component.scss'],
 })
 export class DirectoryTaxonomyRunsPageComponent implements OnInit, OnDestroy {
-  private readonly http = inject(HttpClient);
-  private readonly api = inject(API_BASE_URL).replace(/\/$/, '');
+  private readonly admin = inject(DirectoryAdminService);
 
   readonly applyWord = TAXONOMY_APPLY_CONFIRMATION;
   readonly rollbackWord = TAXONOMY_ROLLBACK_CONFIRMATION;
@@ -80,41 +79,35 @@ export class DirectoryTaxonomyRunsPageComponent implements OnInit, OnDestroy {
   }
 
   private loadMappings(): void {
-    this.http
-      .get<TaxonomyMappingList>(`${this.api}/directory/taxonomy/mappings`)
-      .subscribe({
-        next: (result) => {
-          this.mappings = result;
-          if (!this.version)
-            this.version =
-              result.versions.find((v) => v.active)?.id ??
-              result.available[0]?.id ??
-              '';
-        },
-        error: () => {
-          this.message = 'Mapping versions are unavailable.';
-        },
-      });
+    this.admin.listTaxonomyMappings<TaxonomyMappingList>().subscribe({
+      next: (result) => {
+        this.mappings = result;
+        if (!this.version)
+          this.version =
+            result.versions.find((v) => v.active)?.id ??
+            result.available[0]?.id ??
+            '';
+      },
+      error: () => {
+        this.message = 'Mapping versions are unavailable.';
+      },
+    });
   }
 
   private load(initial = false): void {
     if (initial) this.loading = true;
-    this.http
-      .get<{ runs: TaxonomyRunRecord[] }>(
-        `${this.api}/directory/taxonomy/runs?limit=25`
-      )
-      .subscribe({
-        next: (result) => {
-          this.loading = false;
-          this.runs = result.runs ?? [];
-          this.schedule();
-        },
-        error: () => {
-          this.loading = false;
-          this.message = 'Runs are unavailable. Retrying.';
-          this.schedule();
-        },
-      });
+    this.admin.listTaxonomyRuns<{ runs: TaxonomyRunRecord[] }>(25).subscribe({
+      next: (result) => {
+        this.loading = false;
+        this.runs = result.runs ?? [];
+        this.schedule();
+      },
+      error: () => {
+        this.loading = false;
+        this.message = 'Runs are unavailable. Retrying.';
+        this.schedule();
+      },
+    });
   }
 
   private schedule(): void {
@@ -157,11 +150,11 @@ export class DirectoryTaxonomyRunsPageComponent implements OnInit, OnDestroy {
     if (this.busy || !this.version) return;
     this.busy = true;
     this.message = '';
-    this.http
-      .post<{ replayed: boolean }>(
-        `${this.api}/directory/taxonomy/mappings/install`,
-        { version: this.version, activate }
-      )
+    this.admin
+      .installTaxonomyMappings<{ replayed: boolean }>({
+        version: this.version,
+        activate,
+      })
       .subscribe({
         next: (result) => {
           this.busy = false;
@@ -191,18 +184,15 @@ export class DirectoryTaxonomyRunsPageComponent implements OnInit, OnDestroy {
     }:${townId.trim()}:${reason.trim()}`;
     this.busy = true;
     this.message = '';
-    this.http
-      .post<{ replayed: boolean; run: TaxonomyRunRecord }>(
-        `${this.api}/directory/taxonomy/runs`,
-        {
-          id: this.idFor(key),
-          mappingVersion: this.version,
-          scope: this.scope,
-          ...(this.scope === 'town' ? { townId: townId.trim() } : {}),
-          mode: 'dry_run',
-          reason: reason.trim(),
-        }
-      )
+    this.admin
+      .startTaxonomyRun<{ replayed: boolean; run: TaxonomyRunRecord }>({
+        id: this.idFor(key),
+        mappingVersion: this.version,
+        scope: this.scope,
+        ...(this.scope === 'town' ? { townId: townId.trim() } : {}),
+        mode: 'dry_run',
+        reason: reason.trim(),
+      })
       .subscribe({
         next: () => {
           this.busy = false;
@@ -244,20 +234,17 @@ export class DirectoryTaxonomyRunsPageComponent implements OnInit, OnDestroy {
     const key = `apply:${r.id}`;
     this.busy = true;
     this.message = '';
-    this.http
-      .post<{ replayed: boolean; run: TaxonomyRunRecord }>(
-        `${this.api}/directory/taxonomy/runs`,
-        {
-          id: this.idFor(key),
-          mappingVersion: r.mappingVersion,
-          scope: r.scope,
-          ...(r.townId ? { townId: r.townId } : {}),
-          mode: 'apply',
-          reason: reason.trim(),
-          expectedPlanHash: r.planHash,
-          confirm: this.applyWord,
-        }
-      )
+    this.admin
+      .startTaxonomyRun<{ replayed: boolean; run: TaxonomyRunRecord }>({
+        id: this.idFor(key),
+        mappingVersion: r.mappingVersion,
+        scope: r.scope,
+        ...(r.townId ? { townId: r.townId } : {}),
+        mode: 'apply',
+        reason: reason.trim(),
+        expectedPlanHash: r.planHash,
+        confirm: this.applyWord,
+      })
       .subscribe({
         next: () => {
           this.busy = false;
@@ -280,8 +267,8 @@ export class DirectoryTaxonomyRunsPageComponent implements OnInit, OnDestroy {
     }
     const key = `cancel:${r.id}`;
     this.busy = true;
-    this.http
-      .post(`${this.api}/directory/taxonomy/runs/${r.id}/cancel`, {
+    this.admin
+      .cancelTaxonomyRun(r.id, {
         reason: reason.trim(),
       })
       .subscribe({
@@ -308,8 +295,8 @@ export class DirectoryTaxonomyRunsPageComponent implements OnInit, OnDestroy {
     }
     const key = `rollback:${r.id}`;
     this.busy = true;
-    this.http
-      .post(`${this.api}/directory/taxonomy/runs/${r.id}/rollback`, {
+    this.admin
+      .rollbackTaxonomyRun(r.id, {
         reason: reason.trim(),
         confirm: this.rollbackWord,
       })

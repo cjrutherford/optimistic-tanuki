@@ -1,8 +1,8 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import type {
   AcquisitionBudgetPanel,
   AcquisitionImportHistoryResult,
@@ -107,8 +107,7 @@ interface AcquisitionTownRunResult {
 export class DirectoryAcquisitionRunsPageComponent
   implements OnInit, OnDestroy
 {
-  private readonly http = inject(HttpClient);
-  private readonly api = inject(API_BASE_URL).replace(/\/$/, '');
+  private readonly admin = inject(DirectoryAdminService);
 
   readonly filters = FILTERS;
   runs: AcquisitionRunSummary[] = [];
@@ -145,21 +144,17 @@ export class DirectoryAcquisitionRunsPageComponent
   }
 
   private loadBudget(): void {
-    this.http
-      .get<AcquisitionBudgetPanel>(`${this.api}/directory/runs/budget`)
-      .subscribe({
-        next: (budget) => (this.budget = budget),
-        error: () => (this.message = 'The budget panel is unavailable.'),
-      });
+    this.admin.getRunBudget<AcquisitionBudgetPanel>().subscribe({
+      next: (budget) => (this.budget = budget),
+      error: () => (this.message = 'The budget panel is unavailable.'),
+    });
   }
 
   private loadReleases(): void {
-    this.http
-      .get<OvertureReleasePanel>(`${this.api}/directory/runs/releases`)
-      .subscribe({
-        next: (panel) => (this.releases = panel),
-        error: () => (this.releases = null),
-      });
+    this.admin.getRunReleases<OvertureReleasePanel>().subscribe({
+      next: (panel) => (this.releases = panel),
+      error: () => (this.releases = null),
+    });
   }
 
   /** A held release can be retried (the canaries run again) or rejected (never considered again). */
@@ -182,8 +177,8 @@ export class DirectoryAcquisitionRunsPageComponent
     const key = `release:${action}:${release}:${reason.trim()}`;
     this.busy = true;
     this.message = '';
-    this.http
-      .post(`${this.api}/directory/runs/releases/${release}/${action}`, {
+    this.admin
+      .actOnRelease(release, action, {
         decisionId: this.idFor(key),
         reason: reason.trim(),
         confirm: word,
@@ -206,36 +201,32 @@ export class DirectoryAcquisitionRunsPageComponent
   private load(initial = false): void {
     if (initial) this.loading = true;
     const status = this.filter ? `&status=${this.filter}` : '';
-    this.http
-      .get<AcquisitionRunList>(`${this.api}/directory/runs?limit=25${status}`)
-      .subscribe({
-        next: (result) => {
-          this.loading = false;
-          this.runs = result.runs ?? [];
-          this.total = result.total ?? this.runs.length;
-          if (this.selected) this.refreshSelected();
-          else this.schedule();
-        },
-        error: () => {
-          this.loading = false;
-          this.message = 'Runs are unavailable. Retrying.';
-          this.schedule();
-        },
-      });
+    this.admin.listRuns<AcquisitionRunList>(`limit=25${status}`).subscribe({
+      next: (result) => {
+        this.loading = false;
+        this.runs = result.runs ?? [];
+        this.total = result.total ?? this.runs.length;
+        if (this.selected) this.refreshSelected();
+        else this.schedule();
+      },
+      error: () => {
+        this.loading = false;
+        this.message = 'Runs are unavailable. Retrying.';
+        this.schedule();
+      },
+    });
   }
 
   private refreshSelected(): void {
     const id = this.selected?.id;
     if (!id) return this.schedule();
-    this.http
-      .get<AcquisitionRunDetail>(`${this.api}/directory/runs/${id}`)
-      .subscribe({
-        next: (detail) => {
-          if (this.selected?.id === id) this.selected = detail;
-          this.schedule();
-        },
-        error: () => this.schedule(),
-      });
+    this.admin.getRun<AcquisitionRunDetail>(id).subscribe({
+      next: (detail) => {
+        if (this.selected?.id === id) this.selected = detail;
+        this.schedule();
+      },
+      error: () => this.schedule(),
+    });
   }
 
   private schedule(): void {
@@ -256,15 +247,13 @@ export class DirectoryAcquisitionRunsPageComponent
     this.typed = '';
     this.command = '';
     this.message = '';
-    this.http
-      .get<AcquisitionRunDetail>(`${this.api}/directory/runs/${run.id}`)
-      .subscribe({
-        next: (detail) => {
-          this.selected = detail;
-          this.schedule();
-        },
-        error: () => (this.message = 'That run could not be loaded.'),
-      });
+    this.admin.getRun<AcquisitionRunDetail>(run.id).subscribe({
+      next: (detail) => {
+        this.selected = detail;
+        this.schedule();
+      },
+      error: () => (this.message = 'That run could not be loaded.'),
+    });
   }
 
   close(): void {
@@ -361,17 +350,14 @@ export class DirectoryAcquisitionRunsPageComponent
     const key = `${action}:${run.id}:${unitKey ?? ''}:${run.versionToken}`;
     this.busy = true;
     this.message = '';
-    this.http
-      .post<AcquisitionRunActionResult>(
-        `${this.api}/directory/runs/${run.id}/${action}`,
-        {
-          decisionId: this.idFor(key),
-          reason: reason.trim(),
-          expectedVersionToken: run.versionToken,
-          confirm: CONFIRM_WORD[action],
-          ...(unitKey ? { unitKey } : {}),
-        }
-      )
+    this.admin
+      .actOnRun<AcquisitionRunActionResult>(run.id, action, {
+        decisionId: this.idFor(key),
+        reason: reason.trim(),
+        expectedVersionToken: run.versionToken,
+        confirm: CONFIRM_WORD[action],
+        ...(unitKey ? { unitKey } : {}),
+      })
       .subscribe({
         next: (result) => {
           this.busy = false;
@@ -400,11 +386,11 @@ export class DirectoryAcquisitionRunsPageComponent
     const key = `history:${reason.trim()}`;
     this.busy = true;
     this.message = '';
-    this.http
-      .post<AcquisitionImportHistoryResult>(
-        `${this.api}/directory/runs/history/import`,
-        { decisionId: this.idFor(key), reason: reason.trim() }
-      )
+    this.admin
+      .importRunHistory<AcquisitionImportHistoryResult>({
+        decisionId: this.idFor(key),
+        reason: reason.trim(),
+      })
       .subscribe({
         next: (result) => {
           this.busy = false;
@@ -436,11 +422,12 @@ export class DirectoryAcquisitionRunsPageComponent
     const key = `town:${id}:${reason.trim()}`;
     this.busy = true;
     this.message = '';
-    this.http
-      .post<AcquisitionTownRunResult>(
-        `${this.api}/directory/runs/towns/${id}/run`,
-        { decisionId: this.idFor(key), reason: reason.trim(), confirm: 'RUN' }
-      )
+    this.admin
+      .runTown<AcquisitionTownRunResult>(id, {
+        decisionId: this.idFor(key),
+        reason: reason.trim(),
+        confirm: 'RUN',
+      })
       .subscribe({
         next: (result) => {
           this.busy = false;

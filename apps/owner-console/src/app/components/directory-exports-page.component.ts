@@ -1,13 +1,9 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import {
-  HttpClient,
-  HttpErrorResponse,
-  HttpResponse,
-} from '@angular/common/http';
+import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import type {
   DirectoryExportJob,
   DirectoryExportStatus,
@@ -59,8 +55,7 @@ const ERROR_TEXT: Record<string, string> = {
   styleUrls: ['./directory-exports-page.component.scss'],
 })
 export class DirectoryExportsPageComponent implements OnInit, OnDestroy {
-  private readonly http = inject(HttpClient);
-  private readonly api = inject(API_BASE_URL).replace(/\/$/, '');
+  private readonly admin = inject(DirectoryAdminService);
 
   releaseId = DEFAULT_RELEASE_ID;
   communityId = '';
@@ -92,10 +87,8 @@ export class DirectoryExportsPageComponent implements OnInit, OnDestroy {
 
   private load(initial = false): void {
     if (initial) this.loading = true;
-    this.http
-      .get<{ items: DirectoryExportJob[]; total: number }>(
-        `${this.api}/directory/exports?limit=50`
-      )
+    this.admin
+      .listExports<{ items: DirectoryExportJob[]; total: number }>(50)
       .subscribe({
         next: (result) => {
           this.loading = false;
@@ -137,8 +130,8 @@ export class DirectoryExportsPageComponent implements OnInit, OnDestroy {
     if (key !== this.requestKey) this.requestId = null;
     this.requestKey = key;
     this.requestId ??= crypto.randomUUID();
-    this.http
-      .post<DirectoryExportJob>(`${this.api}/directory/exports`, {
+    this.admin
+      .requestExport<DirectoryExportJob>({
         id: this.requestId,
         releaseId,
         ...(communityId ? { communityId } : {}),
@@ -165,24 +158,19 @@ export class DirectoryExportsPageComponent implements OnInit, OnDestroy {
   }
 
   retry(job: DirectoryExportJob): void {
-    this.http
-      .post<DirectoryExportJob>(
-        `${this.api}/directory/exports/${job.id}/retry`,
-        {}
-      )
-      .subscribe({
-        next: () => {
-          this.message = 'Export queued again.';
-          this.load();
-        },
-        error: (error: HttpErrorResponse) => {
-          this.message =
-            error?.status === 409
-              ? 'Only a failed export can be retried.'
-              : 'The export could not be retried. Try again.';
-          this.load();
-        },
-      });
+    this.admin.retryExport<DirectoryExportJob>(job.id).subscribe({
+      next: () => {
+        this.message = 'Export queued again.';
+        this.load();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.message =
+          error?.status === 409
+            ? 'Only a failed export can be retried.'
+            : 'The export could not be retried. Try again.';
+        this.load();
+      },
+    });
   }
 
   canDownload(job: DirectoryExportJob): boolean {
@@ -192,34 +180,29 @@ export class DirectoryExportsPageComponent implements OnInit, OnDestroy {
   download(job: DirectoryExportJob): void {
     if (!this.canDownload(job) || this.downloading) return;
     this.downloading = job.id;
-    this.http
-      .get(`${this.api}/directory/exports/${job.id}/artifact`, {
-        responseType: 'blob',
-        observe: 'response',
-      })
-      .subscribe({
-        next: (response: HttpResponse<Blob>) => {
-          this.downloading = null;
-          if (!response.body) {
-            this.message = 'The export file was empty. Try again.';
-            return;
-          }
-          this.save(response.body, this.filename(response, job));
-          this.message = `Downloaded. SHA-256 ${
-            response.headers.get('x-content-sha256') ?? job.sha256 ?? 'unknown'
-          }`;
-        },
-        error: (error: HttpErrorResponse) => {
-          this.downloading = null;
-          this.message =
-            error?.status === 410
-              ? 'This export has expired or was withdrawn (or revoked for rights reasons) and can no longer be downloaded.'
-              : error?.status === 409
-              ? 'This export is not ready yet.'
-              : 'The download failed. Try again.';
-          this.load();
-        },
-      });
+    this.admin.downloadExport(job.id).subscribe({
+      next: (response: HttpResponse<Blob>) => {
+        this.downloading = null;
+        if (!response.body) {
+          this.message = 'The export file was empty. Try again.';
+          return;
+        }
+        this.save(response.body, this.filename(response, job));
+        this.message = `Downloaded. SHA-256 ${
+          response.headers.get('x-content-sha256') ?? job.sha256 ?? 'unknown'
+        }`;
+      },
+      error: (error: HttpErrorResponse) => {
+        this.downloading = null;
+        this.message =
+          error?.status === 410
+            ? 'This export has expired or was withdrawn (or revoked for rights reasons) and can no longer be downloaded.'
+            : error?.status === 409
+            ? 'This export is not ready yet.'
+            : 'The download failed. Try again.';
+        this.load();
+      },
+    });
   }
 
   private filename(response: HttpResponse<Blob>, job: DirectoryExportJob) {

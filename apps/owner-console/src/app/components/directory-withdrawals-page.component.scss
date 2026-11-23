@@ -20,34 +20,6 @@
   }
 }
 
-.page-header {
-  display: grid;
-  gap: 0.5rem;
-
-  h1 {
-    margin: 0;
-    font-family: var(--font-heading);
-    font-size: var(--type-h1);
-    line-height: var(--heading-line-height, normal);
-    letter-spacing: var(--heading-tracking, normal);
-  }
-
-  p {
-    max-width: 80ch;
-    margin: 0;
-    color: var(--foreground-muted);
-  }
-}
-
-.page-kicker {
-  margin: 0;
-  color: var(--primary-text, var(--primary));
-  font-size: var(--type-small);
-  font-weight: 700;
-  letter-spacing: var(--personality-label-letter-spacing, normal);
-  text-transform: uppercase;
-}
-
 .kind-bar,
 .form-actions {
   display: flex;

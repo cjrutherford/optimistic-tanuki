@@ -1,8 +1,8 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import {
   BadgeComponent,
   ButtonComponent,
@@ -48,9 +48,8 @@ const STATUS_LABELS: Record<ListingReportStatus, string> = {
   styleUrls: ['./directory-listing-report-page.component.scss'],
 })
 export class DirectoryListingReportPageComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly admin = inject(DirectoryAdminService);
   private readonly route = inject(ActivatedRoute);
-  private readonly api = inject(API_BASE_URL);
 
   readonly filters = REPORT_FILTERS;
   town = '';
@@ -68,10 +67,6 @@ export class DirectoryListingReportPageComponent implements OnInit {
       this.reports = null;
       this.load();
     });
-  }
-
-  private get url(): string {
-    return `${this.api}/directory/towns/${this.town}/listing-reports`;
   }
 
   statusLabel(status: ListingReportStatus): string {
@@ -99,10 +94,11 @@ export class DirectoryListingReportPageComponent implements OnInit {
     if (!this.town) return;
     const town = this.town;
     this.loading = true;
-    this.http
-      .get<{ reports: ListingReportReviewItem[] }>(this.url, {
-        params: { status: this.filter },
-      })
+    this.admin
+      .listListingReports<{ reports: ListingReportReviewItem[] }>(
+        this.town,
+        this.filter
+      )
       .subscribe({
         next: (result) => {
           if (this.town !== town) return;
@@ -156,8 +152,8 @@ export class DirectoryListingReportPageComponent implements OnInit {
     const town = this.town;
     this.message = '';
     this.submitting = true;
-    this.http
-      .post(`${this.api}/directory/towns/${town}/listing-suppressions`, {
+    this.admin
+      .suppressListing(town, {
         suppressionId,
         listingId: report.listingId,
         reasonCode: report.reasonCode,
@@ -192,21 +188,23 @@ export class DirectoryListingReportPageComponent implements OnInit {
     const town = this.town;
     this.message = '';
     this.submitting = true;
-    this.http.post(`${this.url}/${report.reportId}/${action}`, body).subscribe({
-      next: () => {
-        if (this.town !== town) return;
-        this.submitting = false;
-        this.declineFor = null;
-        this.declineNote = '';
-        this.message = done;
-        this.load();
-      },
-      error: (error: HttpErrorResponse) => {
-        if (this.town !== town) return;
-        this.submitting = false;
-        this.message = this.failure(error);
-      },
-    });
+    this.admin
+      .actOnListingReport(this.town, report.reportId, action, body)
+      .subscribe({
+        next: () => {
+          if (this.town !== town) return;
+          this.submitting = false;
+          this.declineFor = null;
+          this.declineNote = '';
+          this.message = done;
+          this.load();
+        },
+        error: (error: HttpErrorResponse) => {
+          if (this.town !== town) return;
+          this.submitting = false;
+          this.message = this.failure(error);
+        },
+      });
   }
 
   private failure(error: HttpErrorResponse): string {

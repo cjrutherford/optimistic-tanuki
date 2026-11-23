@@ -1,9 +1,9 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import type {
   DirectoryOperatingControl,
   DirectoryOperatingControlKey,
@@ -45,8 +45,7 @@ export const CONTROL_LABELS: Record<DirectoryOperatingControlKey, string> = {
   styleUrls: ['./directory-operations-page.component.scss'],
 })
 export class DirectoryOperationsPageComponent implements OnInit {
-  private readonly http = inject(HttpClient);
-  private readonly api = inject(API_BASE_URL).replace(/\/$/, '');
+  private readonly admin = inject(DirectoryAdminService);
 
   metrics: DirectoryOpsMetrics | null = null;
   controls: DirectoryOperatingControl[] = [];
@@ -74,26 +73,22 @@ export class DirectoryOperationsPageComponent implements OnInit {
     const done = () => {
       if (--pending === 0) this.loading = false;
     };
-    this.http
-      .get<DirectoryOpsMetrics>(`${this.api}/directory/operations/metrics`)
-      .subscribe({
-        next: (m) => {
-          this.metrics = m;
-          done();
-        },
-        error: () => {
-          this.failed = true;
-          done();
-        },
-      });
+    this.admin.getOperationsMetrics<DirectoryOpsMetrics>().subscribe({
+      next: (m) => {
+        this.metrics = m;
+        done();
+      },
+      error: () => {
+        this.failed = true;
+        done();
+      },
+    });
     this.loadControls(done);
   }
 
   private loadControls(done?: () => void): void {
-    this.http
-      .get<{ controls: DirectoryOperatingControl[] }>(
-        `${this.api}/directory/operations/controls`
-      )
+    this.admin
+      .listOperatingControls<{ controls: DirectoryOperatingControl[] }>()
       .subscribe({
         next: (r) => {
           this.controls = r.controls ?? [];
@@ -135,15 +130,12 @@ export class DirectoryOperationsPageComponent implements OnInit {
     if (this.busy) return;
     this.busy = control.key;
     this.message = '';
-    this.http
-      .post<DirectoryOperatingControl>(
-        `${this.api}/directory/operations/controls/${control.key}`,
-        {
-          paused,
-          ...(reason ? { reason } : {}),
-          expectedVersion: control.version,
-        }
-      )
+    this.admin
+      .setOperatingControl<DirectoryOperatingControl>(control.key, {
+        paused,
+        ...(reason ? { reason } : {}),
+        expectedVersion: control.version,
+      })
       .subscribe({
         next: (updated) => {
           this.busy = null;

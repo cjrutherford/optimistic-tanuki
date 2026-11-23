@@ -1,9 +1,8 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 import { forkJoin } from 'rxjs';
 
@@ -99,9 +98,8 @@ type Queue = { requests: LinkRequest[]; nextCursor: string | null };
   ],
 })
 export class DirectoryLinkReviewPageComponent {
-  private readonly http = inject(HttpClient);
+  private readonly admin = inject(DirectoryAdminService);
   private readonly route = inject(ActivatedRoute);
-  private readonly api = inject(API_BASE_URL).replace(/\/$/, '');
   private readonly destroyRef = inject(DestroyRef);
   town = '';
   requests: LinkRequest[] = [];
@@ -147,12 +145,8 @@ export class DirectoryLinkReviewPageComponent {
     const town = this.town,
       generation = ++this.generation;
     this.loading = true;
-    this.http
-      .get<Queue>(
-        `${this.api}/directory/towns/${town}/business-link-requests${
-          cursor ? '?cursor=' + encodeURIComponent(cursor) : ''
-        }`
-      )
+    this.admin
+      .listLinkRequests<Queue>(town, cursor)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result) => {
@@ -178,13 +172,13 @@ export class DirectoryLinkReviewPageComponent {
     const town = this.town,
       chosen = request.requestId;
     forkJoin({
-      listing: this.http.get<{ name: string; category: string }>(
-        `${this.api}/directory/towns/${town}/local-evaluation-listings/${
-          request.listingId
-        }${this.inspectedAdult ? '?adult=1' : ''}`
+      listing: this.admin.getLinkListing<{ name: string; category: string }>(
+        town,
+        request.listingId,
+        this.inspectedAdult
       ),
-      page: this.http.get<{ name: string; slug: string }>(
-        `${this.api}/social/community/${request.businessCommunityId}`
+      page: this.admin.getCommunity<{ name: string; slug: string }>(
+        request.businessCommunityId
       ),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -228,19 +222,16 @@ export class DirectoryLinkReviewPageComponent {
     const town = this.town;
     this.submitting = true;
     this.message = 'Recording review…';
-    this.http
-      .post(
-        `${this.api}/directory/towns/${town}/local-evaluation-listings/${request.listingId}/business-link/reviews`,
-        {
-          requestId: request.requestId,
-          businessCommunityId: request.businessCommunityId,
-          ownerId: request.ownerId,
-          decision,
-          evidenceUrl: evidenceUrl.trim(),
-          attested: true,
-          adult: this.inspectedAdult,
-        }
-      )
+    this.admin
+      .reviewBusinessLink(town, request.listingId, {
+        requestId: request.requestId,
+        businessCommunityId: request.businessCommunityId,
+        ownerId: request.ownerId,
+        decision,
+        evidenceUrl: evidenceUrl.trim(),
+        attested: true,
+        adult: this.inspectedAdult,
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {

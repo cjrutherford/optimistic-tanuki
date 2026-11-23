@@ -1,8 +1,8 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import type {
   AddressReviewCandidateDetail,
   AddressReviewHistoryEntry,
@@ -103,9 +103,8 @@ interface ReviewCandidate {
   styleUrls: ['./directory-address-review-page.component.scss'],
 })
 export class DirectoryAddressReviewPageComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly admin = inject(DirectoryAdminService);
   private readonly route = inject(ActivatedRoute);
-  private readonly api = inject(API_BASE_URL).replace(/\/$/, '');
 
   town = '';
   status: ReviewStatus = 'needs_human';
@@ -163,9 +162,10 @@ export class DirectoryAddressReviewPageComponent implements OnInit {
     const town = this.town;
     this.loading = true;
     this.message = '';
-    this.http
-      .get<{ candidates: ReviewCandidate[] }>(
-        `${this.api}/directory/towns/${town}/address-review-candidates?status=${this.status}&limit=${this.limit}&offset=${this.offset}`
+    this.admin
+      .listAddressCandidates<{ candidates: ReviewCandidate[] }>(
+        town,
+        `status=${this.status}&limit=${this.limit}&offset=${this.offset}`
       )
       .subscribe({
         next: (result) => {
@@ -207,9 +207,10 @@ export class DirectoryAddressReviewPageComponent implements OnInit {
     const key = `${candidate.id}:${decision}`;
     const decisionId = this.decisionIds.get(key) ?? crypto.randomUUID();
     this.decisionIds.set(key, decisionId);
-    this.http
-      .post<{ recorded: boolean; status: string }>(
-        `${this.api}/directory/towns/${town}/address-review-candidates/${candidate.id}/decisions`,
+    this.admin
+      .decideAddressCandidate<{ recorded: boolean; status: string }>(
+        town,
+        candidate.id,
         {
           decisionId,
           expectedVersionToken: candidate.versionToken,
@@ -253,10 +254,8 @@ export class DirectoryAddressReviewPageComponent implements OnInit {
 
   private loadHistory(candidateId: string): void {
     const town = this.town;
-    this.http
-      .get<AddressReviewCandidateDetail>(
-        `${this.api}/directory/towns/${town}/address-review-candidates/${candidateId}`
-      )
+    this.admin
+      .getAddressCandidate<AddressReviewCandidateDetail>(town, candidateId)
       .subscribe({
         next: (detail) => {
           if (this.town !== town) return;
@@ -307,9 +306,10 @@ export class DirectoryAddressReviewPageComponent implements OnInit {
     const town = this.town;
     this.message = '';
     this.undoing = true;
-    this.http
-      .post<{ recorded: boolean; status: string }>(
-        `${this.api}/directory/towns/${town}/address-review-candidates/${candidate.id}/undo`,
+    this.admin
+      .undoAddressDecision<{ recorded: boolean; status: string }>(
+        town,
+        candidate.id,
         {
           decisionId: crypto.randomUUID(),
           undoOf: request.entry.id,

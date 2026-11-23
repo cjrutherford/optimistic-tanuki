@@ -1,19 +1,17 @@
-<section class="withdrawals-page" aria-labelledby="withdrawals-title">
-  <a class="back-link" routerLink="/dashboard/directory-rights">
-    <otui-icon name="arrow-back" [size]="18" stroke="currentColor"></otui-icon>
-    Rights cases
-  </a>
-
-  <header class="page-header">
-    <p class="page-kicker">Directory</p>
-    <h1 id="withdrawals-title">Withdrawals</h1>
-    <p>
-      Withdrawal removes data from public display and then deletes it. It is
-      permanent: withdrawn data is not restored and there is no undo. A request
-      is recorded at once; a background worker does the removal and keeps going
-      if it is interrupted.
-    </p>
-  </header>
+<section class="withdrawals-page" aria-label="Withdrawals">
+  <ot-owner-page-header
+    title="Withdrawals"
+    description="Withdrawal removes data from public display and then deletes it. It is permanent: withdrawn data is not restored and there is no undo. A request is recorded at once; a background worker does the removal and keeps going if it is interrupted."
+  >
+    <a ot-breadcrumb class="back-link" routerLink="/dashboard/directory-rights">
+      <otui-icon
+        name="arrow-back"
+        [size]="18"
+        stroke="currentColor"
+      ></otui-icon>
+      Rights cases
+    </a>
+  </ot-owner-page-header>
 
   <otui-card class="withdrawal-form" tone="warning" emphasis="soft">
     <h2>New withdrawal</h2>
@@ -63,13 +61,19 @@
 
   @if (message) {
   <p class="page-message" role="status">{{ message }}</p>
-  } @if (loading && requests.length === 0) {
-  <otui-loading-state headline="Loading withdrawals…"></otui-loading-state>
+  } @if (loadFailed && requests.length === 0) {
+  <ot-owner-state
+    kind="error"
+    message="Withdrawals could not be loaded."
+    (retry)="load(true)"
+  />
+  } @else if (loading && requests.length === 0) {
+  <ot-owner-state kind="loading" message="Loading withdrawals…" />
   } @else if (!loading && requests.length === 0) {
-  <otui-empty-state
-    headline="No withdrawals yet"
-    body="Requests you make here appear in this list with their progress."
-  ></otui-empty-state>
+  <ot-owner-state
+    kind="empty"
+    message="No withdrawals yet. Requests you make here appear in this list with their progress."
+  />
   }
 
   <div class="withdrawal-list" aria-live="polite">

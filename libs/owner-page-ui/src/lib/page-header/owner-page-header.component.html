@@ -1,0 +1,16 @@
+<header class="owner-page-header">
+  <div class="owner-page-header__crumbs">
+    <ng-content select="[ot-breadcrumb]"></ng-content>
+  </div>
+  <div class="owner-page-header__row">
+    <div class="owner-page-header__text">
+      <h1 class="owner-page-header__title">{{ title() }}</h1>
+      @if (description()) {
+      <p class="owner-page-header__description">{{ description() }}</p>
+      }
+    </div>
+    <div class="owner-page-header__actions">
+      <ng-content select="[ot-actions]"></ng-content>
+    </div>
+  </div>
+</header>

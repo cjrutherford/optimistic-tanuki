@@ -1,0 +1,50 @@
+<otui-modal
+  [visible]="true"
+  [heading]="options().title"
+  [closable]="false"
+  [ariaDescribedBy]="'ot-owner-confirm-body-' + uid"
+  size="sm"
+  (close)="cancel()"
+>
+  <p class="owner-confirm__body">{{ options().body }}</p>
+
+  @if (options().level === 'reason') {
+  <label class="owner-confirm__field">
+    <span class="owner-confirm__label">Reason (required)</span>
+    <textarea
+      class="owner-confirm__input"
+      rows="3"
+      [value]="reason()"
+      (input)="reason.set($any($event.target).value)"
+    ></textarea>
+  </label>
+  } @if (options().level === 'typed') {
+  <label class="owner-confirm__field">
+    <span class="owner-confirm__label">
+      Type <strong>{{ options().typedPhrase }}</strong> to confirm
+    </span>
+    <input
+      class="owner-confirm__input"
+      type="text"
+      autocomplete="off"
+      [value]="typed()"
+      (input)="typed.set($any($event.target).value)"
+    />
+  </label>
+  }
+
+  <div modal-footer class="owner-confirm__actions">
+    <button type="button" class="owner-confirm__button" (click)="cancel()">
+      Cancel
+    </button>
+    <button
+      type="button"
+      class="owner-confirm__button owner-confirm__button--confirm"
+      [class.owner-confirm__button--danger]="options().destructive"
+      [disabled]="!valid()"
+      (click)="confirm()"
+    >
+      {{ options().confirmLabel }}
+    </button>
+  </div>
+</otui-modal>

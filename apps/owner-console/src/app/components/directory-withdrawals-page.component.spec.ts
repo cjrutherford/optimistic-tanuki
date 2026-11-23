@@ -147,4 +147,33 @@ describe('DirectoryWithdrawalsPageComponent', () => {
         .textContent
     ).toContain('Scan not bound to policy');
   });
+
+  it('uses the shared page header and an empty state when there are none', () => {
+    http.expectOne(`${url}?limit=50`).flush({ requests: [] });
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('ot-owner-page-header h1')?.textContent).toContain(
+      'Withdrawals'
+    );
+    expect(el.querySelector('ot-owner-state')?.getAttribute('data-kind')).toBe(
+      'empty'
+    );
+  });
+
+  it('shows a failed load as an error with Retry, never as empty', () => {
+    http
+      .expectOne(`${url}?limit=50`)
+      .flush('boom', { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const state = el.querySelector('ot-owner-state') as HTMLElement;
+    expect(state.getAttribute('data-kind')).toBe('error');
+    expect(el.textContent).not.toContain('No withdrawals yet');
+    (state.querySelector('button') as HTMLButtonElement).click();
+    http.expectOne(`${url}?limit=50`).flush({ requests: [] });
+    fixture.detectChanges();
+    expect(el.querySelector('ot-owner-state')?.getAttribute('data-kind')).toBe(
+      'empty'
+    );
+  });
 });

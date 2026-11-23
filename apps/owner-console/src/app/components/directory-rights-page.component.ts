@@ -1,8 +1,8 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import type {
   RightsCaseDetail,
   RightsCaseStatus,
@@ -52,8 +52,7 @@ type StatusFilter = RightsCaseStatus | 'all';
   styleUrls: ['./directory-rights-page.component.scss'],
 })
 export class DirectoryRightsPageComponent implements OnInit {
-  private readonly http = inject(HttpClient);
-  private readonly api = inject(API_BASE_URL).replace(/\/$/, '');
+  private readonly admin = inject(DirectoryAdminService);
 
   status: StatusFilter = 'review';
   cases: RightsCaseSummary[] = [];
@@ -103,9 +102,9 @@ export class DirectoryRightsPageComponent implements OnInit {
   private load(): void {
     this.loading = true;
     const filter = this.status === 'all' ? '' : `status=${this.status}&`;
-    this.http
-      .get<{ cases: RightsCaseSummary[] }>(
-        `${this.api}/directory/rights-cases?${filter}limit=${this.limit}&offset=${this.offset}`
+    this.admin
+      .listRightsCases<{ cases: RightsCaseSummary[] }>(
+        `${filter}limit=${this.limit}&offset=${this.offset}`
       )
       .subscribe({
         next: (result) => {
@@ -132,8 +131,8 @@ export class DirectoryRightsPageComponent implements OnInit {
     this.syncing = true;
     this.message = '';
     this.syncId ??= crypto.randomUUID();
-    this.http
-      .post<RightsSyncResult>(`${this.api}/directory/rights-cases/sync`, {
+    this.admin
+      .syncRightsCases<RightsSyncResult>({
         syncId: this.syncId,
         ...(release ? { releaseId: release } : {}),
       })
@@ -167,25 +166,23 @@ export class DirectoryRightsPageComponent implements OnInit {
   }
 
   private loadDetail(id: string): void {
-    this.http
-      .get<RightsCaseDetail>(`${this.api}/directory/rights-cases/${id}`)
-      .subscribe({
-        next: (detail) => {
-          this.details = { ...this.details, [id]: detail };
-          this.cases = this.cases.map((c) =>
-            c.id === id
-              ? {
-                  ...c,
-                  status: detail.status,
-                  versionToken: detail.versionToken,
-                }
-              : c
-          );
-        },
-        error: () => {
-          this.message = 'The case detail is unavailable. Try again.';
-        },
-      });
+    this.admin.getRightsCase<RightsCaseDetail>(id).subscribe({
+      next: (detail) => {
+        this.details = { ...this.details, [id]: detail };
+        this.cases = this.cases.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                status: detail.status,
+                versionToken: detail.versionToken,
+              }
+            : c
+        );
+      },
+      error: () => {
+        this.message = 'The case detail is unavailable. Try again.';
+      },
+    });
   }
 
   /** The case moved under the operator: say so and show its current state. */
@@ -244,11 +241,11 @@ export class DirectoryRightsPageComponent implements OnInit {
     const decisionId = this.decisionIds.get(key) ?? crypto.randomUUID();
     this.decisionIds.set(key, decisionId);
     this.message = '';
-    this.http
-      .post<{ recorded: boolean; status: string }>(
-        `${this.api}/directory/rights-cases/${c.id}/decisions`,
-        { ...body, decisionId }
-      )
+    this.admin
+      .decideRightsCase<{ recorded: boolean; status: string }>(c.id, {
+        ...body,
+        decisionId,
+      })
       .subscribe({
         next: () => {
           this.decisionIds.delete(key);
@@ -283,16 +280,13 @@ export class DirectoryRightsPageComponent implements OnInit {
     if (this.undoing) return;
     this.undoing = true;
     this.message = '';
-    this.http
-      .post<{ recorded: boolean; status: string }>(
-        `${this.api}/directory/rights-cases/${c.id}/undo`,
-        {
-          decisionId: crypto.randomUUID(),
-          undoOf: request.entry.id,
-          expectedVersionToken: c.versionToken,
-          reason: request.reason,
-        }
-      )
+    this.admin
+      .undoRightsCaseDecision<{ recorded: boolean; status: string }>(c.id, {
+        decisionId: crypto.randomUUID(),
+        undoOf: request.entry.id,
+        expectedVersionToken: c.versionToken,
+        reason: request.reason,
+      })
       .subscribe({
         next: () => {
           this.undoing = false;

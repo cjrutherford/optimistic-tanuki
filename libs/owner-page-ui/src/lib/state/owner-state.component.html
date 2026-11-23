@@ -1,0 +1,17 @@
+<div class="owner-state">
+  @if (kind() === 'loading') {
+  <span class="owner-state__spinner" aria-hidden="true"></span>
+  } @else {
+  <p class="owner-state__heading">{{ heading() }}</p>
+  }
+  <p class="owner-state__message">{{ text() }}</p>
+  @if (kind() === 'error') {
+  <button type="button" class="owner-state__button" (click)="retry.emit()">
+    Retry
+  </button>
+  } @else if (kind() === 'empty' && actionLabel()) {
+  <button type="button" class="owner-state__button" (click)="action.emit()">
+    {{ actionLabel() }}
+  </button>
+  }
+</div>

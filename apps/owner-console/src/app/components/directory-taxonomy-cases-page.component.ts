@@ -1,8 +1,8 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import {
   DIRECTORY_TAXONOMY_CATEGORIES,
   DIRECTORY_TAXONOMY_PLACE_TYPES,
@@ -52,8 +52,7 @@ type StatusFilter = TaxonomyCaseStatus | 'all';
   styleUrls: ['./directory-taxonomy-cases-page.component.scss'],
 })
 export class DirectoryTaxonomyCasesPageComponent implements OnInit {
-  private readonly http = inject(HttpClient);
-  private readonly api = inject(API_BASE_URL).replace(/\/$/, '');
+  private readonly admin = inject(DirectoryAdminService);
 
   status: StatusFilter = 'open';
   cases: TaxonomyCaseSummary[] = [];
@@ -108,9 +107,9 @@ export class DirectoryTaxonomyCasesPageComponent implements OnInit {
   private load(): void {
     this.loading = true;
     const filter = this.status === 'all' ? '' : `status=${this.status}&`;
-    this.http
-      .get<{ cases: TaxonomyCaseSummary[] }>(
-        `${this.api}/directory/taxonomy/cases?${filter}limit=${this.limit}&offset=${this.offset}`
+    this.admin
+      .listTaxonomyCases<{ cases: TaxonomyCaseSummary[] }>(
+        `${filter}limit=${this.limit}&offset=${this.offset}`
       )
       .subscribe({
         next: (result) => {
@@ -168,8 +167,8 @@ export class DirectoryTaxonomyCasesPageComponent implements OnInit {
     this.raising = true;
     this.message = '';
     this.raiseId ??= crypto.randomUUID();
-    this.http
-      .post<TaxonomyRaiseCaseResult>(`${this.api}/directory/taxonomy/cases`, {
+    this.admin
+      .raiseTaxonomyCase<TaxonomyRaiseCaseResult>({
         caseId: this.raiseId,
         townId: townId.trim(),
         listingId: listingId.trim(),
@@ -206,27 +205,25 @@ export class DirectoryTaxonomyCasesPageComponent implements OnInit {
   }
 
   private loadDetail(id: string): void {
-    this.http
-      .get<TaxonomyCaseDetail>(`${this.api}/directory/taxonomy/cases/${id}`)
-      .subscribe({
-        next: (detail) => {
-          this.details = { ...this.details, [id]: detail };
-          this.cases = this.cases.map((c) =>
-            c.id === id
-              ? {
-                  ...c,
-                  status: detail.status,
-                  versionToken: detail.versionToken,
-                  assignedCategoryId: detail.assignedCategoryId,
-                  assignedPlaceTypeId: detail.assignedPlaceTypeId,
-                }
-              : c
-          );
-        },
-        error: () => {
-          this.message = 'The case detail is unavailable. Try again.';
-        },
-      });
+    this.admin.getTaxonomyCase<TaxonomyCaseDetail>(id).subscribe({
+      next: (detail) => {
+        this.details = { ...this.details, [id]: detail };
+        this.cases = this.cases.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                status: detail.status,
+                versionToken: detail.versionToken,
+                assignedCategoryId: detail.assignedCategoryId,
+                assignedPlaceTypeId: detail.assignedPlaceTypeId,
+              }
+            : c
+        );
+      },
+      error: () => {
+        this.message = 'The case detail is unavailable. Try again.';
+      },
+    });
   }
 
   /** The case moved under the operator: say so and show its current state. */
@@ -266,11 +263,12 @@ export class DirectoryTaxonomyCasesPageComponent implements OnInit {
     const decisionId = this.decisionIds.get(key) ?? crypto.randomUUID();
     this.decisionIds.set(key, decisionId);
     this.message = '';
-    this.http
-      .post<{ recorded: boolean; status: string }>(
-        `${this.api}/directory/taxonomy/cases/${c.id}/dismiss`,
-        { decisionId, reason: why, expectedVersionToken: c.versionToken }
-      )
+    this.admin
+      .dismissTaxonomyCase<{ recorded: boolean; status: string }>(c.id, {
+        decisionId,
+        reason: why,
+        expectedVersionToken: c.versionToken,
+      })
       .subscribe({
         next: () => {
           this.decisionIds.delete(key);
@@ -320,11 +318,11 @@ export class DirectoryTaxonomyCasesPageComponent implements OnInit {
     const decisionId = this.decisionIds.get(key) ?? crypto.randomUUID();
     this.decisionIds.set(key, decisionId);
     this.message = '';
-    this.http
-      .post<{ recorded: boolean; status: string }>(
-        `${this.api}/directory/taxonomy/cases/${c.id}/decisions`,
-        { ...body, decisionId }
-      )
+    this.admin
+      .decideTaxonomyCase<{ recorded: boolean; status: string }>(c.id, {
+        ...body,
+        decisionId,
+      })
       .subscribe({
         next: () => {
           this.decisionIds.delete(key);
@@ -365,16 +363,13 @@ export class DirectoryTaxonomyCasesPageComponent implements OnInit {
     if (this.undoing) return;
     this.undoing = true;
     this.message = '';
-    this.http
-      .post<{ recorded: boolean; status: string }>(
-        `${this.api}/directory/taxonomy/cases/${c.id}/undo`,
-        {
-          decisionId: crypto.randomUUID(),
-          undoOf: request.entry.id,
-          expectedVersionToken: c.versionToken,
-          reason: request.reason,
-        }
-      )
+    this.admin
+      .undoTaxonomyCaseDecision<{ recorded: boolean; status: string }>(c.id, {
+        decisionId: crypto.randomUUID(),
+        undoOf: request.entry.id,
+        expectedVersionToken: c.versionToken,
+        reason: request.reason,
+      })
       .subscribe({
         next: () => {
           this.undoing = false;

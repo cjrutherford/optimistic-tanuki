@@ -1,8 +1,8 @@
+import { DirectoryAdminService } from '../services/directory-admin.service';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import {
   BadgeComponent,
   ButtonComponent,
@@ -144,9 +144,8 @@ export interface DuplicateSampleItem {
   styleUrls: ['./directory-duplicate-review-page.component.scss'],
 })
 export class DirectoryDuplicateReviewPageComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly admin = inject(DirectoryAdminService);
   private readonly route = inject(ActivatedRoute);
-  private readonly api = inject(API_BASE_URL).replace(/\/$/, '');
 
   town = '';
   tab: Tab = 'queue';
@@ -207,10 +206,6 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
     });
   }
 
-  private get url(): string {
-    return `${this.api}/directory/towns/${this.town}/duplicate-cases`;
-  }
-
   setTab(tab: Tab): void {
     this.tab = tab;
     if (tab === 'sample' && !this.samplesLoaded) this.loadSamples();
@@ -259,9 +254,10 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
       (this.state === 'all' ? '' : `state=${this.state}&`) +
       (this.status === 'all' ? '' : `status=${this.status}&`) +
       (this.rule === 'all' ? '' : `rule=${this.rule}&`);
-    this.http
-      .get<DuplicatePage>(
-        `${this.url}?${filters}limit=${this.limit}&offset=${this.offset}`
+    this.admin
+      .listDuplicateCases<DuplicatePage>(
+        this.town,
+        `${filters}limit=${this.limit}&offset=${this.offset}`
       )
       .subscribe({
         next: (result) => {
@@ -291,17 +287,19 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
   }
 
   private loadDetail(caseId: string): void {
-    this.http.get<DuplicateCaseDetail>(`${this.url}/${caseId}`).subscribe({
-      next: (detail) => {
-        this.details = { ...this.details, [caseId]: detail };
-        this.cases = this.cases.map((c) =>
-          c.caseId === caseId ? { ...c, state: detail.state } : c
-        );
-      },
-      error: () => {
-        this.message = 'The pair detail is unavailable. Try again.';
-      },
-    });
+    this.admin
+      .getDuplicateCase<DuplicateCaseDetail>(this.town, caseId)
+      .subscribe({
+        next: (detail) => {
+          this.details = { ...this.details, [caseId]: detail };
+          this.cases = this.cases.map((c) =>
+            c.caseId === caseId ? { ...c, state: detail.state } : c
+          );
+        },
+        error: () => {
+          this.message = 'The pair detail is unavailable. Try again.';
+        },
+      });
   }
 
   /** The pair moved under the reviewer: say so and show its current state. */
@@ -348,16 +346,17 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
     }
     this.deciding = true;
     this.message = '';
-    this.http
-      .post<{ recorded: boolean; replayed: boolean; state: DuplicateState }>(
-        `${this.url}/${c.caseId}/decide`,
-        {
-          action,
-          reason: why,
-          expectedState: c.state,
-          ...(expectedKept ? { expectedKept } : {}),
-        }
-      )
+    this.admin
+      .decideDuplicateCase<{
+        recorded: boolean;
+        replayed: boolean;
+        state: DuplicateState;
+      }>(this.town, c.caseId, {
+        action,
+        reason: why,
+        expectedState: c.state,
+        ...(expectedKept ? { expectedKept } : {}),
+      })
       .subscribe({
         next: (result) => {
           this.deciding = false;
@@ -434,8 +433,8 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
   // ---- D18 wrong-merge sample ----
 
   private loadSamples(): void {
-    this.http
-      .get<{ samples: DuplicateSample[] }>(`${this.url}/samples`)
+    this.admin
+      .listDuplicateSamples<{ samples: DuplicateSample[] }>(this.town)
       .subscribe({
         next: (result) => {
           this.samples = result.samples ?? [];
@@ -467,9 +466,9 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
     if (seed.trim()) body.seed = seed.trim();
     this.drawing = true;
     this.message = '';
-    this.http
-      .post<{ replayed: boolean; sample: DuplicateSample }>(
-        `${this.url}/samples`,
+    this.admin
+      .createDuplicateSample<{ replayed: boolean; sample: DuplicateSample }>(
+        this.town,
         body
       )
       .subscribe({
@@ -492,10 +491,11 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
   }
 
   showSample(sampleId: string): void {
-    this.http
-      .get<{ sample: DuplicateSample; items: DuplicateSampleItem[] }>(
-        `${this.url}/samples/${sampleId}`
-      )
+    this.admin
+      .getDuplicateSample<{
+        sample: DuplicateSample;
+        items: DuplicateSampleItem[];
+      }>(this.town, sampleId)
       .subscribe({
         next: (result) => {
           this.openSample = result;
@@ -511,9 +511,10 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
     const { sampleId } = this.openSample.sample;
     this.judging = true;
     this.message = '';
-    this.http
-      .post<{ replayed: boolean; report: WrongMergeReport }>(
-        `${this.url}/samples/${sampleId}/judge`,
+    this.admin
+      .judgeDuplicateSample<{ replayed: boolean; report: WrongMergeReport }>(
+        this.town,
+        sampleId,
         { caseId: item.caseId, verdict }
       )
       .subscribe({

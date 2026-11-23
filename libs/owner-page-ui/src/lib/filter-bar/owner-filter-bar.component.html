@@ -1,0 +1,19 @@
+<div class="owner-filter-bar" role="search">
+  <label class="owner-filter-bar__field" [for]="inputId">
+    <span class="owner-filter-bar__label">{{ label() }}</span>
+    <input
+      class="owner-filter-bar__input"
+      type="search"
+      [id]="inputId"
+      [placeholder]="placeholder()"
+      [value]="text()"
+      (input)="onInput($any($event.target).value)"
+    />
+  </label>
+  <div class="owner-filter-bar__filters">
+    <ng-content></ng-content>
+  </div>
+  <button type="button" class="owner-filter-bar__clear" (click)="clear()">
+    Clear
+  </button>
+</div>

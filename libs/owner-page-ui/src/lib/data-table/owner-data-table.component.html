@@ -1,0 +1,24 @@
+@switch (view()) { @case ('error') {
+<ot-owner-state
+  kind="error"
+  [message]="error() ?? undefined"
+  (retry)="retry.emit()"
+/>
+} @case ('loading') {
+<ot-owner-state kind="loading" />
+} @case ('empty') {
+<ot-owner-state
+  kind="empty"
+  [message]="emptyMessage()"
+  [actionLabel]="emptyActionLabel()"
+  (action)="emptyAction.emit()"
+/>
+} @default {
+<otui-ag-grid
+  [rowData]="data()"
+  [columnDefs]="columns()"
+  [gridOptions]="gridOptions"
+  [height]="height()"
+  (selectionChange)="onSelection($event)"
+/>
+} }
