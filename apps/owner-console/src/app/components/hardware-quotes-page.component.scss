@@ -1,0 +1,196 @@
+:host {
+  color: var(--foreground);
+  font-family: var(--font-body, inherit);
+  font-size: var(--type-body, 1rem);
+  line-height: var(--line-height, 1.5);
+  display: block;
+}
+
+.quotes-page {
+  width: min(100%, 920px);
+  display: grid;
+  gap: 1rem;
+}
+
+h2 {
+  margin-top: 0;
+  font-size: var(--type-h3, 1.25rem);
+  line-height: var(--heading-line-height, 1.25);
+}
+
+h3 {
+  font-size: var(--type-h4, 1.05rem);
+  line-height: var(--heading-line-height, 1.25);
+}
+
+.notice,
+.quote-form,
+.quote-result,
+.sourcing-form {
+  margin: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--personality-card-radius, 0.75rem);
+  background: var(--card, transparent);
+}
+
+.sourcing {
+  display: grid;
+  gap: 0.4rem;
+  border-left-width: 5px;
+}
+
+.error {
+  color: var(--danger, var(--foreground));
+}
+
+.success {
+  color: var(--success, var(--foreground));
+}
+
+.offer-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.offer-list {
+  display: grid;
+  gap: 0.7rem;
+  max-height: 28rem;
+  overflow: auto;
+}
+
+.offer-row {
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--personality-card-radius, 0.65rem);
+}
+
+.offer-choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: center;
+  cursor: pointer;
+
+  input {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  span {
+    display: grid;
+    gap: 0.2rem;
+  }
+
+  small {
+    opacity: 0.75;
+    font-weight: 400;
+    font-size: var(--type-small, 0.875rem);
+  }
+}
+
+.ineligible {
+  opacity: 0.65;
+}
+
+.ineligible-reason {
+  margin: 0.5rem 0 0 2rem;
+  font-size: var(--type-small, 0.9rem);
+}
+
+.quantity {
+  grid-template-columns: auto 6rem;
+  align-items: center;
+  width: fit-content;
+  margin: 0.65rem 0 0 2rem;
+
+  input {
+    padding: 0.45rem;
+  }
+}
+
+form {
+  display: grid;
+  gap: 1rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+input,
+select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--personality-input-radius, 0.5rem);
+  font: inherit;
+}
+
+fieldset {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--personality-card-radius, 0.7rem);
+  padding: 1rem;
+}
+
+legend {
+  padding: 0 0.35rem;
+  font-weight: 700;
+}
+
+button {
+  width: fit-content;
+  border: 1px solid var(--primary);
+  border-radius: var(--personality-input-radius, 0.5rem);
+  padding: 0.6rem 1.1rem;
+  background: var(--primary);
+  color: var(--primary-foreground, var(--background));
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+
+  &.secondary {
+    background: transparent;
+    color: var(--primary);
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.55;
+  }
+}
+
+dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.8rem;
+
+  div {
+    padding: 0.75rem;
+    border-radius: var(--personality-input-radius, 0.5rem);
+    border: 1px solid var(--border);
+  }
+}
+
+dt {
+  font-size: var(--type-small, 0.85rem);
+  opacity: 0.75;
+}
+
+dd {
+  margin: 0.25rem 0 0;
+  font-weight: 700;
+}

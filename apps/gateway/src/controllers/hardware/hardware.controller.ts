@@ -37,6 +37,8 @@ import {
   ClientDeploymentArtifacts,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { RequirePermissions } from '../../decorators/permissions.decorator';
 import validator from 'validator';
 import { createClientDeploymentArchive } from './client-deployment-archive';
 
@@ -155,7 +157,8 @@ export class HardwareController {
   }
 
   @Post('operator/supplier-offers/import')
-  @UseGuards(AuthGuard, OwnerConsoleScopeGuard)
+  @UseGuards(AuthGuard, OwnerConsoleScopeGuard, PermissionsGuard)
+  @RequirePermissions('hardware.operate')
   async importSupplierOffers(@Body() payload: ImportSupplierOffersDto) {
     return await firstValueFrom(
       this.systemConfiguratorService.send(
@@ -166,7 +169,8 @@ export class HardwareController {
   }
 
   @Get('operator/supplier-offers')
-  @UseGuards(AuthGuard, OwnerConsoleScopeGuard)
+  @UseGuards(AuthGuard, OwnerConsoleScopeGuard, PermissionsGuard)
+  @RequirePermissions('hardware.operate')
   async listSupplierOffers() {
     return await firstValueFrom(
       this.systemConfiguratorService.send(
@@ -177,7 +181,8 @@ export class HardwareController {
   }
 
   @Post('operator/supplier-offers/amazon/search')
-  @UseGuards(AuthGuard, OwnerConsoleScopeGuard)
+  @UseGuards(AuthGuard, OwnerConsoleScopeGuard, PermissionsGuard)
+  @RequirePermissions('hardware.operate')
   async searchAmazonBusinessOffers(
     @Body() payload: SearchAmazonBusinessOffersDto
   ) {
@@ -190,7 +195,8 @@ export class HardwareController {
   }
 
   @Post('operator/quotes')
-  @UseGuards(AuthGuard, OwnerConsoleScopeGuard)
+  @UseGuards(AuthGuard, OwnerConsoleScopeGuard, PermissionsGuard)
+  @RequirePermissions('hardware.operate')
   async issueCommercialQuote(@Body() payload: IssueCommercialQuoteDto) {
     return await firstValueFrom(
       this.systemConfiguratorService.send(
@@ -201,7 +207,8 @@ export class HardwareController {
   }
 
   @Get('operator/quotes/:id')
-  @UseGuards(AuthGuard, OwnerConsoleScopeGuard)
+  @UseGuards(AuthGuard, OwnerConsoleScopeGuard, PermissionsGuard)
+  @RequirePermissions('hardware.operate')
   async getCommercialQuote(@Param('id') id: string) {
     return await firstValueFrom(
       this.systemConfiguratorService.send(
@@ -212,7 +219,8 @@ export class HardwareController {
   }
 
   @Post('operator/quotes/:id/accept')
-  @UseGuards(AuthGuard, OwnerConsoleScopeGuard)
+  @UseGuards(AuthGuard, OwnerConsoleScopeGuard, PermissionsGuard)
+  @RequirePermissions('hardware.operate')
   async acceptCommercialQuote(@Param('id') id: string) {
     return await firstValueFrom(
       this.systemConfiguratorService.send(
@@ -223,7 +231,8 @@ export class HardwareController {
   }
 
   @Post('operator/quotes/:id/deployment-artifacts')
-  @UseGuards(AuthGuard, OwnerConsoleScopeGuard)
+  @UseGuards(AuthGuard, OwnerConsoleScopeGuard, PermissionsGuard)
+  @RequirePermissions('hardware.operate')
   async generateClientDeploymentArtifacts(
     @Param('id') quoteId: string,
     @Body()
@@ -259,7 +268,8 @@ export class HardwareController {
   }
 
   @Post('operator/quotes/:id/commit')
-  @UseGuards(AuthGuard, OwnerConsoleScopeGuard)
+  @UseGuards(AuthGuard, OwnerConsoleScopeGuard, PermissionsGuard)
+  @RequirePermissions('hardware.operate')
   async commitHardwareProposal(
     @Param('id') id: string,
     @Body()
@@ -413,7 +423,8 @@ export class HardwareController {
   }
 
   @Get('operator/access')
-  @UseGuards(AuthGuard, OwnerConsoleScopeGuard)
+  @UseGuards(AuthGuard, OwnerConsoleScopeGuard, PermissionsGuard)
+  @RequirePermissions('hardware.operate')
   async probeOperatorAccess() {
     return await firstValueFrom(
       this.systemConfiguratorService.send(

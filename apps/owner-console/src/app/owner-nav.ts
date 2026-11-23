@@ -363,6 +363,12 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
         icon: '✉',
         keywords: ['crm', 'contacts', 'inquiries'],
       },
+      {
+        label: 'Hardware quotes',
+        path: '/dashboard/store/hardware-quotes',
+        icon: '▥',
+        keywords: ['bto', 'hai computer', 'proposals', 'suppliers', 'offers'],
+      },
     ],
   },
   {

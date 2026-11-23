@@ -24,7 +24,7 @@ describe('published labor rate', () => {
       'HAI_LABOR_RATE_PER_HOUR',
     ],
     [
-      'apps/system-configurator/src/app/services/hardware.service.ts',
+      'apps/owner-console/src/app/services/hardware-quotes.service.ts',
       'HAI_LABOR_RATE_PER_HOUR',
     ],
   ])('matches %s', (file, name) => {

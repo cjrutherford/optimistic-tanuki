@@ -1,3 +1,5 @@
+export {};
+
 const seedData = require('../assets/default-permissions.json');
 
 interface RolePermission {

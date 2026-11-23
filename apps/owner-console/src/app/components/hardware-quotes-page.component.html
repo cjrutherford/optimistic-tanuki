@@ -1,0 +1,341 @@
+<div class="quotes-page">
+  <ot-owner-page-header
+    title="Hardware quotes"
+    description="Issue a 30-day quote from current, verified distributor offers, accept it, then save the proposal as a lead."
+  />
+  <ng-container>
+    <section class="notice sourcing" aria-label="Sourcing requirement">
+      <strong>Live sourcing requirement</strong>
+      <span
+        >Only current USD offers marked as in stock and sourced from a live
+        distributor API can be quoted. Structured feed imports are fallback data
+        and cannot be used for firm quotes.</span
+      >
+    </section>
+
+    <form
+      class="sourcing-form"
+      (ngSubmit)="searchAmazonOffers()"
+      aria-label="Search live Amazon Business offers"
+    >
+      <h2>Search Amazon Business</h2>
+      <p>
+        Run a live catalog search with the approved Amazon Business account.
+        Matching offers are saved to the supplier list for review.
+      </p>
+      <label
+        >Search keywords<input
+          name="amazonKeywords"
+          [(ngModel)]="amazonKeywords"
+          minlength="2"
+          maxlength="120"
+          required
+      /></label>
+      <label
+        >Shipping ZIP code (optional)<input
+          name="shippingPostalCode"
+          [(ngModel)]="shippingPostalCode"
+          inputmode="numeric"
+          pattern="[0-9]{5}(-[0-9]{4})?"
+      /></label>
+      <button
+        type="submit"
+        [disabled]="
+          amazonSearchBusy() || busy() || amazonKeywords.trim().length < 2
+        "
+      >
+        {{ amazonSearchBusy() ? 'Searching…' : 'Search and sync offers' }}
+      </button>
+    </form>
+
+    <form class="quote-form" (ngSubmit)="issueQuote()">
+      <h2>Issue firm quote</h2>
+      <p>
+        Select the live supplier offers for this build. Offers must be in stock,
+        priced in USD, and observed within the last seven days.
+      </p>
+      <div class="offer-heading">
+        <h3>Supplier offers</h3>
+        <button
+          type="button"
+          class="secondary"
+          (click)="loadOffers()"
+          [disabled]="offersLoading()"
+        >
+          {{ offersLoading() ? 'Refreshing…' : 'Refresh offers' }}
+        </button>
+      </div>
+      <ot-owner-state *ngIf="offersLoading()" kind="loading" />
+      <ot-owner-state
+        *ngIf="offersError()"
+        kind="error"
+        [message]="offersError()"
+        (retry)="loadOffers()"
+      />
+      <ot-owner-state
+        *ngIf="
+          !offersLoading() && !offersError() && eligibleOffers().length === 0
+        "
+        kind="empty"
+        message="No eligible live API offers are available. Configure a distributor API connection and refresh the list."
+      />
+      <div class="offer-list" *ngIf="eligibleOffers().length > 0">
+        <article
+          class="offer-row"
+          *ngFor="let offer of offers()"
+          [class.ineligible]="!isEligible(offer)"
+        >
+          <label class="offer-choice">
+            <input
+              type="checkbox"
+              [checked]="selectedOfferIds().includes(offer.id)"
+              [disabled]="!isEligible(offer)"
+              (change)="toggleOffer(offer, $any($event.target).checked)"
+            />
+            <span>
+              <strong>{{ offer.productName }}</strong>
+              <small
+                >{{ offer.vendor }} · SKU {{ offer.sourceSku }} ·
+                {{ offer.availability }} · {{ offer.sourceChannel }}</small
+              >
+              <small>Observed {{ offer.observedAt | date : 'medium' }}</small>
+            </span>
+            <strong>{{ offer.amount | currency : offer.currency }}</strong>
+          </label>
+          <label class="quantity" *ngIf="selectedOfferIds().includes(offer.id)">
+            Quantity
+            <input
+              type="number"
+              min="1"
+              max="1000"
+              step="1"
+              [name]="'quantity-' + offer.id"
+              [(ngModel)]="selectedQuantities[offer.id]"
+            />
+          </label>
+          <p class="ineligible-reason" *ngIf="!isEligible(offer)">
+            {{ eligibilityReason(offer) }}
+          </p>
+        </article>
+      </div>
+      <label>
+        Commercial tier
+        <select name="tierId" [(ngModel)]="tierId">
+          <option value="tier1">Tier 1</option>
+          <option value="tier2">Tier 2</option>
+          <option value="tier3">Tier 3</option>
+        </select>
+      </label>
+      <fieldset>
+        <legend>Up front, at actual amounts (no markup)</legend>
+        <label
+          >Freight (USD)<input
+            type="number"
+            name="freight"
+            min="0"
+            step="0.01"
+            [(ngModel)]="freightAmount"
+            required
+        /></label>
+        <label
+          >Tax (USD)<input
+            type="number"
+            name="tax"
+            min="0"
+            step="0.01"
+            [(ngModel)]="taxAmount"
+            required
+        /></label>
+        <label
+          >Setup hours at {{ laborRate | currency : 'USD' }}/hour<input
+            type="number"
+            name="setupHours"
+            min="0"
+            step="0.25"
+            [(ngModel)]="setupHours"
+            required
+        /></label>
+      </fieldset>
+      <fieldset>
+        <legend>Monthly support</legend>
+        <label
+          >Support hours at {{ laborRate | currency : 'USD' }}/hour<input
+            type="number"
+            name="supportHours"
+            min="0"
+            step="0.25"
+            [(ngModel)]="monthlySupportHours"
+            required
+        /></label>
+        <label
+          >Cloud cost<input
+            type="number"
+            name="cloud"
+            min="0"
+            step="0.01"
+            [(ngModel)]="monthlyCloudCost"
+            required
+        /></label>
+        <label
+          >SMS cost<input
+            type="number"
+            name="sms"
+            min="0"
+            step="0.01"
+            [(ngModel)]="monthlySmsCost"
+            required
+        /></label>
+        <label
+          >Network cost<input
+            type="number"
+            name="network"
+            min="0"
+            step="0.01"
+            [(ngModel)]="monthlyNetworkCost"
+            required
+        /></label>
+      </fieldset>
+      <button
+        type="submit"
+        [disabled]="
+          busy() || offersLoading() || selectedOfferIds().length === 0
+        "
+      >
+        {{ busy() ? 'Issuing…' : 'Issue 30-day quote' }}
+      </button>
+    </form>
+
+    <section
+      class="quote-result"
+      *ngIf="quote() as issuedQuote"
+      aria-live="polite"
+    >
+      <h2>Quote {{ issuedQuote.id }}</h2>
+      <dl>
+        <div>
+          <dt>Status</dt>
+          <dd>{{ issuedQuote.state }}</dd>
+        </div>
+        <div>
+          <dt>Hardware at cost</dt>
+          <dd>
+            {{ issuedQuote.sourceCost | currency : issuedQuote.currency }}
+          </dd>
+        </div>
+        <div>
+          <dt>Up-front total (hardware, freight, tax, setup labor)</dt>
+          <dd>
+            {{
+              issuedQuote.pricingSnapshot['outrightPrice']
+                | currency : issuedQuote.currency
+            }}
+          </dd>
+        </div>
+        <div>
+          <dt>Valid until</dt>
+          <dd>{{ issuedQuote.validUntil | date : 'medium' }}</dd>
+        </div>
+      </dl>
+      <button
+        type="button"
+        (click)="acceptQuote()"
+        [disabled]="busy() || issuedQuote.state !== 'issued'"
+      >
+        Accept quote
+      </button>
+
+      <form
+        class="commit-form"
+        (ngSubmit)="commitProposal()"
+        *ngIf="issuedQuote.state === 'accepted'"
+      >
+        <h3>Save proposal as a lead</h3>
+        <label
+          >Customer name<input
+            name="customerName"
+            [(ngModel)]="customerName"
+            required
+        /></label>
+        <label
+          >Customer email<input
+            name="customerEmail"
+            type="email"
+            [(ngModel)]="customerEmail"
+        /></label>
+        <label
+          >Customer phone<input
+            name="customerPhone"
+            type="tel"
+            [(ngModel)]="customerPhone"
+        /></label>
+        <button type="submit" [disabled]="busy() || !customerName.trim()">
+          {{ busy() ? 'Saving…' : 'Save proposal as lead' }}
+        </button>
+      </form>
+
+      <form
+        class="deployment-form"
+        (ngSubmit)="downloadBundle()"
+        *ngIf="issuedQuote.state === 'accepted'"
+      >
+        <h3>Download customer deployment package</h3>
+        <p>
+          This package contains the HAI Computer portal and its required
+          services. Generated credentials are included in the downloaded
+          archive; store it securely.
+        </p>
+        <label
+          >Customer organization<input
+            name="deploymentOrganization"
+            [(ngModel)]="deploymentOrganization"
+            maxlength="255"
+            required
+        /></label>
+        <label
+          >Customer contact<input
+            name="deploymentContactName"
+            [(ngModel)]="deploymentContactName"
+            maxlength="255"
+            required
+        /></label>
+        <label
+          >HAI Computer image tag<input
+            name="deploymentImageTag"
+            [(ngModel)]="deploymentImageTag"
+            pattern="[A-Za-z0-9][A-Za-z0-9._-]{0,127}"
+            required
+        /></label>
+        <label
+          >Gateway URL<input
+            name="deploymentGatewayUrl"
+            type="url"
+            [(ngModel)]="deploymentGatewayUrl"
+            required
+        /></label>
+        <label
+          >Gateway WebSocket URL<input
+            name="deploymentGatewayWsUrl"
+            type="url"
+            [(ngModel)]="deploymentGatewayWsUrl"
+            required
+        /></label>
+        <label
+          >Socket URL<input
+            name="deploymentSocketUrl"
+            type="url"
+            [(ngModel)]="deploymentSocketUrl"
+            required
+        /></label>
+        <button type="submit" [disabled]="busy() || !deploymentFormValid()">
+          {{ busy() ? 'Preparing…' : 'Download deployment package' }}
+        </button>
+      </form>
+    </section>
+    <p class="notice error" *ngIf="actionError()" role="alert">
+      {{ actionError() }}
+    </p>
+    <p class="notice success" *ngIf="successMessage()" role="status">
+      {{ successMessage() }}
+    </p>
+  </ng-container>
+</div>

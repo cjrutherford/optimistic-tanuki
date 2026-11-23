@@ -1,11 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
 import {
   CommercialQuote,
-  HardwareService,
+  HardwareQuotesService,
   OperatorSupplierOffer,
-} from '../../services/hardware.service';
-import { OperatorComponent } from './operator.component';
+} from '../services/hardware-quotes.service';
+import { HardwareQuotesPageComponent } from './hardware-quotes-page.component';
+import {
+  OwnerConfirmStub,
+  createOwnerConfirmStub,
+} from './owner-confirm.testing';
 
 const fresh = new Date(Date.now() - 60_000).toISOString();
 
@@ -40,11 +45,11 @@ function quote(overrides: Partial<CommercialQuote> = {}): CommercialQuote {
   };
 }
 
-describe('OperatorComponent', () => {
-  let fixture: ComponentFixture<OperatorComponent>;
+describe('HardwareQuotesPageComponent', () => {
+  let fixture: ComponentFixture<HardwareQuotesPageComponent>;
+  let confirmStub: OwnerConfirmStub;
   let hardware: {
-    probeOperatorAccess: jest.Mock;
-    getOperatorSupplierOffers: jest.Mock;
+    getSupplierOffers: jest.Mock;
     issueCommercialQuote: jest.Mock;
     acceptCommercialQuote: jest.Mock;
     commitCommercialProposal: jest.Mock;
@@ -54,21 +59,20 @@ describe('OperatorComponent', () => {
 
   async function createComponent(): Promise<void> {
     await TestBed.configureTestingModule({
-      imports: [OperatorComponent],
-      providers: [{ provide: HardwareService, useValue: hardware }],
+      imports: [HardwareQuotesPageComponent],
+      providers: [
+        { provide: HardwareQuotesService, useValue: hardware },
+        { provide: OwnerConfirmService, useValue: confirmStub },
+      ],
     }).compileComponents();
-    fixture = TestBed.createComponent(OperatorComponent);
+    fixture = TestBed.createComponent(HardwareQuotesPageComponent);
     fixture.detectChanges();
   }
 
   beforeEach(() => {
+    confirmStub = createOwnerConfirmStub();
     hardware = {
-      probeOperatorAccess: jest
-        .fn()
-        .mockReturnValue(
-          of({ available: true, service: 'system-configurator' })
-        ),
-      getOperatorSupplierOffers: jest.fn().mockReturnValue(of([])),
+      getSupplierOffers: jest.fn().mockReturnValue(of([])),
       issueCommercialQuote: jest.fn().mockReturnValue(of(quote())),
       acceptCommercialQuote: jest
         .fn()
@@ -81,22 +85,28 @@ describe('OperatorComponent', () => {
     };
   });
 
-  it('hides the workflow when owner scope access is denied', async () => {
-    hardware.probeOperatorAccess.mockReturnValue(
-      throwError(() => ({ status: 403, message: 'Owner role required' }))
+  it('shows Unavailable with a Retry when supplier offers fail to load', async () => {
+    hardware.getSupplierOffers.mockReturnValueOnce(
+      throwError(() => ({ error: { message: 'Gateway timed out' } }))
     );
     await createComponent();
 
-    expect(fixture.componentInstance.ownerAccess()).toBe(false);
-    expect(fixture.nativeElement.textContent).toContain(
-      'Owner Console access could not be verified'
+    const state = fixture.nativeElement.querySelector('ot-owner-state');
+    expect(state.getAttribute('data-kind')).toBe('error');
+    expect(state.textContent).toContain('Gateway timed out');
+
+    hardware.getSupplierOffers.mockReturnValue(of([offer()]));
+    state.querySelector('button').click();
+    fixture.detectChanges();
+
+    expect(hardware.getSupplierOffers).toHaveBeenCalledTimes(2);
+    expect(fixture.nativeElement.querySelectorAll('.offer-row')).toHaveLength(
+      1
     );
-    expect(hardware.getOperatorSupplierOffers).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.querySelector('.quote-form')).toBeNull();
   });
 
   it('only enables live, in-stock USD offers observed within seven days', async () => {
-    hardware.getOperatorSupplierOffers.mockReturnValue(
+    hardware.getSupplierOffers.mockReturnValue(
       of([
         offer(),
         offer({ id: 'offer-import', sourceChannel: 'file-import' }),
@@ -138,7 +148,7 @@ describe('OperatorComponent', () => {
   });
 
   it('issues and accepts a quote, then commits using the server quote ID', async () => {
-    hardware.getOperatorSupplierOffers.mockReturnValue(of([offer()]));
+    hardware.getSupplierOffers.mockReturnValue(of([offer()]));
     const issued = quote();
     const accepted = quote({ state: 'accepted' });
     hardware.issueCommercialQuote.mockReturnValue(of(issued));
@@ -168,7 +178,10 @@ describe('OperatorComponent', () => {
     );
     expect(component.quote()?.id).toBe('server-quote-42');
 
-    component.acceptQuote();
+    await component.acceptQuote();
+    expect(confirmStub.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'reason' })
+    );
     expect(hardware.acceptCommercialQuote).toHaveBeenCalledWith(
       'server-quote-42'
     );
@@ -177,7 +190,8 @@ describe('OperatorComponent', () => {
     component.customerName = 'Example Customer';
     component.customerEmail = 'customer@example.test';
     component.customerPhone = '555-0100';
-    component.commitProposal();
+    await component.commitProposal();
+    expect(confirmStub.confirm).toHaveBeenCalledTimes(2);
     expect(hardware.commitCommercialProposal).toHaveBeenCalledWith(
       'server-quote-42',
       {
@@ -189,7 +203,7 @@ describe('OperatorComponent', () => {
   });
 
   it('starts owner-requested Amazon search and refreshes offers after success', async () => {
-    hardware.getOperatorSupplierOffers.mockReturnValue(of([offer()]));
+    hardware.getSupplierOffers.mockReturnValue(of([offer()]));
     hardware.searchAmazonBusinessOffers.mockReturnValue(of([offer()]));
     await createComponent();
     const component = fixture.componentInstance;
@@ -202,7 +216,7 @@ describe('OperatorComponent', () => {
       keywords: 'rack server',
       shippingPostalCode: '10001',
     });
-    expect(hardware.getOperatorSupplierOffers).toHaveBeenCalledTimes(2);
+    expect(hardware.getSupplierOffers).toHaveBeenCalledTimes(2);
     expect(component.offers()).toEqual([offer()]);
     expect(component.actionError()).toBe('');
     expect(component.successMessage()).toContain('Amazon Business');
@@ -228,8 +242,19 @@ describe('OperatorComponent', () => {
     expect(component.actionError()).not.toContain('private credential');
   });
 
+  it('does not accept the quote when the owner cancels the confirmation', async () => {
+    hardware.getSupplierOffers.mockReturnValue(of([offer()]));
+    confirmStub.confirm.mockResolvedValue({ confirmed: false });
+    await createComponent();
+    fixture.componentInstance.quote.set(quote());
+
+    await fixture.componentInstance.acceptQuote();
+
+    expect(hardware.acceptCommercialQuote).not.toHaveBeenCalled();
+  });
+
   it('downloads the accepted quote deployment bundle using the entered customer endpoints', async () => {
-    hardware.getOperatorSupplierOffers.mockReturnValue(of([offer()]));
+    hardware.getSupplierOffers.mockReturnValue(of([offer()]));
     hardware.downloadClientDeploymentArtifacts.mockReturnValue(
       of(new Blob(['bundle']))
     );
@@ -259,7 +284,7 @@ describe('OperatorComponent', () => {
       .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(() => undefined);
 
-    component.downloadBundle();
+    await component.downloadBundle();
 
     expect(hardware.downloadClientDeploymentArtifacts).toHaveBeenCalledWith(
       'server-quote-42',

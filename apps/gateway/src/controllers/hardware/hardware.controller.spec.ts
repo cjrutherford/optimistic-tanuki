@@ -1,3 +1,5 @@
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientProxy } from '@nestjs/microservices';
 import { of } from 'rxjs';
@@ -38,6 +40,8 @@ describe('HardwareController', () => {
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(OwnerConsoleScopeGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionsGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
@@ -566,8 +570,15 @@ describe('HardwareController', () => {
       HardwareController.prototype.probeOperatorAccess,
     ]) {
       expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual(
-        expect.arrayContaining([AuthGuard, OwnerConsoleScopeGuard])
+        expect.arrayContaining([
+          AuthGuard,
+          OwnerConsoleScopeGuard,
+          PermissionsGuard,
+        ])
       );
+      expect(Reflect.getMetadata(PERMISSIONS_KEY, handler)).toEqual({
+        permissions: ['hardware.operate'],
+      });
     }
   });
 

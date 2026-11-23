@@ -53,12 +53,13 @@ export const appRoutes: Route[] = [
     title: 'Checkout',
   },
   {
+    // Owner workflow moved to the Owner Console (Commerce → Hardware quotes).
     path: 'operator/hardware',
     loadComponent: () =>
-      import('./pages/operator/operator.component').then(
-        (m) => m.OperatorComponent
+      import('./pages/operator-moved/operator-moved.component').then(
+        (m) => m.OperatorMovedComponent
       ),
-    title: 'Commercial Proposals · HAI Computer',
+    title: 'Hardware quotes moved · HAI Computer',
   },
   {
     path: 'confirmation/:orderId',

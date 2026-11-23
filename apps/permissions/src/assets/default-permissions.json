@@ -3633,6 +3633,14 @@
       "resource": "density",
       "action": "read",
       "appScope": "owner-console"
+    },
+    {
+      "name": "hardware.operate",
+      "description": "Issue, accept and commit HAI Computer hardware quotes and download deployment packages.",
+      "active": true,
+      "resource": "hardware",
+      "action": "operate",
+      "appScope": "owner-console"
     }
   ],
   "role_permissions": [
@@ -8424,6 +8432,26 @@
     {
       "role": "system_admin",
       "permission": "density.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "hardware.operate",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "hardware.operate",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "hardware.operate",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "hardware.operate",
       "permissionAppScope": "owner-console"
     }
   ]

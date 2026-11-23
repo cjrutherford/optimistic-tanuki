@@ -336,6 +336,13 @@ export const appRoutes: Route[] = [
         pathMatch: 'full',
       },
       {
+        path: 'store/hardware-quotes',
+        loadComponent: () =>
+          import('./components/hardware-quotes-page.component').then(
+            (m) => m.HardwareQuotesPageComponent
+          ),
+      },
+      {
         path: 'store/orders',
         loadComponent: () =>
           import('./components/order-management.component').then(
