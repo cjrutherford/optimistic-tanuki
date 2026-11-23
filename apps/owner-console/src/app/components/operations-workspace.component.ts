@@ -760,7 +760,7 @@ export class OperationsWorkspaceComponent implements OnInit {
             result.governance.users && result.governance.appScopes
               ? 'Profiles and app-scope metadata are currently reachable.'
               : 'One or more governance sources did not respond cleanly.',
-          route: '/dashboard/governance',
+          route: '/dashboard/users',
         },
         {
           title: 'Experience delivery',
@@ -768,7 +768,7 @@ export class OperationsWorkspaceComponent implements OnInit {
           detail: result.experience
             ? 'App configuration data is available for publish review.'
             : 'Experience configuration data needs operator investigation.',
-          route: '/dashboard/experience',
+          route: '/dashboard/app-config',
         },
         {
           title: 'Commerce operations',
@@ -784,7 +784,7 @@ export class OperationsWorkspaceComponent implements OnInit {
             result.commerce.appointments
               ? 'Catalog, orders, and booking data are available for intervention.'
               : 'Commerce data is partially unavailable and should be checked.',
-          route: '/dashboard/commerce',
+          route: '/dashboard/store/overview',
         },
         {
           title: 'CRM pipeline',
@@ -792,7 +792,7 @@ export class OperationsWorkspaceComponent implements OnInit {
           detail: result.crm
             ? 'Lead intake data is available for assignment, follow-up, and response work.'
             : 'Lead intake data is unavailable and CRM interventions need investigation.',
-          route: '/dashboard/crm',
+          route: '/dashboard/contacts',
         },
         {
           title: 'Community network',

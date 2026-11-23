@@ -20,7 +20,9 @@ export type AuthSessionStatus =
   | 'loading'
   | 'signed-out'
   | 'signed-in'
-  | 'expired';
+  | 'expired'
+  /** Signed in, but the account has no Owner Console role (gateway 403). */
+  | 'forbidden';
 
 export interface AuthSessionState {
   status: AuthSessionStatus;
@@ -174,10 +176,15 @@ export class AuthService {
           });
         }),
         map(() => true),
-        catchError(() => {
+        catchError((error: { status?: number }) => {
           this.sessionUser = null;
           this.setSessionState({
-            status: wasSignedIn ? 'expired' : 'signed-out',
+            status:
+              error?.status === 403
+                ? 'forbidden'
+                : wasSignedIn
+                ? 'expired'
+                : 'signed-out',
           });
           return of(false);
         })

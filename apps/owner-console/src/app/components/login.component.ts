@@ -200,6 +200,10 @@ export class LoginComponent implements OnInit {
         const sessionRestored = await firstValueFrom(
           this.authService.restoreSession()
         );
+        if (this.authService.status === 'forbidden') {
+          this.router.navigateByUrl('/no-access');
+          return;
+        }
         if (!sessionRestored) {
           this.error =
             'Sign-in succeeded, but the session could not be restored. Please try again.';
@@ -231,6 +235,10 @@ export class LoginComponent implements OnInit {
         const sessionRestored = await firstValueFrom(
           this.authService.restoreSession()
         );
+        if (this.authService.status === 'forbidden') {
+          this.router.navigateByUrl('/no-access');
+          return;
+        }
         if (!sessionRestored) {
           this.error =
             'Sign-in succeeded, but the session could not be restored. Please try again.';

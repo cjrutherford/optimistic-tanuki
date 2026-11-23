@@ -227,7 +227,7 @@ describe('OperationsWorkspaceComponent', () => {
         expect.objectContaining({
           title: 'CRM pipeline',
           status: 'Healthy',
-          route: '/dashboard/crm',
+          route: '/dashboard/contacts',
         }),
       ])
     );

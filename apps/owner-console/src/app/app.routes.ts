@@ -2,7 +2,9 @@ import { inject } from '@angular/core';
 import { Route, Router } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { appConfigDesignerDeactivateGuard } from './components/app-config-designer/app-config-designer-deactivate.guard';
-import { OPERATOR_WORKSPACES } from './operator-workspaces';
+import { AuthService } from './services/auth.service';
+import { HOME_PATH } from './owner-nav';
+import { noAccessGuard, ownerAccessGuard } from './guards/owner-access.guard';
 import {
   emailAuthRoutes,
   OAuthCallbackComponent,
@@ -11,10 +13,17 @@ import {
 export const appRoutes: Route[] = [
   ...emailAuthRoutes('auth_token', true),
   {
+    // The old public status page is gone: visitors sign in, owners go Home.
     path: 'control-center',
+    redirectTo: () =>
+      inject(AuthService).isAuthenticated() ? HOME_PATH : '/login',
+  },
+  {
+    path: 'no-access',
+    canActivate: [noAccessGuard],
     loadComponent: () =>
-      import('./components/public-control-center.component').then(
-        (m) => m.PublicControlCenterComponent
+      import('./components/no-access.component').then(
+        (m) => m.NoAccessComponent
       ),
   },
   {
@@ -37,6 +46,7 @@ export const appRoutes: Route[] = [
         (m) => m.DashboardComponent
       ),
     canActivate: [authGuard],
+    canActivateChild: [ownerAccessGuard],
     children: [
       {
         path: 'directory-link-review/:communityId',
@@ -144,31 +154,7 @@ export const appRoutes: Route[] = [
           ),
       },
       {
-        path: 'experience',
-        loadComponent: () =>
-          import('./components/experience-workspace.component').then(
-            (m) => m.ExperienceWorkspaceComponent
-          ),
-      },
-      ...OPERATOR_WORKSPACES.filter(
-        (workspace) =>
-          workspace.path !== 'community-ops' && workspace.path !== 'experience'
-      ).map((workspace) => ({
-        path: workspace.path,
-        loadComponent: () =>
-          import('./components/workspace-landing.component').then(
-            (m) => m.WorkspaceLandingComponent
-          ),
-        data: {
-          title: workspace.label,
-          description: workspace.description,
-          summary: workspace.summary,
-          checklist: workspace.checklist,
-          cards: workspace.cards,
-        },
-      })),
-      {
-        path: 'overview',
+        path: 'home',
         loadComponent: () =>
           import('./components/operator-overview.component').then(
             (m) => m.OperatorOverviewComponent
@@ -203,7 +189,7 @@ export const appRoutes: Route[] = [
           ),
       },
       {
-        path: 'control-center',
+        path: 'deployments',
         loadComponent: () =>
           import('./components/admin-control-center.component').then(
             (m) => m.AdminControlCenterComponent
@@ -420,8 +406,15 @@ export const appRoutes: Route[] = [
             (m) => m.CityEditorComponent
           ),
       },
-      { path: '', redirectTo: 'overview', pathMatch: 'full' },
+      // Retired pages keep working as redirects so bookmarks land somewhere.
+      { path: '', redirectTo: 'home', pathMatch: 'full' },
+      { path: 'overview', redirectTo: 'home', pathMatch: 'full' },
+      { path: 'control-center', redirectTo: 'deployments', pathMatch: 'full' },
+      { path: 'governance', redirectTo: 'users', pathMatch: 'full' },
+      { path: 'experience', redirectTo: 'app-config', pathMatch: 'full' },
+      { path: 'commerce', redirectTo: 'store/overview', pathMatch: 'full' },
+      { path: 'crm', redirectTo: 'contacts', pathMatch: 'full' },
     ],
   },
-  { path: '', redirectTo: '/control-center', pathMatch: 'full' },
+  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
 ];

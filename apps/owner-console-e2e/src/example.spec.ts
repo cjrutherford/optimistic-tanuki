@@ -2,20 +2,22 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Owner Console E2E Tests', () => {
   test.describe('Homepage & Authentication Redirect', () => {
-    // The root no longer bounces anonymous visitors to /login. app.routes.ts
-    // redirects '' to '/control-center', which loads
-    // PublicControlCenterComponent — deliberately unguarded, described in its
-    // own copy as "This login-free view is intended for internal network
-    // access". The guarded surface is /dashboard, which is asserted below.
-    test('lands anonymous visitors on the login-free control center', async ({
+    // There is no public status page any more: the root and the old
+    // /control-center URL both end at the login page for anonymous visitors.
+    test('sends anonymous visitors from the root to login', async ({
       page,
     }) => {
       await page.goto('/');
 
-      await expect(page).toHaveURL(/\/control-center$/);
-      await expect(
-        page.getByRole('heading', { name: 'Platform control center' })
-      ).toBeVisible();
+      await expect(page).toHaveURL(/.*login/);
+    });
+
+    test('sends anonymous visitors from /control-center to login', async ({
+      page,
+    }) => {
+      await page.goto('/control-center');
+
+      await expect(page).toHaveURL(/.*login/);
     });
 
     test('sends an unauthenticated visitor from the dashboard to login', async ({

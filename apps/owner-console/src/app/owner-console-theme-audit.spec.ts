@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { BehaviorSubject, of } from 'rxjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { provideRouter, Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
+import { OwnerAccessService } from './services/owner-access.service';
 import { DashboardComponent } from './components/dashboard.component';
 import { OperatorOverviewComponent } from './components/operator-overview.component';
 import { ThemeManagementComponent } from './components/theme-management.component';
@@ -110,12 +111,14 @@ describe('owner-console theme audit regressions', () => {
             logout: jest.fn(),
           },
         },
+        provideRouter([]),
         {
-          provide: Router,
+          provide: OwnerAccessService,
           useValue: {
-            url: '/dashboard/overview',
-            events: of(),
-            navigate: jest.fn().mockResolvedValue(true),
+            load: () =>
+              of({ status: 'owner', all: true, permissions: new Set() }),
+            can: () => true,
+            reset: jest.fn(),
           },
         },
       ],

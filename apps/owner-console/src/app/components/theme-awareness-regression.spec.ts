@@ -33,10 +33,6 @@ describe('owner console theme awareness regression', () => {
         styles: sourceFile('./login.component.ts'),
       },
       {
-        name: 'PublicControlCenterComponent',
-        styles: sourceFile('./public-control-center.component.ts'),
-      },
-      {
         name: 'ForumGovernanceComponent',
         styles: sourceFile('./forum-governance.component.ts'),
       },
@@ -143,8 +139,16 @@ describe('owner console theme awareness regression', () => {
         ),
       },
       {
-        name: 'WorkspaceLandingComponent',
-        styles: sourceFile('./workspace-landing.component.ts'),
+        name: 'OwnerSidebarComponent',
+        styles: sourceFile('../shell/owner-sidebar.component.ts'),
+      },
+      {
+        name: 'CommandPaletteComponent',
+        styles: sourceFile('../shell/command-palette.component.ts'),
+      },
+      {
+        name: 'NoAccessComponent',
+        styles: sourceFile('./no-access.component.ts'),
       },
       {
         name: 'CommunityMembersComponent',

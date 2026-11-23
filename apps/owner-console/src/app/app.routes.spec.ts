@@ -5,7 +5,8 @@ import { runInInjectionContext, Injector, Type } from '@angular/core';
 
 import { appRoutes } from './app.routes';
 import { authGuard } from './guards/auth.guard';
-import { OPERATOR_WORKSPACES } from './operator-workspaces';
+import { ownerAccessGuard } from './guards/owner-access.guard';
+import { AuthService } from './services/auth.service';
 
 type AnyRoute = Route & { children?: AnyRoute[] };
 
@@ -28,45 +29,67 @@ describe('appRoutes', () => {
     expect(dashboard?.children?.length).toBeGreaterThan(0);
   });
 
-  it('sends the bare path to the public control center', () => {
+  it('sends the bare path to the dashboard, which gates on sign-in', () => {
     const root = appRoutes.find((r) => r.path === '' && !r.children);
-    expect(root?.redirectTo).toBe('/control-center');
+    expect(root?.redirectTo).toBe('/dashboard');
     expect(root?.pathMatch).toBe('full');
   });
 
-  it('defaults the dashboard to the overview workspace', () => {
+  it('defaults the dashboard to Home', () => {
     const dashboard = appRoutes.find((r) => r.path === 'dashboard');
     const fallback = dashboard?.children?.find((r) => r.path === '');
-    expect(fallback?.redirectTo).toBe('overview');
+    expect(fallback?.redirectTo).toBe('home');
     expect(fallback?.pathMatch).toBe('full');
+  });
+
+  it('gates the dashboard shell on owner access', () => {
+    const dashboard = appRoutes.find((r) => r.path === 'dashboard');
+    expect(dashboard?.canActivateChild).toEqual([ownerAccessGuard]);
+  });
+
+  it.each([
+    ['overview', 'home'],
+    ['control-center', 'deployments'],
+    ['governance', 'users'],
+    ['experience', 'app-config'],
+    ['commerce', 'store/overview'],
+    ['crm', 'contacts'],
+  ])('keeps the retired /dashboard/%s URL as a redirect to %s', (from, to) => {
+    const dashboard = appRoutes.find((r) => r.path === 'dashboard');
+    const route = dashboard?.children?.find((r) => r.path === from);
+    expect(route?.redirectTo).toBe(to);
+    expect(route?.pathMatch).toBe('full');
+  });
+
+  describe('public /control-center', () => {
+    const resolve = (signedIn: boolean): string => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          {
+            provide: AuthService,
+            useValue: { isAuthenticated: () => signedIn },
+          },
+        ],
+      });
+      const route = appRoutes.find((r) => r.path === 'control-center');
+      const redirect = route?.redirectTo as () => string;
+      return TestBed.runInInjectionContext(() => redirect());
+    };
+
+    it('sends anonymous visitors to the login page', () => {
+      expect(resolve(false)).toBe('/login');
+    });
+
+    it('sends signed-in owners to Home', () => {
+      expect(resolve(true)).toBe('/dashboard/home');
+    });
   });
 
   it('keeps the legacy business-site catalog path redirecting to the store route', () => {
     const legacy = findRoute('business-site/catalog');
     expect(legacy.redirectTo).toBe('store/business-site');
     expect(legacy.pathMatch).toBe('full');
-  });
-
-  it('generates a workspace landing route for every operator workspace', () => {
-    const paths = flatten(appRoutes as AnyRoute[]).map((r) => r.path);
-    for (const workspace of OPERATOR_WORKSPACES) {
-      expect(paths).toContain(workspace.path);
-    }
-  });
-
-  it('carries workspace metadata onto the generated landing routes', () => {
-    const generated = OPERATOR_WORKSPACES.find(
-      (w) => w.path !== 'community-ops' && w.path !== 'experience'
-    );
-    expect(generated).toBeDefined();
-    const route = findRoute(generated!.path);
-    expect(route.data).toEqual({
-      title: generated!.label,
-      description: generated!.description,
-      summary: generated!.summary,
-      checklist: generated!.checklist,
-      cards: generated!.cards,
-    });
   });
 
   it('marks the guided and studio app-config designer routes distinctly', () => {

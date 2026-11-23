@@ -14,10 +14,6 @@ import {
 } from '../services/operator-queue.service';
 import { Order, StoreService } from '../services/store.service';
 import { UsersService } from '../services/users.service';
-import {
-  OPERATOR_WORKSPACES,
-  OperatorWorkspaceConfig,
-} from '../operator-workspaces';
 
 export type OverviewSourceKey =
   | 'users'
@@ -62,14 +58,9 @@ interface AttentionItem {
   imports: [CommonModule, RouterModule, OperatorQueuePanelComponent],
   template: `
     <section class="overview-page">
-      <header class="hero">
-        <p class="hero-kicker">Platform Owner Console</p>
-        <h1>Unified operator control plane</h1>
-        <p>
-          Govern access, steer user-facing experiences, manage business
-          operations, and intervene across communities from a single
-          workspace-oriented console.
-        </p>
+      <header class="page-header">
+        <h1>Home</h1>
+        <p>What needs attention across the platform.</p>
       </header>
 
       <section class="metrics-grid">
@@ -139,27 +130,6 @@ interface AttentionItem {
           }
         </div>
       </section>
-
-      <section class="workspace-panel">
-        <div class="panel-heading">
-          <h2>Operator workspaces</h2>
-          <p>
-            Each workspace organizes existing tools into one management outcome.
-          </p>
-        </div>
-        <div class="workspace-grid">
-          @for (workspace of workspaces; track workspace.path) {
-          <a
-            class="workspace-card"
-            [routerLink]="['/dashboard', workspace.path]"
-          >
-            <span>{{ workspace.label }}</span>
-            <h3>{{ workspace.summary }}</h3>
-            <p>{{ workspace.description }}</p>
-          </a>
-          }
-        </div>
-      </section>
     </section>
   `,
   styles: [
@@ -174,9 +144,7 @@ interface AttentionItem {
         gap: 24px;
       }
 
-      .hero,
-      .attention-panel,
-      .workspace-panel {
+      .attention-panel {
         border-radius: 24px;
         border: 1px solid var(--border-color, #d6d6d6);
         background: radial-gradient(
@@ -197,32 +165,26 @@ interface AttentionItem {
         color: var(--foreground, #111827);
       }
 
-      .hero-kicker {
-        margin: 0 0 8px;
-        color: var(--accent, #0a6c74);
-        font-size: 0.82rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
+      .page-header h1 {
+        margin: 0;
+        font-family: var(--font-heading, inherit);
+        font-size: var(--type-h2, 1.75rem);
+        line-height: var(--heading-line-height, 1.2);
       }
 
-      .hero h1,
+      .page-header p {
+        margin: 4px 0 0;
+        color: var(--muted-foreground, var(--foreground, #111827));
+      }
+
       .panel-heading h2,
       .metric-card h2,
-      .attention-card h3,
-      .workspace-card h3 {
+      .attention-card h3 {
         margin: 0;
       }
 
-      .hero p {
-        margin: 12px 0 0;
-        max-width: 70ch;
-        line-height: 1.6;
-      }
-
       .metrics-grid,
-      .attention-grid,
-      .workspace-grid {
+      .attention-grid {
         display: grid;
         gap: 16px;
       }
@@ -231,14 +193,12 @@ interface AttentionItem {
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       }
 
-      .attention-grid,
-      .workspace-grid {
+      .attention-grid {
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       }
 
       .metric-card,
-      .attention-card,
-      .workspace-card {
+      .attention-card {
         display: grid;
         gap: 10px;
         border-radius: 18px;
@@ -270,18 +230,9 @@ interface AttentionItem {
       .panel-heading p,
       .panel-heading a,
       .metric-card p,
-      .attention-card p,
-      .workspace-card p {
+      .attention-card p {
         margin: 0;
         line-height: 1.5;
-      }
-
-      .workspace-card span {
-        font-size: 0.82rem;
-        font-weight: 700;
-        color: var(--accent, #0a6c74);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
       }
 
       .skeleton {
@@ -322,7 +273,6 @@ export class OperatorOverviewComponent implements OnInit {
   queueItems: OperatorQueueItem[] = [];
   queueStatus: SourceStatus = 'loading';
   attentionItems: AttentionItem[] = [];
-  workspaces: OperatorWorkspaceConfig[] = OPERATOR_WORKSPACES;
 
   private sources: SourceStates = {
     users: { status: 'loading', data: [] },

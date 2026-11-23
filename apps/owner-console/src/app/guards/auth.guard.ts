@@ -11,6 +11,10 @@ export const authGuard: CanActivateFn = (_route, state) => {
     return true;
   }
 
+  if (authService.status === 'forbidden') {
+    return router.createUrlTree(['/no-access']);
+  }
+
   const currentOrigin =
     typeof window === 'undefined' ? '' : window.location.origin;
   const normalizedReturnTo = normalizeAuthReturnTo(state.url, {

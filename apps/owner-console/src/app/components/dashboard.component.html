@@ -8,25 +8,47 @@
     logoAlt="Owner Console Logo"
   >
     <button
-      class="theme-toggle"
+      type="button"
+      class="bar-button search-button"
+      aria-haspopup="dialog"
+      aria-keyshortcuts="Control+K Meta+K"
+      (click)="openPalette()"
+    >
+      Search pages <kbd>Ctrl K</kbd>
+    </button>
+    <button
+      type="button"
+      class="bar-button"
       (click)="toggleTheme()"
       [attr.aria-label]="themeToggleLabel"
     >
-      <span class="theme-toggle__icon" aria-hidden="true">
-        {{ (theme$ | async) === 'dark' ? 'Light' : 'Dark' }}
-      </span>
-      <span class="theme-toggle__label">{{ themeToggleLabel }}</span>
+      {{ themeToggleLabel }}
+    </button>
+    <button type="button" class="bar-button" (click)="logout()">
+      Sign out
     </button>
   </otui-app-bar>
 
-  <otui-nav-sidebar
-    [isOpen]="sidebarOpen"
-    [navItems]="navItems"
-    heading="Operator Workspaces"
-    (close)="closeSidebar()"
-  ></otui-nav-sidebar>
+  <div class="shell">
+    <app-owner-sidebar
+      [groups]="groups()"
+      [activePath]="activePath()"
+      [open]="sidebarOpen()"
+      [mode]="desktop() ? 'docked' : 'drawer'"
+      (selected)="onNavigated()"
+      (dismissed)="closeSidebar()"
+    ></app-owner-sidebar>
 
-  <div class="content" [class.sidebar-open]="sidebarOpen">
-    <router-outlet></router-outlet>
+    <div class="content">
+      <app-owner-breadcrumbs [url]="url()"></app-owner-breadcrumbs>
+      <router-outlet></router-outlet>
+    </div>
   </div>
+
+  <app-command-palette
+    [open]="paletteOpen()"
+    [entries]="paletteEntries()"
+    (closed)="closePalette()"
+    (chosen)="goTo($event)"
+  ></app-command-palette>
 </div>
