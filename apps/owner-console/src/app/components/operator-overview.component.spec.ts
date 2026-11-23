@@ -10,6 +10,7 @@ import { CommunityService } from '../services/community.service';
 import { ContactLeadsService } from '../services/contact-leads.service';
 import { ForumService } from '../services/forum.service';
 import { SocialGovernanceService } from '../services/social-governance.service';
+import { AttentionService } from '../services/attention.service';
 import { OperatorQueueService } from '../services/operator-queue.service';
 import { StoreService } from '../services/store.service';
 import { UsersService } from '../services/users.service';
@@ -143,6 +144,18 @@ describe('OperatorOverviewComponent', () => {
                 },
               ])
             ),
+          },
+        },
+        {
+          provide: AttentionService,
+          useValue: {
+            report: () => null,
+            state: () => 'idle',
+            health: () => null,
+            healthLoad: () => 'idle',
+            load: jest.fn(),
+            loadHealth: jest.fn(),
+            badgesFor: () => ({}),
           },
         },
         {

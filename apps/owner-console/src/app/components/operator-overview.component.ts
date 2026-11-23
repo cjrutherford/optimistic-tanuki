@@ -5,6 +5,9 @@ import { Observable } from 'rxjs';
 import { AppConfiguration } from '@optimistic-tanuki/app-config-models';
 import { CommunityDto } from '@optimistic-tanuki/ui-models';
 import { OperatorQueuePanelComponent } from './operator-queue-panel.component';
+import { AttentionInboxComponent } from './attention-inbox.component';
+import { HealthStripComponent } from './health-strip.component';
+import { AttentionService } from '../services/attention.service';
 import { AppConfigService } from '../services/app-config.service';
 import { AppScopesService } from '../services/app-scopes.service';
 import { CommunityService } from '../services/community.service';
@@ -55,13 +58,31 @@ interface AttentionItem {
 @Component({
   selector: 'app-operator-overview',
   standalone: true,
-  imports: [CommonModule, RouterModule, OperatorQueuePanelComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    OperatorQueuePanelComponent,
+    AttentionInboxComponent,
+    HealthStripComponent,
+  ],
   template: `
     <section class="overview-page">
       <header class="page-header">
         <h1>Home</h1>
         <p>What needs attention across the platform.</p>
       </header>
+
+      <app-attention-inbox
+        [report]="attention.report()"
+        [state]="attention.state()"
+        (retry)="attention.load()"
+      ></app-attention-inbox>
+
+      <app-health-strip
+        [health]="attention.health()"
+        [state]="attention.healthLoad()"
+        (retry)="attention.loadHealth()"
+      ></app-health-strip>
 
       <section class="metrics-grid">
         @for (metric of metrics; track metric.key) {
@@ -268,6 +289,7 @@ export class OperatorOverviewComponent implements OnInit {
   private readonly communityService = inject(CommunityService);
   private readonly storeService = inject(StoreService);
   private readonly operatorQueueService = inject(OperatorQueueService);
+  readonly attention = inject(AttentionService);
 
   metrics: OverviewMetric[] = [];
   queueItems: OperatorQueueItem[] = [];
@@ -305,6 +327,8 @@ export class OperatorOverviewComponent implements OnInit {
       this.loadSource(key)
     );
     this.retryQueue();
+    this.attention.loadHealth();
+    if (this.attention.state() === 'idle') this.attention.load();
   }
 
   metricValue(metric: OverviewMetric): string {

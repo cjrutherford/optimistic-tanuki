@@ -49,8 +49,12 @@ describe('owner-console admin API proxy boundary', () => {
     expect(server.slice(blockIndex, proxyIndex)).toContain(
       'authorizeOwnerConsoleAdminRequest'
     );
-    expect(server.slice(blockIndex, proxyIndex)).toContain(
-      "request.path === '/api/status/public'"
+    // Deployment status is not public: no path skips the authorization.
+    expect(server.slice(blockIndex, proxyIndex)).not.toContain(
+      '/api/status/public'
+    );
+    expect(server.slice(blockIndex, proxyIndex)).not.toMatch(
+      /request\.path\s*===/
     );
   });
 });

@@ -18,6 +18,11 @@ export interface OwnerNavLeaf {
    * the selected town; with no town selected the nav shows it disabled.
    */
   needsTown?: boolean;
+  /**
+   * Key of the attention source (`GET /api/owner/attention`) whose count this
+   * page works through. The sidebar shows it as a badge.
+   */
+  countSource?: string;
   /** Extra words the command palette matches on. */
   keywords?: string[];
 }
@@ -148,6 +153,7 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       {
         label: 'Address review',
         path: '/dashboard/towns/:townId/directory-address-review',
+        countSource: 'directory.address',
         icon: '⚑',
         needsTown: true,
         keywords: ['listings', 'addresses', 'local evaluation'],
@@ -155,6 +161,7 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       {
         label: 'Identity review',
         path: '/dashboard/towns/:townId/directory-identity-review',
+        countSource: 'directory.identity',
         icon: '⚑',
         needsTown: true,
         keywords: ['listings', 'identity'],
@@ -162,6 +169,7 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       {
         label: 'Link review',
         path: '/dashboard/towns/:townId/directory-link-review',
+        countSource: 'directory.links',
         icon: '⚑',
         needsTown: true,
         keywords: ['listings', 'links', 'urls'],
@@ -169,6 +177,7 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       {
         label: 'Duplicate review',
         path: '/dashboard/towns/:townId/directory-duplicates',
+        countSource: 'directory.duplicates',
         icon: '⚑',
         needsTown: true,
         keywords: ['listings', 'duplicates', 'merge'],
@@ -176,6 +185,7 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       {
         label: 'Listing reports',
         path: '/dashboard/towns/:townId/directory-listing-reports',
+        countSource: 'directory.reports',
         icon: '⚑',
         needsTown: true,
         keywords: ['listings', 'reports', 'complaints'],
@@ -183,6 +193,7 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       {
         label: 'Listing suppressions',
         path: '/dashboard/towns/:townId/directory-listing-suppressions',
+        countSource: 'directory.suppressions',
         icon: '⚑',
         needsTown: true,
         keywords: ['listings', 'suppressions', 'hidden'],
@@ -197,6 +208,7 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       {
         label: 'Acquisition runs',
         path: '/dashboard/directory-runs',
+        countSource: 'directory.runs.failed',
         icon: '↻',
         keywords: ['import', 'ingest', 'crawl'],
       },
@@ -209,6 +221,7 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       {
         label: 'Taxonomy runs',
         path: '/dashboard/directory-taxonomy-runs',
+        countSource: 'directory.taxonomy.failed',
         icon: '↻',
         keywords: ['categories', 'classification', 'mappings'],
       },
@@ -246,12 +259,14 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       {
         label: 'Social moderation',
         path: '/dashboard/social-governance',
+        countSource: 'moderation.social',
         icon: '⚖',
         keywords: ['posts', 'reports', 'governance', 'social'],
       },
       {
         label: 'Forum moderation',
         path: '/dashboard/forum-governance',
+        countSource: 'moderation.forum',
         icon: '⚖',
         keywords: ['threads', 'reports', 'governance', 'forum'],
       },
@@ -283,12 +298,14 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       {
         label: 'Orders',
         path: '/dashboard/store/orders',
+        countSource: 'commerce.orders',
         icon: '▧',
         keywords: ['fulfillment', 'purchases'],
       },
       {
         label: 'Appointments',
         path: '/dashboard/store/appointments',
+        countSource: 'commerce.appointments',
         icon: '◷',
         keywords: ['bookings', 'schedule'],
       },
@@ -307,6 +324,7 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       {
         label: 'Leads',
         path: '/dashboard/contacts',
+        countSource: 'leads.new',
         icon: '✉',
         keywords: ['crm', 'contacts', 'inquiries'],
       },
@@ -326,6 +344,7 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       {
         label: 'App configs',
         path: '/dashboard/app-config',
+        countSource: 'experience.configs',
         icon: '⚙',
         keywords: ['configurations', 'publish', 'layouts'],
       },

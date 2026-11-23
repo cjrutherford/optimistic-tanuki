@@ -1,3 +1,4 @@
+import { AttentionService } from '../services/attention.service';
 import {
   Component,
   HostListener,
@@ -58,6 +59,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private access = inject(OwnerAccessService);
   private router = inject(Router);
   readonly town = inject(TownContextService);
+  private attention = inject(AttentionService);
   private platformId = inject(PLATFORM_ID);
   private mediaQuery?: MediaQueryList;
   private readonly onMediaChange = (event: { matches: boolean }): void =>
@@ -83,6 +85,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.town.selected()?.id
     );
   });
+  /** Nav badges from the attention report; a selected town narrows town pages. */
+  readonly badges = computed(() =>
+    this.attention.badgesFor(
+      this.attention.report()?.items ?? [],
+      this.town.selected()?.id ?? null
+    )
+  );
   /** Town named in the URL, for the tab strip and the not-found state. */
   readonly urlTownId = this.town.urlTownId;
   readonly activePath = computed(() => activeNavPath(this.url(), OWNER_NAV));
@@ -93,6 +102,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.url.set(this.router.url);
     this.town.syncFromUrl(this.router.url);
     this.town.load();
+    this.attention.load();
     this.setupViewport();
     this.access
       .load()

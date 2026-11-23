@@ -1,5 +1,6 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import type { NavBadge } from '../services/attention.service';
 import {
   OwnerNavGroup,
   OwnerNavLeaf,
@@ -43,6 +44,15 @@ import {
         >
           <span class="icon" aria-hidden="true">{{ group.icon }}</span>
           {{ group.leaves[0].label }}
+          @if (badgeOf(group.leaves[0]); as badge) {
+          <span
+            class="badge"
+            [class.badge--unavailable]="badge.kind === 'unavailable'"
+            role="img"
+            [attr.aria-label]="badge.label"
+            >{{ badgeText(badge) }}</span
+          >
+          }
         </a>
         } @else {
         <div class="group">
@@ -74,7 +84,15 @@ import {
               >
                 <span class="icon" aria-hidden="true">{{ leaf.icon }}</span>
                 {{ leaf.label }}
-                @if (needsPick(leaf)) {
+                @if (badgeOf(leaf); as badge) {
+                <span
+                  class="badge"
+                  [class.badge--unavailable]="badge.kind === 'unavailable'"
+                  role="img"
+                  [attr.aria-label]="badge.label"
+                  >{{ badgeText(badge) }}</span
+                >
+                } @if (needsPick(leaf)) {
                 <span class="hint">{{ pickHint }}</span>
                 }
               </a>
@@ -200,6 +218,27 @@ import {
         font-style: italic;
       }
 
+      .badge {
+        flex: none;
+        min-width: 1.5em;
+        box-sizing: border-box;
+        margin-left: auto;
+        padding: 0 6px;
+        border-radius: 9999px;
+        background: var(--primary);
+        color: var(--on-primary, var(--primary-foreground, #ffffff));
+        font-size: var(--type-small, 0.8rem);
+        font-weight: 700;
+        line-height: var(--line-height, 1.5);
+        text-align: center;
+      }
+
+      .badge--unavailable {
+        background: transparent;
+        border: 2px solid var(--primary);
+        color: var(--foreground);
+      }
+
       .icon {
         width: 1.25em;
         text-align: center;
@@ -220,6 +259,8 @@ export class OwnerSidebarComponent {
   readonly pickHint = PICK_A_TOWN;
   readonly open = input(true);
   readonly mode = input<'docked' | 'drawer'>('docked');
+  /** Attention badges by `countSource` key; a source with nothing waiting has none. */
+  readonly badges = input<Readonly<Record<string, NavBadge>>>({});
 
   /** A link was followed; the shell closes the drawer. */
   readonly selected = output<string>();
@@ -238,6 +279,17 @@ export class OwnerSidebarComponent {
   /** Where a leaf goes: its route, or the picker while no town is chosen. */
   hrefOf(leaf: OwnerNavLeaf): string {
     return resolveLeafPath(leaf, this.townId()) ?? '/dashboard/towns';
+  }
+
+  badgeOf(leaf: OwnerNavLeaf): NavBadge | null {
+    return (leaf.countSource && this.badges()[leaf.countSource]) || null;
+  }
+
+  badgeText(badge: NavBadge): string {
+    if (badge.kind === 'unavailable') return '!';
+    return badge.count > 99
+      ? '99+'
+      : `${badge.count}${badge.capped ? '+' : ''}`;
   }
 
   /** A town page with no town selected: shown disabled, links to the picker. */

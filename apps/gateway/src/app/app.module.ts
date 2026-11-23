@@ -112,6 +112,9 @@ import { DirectoryExportsController } from '../controllers/directory/directory-e
 import { DirectoryPublicExportController } from '../controllers/directory/directory-public-export.controller';
 import { DirectoryOperationsController } from '../controllers/directory/directory-operations.controller';
 import { DirectoryTaxonomyController } from '../controllers/directory/directory-taxonomy.controller';
+import { OwnerController } from '../controllers/owner/owner.controller';
+import { OwnerAttentionService } from '../controllers/owner/owner-attention.service';
+import { OwnerHealthService } from '../controllers/owner/owner-health.service';
 import { DirectoryRunsController } from '../controllers/directory/directory-runs.controller';
 import {
   DirectoryListingReportController,
@@ -299,6 +302,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'directory-taxonomy',
         requiredServices: ['social', 'authentication', 'permissions'],
         value: DirectoryTaxonomyController,
+      },
+      {
+        id: 'owner',
+        requiredServices: ['authentication', 'permissions'],
+        value: OwnerController,
       },
       {
         id: 'directory-runs',
@@ -609,6 +617,8 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     WorkspaceDiscoveryController,
   ],
   providers: [
+    OwnerAttentionService,
+    OwnerHealthService,
     // Sends the invitation email. Here rather than in project-planning, which
     // owns the invitation and knows nothing about which application it is for.
     ProjectInviteMailer,

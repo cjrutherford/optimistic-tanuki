@@ -6,6 +6,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { DashboardComponent } from './dashboard.component';
 import { AuthService } from '../services/auth.service';
 import { OwnerNavLeaf, flattenNav } from '../owner-nav';
+import { AttentionService } from '../services/attention.service';
 import { OwnerAccessService } from '../services/owner-access.service';
 import { CommunityService } from '../services/community.service';
 import { TownContextService } from '../services/town-context.service';
@@ -115,6 +116,18 @@ describe('DashboardComponent', () => {
         { provide: AuthService, useValue: authService },
         { provide: OwnerAccessService, useValue: access },
         { provide: CommunityService, useValue: communities },
+        {
+          provide: AttentionService,
+          useValue: {
+            report: () => null,
+            state: () => 'idle',
+            health: () => null,
+            healthLoad: () => 'idle',
+            load: jest.fn(),
+            loadHealth: jest.fn(),
+            badgesFor: () => ({}),
+          },
+        },
         { provide: ThemeService, useValue: themeService },
       ],
     }).compileComponents();

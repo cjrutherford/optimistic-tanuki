@@ -22,6 +22,8 @@ export type OperatorQueueDomain =
 
 export type OperatorQueueSeverity = 'high' | 'medium' | 'low';
 
+type SourceResult<T> = { ok: true; data: T } | { ok: false };
+
 export interface OperatorQueueItem {
   id: string;
   domain: OperatorQueueDomain;
@@ -60,57 +62,169 @@ export class OperatorQueueService {
     );
   }
 
+  /**
+   * Every sub-fetch reports for itself. A source that fails is not an empty
+   * source: it becomes an explicit "unavailable" item (kind
+   * `source-unavailable`) so a consumer never reads a failure as zero.
+   */
   getOperatorQueue(): Observable<OperatorQueueItem[]> {
     return forkJoin({
-      appointments: this.storeService
-        .getAppointments()
-        .pipe(catchError(() => of([]))),
-      orders: this.storeService.getOrders().pipe(catchError(() => of([]))),
-      leads: this.leadsService.getLeads().pipe(catchError(() => of([]))),
-      socialReports: this.socialGovernanceService
-        .getReports()
-        .pipe(catchError(() => of([]))),
-      forumReports: this.forumService
-        .getReports()
-        .pipe(catchError(() => of([]))),
-      configs: this.appConfigService
-        .getConfigurations()
-        .pipe(catchError(() => of([]))),
-      siteConfig: this.businessSiteAdminService
-        .getSiteConfig()
-        .pipe(catchError(() => of(null))),
-      products: this.storeService.getProducts().pipe(catchError(() => of([]))),
+      appointments: this.settle(this.storeService.getAppointments()),
+      orders: this.settle(this.storeService.getOrders()),
+      leads: this.settle(this.leadsService.getLeads()),
+      socialReports: this.settle(this.socialGovernanceService.getReports()),
+      forumReports: this.settle(this.forumService.getReports()),
+      configs: this.settle(this.appConfigService.getConfigurations()),
+      siteConfig: this.settle(this.businessSiteAdminService.getSiteConfig()),
+      products: this.settle(this.storeService.getProducts()),
     }).pipe(
-      map((data) =>
-        this.sortQueueItems(
-          [
-            this.createAppointmentsItem(
-              data.appointments as Array<{
-                status?: string;
-                startTime?: string | Date;
-              }>
-            ),
-            this.createOrdersItem(data.orders as Order[]),
-            this.createNewLeadsItem(data.leads as Lead[]),
-            this.createModerationItem(
-              data.socialReports as ModerationReport[],
-              data.forumReports as ForumModerationReport[]
-            ),
-            this.createDraftConfigurationsItem(
-              data.configs as AppConfiguration[]
-            ),
-            this.createBusinessSiteReadinessItem(
-              data.siteConfig as {
-                config?: {
-                  serviceCatalog?: { source?: 'manual' | 'store' };
-                };
-              } | null,
-              data.products as Product[]
-            ),
-          ].filter((item): item is OperatorQueueItem => item !== null)
-        )
-      )
+      map((data) => {
+        const items: Array<OperatorQueueItem | null> = [
+          data.appointments.ok
+            ? this.createAppointmentsItem(
+                data.appointments.data as Array<{
+                  status?: string;
+                  startTime?: string | Date;
+                }>
+              )
+            : this.unavailable(
+                'commerce-appointments',
+                'Commerce',
+                'Appointments',
+                '/dashboard/store/appointments'
+              ),
+          data.orders.ok
+            ? this.createOrdersItem(data.orders.data as Order[])
+            : this.unavailable(
+                'commerce-orders',
+                'Commerce',
+                'Orders',
+                '/dashboard/store/orders'
+              ),
+          data.leads.ok
+            ? this.createNewLeadsItem(data.leads.data as Lead[])
+            : this.unavailable(
+                'crm-leads',
+                'CRM',
+                'Leads',
+                '/dashboard/contacts'
+              ),
+        ];
+
+        // Moderation is two sources; each reports for itself.
+        const social = data.socialReports.ok
+          ? (data.socialReports.data as ModerationReport[])
+          : [];
+        const forum = data.forumReports.ok
+          ? (data.forumReports.data as ForumModerationReport[])
+          : [];
+        items.push(
+          this.createModerationItem(
+            social,
+            forum,
+            !data.socialReports.ok || !data.forumReports.ok
+          )
+        );
+        if (!data.socialReports.ok) {
+          items.push(
+            this.unavailable(
+              'community-social-reports',
+              'Community Ops',
+              'Social reports',
+              '/dashboard/social-governance'
+            )
+          );
+        }
+        if (!data.forumReports.ok) {
+          items.push(
+            this.unavailable(
+              'community-forum-reports',
+              'Community Ops',
+              'Forum reports',
+              '/dashboard/forum-governance'
+            )
+          );
+        }
+
+        items.push(
+          data.configs.ok
+            ? this.createDraftConfigurationsItem(
+                data.configs.data as AppConfiguration[]
+              )
+            : this.unavailable(
+                'experience-configs',
+                'Experience',
+                'App configurations',
+                '/dashboard/app-config'
+              )
+        );
+
+        if (!data.siteConfig.ok) {
+          items.push(
+            this.unavailable(
+              'experience-business-site',
+              'Experience',
+              'Business-site settings',
+              '/dashboard/store/business-site'
+            )
+          );
+        } else {
+          const siteConfig = data.siteConfig.data as {
+            config?: { serviceCatalog?: { source?: 'manual' | 'store' } };
+          } | null;
+          const storeMode =
+            siteConfig?.config?.serviceCatalog?.source === 'store';
+          if (storeMode && !data.products.ok) {
+            items.push(
+              this.unavailable(
+                'experience-business-site-products',
+                'Experience',
+                'Store products',
+                '/dashboard/store/business-site'
+              )
+            );
+          } else {
+            items.push(
+              this.createBusinessSiteReadinessItem(
+                siteConfig,
+                data.products.ok ? (data.products.data as Product[]) : []
+              )
+            );
+          }
+        }
+
+        return this.sortQueueItems(
+          items.filter((item): item is OperatorQueueItem => item !== null)
+        );
+      })
     );
+  }
+
+  private settle<T>(source: Observable<T>): Observable<SourceResult<T>> {
+    return source.pipe(
+      map((data): SourceResult<T> => ({ ok: true, data })),
+      catchError(() => of<SourceResult<T>>({ ok: false }))
+    );
+  }
+
+  private unavailable(
+    id: string,
+    domain: OperatorQueueDomain,
+    source: string,
+    route: string
+  ): OperatorQueueItem {
+    return {
+      id: `${id}-unavailable`,
+      domain,
+      kind: 'source-unavailable',
+      severity: 'medium',
+      title: `${source} unavailable`,
+      detail: `${source} could not be loaded just now. This is not an empty queue; retry to check.`,
+      route,
+      status: 'unavailable',
+      sourceTimestamp: null,
+      tags: [domain.toLowerCase(), 'unavailable'],
+    };
   }
 
   private createAppointmentsItem(
@@ -203,7 +317,8 @@ export class OperatorQueueService {
 
   private createModerationItem(
     socialReports: ModerationReport[],
-    forumReports: ForumModerationReport[]
+    forumReports: ForumModerationReport[],
+    partial = false
   ): OperatorQueueItem | null {
     const pendingSocial = socialReports.filter(
       (report) => report.status === 'pending'
@@ -223,9 +338,11 @@ export class OperatorQueueService {
       kind: 'moderation-review',
       severity: 'high',
       title: 'Moderation reports pending review',
-      detail: `${total} moderation report${
-        total === 1 ? '' : 's'
-      } are waiting across social and forum governance.`,
+      detail: `${total} moderation report${total === 1 ? '' : 's'} are ${
+        partial ? 'known to be ' : ''
+      }waiting across social and forum governance${
+        partial ? '; another source could not be read' : ''
+      }.`,
       route: '/dashboard/social-governance',
       status: 'pending',
       sourceTimestamp: this.getEarliestTimestamp([

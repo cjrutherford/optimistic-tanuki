@@ -33,6 +33,7 @@
   <div class="shell">
     <app-owner-sidebar
       [groups]="groups()"
+      [badges]="badges()"
       [activePath]="activePath()"
       [townId]="town.selected()?.id ?? null"
       [open]="sidebarOpen()"

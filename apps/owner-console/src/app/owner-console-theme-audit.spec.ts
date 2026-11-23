@@ -14,6 +14,7 @@ import { AppScopesService } from './services/app-scopes.service';
 import { AppConfigService } from './services/app-config.service';
 import { CommunityService } from './services/community.service';
 import { StoreService } from './services/store.service';
+import { AttentionService } from './services/attention.service';
 import { OperatorQueueService } from './services/operator-queue.service';
 import { ThemeColors } from '@optimistic-tanuki/theme-lib';
 
@@ -89,6 +90,18 @@ describe('owner-console theme audit regressions', () => {
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
       providers: [
+        {
+          provide: AttentionService,
+          useValue: {
+            report: () => null,
+            state: () => 'idle',
+            health: () => null,
+            healthLoad: () => 'idle',
+            load: jest.fn(),
+            loadHealth: jest.fn(),
+            badgesFor: () => ({}),
+          },
+        },
         {
           provide: ThemeService,
           useValue: {
@@ -211,6 +224,18 @@ describe('owner-console theme audit regressions', () => {
             getProducts: jest.fn(),
             getOrders: jest.fn(),
             getAppointments: jest.fn(),
+          },
+        },
+        {
+          provide: AttentionService,
+          useValue: {
+            report: () => null,
+            state: () => 'idle',
+            health: () => null,
+            healthLoad: () => 'idle',
+            load: jest.fn(),
+            loadHealth: jest.fn(),
+            badgesFor: () => ({}),
           },
         },
         {

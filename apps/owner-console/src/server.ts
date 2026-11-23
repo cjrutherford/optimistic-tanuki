@@ -77,13 +77,8 @@ app.use('/admin-api/api/bootstrap', (_req, response) => {
 });
 
 app.use('/admin-api', async (request, response, next) => {
-  // Deployment status is intentionally public; every other control-center
-  // operation requires a current token for a global owner role.
-  if (request.path === '/api/status/public') {
-    next();
-    return;
-  }
-
+  // Every control-center operation, deployment status included, requires a
+  // current token for a global owner role.
   const authorization = await authorizeOwnerConsoleAdminRequest({
     authorization: request.get('authorization'),
     cookieHeader: request.get('cookie'),
