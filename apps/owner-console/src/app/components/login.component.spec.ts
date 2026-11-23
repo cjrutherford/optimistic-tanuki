@@ -13,6 +13,7 @@ describe('LoginComponent', () => {
   const login = jest.fn();
   const setToken = jest.fn();
   const restoreSession = jest.fn();
+  const markForbidden = jest.fn();
   const get = jest.fn();
 
   function createComponent(queryParams: Record<string, string> = {}) {
@@ -25,6 +26,7 @@ describe('LoginComponent', () => {
             login,
             setToken,
             restoreSession,
+            markForbidden,
           },
         },
         {
@@ -278,5 +280,41 @@ describe('LoginComponent', () => {
     );
 
     initiateOAuthLogin.mockRestore();
+  });
+
+  it('sends a signed-in account without an owner role to no access', () => {
+    login.mockReturnValue(
+      throwError(() => ({
+        status: 403,
+        error: {
+          code: 'OWNER_ACCESS_REQUIRED',
+          message: 'This account is not authorized for Owner Console access.',
+        },
+      }))
+    );
+    const { component } = createComponent();
+    const router = TestBed.inject(Router);
+
+    component.onLogin({ email: 'member@example.test', password: 'secret' });
+
+    expect(markForbidden).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/no-access');
+    expect(component.error).toBe('');
+  });
+
+  it('keeps other refusals on the login form with their message', () => {
+    login.mockReturnValue(
+      throwError(() => ({
+        status: 403,
+        error: { message: 'App context is not authorized' },
+      }))
+    );
+    const { component } = createComponent();
+    const router = TestBed.inject(Router);
+
+    component.onLogin({ email: 'member@example.test', password: 'secret' });
+
+    expect(router.navigateByUrl).not.toHaveBeenCalledWith('/no-access');
+    expect(component.error).toBe('App context is not authorized');
   });
 });

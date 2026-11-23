@@ -8,7 +8,7 @@ import {
   LoginRequest,
   ProfileDto,
 } from '@optimistic-tanuki/models';
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   RoleInitBuilder,
@@ -272,9 +272,13 @@ export class LoginAccountBootstrapService {
       );
 
       if (!hasOwnerConsoleAccess) {
-        throw new Error(
-          'This account is not authorized for Owner Console access.'
-        );
+        // A 403, not a bare Error: the gateway passes HttpExceptions through,
+        // so the console can tell "not an owner" from a failed sign-in.
+        throw new ForbiddenException({
+          statusCode: 403,
+          code: 'OWNER_ACCESS_REQUIRED',
+          message: 'This account is not authorized for Owner Console access.',
+        });
       }
 
       const hasOwnerConsoleRole = (

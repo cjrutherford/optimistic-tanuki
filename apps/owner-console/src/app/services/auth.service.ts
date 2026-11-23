@@ -194,4 +194,13 @@ export class AuthService {
   isAuthenticated(): boolean {
     return this.hasToken();
   }
+
+  /**
+   * Record that the credentials were good but the account holds no owner
+   * role, so the no-access page (guarded on this state) can explain why.
+   */
+  markForbidden(): void {
+    this.sessionUser = null;
+    this.setSessionState({ status: 'forbidden' });
+  }
 }

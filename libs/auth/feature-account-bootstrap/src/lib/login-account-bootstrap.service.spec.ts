@@ -539,13 +539,16 @@ describe('LoginAccountBootstrapService', () => {
       roleInit as any
     );
 
-    await expect(
-      service.login(
-        { email: 'member@app.com', password: 'secret' },
-        'owner-console'
-      )
-    ).rejects.toThrow(
+    const refusal = service.login(
+      { email: 'member@app.com', password: 'secret' },
+      'owner-console'
+    );
+    await expect(refusal).rejects.toThrow(
       'This account is not authorized for Owner Console access.'
     );
+    await expect(refusal).rejects.toMatchObject({
+      status: 403,
+      response: { code: 'OWNER_ACCESS_REQUIRED' },
+    });
   });
 });

@@ -212,6 +212,16 @@ export class LoginComponent implements OnInit {
         this.router.navigateByUrl(returnUrl);
       },
       error: (err) => {
+        // The gateway answers 403 when the credentials are good but the
+        // account holds no owner role; that is a no-access case, not a typo.
+        if (
+          err?.status === 403 &&
+          err.error?.code === 'OWNER_ACCESS_REQUIRED'
+        ) {
+          this.authService.markForbidden();
+          this.router.navigateByUrl('/no-access');
+          return;
+        }
         this.error = err.error?.message || 'Login failed. Please try again.';
       },
     });
