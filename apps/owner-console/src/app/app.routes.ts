@@ -173,6 +173,21 @@ export const appRoutes: Route[] = [
             './components/directory-listing-suppression-page.component'
           ).then((m) => m.DirectoryListingSuppressionPageComponent),
       },
+      {
+        path: 'towns/:townId/daylight',
+        loadComponent: () =>
+          import('./components/towns/town-daylight.component').then(
+            (m) => m.TownDaylightComponent
+          ),
+      },
+      // Daylight for every town: copyright notices are not tied to a town.
+      {
+        path: 'daylight',
+        loadComponent: () =>
+          import('./components/towns/town-daylight.component').then(
+            (m) => m.TownDaylightComponent
+          ),
+      },
       // Old per-page URLs keep working: the town id moves into the new path.
       {
         path: 'boundary-review/:townId',

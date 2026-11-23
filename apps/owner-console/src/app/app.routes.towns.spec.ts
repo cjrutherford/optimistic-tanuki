@@ -67,8 +67,13 @@ describe('town routes and old URL redirects', () => {
     'directory-duplicates',
     'directory-listing-reports',
     'directory-listing-suppressions',
+    'daylight',
   ])('routes /dashboard/towns/:townId/%s without redirecting', async (page) => {
     const url = `/dashboard/towns/town-7/${page}`;
     expect(await landOn(url)).toBe(url);
+  });
+
+  it('routes Daylight for every town without a town in the URL', async () => {
+    expect(await landOn('/dashboard/daylight')).toBe('/dashboard/daylight');
   });
 });

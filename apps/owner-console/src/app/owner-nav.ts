@@ -144,6 +144,20 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
         keywords: ['towns', 'localities'],
       },
       {
+        label: 'Daylight',
+        path: '/dashboard/towns/:townId/daylight',
+        icon: '☀',
+        needsTown: true,
+        keywords: [
+          'daylight feed',
+          'briefing',
+          'pipeline',
+          'sources',
+          'officials',
+          'density',
+        ],
+      },
+      {
         label: 'Boundary review',
         path: '/dashboard/towns/:townId/boundary-review',
         icon: '◌',
@@ -270,6 +284,12 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
           'forum',
           'daylight',
         ],
+      },
+      {
+        label: 'Daylight notices',
+        path: '/dashboard/daylight',
+        icon: '☀',
+        keywords: ['takedown', 'copyright', 'daylight feed', 'all towns'],
       },
       {
         label: 'Social moderation',

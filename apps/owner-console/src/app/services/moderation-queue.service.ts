@@ -228,8 +228,8 @@ export function normaliseTakedown(notice: TakedownNotice): ModerationItem {
     statusLabel:
       TAKEDOWN_STATUS_LABELS[notice.state] ?? titleCase(notice.state),
     open: notice.state === 'received',
-    // There is no console page for notices; they are handled from the queue.
-    link: null,
+    // Notices are not tied to a town, so open Daylight for every town.
+    link: { commands: ['/dashboard/daylight'], queryParams: {} },
   };
 }
 

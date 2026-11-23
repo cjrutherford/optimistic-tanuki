@@ -176,7 +176,7 @@ describe('ModerationQueueService', () => {
         subject: 'Photo of the bridge',
         reason: 'Copyright notice from Acme',
         open: true,
-        link: null,
+        link: { commands: ['/dashboard/daylight'], queryParams: {} },
       });
     });
 

@@ -303,7 +303,7 @@ export class OwnerAttentionService {
       run(
         'daylight.takedowns',
         'Daylight takedown notices received',
-        '/dashboard/towns',
+        '/dashboard/daylight',
         () => this.takedowns()
       ),
     ]);

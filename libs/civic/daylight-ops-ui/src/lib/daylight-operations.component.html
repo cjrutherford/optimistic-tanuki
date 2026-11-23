@@ -1,13 +1,14 @@
-<div class="daylight-page operations">
+<div class="daylight-page operations" [class.embedded]="!showHeading()">
+  @if (showHeading()) {
   <p class="kicker">Daylight</p>
   <h1>Operations</h1>
-
-  @if (!checked()) {
+  } @if (!checked()) {
   <p class="quiet" role="status">Checking your access…</p>
   } @else if (!anything()) {
   <p class="quiet">
-    This page is for Daylight operators.
-    <a routerLink="/cities">Back to the towns</a>.
+    <ng-content select="[daylightOpsDenied]"
+      >This page is for Daylight operators.</ng-content
+    >
   </p>
   } @if (canPipeline()) {
   <section aria-labelledby="pipeline-heading">
@@ -38,9 +39,9 @@
             <th scope="row">{{ town.name }}</th>
             <td>
               @if (town.lastRun; as run) {
-              <span class="run" [attr.data-status]="run.status"
-                >{{ runWords(run.status) }}</span
-              >
+              <span class="run" [attr.data-status]="run.status">{{
+                runWords(run.status)
+              }}</span>
               @if (run.error) {
               <span class="run-error">{{ run.error }}</span>
               } } @else {
@@ -48,16 +49,24 @@
               }
             </td>
             <td>
-              {{ town.lastRun ? (town.lastRun.startedAt | date : 'medium') : '—'
+              {{
+                town.lastRun ? (town.lastRun.startedAt | date : 'medium') : '—'
               }}
             </td>
             <td>
               @for (problem of town.problems; track problem.sourceId) {
               <div class="source-problem" [attr.data-status]="problem.status">
-                {{ problem.sourceId }}: {{ problem.status === 'failing' ?
-                'failing, ' + problem.consecutiveFailures + ' attempts in a row'
-                : 'quiet' + (problem.stalenessDays !== null ? ', ' +
-                problem.stalenessDays + ' days' : '') }}
+                {{ problem.sourceId }}:
+                {{
+                  problem.status === 'failing'
+                    ? 'failing, ' +
+                      problem.consecutiveFailures +
+                      ' attempts in a row'
+                    : 'quiet' +
+                      (problem.stalenessDays !== null
+                        ? ', ' + problem.stalenessDays + ' days'
+                        : '')
+                }}
               </div>
               } @empty {
               <span class="quiet">None</span>
@@ -93,17 +102,22 @@
       /></label>
       <button
         type="button"
-        [disabled]="backfill()?.running"
+        [disabled]="backfill()?.running || !canBackfill()"
         (click)="startBackfill()"
       >
-        Pull and backfill every town
+        @if (townName()) { Pull and backfill {{ townName() }} } @else { Pull and
+        backfill every town }
       </button>
     </div>
     @if (backfill(); as backfill) { @if (backfill.running) {
     <p class="quiet" role="status">
-      Backfilling {{ backfill.towns.length }} town{{ backfill.towns.length === 1
-      ? '' : 's' }} since {{ backfill.startedAt | date : 'medium' }}: {{
-      backfill.steps.length }} step{{ backfill.steps.length === 1 ? '' : 's' }}
+      Backfilling {{ backfill.towns.length }} town{{
+        backfill.towns.length === 1 ? '' : 's'
+      }}
+      since {{ backfill.startedAt | date : 'medium' }}:
+      {{ backfill.steps.length }} step{{
+        backfill.steps.length === 1 ? '' : 's'
+      }}
       done.
     </p>
     } @else if (backfill.finishedAt) {
@@ -113,7 +127,10 @@
     } @if (backfill.steps.length) {
     <ul class="backfill-steps">
       @for (step of backfill.steps; track $index) {
-      <li><strong>{{ step.town }}</strong>: {{ step.action }}</li>
+      <li>
+        <strong>{{ step.town }}</strong
+        >: {{ step.action }}
+      </li>
       }
     </ul>
     } @if (backfill.problem) {
@@ -121,7 +138,10 @@
     } } @if (backfillMessage()) {
     <p class="problem" role="alert">{{ backfillMessage() }}</p>
     } } } @else if (pipelineError()) {
-    <p class="problem" role="alert">{{ pipelineError() }}</p>
+    <p class="problem" role="alert">
+      <strong>Unavailable.</strong> {{ pipelineError() }}
+      <button type="button" class="link" (click)="loadPipeline()">Retry</button>
+    </p>
     } @else {
     <p class="quiet" role="status">Loading…</p>
     }
@@ -134,7 +154,12 @@
       verification until you do. A rejected name is not suggested again.
     </p>
     @if (candidatesError()) {
-    <p class="problem" role="alert">{{ candidatesError() }}</p>
+    <p class="problem" role="alert">
+      <strong>Unavailable.</strong> {{ candidatesError() }}
+      <button type="button" class="link" (click)="loadCandidates()">
+        Retry
+      </button>
+    </p>
     } @else if (candidates().status === 'loading') {
     <p class="quiet" role="status">Loading…</p>
     } @else { @for (group of candidateGroups(); track group.slug) {
@@ -294,14 +319,17 @@
     <h2 id="density-heading">Contributor density</h2>
     <p class="lede">
       People, not contributions: a town with one prolific contributor has one
-      source, and the gate will never open for it. The target is {{ target.low
-      }}–{{ target.high }} active contributors a town, enough that two
-      independent accounts of the same meeting are ordinary. Thinnest first.
+      source, and the gate will never open for it. The target is
+      {{ target.low }}–{{ target.high }} active contributors a town, enough that
+      two independent accounts of the same meeting are ordinary. Thinnest first.
     </p>
     @switch (density().status) { @case ('loading') {
     <p class="quiet" role="status">Loading…</p>
     } @case ('failed') {
-    <p class="problem" role="alert">{{ densityError() }}</p>
+    <p class="problem" role="alert">
+      <strong>Unavailable.</strong> {{ densityError() }}
+      <button type="button" class="link" (click)="loadDensity()">Retry</button>
+    </p>
     } @case ('ready') {
     <div class="table-wrap">
       <table>
@@ -324,17 +352,20 @@
             <th scope="row">{{ row.town }}</th>
             <td class="number">{{ row.active }}</td>
             <td>
-              <span class="standing" [attr.data-standing]="standing(row)"
-                >{{ standing(row) }}</span
-              >
+              <span class="standing" [attr.data-standing]="standing(row)">{{
+                standing(row)
+              }}</span>
             </td>
             <td class="number">{{ row.reports }}</td>
             <td class="number">{{ row.corroborations }}</td>
             <td class="number">{{ row.corroborated }}</td>
             <td class="number">{{ row.quotable }}</td>
             <td class="number">
-              {{ row.meetings ? row.meetingsWithContributions + '/' +
-              row.meetings : '—' }}
+              {{
+                row.meetings
+                  ? row.meetingsWithContributions + '/' + row.meetings
+                  : '—'
+              }}
             </td>
             <td class="number">{{ row.officials }}</td>
           </tr>
@@ -353,23 +384,29 @@
       <li>
         @if (row.active === 0) {
         <strong>{{ row.town }}</strong> has nobody contributing. Nothing there
-        can be corroborated. } @else { <strong>{{ row.town }}</strong> needs {{
-        target.low - row.active }} more to reach the band; {{ row.active }} {{
-        row.active === 1 ? 'person is' : 'people are' }} watching it now. }
+        can be corroborated. } @else { <strong>{{ row.town }}</strong> needs
+        {{ target.low - row.active }} more to reach the band; {{ row.active }}
+        {{ row.active === 1 ? 'person is' : 'people are' }} watching it now. }
       </li>
       }
     </ul>
     }
     <p class="quiet">
-      Against the record: {{ confirmed() }} report{{ confirmed() === 1 ? '' :
-      's' }} borne out by a later record, {{ contradicted() }} contradicted by
-      one.
+      Against the record: {{ confirmed() }} report{{
+        confirmed() === 1 ? '' : 's'
+      }}
+      borne out by a later record, {{ contradicted() }} contradicted by one.
     </p>
     } }
   </section>
   } @if (canTakedowns()) {
   <section aria-labelledby="notices-heading">
     <h2 id="notices-heading">Copyright notices</h2>
+    @if (town()) {
+    <p class="hint">
+      Notices are not tied to a town; this lists them for every town.
+    </p>
+    }
     <label class="filter"
       >Showing
       <select [value]="noticeState()" (change)="setNoticeState($event)">
@@ -382,18 +419,21 @@
     @switch (notices().status) { @case ('loading') {
     <p class="quiet" role="status">Loading…</p>
     } @case ('failed') {
-    <p class="problem" role="alert">{{ noticesError() }}</p>
+    <p class="problem" role="alert">
+      <strong>Unavailable.</strong> {{ noticesError() }}
+      <button type="button" class="link" (click)="loadNotices()">Retry</button>
+    </p>
     } @case ('ready') { @for (notice of noticeList(); track notice.id) {
     <article class="notice">
       <h3>{{ notice.work }}</h3>
       <p class="meta">
-        From {{ notice.claimantName }} ({{ notice.claimantEmail }}) · {{
-        notice.state }} · notice {{ notice.id }}
+        From {{ notice.claimantName }} ({{ notice.claimantEmail }}) ·
+        {{ notice.state }} · notice {{ notice.id }}
       </p>
       <p class="meta">
         Locates {{ notice.contributionIds.length }} contribution{{
-        notice.contributionIds.length === 1 ? '' : 's' }}: {{
-        notice.contributionIds.join(', ') || 'none' }}
+          notice.contributionIds.length === 1 ? '' : 's'
+        }}: {{ notice.contributionIds.join(', ') || 'none' }}
       </p>
       <label class="field"
         ><span>Reason for the decision</span>

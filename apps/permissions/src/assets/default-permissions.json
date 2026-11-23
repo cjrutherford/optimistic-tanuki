@@ -3593,6 +3593,46 @@
       "action": "export",
       "targetId": null,
       "appScope": "owner-console"
+    },
+    {
+      "name": "town.configure",
+      "description": "Add or change a town and its sources.",
+      "active": true,
+      "resource": "town",
+      "action": "configure",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "official.verify",
+      "description": "Confirm an official's application after the callback.",
+      "active": true,
+      "resource": "official",
+      "action": "verify",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "takedown.manage",
+      "description": "Review copyright takedown notices and act on them.",
+      "active": true,
+      "resource": "takedown",
+      "action": "manage",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "community.maintain",
+      "description": "Run community upkeep: re-review held contributions, sweep outcomes, export promotions.",
+      "active": true,
+      "resource": "community",
+      "action": "maintain",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "density.read",
+      "description": "Read per-town contributor density and coverage.",
+      "active": true,
+      "resource": "density",
+      "action": "read",
+      "appScope": "owner-console"
     }
   ],
   "role_permissions": [
@@ -8284,6 +8324,106 @@
     {
       "role": "system_admin",
       "permission": "directory.export",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "town.configure",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "town.configure",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "town.configure",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "town.configure",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "official.verify",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "official.verify",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "official.verify",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "official.verify",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "takedown.manage",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "takedown.manage",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "takedown.manage",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "takedown.manage",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "community.maintain",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "community.maintain",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "community.maintain",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "community.maintain",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "density.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "density.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "density.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "density.read",
       "permissionAppScope": "owner-console"
     }
   ]

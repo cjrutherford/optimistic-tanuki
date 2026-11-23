@@ -1,0 +1,21 @@
+{
+  "name": "daylight-ops-ui",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/civic/daylight-ops-ui/src",
+  "prefix": "ot",
+  "projectType": "library",
+  "tags": ["type:ui", "scope:civic", "platform:web", "visibility:internal"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/civic/daylight-ops-ui/jest.config.ts",
+        "tsConfig": "libs/civic/daylight-ops-ui/tsconfig.spec.json"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}
