@@ -7,6 +7,7 @@
     logoSrc="/tempest-in-a-teacup.png"
     logoAlt="Owner Console Logo"
   >
+    <app-town-switcher></app-town-switcher>
     <button
       type="button"
       class="bar-button search-button"
@@ -33,6 +34,7 @@
     <app-owner-sidebar
       [groups]="groups()"
       [activePath]="activePath()"
+      [townId]="town.selected()?.id ?? null"
       [open]="sidebarOpen()"
       [mode]="desktop() ? 'docked' : 'drawer'"
       (selected)="onNavigated()"
@@ -40,8 +42,21 @@
     ></app-owner-sidebar>
 
     <div class="content">
-      <app-owner-breadcrumbs [url]="url()"></app-owner-breadcrumbs>
+      <app-owner-breadcrumbs
+        [url]="url()"
+        [town]="town.selected()"
+      ></app-owner-breadcrumbs>
+      @if (urlTownId(); as townId) { @if (town.notFound()) {
+      <app-town-not-found [townId]="townId"></app-town-not-found>
+      } @else {
+      <app-town-tabs
+        [townId]="townId"
+        [activePath]="activePath()"
+      ></app-town-tabs>
       <router-outlet></router-outlet>
+      } } @else {
+      <router-outlet></router-outlet>
+      }
     </div>
   </div>
 

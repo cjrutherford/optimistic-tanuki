@@ -804,7 +804,7 @@ export class OperationsWorkspaceComponent implements OnInit {
             result.communities.communities && result.communities.cities
               ? 'Community and city records are reachable for operator workflows.'
               : 'Community topology data needs follow-up from operators.',
-          route: '/dashboard/community-ops',
+          route: '/dashboard/towns',
         },
       ];
 

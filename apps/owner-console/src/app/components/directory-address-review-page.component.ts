@@ -130,7 +130,7 @@ export class DirectoryAddressReviewPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
-      this.town = params.get('communityId') ?? '';
+      this.town = params.get('townId') ?? params.get('communityId') ?? '';
       this.refresh();
     });
   }

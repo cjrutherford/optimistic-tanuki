@@ -121,6 +121,13 @@ describe('owner-console theme audit regressions', () => {
             reset: jest.fn(),
           },
         },
+        {
+          provide: CommunityService,
+          useValue: {
+            getCities: () => of([]),
+            getCommunities: () => of([]),
+          },
+        },
       ],
     }).compileComponents();
 

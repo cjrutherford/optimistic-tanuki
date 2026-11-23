@@ -4,11 +4,16 @@ import {
   HOME_PATH,
   OWNER_NAV,
   OwnerNavGroup,
+  OwnerNavLeaf,
   breadcrumbsFor,
   filterNavByPermission,
   findNavEntry,
   flattenNav,
   navigableEntries,
+  resolveLeafPath,
+  resolveNavEntries,
+  TOWNS_PATH,
+  PICK_A_TOWN,
   searchNav,
 } from './owner-nav';
 
@@ -74,7 +79,7 @@ describe('OWNER_NAV tree', () => {
 
   it('only marks parameterised leaves as needing a town', () => {
     for (const { leaf } of leaves) {
-      expect(leaf.path.includes(':communityId')).toBe(!!leaf.needsTown);
+      expect(leaf.path.includes(':townId')).toBe(!!leaf.needsTown);
     }
   });
 });
@@ -118,8 +123,16 @@ describe('route and nav coverage', () => {
     const redirects = dashboardChildren.filter((r) => r.redirectTo && r.path);
     expect(redirects.length).toBeGreaterThan(0);
     for (const route of redirects) {
-      const target = `/dashboard/${route.redirectTo as string}`;
-      expect(routedPatterns).toContain(target);
+      const to = route.redirectTo as string;
+      const target = to.startsWith('/') ? to : `/dashboard/${to}`;
+      // Old town URLs redirect to a town page; the picker is a plain route.
+      expect(
+        routedPatterns.some(
+          (pattern) =>
+            pattern === target ||
+            pattern === target.replace(':communityId', ':townId')
+        )
+      ).toBe(true);
     }
   });
 });
@@ -139,7 +152,8 @@ describe('findNavEntry', () => {
 
   it('matches parameterised leaves and ignores other URLs', () => {
     expect(
-      findNavEntry('/dashboard/directory-address-review/town-1')?.leaf.label
+      findNavEntry('/dashboard/towns/town-1/directory-address-review')?.leaf
+        .label
     ).toBe('Address review');
     expect(findNavEntry('/login')).toBeUndefined();
   });
@@ -209,8 +223,8 @@ describe('searchNav', () => {
     expect(labels('zzzqqq')).toEqual([]);
   });
 
-  it('leaves out pages that need a town', () => {
-    expect(entries.some((entry) => entry.leaf.needsTown)).toBe(false);
+  it('keeps pages that need a town in the results', () => {
+    expect(labels('boundary')).toContain('Boundary review');
   });
 });
 
@@ -255,5 +269,67 @@ describe('filterNavByPermission', () => {
     const result = filterNavByPermission((p) => p === 'x.manage', nav);
     expect(result[0].leaves.map((l) => l.label)).toEqual(['Open', 'Locked']);
     expect(result).toHaveLength(1);
+  });
+});
+
+describe('town pages in the nav', () => {
+  const boundary = leaves.find(
+    (entry) => entry.leaf.label === 'Boundary review'
+  )?.leaf as OwnerNavLeaf;
+
+  it('lists every town page under /dashboard/towns/:townId', () => {
+    const townLeaves = leaves.filter((entry) => entry.leaf.needsTown);
+    expect(townLeaves.length).toBeGreaterThanOrEqual(9);
+    for (const { leaf } of townLeaves) {
+      expect(leaf.path.startsWith('/dashboard/towns/:townId/')).toBe(true);
+    }
+  });
+
+  it('fills :townId from the selected town', () => {
+    expect(resolveLeafPath(boundary, 'abc 1')).toBe(
+      '/dashboard/towns/abc%201/boundary-review'
+    );
+  });
+
+  it('has no route for a town page while no town is selected', () => {
+    expect(resolveLeafPath(boundary, null)).toBeNull();
+  });
+
+  it('resolves every entry with a town and leaves non-town pages alone', () => {
+    const resolved = resolveNavEntries(navigableEntries(), 't1');
+    expect(resolved.every((entry) => entry.hint === undefined)).toBe(true);
+    expect(
+      resolved.find((entry) => entry.leaf.label === 'Boundary review')?.href
+    ).toBe('/dashboard/towns/t1/boundary-review');
+    expect(resolved.find((e) => e.leaf.label === 'Users')?.href).toBe(
+      '/dashboard/users'
+    );
+  });
+
+  it('points town pages at the picker with a hint when no town is selected', () => {
+    const resolved = resolveNavEntries(navigableEntries(), null);
+    const row = resolved.find((e) => e.leaf.label === 'Boundary review');
+    expect(row?.href).toBe(TOWNS_PATH);
+    expect(row?.hint).toBe(PICK_A_TOWN);
+    expect(
+      resolved.find((e) => e.leaf.label === 'Users')?.hint
+    ).toBeUndefined();
+  });
+
+  it('keeps town pages in navigableEntries', () => {
+    expect(navigableEntries().some((e) => e.leaf.needsTown)).toBe(true);
+  });
+
+  it('adds the town to the breadcrumbs of a town page', () => {
+    expect(
+      breadcrumbsFor('/dashboard/towns/t1/boundary-review', undefined, {
+        id: 't1',
+        name: 'Springfield',
+      })
+    ).toEqual([
+      { label: 'Towns' },
+      { label: 'Springfield', path: '/dashboard/towns/t1/overview' },
+      { label: 'Boundary review' },
+    ]);
   });
 });

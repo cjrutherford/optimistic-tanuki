@@ -44,7 +44,7 @@ import { OwnerNavEntry, searchNav } from '../owner-nav';
         (input)="setQuery($any($event.target).value)"
       />
       <ul id="palette-results" class="results" role="listbox">
-        @for (entry of results(); track entry.leaf.path; let i = $index) {
+        @for (entry of results(); track $index; let i = $index) {
         <li
           role="option"
           class="option"
@@ -55,7 +55,11 @@ import { OwnerNavEntry, searchNav } from '../owner-nav';
           (click)="choose(entry)"
         >
           <span class="option-label">{{ entry.leaf.label }}</span>
-          <span class="option-group">{{ entry.group.label }}</span>
+          <span class="option-group">{{
+            entry.hint
+              ? entry.group.label + ' · ' + entry.hint
+              : entry.group.label
+          }}</span>
         </li>
         } @empty {
         <li class="empty" role="presentation">No matching pages</li>

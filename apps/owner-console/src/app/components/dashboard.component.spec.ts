@@ -7,6 +7,13 @@ import { DashboardComponent } from './dashboard.component';
 import { AuthService } from '../services/auth.service';
 import { OwnerNavLeaf, flattenNav } from '../owner-nav';
 import { OwnerAccessService } from '../services/owner-access.service';
+import { CommunityService } from '../services/community.service';
+import { TownContextService } from '../services/town-context.service';
+
+interface CommunityServiceStub {
+  getCities: jest.Mock;
+  getCommunities: jest.Mock;
+}
 
 interface OwnerAccessStub {
   load: jest.Mock;
@@ -19,6 +26,7 @@ describe('DashboardComponent', () => {
   let authService: { logout: jest.Mock };
   let access: OwnerAccessStub;
   let themeService: any;
+  let communities: CommunityServiceStub;
 
   const controlCenterPersonality = {
     id: 'control-center',
@@ -34,6 +42,13 @@ describe('DashboardComponent', () => {
   };
 
   beforeEach(async () => {
+    localStorage.clear();
+    communities = {
+      getCities: jest.fn(() =>
+        of([{ id: 't1', name: 'Springfield', city: 'Springfield' }])
+      ),
+      getCommunities: jest.fn(() => of([])),
+    };
     authService = {
       logout: jest.fn(),
     };
@@ -99,6 +114,7 @@ describe('DashboardComponent', () => {
         provideRouter([]),
         { provide: AuthService, useValue: authService },
         { provide: OwnerAccessService, useValue: access },
+        { provide: CommunityService, useValue: communities },
         { provide: ThemeService, useValue: themeService },
       ],
     }).compileComponents();
@@ -140,7 +156,7 @@ describe('DashboardComponent', () => {
       .queryAll(By.css('app-owner-sidebar a'))
       .map((el) => (el.nativeElement as HTMLElement).textContent?.trim() ?? '');
 
-  it('builds the grouped sidebar from OWNER_NAV, hiding town-only pages', () => {
+  it('builds the grouped sidebar from OWNER_NAV, showing town pages disabled until a town is picked', () => {
     setViewport(true);
     setUrl('/dashboard/home');
     const { fixture, component } = create();
@@ -156,7 +172,7 @@ describe('DashboardComponent', () => {
       'System',
     ]);
     const towns = component.groups().find((g) => g.id === 'towns');
-    expect(towns?.leaves.some((leaf) => leaf.needsTown)).toBe(false);
+    expect(towns?.leaves.some((leaf) => leaf.needsTown)).toBe(true);
     expect(links(fixture)[0]).toContain('Home');
 
     // Groups are collapsible: only the active group starts open.
@@ -310,5 +326,85 @@ describe('DashboardComponent', () => {
     create();
     expect(themeService.setPersonality).not.toHaveBeenCalled();
     expect(themeService.setPrimaryColor).not.toHaveBeenCalled();
+  });
+
+  describe('town context', () => {
+    const townLinks = (
+      fixture: ReturnType<typeof create>['fixture']
+    ): HTMLAnchorElement[] =>
+      fixture.debugElement
+        .queryAll(By.css('app-owner-sidebar .leaves a'))
+        .map((el) => el.nativeElement as HTMLAnchorElement)
+        .filter((a) => a.textContent?.includes('Boundary review'));
+
+    it('shows town pages disabled with a hint and a picker link when no town is selected', () => {
+      setViewport(true);
+      setUrl('/dashboard/towns');
+      const { fixture } = create();
+      const [boundary] = townLinks(fixture);
+      expect(boundary.getAttribute('aria-disabled')).toBe('true');
+      expect(boundary.textContent).toContain('Pick a town');
+      expect(boundary.getAttribute('href')).toBe('/dashboard/towns');
+    });
+
+    it('links town pages to the selected town', () => {
+      setViewport(true);
+      setUrl('/dashboard/towns');
+      localStorage.setItem('owner-console.town', 't1');
+      const town = TestBed.inject(TownContextService);
+      town.selectedId.set('t1');
+      const { fixture } = create();
+      const [boundary] = townLinks(fixture);
+      expect(boundary.getAttribute('aria-disabled')).toBeNull();
+      expect(boundary.getAttribute('href')).toBe(
+        '/dashboard/towns/t1/boundary-review'
+      );
+    });
+
+    it('resolves palette town pages against the selected town', () => {
+      setViewport(true);
+      setUrl('/dashboard/home');
+      const town = TestBed.inject(TownContextService);
+      town.selectedId.set('t1');
+      const { component } = create();
+      const row = component
+        .paletteEntries()
+        .find((entry) => entry.leaf.label === 'Boundary review');
+      expect(row?.href).toBe('/dashboard/towns/t1/boundary-review');
+      expect(row?.hint).toBeUndefined();
+    });
+
+    it('marks palette town pages with a hint when no town is selected', () => {
+      setViewport(true);
+      setUrl('/dashboard/home');
+      const { component } = create();
+      const row = component
+        .paletteEntries()
+        .find((entry) => entry.leaf.label === 'Boundary review');
+      expect(row?.href).toBe('/dashboard/towns');
+      expect(row?.hint).toBe('Pick a town');
+    });
+
+    it('shows Town not found with a link to the picker for an unknown town URL', () => {
+      setViewport(true);
+      setUrl('/dashboard/towns/missing/boundary-review');
+      const { fixture } = create();
+      const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+      expect(text).toContain('Town not found');
+      const back = fixture.debugElement.query(By.css('app-town-not-found a'));
+      expect(back.nativeElement.getAttribute('href')).toBe('/dashboard/towns');
+    });
+
+    it('sets the town from the URL and shows the town tabs', () => {
+      setViewport(true);
+      setUrl('/dashboard/towns/t1/boundary-review');
+      localStorage.setItem('owner-console.town', 'other');
+      const { fixture } = create();
+      expect(TestBed.inject(TownContextService).selected()?.id).toBe('t1');
+      expect(fixture.debugElement.query(By.css('app-town-tabs'))).toBeTruthy();
+      expect(
+        fixture.debugElement.query(By.css('app-town-not-found'))
+      ).toBeNull();
+    });
   });
 });

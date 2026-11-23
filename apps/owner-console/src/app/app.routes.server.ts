@@ -14,28 +14,9 @@ export const serverRoutes: ServerRoute[] = [
     path: 'dashboard/communities/:id/members',
     renderMode: RenderMode.Client,
   },
+  // Every per-town page needs the browser session.
   {
-    path: 'dashboard/directory-link-review/:communityId',
-    renderMode: RenderMode.Client,
-  },
-  {
-    path: 'dashboard/directory-address-review/:communityId',
-    renderMode: RenderMode.Client,
-  },
-  {
-    path: 'dashboard/directory-identity-review/:communityId',
-    renderMode: RenderMode.Client,
-  },
-  {
-    path: 'dashboard/directory-listing-suppressions/:communityId',
-    renderMode: RenderMode.Client,
-  },
-  {
-    path: 'dashboard/directory-listing-reports/:communityId',
-    renderMode: RenderMode.Client,
-  },
-  {
-    path: 'dashboard/directory-duplicates/:communityId',
+    path: 'dashboard/towns/**',
     renderMode: RenderMode.Client,
   },
   // S7 operator pages need the browser session, so they never render on the server.
@@ -48,10 +29,6 @@ export const serverRoutes: ServerRoute[] = [
     'dashboard/directory-taxonomy-runs',
     'dashboard/directory-runs',
   ].map((path): ServerRoute => ({ path, renderMode: RenderMode.Client })),
-  {
-    path: 'dashboard/boundary-review/:communityId',
-    renderMode: RenderMode.Client,
-  },
   {
     path: 'dashboard/cities/:id',
     renderMode: RenderMode.Client,

@@ -35,9 +35,7 @@ type View = {
   standalone: true,
   imports: [CommonModule, RouterLink, ButtonComponent, CardComponent],
   template: `<section class="review-page" aria-labelledby="boundary-title">
-    <a routerLink="/dashboard/community-ops" class="back-link"
-      >← Community operations</a
-    >
+    <a routerLink="/dashboard/towns" class="back-link">← All towns</a>
     <header>
       <p class="eyebrow">Town geography · private review</p>
       <h2 id="boundary-title">Boundary candidate</h2>
@@ -232,7 +230,7 @@ export class BoundaryReviewPageComponent {
     ])
       .pipe(
         switchMap(([params]) => {
-          const id = params.get('communityId');
+          const id = params.get('townId') ?? params.get('communityId');
           this.view = { state: 'loading' };
           if (
             !id ||

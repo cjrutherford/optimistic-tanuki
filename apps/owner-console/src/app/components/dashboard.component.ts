@@ -21,7 +21,12 @@ import {
   activeNavPath,
   filterNavByPermission,
   navigableEntries,
+  resolveNavEntries,
 } from '../owner-nav';
+import { TownContextService } from '../services/town-context.service';
+import { TownNotFoundComponent } from './towns/town-not-found.component';
+import { TownSwitcherComponent } from '../shell/town-switcher.component';
+import { TownTabsComponent } from '../shell/town-tabs.component';
 import { CommandPaletteComponent } from '../shell/command-palette.component';
 import { OwnerBreadcrumbsComponent } from '../shell/owner-breadcrumbs.component';
 import { OwnerSidebarComponent } from '../shell/owner-sidebar.component';
@@ -39,6 +44,9 @@ export const DESKTOP_SIDEBAR_QUERY = '(min-width: 769px)';
     OwnerSidebarComponent,
     OwnerBreadcrumbsComponent,
     CommandPaletteComponent,
+    TownSwitcherComponent,
+    TownTabsComponent,
+    TownNotFoundComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
@@ -49,6 +57,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private access = inject(OwnerAccessService);
   private router = inject(Router);
+  readonly town = inject(TownContextService);
   private platformId = inject(PLATFORM_ID);
   private mediaQuery?: MediaQueryList;
   private readonly onMediaChange = (event: { matches: boolean }): void =>
@@ -64,21 +73,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   readonly groups = computed(() => {
     this.accessLoaded();
-    return filterNavByPermission(this.access.can).map((group) => ({
-      ...group,
-      leaves: group.leaves.filter((leaf) => !leaf.needsTown),
-    }));
+    return filterNavByPermission(this.access.can);
   });
+  /** Palette rows with town pages resolved against the selected town. */
   readonly paletteEntries = computed(() => {
     this.accessLoaded();
-    return navigableEntries(this.groups());
+    return resolveNavEntries(
+      navigableEntries(this.groups()),
+      this.town.selected()?.id
+    );
   });
+  /** Town named in the URL, for the tab strip and the not-found state. */
+  readonly urlTownId = this.town.urlTownId;
   readonly activePath = computed(() => activeNavPath(this.url(), OWNER_NAV));
 
   theme$ = this.themeService.theme;
 
   ngOnInit(): void {
     this.url.set(this.router.url);
+    this.town.syncFromUrl(this.router.url);
+    this.town.load();
     this.setupViewport();
     this.access
       .load()
@@ -90,7 +104,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
         filter((event) => event instanceof NavigationEnd),
         takeUntil(this.destroy$)
       )
-      .subscribe(() => this.url.set(this.router.url));
+      .subscribe(() => {
+        this.url.set(this.router.url);
+        this.town.syncFromUrl(this.router.url);
+      });
   }
 
   ngOnDestroy(): void {
@@ -131,7 +148,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   goTo(entry: OwnerNavEntry): void {
-    this.router.navigateByUrl(entry.leaf.path);
+    this.router.navigateByUrl(entry.href ?? entry.leaf.path);
     this.onNavigated();
   }
 

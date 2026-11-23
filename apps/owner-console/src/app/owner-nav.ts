@@ -13,7 +13,10 @@ export interface OwnerNavLeaf {
   icon: string;
   /** Permission the owner needs to see and open the page. */
   requiredPermission?: string;
-  /** Page only makes sense inside a town (reached from a town, not the nav). */
+  /**
+   * Page only makes sense inside a town. Its path holds `:townId`, filled from
+   * the selected town; with no town selected the nav shows it disabled.
+   */
   needsTown?: boolean;
   /** Extra words the command palette matches on. */
   keywords?: string[];
@@ -29,6 +32,10 @@ export interface OwnerNavGroup {
 export interface OwnerNavEntry {
   group: OwnerNavGroup;
   leaf: OwnerNavLeaf;
+  /** Real route once resolved against the town context (see resolveNavEntries). */
+  href?: string;
+  /** Set when the page needs a town and none is selected. */
+  hint?: string;
 }
 
 export interface OwnerBreadcrumb {
@@ -38,6 +45,10 @@ export interface OwnerBreadcrumb {
 }
 
 export const HOME_PATH = '/dashboard/home';
+export const TOWNS_PATH = '/dashboard/towns';
+
+/** Hint shown beside a town page while no town is selected. */
+export const PICK_A_TOWN = 'Pick a town';
 
 export const OWNER_NAV: readonly OwnerNavGroup[] = [
   {
@@ -96,10 +107,24 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
     icon: '⌂',
     leaves: [
       {
-        label: 'Town operations',
-        path: '/dashboard/community-ops',
+        label: 'All towns',
+        path: TOWNS_PATH,
         icon: '⌂',
-        keywords: ['community ops', 'towns', 'daylight'],
+        keywords: ['town picker', 'switch town', 'community ops', 'daylight'],
+      },
+      {
+        label: 'Town overview',
+        path: '/dashboard/towns/:townId/overview',
+        icon: '⌂',
+        needsTown: true,
+        keywords: ['town', 'journal', 'notes', 'cases', 'escalations'],
+      },
+      {
+        label: 'Town communities',
+        path: '/dashboard/towns/:townId/communities',
+        icon: '☷',
+        needsTown: true,
+        keywords: ['community ops', 'members', 'managers'],
       },
       {
         label: 'Communities',
@@ -115,49 +140,49 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
       },
       {
         label: 'Boundary review',
-        path: '/dashboard/boundary-review/:communityId',
+        path: '/dashboard/towns/:townId/boundary-review',
         icon: '◌',
         needsTown: true,
         keywords: ['boundaries', 'geometry'],
       },
       {
         label: 'Address review',
-        path: '/dashboard/directory-address-review/:communityId',
+        path: '/dashboard/towns/:townId/directory-address-review',
         icon: '⚑',
         needsTown: true,
         keywords: ['listings', 'addresses', 'local evaluation'],
       },
       {
         label: 'Identity review',
-        path: '/dashboard/directory-identity-review/:communityId',
+        path: '/dashboard/towns/:townId/directory-identity-review',
         icon: '⚑',
         needsTown: true,
         keywords: ['listings', 'identity'],
       },
       {
         label: 'Link review',
-        path: '/dashboard/directory-link-review/:communityId',
+        path: '/dashboard/towns/:townId/directory-link-review',
         icon: '⚑',
         needsTown: true,
         keywords: ['listings', 'links', 'urls'],
       },
       {
         label: 'Duplicate review',
-        path: '/dashboard/directory-duplicates/:communityId',
+        path: '/dashboard/towns/:townId/directory-duplicates',
         icon: '⚑',
         needsTown: true,
         keywords: ['listings', 'duplicates', 'merge'],
       },
       {
         label: 'Listing reports',
-        path: '/dashboard/directory-listing-reports/:communityId',
+        path: '/dashboard/towns/:townId/directory-listing-reports',
         icon: '⚑',
         needsTown: true,
         keywords: ['listings', 'reports', 'complaints'],
       },
       {
         label: 'Listing suppressions',
-        path: '/dashboard/directory-listing-suppressions/:communityId',
+        path: '/dashboard/towns/:townId/directory-listing-suppressions',
         icon: '⚑',
         needsTown: true,
         keywords: ['listings', 'suppressions', 'hidden'],
@@ -428,7 +453,8 @@ const detailLabel = (segment: string): string => {
  */
 export function breadcrumbsFor(
   url: string,
-  nav: readonly OwnerNavGroup[] = OWNER_NAV
+  nav: readonly OwnerNavGroup[] = OWNER_NAV,
+  town?: { id: string; name: string } | null
 ): OwnerBreadcrumb[] {
   const entry = findNavEntry(url, nav);
   if (!entry) {
@@ -444,6 +470,15 @@ export function breadcrumbsFor(
   }
 
   const crumbs: OwnerBreadcrumb[] = [{ label: group.label }];
+  if (leaf.needsTown && town && !leaf.path.endsWith('/overview')) {
+    crumbs.push({
+      label: town.name,
+      path: resolveLeafPath(
+        { ...leaf, path: '/dashboard/towns/:townId/overview' },
+        town.id
+      ) as string,
+    });
+  }
   const pageUrl = `/${segmentsOf(path).slice(0, leafDepth).join('/')}`;
   crumbs.push({ label: leaf.label, path: detail.length ? pageUrl : undefined });
   detail.forEach((segment, index) => {
@@ -473,11 +508,40 @@ export function filterNavByPermission(
     .filter((group) => group.leaves.length > 0);
 }
 
-/** Leaves the owner can navigate to directly (no town needed). */
+/** A leaf's real route: `:townId` filled in, or null while no town is picked. */
+export function resolveLeafPath(
+  leaf: OwnerNavLeaf,
+  townId: string | null | undefined
+): string | null {
+  if (!leaf.needsTown) {
+    return leaf.path;
+  }
+  return townId
+    ? leaf.path.replace(':townId', encodeURIComponent(townId))
+    : null;
+}
+
+/**
+ * Fill in each entry's `href`. Town pages get the selected town's id; with no
+ * town they point at the picker and carry a `hint` so the UI can say why.
+ */
+export function resolveNavEntries(
+  entries: readonly OwnerNavEntry[],
+  townId: string | null | undefined
+): OwnerNavEntry[] {
+  return entries.map((entry) => {
+    const href = resolveLeafPath(entry.leaf, townId);
+    return href === null
+      ? { ...entry, href: TOWNS_PATH, hint: PICK_A_TOWN }
+      : { ...entry, href };
+  });
+}
+
+/** Leaves the owner can navigate to (town pages resolve via the context). */
 export function navigableEntries(
   nav: readonly OwnerNavGroup[] = OWNER_NAV
 ): OwnerNavEntry[] {
-  return flattenNav(nav).filter((entry) => !entry.leaf.needsTown);
+  return flattenNav(nav);
 }
 
 /** Score a query against a haystack: lower is better, -1 for no match. */

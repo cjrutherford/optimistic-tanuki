@@ -1,6 +1,11 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { OwnerNavGroup } from '../owner-nav';
+import {
+  OwnerNavGroup,
+  OwnerNavLeaf,
+  PICK_A_TOWN,
+  resolveLeafPath,
+} from '../owner-nav';
 
 /**
  * Grouped, collapsible navigation generated from `OWNER_NAV`. It is docked
@@ -60,13 +65,18 @@ import { OwnerNavGroup } from '../owner-nav';
             <li>
               <a
                 class="link"
-                [routerLink]="leaf.path"
+                [routerLink]="hrefOf(leaf)"
                 [class.link--active]="leaf.path === activePath()"
+                [class.link--disabled]="needsPick(leaf)"
                 [attr.aria-current]="leaf.path === activePath() ? 'page' : null"
-                (click)="selected.emit(leaf.path)"
+                [attr.aria-disabled]="needsPick(leaf) ? 'true' : null"
+                (click)="selected.emit(hrefOf(leaf))"
               >
                 <span class="icon" aria-hidden="true">{{ leaf.icon }}</span>
                 {{ leaf.label }}
+                @if (needsPick(leaf)) {
+                <span class="hint">{{ pickHint }}</span>
+                }
               </a>
             </li>
             }
@@ -180,6 +190,16 @@ import { OwnerNavGroup } from '../owner-nav';
         font-weight: 700;
       }
 
+      .link--disabled {
+        opacity: 0.6;
+      }
+
+      .hint {
+        margin-left: auto;
+        font-size: var(--type-small, 0.8rem);
+        font-style: italic;
+      }
+
       .icon {
         width: 1.25em;
         text-align: center;
@@ -195,6 +215,9 @@ import { OwnerNavGroup } from '../owner-nav';
 export class OwnerSidebarComponent {
   readonly groups = input.required<readonly OwnerNavGroup[]>();
   readonly activePath = input<string | undefined>();
+  /** Selected town; fills `:townId` in town pages. */
+  readonly townId = input<string | null>(null);
+  readonly pickHint = PICK_A_TOWN;
   readonly open = input(true);
   readonly mode = input<'docked' | 'drawer'>('docked');
 
@@ -211,6 +234,16 @@ export class OwnerSidebarComponent {
       group.leaves.some((leaf) => leaf.path === active)
     )?.id;
   });
+
+  /** Where a leaf goes: its route, or the picker while no town is chosen. */
+  hrefOf(leaf: OwnerNavLeaf): string {
+    return resolveLeafPath(leaf, this.townId()) ?? '/dashboard/towns';
+  }
+
+  /** A town page with no town selected: shown disabled, links to the picker. */
+  needsPick(leaf: OwnerNavLeaf): boolean {
+    return !!leaf.needsTown && !this.townId();
+  }
 
   isExpanded(group: OwnerNavGroup): boolean {
     return this.overrides()[group.id] ?? group.id === this.activeGroupId();

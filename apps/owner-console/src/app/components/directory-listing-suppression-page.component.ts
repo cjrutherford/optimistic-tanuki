@@ -97,7 +97,7 @@ export class DirectoryListingSuppressionPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
-      this.town = params.get('communityId') ?? '';
+      this.town = params.get('townId') ?? params.get('communityId') ?? '';
       this.form = null;
       this.liftForm = null;
       this.hits = [];

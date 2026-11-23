@@ -19,7 +19,7 @@ type Queue = { requests: LinkRequest[]; nextCursor: string | null };
   standalone: true,
   imports: [CommonModule, RouterLink, CardComponent],
   template: ` <section aria-labelledby="directory-link-title">
-    <a routerLink="/dashboard/community-ops">← Community operations</a>
+    <a routerLink="/dashboard/towns">← All towns</a>
     <h2 id="directory-link-title">Business page link reviews</h2>
     <p>
       Compare the directory listing and the business page with independent
@@ -120,7 +120,7 @@ export class DirectoryLinkReviewPageComponent {
     this.route.paramMap
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((params) => {
-        this.town = params.get('communityId') || '';
+        this.town = params.get('townId') ?? (params.get('communityId') || '');
         this.refresh();
       });
   }

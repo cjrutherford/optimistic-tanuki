@@ -49,48 +49,6 @@ export const appRoutes: Route[] = [
     canActivateChild: [ownerAccessGuard],
     children: [
       {
-        path: 'directory-link-review/:communityId',
-        loadComponent: () =>
-          import('./components/directory-link-review-page.component').then(
-            (m) => m.DirectoryLinkReviewPageComponent
-          ),
-      },
-      {
-        path: 'directory-address-review/:communityId',
-        loadComponent: () =>
-          import('./components/directory-address-review-page.component').then(
-            (m) => m.DirectoryAddressReviewPageComponent
-          ),
-      },
-      {
-        path: 'directory-identity-review/:communityId',
-        loadComponent: () =>
-          import('./components/directory-identity-review-page.component').then(
-            (m) => m.DirectoryIdentityReviewPageComponent
-          ),
-      },
-      {
-        path: 'directory-listing-suppressions/:communityId',
-        loadComponent: () =>
-          import(
-            './components/directory-listing-suppression-page.component'
-          ).then((m) => m.DirectoryListingSuppressionPageComponent),
-      },
-      {
-        path: 'directory-listing-reports/:communityId',
-        loadComponent: () =>
-          import('./components/directory-listing-report-page.component').then(
-            (m) => m.DirectoryListingReportPageComponent
-          ),
-      },
-      {
-        path: 'directory-duplicates/:communityId',
-        loadComponent: () =>
-          import('./components/directory-duplicate-review-page.component').then(
-            (m) => m.DirectoryDuplicateReviewPageComponent
-          ),
-      },
-      {
         path: 'directory-rights',
         loadComponent: () =>
           import('./components/directory-rights-page.component').then(
@@ -139,20 +97,112 @@ export const appRoutes: Route[] = [
             (m) => m.DirectoryAcquisitionRunsPageComponent
           ),
       },
+      // Town picker, then every per-town page under /dashboard/towns/:townId.
       {
-        path: 'boundary-review/:communityId',
+        path: 'towns',
+        loadComponent: () =>
+          import('./components/towns/towns-picker.component').then(
+            (m) => m.TownsPickerComponent
+          ),
+      },
+      {
+        path: 'towns/:townId',
+        redirectTo: '/dashboard/towns/:townId/overview',
+        pathMatch: 'full',
+      },
+      {
+        path: 'towns/:townId/overview',
+        loadComponent: () =>
+          import('./components/towns/town-overview.component').then(
+            (m) => m.TownOverviewComponent
+          ),
+      },
+      {
+        path: 'towns/:townId/communities',
+        loadComponent: () =>
+          import('./components/towns/town-communities.component').then(
+            (m) => m.TownCommunitiesComponent
+          ),
+      },
+      {
+        path: 'towns/:townId/boundary-review',
         loadComponent: () =>
           import('./components/boundary-review-page.component').then(
             (m) => m.BoundaryReviewPageComponent
           ),
       },
       {
-        path: 'community-ops',
+        path: 'towns/:townId/directory-address-review',
         loadComponent: () =>
-          import('./components/community-ops-workspace.component').then(
-            (m) => m.CommunityOpsWorkspaceComponent
+          import('./components/directory-address-review-page.component').then(
+            (m) => m.DirectoryAddressReviewPageComponent
           ),
       },
+      {
+        path: 'towns/:townId/directory-identity-review',
+        loadComponent: () =>
+          import('./components/directory-identity-review-page.component').then(
+            (m) => m.DirectoryIdentityReviewPageComponent
+          ),
+      },
+      {
+        path: 'towns/:townId/directory-link-review',
+        loadComponent: () =>
+          import('./components/directory-link-review-page.component').then(
+            (m) => m.DirectoryLinkReviewPageComponent
+          ),
+      },
+      {
+        path: 'towns/:townId/directory-duplicates',
+        loadComponent: () =>
+          import('./components/directory-duplicate-review-page.component').then(
+            (m) => m.DirectoryDuplicateReviewPageComponent
+          ),
+      },
+      {
+        path: 'towns/:townId/directory-listing-reports',
+        loadComponent: () =>
+          import('./components/directory-listing-report-page.component').then(
+            (m) => m.DirectoryListingReportPageComponent
+          ),
+      },
+      {
+        path: 'towns/:townId/directory-listing-suppressions',
+        loadComponent: () =>
+          import(
+            './components/directory-listing-suppression-page.component'
+          ).then((m) => m.DirectoryListingSuppressionPageComponent),
+      },
+      // Old per-page URLs keep working: the town id moves into the new path.
+      {
+        path: 'boundary-review/:townId',
+        redirectTo: '/dashboard/towns/:townId/boundary-review',
+      },
+      {
+        path: 'directory-address-review/:townId',
+        redirectTo: '/dashboard/towns/:townId/directory-address-review',
+      },
+      {
+        path: 'directory-identity-review/:townId',
+        redirectTo: '/dashboard/towns/:townId/directory-identity-review',
+      },
+      {
+        path: 'directory-link-review/:townId',
+        redirectTo: '/dashboard/towns/:townId/directory-link-review',
+      },
+      {
+        path: 'directory-duplicates/:townId',
+        redirectTo: '/dashboard/towns/:townId/directory-duplicates',
+      },
+      {
+        path: 'directory-listing-reports/:townId',
+        redirectTo: '/dashboard/towns/:townId/directory-listing-reports',
+      },
+      {
+        path: 'directory-listing-suppressions/:townId',
+        redirectTo: '/dashboard/towns/:townId/directory-listing-suppressions',
+      },
+      { path: 'community-ops', redirectTo: '/dashboard/towns' },
       {
         path: 'home',
         loadComponent: () =>

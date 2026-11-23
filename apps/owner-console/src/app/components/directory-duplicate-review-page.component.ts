@@ -198,7 +198,7 @@ export class DirectoryDuplicateReviewPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
-      this.town = params.get('communityId') ?? '';
+      this.town = params.get('townId') ?? params.get('communityId') ?? '';
       this.details = {};
       this.openSample = null;
       this.samples = [];

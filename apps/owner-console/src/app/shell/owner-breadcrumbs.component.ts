@@ -57,5 +57,9 @@ import { breadcrumbsFor } from '../owner-nav';
 })
 export class OwnerBreadcrumbsComponent {
   readonly url = input.required<string>();
-  readonly crumbs = computed(() => breadcrumbsFor(this.url()));
+  /** Selected town; names the town crumb on town pages. */
+  readonly town = input<{ id: string; name: string } | null>(null);
+  readonly crumbs = computed(() =>
+    breadcrumbsFor(this.url(), undefined, this.town())
+  );
 }
