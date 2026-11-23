@@ -1,0 +1,73 @@
+<div class="jobs-page">
+  <ot-owner-page-header
+    title="Directory jobs"
+    description="Re-normalize stored listings against the current rules. A dry run reports what would change and writes nothing."
+  />
+
+  <form class="job-form" (ngSubmit)="start()" aria-label="Start re-normalize">
+    <h2>Re-normalize</h2>
+    <label
+      >Town id (optional)<input
+        name="townId"
+        [(ngModel)]="townId"
+        placeholder="All towns"
+        autocomplete="off"
+    /></label>
+    <label class="check"
+      ><input type="checkbox" name="dryRun" [(ngModel)]="dryRun" /> Dry run
+      (writes nothing)</label
+    >
+    <label *ngIf="!dryRun"
+      >Reason<input
+        name="reason"
+        [(ngModel)]="reason"
+        maxlength="1024"
+        autocomplete="off"
+    /></label>
+    <p class="hint" *ngIf="!dryRun">
+      A real run rewrites listings and asks you to type {{ phrase }}.
+    </p>
+    <button type="submit" [disabled]="starting() || polling()">
+      {{
+        starting() ? 'Starting…' : dryRun ? 'Start dry run' : 'Start real run'
+      }}
+    </button>
+    <p class="error" role="alert" *ngIf="actionError()">{{ actionError() }}</p>
+  </form>
+
+  <section class="job" *ngIf="job() as j" aria-label="Job status">
+    <h2>Job {{ j.dryRun ? '(dry run)' : '(real run)' }}</h2>
+    <p class="status" role="status">
+      {{ j.status }}<ng-container *ngIf="polling()"> · checking…</ng-container>
+    </p>
+    <dl>
+      <div>
+        <dt>Scans</dt>
+        <dd>{{ j.counts.scansDone }} of {{ j.counts.scansTotal }}</dd>
+      </div>
+      <div>
+        <dt>Rows scanned</dt>
+        <dd>{{ j.counts.scanned }}</dd>
+      </div>
+      <div>
+        <dt>{{ j.dryRun ? 'Would update' : 'Updated' }}</dt>
+        <dd>{{ j.counts.updated }}</dd>
+      </div>
+      <div>
+        <dt>Skipped</dt>
+        <dd>{{ j.counts.skipped }}</dd>
+      </div>
+    </dl>
+    <p class="error" *ngIf="j.error">{{ j.error }}</p>
+    <ot-owner-state
+      *ngIf="pollError()"
+      kind="error"
+      [message]="pollError()"
+      (retry)="retryPolling()"
+    />
+    <p class="hint">
+      Job state is kept in memory and is lost if Directory restarts. The audit
+      record is kept.
+    </p>
+  </section>
+</div>

@@ -1,0 +1,70 @@
+<div class="bindings-page">
+  <ot-owner-page-header
+    title="Suspended bindings"
+    description="Reviewed bindings suspended because their source stopped matching. Revalidate one to re-check it against its source."
+  />
+
+  <form class="filter" (ngSubmit)="applyFilter()" aria-label="Filter by town">
+    <label
+      >Town id<input
+        name="townFilter"
+        [(ngModel)]="townFilter"
+        placeholder="All towns"
+        autocomplete="off"
+    /></label>
+    <button type="submit" [disabled]="loading()">Filter</button>
+    <p class="error" *ngIf="filterError()" role="alert">{{ filterError() }}</p>
+  </form>
+
+  <p class="status" role="status" *ngIf="notice()">{{ notice() }}</p>
+  <p class="error" role="alert" *ngIf="actionError()">{{ actionError() }}</p>
+
+  <ot-owner-state *ngIf="loading() && !bindings().length" kind="loading" />
+  <ot-owner-state
+    *ngIf="error()"
+    kind="error"
+    [message]="error()"
+    (retry)="load(false)"
+  />
+  <ot-owner-state
+    *ngIf="!loading() && !error() && !bindings().length"
+    kind="empty"
+    message="No suspended bindings."
+  />
+
+  <ng-container *ngIf="bindings().length">
+    <p class="total">{{ total() }} suspended in total</p>
+    <ul class="binding-list">
+      <li class="binding" *ngFor="let b of bindings()">
+        <div>
+          <strong>{{ b.townName ?? b.townId }}</strong>
+          <small
+            >Listing {{ b.listing.scanId }} · row
+            {{ b.listing.sourceFileRowNumber }}</small
+          >
+          <small
+            >{{ b.stateCause ?? 'No cause recorded' }}
+            <ng-container *ngIf="b.suspendedAt"
+              >· suspended {{ b.suspendedAt }}</ng-container
+            ></small
+          >
+          <a [routerLink]="['/dashboard/towns', b.townId, 'boundary-review']"
+            >Town boundary</a
+          >
+        </div>
+        <button type="button" [disabled]="!!busyId()" (click)="revalidate(b)">
+          {{ busyId() === b.id ? 'Revalidating…' : 'Revalidate' }}
+        </button>
+      </li>
+    </ul>
+    <button
+      type="button"
+      class="secondary"
+      *ngIf="nextCursor()"
+      [disabled]="loading()"
+      (click)="loadMore()"
+    >
+      {{ loading() ? 'Loading…' : 'Load more' }}
+    </button>
+  </ng-container>
+</div>

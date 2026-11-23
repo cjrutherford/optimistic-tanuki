@@ -91,6 +91,20 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'directory-suspended-bindings',
+        loadComponent: () =>
+          import(
+            './components/directory-suspended-bindings-page.component'
+          ).then((m) => m.DirectorySuspendedBindingsPageComponent),
+      },
+      {
+        path: 'directory-jobs',
+        loadComponent: () =>
+          import('./components/directory-jobs-page.component').then(
+            (m) => m.DirectoryJobsPageComponent
+          ),
+      },
+      {
         path: 'directory-runs',
         loadComponent: () =>
           import('./components/directory-acquisition-runs-page.component').then(

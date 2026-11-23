@@ -364,4 +364,58 @@ export class DirectoryAdminService {
       observe: 'response',
     });
   }
+
+  // Taxonomy mapping versions
+  deactivateTaxonomyMapping<T>(versionId: string, body: Body): Observable<T> {
+    return this.http.post<T>(
+      `${this.api}/directory/taxonomy/mappings/${encodeURIComponent(
+        versionId
+      )}/deactivate`,
+      body
+    );
+  }
+  activateTaxonomyMapping<T>(versionId: string, body: Body): Observable<T> {
+    return this.http.post<T>(
+      `${this.api}/directory/taxonomy/mappings/${encodeURIComponent(
+        versionId
+      )}/activate`,
+      body
+    );
+  }
+
+  // Suspended reviewed bindings
+  listSuspendedBindings<T>(
+    options: { townId?: string; cursor?: string; limit?: number } = {}
+  ): Observable<T> {
+    const q = new URLSearchParams({ state: 'suspended' });
+    if (options.townId) q.set('townId', options.townId);
+    if (options.cursor) q.set('cursor', options.cursor);
+    if (options.limit) q.set('limit', String(options.limit));
+    return this.http.get<T>(`${this.api}/directory/reviewed-bindings?${q}`);
+  }
+  revalidateBinding<T>(id: string): Observable<T> {
+    return this.http.post<T>(
+      `${this.api}/directory/reviewed-bindings/${id}/revalidate`,
+      {}
+    );
+  }
+
+  // Boundary lock
+  getBoundaryLock<T>(townId: string): Observable<T> {
+    return this.http.get<T>(`${this.town(townId)}/boundary-lock`);
+  }
+  lockBoundary<T>(townId: string, body: Body): Observable<T> {
+    return this.http.post<T>(`${this.town(townId)}/boundary-lock`, body);
+  }
+  unlockBoundary<T>(townId: string, body: Body): Observable<T> {
+    return this.http.post<T>(`${this.town(townId)}/boundary-unlock`, body);
+  }
+
+  // Maintenance jobs
+  startRenormalizeJob<T>(body: Body): Observable<T> {
+    return this.http.post<T>(`${this.api}/directory/jobs/renormalize`, body);
+  }
+  getJob<T>(id: string): Observable<T> {
+    return this.http.get<T>(`${this.api}/directory/jobs/${id}`);
+  }
 }

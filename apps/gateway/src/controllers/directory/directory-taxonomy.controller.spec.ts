@@ -68,6 +68,8 @@ describe('DirectoryTaxonomyController', () => {
     for (const name of [
       'mappings',
       'install',
+      'deactivate',
+      'activate',
       'cases',
       'raise',
       'caseDetail',
@@ -137,6 +139,51 @@ describe('DirectoryTaxonomyController', () => {
     await expect(
       controller.install({ version: '../x', activate: true }, req)
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('deactivates and activates a mapping version with the session actor, and carries the refusal detail', async () => {
+    let spy = reply(200, { replayed: false, version: { id: 'v1' } });
+    await controller.deactivate('v1', { reason: ' rolled back ' }, req);
+    expect(call(spy).url).toBe(
+      'http://directory:3120/internal/taxonomy/mappings/v1/deactivate'
+    );
+    expect(JSON.parse(call(spy).init.body as string)).toEqual({
+      actorId: actor,
+      reason: 'rolled back',
+    });
+    for (const bad of [{}, { reason: ' ' }, { reason: 'r', actorId: 'evil' }])
+      await expect(controller.deactivate('v1', bad, req)).rejects.toThrow(
+        BadRequestException
+      );
+    await expect(
+      controller.deactivate('../x', { reason: 'r' }, req)
+    ).rejects.toThrow(BadRequestException);
+
+    spy.mockRestore();
+    spy = reply(200, { replayed: true, version: { id: 'v1' } });
+    await controller.activate('v1', undefined, req);
+    expect(JSON.parse(call(spy).init.body as string)).toEqual({
+      actorId: actor,
+    });
+    await expect(
+      controller.activate('v1', { reason: ' ' }, req)
+    ).rejects.toThrow(BadRequestException);
+
+    spy.mockRestore();
+    reply(409, { code: 'invalid_state', detail: 'unmapped_policy_excludes' });
+    await expect(
+      controller.deactivate('v1', { reason: 'r' }, req)
+    ).rejects.toMatchObject({
+      response: {
+        code: 'invalid_state',
+        detail: 'unmapped_policy_excludes',
+      },
+    });
+    jest.restoreAllMocks();
+    reply(409, { code: 'invalid_state', detail: '<script>' });
+    await expect(
+      controller.deactivate('v1', { reason: 'r' }, req)
+    ).rejects.not.toHaveProperty('response.detail');
   });
 
   it('refuses malformed decisions before calling Directory', async () => {

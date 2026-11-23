@@ -22,6 +22,7 @@ import {
 import { DirectoryExportsController } from './directory-exports.controller';
 import { DirectoryOperationsController } from './directory-operations.controller';
 import { DirectoryTaxonomyController } from './directory-taxonomy.controller';
+import { DirectoryAdminController } from './directory-admin.controller';
 import { DirectoryRunsController } from './directory-runs.controller';
 import {
   DirectoryListingReportController,
@@ -103,6 +104,16 @@ const rightsRoutes: MatrixRoute[] = [
 const taxonomyRoutes: MatrixRoute[] = [
   { method: 'GET', path: '/directory/taxonomy/mappings' },
   { method: 'POST', path: '/directory/taxonomy/mappings/install', body: {} },
+  {
+    method: 'POST',
+    path: '/directory/taxonomy/mappings/v1/deactivate',
+    body: {},
+  },
+  {
+    method: 'POST',
+    path: '/directory/taxonomy/mappings/v1/activate',
+    body: {},
+  },
   { method: 'GET', path: '/directory/taxonomy/cases' },
   { method: 'POST', path: '/directory/taxonomy/cases', body: {} },
   { method: 'GET', path: `/directory/taxonomy/cases/${rightsId}` },
@@ -158,9 +169,35 @@ const runsRoutes: MatrixRoute[] = [
   { method: 'POST', path: `/directory/runs/${rightsId}/resume`, body: {} },
   { method: 'POST', path: `/directory/runs/${rightsId}/retry`, body: {} },
 ];
+const adminRoutes: MatrixRoute[] = [
+  { method: 'GET', path: '/directory/reviewed-bindings' },
+  {
+    method: 'POST',
+    path: `/directory/reviewed-bindings/${rightsId}/revalidate`,
+    body: {},
+  },
+  { method: 'GET', path: `/directory/towns/${rightsId}/boundary-lock` },
+  {
+    method: 'POST',
+    path: `/directory/towns/${rightsId}/boundary-lock`,
+    body: {},
+  },
+  {
+    method: 'POST',
+    path: `/directory/towns/${rightsId}/boundary-unlock`,
+    body: {},
+  },
+  { method: 'POST', path: '/directory/jobs/renormalize', body: {} },
+  { method: 'GET', path: `/directory/jobs/${rightsId}` },
+];
+// directory.review covers the lock routes; the rest of adminRoutes need directory.operate.
+const adminOperateRoutes = adminRoutes.filter(
+  (r) => !r.path.includes('/boundary-')
+);
 const reviewRoutes: MatrixRoute[] = [
   ...rightsRoutes,
   ...taxonomyRoutes,
+  ...adminRoutes,
   ...runsRoutes,
   ...exportRoutes,
   ...operationsRoutes,
@@ -303,6 +340,7 @@ describe('directory authentication and Owner Console scope matrix', () => {
         DirectoryRightsCasesController,
         DirectoryWithdrawalsController,
         DirectoryTaxonomyController,
+        DirectoryAdminController,
         DirectoryRunsController,
         DirectoryExportsController,
         DirectoryOperationsController,
@@ -462,6 +500,14 @@ describe('directory authentication and Owner Console scope matrix', () => {
 
   it.each(operationsRoutes.map((r) => [r.method + ' ' + r.path, r] as const))(
     'a review-only owner-console session gets 403 on operations route %s',
+    async (_n, route) => {
+      const res = await call(route, { token: token(reviewOnly), scope: true });
+      expect(res.status).toBe(403);
+    }
+  );
+
+  it.each(adminOperateRoutes.map((r) => [r.method + ' ' + r.path, r] as const))(
+    'a review-only owner-console session gets 403 on admin operate route %s',
     async (_n, route) => {
       const res = await call(route, { token: token(reviewOnly), scope: true });
       expect(res.status).toBe(403);

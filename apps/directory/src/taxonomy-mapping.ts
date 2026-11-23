@@ -7,6 +7,7 @@ import {
   type TaxonomyMappingList,
   type TaxonomyMappingVersion,
 } from '../../../libs/social/contracts/src/lib/directory';
+import { recordOperatorEvent } from './operator-audit';
 import { IDEMPOTENCY_CONFLICT, ReviewConflictError } from './review-version';
 import {
   findTaxonomyMapping,
@@ -324,6 +325,107 @@ export async function installTaxonomyMapping(
     ]);
     return { replayed, version: toVersion(row) };
   });
+}
+
+export interface MappingActivationResult {
+  /** True when the version was already in the requested state and nothing changed. */
+  replayed: boolean;
+  version: TaxonomyMappingVersion;
+}
+
+/**
+ * Takes a mapping version out of service. With no active mapping, classification falls back to the stored (legacy)
+ * category, which is exactly what `keep_legacy` says an unmapped listing should do. A version whose policy is
+ * `exclude` says the opposite (a listing the mapping does not know must not be served), so deactivating it would
+ * quietly publish what the policy withholds. That deactivation is refused (409 `invalid_state`, detail
+ * `unmapped_policy_excludes`); the owner activates the replacement version, which deactivates this one. Idempotent:
+ * an inactive version is returned unchanged. The audit row is written in the same transaction.
+ */
+export async function deactivateTaxonomyMapping(
+  db: Db,
+  input: { version: string; actorId: string; reason: string }
+): Promise<MappingActivationResult> {
+  if (
+    typeof input.version !== 'string' ||
+    !VERSION_ID.test(input.version) ||
+    !UUID.test(input.actorId) ||
+    typeof input.reason !== 'string' ||
+    !input.reason.trim() ||
+    input.reason.length > 1024
+  )
+    throw Error('Invalid mapping deactivation');
+  return db.transaction(async (q) => {
+    await q.query(
+      `SELECT pg_advisory_xact_lock(hashtext('directory_taxonomy_mapping'))`
+    );
+    const [row] = await q.query(
+      `SELECT id,"unmappedPolicy",active FROM directory_taxonomy_mapping_version WHERE id=$1 FOR UPDATE`,
+      [input.version]
+    );
+    if (!row) throw Error('Mapping not found');
+    let replayed = true;
+    if (row.active === true) {
+      if (row.unmappedPolicy !== 'keep_legacy')
+        throw new ReviewConflictError(
+          'invalid_state',
+          undefined,
+          'unmapped_policy_excludes'
+        );
+      replayed = false;
+      await q.query(
+        `UPDATE directory_taxonomy_mapping_version SET active=false WHERE id=$1`,
+        [input.version]
+      );
+      await recordOperatorEvent(q, {
+        kind: 'taxonomy_mapping',
+        subjectId: input.version,
+        action: 'deactivate',
+        actorId: input.actorId,
+        reason: input.reason.trim(),
+        detail: { unmappedPolicy: row.unmappedPolicy },
+      });
+    }
+    const [after] = await q.query(`${VERSION_SELECT} WHERE v.id=$1`, [
+      input.version,
+    ]);
+    return { replayed, version: toVersion(after) };
+  });
+}
+
+/**
+ * Activates an installed version: the install path with `activate: true` (same hash check, same single-active
+ * rule), then an audit row when it changed anything. A version that was never installed is a 404, not an install.
+ */
+export async function activateTaxonomyMapping(
+  db: Db,
+  input: { version: string; actorId: string; reason?: string }
+): Promise<TaxonomyMappingInstallResult> {
+  if (
+    typeof input.version !== 'string' ||
+    !VERSION_ID.test(input.version) ||
+    !UUID.test(input.actorId)
+  )
+    throw Error('Invalid mapping activation');
+  const [installed] = await db.query(
+    `SELECT 1 FROM directory_taxonomy_mapping_version WHERE id=$1`,
+    [input.version]
+  );
+  if (!installed) throw Error('Mapping not found');
+  const result = await installTaxonomyMapping(db, {
+    version: input.version,
+    activate: true,
+    actorId: input.actorId,
+  });
+  if (!result.replayed)
+    await recordOperatorEvent(db, {
+      kind: 'taxonomy_mapping',
+      subjectId: input.version,
+      action: 'activate',
+      actorId: input.actorId,
+      reason: input.reason?.trim() || null,
+      detail: { unmappedPolicy: result.version.unmappedPolicy },
+    });
+  return result;
 }
 
 /** The taxonomy path a stored listing carries, root first, when it has one (most private rows do not). */

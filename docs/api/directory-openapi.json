@@ -178,6 +178,58 @@
         "x-required-permissions": ["directory.export"]
       }
     },
+    "/api/directory/jobs/renormalize": {
+      "post": {
+        "description": "townId is optional; dryRun defaults to true. A real run (dryRun false) needs a reason. One job runs at a time (409 detail job_running). Poll GET jobs/{id}; job state is in memory and does not survive a Directory restart.",
+        "operationId": "DirectoryAdminController_startRenormalize",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start a re-normalize job",
+        "tags": ["DirectoryAdmin"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/jobs/{id}": {
+      "get": {
+        "operationId": "DirectoryAdminController_job",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read a maintenance job status and counts",
+        "tags": ["DirectoryAdmin"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
     "/api/directory/listing-reports/{receipt}": {
       "get": {
         "operationId": "DirectoryListingReportController_status",
@@ -285,6 +337,59 @@
           }
         ],
         "tags": ["DirectoryOperations"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/reviewed-bindings": {
+      "get": {
+        "description": "Only state=suspended is supported. Newest suspension first, keyset-paged with limit (1-100) and cursor; total counts every match.",
+        "operationId": "DirectoryAdminController_bindings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List reviewed bindings by state",
+        "tags": ["DirectoryAdmin"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/reviewed-bindings/{id}/revalidate": {
+      "post": {
+        "description": "Runs the same revalidation the sweep uses and returns the resulting state. 503 when the source stage is not configured.",
+        "operationId": "DirectoryAdminController_revalidate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Revalidate one reviewed binding against its source",
+        "tags": ["DirectoryAdmin"],
         "x-app-scope": "owner-console",
         "x-public": false,
         "x-required-permissions": ["directory.operate"]
@@ -893,6 +998,68 @@
         "x-required-permissions": ["directory.operate"]
       }
     },
+    "/api/directory/taxonomy/mappings/{versionId}/activate": {
+      "post": {
+        "description": "Same rules as install with activate set; an optional reason is recorded in the audit.",
+        "operationId": "DirectoryTaxonomyController_activate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "versionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Activate an installed taxonomy mapping version",
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
+    "/api/directory/taxonomy/mappings/{versionId}/deactivate": {
+      "post": {
+        "description": "Needs a reason. Refused with 409 detail unmapped_policy_excludes when it is the active version and its unmappedPolicy would exclude listings.",
+        "operationId": "DirectoryTaxonomyController_deactivate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "versionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Deactivate a taxonomy mapping version",
+        "tags": ["DirectoryTaxonomy"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.operate"]
+      }
+    },
     "/api/directory/taxonomy/runs": {
       "get": {
         "operationId": "DirectoryTaxonomyController_runs",
@@ -1477,6 +1644,96 @@
           }
         ],
         "tags": ["DirectoryAddressReview"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/boundary-lock": {
+      "get": {
+        "operationId": "DirectoryAdminController_lockState",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read whether a town boundary is locked",
+        "tags": ["DirectoryAdmin"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      },
+      "post": {
+        "description": "Needs a reason and a verified current boundary. 409 detail already_locked or no_verified_boundary. Recovery keeps the lock.",
+        "operationId": "DirectoryAdminController_lock",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lock the boundary a town serves now",
+        "tags": ["DirectoryAdmin"],
+        "x-app-scope": "owner-console",
+        "x-public": false,
+        "x-required-permissions": ["directory.review"]
+      }
+    },
+    "/api/directory/towns/{townId}/boundary-unlock": {
+      "post": {
+        "description": "Needs a reason. 409 detail not_locked when there is no lock. Recovery does not recreate a lock that was removed.",
+        "operationId": "DirectoryAdminController_unlock",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "townId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unlock a town boundary and return it to boundary review",
+        "tags": ["DirectoryAdmin"],
         "x-app-scope": "owner-console",
         "x-public": false,
         "x-required-permissions": ["directory.review"]
@@ -2381,6 +2638,9 @@
     },
     {
       "name": "DirectoryAddressReview"
+    },
+    {
+      "name": "DirectoryAdmin"
     },
     {
       "name": "DirectoryBusinessIdentityReview"

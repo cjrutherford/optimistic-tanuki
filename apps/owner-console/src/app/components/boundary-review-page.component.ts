@@ -4,6 +4,7 @@ import { Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
 import { Subject, combineLatest, of } from 'rxjs';
 import { catchError, map, startWith, switchMap } from 'rxjs/operators';
 
@@ -23,6 +24,18 @@ type Candidate = {
     countryCode: string;
     localityType: 'city' | 'town';
   };
+};
+type LockState = {
+  locked: boolean;
+  townName: string | null;
+  lock: {
+    lockedAt: string;
+    version: number;
+    geoid: string;
+    source: 'owner_console' | 'manifest';
+    lockedBy: string | null;
+    reason: string | null;
+  } | null;
 };
 type View = {
   state: 'loading' | 'empty' | 'error' | 'candidate';
@@ -129,6 +142,52 @@ type View = {
         >
       </div></otui-card
     >
+    <otui-card
+      ><div class="card-content lock-panel" aria-live="polite">
+        <h2>Boundary lock</h2>
+        @if (lockLoading) {
+        <p>Checking the lock…</p>
+        } @else if (lockError) {
+        <p role="alert">The lock state could not be read.</p>
+        <otui-button variant="secondary" (click)="loadLock()"
+          >Retry</otui-button
+        >
+        } @else if (lockState; as l) { @if (l.locked && l.lock; as k) {
+        <p class="status">Locked</p>
+        <p>
+          The boundary ({{ k.geoid }}) is locked
+          {{
+            k.source === 'manifest' ? 'from a manifest' : 'from this console'
+          }}
+          since {{ k.lockedAt }}. Recovery keeps it. @if (k.reason) { Reason:
+          {{ k.reason }} }
+        </p>
+        <otui-button [disabled]="lockBusy" (click)="unlock()"
+          >Unlock boundary</otui-button
+        >
+        } @else {
+        <p class="status">Not locked</p>
+        <p>
+          Locking pins the verified boundary this town serves now. It needs a
+          verified current boundary.
+        </p>
+        <label for="lock-reason">Reason</label>
+        <input
+          id="lock-reason"
+          type="text"
+          maxlength="1024"
+          autocomplete="off"
+          [value]="lockReason"
+          (input)="lockReason = $any($event.target).value"
+        />
+        <otui-button [disabled]="lockBusy" (click)="lock()"
+          >Lock boundary</otui-button
+        >
+        } } @if (lockMessage) {
+        <p role="status">{{ lockMessage }}</p>
+        }
+      </div></otui-card
+    >
   </section>`,
   styles: [
     `
@@ -204,6 +263,14 @@ type View = {
         align-items: start;
         line-height: 1.5;
       }
+      .lock-panel input {
+        width: 100%;
+        padding: 0.65rem;
+        border: 1px solid currentColor;
+        border-radius: var(--personality-input-radius, 0.3rem);
+        background: transparent;
+        color: inherit;
+      }
       .notice {
         border-inline-start: 3px solid currentColor;
         padding: 0.5rem 1rem;
@@ -216,9 +283,17 @@ export class BoundaryReviewPageComponent {
   private readonly admin = inject(DirectoryAdminService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly confirm = inject(OwnerConfirmService);
   private readonly refreshes = new Subject<void>();
   view: View = { state: 'loading' };
   submitting = false;
+  townId = '';
+  lockState: LockState | null = null;
+  lockLoading = false;
+  lockError = false;
+  lockBusy = false;
+  lockMessage = '';
+  lockReason = '';
   message = '';
   private pendingRequest?: { key: string; id: string };
   constructor() {
@@ -230,6 +305,13 @@ export class BoundaryReviewPageComponent {
         switchMap(([params]) => {
           const id = params.get('townId') ?? params.get('communityId');
           this.view = { state: 'loading' };
+          const valid =
+            !!id &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+              id
+            );
+          this.townId = valid ? id : '';
+          if (valid) this.loadLock();
           if (
             !id ||
             !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -300,6 +382,86 @@ export class BoundaryReviewPageComponent {
           this.submitting = false;
           this.message =
             'Review could not be recorded. Check the source and refresh the candidate before trying again.';
+        },
+      });
+  }
+  loadLock() {
+    if (!this.townId) return;
+    this.lockLoading = true;
+    this.lockError = false;
+    this.admin
+      .getBoundaryLock<LockState>(this.townId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (state) => {
+          this.lockLoading = false;
+          this.lockState = state;
+        },
+        error: () => {
+          this.lockLoading = false;
+          this.lockError = true;
+        },
+      });
+  }
+  async lock() {
+    const name = this.lockState?.townName;
+    const reason = this.lockReason.trim();
+    if (this.lockBusy || !name) return;
+    if (!reason) {
+      this.lockMessage = 'A lock needs a reason.';
+      return;
+    }
+    const { confirmed } = await this.confirm.confirm({
+      level: 'typed',
+      title: 'Lock town boundary',
+      body: `Locking pins the boundary ${name} serves now and keeps it through recovery. Type the town name to continue.`,
+      confirmLabel: 'Lock boundary',
+      typedPhrase: name,
+      destructive: true,
+    });
+    if (!confirmed) return;
+    this.changeLock('lockBoundary', reason, 'Boundary locked.');
+  }
+  async unlock() {
+    if (this.lockBusy) return;
+    const { confirmed, reason } = await this.confirm.confirm({
+      level: 'reason',
+      title: 'Unlock town boundary',
+      body: 'Unlocking returns the town to boundary review. Its boundary-dependent searches stay pending until it is verified again.',
+      confirmLabel: 'Unlock boundary',
+      destructive: true,
+    });
+    if (!confirmed || !reason) return;
+    this.changeLock('unlockBoundary', reason, 'Boundary unlocked.');
+  }
+  private changeLock(
+    call: 'lockBoundary' | 'unlockBoundary',
+    reason: string,
+    done: string
+  ) {
+    this.lockBusy = true;
+    this.lockMessage = '';
+    this.admin[call]<unknown>(this.townId, { reason })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.lockBusy = false;
+          this.lockReason = '';
+          this.lockMessage = done;
+          this.loadLock();
+        },
+        error: (err: { status?: number; error?: { detail?: string } }) => {
+          this.lockBusy = false;
+          const detail = err?.error?.detail;
+          this.lockMessage =
+            detail === 'no_verified_boundary'
+              ? 'This town has no verified current boundary to lock.'
+              : detail === 'already_locked'
+              ? 'The boundary is already locked.'
+              : detail === 'not_locked'
+              ? 'The boundary is not locked.'
+              : 'The lock could not be changed.';
+          if (err?.status === 409) this.loadLock();
         },
       });
   }

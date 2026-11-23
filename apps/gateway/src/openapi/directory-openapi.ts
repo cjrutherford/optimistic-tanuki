@@ -34,6 +34,7 @@ import {
 } from '../controllers/directory/directory-rights.controller';
 import { DirectoryRunsController } from '../controllers/directory/directory-runs.controller';
 import { DirectoryTaxonomyController } from '../controllers/directory/directory-taxonomy.controller';
+import { DirectoryAdminController } from '../controllers/directory/directory-admin.controller';
 
 /** Every Directory controller the gateway mounts. Keep in step with app.module. */
 export const DIRECTORY_CONTROLLERS: Type<unknown>[] = [
@@ -43,6 +44,7 @@ export const DIRECTORY_CONTROLLERS: Type<unknown>[] = [
   DirectoryRightsCasesController,
   DirectoryWithdrawalsController,
   DirectoryTaxonomyController,
+  DirectoryAdminController,
   DirectoryExportsController,
   DirectoryOperationsController,
   DirectoryAddressReviewController,

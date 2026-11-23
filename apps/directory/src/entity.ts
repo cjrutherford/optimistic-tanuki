@@ -1881,3 +1881,24 @@ export class DirectoryOperatingControlEvent {
   @Column({ type: 'integer' }) previousVersion!: number;
   @Column({ type: 'timestamptz', default: () => 'now()' }) at!: Date;
 }
+
+/**
+ * Append-only audit of owner-console operator actions that have no case or run of their own: mapping activation,
+ * boundary locks, binding revalidation and maintenance jobs. `subjectId` is the mapping version id, town id, binding
+ * id or job id, as text.
+ */
+@Entity({ name: 'directory_operator_event' })
+@Index('IDX_directory_operator_event_subject', ['kind', 'subjectId', 'at'])
+export class DirectoryOperatorEvent {
+  @PrimaryGeneratedColumn('uuid') id!: string;
+  @Column({ type: 'varchar', length: 32 }) kind!: string;
+  @Column({ type: 'varchar', length: 100 }) subjectId!: string;
+  @Column({ type: 'varchar', length: 32 }) action!: string;
+  @Column({ type: 'uuid', nullable: true }) actorId!: string | null;
+  @Column({ type: 'text', nullable: true }) reason!: string | null;
+  @Column({ type: 'jsonb', nullable: true }) detail!: Record<
+    string,
+    unknown
+  > | null;
+  @Column({ type: 'timestamptz', default: () => 'now()' }) at!: Date;
+}

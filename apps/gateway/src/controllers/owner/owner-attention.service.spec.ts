@@ -165,4 +165,32 @@ describe('OwnerAttentionService', () => {
       'unavailable'
     );
   });
+
+  it('counts suspended reviewed bindings from the list total, and never reports zero for a bad reply', async () => {
+    process.env['DIRECTORY_LOCAL_EVALUATION'] = 'true';
+    process.env['DIRECTORY_INTERNAL_URL'] = 'http://directory:3120';
+    process.env['DIRECTORY_LOCAL_EVALUATION_SECRET'] = 'x'.repeat(40);
+    process.env['DIRECTORY_BUSINESS_LINK_SECRET'] = 'y'.repeat(40);
+    let reply: unknown = { bindings: [], total: 4, nextCursor: null };
+    fetchSpy.mockImplementation(async (input) =>
+      String(input).includes('reviewed-bindings')
+        ? new Response(JSON.stringify(reply), { status: 200 })
+        : new Response(JSON.stringify({}), { status: 200 })
+    );
+    let report = await build({}).collect({ profileId: 'p' });
+    expect(find(report.items, 'directory.suspendedBindings')).toMatchObject({
+      status: 'ok',
+      count: 4,
+      link: '/dashboard/directory-suspended-bindings',
+    });
+    expect(String(fetchSpy.mock.calls.map((c) => c[0]))).toContain(
+      '/internal/reviewed-bindings?state=suspended&limit=1'
+    );
+    reply = { bindings: [] };
+    report = await build({}).collect({ profileId: 'p' });
+    expect(find(report.items, 'directory.suspendedBindings')).toMatchObject({
+      status: 'unavailable',
+      count: null,
+    });
+  });
 });

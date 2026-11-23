@@ -103,6 +103,7 @@ export const DIRECTORY_DELETION_IDENTITIES = Object.freeze({
   ],
   directory_listing_report: [['decidedById', 'profile']],
   directory_overture_release_candidate: [['decidedBy', 'profile']],
+  directory_operator_event: [['actorId', 'profile']],
 } as const);
 
 function count(rows: unknown): number {
@@ -243,6 +244,9 @@ async function inspect(
       'directory_overture_release_candidate WHERE "decidedBy"=ANY($1::uuid[])',
       [s.profiles]
     ),
+    await one('directory_operator_event WHERE "actorId"=ANY($1::uuid[])', [
+      s.profiles,
+    ]),
   ];
   // Every match of a scope identifier that the exact-domain rules above do not cover.
   // A legacy NULL domain makes the comparison NULL, so the test is IS NOT TRUE rather than NOT.
@@ -339,6 +343,10 @@ async function inspect(
       'directory_overture_release_candidate WHERE "decidedBy"=ANY($1::uuid[]) AND NOT ("decidedBy"=ANY($2::uuid[]))',
       [s.all, s.profiles]
     ),
+    await one(
+      'directory_operator_event WHERE "actorId"=ANY($1::uuid[]) AND NOT ("actorId"=ANY($2::uuid[]))',
+      [s.all, s.profiles]
+    ),
   ];
   const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
   return { remaining: sum(exact), blocked: sum(ambiguous) };
@@ -398,6 +406,10 @@ async function erase(manager: Manager, s: Canonical): Promise<void> {
   );
   await manager.query(
     `UPDATE directory_listing_report SET "decisionNote"=NULL,"decidedById"=NULL WHERE "decidedById"=ANY($1::uuid[])`,
+    [s.profiles]
+  );
+  await manager.query(
+    `UPDATE directory_operator_event SET reason=NULL,"actorId"=NULL WHERE "actorId"=ANY($1::uuid[])`,
     [s.profiles]
   );
   await manager.query(

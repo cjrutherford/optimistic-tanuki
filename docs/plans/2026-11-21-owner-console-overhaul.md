@@ -224,20 +224,49 @@ default host.
 | S6a Daylight mirror      | `a6bc3f1ce` | SD.6 decision log, overrides, per-source health and the source-request queue need civic-briefing commands first |
 | S6b durable registry     | `31db17bba` | migration `AddRegistryDurability1795411571917`                                                                  |
 | S6c fold-in              | `a97abeae5` | only BTO hardware quotes needed moving                                                                          |
-| S6d directory follow-ups | —           | blocked on backend, see below                                                                                   |
+| S6d directory follow-ups | uncommitted | done except the migration, backup and cohort cutover; see below                                                 |
 
-S6d needs directory-service endpoints before any console work:
+S6d is built on all three layers. Open items are listed first.
 
-- Suspended bindings: a list route with `stateCause` and `suspendedAt`, and a
-  resume action that reuses revalidation. Today only an aggregate count exists
-  in readiness output.
-- Mapping deactivate: `POST mappings/:versionId/deactivate`, keeping the
-  `unmappedPolicy` and audit handling. Today activation happens only through
-  install.
-- Boundary lock and unlock routes. Locks are written only by install and
-  recovery, so this has to agree with recovery re-creating locks.
-- Re-normalize exists as `renormalizeScan` with no route or job record. Backup
-  and cohort cutover have no code.
+Open:
+
+- **Migration not generated.** `directory_operator_event` (the generic operator
+  audit table: `kind`, `subjectId`, `action`, `actorId`, `reason`, `detail`,
+  `at`, index `IDX_directory_operator_event_subject` on `kind, subjectId, at`)
+  has an entity and no migration, because no Postgres was reachable to run
+  `typeorm:migration:generate`. Generate it, review the SQL, then run the
+  DB-gated suite `apps/directory/test/owner-boundary-lock.postgres.test.js`,
+  which has not been run.
+- **Revalidation needs configuration.** The directory service reads
+  `DIRECTORY_CONTACT_STAGE_DATABASE_URL`, `DIRECTORY_CONTACT_STAGE_LABEL` and
+  `DIRECTORY_REVIEWED_BINDING_HMAC_KEY` (32+ characters). Compose does not set
+  them, so the revalidate route answers 503 until it does.
+- **Jobs are in memory.** Re-normalize job state does not survive a Directory
+  restart; the console says so and treats a 404 on a known job as final. One job
+  runs at a time (409 `job_running`). Start and finish are audited durably.
+- **Backup and cohort cutover are out of scope.** No code exists for either, and
+  both need a product decision (what is backed up, where, and which cohorts)
+  before an endpoint can be specified.
+
+Done:
+
+- Suspended bindings: `GET /internal/reviewed-bindings?state=suspended`
+  (town filter, keyset cursor, total) and `POST .../:id/revalidate`. Gateway
+  `directory.operate`; attention source `directory.suspendedBindings`; console
+  page "Suspended bindings" (plain confirm).
+- Mapping deactivate and activate: `POST mappings/:versionId/(deactivate|activate)`.
+  Deactivating the only active version is refused (409
+  `unmapped_policy_excludes`) unless its policy is `keep_legacy`. Audited.
+  Console: deactivate asks for a reason, activate a plain confirm.
+- Boundary lock: `GET|POST towns/:id/boundary-lock`, `POST .../boundary-unlock`
+  (gateway `directory.review`). The lock row is the single truth: recovery keeps
+  and re-creates a lock, and unlock deletes the row so recovery does not bring
+  it back. Lock needs a verified current boundary. Console: typed (town name)
+  lock, reason unlock, current state shown.
+- Re-normalize: `POST /internal/jobs/renormalize` (dry run by default; a real
+  run needs a reason) and `GET /internal/jobs/:id`. Console "Directory jobs":
+  real run needs the typed phrase `RENORMALIZE`; status polls with backoff and
+  stops when the job is done, fails repeatedly, or the page closes.
 
 ## 5. Provider login regression
 

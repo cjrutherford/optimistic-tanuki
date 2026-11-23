@@ -112,6 +112,7 @@ import { DirectoryExportsController } from '../controllers/directory/directory-e
 import { DirectoryPublicExportController } from '../controllers/directory/directory-public-export.controller';
 import { DirectoryOperationsController } from '../controllers/directory/directory-operations.controller';
 import { DirectoryTaxonomyController } from '../controllers/directory/directory-taxonomy.controller';
+import { DirectoryAdminController } from '../controllers/directory/directory-admin.controller';
 import { OwnerController } from '../controllers/owner/owner.controller';
 import { OwnerAttentionService } from '../controllers/owner/owner-attention.service';
 import { OwnerHealthService } from '../controllers/owner/owner-health.service';
@@ -302,6 +303,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'directory-taxonomy',
         requiredServices: ['social', 'authentication', 'permissions'],
         value: DirectoryTaxonomyController,
+      },
+      {
+        id: 'directory-admin',
+        requiredServices: ['social', 'authentication', 'permissions'],
+        value: DirectoryAdminController,
       },
       {
         id: 'owner',

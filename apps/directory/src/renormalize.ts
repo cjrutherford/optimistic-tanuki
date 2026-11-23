@@ -122,16 +122,19 @@ export async function renormalizeScan(
 export async function scansNeedingNormalization(
   db: Pick<DataSource, 'query'>,
   limit = 100,
-  version: string = NORMALIZER_VERSION
+  version: string = NORMALIZER_VERSION,
+  /** Only scans targeted at this town. */
+  townId?: string
 ): Promise<string[]> {
   const rows: { scanId: string }[] = await db.query(
     `SELECT c."scanId" FROM directory_overture_private_completion c
       WHERE NOT EXISTS (SELECT 1 FROM directory_overture_private_revocation x WHERE x."scanId"=c."scanId")
         AND EXISTS (SELECT 1 FROM directory_town_scan_target s WHERE s."scanId"=c."scanId"
+              AND ($3::uuid IS NULL OR s."communityId"=$3)
               AND NOT EXISTS (SELECT 1 FROM directory_town_scan_retirement z WHERE z."communityId"=s."communityId" AND z."scanId"=s."scanId"))
         AND NOT EXISTS (SELECT 1 FROM directory_scan_normalization n WHERE n."scanId"=c."scanId" AND n."normalizerVersion"=$2)
       ORDER BY c."scanId" LIMIT $1`,
-    [limit, version]
+    [limit, version, townId ?? null]
   );
   return rows.map((r) => r.scanId);
 }

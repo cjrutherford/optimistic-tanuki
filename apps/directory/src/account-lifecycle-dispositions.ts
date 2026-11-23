@@ -1079,6 +1079,35 @@ const inventory: DirectoryLifecycleInventory = {
       ],
     },
     {
+      table: 'directory_operator_event',
+      entity: 'DirectoryOperatorEvent',
+      subject: 'profile',
+      rule: 'actorId is the operator profile that activated a mapping, locked a boundary, revalidated a binding or started a job. A match on the account or a legacy identifier is ambiguous and blocks.',
+      columns: [
+        {
+          fields: ['actorId'],
+          class: 'identity',
+          domain: 'profile',
+          deletion: 'null-when-domain-matches',
+          export: 'exclude',
+        },
+        {
+          fields: ['reason'],
+          class: 'actor-input',
+          deletion: 'clear',
+          export: 'exclude',
+          note: 'Free text the operator supplied; cleared on events that operator authored.',
+        },
+        {
+          fields: ['id', 'kind', 'subjectId', 'action', 'detail', 'at'],
+          class: 'history',
+          deletion: 'preserve',
+          export: 'exclude',
+          note: 'What was acted on and when; detail holds only machine values (outcomes, counts, hashes), never operator text.',
+        },
+      ],
+    },
+    {
       table: 'directory_listing_report',
       entity: 'DirectoryListingReport',
       subject: 'profile',

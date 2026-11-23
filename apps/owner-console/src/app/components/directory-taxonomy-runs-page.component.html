@@ -33,6 +33,19 @@
       <li>
         {{ v.id }} · {{ v.rowCount }} entries ·
         {{ v.active ? 'active' : 'inactive' }}
+        @if (v.active) {
+        <button
+          type="button"
+          [disabled]="busy"
+          (click)="deactivateMapping(v.id)"
+        >
+          Deactivate
+        </button>
+        } @else {
+        <button type="button" [disabled]="busy" (click)="activateMapping(v.id)">
+          Activate
+        </button>
+        }
       </li>
       }
     </ul>

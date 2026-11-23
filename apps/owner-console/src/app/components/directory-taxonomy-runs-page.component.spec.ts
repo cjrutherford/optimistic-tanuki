@@ -5,6 +5,11 @@ import {
 } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
+import {
+  OwnerConfirmStub,
+  createOwnerConfirmStub,
+} from './owner-confirm.testing';
 import {
   DirectoryTaxonomyRunsPageComponent,
   TAXONOMY_POLL_MS,
@@ -72,8 +77,10 @@ describe('DirectoryTaxonomyRunsPageComponent', () => {
   let http: HttpTestingController;
   let component: DirectoryTaxonomyRunsPageComponent;
 
+  let confirmStub: OwnerConfirmStub;
   beforeEach(async () => {
     jest.useFakeTimers();
+    confirmStub = createOwnerConfirmStub();
     let n = 0;
     Object.defineProperty(globalThis, 'crypto', {
       configurable: true,
@@ -90,6 +97,7 @@ describe('DirectoryTaxonomyRunsPageComponent', () => {
       ],
       providers: [
         { provide: API_BASE_URL, useValue: 'http://localhost:3000/api' },
+        { provide: OwnerConfirmService, useValue: confirmStub },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(DirectoryTaxonomyRunsPageComponent);
@@ -220,5 +228,49 @@ describe('DirectoryTaxonomyRunsPageComponent', () => {
     req.flush({ replayed: true, version: mappings.versions[0] });
     http.expectOne(`${base}/mappings`).flush(mappings);
     expect(component.message).toContain('already installed');
+  });
+
+  it('deactivates a mapping version with a reason confirmation', async () => {
+    http.expectOne(runsUrl).flush({ runs: [] });
+    confirmStub.confirm.mockResolvedValue({ confirmed: true, reason: 'bad' });
+    await component.deactivateMapping('v1');
+    expect(confirmStub.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'reason' })
+    );
+    const req = http.expectOne(`${base}/mappings/v1/deactivate`);
+    expect(req.request.body).toEqual({ reason: 'bad' });
+    req.flush({});
+    http.expectOne(`${base}/mappings`).flush(mappings);
+    expect(component.message).toContain('deactivated');
+  });
+
+  it('explains when the only active version cannot be deactivated', async () => {
+    http.expectOne(runsUrl).flush({ runs: [] });
+    confirmStub.confirm.mockResolvedValue({ confirmed: true, reason: 'bad' });
+    await component.deactivateMapping('v1');
+    http
+      .expectOne(`${base}/mappings/v1/deactivate`)
+      .flush(
+        { code: 'invalid_state', detail: 'unmapped_policy_excludes' },
+        { status: 409, statusText: 'Conflict' }
+      );
+    expect(component.message).toContain('only active version');
+  });
+
+  it('activates a mapping version with a plain confirmation', async () => {
+    http.expectOne(runsUrl).flush({ runs: [] });
+    await component.activateMapping('v1');
+    expect(confirmStub.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'plain' })
+    );
+    http.expectOne(`${base}/mappings/v1/activate`).flush({});
+    http.expectOne(`${base}/mappings`).flush(mappings);
+  });
+
+  it('does nothing when the deactivation is cancelled', async () => {
+    http.expectOne(runsUrl).flush({ runs: [] });
+    confirmStub.confirm.mockResolvedValue({ confirmed: false });
+    await component.deactivateMapping('v1');
+    http.expectNone(`${base}/mappings/v1/deactivate`);
   });
 });

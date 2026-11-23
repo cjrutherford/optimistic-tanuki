@@ -301,6 +301,12 @@ export class OwnerAttentionService {
         () => this.failedTaxonomyRuns()
       ),
       run(
+        'directory.suspendedBindings',
+        'Suspended reviewed bindings',
+        '/dashboard/directory-suspended-bindings',
+        () => this.suspendedBindings()
+      ),
+      run(
         'daylight.takedowns',
         'Daylight takedown notices received',
         '/dashboard/daylight',
@@ -452,6 +458,18 @@ export class OwnerAttentionService {
       // Only the newest page of runs is read; older failures may sit beyond it.
       ...(all.length >= PAGE_LIMIT ? { capped: true } : {}),
     };
+  }
+
+  private async suspendedBindings(): Promise<Reading> {
+    const body = (await this.directory(
+      '/internal/reviewed-bindings?state=suspended&limit=1',
+      'DIRECTORY_LOCAL_EVALUATION_SECRET'
+    )) as { total?: unknown } | null;
+    const total = body?.total;
+    if (typeof total !== 'number' || !Number.isSafeInteger(total) || total < 0)
+      throw new SourceError('Unexpected reply');
+    // The list reports the exact total, so nothing is capped; its oldest row is not read.
+    return { count: total, oldest: null };
   }
 
   // ---- directory ------------------------------------------------------------

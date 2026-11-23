@@ -18,6 +18,14 @@ export interface TaxonomyRouteChecks {
     activate: boolean;
     actorId: string;
   }): Promise<unknown>;
+  taxonomyDeactivate(
+    version: string,
+    v: { actorId: string; reason: string }
+  ): Promise<unknown>;
+  taxonomyActivate(
+    version: string,
+    v: { actorId: string; reason?: string }
+  ): Promise<unknown>;
   taxonomyCases(o: {
     status?: string;
     townId?: string;
@@ -94,10 +102,11 @@ export async function handleTaxonomyRoute(
   if (!req.url?.startsWith('/internal/taxonomy/')) return false;
   const url = new URL(req.url, 'http://localhost');
   const m = url.pathname.match(
-    /^\/internal\/taxonomy\/(mappings(?:\/(install))?|cases(?:\/([0-9a-f-]{36})(?:\/(decisions|dismiss|undo))?)?|runs(?:\/([0-9a-f-]{36})(?:\/(cancel|rollback))?)?)$/
+    /^\/internal\/taxonomy\/(mappings(?:\/(install)|\/([A-Za-z0-9][A-Za-z0-9._-]{0,99})\/(deactivate|activate))?|cases(?:\/([0-9a-f-]{36})(?:\/(decisions|dismiss|undo))?)?|runs(?:\/([0-9a-f-]{36})(?:\/(cancel|rollback))?)?)$/
   );
   if (!m) return false;
-  const [, , install, caseId, caseSub, runId, runSub] = m;
+  const [, , install, mappingId, mappingSub, caseId, caseSub, runId, runSub] =
+    m;
   const area = m[1].split('/')[0];
   const auth = authorized(req, secret);
   if (auth) return send(res, auth), true;
@@ -109,6 +118,7 @@ export async function handleTaxonomyRoute(
       [...url.searchParams.keys()].every((k) => allowed.includes(k));
     if (req.method === 'GET') {
       if (area === 'mappings') {
+        if (mappingId) return send(res, 405), true;
         if (url.search) return send(res, 400), true;
         return send(res, 200, await checks.taxonomyMappings()), true;
       }
@@ -168,6 +178,36 @@ export async function handleTaxonomyRoute(
             version: v.version,
             activate: v.activate,
             actorId: v.actorId,
+          })
+        ),
+        true
+      );
+    }
+    if (mappingId && mappingSub === 'deactivate') {
+      if (!only(v, ['actorId', 'reason']) || !text(v.reason))
+        return send(res, 400), true;
+      return (
+        send(
+          res,
+          200,
+          await checks.taxonomyDeactivate(mappingId, {
+            actorId: v.actorId,
+            reason: v.reason,
+          })
+        ),
+        true
+      );
+    }
+    if (mappingId && mappingSub === 'activate') {
+      if (!only(v, ['actorId', 'reason']) || !optionalText(v.reason, 1024))
+        return send(res, 400), true;
+      return (
+        send(
+          res,
+          200,
+          await checks.taxonomyActivate(mappingId, {
+            actorId: v.actorId,
+            ...(v.reason === undefined ? {} : { reason: v.reason }),
           })
         ),
         true
@@ -284,10 +324,14 @@ export async function handleTaxonomyRoute(
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
     if (error instanceof ReviewConflictError)
-      send(res, 409, { code: error.code });
+      send(res, 409, {
+        code: error.code,
+        ...(error.detail ? { detail: error.detail } : {}),
+      });
     else if (
       message === 'Case not found' ||
       message === 'Run not found' ||
+      message === 'Mapping not found' ||
       message === 'Listing unavailable'
     )
       send(res, 404);

@@ -9,6 +9,7 @@ import {
   type TaxonomyRunRecord,
   type TaxonomyRunScope,
 } from '@optimistic-tanuki/social-contracts/directory';
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
 import {
   BadgeComponent,
   ButtonComponent,
@@ -47,6 +48,7 @@ const ACTIVE = ['pending', 'running', 'rolling_back'];
 })
 export class DirectoryTaxonomyRunsPageComponent implements OnInit, OnDestroy {
   private readonly admin = inject(DirectoryAdminService);
+  private readonly confirm = inject(OwnerConfirmService);
 
   readonly applyWord = TAXONOMY_APPLY_CONFIRMATION;
   readonly rollbackWord = TAXONOMY_ROLLBACK_CONFIRMATION;
@@ -72,6 +74,59 @@ export class DirectoryTaxonomyRunsPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.stopped = true;
     if (this.timer) clearTimeout(this.timer);
+  }
+
+  async deactivateMapping(id: string): Promise<void> {
+    if (this.busy) return;
+    const { confirmed, reason } = await this.confirm.confirm({
+      level: 'reason',
+      title: `Deactivate mapping ${id}`,
+      body: 'New runs stop using this version. Listings already classified keep their categories. It is refused when the version is the only active one and its policy does not allow a fallback.',
+      confirmLabel: 'Deactivate',
+      destructive: true,
+    });
+    if (!confirmed || !reason) return;
+    this.changeMapping('deactivate', id, { reason }, 'deactivated');
+  }
+
+  async activateMapping(id: string): Promise<void> {
+    if (this.busy) return;
+    const { confirmed } = await this.confirm.confirm({
+      level: 'plain',
+      title: `Activate mapping ${id}`,
+      body: 'New runs may use this version again.',
+      confirmLabel: 'Activate',
+    });
+    if (!confirmed) return;
+    this.changeMapping('activate', id, {}, 'activated');
+  }
+
+  private changeMapping(
+    action: 'deactivate' | 'activate',
+    id: string,
+    body: object,
+    done: string
+  ): void {
+    this.busy = true;
+    this.message = '';
+    const call =
+      action === 'deactivate'
+        ? this.admin.deactivateTaxonomyMapping<unknown>(id, body)
+        : this.admin.activateTaxonomyMapping<unknown>(id, body);
+    call.subscribe({
+      next: () => {
+        this.busy = false;
+        this.message = `Mapping ${id} ${done}.`;
+        this.loadMappings();
+      },
+      error: (err: { status?: number; error?: { detail?: string } }) => {
+        this.busy = false;
+        this.message =
+          err?.error?.detail === 'unmapped_policy_excludes'
+            ? `Mapping ${id} is the only active version and its unmapped policy does not allow a fallback, so it cannot be deactivated.`
+            : `Mapping ${id} could not be ${done}.`;
+      },
+    });
   }
 
   inFlight(): boolean {

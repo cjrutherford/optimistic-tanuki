@@ -180,6 +180,18 @@ import {
   startExportWorker,
 } from './export-job';
 import { handleTaxonomyRoute } from './taxonomy-routes';
+import { handleDirectoryAdminRoute } from './directory-admin-routes';
+import { DirectoryJobs, productionRunner } from './directory-jobs';
+import {
+  lockBoundary,
+  readBoundaryLock,
+  unlockBoundary,
+} from './owner-boundary-lock';
+import {
+  listSuspendedBindings,
+  revalidateOne,
+  stageRevalidator,
+} from './reviewed-binding-admin';
 import { handleAcquisitionRoute } from './acquisition-routes';
 import { requestTownAcquisition } from './acquisition-refresh';
 import {
@@ -209,6 +221,8 @@ import {
 } from './taxonomy-reclassification';
 import {
   installTaxonomyMapping,
+  deactivateTaxonomyMapping,
+  activateTaxonomyMapping,
   listTaxonomyMappings,
 } from './taxonomy-mapping';
 
@@ -1758,6 +1772,14 @@ export function pendingChecks(
       activate: boolean;
       actorId: string;
     }) => installTaxonomyMapping(taxonomyDb, v),
+    taxonomyDeactivate: (
+      version: string,
+      v: { actorId: string; reason: string }
+    ) => deactivateTaxonomyMapping(taxonomyDb, { version, ...v }),
+    taxonomyActivate: (
+      version: string,
+      v: { actorId: string; reason?: string }
+    ) => activateTaxonomyMapping(taxonomyDb, { version, ...v }),
     taxonomyCases: (o: Parameters<typeof listTaxonomyCases>[1]) =>
       listTaxonomyCases(db, o),
     taxonomyRaise: (v: any) => raiseTaxonomyCase(taxonomyDb, v),
@@ -1849,11 +1871,45 @@ export function pendingChecks(
     opsSetControl: (v: Parameters<typeof setControl>[1]) =>
       setControl(db as unknown as Parameters<typeof setControl>[0], v),
   };
+  // Operator routes (S6d). Jobs live in process memory (see directory-jobs.ts); revalidation needs the stage database.
+  const adminDb = db as unknown as Parameters<typeof lockBoundary>[0] &
+    Parameters<typeof listSuspendedBindings>[0];
+  const jobs = new DirectoryJobs(db, productionRunner(db as never));
+  const revalidator = stageRevalidator(
+    db as unknown as DataSource,
+    process.env,
+    (url) =>
+      new DataSource({
+        type: 'postgres',
+        url,
+        extra: {
+          options:
+            '-c default_transaction_read_only=on -c statement_timeout=15000',
+          connectionTimeoutMillis: 5000,
+        },
+      })
+  );
+  const directoryAdmin = {
+    suspendedBindings: (o: Parameters<typeof listSuspendedBindings>[1]) =>
+      listSuspendedBindings(adminDb, o),
+    bindingRevalidate: (id: string, v: { actorId: string }) =>
+      revalidateOne({ db: adminDb, run: revalidator }, id, v.actorId),
+    boundaryLockRead: (townId: string) => readBoundaryLock(db, townId),
+    boundaryLock: (townId: string, v: { actorId: string; reason: string }) =>
+      lockBoundary(adminDb, { communityId: townId, ...v }),
+    boundaryUnlock: (townId: string, v: { actorId: string; reason: string }) =>
+      unlockBoundary(adminDb, { communityId: townId, ...v }),
+    jobStartRenormalize: (
+      v: Parameters<DirectoryJobs['startRenormalize']>[0]
+    ) => jobs.startRenormalize(v),
+    jobGet: async (id: string) => jobs.get(id),
+  };
   return {
     ...rights,
     ...exportOps,
     ...ops,
     ...taxonomy,
+    ...directoryAdmin,
     ...acquisition,
     reportCreate,
     reportLookup,
@@ -1912,6 +1968,7 @@ export function pendingServer(
     if (await handleExportRoute(req, res, checks, localSecret)) return;
     if (await handlePublicExportRoute(req, res, checks, localSecret)) return;
     if (await handleOpsRoute(req, res, checks, localSecret)) return;
+    if (await handleDirectoryAdminRoute(req, res, checks, localSecret)) return;
     if (await handleTaxonomyRoute(req, res, checks, localSecret)) return;
     if (await handleAcquisitionRoute(req, res, checks, localSecret)) return;
     if (

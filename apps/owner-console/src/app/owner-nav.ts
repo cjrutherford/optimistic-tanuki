@@ -240,6 +240,19 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
         keywords: ['categories', 'classification', 'mappings'],
       },
       {
+        label: 'Suspended bindings',
+        path: '/dashboard/directory-suspended-bindings',
+        countSource: 'directory.suspendedBindings',
+        icon: '⏸',
+        keywords: ['reviewed', 'binding', 'revalidate', 'suspended'],
+      },
+      {
+        label: 'Directory jobs',
+        path: '/dashboard/directory-jobs',
+        icon: '⚙',
+        keywords: ['renormalize', 're-normalize', 'maintenance', 'job'],
+      },
+      {
         label: 'Rights',
         path: '/dashboard/directory-rights',
         icon: '§',

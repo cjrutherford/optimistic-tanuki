@@ -14,6 +14,7 @@ import {
   ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
+import { ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
@@ -33,6 +34,7 @@ const conflictCodes = new Set([
 ]);
 const caseStatuses = ['open', 'assigned', 'rejected', 'deferred', 'dismissed'];
 const decisionActions = ['assign', 'reject', 'defer', 'reopen'];
+const conflictDetails = new Set(['unmapped_policy_excludes']);
 const id100 = /^[A-Za-z0-9._-]{1,100}$/;
 export const TAXONOMY_ROLLBACK_CONFIRMATION = 'ROLLBACK';
 type RequestUser = { user?: { profileId?: string } };
@@ -135,14 +137,24 @@ export class DirectoryTaxonomyController {
     }
     if (response.status === 409) {
       let code = 'invalid_state';
+      let detail: string | undefined;
       try {
         const body = await response.json();
         if (typeof body?.code === 'string' && conflictCodes.has(body.code))
           code = body.code;
+        if (
+          typeof body?.detail === 'string' &&
+          conflictDetails.has(body.detail)
+        )
+          detail = body.detail;
       } catch {
         // generic code
       }
-      throw new ConflictException({ code, message: 'Decision refused' });
+      throw new ConflictException({
+        code,
+        message: 'Decision refused',
+        ...(detail ? { detail } : {}),
+      });
     }
     if (response.status === 404) throw new NotFoundException('Not found');
     if (response.status === 400)
@@ -218,6 +230,66 @@ export class DirectoryTaxonomyController {
       activate: body.activate,
       actorId,
     });
+    this.shape(typeof result.replayed === 'boolean' && !!result.version);
+    return result;
+  }
+
+  @Post('mappings/:versionId/deactivate')
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.operate)
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Deactivate a taxonomy mapping version',
+    description:
+      'Needs a reason. Refused with 409 detail unmapped_policy_excludes when it is the active version and its unmappedPolicy would exclude listings.',
+  })
+  async deactivate(
+    @Param('versionId') versionId: string,
+    @Body() body: any,
+    @Req() req: RequestUser
+  ) {
+    const actorId = this.actor(req);
+    if (
+      !id100.test(versionId) ||
+      !this.object(body) ||
+      Object.keys(body).some((k) => k !== 'reason') ||
+      !this.text(body.reason)
+    )
+      throw new BadRequestException('Invalid mapping deactivation');
+    const result = await this.post(
+      `/internal/taxonomy/mappings/${versionId}/deactivate`,
+      { actorId, reason: body.reason.trim() }
+    );
+    this.shape(typeof result.replayed === 'boolean' && !!result.version);
+    return result;
+  }
+
+  @Post('mappings/:versionId/activate')
+  @UseGuards(AuthGuard, DirectoryOwnerScopeGuard, PermissionsGuard)
+  @RequirePermissions(DIRECTORY_PERMISSIONS.operate)
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({
+    summary: 'Activate an installed taxonomy mapping version',
+    description:
+      'Same rules as install with activate set; an optional reason is recorded in the audit.',
+  })
+  async activate(
+    @Param('versionId') versionId: string,
+    @Body() body: any,
+    @Req() req: RequestUser
+  ) {
+    const actorId = this.actor(req);
+    if (
+      !id100.test(versionId) ||
+      (body !== undefined && body !== null && !this.object(body)) ||
+      Object.keys(body ?? {}).some((k) => k !== 'reason') ||
+      (body?.reason !== undefined && !this.text(body.reason))
+    )
+      throw new BadRequestException('Invalid mapping activation');
+    const result = await this.post(
+      `/internal/taxonomy/mappings/${versionId}/activate`,
+      { actorId, ...(body?.reason ? { reason: body.reason.trim() } : {}) }
+    );
     this.shape(typeof result.replayed === 'boolean' && !!result.version);
     return result;
   }

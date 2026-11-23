@@ -28,6 +28,8 @@ export const serverRoutes: ServerRoute[] = [
     'dashboard/directory-taxonomy',
     'dashboard/directory-taxonomy-runs',
     'dashboard/directory-runs',
+    'dashboard/directory-suspended-bindings',
+    'dashboard/directory-jobs',
   ].map((path): ServerRoute => ({ path, renderMode: RenderMode.Client })),
   {
     path: 'dashboard/cities/:id',
