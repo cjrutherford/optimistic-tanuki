@@ -1,33 +1,35 @@
 <div class="dashboard-container">
   <otui-app-bar
     appTitle="Owner Console"
-    [showThemeToggle]="true"
+    [showThemeToggle]="false"
     [useTile]="false"
     (menuToggle)="toggleSidebar()"
     logoSrc="/tempest-in-a-teacup.png"
     logoAlt="Owner Console Logo"
   >
-    <app-town-switcher></app-town-switcher>
-    <button
-      type="button"
-      class="bar-button search-button"
-      aria-haspopup="dialog"
-      aria-keyshortcuts="Control+K Meta+K"
-      (click)="openPalette()"
-    >
-      Search pages <kbd>Ctrl K</kbd>
-    </button>
-    <button
-      type="button"
-      class="bar-button"
-      (click)="toggleTheme()"
-      [attr.aria-label]="themeToggleLabel"
-    >
-      {{ themeToggleLabel }}
-    </button>
-    <button type="button" class="bar-button" (click)="logout()">
-      Sign out
-    </button>
+    <div appBarActions class="bar-actions">
+      <app-town-switcher></app-town-switcher>
+      <button
+        type="button"
+        class="bar-button search-button"
+        aria-haspopup="dialog"
+        aria-keyshortcuts="Control+K Meta+K"
+        (click)="openPalette()"
+      >
+        Search pages <kbd>Ctrl K</kbd>
+      </button>
+      <button
+        type="button"
+        class="bar-button"
+        (click)="toggleTheme()"
+        [attr.aria-label]="themeToggleLabel"
+      >
+        {{ themeToggleLabel }}
+      </button>
+      <button type="button" class="bar-button" (click)="logout()">
+        Sign out
+      </button>
+    </div>
   </otui-app-bar>
 
   <div class="shell">

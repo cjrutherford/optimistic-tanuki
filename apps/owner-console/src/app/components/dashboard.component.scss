@@ -26,6 +26,14 @@
   }
 }
 
+.bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm, 0.5rem);
+  margin-left: auto;
+}
+
 .bar-button {
   display: inline-flex;
   align-items: center;

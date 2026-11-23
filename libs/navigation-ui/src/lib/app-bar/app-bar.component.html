@@ -17,6 +17,7 @@
         [size]="isSmall ? '1.25em' : isCompact ? '1.5em' : '2em'"
       ></otui-heading>
       <lib-theme-toggle *ngIf="showThemeToggle"></lib-theme-toggle>
+      <ng-container *ngTemplateOutlet="actions"></ng-container>
       <otui-button class="menu-btn" (click)="onMenuClick()">{{
         menuIcon
       }}</otui-button>
@@ -47,7 +48,16 @@
         </otui-button>
         <h1>{{ appTitle }}</h1>
         <lib-theme-toggle *ngIf="showThemeToggle"></lib-theme-toggle>
+        <ng-container *ngTemplateOutlet="actions"></ng-container>
       </div>
     </otui-card>
   </div>
+</ng-template>
+
+<!--
+  Opt-in actions slot: only children marked [appBarActions] are projected, so
+  apps that put other content inside the bar are unaffected.
+-->
+<ng-template #actions>
+  <ng-content select="[appBarActions]"></ng-content>
 </ng-template>
