@@ -367,8 +367,9 @@ must not change the replayed corpora.
       if the trial read passes. (Needs P2.3.)
 - [ ] SD.5 Automation: auto-adoption including snippet-only publishers,
       quiet-source detection, auto-retire and rediscovery (D9, D11, D13).
-- [ ] SD.6 Sources admin in `owner-console`: the decision log, overrides and
-      health (D14).
+- [x] SD.6 Sources admin in `owner-console`: the decision log, overrides and
+      health (D14). Done 2026-11-23 with a source-request queue; see the
+      handoff log.
 - [ ] ~~SD.7 SearXNG compose service (D12).~~ Dropped by D21.
 
 ## Handoff log
@@ -1115,3 +1116,19 @@ clamav`).
   - **Run registry:** the town registry still only exists as the test
     fixtures, so the run copies them to `tmp/daylight-run/localities` and
     adds Moultrie and Colquitt County there, with no hand-written sources.
+- 2026-11-23: SD.6 is done (owner-console overhaul, S6).
+  - **civic-briefing:** `CivicBriefingCommands.SOURCES_*` cover the decision
+    log, overrides (block or pin, each with an actor and a reason), per-source
+    health, and the source-request queue (approve or reject with a reason).
+    Migration `1795421681325-SourcesAdmin` adds `source_overrides` and the
+    decision columns on `source_requests`.
+  - **Known gap closed:** a blocked source is refused in `applyOverrides`
+    and in `SourcingStore.adopt`, so a removed civic-core source stays out.
+  - **Gateway:** `local-hub/operations/sources/:slug/*` and
+    `source-requests`, behind `sources.read` / `sources.manage` (owner-console
+    and local-hub scopes).
+  - **UI:** `ot-daylight-sources` in `daylight-ops-ui`, mounted by the shared
+    operations page in both hosts.
+  - **Open:** a block takes effect in the registry on its next sync;
+    approving a request records the decision but does not add the source;
+    overrides are keyed by `sourceKey` across towns.

@@ -3,6 +3,7 @@ import type { EntitySchema } from 'typeorm';
 import { DaylightAlertSchema } from './health/daylight-alert.schema';
 import { OfficialCandidateSchema } from './officials/official-candidate.schema';
 import { SourceRequestSchema } from './registry/source-request.schema';
+import { SourceOverrideSchema } from './schedule/source-override.schema';
 import { SourcingDecisionSchema } from './schedule/sourcing-decision.schema';
 
 /**
@@ -14,5 +15,6 @@ export const BRIEFING_SCHEMAS = [
   DaylightAlertSchema as EntitySchema<unknown>,
   SourcingDecisionSchema as EntitySchema<unknown>,
   SourceRequestSchema as EntitySchema<unknown>,
+  SourceOverrideSchema as EntitySchema<unknown>,
   OfficialCandidateSchema as EntitySchema<unknown>,
 ];

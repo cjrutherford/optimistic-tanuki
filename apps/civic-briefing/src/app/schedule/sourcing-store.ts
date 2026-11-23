@@ -6,7 +6,12 @@ import {
   type SourceRow,
   type SourcingDecision,
 } from '@optimistic-tanuki/civic-core';
-import type { DataSource } from 'typeorm';
+import { IsNull, type DataSource } from 'typeorm';
+import {
+  type SourceOverrideKind,
+  type SourceOverrideRow,
+  SourceOverrideSchema,
+} from './source-override.schema';
 import {
   type SourcingDecisionRow,
   SourcingDecisionSchema,
@@ -38,6 +43,12 @@ export class SourcingStore {
     );
   }
 
+  private get overrideRows() {
+    return this.dataSource.getRepository<SourceOverrideRow>(
+      SourceOverrideSchema
+    );
+  }
+
   private get decisions() {
     return this.dataSource.getRepository<SourcingDecisionRow>(
       SourcingDecisionSchema
@@ -60,6 +71,9 @@ export class SourcingStore {
   ): Promise<boolean> {
     const { source } = decision;
     const key = source.sourceKey;
+    // An operator's block outranks every finder (SD.6): the source is not
+    // re-adopted however discovery or Civic Core rate it.
+    if ((await this.overrides()).get(key) === 'block') return false;
     if (await this.sources.findOneBy({ sourceKey: key })) return false;
     const address = normalizedAddress(source.url);
     if (
@@ -102,6 +116,29 @@ export class SourcingStore {
       observedAt: null,
       origin: 'discovered',
     });
+    return true;
+  }
+
+  /** The overrides in force, by source key (cleared ones are history). */
+  async overrides(): Promise<Map<string, SourceOverrideKind>> {
+    const rows = await this.overrideRows.find({
+      where: { clearedAt: IsNull() },
+    });
+    return new Map(rows.map((row) => [row.sourceKey, row.kind]));
+  }
+
+  /**
+   * Turns a discovered source on or off, leaving hand-kept sources alone.
+   * Returns whether a row changed.
+   */
+  async setDiscoveredEnabled(
+    sourceKey: string,
+    enabled: boolean
+  ): Promise<boolean> {
+    const row = await this.sources.findOneBy({ sourceKey });
+    if (!row || row.origin !== 'discovered' || row.enabled === enabled)
+      return false;
+    await this.sources.update({ sourceKey }, { enabled });
     return true;
   }
 

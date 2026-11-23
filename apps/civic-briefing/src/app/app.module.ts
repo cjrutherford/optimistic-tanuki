@@ -17,6 +17,7 @@ import { QuarantineModule } from './quarantine/quarantine.module';
 import { LocalitiesModule } from './registry/localities.module';
 import { OfficialCandidatesModule } from './officials/official-candidates.module';
 import { RegistryModule } from './registry/registry.module';
+import { SourceOpsModule } from './sources/source-ops.module';
 import { StoriesModule } from './stories/stories.module';
 
 @Module({
@@ -29,6 +30,7 @@ import { StoriesModule } from './stories/stories.module';
     RegistryModule,
     LocalitiesModule,
     OfficialCandidatesModule,
+    SourceOpsModule,
     CorpusModule,
     EditionsModule,
     HealthModule,

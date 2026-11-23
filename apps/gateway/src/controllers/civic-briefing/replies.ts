@@ -12,6 +12,11 @@ import {
   BackfillStatus,
   OfficialCandidate,
   PipelineHealthReport,
+  SourceDecisionPage,
+  SourceHealthReport,
+  SourceOverride,
+  SourceRequestEntry,
+  SourceRequestPage,
   type OfficialStanding,
   PublishedBriefing,
   SubmissionRequest,
@@ -247,4 +252,34 @@ export class SourceRequestReply {
   /** True when this reader had already asked for this town; nothing was added. */
   @ApiProperty()
   alreadyRequested!: boolean;
+}
+
+export class SourceDecisionPageReply {
+  @ApiProperty({ type: SourceDecisionPage })
+  data!: SourceDecisionPage;
+}
+
+export class SourceOverrideListReply {
+  @ApiProperty({ type: [SourceOverride] })
+  data!: SourceOverride[];
+}
+
+export class SourceOverrideReply {
+  @ApiProperty({ type: SourceOverride })
+  data!: SourceOverride;
+}
+
+export class SourceHealthReply {
+  @ApiProperty({ type: SourceHealthReport })
+  data!: SourceHealthReport;
+}
+
+export class SourceRequestPageReply {
+  @ApiProperty({ type: SourceRequestPage })
+  data!: SourceRequestPage;
+}
+
+export class SourceRequestDecisionReply {
+  @ApiProperty({ type: SourceRequestEntry })
+  data!: SourceRequestEntry;
 }

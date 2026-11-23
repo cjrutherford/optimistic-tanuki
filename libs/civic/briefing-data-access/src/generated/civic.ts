@@ -89,6 +89,176 @@ export interface SourceRequestReply {
   alreadyRequested: boolean;
 }
 
+export interface SourceDecisionEntry {
+  id: number;
+  slug: string;
+  /** @nullable */
+  ownerSlug: string | null;
+  /** @nullable */
+  sourceKey: string | null;
+  /** @nullable */
+  adapter: string | null;
+  /** @nullable */
+  url: string | null;
+  decision: string;
+  /** @nullable */
+  via: string | null;
+  /** @nullable */
+  reason: string | null;
+  evidence: string[];
+  decidedAt: string;
+}
+
+export interface SourceDecisionPage {
+  items: SourceDecisionEntry[];
+  total: number;
+}
+
+export interface SourceDecisionPageReply {
+  data: SourceDecisionPage;
+}
+
+export type SourceOverrideKind =
+  (typeof SourceOverrideKind)[keyof typeof SourceOverrideKind];
+
+export const SourceOverrideKind = {
+  block: 'block',
+  pin: 'pin',
+} as const;
+
+export interface SourceOverride {
+  id: string;
+  slug: string;
+  sourceKey: string;
+  kind: SourceOverrideKind;
+  reason: string;
+  actor: string;
+  createdAt: string;
+}
+
+export interface SourceOverrideListReply {
+  data: SourceOverride[];
+}
+
+export type SetSourceOverrideBodyKind =
+  (typeof SetSourceOverrideBodyKind)[keyof typeof SetSourceOverrideBodyKind];
+
+export const SetSourceOverrideBodyKind = {
+  block: 'block',
+  pin: 'pin',
+} as const;
+
+export interface SetSourceOverrideBody {
+  sourceKey: string;
+  kind: SetSourceOverrideBodyKind;
+  reason: string;
+}
+
+export interface SourceOverrideReply {
+  data: SourceOverride;
+}
+
+export interface ClearSourceOverrideBody {
+  reason: string;
+}
+
+export type SourceHealthEntryStatus =
+  (typeof SourceHealthEntryStatus)[keyof typeof SourceHealthEntryStatus];
+
+export const SourceHealthEntryStatus = {
+  healthy: 'healthy',
+  quiet: 'quiet',
+  failing: 'failing',
+  retired: 'retired',
+} as const;
+
+export type SourceHealthEntryOverride =
+  (typeof SourceHealthEntryOverride)[keyof typeof SourceHealthEntryOverride];
+
+export const SourceHealthEntryOverride = {
+  block: 'block',
+  pin: 'pin',
+} as const;
+
+export interface SourceHealthEntry {
+  sourceKey: string;
+  name: string;
+  adapter: string;
+  status: SourceHealthEntryStatus;
+  /** @nullable */
+  lastAttemptAt: string | null;
+  /** @nullable */
+  lastSuccessAt: string | null;
+  consecutiveFailures: number;
+  items7d: number;
+  errors7d: number;
+  /** @nullable */
+  newestPublished: string | null;
+  override?: SourceHealthEntryOverride;
+}
+
+export interface SourceHealthReport {
+  slug: string;
+  name: string;
+  sources: SourceHealthEntry[];
+}
+
+export interface SourceHealthReply {
+  data: SourceHealthReport;
+}
+
+export type SourceRequestEntryStatus =
+  (typeof SourceRequestEntryStatus)[keyof typeof SourceRequestEntryStatus];
+
+export const SourceRequestEntryStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface SourceRequestEntry {
+  id: string;
+  slug: string;
+  townName: string;
+  userId: string;
+  /** @nullable */
+  note: string | null;
+  status: SourceRequestEntryStatus;
+  createdAt: string;
+  /** @nullable */
+  decidedBy: string | null;
+  /** @nullable */
+  decidedAt: string | null;
+  /** @nullable */
+  decisionReason: string | null;
+}
+
+export interface SourceRequestPage {
+  items: SourceRequestEntry[];
+  total: number;
+}
+
+export interface SourceRequestPageReply {
+  data: SourceRequestPage;
+}
+
+export type DecideSourceRequestBodyDecision =
+  (typeof DecideSourceRequestBodyDecision)[keyof typeof DecideSourceRequestBodyDecision];
+
+export const DecideSourceRequestBodyDecision = {
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface DecideSourceRequestBody {
+  decision: DecideSourceRequestBodyDecision;
+  reason: string;
+}
+
+export interface SourceRequestDecisionReply {
+  data: SourceRequestEntry;
+}
+
 export interface LocalHubMembership {
   profileId: string;
   handle: string;
@@ -788,6 +958,27 @@ export interface PromotionExportReply {
   data: PromotionExportResult;
 }
 
+export type DecisionsParams = {
+  limit?: string;
+  offset?: string;
+};
+
+export type RequestsParams = {
+  slug?: string;
+  status?: RequestsStatus;
+  limit?: string;
+  offset?: string;
+};
+
+export type RequestsStatus =
+  (typeof RequestsStatus)[keyof typeof RequestsStatus];
+
+export const RequestsStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
 export type OfficialCandidatesParams = {
   slug?: string;
   status?: OfficialCandidatesStatus;
@@ -1196,6 +1387,378 @@ export class OptomisitcTanukiAPIService {
     return this.http.post<TData>(
       `/api/local-hub/localities/${slug}/source-requests`,
       sourceRequestBody,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary A town's source decisions, newest first, paged
+   */
+  decisions<TData = SourceDecisionPageReply>(
+    slug: string,
+    params?: DecisionsParams,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  decisions<TData = SourceDecisionPageReply>(
+    slug: string,
+    params?: DecisionsParams,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  decisions<TData = SourceDecisionPageReply>(
+    slug: string,
+    params?: DecisionsParams,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  decisions<TData = SourceDecisionPageReply>(
+    slug: string,
+    params?: DecisionsParams,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    const filteredParams = filterParams(
+      { ...params, ...options?.params },
+      new Set<string>([])
+    );
+
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(
+        `/api/local-hub/operations/sources/${slug}/decisions`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+          params: filteredParams,
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(
+        `/api/local-hub/operations/sources/${slug}/decisions`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+          params: filteredParams,
+        }
+      );
+    }
+
+    return this.http.get<TData>(
+      `/api/local-hub/operations/sources/${slug}/decisions`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+        params: filteredParams,
+      }
+    );
+  }
+
+  /**
+   * @summary A town's source overrides in force
+   */
+  overrides<TData = SourceOverrideListReply>(
+    slug: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  overrides<TData = SourceOverrideListReply>(
+    slug: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  overrides<TData = SourceOverrideListReply>(
+    slug: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  overrides<TData = SourceOverrideListReply>(
+    slug: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(
+        `/api/local-hub/operations/sources/${slug}/overrides`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(
+        `/api/local-hub/operations/sources/${slug}/overrides`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.get<TData>(
+      `/api/local-hub/operations/sources/${slug}/overrides`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary Block a source, or pin it, with a reason
+   */
+  setOverride<TData = SourceOverrideReply>(
+    slug: string,
+    setSourceOverrideBody: SetSourceOverrideBody,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  setOverride<TData = SourceOverrideReply>(
+    slug: string,
+    setSourceOverrideBody: SetSourceOverrideBody,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  setOverride<TData = SourceOverrideReply>(
+    slug: string,
+    setSourceOverrideBody: SetSourceOverrideBody,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  setOverride<TData = SourceOverrideReply>(
+    slug: string,
+    setSourceOverrideBody: SetSourceOverrideBody,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/local-hub/operations/sources/${slug}/overrides`,
+        setSourceOverrideBody,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/local-hub/operations/sources/${slug}/overrides`,
+        setSourceOverrideBody,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/local-hub/operations/sources/${slug}/overrides`,
+      setSourceOverrideBody,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary Clear a source's override, with a reason
+   */
+  clearOverride<TData = SourceOverrideReply>(
+    slug: string,
+    sourceKey: string,
+    clearSourceOverrideBody: ClearSourceOverrideBody,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  clearOverride<TData = SourceOverrideReply>(
+    slug: string,
+    sourceKey: string,
+    clearSourceOverrideBody: ClearSourceOverrideBody,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  clearOverride<TData = SourceOverrideReply>(
+    slug: string,
+    sourceKey: string,
+    clearSourceOverrideBody: ClearSourceOverrideBody,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  clearOverride<TData = SourceOverrideReply>(
+    slug: string,
+    sourceKey: string,
+    clearSourceOverrideBody: ClearSourceOverrideBody,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/local-hub/operations/sources/${slug}/overrides/${sourceKey}/clear`,
+        clearSourceOverrideBody,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/local-hub/operations/sources/${slug}/overrides/${sourceKey}/clear`,
+        clearSourceOverrideBody,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/local-hub/operations/sources/${slug}/overrides/${sourceKey}/clear`,
+      clearSourceOverrideBody,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary How each of a town's sources is doing
+   */
+  health<TData = SourceHealthReply>(
+    slug: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  health<TData = SourceHealthReply>(
+    slug: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  health<TData = SourceHealthReply>(
+    slug: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  health<TData = SourceHealthReply>(
+    slug: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(
+        `/api/local-hub/operations/sources/${slug}/health`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(
+        `/api/local-hub/operations/sources/${slug}/health`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.get<TData>(
+      `/api/local-hub/operations/sources/${slug}/health`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary Readers' requests for sources, pending by default
+   */
+  requests<TData = SourceRequestPageReply>(
+    params?: RequestsParams,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  requests<TData = SourceRequestPageReply>(
+    params?: RequestsParams,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  requests<TData = SourceRequestPageReply>(
+    params?: RequestsParams,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  requests<TData = SourceRequestPageReply>(
+    params?: RequestsParams,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    const filteredParams = filterParams(
+      { ...params, ...options?.params },
+      new Set<string>([])
+    );
+
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(`/api/local-hub/operations/source-requests`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'events',
+        params: filteredParams,
+      });
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(`/api/local-hub/operations/source-requests`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'response',
+        params: filteredParams,
+      });
+    }
+
+    return this.http.get<TData>(`/api/local-hub/operations/source-requests`, {
+      ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+      observe: 'body',
+      params: filteredParams,
+    });
+  }
+
+  /**
+   * @summary Approve or reject a source request, with a reason
+   */
+  decide<TData = SourceRequestDecisionReply>(
+    id: string,
+    decideSourceRequestBody: DecideSourceRequestBody,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  decide<TData = SourceRequestDecisionReply>(
+    id: string,
+    decideSourceRequestBody: DecideSourceRequestBody,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  decide<TData = SourceRequestDecisionReply>(
+    id: string,
+    decideSourceRequestBody: DecideSourceRequestBody,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  decide<TData = SourceRequestDecisionReply>(
+    id: string,
+    decideSourceRequestBody: DecideSourceRequestBody,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/local-hub/operations/source-requests/${id}/decide`,
+        decideSourceRequestBody,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/local-hub/operations/source-requests/${id}/decide`,
+        decideSourceRequestBody,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/local-hub/operations/source-requests/${id}/decide`,
+      decideSourceRequestBody,
       {
         ...(options as Omit<NonNullable<typeof options>, 'observe'>),
         observe: 'body',

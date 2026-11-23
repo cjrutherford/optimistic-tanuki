@@ -11,6 +11,11 @@ export interface SourceRequestRow {
   slug: string;
   userId: string;
   note?: string | null;
+  /** An operator's decision on the request (SD.6). */
+  status?: 'pending' | 'approved' | 'rejected';
+  decidedBy?: string | null;
+  decidedAt?: Date | null;
+  decisionReason?: string | null;
   createdAt?: Date;
 }
 
@@ -22,6 +27,10 @@ export const SourceRequestSchema = new EntitySchema<SourceRequestRow>({
     slug: { type: String },
     userId: { type: String },
     note: { type: 'text', nullable: true },
+    status: { type: String, default: 'pending' },
+    decidedBy: { type: String, nullable: true },
+    decidedAt: { type: 'timestamptz', nullable: true },
+    decisionReason: { type: 'text', nullable: true },
     createdAt: { type: 'timestamptz', createDate: true },
   },
   indices: [{ columns: ['slug'] }],

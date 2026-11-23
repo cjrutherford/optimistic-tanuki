@@ -84,6 +84,15 @@ describe('DaylightOperationsComponent', () => {
     expect(page.querySelector('section')).toBeNull();
   });
 
+  it('shows the sources panels only with the sources permission', async () => {
+    const { fixture, page } = await render(['sources.read']);
+    http().match(() => true);
+    fixture.detectChanges();
+    expect(page.querySelector('ot-daylight-sources')).not.toBeNull();
+    expect(page.textContent).toContain('Source requests');
+    expect(page.textContent).not.toContain('Not available');
+  });
+
   it('lists towns thinnest first and says where to recruit', async () => {
     const { fixture, page } = await render(['density.read']);
     http()

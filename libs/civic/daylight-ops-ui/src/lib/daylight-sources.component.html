@@ -1,0 +1,389 @@
+<div class="sources">
+  <ng-template #confirmGroup>
+    <div class="confirm" role="group" aria-label="Confirm this change">
+      <p>{{ question() }}</p>
+      <label class="field"
+        ><span>Reason (kept with the decision)</span>
+        <textarea
+          rows="2"
+          maxlength="500"
+          [value]="reason()"
+          (input)="setReason($event)"
+          [attr.aria-invalid]="reasonMissing()"
+          aria-describedby="source-reason-error"
+        ></textarea>
+        @if (reasonMissing()) {
+        <span class="problem" id="source-reason-error" role="alert"
+          >Give a reason.</span
+        >
+        }
+      </label>
+      @if (actionError()) {
+      <p class="problem" role="alert">{{ actionError() }}</p>
+      }
+      <div class="actions">
+        <button type="button" [disabled]="busy()" (click)="confirm()">
+          Confirm
+        </button>
+        <button type="button" (click)="cancel()">Cancel</button>
+      </div>
+    </div>
+  </ng-template>
+
+  @if (!activeSlug() && town()) {
+  <p class="quiet" role="status">Looking for the town's sources…</p>
+  } @else if (!activeSlug()) {
+  <p class="quiet">
+    No towns are scheduled yet, so there are no sources to show.
+  </p>
+  } @else {
+  <div class="town-pick">
+    @if (!town()) {
+    <label class="field"
+      ><span>Town</span>
+      <select (change)="pick($event)">
+        @for (option of towns(); track option.slug) {
+        <option [value]="option.slug" [selected]="option.slug === activeSlug()">
+          {{ option.name }}
+        </option>
+        }
+      </select>
+    </label>
+    }
+  </div>
+
+  <section aria-labelledby="source-health-heading">
+    <h2 id="source-health-heading">Source health: {{ activeName() }}</h2>
+    <p class="lede">
+      How each source is doing. Quiet means nothing new for a while; retired
+      means switched off.
+    </p>
+    @if (failure(health())) {
+    <p class="problem" role="alert">
+      <strong>Unavailable.</strong> {{ failure(health()) }}
+      <button type="button" class="link" (click)="loadHealth()">Retry</button>
+    </p>
+    } @else if (health().status === 'loading') {
+    <p class="quiet" role="status">Loading…</p>
+    } @else if (health().status === 'ready') { @let rows = $any(health()).value;
+    @if (rows.length) {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Source</th>
+            <th scope="col">Status</th>
+            <th scope="col">Last fetch</th>
+            <th scope="col">Last success</th>
+            <th scope="col" class="number">Failures in a row</th>
+            <th scope="col" class="number">Items (7 days)</th>
+            <th scope="col" class="number">Errors (7 days)</th>
+            @if (canManage()) {
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (source of rows; track source.sourceKey) {
+          <tr>
+            <th scope="row">
+              {{ source.name }}
+              <span class="meta"
+                >{{ source.sourceKey }} · {{ source.adapter }}</span
+              >
+              @if (source.override) {
+              <span class="tag">{{ source.override }}</span>
+              }
+            </th>
+            <td>
+              <span class="status" [attr.data-status]="source.status">{{
+                statusWords(source.status)
+              }}</span>
+            </td>
+            <td>
+              {{
+                source.lastAttemptAt
+                  ? (source.lastAttemptAt | date : 'medium')
+                  : 'Never'
+              }}
+            </td>
+            <td>
+              {{
+                source.lastSuccessAt
+                  ? (source.lastSuccessAt | date : 'medium')
+                  : 'Never'
+              }}
+            </td>
+            <td class="number">{{ source.consecutiveFailures }}</td>
+            <td class="number">{{ source.items7d }}</td>
+            <td class="number">{{ source.errors7d }}</td>
+            @if (canManage()) {
+            <td>
+              @if (source.override !== 'block') {
+              <button
+                type="button"
+                class="link"
+                (click)="
+                  ask({
+                    kind: 'block',
+                    panel: 'health',
+                    sourceKey: source.sourceKey
+                  })
+                "
+              >
+                Block
+              </button>
+              }
+            </td>
+            }
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    } @else {
+    <p class="quiet">This town has no sources yet.</p>
+    } } @if (isAsking('health')) {
+    <ng-container [ngTemplateOutlet]="confirmGroup" />
+    }
+  </section>
+
+  <section aria-labelledby="source-overrides-heading">
+    <h2 id="source-overrides-heading">Overrides</h2>
+    <p class="lede">
+      A blocked source is never adopted, whoever finds it again. Each override
+      records who set it, why and when.
+    </p>
+    @if (failure(overrides())) {
+    <p class="problem" role="alert">
+      <strong>Unavailable.</strong> {{ failure(overrides()) }}
+      <button type="button" class="link" (click)="loadOverrides()">
+        Retry
+      </button>
+    </p>
+    } @else if (overrides().status === 'loading') {
+    <p class="quiet" role="status">Loading…</p>
+    } @else if (overrides().status === 'ready') { @let items =
+    $any(overrides()).value;
+    <ul class="entries">
+      @for (item of items; track item.id) {
+      <li>
+        <div class="entry-line">
+          <span class="tag">{{ item.kind }}</span>
+          <strong>{{ item.sourceKey }}</strong>
+          @if (canManage()) {
+          <button
+            type="button"
+            class="link"
+            (click)="ask({ kind: 'clear', panel: 'overrides', override: item })"
+          >
+            Remove {{ item.kind }}
+          </button>
+          }
+        </div>
+        <p class="meta">
+          {{ item.reason }} · by {{ item.actor }} on
+          {{ item.createdAt | date : 'medium' }}
+        </p>
+      </li>
+      } @empty {
+      <li class="quiet">No overrides are set.</li>
+      }
+    </ul>
+    } @if (canManage()) {
+    <div class="add-block">
+      <label class="field"
+        ><span>Block a source by its key</span>
+        <input
+          type="text"
+          [value]="newKey()"
+          (input)="setNewKey($event)"
+          placeholder="civic-core-…"
+          [attr.aria-invalid]="newKeyMissing()"
+        />
+        @if (newKeyMissing()) {
+        <span class="problem" role="alert">Give the source's key.</span>
+        }
+      </label>
+      <div class="actions">
+        <button type="button" (click)="askBlockByKey()">Block…</button>
+      </div>
+    </div>
+    } @if (isAsking('overrides')) {
+    <ng-container [ngTemplateOutlet]="confirmGroup" />
+    } @if (message()) {
+    <p role="status">{{ message() }}</p>
+    }
+  </section>
+
+  <section aria-labelledby="source-decisions-heading">
+    <h2 id="source-decisions-heading">Decision log: {{ activeName() }}</h2>
+    <p class="lede">
+      What discovery adopted or refused, and what operators blocked or pinned,
+      newest first.
+    </p>
+    @if (failure(decisions())) {
+    <p class="problem" role="alert">
+      <strong>Unavailable.</strong> {{ failure(decisions()) }}
+      <button type="button" class="link" (click)="loadDecisions()">
+        Retry
+      </button>
+    </p>
+    } @else if (decisions().status === 'loading') {
+    <p class="quiet" role="status">Loading…</p>
+    } @else if (decisions().status === 'ready') { @let log =
+    $any(decisions()).value; @if (log.items.length) {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">When</th>
+            <th scope="col">Decision</th>
+            <th scope="col">Source</th>
+            <th scope="col">Found by</th>
+            <th scope="col">Why</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of log.items; track entry.id) {
+          <tr>
+            <td>{{ entry.decidedAt | date : 'medium' }}</td>
+            <td>
+              <span class="status" [attr.data-decision]="entry.decision">{{
+                decisionWords(entry.decision)
+              }}</span>
+            </td>
+            <td>
+              {{ entry.sourceKey ?? 'Unknown' }}
+              @if (entry.url) {
+              <span class="meta">{{ entry.url }}</span>
+              }
+            </td>
+            <td>{{ entry.via ?? '' }}</td>
+            <td class="why">{{ entry.reason ?? '' }}</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="meta">
+      Showing {{ decisionOffset() + 1 }}–{{
+        decisionOffset() + log.items.length
+      }}
+      of {{ log.total }}
+    </p>
+    } @else {
+    <p class="quiet">Nothing has been decided for this town yet.</p>
+    }
+    <div class="actions">
+      <button
+        type="button"
+        [disabled]="decisionOffset() === 0"
+        (click)="pageDecisions(-1)"
+      >
+        Newer
+      </button>
+      <button
+        type="button"
+        [disabled]="!hasNext(decisionOffset(), log.total)"
+        (click)="pageDecisions(1)"
+      >
+        Older
+      </button>
+    </div>
+    }
+  </section>
+  }
+
+  <section aria-labelledby="source-requests-heading">
+    <h2 id="source-requests-heading">Source requests</h2>
+    <p class="lede">
+      Readers who asked for sources for their town. Approving or rejecting
+      records your reason with the decision.
+    </p>
+    <label class="field filter"
+      ><span>Show</span>
+      <select (change)="setRequestStatus($event)">
+        <option value="pending" [selected]="requestStatus() === 'pending'">
+          Pending
+        </option>
+        <option value="approved" [selected]="requestStatus() === 'approved'">
+          Approved
+        </option>
+        <option value="rejected" [selected]="requestStatus() === 'rejected'">
+          Rejected
+        </option>
+      </select>
+    </label>
+    @if (failure(requests())) {
+    <p class="problem" role="alert">
+      <strong>Unavailable.</strong> {{ failure(requests()) }}
+      <button type="button" class="link" (click)="loadRequests()">Retry</button>
+    </p>
+    } @else if (requests().status === 'loading') {
+    <p class="quiet" role="status">Loading…</p>
+    } @else if (requests().status === 'ready') { @let queue =
+    $any(requests()).value;
+    <ul class="entries">
+      @for (request of queue.items; track request.id) {
+      <li>
+        <div class="entry-line">
+          <strong>{{ request.townName }}</strong>
+          <span class="meta">{{
+            request.createdAt | date : 'mediumDate'
+          }}</span>
+          @if (request.status !== 'pending') {
+          <span class="tag">{{ request.status }}</span>
+          } @else if (canManage()) {
+          <span class="actions">
+            <button
+              type="button"
+              (click)="ask({ kind: 'approved', panel: 'requests', request })"
+            >
+              Approve
+            </button>
+            <button
+              type="button"
+              (click)="ask({ kind: 'rejected', panel: 'requests', request })"
+            >
+              Reject
+            </button>
+          </span>
+          }
+        </div>
+        @if (request.note) {
+        <p class="meta">“{{ request.note }}”</p>
+        } @if (request.decisionReason) {
+        <p class="meta">
+          {{ request.decisionReason }} · by {{ request.decidedBy }}
+        </p>
+        }
+      </li>
+      } @empty {
+      <li class="quiet">No requests here.</li>
+      }
+    </ul>
+    <p class="meta">{{ queue.total }} in total</p>
+    <div class="actions">
+      <button
+        type="button"
+        [disabled]="requestOffset() === 0"
+        (click)="pageRequests(-1)"
+      >
+        Newer
+      </button>
+      <button
+        type="button"
+        [disabled]="!hasNext(requestOffset(), queue.total)"
+        (click)="pageRequests(1)"
+      >
+        Older
+      </button>
+    </div>
+    } @if (isAsking('requests')) {
+    <ng-container [ngTemplateOutlet]="confirmGroup" />
+    } @if (message() && !isAsking('overrides')) {
+    <p role="status">{{ message() }}</p>
+    }
+  </section>
+</div>

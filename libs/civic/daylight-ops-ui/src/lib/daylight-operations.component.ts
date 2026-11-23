@@ -1,3 +1,4 @@
+import { DaylightSourcesComponent } from './daylight-sources.component';
 import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -72,7 +73,7 @@ type NoticeAction = 'upheld' | 'declined' | 'restored';
  */
 @Component({
   selector: 'ot-daylight-operations',
-  imports: [DatePipe, ReactiveFormsModule],
+  imports: [DatePipe, ReactiveFormsModule, DaylightSourcesComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daylight-operations.component.html',
   styleUrl: './daylight-operations.component.scss',
@@ -104,13 +105,16 @@ export class DaylightOperationsComponent {
   protected readonly canTakedowns = this.can('takedown.manage');
   protected readonly canVerify = this.can('official.verify');
   protected readonly canMaintain = this.can('community.maintain');
+  protected readonly canSourcesRead = this.can('sources.read');
+  protected readonly canSourcesManage = this.can('sources.manage');
   protected readonly anything = computed(
     () =>
       this.canPipeline() ||
       this.canDensity() ||
       this.canTakedowns() ||
       this.canVerify() ||
-      this.canMaintain()
+      this.canMaintain() ||
+      this.canSourcesRead()
   );
 
   // ── Pipeline health ────────────────────────────────────────────────────
@@ -130,7 +134,7 @@ export class DaylightOperationsComponent {
     };
   });
   /** The locality slug of the filtered town, once the pipeline names it. */
-  private readonly townSlug = computed(() => {
+  protected readonly townSlug = computed(() => {
     const filter = this.town();
     if (!filter) return null;
     if (filter.slug) return filter.slug;
@@ -140,6 +144,13 @@ export class DaylightOperationsComponent {
       )?.slug ?? null
     );
   });
+  /** Towns the sources panels can be pointed at. */
+  protected readonly sourceTowns = computed(() =>
+    (this.fullPipelineReport()?.towns ?? []).map((town) => ({
+      slug: town.slug,
+      name: town.name,
+    }))
+  );
   protected readonly townName = computed(() => this.town()?.name ?? '');
   /** Whether the backfill can be pointed at the filtered town alone. */
   protected readonly canBackfill = computed(

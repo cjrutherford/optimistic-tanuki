@@ -3531,6 +3531,22 @@
       "appScope": "local-hub"
     },
     {
+      "name": "sources.read",
+      "description": "Read a town's source decision log, overrides, health and requests.",
+      "active": true,
+      "resource": "sources",
+      "action": "read",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "sources.manage",
+      "description": "Block, pin or clear sources, and decide readers' source requests.",
+      "active": true,
+      "resource": "sources",
+      "action": "manage",
+      "appScope": "local-hub"
+    },
+    {
       "name": "official.verify",
       "description": "Confirm an official's application after the callback.",
       "active": true,
@@ -3600,6 +3616,22 @@
       "active": true,
       "resource": "town",
       "action": "configure",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "sources.read",
+      "description": "Read a town's source decision log, overrides, health and requests.",
+      "active": true,
+      "resource": "sources",
+      "action": "read",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "sources.manage",
+      "description": "Block, pin or clear sources, and decide readers' source requests.",
+      "active": true,
+      "resource": "sources",
+      "action": "manage",
       "appScope": "owner-console"
     },
     {
@@ -8352,6 +8384,56 @@
     {
       "role": "system_admin",
       "permission": "town.configure",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "sources.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "sources.manage",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "sources.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "sources.manage",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "sources.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner",
+      "permission": "sources.manage",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "sources.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "global_admin",
+      "permission": "sources.manage",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "sources.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "system_admin",
+      "permission": "sources.manage",
       "permissionAppScope": "owner-console"
     },
     {

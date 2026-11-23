@@ -1,0 +1,203 @@
+// Source admin panels. Colours come from the theme; shapes from tokens.
+
+:host {
+  display: block;
+}
+
+section {
+  margin-top: 2.5rem;
+}
+
+h2 {
+  font-size: var(--type-h3, 1.35rem);
+  margin: 0 0 0.5rem;
+}
+
+.lede,
+.quiet,
+.meta,
+.hint {
+  margin: 0;
+  line-height: var(--line-height, 1.55);
+  color: var(--foreground-muted);
+}
+
+.lede {
+  max-width: 66ch;
+  margin-bottom: 1rem;
+}
+
+.meta {
+  display: block;
+  font-size: var(--type-small, 0.88rem);
+}
+
+.problem {
+  color: var(--error);
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 0.8rem;
+
+  > span:first-child {
+    font-weight: 600;
+  }
+}
+
+.filter {
+  display: inline-grid;
+}
+
+input[type='text'],
+select,
+textarea {
+  font: inherit;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--personality-input-radius, 0.8rem);
+  border: 1px solid var(--border);
+  background: var(--surface, var(--background));
+  color: var(--foreground);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: var(--type-small, 0.93rem);
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+thead th {
+  font-size: var(--type-small, 0.82rem);
+  text-transform: uppercase;
+  letter-spacing: var(--personality-label-letter-spacing, 0.04em);
+}
+
+.number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.why {
+  max-width: 28rem;
+}
+
+.tag,
+.status {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+  font-size: var(--type-small, 0.8rem);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+.status[data-status='healthy'],
+.status[data-decision='adopted'],
+.status[data-decision='pinned'] {
+  background: color-mix(in srgb, var(--success) 16%, transparent);
+}
+
+.status[data-status='failing'],
+.status[data-decision='blocked'] {
+  background: color-mix(in srgb, var(--error) 14%, transparent);
+}
+
+.entries {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+
+  li {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    line-height: var(--line-height, 1.55);
+  }
+}
+
+.entry-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.confirm,
+.add-block {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--personality-card-radius, 1rem);
+
+  p {
+    margin: 0;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+
+  button {
+    font: inherit;
+    padding: 0.45rem 1rem;
+    border-radius: 9999px;
+    border: 1px solid var(--primary);
+    background: transparent;
+    color: var(--primary);
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

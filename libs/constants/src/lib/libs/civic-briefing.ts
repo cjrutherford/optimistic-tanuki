@@ -35,4 +35,18 @@ export const CivicBriefingCommands = {
   ACCEPT_OFFICIAL_CANDIDATE: 'civic-briefing.officials.accept',
   /** Reject a candidate; it is not suggested again (D33). */
   REJECT_OFFICIAL_CANDIDATE: 'civic-briefing.officials.reject',
+  /** A town's source decision log (adopted, refused, blocked, pinned), newest first; `{ slug, limit?, offset? }` (SD.6). */
+  SOURCE_DECISIONS: 'civic-briefing.sources.decisions',
+  /** Active source overrides (block, pin); `{ slug? }` (SD.6). */
+  SOURCE_OVERRIDES: 'civic-briefing.sources.overrides',
+  /** Block or pin a source; `{ slug, sourceKey, kind, reason, actor }` (SD.6). */
+  SOURCE_OVERRIDE_SET: 'civic-briefing.sources.override-set',
+  /** Clear a source's override; `{ sourceKey, reason, actor }` (SD.6). */
+  SOURCE_OVERRIDE_CLEAR: 'civic-briefing.sources.override-clear',
+  /** Per-source health for a town; `{ slug }` (SD.6). */
+  SOURCE_HEALTH: 'civic-briefing.sources.health',
+  /** Readers' requests for sources; `{ slug?, status?, limit?, offset? }`, pending by default (SD.6). */
+  SOURCE_REQUESTS: 'civic-briefing.sources.requests',
+  /** Approve or reject a request; `{ id, decision, reason, actor }` (SD.6). */
+  SOURCE_REQUEST_DECIDE: 'civic-briefing.sources.request-decide',
 } as const;

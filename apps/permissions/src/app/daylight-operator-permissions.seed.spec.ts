@@ -14,6 +14,8 @@ const OPERATOR_PERMISSIONS = [
   'takedown.manage',
   'official.verify',
   'community.maintain',
+  'sources.read',
+  'sources.manage',
 ];
 const OWNER_ROLES = [
   'owner_console_owner',

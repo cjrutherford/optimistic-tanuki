@@ -218,13 +218,14 @@ default host.
 
 ### After the boundary (S5–S6)
 
-| Slice                    | Commit      | Note                                                                                                            |
-| ------------------------ | ----------- | --------------------------------------------------------------------------------------------------------------- |
-| S5 moderation queue      | `b4581866e` |                                                                                                                 |
-| S6a Daylight mirror      | `a6bc3f1ce` | SD.6 decision log, overrides, per-source health and the source-request queue need civic-briefing commands first |
-| S6b durable registry     | `31db17bba` | migration `AddRegistryDurability1795411571917`                                                                  |
-| S6c fold-in              | `a97abeae5` | only BTO hardware quotes needed moving                                                                          |
-| S6d directory follow-ups | uncommitted | done except the migration, backup and cohort cutover; see below                                                 |
+| Slice                    | Commit      | Note                                                                             |
+| ------------------------ | ----------- | -------------------------------------------------------------------------------- |
+| S5 moderation queue      | `b4581866e` |                                                                                  |
+| S6a Daylight mirror      | `a6bc3f1ce` | SD.6 (decision log, overrides, source health, source requests) landed separately |
+| S6b durable registry     | `31db17bba` | migration `AddRegistryDurability1795411571917`                                   |
+| S6c fold-in              | `a97abeae5` | only BTO hardware quotes needed moving                                           |
+| SD.6 Daylight sources    | next commit | migration `SourcesAdmin1795421681325`; see the Daylight plan log                 |
+| S6d directory follow-ups | uncommitted | done except the migration, backup and cohort cutover; see below                  |
 
 S6d is built on all three layers. Open items are listed first.
 

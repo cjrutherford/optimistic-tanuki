@@ -35,6 +35,7 @@ import type { ScheduleConfig } from './schedule.config';
 import type { CivicCoreClient } from '@optimistic-tanuki/civic-adapters';
 import { civicCoreDecisions } from '../civic-core/adoption';
 import { townSources } from '../registry/town-sources';
+import { applyOverrides } from './source-overrides';
 import { SourcingStore } from './sourcing-store';
 import type { LocalityRegistrySource } from '../registry/locality-registry.source';
 
@@ -720,7 +721,7 @@ export class DailySchedule {
         pageBudget: this.config.sourcingPageBudget,
       });
       const { searched, pagesRead } = discovery;
-      const decisions = [...discovery.decisions];
+      const found = [...discovery.decisions];
       if (this.civicCore) {
         const civic = await civicCoreDecisions(
           this.civicCore,
@@ -731,8 +732,10 @@ export class DailySchedule {
           this.logger.warn(
             `${town.slug}: Civic Core unreachable, skipped: ${civic.unreachable}`
           );
-        decisions.push(...civic.decisions);
+        found.push(...civic.decisions);
       }
+      // An operator's block or pin outranks what discovery decided (SD.6).
+      const decisions = applyOverrides(found, await this.store.overrides());
       const adopted = decisions.filter((decision) => decision.adopted);
       const configured = this.registry.all().flatMap((place) => place.sources);
       let added = 0;

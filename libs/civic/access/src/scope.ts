@@ -114,6 +114,20 @@ export const PERMISSIONS: readonly PermissionRecord[] = [
     description: 'Add or change a town and its sources.',
   },
   {
+    name: 'sources.read',
+    resource: 'sources',
+    action: 'read',
+    description:
+      "Read a town's source decision log, overrides, health and requests.",
+  },
+  {
+    name: 'sources.manage',
+    resource: 'sources',
+    action: 'manage',
+    description:
+      "Block, pin or clear sources, and decide readers' source requests.",
+  },
+  {
     name: 'official.verify',
     resource: 'official',
     action: 'verify',
@@ -165,6 +179,8 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, readonly string[]>> = {
     'review-decision.read',
     'account.suspend',
     'town.configure',
+    'sources.read',
+    'sources.manage',
     'density.read',
     'official.verify',
     'takedown.manage',

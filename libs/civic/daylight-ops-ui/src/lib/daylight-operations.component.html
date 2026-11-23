@@ -510,5 +510,12 @@
     <p role="status">{{ maintenanceMessage() }}</p>
     }
   </section>
+  } @if (canSourcesRead()) {
+  <ot-daylight-sources
+    [town]="town()"
+    [slug]="townSlug()"
+    [towns]="sourceTowns()"
+    [canManage]="canSourcesManage()"
+  />
   }
 </div>

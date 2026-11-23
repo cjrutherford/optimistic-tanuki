@@ -147,6 +147,7 @@ import { EditionsController } from '../controllers/civic-briefing/editions.contr
 import { CivicCommunityController } from '../controllers/civic-briefing/community.controller';
 import { SourcesController } from '../controllers/civic-briefing/sources.controller';
 import { CivicOperationsController } from '../controllers/civic-briefing/operations.controller';
+import { SourceOpsController } from '../controllers/civic-briefing/source-ops.controller';
 import { NexusController } from '../controllers/nexus/nexus.controller';
 import { VaultController } from '../controllers/vault/vault.controller';
 import {
@@ -535,6 +536,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'civic-briefing-sources',
         requiredServices: ['civic-briefing'],
         value: SourcesController,
+      },
+      {
+        id: 'civic-briefing-source-ops',
+        requiredServices: ['civic-briefing'],
+        value: SourceOpsController,
       },
       {
         id: 'civic-community',

@@ -8,6 +8,8 @@ import { map, type Observable } from 'rxjs';
  */
 export const DAYLIGHT_OPERATOR_PERMISSIONS = [
   'town.configure',
+  'sources.read',
+  'sources.manage',
   'density.read',
   'takedown.manage',
   'official.verify',

@@ -7,6 +7,7 @@ import { DaylightDbLocalities1793805980810 } from '../../../migrations/179380598
 import { DaylightLocalityDisambiguation1793808213553 } from '../../../migrations/1793808213553-DaylightLocalityDisambiguation';
 import { SourceRequests1793837771735 } from '../../../migrations/1793837771735-SourceRequests';
 import { OfficialCandidates1793843620449 } from '../../../migrations/1793843620449-OfficialCandidates';
+import { SourcesAdmin1795421681325 } from '../../../migrations/1795421681325-SourcesAdmin';
 import { BRIEFING_SCHEMAS } from '../schemas';
 import { SourcingStore } from '../schedule/sourcing-store';
 import { SourceRequestSchema } from './source-request.schema';
@@ -50,6 +51,7 @@ describe('SourceRequestsService', () => {
         DaylightLocalityDisambiguation1793808213553,
         SourceRequests1793837771735,
         OfficialCandidates1793843620449,
+        SourcesAdmin1795421681325,
       ],
     });
     await ds.initialize();
