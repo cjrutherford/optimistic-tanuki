@@ -5,6 +5,7 @@ import { StoreService, Order } from '../services/store.service';
 import { UpdateOrderDto } from '@optimistic-tanuki/ui-models';
 import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
 import { CommerceWorkspaceNavComponent } from './commerce-workspace-nav.component';
+import { describeHttpError } from '../services/describe-http-error';
 
 @Component({
   selector: 'app-order-management',
@@ -126,9 +127,8 @@ export class OrderManagementComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to load orders';
+        this.error = describeHttpError(err, 'Failed to load orders');
         this.loading = false;
-        console.error(err);
       },
     });
   }
@@ -166,9 +166,8 @@ export class OrderManagementComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to update order status';
+        this.error = describeHttpError(err, 'Failed to update order status');
         this.loading = false;
-        console.error(err);
       },
     });
   }

@@ -169,10 +169,10 @@ describe('ForumGovernanceComponent workflows', () => {
 
   describe('load failures', () => {
     it.each([
-      ['getTopics', 'Failed to load forum topics'],
-      ['getThreads', 'Failed to load forum threads'],
-      ['getPosts', 'Failed to load forum posts'],
-      ['getReports', 'Failed to load forum reports'],
+      ['getTopics', 'Failed to load forum topics: boom'],
+      ['getThreads', 'Failed to load forum threads: boom'],
+      ['getPosts', 'Failed to load forum posts: boom'],
+      ['getReports', 'Failed to load forum reports: boom'],
     ])('reports a %s failure', (method, message) => {
       jest.spyOn(console, 'error').mockImplementation(() => undefined);
       (forumService as Record<string, jest.Mock>)[method].mockReturnValue(
@@ -312,7 +312,7 @@ describe('ForumGovernanceComponent workflows', () => {
 
       component.saveReport(component.reports[0]);
 
-      expect(component.error).toBe('Failed to update forum report');
+      expect(component.error).toBe('Failed to update forum report: boom');
     });
   });
 
@@ -390,7 +390,7 @@ describe('ForumGovernanceComponent workflows', () => {
 
       component.applyThreadModeration(component.threads[0], 'hidden');
 
-      expect(component.error).toBe('Failed to moderate forum thread');
+      expect(component.error).toBe('Failed to moderate forum thread: boom');
     });
 
     it('hides a post and actions the linked report', () => {
@@ -422,7 +422,7 @@ describe('ForumGovernanceComponent workflows', () => {
 
       component.applyPostModeration(component.posts[0], 'hidden');
 
-      expect(component.error).toBe('Failed to moderate forum post');
+      expect(component.error).toBe('Failed to moderate forum post: boom');
     });
   });
 
@@ -469,7 +469,7 @@ describe('ForumGovernanceComponent workflows', () => {
 
       component.applyReportContentModeration(component.reports[1], 'hidden');
 
-      expect(component.error).toBe('Failed to moderate forum thread');
+      expect(component.error).toBe('Failed to moderate forum thread: boom');
     });
 
     it('moderates the reported post and actions the report', () => {
@@ -508,7 +508,7 @@ describe('ForumGovernanceComponent workflows', () => {
 
       component.applyReportContentModeration(component.reports[0], 'hidden');
 
-      expect(component.error).toBe('Failed to moderate forum post');
+      expect(component.error).toBe('Failed to moderate forum post: boom');
     });
 
     it('reports a failure to finalise the report after moderation', () => {
@@ -520,7 +520,7 @@ describe('ForumGovernanceComponent workflows', () => {
 
       component.applyReportContentModeration(component.reports[0], 'hidden');
 
-      expect(component.error).toBe('Failed to update forum report');
+      expect(component.error).toBe('Failed to update forum report: boom');
     });
   });
 });

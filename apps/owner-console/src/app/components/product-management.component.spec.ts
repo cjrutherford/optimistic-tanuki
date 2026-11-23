@@ -139,7 +139,7 @@ describe('ProductManagementComponent', () => {
 
     const component = create();
 
-    expect(component.error).toBe('Failed to load products');
+    expect(component.error).toBe('Failed to load products: boom');
     expect(component.loading).toBe(false);
     expect(component.products).toEqual([]);
   });
@@ -220,7 +220,7 @@ describe('ProductManagementComponent', () => {
     component.startCreate();
     component.saveProduct();
 
-    expect(component.error).toBe('Failed to create product');
+    expect(component.error).toBe('Failed to create product: nope');
     expect(component.isCreating).toBe(true);
   });
 
@@ -250,7 +250,7 @@ describe('ProductManagementComponent', () => {
     component.startEdit(component.products[0]);
     component.saveProduct();
 
-    expect(component.error).toBe('Failed to update product');
+    expect(component.error).toBe('Failed to update product: nope');
   });
 
   it('does nothing on save when neither creating nor editing', () => {
@@ -322,7 +322,7 @@ describe('ProductManagementComponent', () => {
 
     component.deleteProduct(component.products[0]);
 
-    expect(component.error).toBe('Failed to delete product');
+    expect(component.error).toBe('Failed to delete product: nope');
     confirmSpy.mockRestore();
   });
 });

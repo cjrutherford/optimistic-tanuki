@@ -9,6 +9,7 @@ import {
 } from '@optimistic-tanuki/ui-models';
 import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
 import { CommerceWorkspaceNavComponent } from './commerce-workspace-nav.component';
+import { describeHttpError } from '../services/describe-http-error';
 
 type ResourceFilter = 'all' | 'room' | 'equipment' | 'vehicle' | 'inactive';
 
@@ -122,9 +123,8 @@ export class ResourceManagementComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to load resources';
+        this.error = describeHttpError(err, 'Failed to load resources');
         this.loading = false;
-        console.error(err);
       },
     });
   }
@@ -212,9 +212,8 @@ export class ResourceManagementComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to create resource';
+        this.error = describeHttpError(err, 'Failed to create resource');
         this.loading = false;
-        console.error(err);
       },
     });
   }
@@ -235,9 +234,8 @@ export class ResourceManagementComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to update resource';
+        this.error = describeHttpError(err, 'Failed to update resource');
         this.loading = false;
-        console.error(err);
       },
     });
   }
@@ -255,9 +253,8 @@ export class ResourceManagementComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to delete resource';
+        this.error = describeHttpError(err, 'Failed to delete resource');
         this.loading = false;
-        console.error(err);
       },
     });
   }

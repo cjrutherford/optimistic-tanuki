@@ -98,7 +98,7 @@ describe('AppointmentManagementComponent', () => {
 
     const component = create();
 
-    expect(component.error).toBe('Failed to load appointments');
+    expect(component.error).toBe('Failed to load appointments: boom');
     expect(component.loading).toBe(false);
   });
 
@@ -154,7 +154,7 @@ describe('AppointmentManagementComponent', () => {
       component.openApproveModal(appointments[0]);
       component.approveAppointment();
 
-      expect(component.error).toBe('Failed to approve appointment');
+      expect(component.error).toBe('Failed to approve appointment: nope');
       expect(component.showApproveModal).toBe(true);
     });
 
@@ -211,7 +211,7 @@ describe('AppointmentManagementComponent', () => {
       component.openDenyModal(appointments[0]);
       component.denyAppointment();
 
-      expect(component.error).toBe('Failed to deny appointment');
+      expect(component.error).toBe('Failed to deny appointment: nope');
     });
 
     it('does nothing when no appointment is selected', () => {
@@ -256,7 +256,7 @@ describe('AppointmentManagementComponent', () => {
 
       component.completeAppointment(appointments[1]);
 
-      expect(component.error).toBe('Failed to complete appointment');
+      expect(component.error).toBe('Failed to complete appointment: nope');
       confirmSpy.mockRestore();
     });
 
@@ -291,7 +291,7 @@ describe('AppointmentManagementComponent', () => {
 
       component.cancelAppointment(appointments[0]);
 
-      expect(component.error).toBe('Failed to cancel appointment');
+      expect(component.error).toBe('Failed to cancel appointment: nope');
       confirmSpy.mockRestore();
     });
   });
@@ -328,7 +328,7 @@ describe('AppointmentManagementComponent', () => {
 
       component.generateInvoice(appointments[2]);
 
-      expect(component.error).toBe('Failed to generate invoice');
+      expect(component.error).toBe('Failed to generate invoice: nope');
       expect(component.showInvoiceModal).toBe(false);
     });
   });

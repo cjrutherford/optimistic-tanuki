@@ -17,6 +17,7 @@ import {
   OperatorQueueItem,
   OperatorQueueService,
 } from '../services/operator-queue.service';
+import { describeHttpError } from '../services/describe-http-error';
 
 type CommerceLane =
   | 'all'
@@ -433,8 +434,10 @@ export class StoreOverviewComponent implements OnInit {
         },
         error: (err) => {
           this.loading = false;
-          this.error = 'Failed to apply bulk appointment action';
-          console.error(err);
+          this.error = describeHttpError(
+            err,
+            'Failed to apply bulk appointment action'
+          );
         },
       });
     });
@@ -496,8 +499,10 @@ export class StoreOverviewComponent implements OnInit {
           },
           error: (err) => {
             this.loading = false;
-            this.error = 'Failed to apply bulk order status update';
-            console.error(err);
+            this.error = describeHttpError(
+              err,
+              'Failed to apply bulk order status update'
+            );
           },
         });
     });
@@ -516,9 +521,8 @@ export class StoreOverviewComponent implements OnInit {
         this.loadData();
       },
       error: (err) => {
-        this.error = 'Failed to cancel subscription';
+        this.error = describeHttpError(err, 'Failed to cancel subscription');
         this.loading = false;
-        console.error(err);
       },
     });
   }
@@ -581,9 +585,11 @@ export class StoreOverviewComponent implements OnInit {
   }
 
   private handleLoadError(error: unknown): void {
-    this.error = 'Failed to load commerce workspace data';
+    this.error = describeHttpError(
+      error,
+      'Failed to load commerce workspace data'
+    );
     this.loading = false;
-    console.error(error);
   }
 
   private restoreViewPreset(): void {

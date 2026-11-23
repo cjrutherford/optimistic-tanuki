@@ -17,6 +17,7 @@ import {
   OperatorQueueItem,
   OperatorQueueService,
 } from '../services/operator-queue.service';
+import { describeHttpError } from '../services/describe-http-error';
 
 @Component({
   selector: 'app-social-governance',
@@ -127,10 +128,12 @@ export class SocialGovernanceComponent implements OnInit {
         scrollToFocused(this.focusId);
       },
       error: (err) => {
-        this.error = 'Failed to load moderation reports';
+        this.error = describeHttpError(
+          err,
+          'Failed to load moderation reports'
+        );
         this.loadFailed = true;
         this.reportsLoaded = false;
-        console.error(err);
       },
     });
   }
@@ -235,8 +238,10 @@ export class SocialGovernanceComponent implements OnInit {
         };
       },
       error: (err) => {
-        this.error = 'Failed to update moderation report';
-        console.error(err);
+        this.error = describeHttpError(
+          err,
+          'Failed to update moderation report'
+        );
       },
     });
   }
@@ -306,14 +311,18 @@ export class SocialGovernanceComponent implements OnInit {
                 };
               },
               error: (err) => {
-                this.error = 'Failed to update moderation report';
-                console.error(err);
+                this.error = describeHttpError(
+                  err,
+                  'Failed to update moderation report'
+                );
               },
             });
         },
         error: (err) => {
-          this.error = 'Failed to apply content moderation';
-          console.error(err);
+          this.error = describeHttpError(
+            err,
+            'Failed to apply content moderation'
+          );
         },
       });
   }

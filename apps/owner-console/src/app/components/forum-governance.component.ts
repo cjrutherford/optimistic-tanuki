@@ -9,6 +9,7 @@ import {
 } from '@optimistic-tanuki/ui-models';
 import { scrollToFocused } from '../focus-item';
 import { ForumModerationReport, ForumService } from '../services/forum.service';
+import { describeHttpError } from '../services/describe-http-error';
 
 @Component({
   selector: 'app-forum-governance',
@@ -495,8 +496,7 @@ export class ForumGovernanceComponent implements OnInit {
         this.topics = topics;
       },
       error: (err) => {
-        this.error = 'Failed to load forum topics';
-        console.error(err);
+        this.error = describeHttpError(err, 'Failed to load forum topics');
       },
     });
   }
@@ -507,8 +507,7 @@ export class ForumGovernanceComponent implements OnInit {
         this.threads = threads;
       },
       error: (err) => {
-        this.error = 'Failed to load forum threads';
-        console.error(err);
+        this.error = describeHttpError(err, 'Failed to load forum threads');
       },
     });
   }
@@ -519,8 +518,7 @@ export class ForumGovernanceComponent implements OnInit {
         this.posts = posts;
       },
       error: (err) => {
-        this.error = 'Failed to load forum posts';
-        console.error(err);
+        this.error = describeHttpError(err, 'Failed to load forum posts');
       },
     });
   }
@@ -539,8 +537,7 @@ export class ForumGovernanceComponent implements OnInit {
         scrollToFocused(this.focusId);
       },
       error: (err) => {
-        this.error = 'Failed to load forum reports';
-        console.error(err);
+        this.error = describeHttpError(err, 'Failed to load forum reports');
       },
     });
   }
@@ -643,8 +640,7 @@ export class ForumGovernanceComponent implements OnInit {
           };
         },
         error: (err) => {
-          this.error = 'Failed to update forum report';
-          console.error(err);
+          this.error = describeHttpError(err, 'Failed to update forum report');
         },
       });
   }
@@ -686,8 +682,10 @@ export class ForumGovernanceComponent implements OnInit {
           }
         },
         error: (err) => {
-          this.error = 'Failed to moderate forum thread';
-          console.error(err);
+          this.error = describeHttpError(
+            err,
+            'Failed to moderate forum thread'
+          );
         },
       });
   }
@@ -715,8 +713,7 @@ export class ForumGovernanceComponent implements OnInit {
           }
         },
         error: (err) => {
-          this.error = 'Failed to moderate forum post';
-          console.error(err);
+          this.error = describeHttpError(err, 'Failed to moderate forum post');
         },
       });
   }
@@ -743,8 +740,10 @@ export class ForumGovernanceComponent implements OnInit {
             );
           },
           error: (err) => {
-            this.error = 'Failed to moderate forum thread';
-            console.error(err);
+            this.error = describeHttpError(
+              err,
+              'Failed to moderate forum thread'
+            );
           },
         });
       return;
@@ -767,8 +766,7 @@ export class ForumGovernanceComponent implements OnInit {
           );
         },
         error: (err) => {
-          this.error = 'Failed to moderate forum post';
-          console.error(err);
+          this.error = describeHttpError(err, 'Failed to moderate forum post');
         },
       });
   }
@@ -793,8 +791,7 @@ export class ForumGovernanceComponent implements OnInit {
           };
         },
         error: (err) => {
-          this.error = 'Failed to update forum report';
-          console.error(err);
+          this.error = describeHttpError(err, 'Failed to update forum report');
         },
       });
   }

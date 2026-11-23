@@ -125,7 +125,11 @@ export class AgAppScopesTableComponent implements OnInit, OnChanges {
       field: 'active',
       headerName: 'Status',
       flex: 1,
-      filter: 'agSetColumnFilter',
+      // The set filter is an enterprise module the console does not register;
+      // filter on the label the badge shows instead.
+      filter: 'agTextColumnFilter',
+      filterValueGetter: (params: any) =>
+        params.data?.active ? 'Active' : 'Inactive',
       cellRenderer: (params: any) => {
         const active = params.value;
         const badge = document.createElement('span');

@@ -8,6 +8,7 @@ import {
   UpdateProductDto,
 } from '@optimistic-tanuki/ui-models';
 import { CommerceWorkspaceNavComponent } from './commerce-workspace-nav.component';
+import { describeHttpError } from '../services/describe-http-error';
 
 // The form binds to a dollar-denominated `price` field for a friendlier
 // input UX; it is converted to `priceCents` when building the DTO.
@@ -68,9 +69,8 @@ export class ProductManagementComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to load products';
+        this.error = describeHttpError(err, 'Failed to load products');
         this.loading = false;
-        console.error(err);
       },
     });
   }
@@ -182,9 +182,8 @@ export class ProductManagementComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to create product';
+        this.error = describeHttpError(err, 'Failed to create product');
         this.loading = false;
-        console.error(err);
       },
     });
   }
@@ -213,9 +212,8 @@ export class ProductManagementComponent implements OnInit {
           this.loading = false;
         },
         error: (err) => {
-          this.error = 'Failed to update product';
+          this.error = describeHttpError(err, 'Failed to update product');
           this.loading = false;
-          console.error(err);
         },
       });
   }
@@ -233,9 +231,8 @@ export class ProductManagementComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to delete product';
+        this.error = describeHttpError(err, 'Failed to delete product');
         this.loading = false;
-        console.error(err);
       },
     });
   }

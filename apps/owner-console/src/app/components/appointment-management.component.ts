@@ -9,6 +9,7 @@ import {
 } from '@optimistic-tanuki/ui-models';
 import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
 import { CommerceWorkspaceNavComponent } from './commerce-workspace-nav.component';
+import { describeHttpError } from '../services/describe-http-error';
 
 @Component({
   selector: 'app-appointment-management',
@@ -139,9 +140,8 @@ export class AppointmentManagementComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to load appointments';
+        this.error = describeHttpError(err, 'Failed to load appointments');
         this.loading = false;
-        console.error(err);
       },
     });
   }
@@ -193,9 +193,8 @@ export class AppointmentManagementComponent implements OnInit {
           this.loadAppointments();
         },
         error: (err) => {
-          this.error = 'Failed to approve appointment';
+          this.error = describeHttpError(err, 'Failed to approve appointment');
           this.loading = false;
-          console.error(err);
         },
       });
   }
@@ -226,9 +225,8 @@ export class AppointmentManagementComponent implements OnInit {
           this.loadAppointments();
         },
         error: (err) => {
-          this.error = 'Failed to deny appointment';
+          this.error = describeHttpError(err, 'Failed to deny appointment');
           this.loading = false;
-          console.error(err);
         },
       });
   }
@@ -244,9 +242,8 @@ export class AppointmentManagementComponent implements OnInit {
         this.loadAppointments();
       },
       error: (err) => {
-        this.error = 'Failed to complete appointment';
+        this.error = describeHttpError(err, 'Failed to complete appointment');
         this.loading = false;
-        console.error(err);
       },
     });
   }
@@ -262,9 +259,8 @@ export class AppointmentManagementComponent implements OnInit {
         this.loadAppointments();
       },
       error: (err) => {
-        this.error = 'Failed to cancel appointment';
+        this.error = describeHttpError(err, 'Failed to cancel appointment');
         this.loading = false;
-        console.error(err);
       },
     });
   }
@@ -280,9 +276,8 @@ export class AppointmentManagementComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to generate invoice';
+        this.error = describeHttpError(err, 'Failed to generate invoice');
         this.loading = false;
-        console.error(err);
       },
     });
   }

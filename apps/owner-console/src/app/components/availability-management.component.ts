@@ -10,6 +10,7 @@ import {
 } from '@optimistic-tanuki/ui-models';
 import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
 import { CommerceWorkspaceNavComponent } from './commerce-workspace-nav.component';
+import { describeHttpError } from '../services/describe-http-error';
 
 @Component({
   selector: 'app-availability-management',
@@ -136,9 +137,8 @@ export class AvailabilityManagementComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Failed to load availabilities';
+        this.error = describeHttpError(err, 'Failed to load availabilities');
         this.loading = false;
-        console.error(err);
       },
     });
   }
@@ -182,9 +182,8 @@ export class AvailabilityManagementComponent implements OnInit {
         this.loadAvailabilities();
       },
       error: (err) => {
-        this.error = 'Failed to create availability';
+        this.error = describeHttpError(err, 'Failed to create availability');
         this.loading = false;
-        console.error(err);
       },
     });
   }
@@ -222,9 +221,8 @@ export class AvailabilityManagementComponent implements OnInit {
           this.loadAvailabilities();
         },
         error: (err) => {
-          this.error = 'Failed to update availability';
+          this.error = describeHttpError(err, 'Failed to update availability');
           this.loading = false;
-          console.error(err);
         },
       });
   }
@@ -240,9 +238,8 @@ export class AvailabilityManagementComponent implements OnInit {
         this.loadAvailabilities();
       },
       error: (err) => {
-        this.error = 'Failed to delete availability';
+        this.error = describeHttpError(err, 'Failed to delete availability');
         this.loading = false;
-        console.error(err);
       },
     });
   }

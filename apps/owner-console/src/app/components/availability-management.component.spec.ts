@@ -109,7 +109,7 @@ describe('AvailabilityManagementComponent', () => {
 
     const component = create();
 
-    expect(component.error).toBe('Failed to load availabilities');
+    expect(component.error).toBe('Failed to load availabilities: boom');
     expect(component.loading).toBe(false);
   });
 
@@ -141,7 +141,7 @@ describe('AvailabilityManagementComponent', () => {
       component.openCreateModal();
       component.createAvailability();
 
-      expect(component.error).toBe('Failed to create availability');
+      expect(component.error).toBe('Failed to create availability: nope');
       expect(component.showCreateModal).toBe(true);
     });
 
@@ -207,7 +207,7 @@ describe('AvailabilityManagementComponent', () => {
       component.openEditModal(slot());
       component.updateAvailability();
 
-      expect(component.error).toBe('Failed to update availability');
+      expect(component.error).toBe('Failed to update availability: nope');
     });
 
     it('does nothing when no slot is selected', () => {
@@ -251,7 +251,7 @@ describe('AvailabilityManagementComponent', () => {
 
       component.deleteAvailability(slot());
 
-      expect(component.error).toBe('Failed to delete availability');
+      expect(component.error).toBe('Failed to delete availability: nope');
       confirmSpy.mockRestore();
     });
   });
