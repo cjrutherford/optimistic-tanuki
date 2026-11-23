@@ -20,11 +20,13 @@ import { AgGridUiComponent } from '@optimistic-tanuki/ag-grid-ui/ag-grid-ui.comp
   imports: [CommonModule, AgGridUiComponent],
   template: `
     <div class="ag-permissions-table-container">
+      @if (showCreate) {
       <div class="action-group">
         <button class="create-button" (click)="create.emit()">
           ➕ Create Permission
         </button>
       </div>
+      }
       <otui-ag-grid
         [rowData]="gridData()"
         [columnDefs]="columnDefs"
@@ -94,6 +96,8 @@ import { AgGridUiComponent } from '@optimistic-tanuki/ag-grid-ui/ag-grid-ui.comp
 export class AgPermissionsTableComponent implements OnInit, OnChanges {
   @Input() permissions: PermissionDto[] = [];
   @Input() loading = false;
+  /** A page that carries its own create action turns the built-in one off. */
+  @Input() showCreate = true;
   @Input() height = '600px';
   @Output() create = new EventEmitter<void>();
   @Output() edit = new EventEmitter<PermissionDto>();

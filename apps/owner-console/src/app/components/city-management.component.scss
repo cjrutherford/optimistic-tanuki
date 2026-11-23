@@ -1,0 +1,75 @@
+.cities-page {
+  display: grid;
+  gap: 1.25rem;
+  padding: var(--spacing-md, 1rem);
+}
+
+.filter-field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.filter-label {
+  font-size: var(--type-small, 0.75rem);
+  letter-spacing: var(--personality-label-letter-spacing, normal);
+  color: var(--foreground-muted, inherit);
+}
+
+.filter-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--personality-input-radius, var(--border-radius-sm));
+  font-size: var(--type-body, 0.875rem);
+  background: var(--surface, #ffffff);
+  color: var(--foreground, #111827);
+}
+
+.city-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-md, 1rem);
+}
+
+.city-card {
+  padding: var(--spacing-md, 1rem);
+  border: 1px solid var(--border-color);
+  border-radius: var(--personality-card-radius, var(--border-radius-md));
+  background: var(--surface);
+
+  h2 {
+    margin: 0 0 var(--spacing-sm, 0.5rem) 0;
+    font-family: var(--font-heading);
+    font-size: var(--type-h4);
+    line-height: var(--heading-line-height, normal);
+    color: var(--foreground, #111827);
+  }
+
+  p {
+    margin: 0 0 var(--spacing-sm, 0.5rem) 0;
+    color: color-mix(in srgb, var(--foreground, #111827) 72%, transparent);
+  }
+}
+
+.city-card__open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid
+      color-mix(in srgb, var(--accent, #2563eb) 72%, transparent);
+    outline-offset: 4px;
+  }
+}
+
+.city-actions {
+  display: flex;
+  gap: var(--spacing-sm, 0.5rem);
+  margin-top: var(--spacing-sm, 0.5rem);
+}

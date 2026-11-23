@@ -1,0 +1,129 @@
+<lib-message></lib-message>
+
+<section class="permissions-page">
+  <ot-owner-page-header
+    title="Permissions"
+    description="Permissions are what roles grant. Changing or deleting one changes access for every role and user that holds it."
+  >
+    <otui-button ot-actions variant="primary" (action)="openCreateModal()">
+      Create permission
+    </otui-button>
+  </ot-owner-page-header>
+
+  @if (loadError) {
+  <ot-owner-state
+    kind="error"
+    [message]="loadError"
+    (retry)="loadPermissions()"
+  />
+  } @else if (loading) {
+  <ot-owner-state kind="loading" message="Loading permissions…" />
+  } @else if (permissions.length === 0) {
+  <ot-owner-state
+    kind="empty"
+    message="No permissions exist yet."
+    actionLabel="Create permission"
+    (action)="openCreateModal()"
+  />
+  } @else {
+  <app-ag-permissions-table
+    [permissions]="permissions"
+    [loading]="loading"
+    [showCreate]="false"
+    (create)="openCreateModal()"
+    (edit)="openEditModal($event)"
+    (delete)="openDeleteConfirm($event)"
+  />
+  }
+</section>
+
+<!-- Create/Edit Modal -->
+<otui-modal
+  *ngIf="showFormModal"
+  [heading]="isEditMode ? 'Edit Permission' : 'Create New Permission'"
+  (closeModal)="closeFormModal()"
+  mode="standard-modal"
+  size="lg"
+>
+  <div class="form-container">
+    <div class="form-section">
+      <h3>Permission Details</h3>
+      <p class="section-description">
+        Define the permission name, description, and scope.
+      </p>
+
+      <div class="form-field">
+        <lib-text-input
+          label="Permission Name *"
+          placeholder="e.g., manage_users"
+          [(ngModel)]="formData.name"
+        ></lib-text-input>
+      </div>
+
+      <div class="form-field">
+        <lib-text-area
+          label="Description *"
+          [(ngModel)]="formData.description"
+        ></lib-text-area>
+      </div>
+
+      <div class="form-field">
+        <lib-text-input
+          label="Resource *"
+          placeholder="e.g., users, posts, profiles"
+          [(ngModel)]="formData.resource"
+        ></lib-text-input>
+      </div>
+
+      <div class="form-field">
+        <lib-text-input
+          label="Action *"
+          placeholder="e.g., read, write, delete, manage"
+          [(ngModel)]="formData.action"
+        ></lib-text-input>
+      </div>
+
+      <div class="form-field">
+        <lib-text-input
+          label="Target ID (optional)"
+          placeholder="e.g., profile ID for profile-specific permissions"
+          [(ngModel)]="formData.targetId"
+        ></lib-text-input>
+      </div>
+    </div>
+
+    <div class="form-preview">
+      <h3>Preview</h3>
+      <div class="preview-content">
+        <p><strong>Name:</strong> {{ formData.name || 'Not set' }}</p>
+        <p>
+          <strong>Description:</strong>
+          {{ formData.description || 'Not set' }}
+        </p>
+        <p><strong>Resource:</strong> {{ formData.resource || 'Not set' }}</p>
+        <p><strong>Action:</strong> {{ formData.action || 'Not set' }}</p>
+        <p>
+          <strong>Target ID:</strong>
+          {{ formData.targetId || 'None (applies globally)' }}
+        </p>
+        <p *ngIf="isEditMode && currentPermission" class="info-text">
+          <strong>Current App Scope:</strong>
+          {{ currentPermission.appScope?.name || 'None' }}
+        </p>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <otui-button variant="secondary" (action)="closeFormModal()">
+        Cancel
+      </otui-button>
+      <otui-button
+        variant="primary"
+        (action)="confirmFormSubmit()"
+        [disabled]="!isFormValid()"
+      >
+        {{ isEditMode ? 'Update Permission' : 'Create Permission' }}
+      </otui-button>
+    </div>
+  </div>
+</otui-modal>

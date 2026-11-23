@@ -40,6 +40,23 @@ interface CandidateGroup {
   candidates: OfficialCandidate[];
 }
 
+/**
+ * A reply whose body is missing or has the wrong shape (an empty 200 from a
+ * proxy, a gateway that answers with its own envelope) is a failed load, not
+ * a value to read fields from. Throwing here lands in `track`'s failed state.
+ */
+function body<T>(data: T | null | undefined): T {
+  if (data === null || data === undefined || typeof data !== 'object') {
+    throw new Error('The reply had no data.');
+  }
+  return data;
+}
+
+/** A list the server may have left out or nulled. */
+function list<T>(value: readonly T[] | null | undefined): T[] {
+  return Array.isArray(value) ? [...value] : [];
+}
+
 const HTTPS_URL = /^https:\/\/[^\s/$.?#][^\s]*$/iu;
 
 type NoticeAction = 'upheld' | 'declined' | 'restored';
@@ -159,7 +176,7 @@ export class DaylightOperationsComponent {
       groups.set(candidate.slug, group);
     }
     return [...groups.values()].sort((a, b) =>
-      a.townName.localeCompare(b.townName)
+      (a.townName ?? '').localeCompare(b.townName ?? '')
     );
   });
   protected readonly candidatesError = computed(() => {
@@ -190,7 +207,10 @@ export class DaylightOperationsComponent {
     return state.status === 'ready'
       ? state.value
           .filter((row) => this.isTown(row.localitySlug, row.town))
-          .sort((a, b) => a.active - b.active || a.town.localeCompare(b.town))
+          .sort(
+            (a, b) =>
+              a.active - b.active || (a.town ?? '').localeCompare(b.town ?? '')
+          )
       : [];
   });
   protected readonly densityError = computed(() => {
@@ -249,7 +269,7 @@ export class DaylightOperationsComponent {
     if (!filter) return true;
     if (filter.slug) return filter.slug === slug;
     const wanted = filter.name?.trim().toLowerCase();
-    return !wanted || wanted === name.trim().toLowerCase();
+    return !wanted || wanted === (name ?? '').trim().toLowerCase();
   }
 
   private loadPanels(): void {
@@ -264,14 +284,21 @@ export class DaylightOperationsComponent {
 
   protected loadPipeline(): void {
     this.track(
-      this.civic.pipelineHealth().pipe(map((reply) => reply.data)),
+      this.civic.pipelineHealth().pipe(
+        map((reply) => {
+          const report = body(reply?.data);
+          return { ...report, towns: list(report.towns) };
+        })
+      ),
       'Pipeline health could not be loaded.'
     ).subscribe((state) => this.pipeline.set(state));
   }
 
   protected loadCandidates(): void {
     this.track(
-      this.civic.officialCandidates().pipe(map((reply) => reply.data)),
+      this.civic
+        .officialCandidates()
+        .pipe(map((reply) => list(body(reply?.data)))),
       'Official candidates could not be loaded.'
     ).subscribe((state) => this.candidates.set(state));
   }
@@ -404,22 +431,31 @@ export class DaylightOperationsComponent {
         ...(slug ? { towns: [slug] } : {}),
       })
       .subscribe({
-        next: (reply) => this.showBackfill(reply.data),
+        next: (reply) => this.showBackfill(reply?.data),
         error: (error: unknown) => this.backfillMessage.set(problem(error)),
       });
   }
 
   private loadBackfill(): void {
     this.civic.backfillStatus().subscribe({
-      next: (reply) => this.showBackfill(reply.data),
+      next: (reply) => this.showBackfill(reply?.data),
       error: () => this.backfill.set(null),
     });
   }
 
   /** Shows a backfill's status, checking again while it runs. */
-  private showBackfill(status: BackfillStatus): void {
-    this.backfill.set(status);
+  private showBackfill(raw: BackfillStatus | null | undefined): void {
     this.stopBackfillPoll();
+    if (!raw || typeof raw !== 'object') {
+      this.backfill.set(null);
+      return;
+    }
+    const status: BackfillStatus = {
+      ...raw,
+      towns: list(raw.towns),
+      steps: list(raw.steps),
+    };
+    this.backfill.set(status);
     if (status.running)
       this.backfillPoll = setTimeout(() => {
         this.loadBackfill();
@@ -447,7 +483,7 @@ export class DaylightOperationsComponent {
 
   protected loadDensity(): void {
     this.track(
-      this.civic.density().pipe(map((reply) => reply.data.rows)),
+      this.civic.density().pipe(map((reply) => list(body(reply?.data).rows))),
       'Contributor density could not be loaded.'
     ).subscribe((state) => this.density.set(state));
   }
@@ -457,7 +493,7 @@ export class DaylightOperationsComponent {
     this.track(
       this.civic
         .takedownNotices(state ? { state } : undefined)
-        .pipe(map((reply) => reply.data)),
+        .pipe(map((reply) => list(body(reply?.data)))),
       'Copyright notices could not be loaded.'
     ).subscribe((loaded) => this.notices.set(loaded));
   }

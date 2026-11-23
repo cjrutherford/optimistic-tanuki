@@ -1,12 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import {
-  CardComponent,
-  HeadingComponent,
-  ButtonComponent,
-} from '@optimistic-tanuki/common-ui';
+  OwnerConfirmService,
+  OwnerFilterBarComponent,
+  OwnerPageHeaderComponent,
+  OwnerStateComponent,
+} from '@optimistic-tanuki/owner-page-ui';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { CommunityDto, LocalityType } from '@optimistic-tanuki/ui-models';
 import { CommunityService } from '../services/community.service';
@@ -17,91 +19,20 @@ import { CommunityService } from '../services/community.service';
   imports: [
     CommonModule,
     FormsModule,
-    CardComponent,
-    HeadingComponent,
     ButtonComponent,
+    OwnerFilterBarComponent,
+    OwnerPageHeaderComponent,
+    OwnerStateComponent,
   ],
   templateUrl: './city-management.component.html',
-  styles: [
-    `
-      :host {
-        display: block;
-        padding: var(--spacing-md);
-      }
-      .filters {
-        display: flex;
-        gap: var(--spacing-md);
-        margin-bottom: var(--spacing-md);
-        flex-wrap: wrap;
-        align-items: center;
-      }
-      .search-input {
-        flex: 1;
-        min-width: 200px;
-        padding: 8px 12px;
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius-sm);
-        font-size: 14px;
-        background: var(--surface, #ffffff);
-        color: var(--foreground, #111827);
-      }
-      .search-input:focus {
-        outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 2px
-          color-mix(in srgb, var(--accent, #2563eb) 22%, transparent);
-      }
-      .filter-select {
-        padding: 8px 12px;
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius-sm);
-        font-size: 14px;
-        background: var(--surface, #ffffff);
-        color: var(--foreground, #111827);
-      }
-      .city-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: var(--spacing-md);
-        margin-top: var(--spacing-md);
-      }
-      .city-card {
-        padding: var(--spacing-md);
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius-md);
-        background: var(--surface);
-        cursor: pointer;
-        transition: box-shadow 0.2s, transform 0.2s;
-      }
-      .city-card:hover {
-        box-shadow: var(--shadow-md);
-        transform: translateY(-2px);
-      }
-      .city-card h3 {
-        margin: 0 0 var(--spacing-sm) 0;
-        color: var(--foreground, #111827);
-      }
-      .city-card p {
-        margin: 0 0 var(--spacing-sm) 0;
-        color: color-mix(in srgb, var(--foreground, #111827) 72%, transparent);
-      }
-      .city-actions {
-        display: flex;
-        gap: var(--spacing-sm);
-        margin-top: var(--spacing-sm);
-      }
-      .loading-state {
-        text-align: center;
-        padding: var(--spacing-xl);
-        color: color-mix(in srgb, var(--foreground, #111827) 70%, transparent);
-      }
-    `,
-  ],
+  styleUrls: ['./city-management.component.scss'],
 })
 export class CityManagementComponent implements OnInit {
   cities: CommunityDto[] = [];
   filteredCities: CommunityDto[] = [];
   loading = false;
+  /** Set when the list could not be loaded; shows Unavailable + Retry. */
+  loadError = '';
   readonly governanceSummary =
     'City records are governed through Community Ops permissions on the shared communities API.';
 
@@ -125,32 +56,41 @@ export class CityManagementComponent implements OnInit {
     private messageService: MessageService
   ) {}
 
+  private readonly confirmService = inject(OwnerConfirmService);
+
   ngOnInit(): void {
     this.loadCities();
   }
 
   loadCities(): void {
     this.loading = true;
+    this.loadError = '';
     this.communityService.getCities().subscribe({
       next: (cities) => {
-        this.cities = cities;
+        this.cities = Array.isArray(cities) ? cities : [];
         this.applyFiltersAndSort();
         this.loading = false;
-        if (cities.length === 0) {
-          this.messageService.addMessage({
-            content: 'No cities found.',
-            type: 'info',
-          });
-        }
       },
       error: (err) => {
         this.loading = false;
-        this.messageService.addMessage({
-          content: err.error?.message || 'Failed to load cities.',
-          type: 'error',
-        });
+        this.cities = [];
+        this.filteredCities = [];
+        this.loadError = err?.error?.message || 'Failed to load cities.';
       },
     });
+  }
+
+  /** The card summary: the first 100 characters, safe when a record has none. */
+  blurb(description: string | null | undefined): string {
+    const text = description ?? '';
+    return text.length > 100 ? `${text.slice(0, 100)}...` : text;
+  }
+
+  /** "City, Area, CC" with whatever parts the record has. */
+  place(city: CommunityDto): string {
+    return [city.city, city.adminArea, city.countryCode]
+      .filter((part) => !!part)
+      .join(', ');
   }
 
   applyFiltersAndSort(): void {
@@ -160,8 +100,8 @@ export class CityManagementComponent implements OnInit {
       const query = this.searchQuery.toLowerCase();
       result = result.filter(
         (c) =>
-          c.name.toLowerCase().includes(query) ||
-          c.description?.toLowerCase().includes(query) ||
+          (c.name ?? '').toLowerCase().includes(query) ||
+          (c.description ?? '').toLowerCase().includes(query) ||
           c.city?.toLowerCase().includes(query) ||
           c.adminArea?.toLowerCase().includes(query)
       );
@@ -185,6 +125,11 @@ export class CityManagementComponent implements OnInit {
     });
 
     this.filteredCities = result;
+  }
+
+  onSearch(query: string): void {
+    this.searchQuery = query;
+    this.applyFiltersAndSort();
   }
 
   onSearchChange(): void {
@@ -213,24 +158,31 @@ export class CityManagementComponent implements OnInit {
     this.router.navigate(['/dashboard/cities', city.id]);
   }
 
-  deleteCity(city: CommunityDto, event: Event): void {
-    event.stopPropagation();
-    if (confirm(`Are you sure you want to delete "${city.name}"?`)) {
-      this.communityService.deleteCity(city.id).subscribe({
-        next: () => {
-          this.messageService.addMessage({
-            content: 'City deleted successfully.',
-            type: 'success',
-          });
-          this.loadCities();
-        },
-        error: (err) => {
-          this.messageService.addMessage({
-            content: err.error?.message || 'Failed to delete city.',
-            type: 'error',
-          });
-        },
-      });
-    }
+  async deleteCity(city: CommunityDto, event?: Event): Promise<void> {
+    event?.stopPropagation?.();
+    const result = await this.confirmService.confirm({
+      level: 'typed',
+      title: 'Delete this city',
+      body: `Deleting ${city.name} cannot be undone. Everything attached to the city record goes with it.`,
+      confirmLabel: 'Delete city',
+      typedPhrase: city.name || city.id,
+      destructive: true,
+    });
+    if (!result.confirmed) return;
+    this.communityService.deleteCity(city.id).subscribe({
+      next: () => {
+        this.messageService.addMessage({
+          content: 'City deleted successfully.',
+          type: 'success',
+        });
+        this.loadCities();
+      },
+      error: (err) => {
+        this.messageService.addMessage({
+          content: err.error?.message || 'Failed to delete city.',
+          type: 'error',
+        });
+      },
+    });
   }
 }

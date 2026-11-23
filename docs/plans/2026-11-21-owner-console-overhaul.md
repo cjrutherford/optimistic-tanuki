@@ -216,6 +216,29 @@ store/appointment/lead/report counts fetch full lists until count commands
 exist; directory-worker health needs `DIRECTORY_WORKER_HEALTH_URL` off the
 default host.
 
+### After the boundary (S5–S6)
+
+| Slice                    | Commit      | Note                                                                                                            |
+| ------------------------ | ----------- | --------------------------------------------------------------------------------------------------------------- |
+| S5 moderation queue      | `b4581866e` |                                                                                                                 |
+| S6a Daylight mirror      | `a6bc3f1ce` | SD.6 decision log, overrides, per-source health and the source-request queue need civic-briefing commands first |
+| S6b durable registry     | `31db17bba` | migration `AddRegistryDurability1795411571917`                                                                  |
+| S6c fold-in              | `a97abeae5` | only BTO hardware quotes needed moving                                                                          |
+| S6d directory follow-ups | —           | blocked on backend, see below                                                                                   |
+
+S6d needs directory-service endpoints before any console work:
+
+- Suspended bindings: a list route with `stateCause` and `suspendedAt`, and a
+  resume action that reuses revalidation. Today only an aggregate count exists
+  in readiness output.
+- Mapping deactivate: `POST mappings/:versionId/deactivate`, keeping the
+  `unmappedPolicy` and audit handling. Today activation happens only through
+  install.
+- Boundary lock and unlock routes. Locks are written only by install and
+  recovery, so this has to agree with recovery re-creating locks.
+- Re-normalize exists as `renormalizeScan` with no route or job record. Backup
+  and cohort cutover have no code.
+
 ## 5. Provider login regression
 
 Moved to its own plan and PR: `docs/plans/2026-11-22-oauth-provider-login.md` on branch `t3/oauth-provider-login-fixes`.

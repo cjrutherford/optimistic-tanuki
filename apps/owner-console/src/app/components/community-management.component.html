@@ -1,63 +1,64 @@
-<otui-card>
-  <div
-    style="
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    "
+<section class="communities-page">
+  <ot-owner-page-header
+    title="Communities"
+    description="Every community on the platform. Deleting one removes it for all of its members."
   >
-    <otui-heading level="2">Communities</otui-heading>
-    <otui-button variant="primary" (click)="createNew()"
-      >Create Community</otui-button
-    >
-  </div>
+    <otui-button ot-actions variant="primary" (action)="createNew()">
+      Create community
+    </otui-button>
+  </ot-owner-page-header>
 
-  <div class="filters">
-    <input
-      type="text"
-      class="search-input"
-      placeholder="Search communities..."
-      [(ngModel)]="searchQuery"
-      (ngModelChange)="onSearchChange()"
-    />
-    <select
-      class="filter-select"
-      [(ngModel)]="filterJoinPolicy"
-      (ngModelChange)="onFilterChange()"
-    >
-      <option *ngFor="let option of joinPolicyOptions" [value]="option.value">
-        {{ option.label }}
-      </option>
-    </select>
-  </div>
-
-  <div *ngIf="loading" class="loading">Loading...</div>
-
-  <div *ngIf="!loading && filteredCommunities.length === 0" class="empty-state">
-    <p>No communities found. Create your first community to get started.</p>
-  </div>
-
-  <div
-    *ngIf="!loading && filteredCommunities.length > 0"
-    class="community-grid"
+  @if (loadError) {
+  <ot-owner-state
+    kind="error"
+    [message]="loadError"
+    (retry)="loadCommunities()"
+  />
+  } @else if (loading) {
+  <ot-owner-state kind="loading" message="Loading communities…" />
+  } @else if (communities.length === 0) {
+  <ot-owner-state
+    kind="empty"
+    message="No communities exist yet."
+    actionLabel="Create community"
+    (action)="createNew()"
+  />
+  } @else {
+  <ot-owner-filter-bar
+    label="Search communities"
+    placeholder="Name or description"
+    (query)="onSearch($event)"
+    (cleared)="onSearch('')"
   >
-    <article
-      *ngFor="let community of filteredCommunities"
-      class="community-card"
-    >
+    <label class="filter-field">
+      <span class="filter-label">Join policy</span>
+      <select
+        class="filter-select"
+        [(ngModel)]="filterJoinPolicy"
+        (ngModelChange)="onFilterChange()"
+      >
+        @for (option of joinPolicyOptions; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+  </ot-owner-filter-bar>
+
+  @if (filteredCommunities.length === 0) {
+  <ot-owner-state kind="empty" message="No communities match." />
+  } @else {
+  <div class="community-grid">
+    @for (community of filteredCommunities; track community.id) {
+    <article class="community-card">
       <button
         type="button"
         class="community-card__open"
         (click)="editCommunity(community)"
         [attr.aria-label]="'Edit ' + community.name"
       >
-        <h3>{{ community.name }}</h3>
-        <p>
-          {{ community.description | slice : 0 : 100
-          }}{{ community.description.length > 100 ? '...' : '' }}
-        </p>
-        <p><strong>Members:</strong> {{ community.memberCount }}</p>
+        <h2>{{ community.name }}</h2>
+        <p>{{ blurb(community.description) }}</p>
+        <p><strong>Members:</strong> {{ community.memberCount ?? 0 }}</p>
         <p><strong>Join Policy:</strong> {{ community.joinPolicy }}</p>
       </button>
       <div class="community-actions">
@@ -71,5 +72,7 @@
         >
       </div>
     </article>
+    }
   </div>
-</otui-card>
+  } }
+</section>

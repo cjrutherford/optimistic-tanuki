@@ -20,11 +20,13 @@ import { AgGridUiComponent } from '@optimistic-tanuki/ag-grid-ui/ag-grid-ui.comp
   imports: [CommonModule, AgGridUiComponent],
   template: `
     <div class="ag-app-scopes-table-container">
+      @if (showCreate) {
       <div class="action-group">
         <button class="create-button" (click)="create.emit()">
           ➕ Create App Scope
         </button>
       </div>
+      }
       <otui-ag-grid
         [rowData]="gridData()"
         [columnDefs]="columnDefs"
@@ -95,6 +97,8 @@ export class AgAppScopesTableComponent implements OnInit, OnChanges {
   @Input() appScopes: AppScopeDto[] = [];
   @Input() permissionCounts: Map<string, number> = new Map();
   @Input() loading = false;
+  /** A page that carries its own create action turns the built-in one off. */
+  @Input() showCreate = true;
   @Input() height = '600px';
   @Output() create = new EventEmitter<void>();
   @Output() edit = new EventEmitter<AppScopeDto>();

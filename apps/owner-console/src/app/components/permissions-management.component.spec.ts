@@ -1,9 +1,14 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
 import { MessageService } from '@optimistic-tanuki/message-ui/message.service';
 import { PermissionDto } from '@optimistic-tanuki/ui-models';
 
+import {
+  createOwnerConfirmStub,
+  OwnerConfirmStub,
+} from './owner-confirm.testing';
 import { AppScopesService } from '../services/app-scopes.service';
 import { PermissionsService } from '../services/permissions.service';
 import { PermissionsManagementComponent } from './permissions-management.component';
@@ -20,6 +25,8 @@ const permission = {
 describe('PermissionsManagementComponent', () => {
   let permissionsService: Record<string, jest.Mock>;
   let appScopesService: { getAppScopes: jest.Mock };
+  let lastFixture: ComponentFixture<PermissionsManagementComponent>;
+  let confirmStub: OwnerConfirmStub;
   let messageService: {
     messages: ReturnType<typeof signal>;
     clearMessages: jest.Mock;
@@ -38,6 +45,7 @@ describe('PermissionsManagementComponent', () => {
         .fn()
         .mockReturnValue(of([{ id: 'scope-1', name: 'global' }])),
     };
+    confirmStub = createOwnerConfirmStub();
     messageService = {
       messages: signal([]),
       clearMessages: jest.fn(),
@@ -50,6 +58,7 @@ describe('PermissionsManagementComponent', () => {
         { provide: PermissionsService, useValue: permissionsService },
         { provide: AppScopesService, useValue: appScopesService },
         { provide: MessageService, useValue: messageService },
+        { provide: OwnerConfirmService, useValue: confirmStub },
       ],
     }).compileComponents();
   });
@@ -57,8 +66,12 @@ describe('PermissionsManagementComponent', () => {
   const create = () => {
     const fixture = TestBed.createComponent(PermissionsManagementComponent);
     fixture.detectChanges();
+    lastFixture = fixture;
     return fixture.componentInstance;
   };
+
+  const text = () =>
+    (lastFixture.nativeElement as HTMLElement).textContent ?? '';
 
   const fillForm = (component: PermissionsManagementComponent) => {
     component.formData = {
@@ -79,18 +92,16 @@ describe('PermissionsManagementComponent', () => {
       expect(component.loading).toBe(false);
     });
 
-    it('tells the operator when no permissions exist', () => {
+    it('shows an empty state, not a message, when no permissions exist', () => {
       permissionsService['getPermissions'].mockReturnValue(of([]));
 
-      create();
+      const component = create();
 
-      expect(messageService.addMessage).toHaveBeenCalledWith({
-        content: 'No permissions found in the system.',
-        type: 'info',
-      });
+      expect(component.loadError).toBe('');
+      expect(text()).toContain('No permissions exist yet.');
     });
 
-    it('surfaces the server message when loading permissions fails', () => {
+    it('shows Unavailable with the server message when loading fails', () => {
       permissionsService['getPermissions'].mockReturnValue(
         throwError(() => ({ error: { message: 'Permission service down' } }))
       );
@@ -98,23 +109,40 @@ describe('PermissionsManagementComponent', () => {
       const component = create();
 
       expect(component.loading).toBe(false);
-      expect(messageService.addMessage).toHaveBeenCalledWith({
-        content: 'Permission service down',
-        type: 'error',
-      });
+      expect(component.loadError).toBe('Permission service down');
+      expect(text()).toContain('Unavailable');
+      expect(text()).toContain('Permission service down');
     });
 
-    it('falls back to a generic permission load message', () => {
-      permissionsService['getPermissions'].mockReturnValue(
+    it('falls back to a generic message and retries on demand', () => {
+      permissionsService['getPermissions'].mockReturnValueOnce(
         throwError(() => ({}))
       );
 
-      create();
+      const component = create();
+      expect(component.loadError).toBe(
+        'Failed to load permissions. Please try again.'
+      );
 
-      expect(messageService.addMessage).toHaveBeenCalledWith({
-        content: 'Failed to load permissions. Please try again.',
-        type: 'error',
-      });
+      const retry = (lastFixture.nativeElement as HTMLElement).querySelector(
+        'ot-owner-state button'
+      ) as HTMLButtonElement;
+      retry.click();
+      lastFixture.detectChanges();
+
+      expect(permissionsService['getPermissions']).toHaveBeenCalledTimes(2);
+      expect(component.loadError).toBe('');
+      expect(component.permissions).toHaveLength(1);
+    });
+
+    it('treats a non-array reply as an empty list', () => {
+      permissionsService['getPermissions'].mockReturnValue(
+        of({ message: 'x' } as never)
+      );
+
+      const component = create();
+
+      expect(component.permissions).toEqual([]);
     });
 
     it('logs but tolerates an app scope load failure', () => {
@@ -171,27 +199,12 @@ describe('PermissionsManagementComponent', () => {
       });
     });
 
-    it('closes both modals', () => {
+    it('closes the form modal', () => {
       const component = create();
 
       component.openCreateModal();
       component.closeFormModal();
       expect(component.showFormModal).toBe(false);
-
-      component.openDeleteConfirm(permission);
-      component.closeConfirmModal();
-      expect(component.showConfirmModal).toBe(false);
-    });
-
-    it('stages a delete confirmation', () => {
-      const component = create();
-
-      component.openDeleteConfirm(permission);
-
-      expect(component.currentPermission).toEqual(permission);
-      expect(component.confirmAction).toBe('delete');
-      expect(component.confirmModalTitle).toBe('Confirm Permission Deletion');
-      expect(component.showConfirmModal).toBe(true);
     });
   });
 
@@ -240,7 +253,7 @@ describe('PermissionsManagementComponent', () => {
       expect(component.isFormValid()).toBe(true);
     });
 
-    it('refuses to confirm an invalid form', () => {
+    it('refuses to confirm an invalid form', async () => {
       const component = create();
 
       component.formData = {
@@ -249,46 +262,70 @@ describe('PermissionsManagementComponent', () => {
         resource: '',
         action: '',
       };
-      component.confirmFormSubmit();
+      await component.confirmFormSubmit();
 
-      expect(component.showConfirmModal).toBe(false);
+      expect(confirmStub.confirm).not.toHaveBeenCalled();
       expect(messageService.addMessage).toHaveBeenCalledWith({
         content: 'Please fill in all required fields.',
         type: 'error',
       });
     });
 
-    it('stages create and update confirmations', () => {
+    it('asks for a plain confirmation before creating', async () => {
       const component = create();
+      const createSpy = jest.spyOn(component, 'createPermission');
 
       component.openCreateModal();
       fillForm(component);
-      component.confirmFormSubmit();
-      expect(component.confirmAction).toBe('create');
-      expect(component.confirmModalTitle).toBe('Confirm Permission Creation');
+      await component.confirmFormSubmit();
 
-      component.openEditModal(permission);
-      component.confirmFormSubmit();
-      expect(component.confirmAction).toBe('update');
-      expect(component.confirmModalTitle).toBe('Confirm Permission Update');
+      expect(confirmStub.confirm).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'plain' })
+      );
+      expect(createSpy).toHaveBeenCalled();
     });
 
-    it('dispatches the staged action', () => {
+    it('asks for a reason before updating', async () => {
       const component = create();
-      const createSpy = jest.spyOn(component, 'createPermission');
       const updateSpy = jest.spyOn(component, 'updatePermission');
-      const deleteSpy = jest.spyOn(component, 'deletePermission');
 
-      component.confirmAction = 'create';
-      component.executeConfirmedAction();
-      component.confirmAction = 'update';
-      component.executeConfirmedAction();
-      component.confirmAction = 'delete';
-      component.executeConfirmedAction();
+      component.openEditModal(permission);
+      await component.confirmFormSubmit();
 
-      expect(createSpy).toHaveBeenCalled();
+      expect(confirmStub.confirm).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'reason' })
+      );
       expect(updateSpy).toHaveBeenCalled();
-      expect(deleteSpy).toHaveBeenCalled();
+    });
+
+    it('does nothing when the confirmation is declined', async () => {
+      confirmStub.confirm.mockResolvedValue({ confirmed: false });
+      const component = create();
+      const updateSpy = jest.spyOn(component, 'updatePermission');
+
+      component.openEditModal(permission);
+      await component.confirmFormSubmit();
+      await component.openDeleteConfirm(permission);
+
+      expect(updateSpy).not.toHaveBeenCalled();
+      expect(permissionsService['deletePermission']).not.toHaveBeenCalled();
+    });
+
+    it('requires typing the name before deleting', async () => {
+      const component = create();
+
+      await component.openDeleteConfirm(permission);
+
+      expect(confirmStub.confirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          level: 'typed',
+          typedPhrase: 'users.read',
+          destructive: true,
+        })
+      );
+      expect(permissionsService['deletePermission']).toHaveBeenCalledWith(
+        'perm-1'
+      );
     });
   });
 
@@ -364,16 +401,14 @@ describe('PermissionsManagementComponent', () => {
       });
     });
 
-    it('deletes the staged permission and reloads', () => {
+    it('deletes the confirmed permission and reloads', async () => {
       const component = create();
 
-      component.openDeleteConfirm(permission);
-      component.deletePermission();
+      await component.openDeleteConfirm(permission);
 
       expect(permissionsService['deletePermission']).toHaveBeenCalledWith(
         'perm-1'
       );
-      expect(component.showConfirmModal).toBe(false);
       expect(permissionsService['getPermissions']).toHaveBeenCalledTimes(2);
     });
 
@@ -386,14 +421,13 @@ describe('PermissionsManagementComponent', () => {
       expect(permissionsService['deletePermission']).not.toHaveBeenCalled();
     });
 
-    it('reports a delete failure', () => {
+    it('reports a delete failure', async () => {
       permissionsService['deletePermission'].mockReturnValue(
         throwError(() => new Error('permission in use'))
       );
       const component = create();
 
-      component.openDeleteConfirm(permission);
-      component.deletePermission();
+      await component.openDeleteConfirm(permission);
 
       expect(messageService.addMessage).toHaveBeenCalledWith({
         content: 'permission in use',

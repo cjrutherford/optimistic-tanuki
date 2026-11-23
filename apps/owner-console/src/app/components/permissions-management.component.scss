@@ -1,0 +1,84 @@
+:host ::ng-deep otui-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--foreground, #111827) 36%, transparent);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:host {
+  display: block;
+  padding: 16px;
+}
+
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1rem;
+}
+
+.form-section {
+  flex: 1;
+}
+
+.form-section h3 {
+  margin-bottom: 0.5rem;
+}
+
+.section-description {
+  color: var(--foreground, #666);
+  margin-bottom: 1.5rem;
+  font-size: var(--type-small, 0.9rem);
+}
+
+.form-field {
+  margin-bottom: 1.5rem;
+}
+
+.form-preview {
+  background: color-mix(
+    in srgb,
+    var(--surface, #ffffff) 88%,
+    var(--background, #f3f4f6)
+  );
+  padding: 1.5rem;
+  border-radius: var(--personality-card-radius, 8px);
+  border: 1px solid var(--border-color, #ddd);
+  color: var(--foreground, #111827);
+}
+
+.form-preview h3 {
+  margin-bottom: 1rem;
+}
+
+.preview-content p {
+  margin-bottom: 0.75rem;
+}
+
+.info-text {
+  color: color-mix(
+    in srgb,
+    var(--accent, #2563eb) 82%,
+    var(--foreground, #111827)
+  );
+  font-style: italic;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #ddd);
+}
+
+.permissions-page {
+  display: grid;
+  gap: 1.25rem;
+}

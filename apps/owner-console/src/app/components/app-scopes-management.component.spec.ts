@@ -1,9 +1,14 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
 import { MessageService } from '@optimistic-tanuki/message-ui/message.service';
 import { AppScopeDto } from '@optimistic-tanuki/ui-models';
 
+import {
+  createOwnerConfirmStub,
+  OwnerConfirmStub,
+} from './owner-confirm.testing';
 import { AppScopesService } from '../services/app-scopes.service';
 import { PermissionsService } from '../services/permissions.service';
 import { AppScopesManagementComponent } from './app-scopes-management.component';
@@ -23,6 +28,8 @@ const permissions = [
 describe('AppScopesManagementComponent', () => {
   let appScopesService: Record<string, jest.Mock>;
   let permissionsService: { getPermissions: jest.Mock };
+  let lastFixture: ComponentFixture<AppScopesManagementComponent>;
+  let confirmStub: OwnerConfirmStub;
   let messageService: {
     messages: ReturnType<typeof signal>;
     clearMessages: jest.Mock;
@@ -39,6 +46,7 @@ describe('AppScopesManagementComponent', () => {
     permissionsService = {
       getPermissions: jest.fn().mockReturnValue(of(permissions)),
     };
+    confirmStub = createOwnerConfirmStub();
     messageService = {
       messages: signal([]),
       clearMessages: jest.fn(),
@@ -51,6 +59,7 @@ describe('AppScopesManagementComponent', () => {
         { provide: AppScopesService, useValue: appScopesService },
         { provide: PermissionsService, useValue: permissionsService },
         { provide: MessageService, useValue: messageService },
+        { provide: OwnerConfirmService, useValue: confirmStub },
       ],
     }).compileComponents();
   });
@@ -58,8 +67,12 @@ describe('AppScopesManagementComponent', () => {
   const create = () => {
     const fixture = TestBed.createComponent(AppScopesManagementComponent);
     fixture.detectChanges();
+    lastFixture = fixture;
     return fixture.componentInstance;
   };
+
+  const text = () =>
+    (lastFixture.nativeElement as HTMLElement).textContent ?? '';
 
   describe('loading', () => {
     it('counts the permissions attached to each scope', () => {
@@ -70,18 +83,16 @@ describe('AppScopesManagementComponent', () => {
       expect(component.permissionCountsMap.get('scope-2')).toBe(1);
     });
 
-    it('tells the operator when no scopes exist', () => {
+    it('shows an empty state, not a message, when no scopes exist', () => {
       appScopesService['getAppScopes'].mockReturnValue(of([]));
 
-      create();
+      const component = create();
 
-      expect(messageService.addMessage).toHaveBeenCalledWith({
-        content: 'No app scopes found in the system.',
-        type: 'info',
-      });
+      expect(component.loadError).toBe('');
+      expect(text()).toContain('No app scopes exist yet.');
     });
 
-    it('surfaces the server message when loading scopes fails', () => {
+    it('shows Unavailable with the server message when loading fails', () => {
       appScopesService['getAppScopes'].mockReturnValue(
         throwError(() => ({ error: { message: 'Scope service down' } }))
       );
@@ -89,21 +100,39 @@ describe('AppScopesManagementComponent', () => {
       const component = create();
 
       expect(component.loading).toBe(false);
-      expect(messageService.addMessage).toHaveBeenCalledWith({
-        content: 'Scope service down',
-        type: 'error',
-      });
+      expect(component.loadError).toBe('Scope service down');
+      expect(text()).toContain('Unavailable');
     });
 
-    it('falls back to a generic scope load message', () => {
-      appScopesService['getAppScopes'].mockReturnValue(throwError(() => ({})));
+    it('falls back to a generic message and retries on demand', () => {
+      appScopesService['getAppScopes'].mockReturnValueOnce(
+        throwError(() => ({}))
+      );
 
-      create();
+      const component = create();
+      expect(component.loadError).toBe(
+        'Failed to load app scopes. Please try again.'
+      );
 
-      expect(messageService.addMessage).toHaveBeenCalledWith({
-        content: 'Failed to load app scopes. Please try again.',
-        type: 'error',
-      });
+      const retry = (lastFixture.nativeElement as HTMLElement).querySelector(
+        'ot-owner-state button'
+      ) as HTMLButtonElement;
+      retry.click();
+      lastFixture.detectChanges();
+
+      expect(appScopesService['getAppScopes']).toHaveBeenCalledTimes(2);
+      expect(component.loadError).toBe('');
+      expect(component.appScopes).toHaveLength(2);
+    });
+
+    it('treats a non-array reply as an empty list', () => {
+      appScopesService['getAppScopes'].mockReturnValue(
+        of({ message: 'x' } as never)
+      );
+
+      const component = create();
+
+      expect(component.appScopes).toEqual([]);
     });
 
     it('logs but tolerates a permission load failure', () => {
@@ -161,27 +190,12 @@ describe('AppScopesManagementComponent', () => {
       ]);
     });
 
-    it('closes the form and confirm modals', () => {
+    it('closes the form modal', () => {
       const component = create();
 
       component.openCreateModal();
       component.closeFormModal();
       expect(component.showFormModal).toBe(false);
-
-      component.openDeleteConfirm(scopes[1]);
-      component.closeConfirmModal();
-      expect(component.showConfirmModal).toBe(false);
-    });
-
-    it('stages a delete confirmation with the scope impact', () => {
-      const component = create();
-
-      component.openDeleteConfirm(scopes[1]);
-
-      expect(component.currentAppScope).toEqual(scopes[1]);
-      expect(component.confirmAction).toBe('delete');
-      expect(component.confirmModalTitle).toBe('Confirm App Scope Deletion');
-      expect(component.relatedPermissions.map((p) => p.id)).toEqual(['perm-3']);
     });
   });
 
@@ -199,50 +213,86 @@ describe('AppScopesManagementComponent', () => {
       expect(component.isFormValid()).toBe(true);
     });
 
-    it('refuses to confirm an invalid form', () => {
+    it('refuses to confirm an invalid form', async () => {
       const component = create();
 
       component.formData = { name: '', description: '', active: true };
-      component.confirmFormSubmit();
+      await component.confirmFormSubmit();
 
-      expect(component.showConfirmModal).toBe(false);
+      expect(confirmStub.confirm).not.toHaveBeenCalled();
       expect(messageService.addMessage).toHaveBeenCalledWith({
         content: 'Please fill in all required fields.',
         type: 'error',
       });
     });
 
-    it('stages create and update confirmations', () => {
+    it('asks for a plain confirmation before creating', async () => {
       const component = create();
+      const createSpy = jest.spyOn(component, 'createAppScope');
 
       component.openCreateModal();
       component.formData = { name: 'x', description: 'y', active: true };
-      component.confirmFormSubmit();
-      expect(component.confirmAction).toBe('create');
-      expect(component.confirmModalTitle).toBe('Confirm App Scope Creation');
+      await component.confirmFormSubmit();
 
-      component.openEditModal(scopes[0]);
-      component.confirmFormSubmit();
-      expect(component.confirmAction).toBe('update');
-      expect(component.confirmModalTitle).toBe('Confirm App Scope Update');
+      expect(confirmStub.confirm).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'plain' })
+      );
+      expect(createSpy).toHaveBeenCalled();
     });
 
-    it('dispatches the staged action', () => {
+    it('asks for a reason before updating', async () => {
       const component = create();
-      const createSpy = jest.spyOn(component, 'createAppScope');
       const updateSpy = jest.spyOn(component, 'updateAppScope');
-      const deleteSpy = jest.spyOn(component, 'deleteAppScope');
 
-      component.confirmAction = 'create';
-      component.executeConfirmedAction();
-      component.confirmAction = 'update';
-      component.executeConfirmedAction();
-      component.confirmAction = 'delete';
-      component.executeConfirmedAction();
+      component.openEditModal(scopes[0]);
+      await component.confirmFormSubmit();
 
-      expect(createSpy).toHaveBeenCalled();
+      expect(confirmStub.confirm).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'reason', destructive: false })
+      );
       expect(updateSpy).toHaveBeenCalled();
-      expect(deleteSpy).toHaveBeenCalled();
+    });
+
+    it('marks deactivating a scope as destructive', async () => {
+      const component = create();
+
+      component.openEditModal(scopes[0]);
+      component.formData.active = false;
+      await component.confirmFormSubmit();
+
+      expect(confirmStub.confirm).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'reason', destructive: true })
+      );
+    });
+
+    it('does nothing when the confirmation is declined', async () => {
+      confirmStub.confirm.mockResolvedValue({ confirmed: false });
+      const component = create();
+      const updateSpy = jest.spyOn(component, 'updateAppScope');
+
+      component.openEditModal(scopes[0]);
+      await component.confirmFormSubmit();
+      await component.openDeleteConfirm(scopes[1]);
+
+      expect(updateSpy).not.toHaveBeenCalled();
+      expect(appScopesService['deleteAppScope']).not.toHaveBeenCalled();
+    });
+
+    it('requires typing the name before deleting', async () => {
+      const component = create();
+
+      await component.openDeleteConfirm(scopes[1]);
+
+      expect(confirmStub.confirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          level: 'typed',
+          typedPhrase: 'store',
+          destructive: true,
+        })
+      );
+      expect(appScopesService['deleteAppScope']).toHaveBeenCalledWith(
+        'scope-2'
+      );
     });
   });
 
@@ -320,16 +370,14 @@ describe('AppScopesManagementComponent', () => {
       });
     });
 
-    it('deletes the staged scope and reloads', () => {
+    it('deletes the confirmed scope and reloads', async () => {
       const component = create();
 
-      component.openDeleteConfirm(scopes[1]);
-      component.deleteAppScope();
+      await component.openDeleteConfirm(scopes[1]);
 
       expect(appScopesService['deleteAppScope']).toHaveBeenCalledWith(
         'scope-2'
       );
-      expect(component.showConfirmModal).toBe(false);
       expect(appScopesService['getAppScopes']).toHaveBeenCalledTimes(2);
     });
 
@@ -342,14 +390,13 @@ describe('AppScopesManagementComponent', () => {
       expect(appScopesService['deleteAppScope']).not.toHaveBeenCalled();
     });
 
-    it('reports a delete failure', () => {
+    it('reports a delete failure', async () => {
       appScopesService['deleteAppScope'].mockReturnValue(
         throwError(() => new Error('scope in use'))
       );
       const component = create();
 
-      component.openDeleteConfirm(scopes[0]);
-      component.deleteAppScope();
+      await component.openDeleteConfirm(scopes[0]);
 
       expect(messageService.addMessage).toHaveBeenCalledWith({
         content: 'scope in use',

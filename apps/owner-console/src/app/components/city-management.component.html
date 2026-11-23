@@ -1,66 +1,72 @@
-<otui-card>
-  <div
-    style="
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    "
+<section class="cities-page">
+  <ot-owner-page-header
+    title="Cities"
+    description="City records are governed through Community Ops permissions on the shared communities API."
   >
-    <otui-heading level="2">Cities</otui-heading>
-    <otui-button variant="primary" (click)="createNew()"
-      >Create City</otui-button
-    >
-  </div>
+    <otui-button ot-actions variant="primary" (action)="createNew()">
+      Create city
+    </otui-button>
+  </ot-owner-page-header>
 
-  <p>{{ governanceSummary }}</p>
+  @if (loadError) {
+  <ot-owner-state kind="error" [message]="loadError" (retry)="loadCities()" />
+  } @else if (loading) {
+  <ot-owner-state kind="loading" message="Loading cities…" />
+  } @else if (cities.length === 0) {
+  <ot-owner-state
+    kind="empty"
+    message="No cities exist yet."
+    actionLabel="Create city"
+    (action)="createNew()"
+  />
+  } @else {
+  <ot-owner-filter-bar
+    label="Search cities"
+    placeholder="Name, description or place"
+    (query)="onSearch($event)"
+    (cleared)="onSearch('')"
+  >
+    <label class="filter-field">
+      <span class="filter-label">Type</span>
+      <select
+        class="filter-select"
+        [(ngModel)]="filterLocalityType"
+        (ngModelChange)="onFilterChange()"
+      >
+        @for (option of localityTypeOptions; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+  </ot-owner-filter-bar>
 
-  <div class="filters">
-    <input
-      type="text"
-      class="search-input"
-      placeholder="Search cities..."
-      [(ngModel)]="searchQuery"
-      (ngModelChange)="onSearchChange()"
-    />
-    <select
-      class="filter-select"
-      [(ngModel)]="filterLocalityType"
-      (ngModelChange)="onFilterChange()"
-    >
-      <option *ngFor="let option of localityTypeOptions" [value]="option.value">
-        {{ option.label }}
-      </option>
-    </select>
-  </div>
-
-  <div *ngIf="loading">Loading...</div>
-
-  <div *ngIf="!loading && filteredCities.length === 0" class="empty-state">
-    <p>No cities found. Create your first city to get started.</p>
-  </div>
-
-  <div *ngIf="!loading && filteredCities.length > 0" class="city-grid">
-    <div
-      *ngFor="let city of filteredCities"
-      class="city-card"
-      (click)="editCity(city)"
-    >
-      <h3>{{ city.name }}</h3>
-      <p>
-        {{ city.description | slice : 0 : 100
-        }}{{ city.description.length > 100 ? '...' : '' }}
-      </p>
-      <p><strong>Population:</strong> {{ city.population | number }}</p>
-      <p>
-        <strong>Location:</strong> {{ city.city }}, {{ city.adminArea }},
-        {{ city.countryCode }}
-      </p>
-      <div class="city-actions" (click)="$event.stopPropagation()">
+  @if (filteredCities.length === 0) {
+  <ot-owner-state kind="empty" message="No cities match." />
+  } @else {
+  <div class="city-grid">
+    @for (city of filteredCities; track city.id) {
+    <article class="city-card">
+      <button
+        type="button"
+        class="city-card__open"
+        (click)="editCity(city)"
+        [attr.aria-label]="'Edit ' + city.name"
+      >
+        <h2>{{ city.name }}</h2>
+        <p>{{ blurb(city.description) }}</p>
+        <p><strong>Population:</strong> {{ city.population | number }}</p>
+        <p>
+          <strong>Location:</strong>
+          {{ place(city) }}
+        </p>
+      </button>
+      <div class="city-actions">
         <otui-button variant="danger" (click)="deleteCity(city, $event)"
           >Delete</otui-button
         >
       </div>
-    </div>
+    </article>
+    }
   </div>
-</otui-card>
+  } }
+</section>

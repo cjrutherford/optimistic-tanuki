@@ -44,15 +44,15 @@ describe('owner console theme awareness regression', () => {
       },
       {
         name: 'PermissionsManagementComponent',
-        styles: sourceFile('./permissions-management.component.ts'),
+        styles: sourceFile('./permissions-management.component.scss'),
       },
       {
         name: 'AppScopesManagementComponent',
-        styles: sourceFile('./app-scopes-management.component.ts'),
+        styles: sourceFile('./app-scopes-management.component.scss'),
       },
       {
         name: 'CommunityManagementComponent',
-        styles: sourceFile('./community-management.component.ts'),
+        styles: sourceFile('./community-management.component.scss'),
       },
       {
         name: 'CommunityEditorComponent',
@@ -64,7 +64,7 @@ describe('owner console theme awareness regression', () => {
       },
       {
         name: 'CityManagementComponent',
-        styles: sourceFile('./city-management.component.ts'),
+        styles: sourceFile('./city-management.component.scss'),
       },
       {
         name: 'CityEditorComponent',

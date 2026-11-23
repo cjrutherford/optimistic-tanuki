@@ -1,12 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import {
-  CardComponent,
-  HeadingComponent,
-  ButtonComponent,
-} from '@optimistic-tanuki/common-ui';
+  OwnerConfirmService,
+  OwnerFilterBarComponent,
+  OwnerPageHeaderComponent,
+  OwnerStateComponent,
+} from '@optimistic-tanuki/owner-page-ui';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import {
   CommunityDto,
@@ -20,126 +22,20 @@ import { CommunityService } from '../services/community.service';
   imports: [
     CommonModule,
     FormsModule,
-    CardComponent,
-    HeadingComponent,
     ButtonComponent,
+    OwnerFilterBarComponent,
+    OwnerPageHeaderComponent,
+    OwnerStateComponent,
   ],
   templateUrl: './community-management.component.html',
-  styles: [
-    `
-      :host {
-        display: block;
-        padding: var(--spacing-md);
-      }
-      .filters {
-        display: flex;
-        gap: var(--spacing-md);
-        margin-bottom: var(--spacing-md);
-        flex-wrap: wrap;
-        align-items: center;
-      }
-      .search-input {
-        flex: 1;
-        min-width: 200px;
-        padding: 8px 12px;
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius-sm);
-        font-size: 14px;
-        background: var(--surface, #ffffff);
-        color: var(--foreground, #111827);
-      }
-      .search-input:focus {
-        outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 2px
-          color-mix(in srgb, var(--accent, #2563eb) 22%, transparent);
-      }
-      .filter-select {
-        padding: 8px 12px;
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius-sm);
-        font-size: 14px;
-        background: var(--surface, #ffffff);
-        color: var(--foreground, #111827);
-      }
-      .community-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: var(--spacing-md);
-        margin-top: var(--spacing-md);
-      }
-      .community-card {
-        padding: var(--spacing-md);
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius-md);
-        background: var(--surface);
-        transition: box-shadow 0.2s, transform 0.2s;
-      }
-      .community-card:hover {
-        box-shadow: var(--shadow-md);
-        transform: translateY(-2px);
-      }
-      .community-card h3 {
-        margin: 0 0 var(--spacing-sm) 0;
-        color: var(--foreground, #111827);
-      }
-      .community-card__open {
-        display: block;
-        width: 100%;
-        padding: 0;
-        border: 0;
-        background: transparent;
-        color: inherit;
-        text-align: left;
-        font: inherit;
-        cursor: pointer;
-      }
-      .community-card__open:focus-visible {
-        outline: 3px solid
-          color-mix(in srgb, var(--accent, #2563eb) 72%, transparent);
-        outline-offset: 4px;
-      }
-      .community-card p {
-        margin: 0 0 var(--spacing-sm) 0;
-        color: color-mix(in srgb, var(--foreground, #111827) 72%, transparent);
-      }
-      .community-card .badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: var(--border-radius-sm);
-        font-size: 12px;
-        background: var(--accent);
-        color: var(--on-primary, var(--primary-foreground, #ffffff));
-      }
-      .community-actions {
-        display: flex;
-        gap: var(--spacing-sm);
-        margin-top: var(--spacing-sm);
-      }
-      .empty-state {
-        text-align: center;
-        padding: var(--spacing-xl);
-        color: color-mix(in srgb, var(--foreground, #111827) 70%, transparent);
-      }
-      .sortable {
-        cursor: pointer;
-        user-select: none;
-      }
-      .sortable:hover {
-        color: var(--accent);
-      }
-      .loading-state {
-        text-align: center;
-        padding: var(--spacing-xl);
-        color: color-mix(in srgb, var(--foreground, #111827) 70%, transparent);
-      }
-    `,
-  ],
+  styleUrls: ['./community-management.component.scss'],
 })
 export class CommunityManagementComponent implements OnInit {
   communities: CommunityDto[] = [];
   filteredCommunities: CommunityDto[] = [];
   loading = false;
+  /** Set when the list could not be loaded; shows Unavailable + Retry. */
+  loadError = '';
 
   searchQuery = '';
   sortBy: 'name' | 'memberCount' | 'createdAt' = 'name';
@@ -162,34 +58,36 @@ export class CommunityManagementComponent implements OnInit {
     private messageService: MessageService
   ) {}
 
+  private readonly confirmService = inject(OwnerConfirmService);
+
   ngOnInit(): void {
     this.loadCommunities();
   }
 
   loadCommunities(): void {
     this.loading = true;
+    this.loadError = '';
     this.messageService.clearMessages();
 
     this.communityService.getCommunities().subscribe({
       next: (communities) => {
-        this.communities = communities;
+        this.communities = Array.isArray(communities) ? communities : [];
         this.applyFiltersAndSort();
         this.loading = false;
-        if (communities.length === 0) {
-          this.messageService.addMessage({
-            content: 'No communities found.',
-            type: 'info',
-          });
-        }
       },
       error: (err) => {
         this.loading = false;
-        this.messageService.addMessage({
-          content: err.error?.message || 'Failed to load communities.',
-          type: 'error',
-        });
+        this.communities = [];
+        this.filteredCommunities = [];
+        this.loadError = err?.error?.message || 'Failed to load communities.';
       },
     });
+  }
+
+  /** The card summary: the first 100 characters, safe when a record has none. */
+  blurb(description: string | null | undefined): string {
+    const text = description ?? '';
+    return text.length > 100 ? `${text.slice(0, 100)}...` : text;
   }
 
   applyFiltersAndSort(): void {
@@ -199,8 +97,8 @@ export class CommunityManagementComponent implements OnInit {
       const query = this.searchQuery.toLowerCase();
       result = result.filter(
         (c) =>
-          c.name.toLowerCase().includes(query) ||
-          c.description?.toLowerCase().includes(query)
+          (c.name ?? '').toLowerCase().includes(query) ||
+          (c.description ?? '').toLowerCase().includes(query)
       );
     }
 
@@ -222,6 +120,11 @@ export class CommunityManagementComponent implements OnInit {
     });
 
     this.filteredCommunities = result;
+  }
+
+  onSearch(query: string): void {
+    this.searchQuery = query;
+    this.applyFiltersAndSort();
   }
 
   onSearchChange(): void {
@@ -254,24 +157,31 @@ export class CommunityManagementComponent implements OnInit {
     this.router.navigate(['/dashboard/communities', community.id, 'members']);
   }
 
-  deleteCommunity(community: CommunityDto, event: Event): void {
-    event.stopPropagation();
-    if (confirm(`Are you sure you want to delete "${community.name}"?`)) {
-      this.communityService.deleteCommunity(community.id).subscribe({
-        next: () => {
-          this.messageService.addMessage({
-            content: 'Community deleted successfully.',
-            type: 'success',
-          });
-          this.loadCommunities();
-        },
-        error: (err) => {
-          this.messageService.addMessage({
-            content: err.error?.message || 'Failed to delete community.',
-            type: 'error',
-          });
-        },
-      });
-    }
+  async deleteCommunity(community: CommunityDto, event?: Event): Promise<void> {
+    event?.stopPropagation?.();
+    const result = await this.confirmService.confirm({
+      level: 'typed',
+      title: 'Delete this community',
+      body: `Deleting ${community.name} cannot be undone. Its members lose the community.`,
+      confirmLabel: 'Delete community',
+      typedPhrase: community.name || community.id,
+      destructive: true,
+    });
+    if (!result.confirmed) return;
+    this.communityService.deleteCommunity(community.id).subscribe({
+      next: () => {
+        this.messageService.addMessage({
+          content: 'Community deleted successfully.',
+          type: 'success',
+        });
+        this.loadCommunities();
+      },
+      error: (err) => {
+        this.messageService.addMessage({
+          content: err.error?.message || 'Failed to delete community.',
+          type: 'error',
+        });
+      },
+    });
   }
 }

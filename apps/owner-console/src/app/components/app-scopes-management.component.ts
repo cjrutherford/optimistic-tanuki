@@ -2,8 +2,6 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui/button/button.component';
-import { CardComponent } from '@optimistic-tanuki/common-ui/card/card.component';
-import { HeadingComponent } from '@optimistic-tanuki/common-ui/heading/heading.component';
 import { ModalComponent } from '@optimistic-tanuki/common-ui/modal/modal.component';
 import { CheckboxComponent } from '@optimistic-tanuki/form-ui/checkbox/checkbox.component';
 import { TextAreaComponent } from '@optimistic-tanuki/form-ui/text-area/text-area.component';
@@ -16,6 +14,11 @@ import {
   UpdateAppScopeDto,
   PermissionDto,
 } from '@optimistic-tanuki/ui-models';
+import {
+  OwnerConfirmService,
+  OwnerPageHeaderComponent,
+  OwnerStateComponent,
+} from '@optimistic-tanuki/owner-page-ui';
 import { AppScopesService } from '../services/app-scopes.service';
 import { PermissionsService } from '../services/permissions.service';
 import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
@@ -26,8 +29,6 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
   imports: [
     CommonModule,
     FormsModule,
-    CardComponent,
-    HeadingComponent,
     MessageComponent,
     ModalComponent,
     ButtonComponent,
@@ -35,437 +36,28 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
     TextAreaComponent,
     CheckboxComponent,
     AgAppScopesTableComponent,
+    OwnerPageHeaderComponent,
+    OwnerStateComponent,
   ],
-  template: `
-    <lib-message></lib-message>
-
-    <otui-card>
-      <otui-heading level="2">App Scopes Management</otui-heading>
-
-      <app-ag-app-scopes-table
-        [appScopes]="appScopes"
-        [permissionCounts]="permissionCountsMap"
-        [loading]="loading"
-        (create)="openCreateModal()"
-        (edit)="openEditModal($event)"
-        (delete)="openDeleteConfirm($event)"
-      />
-    </otui-card>
-
-    <!-- Create/Edit Modal -->
-    <otui-modal
-      *ngIf="showFormModal"
-      [heading]="isEditMode ? 'Edit App Scope' : 'Create New App Scope'"
-      (closeModal)="closeFormModal()"
-      mode="standard-modal"
-      size="lg"
-    >
-      <div class="form-container">
-        <div class="form-section">
-          <h3>App Scope Details</h3>
-          <p class="section-description">
-            Define the application scope name, description, and status.
-          </p>
-
-          <div class="form-field">
-            <lib-text-input
-              label="App Scope Name *"
-              placeholder="e.g., owner-console, social-app, blog-service"
-              [(ngModel)]="formData.name"
-            ></lib-text-input>
-          </div>
-
-          <div class="form-field">
-            <lib-text-area
-              label="Description *"
-              [(ngModel)]="formData.description"
-            ></lib-text-area>
-          </div>
-
-          <div class="form-field checkbox-field">
-            <lib-checkbox
-              [value]="formData.active"
-              (changeEvent)="formData.active = $event"
-            ></lib-checkbox>
-            <label>Active (when checked, this app scope is enabled)</label>
-          </div>
-        </div>
-
-        <div class="form-preview">
-          <h3>Preview</h3>
-          <div class="preview-content">
-            <p><strong>Name:</strong> {{ formData.name || 'Not set' }}</p>
-            <p>
-              <strong>Description:</strong>
-              {{ formData.description || 'Not set' }}
-            </p>
-            <p>
-              <strong>Status:</strong>
-              <span
-                [class.active-badge]="formData.active"
-                [class.inactive-badge]="!formData.active"
-              >
-                {{ formData.active ? 'Active' : 'Inactive' }}
-              </span>
-            </p>
-            <div *ngIf="isEditMode && currentAppScope" class="related-info">
-              <p class="info-text"><strong>Related Permissions:</strong></p>
-              <p *ngIf="relatedPermissions.length === 0" class="muted-text">
-                No permissions associated with this app scope.
-              </p>
-              <ul *ngIf="relatedPermissions.length > 0">
-                <li *ngFor="let perm of relatedPermissions">
-                  {{ perm.name }} ({{ perm.resource }}.{{ perm.action }})
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <otui-button variant="secondary" (action)="closeFormModal()">
-            Cancel
-          </otui-button>
-          <otui-button
-            variant="primary"
-            (action)="confirmFormSubmit()"
-            [disabled]="!isFormValid()"
-          >
-            {{ isEditMode ? 'Update App Scope' : 'Create App Scope' }}
-          </otui-button>
-        </div>
-      </div>
-    </otui-modal>
-
-    <!-- Confirmation Modal -->
-    <otui-modal
-      *ngIf="showConfirmModal"
-      [heading]="confirmModalTitle"
-      (closeModal)="closeConfirmModal()"
-      mode="standard-modal"
-      size="md"
-    >
-      <div class="confirm-container">
-        <p>{{ confirmModalMessage }}</p>
-
-        <div
-          *ngIf="confirmAction === 'create' || confirmAction === 'update'"
-          class="change-details"
-        >
-          <h4>
-            Changes to be
-            {{ confirmAction === 'create' ? 'applied' : 'saved' }}:
-          </h4>
-          <ul>
-            <li><strong>Name:</strong> {{ formData.name }}</li>
-            <li><strong>Description:</strong> {{ formData.description }}</li>
-            <li>
-              <strong>Status:</strong>
-              {{ formData.active ? 'Active' : 'Inactive' }}
-            </li>
-          </ul>
-          <p class="warning-text" *ngIf="confirmAction === 'update'">
-            ⚠️ Updating this app scope may affect
-            {{ relatedPermissions.length }} permission(s) and associated roles.
-          </p>
-          <div
-            *ngIf="
-              confirmAction === 'update' &&
-              !formData.active &&
-              currentAppScope?.active
-            "
-            class="warning-box"
-          >
-            <p class="danger-text">
-              <strong>⚠️ Warning:</strong> Deactivating this app scope will
-              affect:
-            </p>
-            <ul>
-              <li>
-                {{ relatedPermissions.length }} permission(s) associated with
-                this scope
-              </li>
-              <li>All roles that use these permissions</li>
-              <li>All users with these roles</li>
-            </ul>
-          </div>
-        </div>
-
-        <div
-          *ngIf="confirmAction === 'delete' && currentAppScope"
-          class="change-details"
-        >
-          <h4>App Scope to be deleted:</h4>
-          <ul>
-            <li><strong>Name:</strong> {{ currentAppScope.name }}</li>
-            <li>
-              <strong>Description:</strong> {{ currentAppScope.description }}
-            </li>
-            <li>
-              <strong>Status:</strong>
-              {{ currentAppScope.active ? 'Active' : 'Inactive' }}
-            </li>
-          </ul>
-          <div class="danger-box">
-            <p class="danger-text">
-              <strong>⚠️ This action cannot be undone!</strong>
-            </p>
-            <p>Deleting this app scope will affect:</p>
-            <ul>
-              <li>
-                {{ relatedPermissions.length }} permission(s) will lose their
-                app scope association
-              </li>
-              <li>All roles using these permissions</li>
-              <li>All users with these roles</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="confirm-actions">
-          <otui-button variant="secondary" (action)="closeConfirmModal()">
-            Cancel
-          </otui-button>
-          <otui-button
-            [variant]="confirmAction === 'delete' ? 'danger' : 'primary'"
-            (action)="executeConfirmedAction()"
-          >
-            Confirm {{ confirmAction === 'delete' ? 'Delete' : 'Save' }}
-          </otui-button>
-        </div>
-      </div>
-    </otui-modal>
-  `,
-  styles: [
-    `
-      :host ::ng-deep otui-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: color-mix(
-          in srgb,
-          var(--foreground, #111827) 36%,
-          transparent
-        );
-        z-index: 999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      :host {
-        display: block;
-        padding: 16px;
-      }
-
-      .form-container {
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-        padding: 1rem;
-      }
-
-      .form-section {
-        flex: 1;
-      }
-
-      .form-section h3 {
-        margin-bottom: 0.5rem;
-      }
-
-      .section-description {
-        color: var(--foreground, #666);
-        margin-bottom: 1.5rem;
-        font-size: 0.9rem;
-      }
-
-      .form-field {
-        margin-bottom: 1.5rem;
-      }
-
-      .checkbox-field {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-      }
-
-      .checkbox-field label {
-        cursor: pointer;
-      }
-
-      .form-preview {
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 88%,
-          var(--background, #f3f4f6)
-        );
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid var(--border-color, #ddd);
-        color: var(--foreground, #111827);
-      }
-
-      .form-preview h3 {
-        margin-bottom: 1rem;
-      }
-
-      .preview-content p {
-        margin-bottom: 0.75rem;
-      }
-
-      .active-badge {
-        color: color-mix(
-          in srgb,
-          var(--success, #15803d) 84%,
-          var(--foreground, #111827)
-        );
-        font-weight: 600;
-      }
-
-      .inactive-badge {
-        color: color-mix(
-          in srgb,
-          var(--warning, #b45309) 82%,
-          var(--foreground, #111827)
-        );
-        font-weight: 600;
-      }
-
-      .related-info {
-        margin-top: 1.5rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--border-color, #ddd);
-      }
-
-      .related-info ul {
-        list-style: disc;
-        padding-left: 1.5rem;
-        margin-top: 0.5rem;
-      }
-
-      .related-info ul li {
-        margin-bottom: 0.25rem;
-        font-size: 0.9rem;
-      }
-
-      .info-text {
-        color: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 82%,
-          var(--foreground, #111827)
-        );
-        font-weight: 500;
-      }
-
-      .muted-text {
-        color: color-mix(in srgb, var(--foreground, #111827) 58%, transparent);
-        font-style: italic;
-      }
-
-      .form-actions {
-        display: flex;
-        gap: 1rem;
-        justify-content: flex-end;
-        padding-top: 1rem;
-        border-top: 1px solid var(--border-color, #ddd);
-      }
-
-      .confirm-container {
-        padding: 1rem;
-      }
-
-      .confirm-container p {
-        margin-bottom: 1.5rem;
-      }
-
-      .change-details {
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 92%,
-          var(--background, #f3f4f6)
-        );
-        padding: 1rem;
-        border-radius: 6px;
-        margin-bottom: 1.5rem;
-        color: var(--foreground, #111827);
-      }
-
-      .change-details h4 {
-        margin-bottom: 0.75rem;
-      }
-
-      .change-details ul {
-        list-style: none;
-        padding-left: 0;
-      }
-
-      .change-details ul li {
-        margin-bottom: 0.5rem;
-      }
-
-      .warning-text {
-        color: var(--warning, #ff9800);
-        font-weight: 500;
-        margin-top: 1rem;
-      }
-
-      .danger-text {
-        color: var(--danger, #f44336);
-        font-weight: 500;
-      }
-
-      .warning-box,
-      .danger-box {
-        background: color-mix(
-          in srgb,
-          var(--warning, #b45309) 14%,
-          var(--surface, #ffffff)
-        );
-        border: 1px solid var(--warning, #ff9800);
-        padding: 1rem;
-        border-radius: 6px;
-        margin-top: 1rem;
-      }
-
-      .danger-box {
-        background: color-mix(
-          in srgb,
-          var(--danger, #b91c1c) 14%,
-          var(--surface, #ffffff)
-        );
-        border-color: var(--danger, #f44336);
-      }
-
-      .danger-box ul {
-        list-style: disc;
-        padding-left: 1.5rem;
-        margin-top: 0.5rem;
-      }
-
-      .confirm-actions {
-        display: flex;
-        gap: 1rem;
-        justify-content: flex-end;
-      }
-    `,
-  ],
+  templateUrl: './app-scopes-management.component.html',
+  styleUrls: ['./app-scopes-management.component.scss'],
 })
 export class AppScopesManagementComponent implements OnInit {
   private readonly appScopesService = inject(AppScopesService);
   private readonly permissionsService = inject(PermissionsService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmService = inject(OwnerConfirmService);
 
   appScopes: AppScopeDto[] = [];
   permissions: PermissionDto[] = [];
   relatedPermissions: PermissionDto[] = [];
   permissionCountsMap: Map<string, number> = new Map();
   loading = false;
+  /** Set when the scope list could not be loaded; shows Unavailable + Retry. */
+  loadError = '';
 
   // Modal states
   showFormModal = false;
-  showConfirmModal = false;
   isEditMode = false;
   currentAppScope: AppScopeDto | null = null;
 
@@ -476,11 +68,6 @@ export class AppScopesManagementComponent implements OnInit {
     active: true,
   };
 
-  // Confirmation modal
-  confirmModalTitle = '';
-  confirmModalMessage = '';
-  confirmAction: 'create' | 'update' | 'delete' = 'create';
-
   ngOnInit(): void {
     this.loadAppScopes();
     this.loadPermissions();
@@ -488,31 +75,22 @@ export class AppScopesManagementComponent implements OnInit {
 
   loadAppScopes(): void {
     this.loading = true;
+    this.loadError = '';
     this.messageService.clearMessages();
 
     this.appScopesService.getAppScopes().subscribe({
       next: (appScopes) => {
-        this.appScopes = appScopes;
+        this.appScopes = Array.isArray(appScopes) ? appScopes : [];
         this.loading = false;
         this.updatePermissionCounts();
-
-        if (appScopes.length === 0) {
-          this.messageService.addMessage({
-            content: 'No app scopes found in the system.',
-            type: 'info',
-          });
-        }
       },
       error: (err) => {
         this.loading = false;
-        const errorMessage =
-          err.error?.message ||
-          err.message ||
+        this.appScopes = [];
+        this.loadError =
+          err?.error?.message ||
+          err?.message ||
           'Failed to load app scopes. Please try again.';
-        this.messageService.addMessage({
-          content: errorMessage,
-          type: 'error',
-        });
       },
     });
   }
@@ -520,7 +98,7 @@ export class AppScopesManagementComponent implements OnInit {
   loadPermissions(): void {
     this.permissionsService.getPermissions().subscribe({
       next: (permissions) => {
-        this.permissions = permissions;
+        this.permissions = Array.isArray(permissions) ? permissions : [];
         this.updatePermissionCounts();
       },
       error: (err) => {
@@ -575,7 +153,7 @@ export class AppScopesManagementComponent implements OnInit {
     return !!(this.formData.name?.trim() && this.formData.description?.trim());
   }
 
-  confirmFormSubmit(): void {
+  async confirmFormSubmit(): Promise<void> {
     if (!this.isFormValid()) {
       this.messageService.addMessage({
         content: 'Please fill in all required fields.',
@@ -584,39 +162,49 @@ export class AppScopesManagementComponent implements OnInit {
       return;
     }
 
-    this.confirmAction = this.isEditMode ? 'update' : 'create';
-    this.confirmModalTitle = this.isEditMode
-      ? 'Confirm App Scope Update'
-      : 'Confirm App Scope Creation';
-    this.confirmModalMessage = this.isEditMode
-      ? 'Are you sure you want to update this app scope?'
-      : 'Are you sure you want to create this app scope?';
-
-    this.showConfirmModal = true;
-  }
-
-  openDeleteConfirm(appScope: AppScopeDto): void {
-    this.currentAppScope = appScope;
-    this.relatedPermissions = this.getRelatedPermissionsForScope(appScope);
-    this.confirmAction = 'delete';
-    this.confirmModalTitle = 'Confirm App Scope Deletion';
-    this.confirmModalMessage =
-      'Are you sure you want to delete this app scope?';
-    this.showConfirmModal = true;
-  }
-
-  closeConfirmModal(): void {
-    this.showConfirmModal = false;
-  }
-
-  executeConfirmedAction(): void {
-    if (this.confirmAction === 'create') {
-      this.createAppScope();
-    } else if (this.confirmAction === 'update') {
-      this.updateAppScope();
-    } else if (this.confirmAction === 'delete') {
-      this.deleteAppScope();
+    if (!this.isEditMode) {
+      const created = await this.confirmService.confirm({
+        level: 'plain',
+        title: 'Create this app scope',
+        body: `Create the app scope ${this.formData.name}?`,
+        confirmLabel: 'Create app scope',
+      });
+      if (created.confirmed) this.createAppScope();
+      return;
     }
+
+    const deactivating =
+      !this.formData.active && !!this.currentAppScope?.active;
+    // Reason is collected in the UI only: the app scopes API accepts none.
+    const updated = await this.confirmService.confirm({
+      level: 'reason',
+      title: 'Save changes to this app scope',
+      body: `Updating ${this.formData.name} may affect ${
+        this.relatedPermissions.length
+      } permission(s) and the roles and users that depend on them.${
+        deactivating
+          ? ' Deactivating it disables every permission attached to it.'
+          : ''
+      }`,
+      confirmLabel: 'Save changes',
+      destructive: deactivating,
+    });
+    if (updated.confirmed) this.updateAppScope();
+  }
+
+  async openDeleteConfirm(appScope: AppScopeDto): Promise<void> {
+    this.relatedPermissions = this.getRelatedPermissionsForScope(appScope);
+    const result = await this.confirmService.confirm({
+      level: 'typed',
+      title: 'Delete this app scope',
+      body: `Deleting ${appScope.name} cannot be undone. ${this.relatedPermissions.length} permission(s) lose their app scope, which affects every role and user that uses them.`,
+      confirmLabel: 'Delete app scope',
+      typedPhrase: appScope.name,
+      destructive: true,
+    });
+    if (!result.confirmed) return;
+    this.currentAppScope = appScope;
+    this.deleteAppScope();
   }
 
   createAppScope(): void {
@@ -632,7 +220,6 @@ export class AppScopesManagementComponent implements OnInit {
           content: 'App scope created successfully!',
           type: 'success',
         });
-        this.closeConfirmModal();
         this.closeFormModal();
         this.loadAppScopes();
       },
@@ -664,7 +251,6 @@ export class AppScopesManagementComponent implements OnInit {
             content: 'App scope updated successfully!',
             type: 'success',
           });
-          this.closeConfirmModal();
           this.closeFormModal();
           this.loadAppScopes();
           this.loadPermissions(); // Reload to get updated relationships
@@ -690,7 +276,6 @@ export class AppScopesManagementComponent implements OnInit {
           content: 'App scope deleted successfully!',
           type: 'success',
         });
-        this.closeConfirmModal();
         this.loadAppScopes();
         this.loadPermissions(); // Reload to get updated relationships
         this.updatePermissionCounts();

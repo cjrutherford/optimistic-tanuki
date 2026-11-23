@@ -548,7 +548,12 @@ describe('DaylightOperationsComponent in another app', () => {
 
   describe('a panel that cannot load', () => {
     const cases: [string, string, string, unknown][] = [
-      ['pipeline health', 'town.configure', 'operations/pipeline-health', null],
+      [
+        'pipeline health',
+        'town.configure',
+        'operations/pipeline-health',
+        { configured: false, towns: [], checkedAt: '2026-10-01T00:00:00.000Z' },
+      ],
       [
         'official candidates',
         'town.configure',
@@ -607,5 +612,63 @@ describe('DaylightOperationsComponent in another app', () => {
         ).toBe(false);
       }
     );
+  });
+
+  describe('replies with missing or null fields', () => {
+    const ALL = [
+      'town.configure',
+      'density.read',
+      'takedown.manage',
+      'official.verify',
+      'community.maintain',
+    ];
+
+    it('shows a failed load, not a TypeError, for empty 200 bodies', async () => {
+      const { fixture, page } = await render({ permissions: ALL });
+      for (const path of [
+        'pipeline-health',
+        'official-candidates',
+        'density',
+        'takedown-notices?state=received',
+      ]) {
+        http().expectOne(`${API}/operations/${path}`).flush({});
+      }
+      http().expectOne(`${API}/operations/backfill`).flush(null);
+      expect(() => fixture.detectChanges()).not.toThrow();
+      expect(page.textContent).toContain('could not be loaded');
+    });
+
+    it('renders a backfill and notices that omit their lists', async () => {
+      const { fixture, page } = await render({ permissions: ALL });
+      http()
+        .expectOne(`${API}/operations/pipeline-health`)
+        .flush({ data: { configured: true, checkedAt: null } });
+      http()
+        .expectOne(`${API}/operations/official-candidates`)
+        .flush({ data: [] });
+      http()
+        .expectOne(`${API}/operations/density`)
+        .flush({ data: { rows: null } });
+      http()
+        .expectOne(`${API}/operations/takedown-notices?state=received`)
+        .flush({
+          data: [
+            {
+              id: 'n1',
+              work: 'A work',
+              claimantName: 'C',
+              claimantEmail: 'c@example.test',
+              state: 'received',
+              contributionIds: null,
+            },
+          ],
+        });
+      http()
+        .expectOne(`${API}/operations/backfill`)
+        .flush({ data: { running: true, startedAt: null } });
+
+      expect(() => fixture.detectChanges()).not.toThrow();
+      expect(page.textContent).toContain('Locates 0 contributions: none');
+    });
   });
 });

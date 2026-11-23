@@ -431,9 +431,9 @@
         {{ notice.state }} · notice {{ notice.id }}
       </p>
       <p class="meta">
-        Locates {{ notice.contributionIds.length }} contribution{{
-          notice.contributionIds.length === 1 ? '' : 's'
-        }}: {{ notice.contributionIds.join(', ') || 'none' }}
+        Locates {{ notice.contributionIds?.length ?? 0 }} contribution{{
+          (notice.contributionIds?.length ?? 0) === 1 ? '' : 's'
+        }}: {{ notice.contributionIds?.join(', ') || 'none' }}
       </p>
       <label class="field"
         ><span>Reason for the decision</span>

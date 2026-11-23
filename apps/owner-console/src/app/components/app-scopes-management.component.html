@@ -1,0 +1,124 @@
+<lib-message></lib-message>
+
+<section class="scopes-page">
+  <ot-owner-page-header
+    title="App scopes"
+    description="App scopes partition roles and permissions by application. Changing one can affect every permission, role and user that depends on it."
+  >
+    <otui-button ot-actions variant="primary" (action)="openCreateModal()">
+      Create app scope
+    </otui-button>
+  </ot-owner-page-header>
+
+  @if (loadError) {
+  <ot-owner-state
+    kind="error"
+    [message]="loadError"
+    (retry)="loadAppScopes()"
+  />
+  } @else if (loading) {
+  <ot-owner-state kind="loading" message="Loading app scopes…" />
+  } @else if (appScopes.length === 0) {
+  <ot-owner-state
+    kind="empty"
+    message="No app scopes exist yet."
+    actionLabel="Create app scope"
+    (action)="openCreateModal()"
+  />
+  } @else {
+  <app-ag-app-scopes-table
+    [appScopes]="appScopes"
+    [permissionCounts]="permissionCountsMap"
+    [loading]="loading"
+    [showCreate]="false"
+    (create)="openCreateModal()"
+    (edit)="openEditModal($event)"
+    (delete)="openDeleteConfirm($event)"
+  />
+  }
+</section>
+
+<!-- Create/Edit Modal -->
+<otui-modal
+  *ngIf="showFormModal"
+  [heading]="isEditMode ? 'Edit App Scope' : 'Create New App Scope'"
+  (closeModal)="closeFormModal()"
+  mode="standard-modal"
+  size="lg"
+>
+  <div class="form-container">
+    <div class="form-section">
+      <h3>App Scope Details</h3>
+      <p class="section-description">
+        Define the application scope name, description, and status.
+      </p>
+
+      <div class="form-field">
+        <lib-text-input
+          label="App Scope Name *"
+          placeholder="e.g., owner-console, social-app, blog-service"
+          [(ngModel)]="formData.name"
+        ></lib-text-input>
+      </div>
+
+      <div class="form-field">
+        <lib-text-area
+          label="Description *"
+          [(ngModel)]="formData.description"
+        ></lib-text-area>
+      </div>
+
+      <div class="form-field checkbox-field">
+        <lib-checkbox
+          [value]="formData.active"
+          (changeEvent)="formData.active = $event"
+        ></lib-checkbox>
+        <label>Active (when checked, this app scope is enabled)</label>
+      </div>
+    </div>
+
+    <div class="form-preview">
+      <h3>Preview</h3>
+      <div class="preview-content">
+        <p><strong>Name:</strong> {{ formData.name || 'Not set' }}</p>
+        <p>
+          <strong>Description:</strong>
+          {{ formData.description || 'Not set' }}
+        </p>
+        <p>
+          <strong>Status:</strong>
+          <span
+            [class.active-badge]="formData.active"
+            [class.inactive-badge]="!formData.active"
+          >
+            {{ formData.active ? 'Active' : 'Inactive' }}
+          </span>
+        </p>
+        <div *ngIf="isEditMode && currentAppScope" class="related-info">
+          <p class="info-text"><strong>Related Permissions:</strong></p>
+          <p *ngIf="relatedPermissions.length === 0" class="muted-text">
+            No permissions associated with this app scope.
+          </p>
+          <ul *ngIf="relatedPermissions.length > 0">
+            <li *ngFor="let perm of relatedPermissions">
+              {{ perm.name }} ({{ perm.resource }}.{{ perm.action }})
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <otui-button variant="secondary" (action)="closeFormModal()">
+        Cancel
+      </otui-button>
+      <otui-button
+        variant="primary"
+        (action)="confirmFormSubmit()"
+        [disabled]="!isFormValid()"
+      >
+        {{ isEditMode ? 'Update App Scope' : 'Create App Scope' }}
+      </otui-button>
+    </div>
+  </div>
+</otui-modal>
