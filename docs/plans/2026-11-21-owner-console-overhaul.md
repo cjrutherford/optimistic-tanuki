@@ -195,6 +195,27 @@ orientation and trust, the three lowest scores, with no new backend work
 except the summary endpoint in S3. S4–S7 can follow in any order, once the
 decisions above are made.
 
+## 4a. Progress
+
+Boundary tag `owner-console-overhaul-s0-s4` (2026-11-23): S0–S4 done and
+verified locally (owner-console 1,021 tests, owner-page-ui 31, gateway 2,468;
+lint, build and personality audit clean). Not pushed.
+
+| Slice | Commit      |
+| ----- | ----------- |
+| S0    | `3b66ba981` |
+| S1    | `6f407ca73` |
+| S2    | `e332fd255` |
+| S3    | `944651c9e` |
+| S4a   | `112f3a0e1` |
+| S4b   | `ec2fb6554` |
+
+Open carry-overs: nav leaves have no `requiredPermission` yet (needs real
+permission names); users, roles and contacts components are 575–610 lines;
+store/appointment/lead/report counts fetch full lists until count commands
+exist; directory-worker health needs `DIRECTORY_WORKER_HEALTH_URL` off the
+default host.
+
 ## 5. Provider login regression
 
 Moved to its own plan and PR: `docs/plans/2026-11-22-oauth-provider-login.md` on branch `t3/oauth-provider-login-fixes`.
