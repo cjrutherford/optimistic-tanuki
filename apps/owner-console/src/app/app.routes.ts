@@ -422,6 +422,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'moderation',
+        loadComponent: () =>
+          import('./components/moderation-queue-page.component').then(
+            (m) => m.ModerationQueuePageComponent
+          ),
+      },
+      {
         path: 'social-governance',
         loadComponent: () =>
           import('./components/social-governance.component').then(

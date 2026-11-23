@@ -42,6 +42,15 @@ export type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 /** Source key for draft app configurations, composed here (see load()). */
 export const CONFIG_DRAFT_SOURCE = 'experience.configs';
 
+/** Badge key for the moderation queue: the sum of its attention sources. */
+export const MODERATION_QUEUE_SOURCE = 'moderation.queue';
+const MODERATION_QUEUE_SOURCES = [
+  'moderation.social',
+  'moderation.forum',
+  'directory.reports',
+  'daylight.takedowns',
+] as const;
+
 @Injectable({ providedIn: 'root' })
 export class AttentionService {
   private readonly http = inject(HttpClient);
@@ -132,6 +141,28 @@ export class AttentionService {
       if (count > 0) {
         const capped = mine.some((item) => item.capped);
         out[source] = {
+          kind: 'count',
+          count,
+          capped,
+          label: `${count}${capped ? ' or more' : ''} waiting`,
+        };
+      }
+    }
+    const queue = MODERATION_QUEUE_SOURCES.map((source) => out[source]);
+    if (queue.some((badge) => badge?.kind === 'unavailable')) {
+      out[MODERATION_QUEUE_SOURCE] = {
+        kind: 'unavailable',
+        label: 'Could not be loaded; this is not zero',
+      };
+    } else {
+      const counts = queue.filter(
+        (badge): badge is Extract<NavBadge, { kind: 'count' }> =>
+          badge?.kind === 'count'
+      );
+      const count = counts.reduce((sum, badge) => sum + badge.count, 0);
+      if (count > 0) {
+        const capped = counts.some((badge) => badge.capped);
+        out[MODERATION_QUEUE_SOURCE] = {
           kind: 'count',
           count,
           capped,

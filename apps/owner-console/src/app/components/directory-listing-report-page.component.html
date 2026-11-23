@@ -39,7 +39,13 @@
     body="No reports match this filter."
   ></otui-empty-state>
   } @for (item of list; track item.reportId) {
-  <otui-card class="report-card" tone="neutral" emphasis="soft">
+  <otui-card
+    class="report-card"
+    [class.focused]="item.reportId === focusId"
+    [attr.id]="'report-' + item.reportId"
+    tone="neutral"
+    emphasis="soft"
+  >
     <div class="report-header">
       @if (item.priority) {
       <otui-badge tone="danger" size="sm">Priority</otui-badge>

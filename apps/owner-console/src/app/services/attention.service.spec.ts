@@ -136,4 +136,41 @@ describe('AttentionService', () => {
       expect(badge?.label).toContain('or more');
     });
   });
+
+  describe('moderation queue badge', () => {
+    const queue = (items: OwnerAttentionItem[]) =>
+      service.badgesFor(items, null)['moderation.queue'];
+
+    it('sums the four moderation sources', () => {
+      expect(
+        queue([
+          item({ source: 'moderation.social', count: 2 }),
+          item({ source: 'moderation.forum', count: 1 }),
+          item({ source: 'directory.reports', townId: 't1', count: 3 }),
+          item({ source: 'directory.reports', townId: 't2', count: 4 }),
+          item({ source: 'daylight.takedowns', count: 5 }),
+          item({ source: 'commerce.orders', count: 9 }),
+        ])
+      ).toMatchObject({ kind: 'count', count: 15, capped: false });
+    });
+
+    it('shows unavailable, not a smaller count, when a source failed', () => {
+      expect(
+        queue([
+          item({ source: 'moderation.social', count: 2 }),
+          item({
+            source: 'daylight.takedowns',
+            count: null,
+            status: 'unavailable',
+          }),
+        ])
+      ).toMatchObject({ kind: 'unavailable' });
+    });
+
+    it('has no badge when nothing is waiting', () => {
+      expect(queue([item({ source: 'moderation.social', count: 0 })])).toBe(
+        undefined
+      );
+    });
+  });
 });

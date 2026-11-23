@@ -11,6 +11,7 @@ import {
   IconComponent,
   LoadingStateComponent,
 } from '@optimistic-tanuki/common-ui';
+import { scrollToFocused } from '../focus-item';
 import type {
   ListingReportReviewItem,
   ListingReportStatus,
@@ -53,6 +54,8 @@ export class DirectoryListingReportPageComponent implements OnInit {
 
   readonly filters = REPORT_FILTERS;
   town = '';
+  /** Report to mark, from `?focus=` (set by the moderation queue). */
+  focusId: string | null = null;
   filter: ReportFilter = 'open';
   reports: ListingReportReviewItem[] | null = null;
   loading = false;
@@ -62,6 +65,10 @@ export class DirectoryListingReportPageComponent implements OnInit {
   declineNote = '';
 
   ngOnInit(): void {
+    const query = this.route.snapshot?.queryParamMap;
+    this.focusId = query?.get('focus') ?? null;
+    const status = (query?.get('status') ?? null) as ReportFilter | null;
+    if (status && REPORT_FILTERS.includes(status)) this.filter = status;
     this.route.paramMap.subscribe((params) => {
       this.town = params.get('townId') ?? params.get('communityId') ?? '';
       this.reports = null;
@@ -104,6 +111,7 @@ export class DirectoryListingReportPageComponent implements OnInit {
           if (this.town !== town) return;
           this.loading = false;
           this.reports = result?.reports ?? [];
+          scrollToFocused(this.focusId);
         },
         error: (error: HttpErrorResponse) => {
           if (this.town !== town) return;

@@ -1,0 +1,80 @@
+<section class="moderation-page" aria-label="Moderation queue">
+  <ot-owner-page-header
+    title="Moderation queue"
+    description="Reports from social, forum, directory listings and Daylight takedown notices in one list. The oldest open report comes first."
+  ></ot-owner-page-header>
+
+  <ot-owner-filter-bar
+    label="Search reports"
+    placeholder="Subject, reason, town or status"
+    (query)="text.set($event)"
+    (cleared)="resetFilters()"
+  >
+    <fieldset class="source-filter">
+      <legend>Source</legend>
+      @for (source of sources; track source) {
+      <label class="source-option">
+        <input
+          type="checkbox"
+          [checked]="isSourceOn(source)"
+          (change)="setSources(source, $any($event.target).checked)"
+        />
+        {{ sourceLabels[source] }}
+      </label>
+      }
+    </fieldset>
+    <label class="select-filter">
+      <span>Town</span>
+      <select
+        [value]="townChoice()"
+        (change)="setTown($any($event.target).value)"
+      >
+        <option [value]="allTowns">All towns</option>
+        <option [value]="followSwitcher">Follow the town switcher</option>
+        @for (town of towns.towns(); track town.id) {
+        <option [value]="town.id">{{ town.name }}</option>
+        }
+      </select>
+    </label>
+    <label class="select-filter">
+      <span>Status</span>
+      <select
+        [value]="status()"
+        (change)="setStatus($any($event.target).value)"
+      >
+        <option value="open">Open</option>
+        <option value="all">All</option>
+      </select>
+    </label>
+  </ot-owner-filter-bar>
+
+  @if (unavailable().length) {
+  <ul class="source-notices" aria-label="Sources that could not be loaded">
+    @for (notice of unavailable(); track notice.source) {
+    <li class="source-notice" role="alert">
+      <span
+        ><strong>{{ notice.label }}:</strong> Unavailable. {{ notice.error }}.
+        The list below leaves out anything it could not read.</span
+      >
+      <button type="button" (click)="retry(notice.source)">Retry</button>
+    </li>
+    }
+  </ul>
+  } @if (capped().length) {
+  <p class="capped-note" role="status">
+    {{ capped().join(', ') }}: the service returned a full page, so more reports
+    may exist than are listed.
+  </p>
+  } @if (message()) {
+  <p class="page-message" role="status">{{ message() }}</p>
+  }
+
+  <ot-owner-data-table
+    [columns]="columns"
+    [rows]="rows()"
+    [error]="everySourceDown() ? 'No source could be loaded.' : null"
+    [emptyMessage]="emptyMessage()"
+    (rowClick)="open($event)"
+    (retry)="retryAll()"
+  ></ot-owner-data-table>
+</section>

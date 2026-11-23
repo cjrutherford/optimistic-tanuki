@@ -210,7 +210,11 @@ describe('searchNav', () => {
 
   it('matches group names and keywords', () => {
     expect(labels('moderation')).toEqual(
-      expect.arrayContaining(['Social moderation', 'Forum moderation'])
+      expect.arrayContaining([
+        'Moderation queue',
+        'Social moderation',
+        'Forum moderation',
+      ])
     );
     expect(labels('crm')).toContain('Leads');
   });

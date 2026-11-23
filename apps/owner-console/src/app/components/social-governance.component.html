@@ -79,7 +79,12 @@
       class="report-list"
       *ngIf="reports.length && !loadFailed; else noReports"
     >
-      <article class="report-card" *ngFor="let report of reports">
+      <article
+        class="report-card"
+        *ngFor="let report of reports"
+        [attr.id]="'report-' + report.id"
+        [class.focused]="report.id === focusId"
+      >
         <div class="report-copy">
           <div class="status-row">
             <span class="status-pill">{{ report.status }}</span>

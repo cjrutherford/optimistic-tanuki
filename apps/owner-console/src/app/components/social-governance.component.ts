@@ -11,6 +11,7 @@ import {
   ModerationReport,
   SocialGovernanceService,
 } from '../services/social-governance.service';
+import { scrollToFocused } from '../focus-item';
 import { OperatorQueuePanelComponent } from './operator-queue-panel.component';
 import {
   OperatorQueueItem,
@@ -37,6 +38,8 @@ export class SocialGovernanceComponent implements OnInit {
   private readonly confirmService = inject(OwnerConfirmService);
 
   reports: ModerationReport[] = [];
+  /** Report to mark, from `?focus=` (set by the moderation queue). */
+  focusId: string | null = null;
   queueItems: OperatorQueueItem[] = [];
   error: string | null = null;
   loadFailed = false;
@@ -70,6 +73,7 @@ export class SocialGovernanceComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.focusId = this.route.snapshot.queryParamMap.get('focus');
     this.loadHandoffContext();
     this.loadReports();
     this.loadQueue();
@@ -120,6 +124,7 @@ export class SocialGovernanceComponent implements OnInit {
             adminNotes: report.adminNotes ?? '',
           };
         }
+        scrollToFocused(this.focusId);
       },
       error: (err) => {
         this.error = 'Failed to load moderation reports';

@@ -7,6 +7,7 @@ import {
   ThreadDto,
   TopicDto,
 } from '@optimistic-tanuki/ui-models';
+import { scrollToFocused } from '../focus-item';
 import { ForumModerationReport, ForumService } from '../services/forum.service';
 
 @Component({
@@ -199,7 +200,12 @@ import { ForumModerationReport, ForumService } from '../services/forum.service';
           </p>
         </div>
         <div class="moderation-list" *ngIf="reports.length; else noReports">
-          <article class="moderation-card" *ngFor="let report of reports">
+          <article
+            class="moderation-card"
+            *ngFor="let report of reports"
+            [attr.id]="'report-' + report.id"
+            [class.focused]="report.id === focusId"
+          >
             <div class="card-copy">
               <h3>{{ report.contentType }} · {{ report.contentId }}</h3>
               <p>
@@ -321,6 +327,11 @@ import { ForumModerationReport, ForumService } from '../services/forum.service';
         gap: 16px;
       }
 
+      .moderation-card.focused {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+      }
+
       .moderation-card {
         display: flex;
         justify-content: space-between;
@@ -414,6 +425,8 @@ export class ForumGovernanceComponent implements OnInit {
   threads: ThreadDto[] = [];
   posts: ForumPostDto[] = [];
   reports: ForumModerationReport[] = [];
+  /** Report to mark, from `?focus=` (set by the moderation queue). */
+  focusId: string | null = null;
   error: string | null = null;
   handoffContext: {
     source: string;
@@ -450,6 +463,7 @@ export class ForumGovernanceComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.focusId = this.route.snapshot.queryParamMap.get('focus');
     this.loadHandoffContext();
     this.loadTopics();
     this.loadThreads();
@@ -522,6 +536,7 @@ export class ForumGovernanceComponent implements OnInit {
             adminNotes: report.adminNotes ?? '',
           };
         }
+        scrollToFocused(this.focusId);
       },
       error: (err) => {
         this.error = 'Failed to load forum reports';

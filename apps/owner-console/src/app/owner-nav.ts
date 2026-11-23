@@ -257,6 +257,21 @@ export const OWNER_NAV: readonly OwnerNavGroup[] = [
     icon: '⚖',
     leaves: [
       {
+        label: 'Moderation queue',
+        path: '/dashboard/moderation',
+        countSource: 'moderation.queue',
+        icon: '⚖',
+        keywords: [
+          'reports',
+          'queue',
+          'takedown',
+          'listing reports',
+          'social',
+          'forum',
+          'daylight',
+        ],
+      },
+      {
         label: 'Social moderation',
         path: '/dashboard/social-governance',
         countSource: 'moderation.social',

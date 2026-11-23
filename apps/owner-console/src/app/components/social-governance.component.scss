@@ -169,3 +169,8 @@ textarea {
   );
   font-weight: 600;
 }
+
+.report-card.focused {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
