@@ -44,7 +44,13 @@
           Deploy to production
         </button>
       </div>
-      @if (rollout(); as preview) {
+      @if (rolloutError()) {
+      <ot-owner-state
+        kind="error"
+        [message]="rolloutError() ?? undefined"
+        (retry)="refreshRollout()"
+      />
+      } @else if (rollout(); as preview) {
       <p class="strategy">{{ preview.strategy }}</p>
       <p>
         {{ preview.services.length }} services in staged pull/recreate plan.

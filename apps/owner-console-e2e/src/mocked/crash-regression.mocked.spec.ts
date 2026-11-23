@@ -1,21 +1,26 @@
-import { expect, Page, test } from '@playwright/test';
+import { Page } from '@playwright/test';
 import {
-  ALWAYS_ALLOWED,
-  MOCKED_503_ALLOWED,
   NAV_TARGETS,
   openLeaf,
   selectTown,
   signInAsOwner,
-  watchProblems,
 } from '../support/nav';
-import { ApiMockOptions, installApiMocks, MOCK_TOWN } from './fixtures';
+import {
+  ApiMockOptions,
+  expect,
+  installApiMocks,
+  MOCK_TOWN,
+  test,
+} from './fixtures';
 
 /**
  * Regressions for crashes the first mocked run found: an Angular
  * `ERROR TypeError: Cannot read properties of ... (reading 'length')` thrown
- * while rendering. Angular logs it through console.error, so it is read from
- * the console, with only the stub's own 503 lines allowed.
+ * while rendering. Angular logs it through console.error, which the console
+ * guard fails the test on; a test that fails a load on purpose allows only
+ * the browser's own 503 line for it.
  */
+const STUB_503 = /Failed to load resource.*status of 503/;
 const target = (path: string) => {
   const found = NAV_TARGETS.find((t) => t.leaf.path === path);
   if (!found) throw new Error(`${path} is not in OWNER_NAV`);
@@ -26,27 +31,21 @@ async function visit(
   page: Page,
   path: string,
   options: ApiMockOptions
-): Promise<string[]> {
+): Promise<void> {
   await installApiMocks(page, options);
   await signInAsOwner(page, 'owner@example.test', 'irrelevant');
   // With no towns loaded there is nothing to pick.
   if (options.communities !== null) await selectTown(page, MOCK_TOWN.id);
-  const problems = watchProblems(page, [
-    ...ALWAYS_ALLOWED,
-    ...MOCKED_503_ALLOWED,
-  ]);
   await openLeaf(page, target(path), MOCK_TOWN.id);
   await page.waitForTimeout(800);
-  return [...problems.pageErrors, ...problems.consoleErrors];
 }
 
 test.describe('crash regressions (mocked API)', () => {
   for (const path of ['/dashboard/communities', '/dashboard/cities']) {
     test(`${path}: a record with no description renders`, async ({ page }) => {
-      const errors = await visit(page, path, {
+      await visit(page, path, {
         communities: [{ ...MOCK_TOWN, description: null }],
       });
-      expect(errors).toEqual([]);
       await expect(
         page.getByRole('heading', { level: 1 }).last()
       ).toBeVisible();
@@ -57,9 +56,10 @@ test.describe('crash regressions (mocked API)', () => {
 
     test(`${path}: a failed load shows Unavailable with Retry`, async ({
       page,
+      consoleGuard,
     }) => {
-      const errors = await visit(page, path, { communities: null });
-      expect(errors).toEqual([]);
+      consoleGuard.allow(STUB_503);
+      await visit(page, path, { communities: null });
       const alert = page.getByRole('alert').filter({ hasText: /Unavailable/ });
       await expect(alert).toBeVisible();
       await expect(alert.getByRole('button', { name: 'Retry' })).toBeVisible();
@@ -78,13 +78,15 @@ test.describe('crash regressions (mocked API)', () => {
     `/dashboard/towns/:townId/daylight`,
   ]) {
     test(`${path}: unusable replies do not throw`, async ({ page }) => {
-      const errors = await visit(page, path, { operations: emptyBodies });
-      expect(errors).toEqual([]);
+      await visit(page, path, { operations: emptyBodies });
     });
 
-    test(`${path}: a failed load throws nothing`, async ({ page }) => {
-      const errors = await visit(page, path, {});
-      expect(errors).toEqual([]);
+    test(`${path}: a failed load throws nothing`, async ({
+      page,
+      consoleGuard,
+    }) => {
+      consoleGuard.allow(STUB_503);
+      await visit(page, path, { operations: null });
     });
   }
 });

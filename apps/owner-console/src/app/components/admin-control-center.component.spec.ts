@@ -10,7 +10,6 @@ import {
 
 interface ControlCenterStub {
   getPublicStatus: jest.Mock;
-  getOAuthInspection: jest.Mock;
   getLatestRollout: jest.Mock;
   getRolloutHistory: jest.Mock;
   getOAuthProviders: jest.Mock;
@@ -32,7 +31,6 @@ describe('AdminControlCenterComponent', () => {
           defaultTag: 'v1',
         })
       ),
-      getOAuthInspection: jest.fn().mockReturnValue(of({})),
       getLatestRollout: jest.fn().mockReturnValue(of(null)),
       getRolloutHistory: jest.fn().mockReturnValue(of([])),
       getOAuthProviders: jest.fn().mockReturnValue(of({ providers: [] })),
@@ -80,6 +78,36 @@ describe('AdminControlCenterComponent', () => {
     const component = create().componentInstance;
     expect(component.statusError()).not.toBeNull();
     expect(component.providersError()).not.toBeNull();
+  });
+
+  it('treats the no-rollout reply as nothing to show', () => {
+    // The API answers `{ status: 'pending' }` alone when no rollout has run.
+    service.getLatestRollout.mockReturnValue(of({ status: 'pending' }));
+    const fixture = create();
+    expect(fixture.componentInstance.latestRollout()).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain(
+      'Latest rollout'
+    );
+  });
+
+  it('shows an error with retry when the rollout plan fails to load', () => {
+    service.getRolloutPreview.mockReturnValue(throwError(() => new Error('x')));
+    const fixture = create();
+    const component = fixture.componentInstance;
+    expect(component.rolloutError()).toBe('Could not load the rollout plan.');
+
+    service.getRolloutPreview.mockReturnValue(
+      of({ strategy: 's', services: [], waves: [] })
+    );
+    component.refreshRollout();
+    expect(component.rolloutError()).toBeNull();
+  });
+
+  it('reports a rollout that could not be started', async () => {
+    service.startRollout.mockReturnValue(throwError(() => new Error('x')));
+    const component = create().componentInstance;
+    await component.startRollout();
+    expect(component.rolloutError()).toBe('The rollout could not be started.');
   });
 
   it('deploys only after typing the tag', async () => {

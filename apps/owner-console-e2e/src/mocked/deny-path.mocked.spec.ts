@@ -1,6 +1,5 @@
-import { expect, test } from '@playwright/test';
 import { signInThroughForm } from '../support/nav';
-import { installApiMocks } from './fixtures';
+import { expect, installApiMocks, test } from './fixtures';
 
 test.describe('Owner console deny paths (mocked API)', () => {
   test('a signed-in account with no owner role lands on no access', async ({

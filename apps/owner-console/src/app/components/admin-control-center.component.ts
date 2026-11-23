@@ -9,7 +9,6 @@ import {
 import {
   ControlCenterService,
   ControlCenterStatus,
-  OAuthInspection,
   RolloutPreview,
   RolloutState,
   RolloutHistoryEntry,
@@ -36,7 +35,6 @@ export class AdminControlCenterComponent implements OnInit {
   readonly status = signal<ControlCenterStatus | null>(null);
   readonly rollout = signal<RolloutPreview | null>(null);
   readonly latestRollout = signal<RolloutState | null>(null);
-  readonly oauth = signal<OAuthInspection | null>(null);
   readonly rolloutHistory = signal<RolloutHistoryEntry[]>([]);
   readonly oauthProviders = signal<OAuthProviderDetail[]>([]);
   targetTag = 'latest';
@@ -44,18 +42,17 @@ export class AdminControlCenterComponent implements OnInit {
   readonly statusError = signal<string | null>(null);
   readonly historyError = signal<string | null>(null);
   readonly providersError = signal<string | null>(null);
+  readonly rolloutError = signal<string | null>(null);
 
   ngOnInit(): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
     this.loadStatus();
-    this.controlCenter.getOAuthInspection().subscribe((oauth) => {
-      this.oauth.set(oauth);
-    });
     this.controlCenter.getLatestRollout().subscribe({
-      next: (state) => this.latestRollout.set(state),
-      // No rollout has run yet is a normal state, not a failure.
+      // With no rollout recorded the API answers `{ status: 'pending' }` and
+      // nothing else, so a reply without a target tag is "none yet".
+      next: (state) => this.latestRollout.set(state?.targetTag ? state : null),
       error: () => this.latestRollout.set(null),
     });
     this.loadHistory();
@@ -92,11 +89,14 @@ export class AdminControlCenterComponent implements OnInit {
   }
 
   refreshRollout(): void {
-    this.controlCenter
-      .getRolloutPreview(this.targetTag)
-      .subscribe((preview) => {
-        this.rollout.set(preview);
-      });
+    this.rolloutError.set(null);
+    this.controlCenter.getRolloutPreview(this.targetTag).subscribe({
+      next: (preview) => this.rollout.set(preview),
+      error: () => {
+        this.rollout.set(null);
+        this.rolloutError.set('Could not load the rollout plan.');
+      },
+    });
   }
 
   async startRollout(): Promise<void> {
@@ -110,8 +110,10 @@ export class AdminControlCenterComponent implements OnInit {
       destructive: true,
     });
     if (!result.confirmed) return;
-    this.controlCenter.startRollout(this.targetTag).subscribe((state) => {
-      this.latestRollout.set(state);
+    this.rolloutError.set(null);
+    this.controlCenter.startRollout(this.targetTag).subscribe({
+      next: (state) => this.latestRollout.set(state),
+      error: () => this.rolloutError.set('The rollout could not be started.'),
     });
   }
 }

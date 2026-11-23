@@ -167,32 +167,3 @@ export const ALWAYS_ALLOWED: readonly RegExp[] = [
   // at that path and the failure says nothing about a page.
   /Failed to load resource.*favicon/i,
 ];
-
-/**
- * Mocked run only: the stub answers every endpoint it does not know with a
- * 503 so pages show Unavailable, and the browser logs each one as a console
- * error. The status lines are the stub working, not a page failing; what a
- * page does with the failure (a thrown TypeError, say) is still asserted.
- */
-export const MOCKED_503_ALLOWED: readonly RegExp[] = [
-  /Failed to load resource.*status of 503/i,
-  // App scopes and permissions each look the other list up for counts and
-  // names. The page logs a failure of that secondary lookup on purpose and
-  // keeps working; the primary list still shows Unavailable + Retry.
-  /^Failed to load (app scopes|permissions):/,
-];
-
-/**
- * Pages whose console is asserted empty (after the allow-lists) in the mocked
- * run: the ones moved onto the shared owner-page components and the Daylight
- * pages. Other pages still log their own handled failures; add a page here
- * when it is clean.
- */
-export const CONSOLE_CLEAN_PAGES: readonly RegExp[] = [
-  /^\/dashboard\/app-scopes$/,
-  /^\/dashboard\/permissions$/,
-  /^\/dashboard\/communities$/,
-  /^\/dashboard\/cities$/,
-  /^\/dashboard\/daylight$/,
-  /^\/dashboard\/towns\/[^/]+\/daylight$/,
-];

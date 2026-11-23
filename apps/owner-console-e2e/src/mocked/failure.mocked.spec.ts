@@ -1,10 +1,12 @@
-import { expect, test } from '@playwright/test';
 import { signInAsOwner } from '../support/nav';
-import { installApiMocks } from './fixtures';
+import { expect, installApiMocks, test } from './fixtures';
 
 test('a failed attention source shows Unavailable with Retry, not zero', async ({
   page,
+  consoleGuard,
 }) => {
+  // The stub answers this one source 503 on purpose; the browser logs it.
+  consoleGuard.allow(/Failed to load resource.*status of 503/);
   await installApiMocks(page, { attention: null });
   await signInAsOwner(page, 'owner@example.test', 'irrelevant');
   await expect(page).toHaveURL(/\/dashboard\/home/);

@@ -1,16 +1,11 @@
-import { expect, test } from '@playwright/test';
 import {
-  ALWAYS_ALLOWED,
-  CONSOLE_CLEAN_PAGES,
-  MOCKED_503_ALLOWED,
   NAV_TARGETS,
   openLeaf,
   expectPageHeader,
   selectTown,
   signInAsOwner,
-  watchProblems,
 } from '../support/nav';
-import { installApiMocks, MOCK_TOWN } from './fixtures';
+import { expect, installApiMocks, MOCK_TOWN, test } from './fixtures';
 
 test.describe('Owner console navigation smoke (mocked API)', () => {
   test('the app bar carries the town switcher and Sign out', async ({
@@ -26,37 +21,24 @@ test.describe('Owner console navigation smoke (mocked API)', () => {
     await expect(page.getByText('Sign out')).toBeVisible();
   });
 
-  test('every OWNER_NAV page renders a header without page errors', async ({
+  // The console guard fails this test on any console error or unstubbed API
+  // call from any page in the tree, so a page cannot log one unnoticed.
+  test('every OWNER_NAV page renders a header and logs no console error', async ({
     page,
   }) => {
     test.setTimeout(5 * 60_000);
     await installApiMocks(page);
     await signInAsOwner(page, 'owner@example.test', 'irrelevant');
     await selectTown(page, MOCK_TOWN.id);
-    const problems = watchProblems(page, [
-      ...ALWAYS_ALLOWED,
-      ...MOCKED_503_ALLOWED,
-    ]);
-    const townId = MOCK_TOWN.id;
 
     for (const target of NAV_TARGETS) {
       await test.step(target.leaf.label, async () => {
-        const before = problems.consoleErrors.length;
-        const path = await openLeaf(page, target, townId);
+        const path = await openLeaf(page, target, MOCK_TOWN.id);
         await expectPageHeader(page, path);
-        // Let the page's own loads settle so a crash on a failed one lands here.
+        // Let the page's own loads settle so an error from one lands in this
+        // run rather than the next page's.
         await page.waitForTimeout(500);
-        if (CONSOLE_CLEAN_PAGES.some((clean) => clean.test(path))) {
-          expect
-            .soft(
-              problems.consoleErrors.slice(before),
-              `${path} logged console errors`
-            )
-            .toEqual([]);
-        }
       });
     }
-
-    expect(problems.pageErrors, 'uncaught page errors').toEqual([]);
   });
 });
