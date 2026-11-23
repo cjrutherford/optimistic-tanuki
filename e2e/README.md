@@ -30,6 +30,22 @@ Each E2E test has its own Docker Compose file that includes only the necessary s
 - `docker-compose.christopherrutherford-net-e2e.yaml` - Christopher Rutherford Net UI tests with backend
 - `docker-compose.store-client-e2e.yaml` - Store Client UI tests with backend
 
+## Owner console owner account
+
+The full-stack `owner-console-e2e` specs (nav smoke, happy paths) sign in as the stack's owner. Global setup registers that account through the gateway in the owner-console scope (open only while the stack has no owner, the same call `scripts/dev-seed.sh` makes) and confirms it can sign in, so reruns against the same stack are fine.
+
+| Variable         | CI / `scripts/run-ci-e2e-locally.sh` default | Notes                                    |
+| ---------------- | -------------------------------------------- | ---------------------------------------- |
+| `OWNER_EMAIL`    | `owner-e2e@example.test`                     | Test-only value; override with your own. |
+| `OWNER_PASSWORD` | `OwnerE2e-Pass-123!`                         | Test-only value; override with your own. |
+| `GATEWAY_URL`    | `http://127.0.0.1:3000`                      | Where global setup registers the owner.  |
+
+In CI the specs fail loudly when the owner variables are missing; outside CI they skip with a reason. The deny-path spec registers its own plain account. For a stack that already has a different owner, pass that owner's credentials.
+
+```bash
+E2E_TARGETS=owner-console-e2e PLAYWRIGHT_HEADLESS=true scripts/run-ci-e2e-locally.sh
+```
+
 ## Usage
 
 ### Running a specific E2E test environment

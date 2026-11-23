@@ -814,6 +814,11 @@ jobs:
           CI: true
           BASE_URL: ${{ matrix.base_url }}
           PLAYWRIGHT_CHANNEL: chrome
+          # Test-only owner for the throwaway e2e stack (not a secret). The
+          # owner-console-e2e global setup registers it through the gateway;
+          # its full-stack specs fail in CI when these are unset.
+          OWNER_EMAIL: owner-e2e@example.test
+          OWNER_PASSWORD: OwnerE2e-Pass-123!
 
       - name: Upload Playwright artifacts
         if: always()

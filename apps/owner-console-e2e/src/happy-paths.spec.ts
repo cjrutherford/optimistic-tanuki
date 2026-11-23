@@ -7,6 +7,10 @@ import {
   selectTown,
   signInAsOwner,
 } from './support/nav';
+import {
+  OWNER_ENV_MISSING_REASON,
+  ownerCredentials,
+} from './support/owner-credentials';
 
 /**
  * One happy path per section, each through the confirmation step the page
@@ -14,8 +18,10 @@ import {
  * data the seed may not hold; where the data is missing the test skips and
  * says which row it needed.
  */
-const email = process.env['OWNER_EMAIL'];
-const password = process.env['OWNER_PASSWORD'];
+// Throws in CI when the owner env is missing, so the suite cannot skip green.
+const owner = ownerCredentials();
+const email = owner?.email;
+const password = owner?.password;
 
 const targetFor = (path: string): NavTarget => {
   const found = NAV_TARGETS.find((t) => t.leaf.path === path);
@@ -35,10 +41,7 @@ async function start(page: Page, path: string): Promise<void> {
 }
 
 test.describe('Owner console happy paths (full stack)', () => {
-  test.skip(
-    !email || !password,
-    'OWNER_EMAIL and OWNER_PASSWORD are not set: the stack has no provisioned owner account'
-  );
+  test.skip(!owner, OWNER_ENV_MISSING_REASON);
 
   test('People & access: assign a role (reason dialog)', async ({ page }) => {
     await start(page, '/dashboard/users');

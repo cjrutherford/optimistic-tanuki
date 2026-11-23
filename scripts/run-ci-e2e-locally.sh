@@ -15,6 +15,10 @@ export E2E_BUILD_BATCH_SIZE="${E2E_BUILD_BATCH_SIZE:-4}"
 export E2E_BUILD_PARALLEL_LIMIT="${E2E_BUILD_PARALLEL_LIMIT:-1}"
 export E2E_TARGETS="${E2E_TARGETS:-}"
 export E2E_NX_ARGS="${E2E_NX_ARGS:-}"
+# Same test-only owner as .github/workflows/ci-cd.yml; owner-console-e2e
+# registers it through the gateway in its global setup.
+export OWNER_EMAIL="${OWNER_EMAIL:-owner-e2e@example.test}"
+export OWNER_PASSWORD="${OWNER_PASSWORD:-OwnerE2e-Pass-123!}"
 
 FAILED_TARGETS=()
 CURRENT_PID=""

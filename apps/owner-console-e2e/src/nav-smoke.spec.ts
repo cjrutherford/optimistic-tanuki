@@ -9,20 +9,23 @@ import {
   signInAsOwner,
   watchProblems,
 } from './support/nav';
+import {
+  OWNER_ENV_MISSING_REASON,
+  ownerCredentials,
+} from './support/owner-credentials';
 
 /**
  * Full-stack navigation smoke: sign in as the stack's owner and open every
- * page in OWNER_NAV. The CI stack does not provision an owner account, so the
- * run needs OWNER_EMAIL and OWNER_PASSWORD; without them it skips and says so.
+ * page in OWNER_NAV. The run needs OWNER_EMAIL and OWNER_PASSWORD (global setup provisions the
+ * account). Locally, without them it skips and says so; in CI it fails.
  */
-const email = process.env['OWNER_EMAIL'];
-const password = process.env['OWNER_PASSWORD'];
+// Throws in CI when the owner env is missing, so the suite cannot skip green.
+const owner = ownerCredentials();
+const email = owner?.email;
+const password = owner?.password;
 
 test.describe('Owner console navigation smoke (full stack)', () => {
-  test.skip(
-    !email || !password,
-    'OWNER_EMAIL and OWNER_PASSWORD are not set: the stack has no provisioned owner account'
-  );
+  test.skip(!owner, OWNER_ENV_MISSING_REASON);
 
   test('every OWNER_NAV page renders a header without errors', async ({
     page,
