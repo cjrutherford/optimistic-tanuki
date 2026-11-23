@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { LeadStatus } from '@optimistic-tanuki/ui-models';
 import { OperatorOverviewComponent } from './operator-overview.component';
 import { AppConfigService } from '../services/app-config.service';
@@ -10,6 +10,7 @@ import { CommunityService } from '../services/community.service';
 import { ContactLeadsService } from '../services/contact-leads.service';
 import { ForumService } from '../services/forum.service';
 import { SocialGovernanceService } from '../services/social-governance.service';
+import { OperatorQueueService } from '../services/operator-queue.service';
 import { StoreService } from '../services/store.service';
 import { UsersService } from '../services/users.service';
 
@@ -173,5 +174,80 @@ describe('OperatorOverviewComponent', () => {
     expect(text).toContain('New leads need first response');
     expect(text).toContain('Business-site catalog readiness');
     expect(text).toContain('Moderation reports pending review');
+  });
+
+  const tileFor = (root: HTMLElement, label: string): HTMLElement => {
+    const tile = Array.from(
+      root.querySelectorAll<HTMLElement>('.metric-card')
+    ).find((card) => card.querySelector('h2')?.textContent?.trim() === label);
+    if (!tile) throw new Error(`No tile labelled ${label}`);
+    return tile;
+  };
+
+  it('shows a failed source as Unavailable with a retry, never as zero', () => {
+    const store = TestBed.inject(StoreService) as unknown as {
+      getOrders: jest.Mock;
+    };
+    store.getOrders.mockReturnValueOnce(throwError(() => new Error('down')));
+    const fixture = TestBed.createComponent(OperatorOverviewComponent);
+
+    fixture.detectChanges();
+
+    const failed = tileFor(fixture.nativeElement, 'Commerce Surfaces');
+    expect(failed.textContent).toContain('Unavailable');
+    expect(failed.textContent).not.toMatch(/\b0 orders/);
+    expect(failed.querySelector('button.retry')).not.toBeNull();
+
+    const healthy = tileFor(fixture.nativeElement, 'Governed Profiles');
+    expect(healthy.textContent).not.toContain('Unavailable');
+    expect(healthy.querySelector('button.retry')).toBeNull();
+  });
+
+  it('retries only the failed tile sources', () => {
+    const users = TestBed.inject(UsersService) as unknown as {
+      getProfiles: jest.Mock;
+    };
+    const store = TestBed.inject(StoreService) as unknown as {
+      getOrders: jest.Mock;
+      getProducts: jest.Mock;
+    };
+    store.getOrders.mockReturnValueOnce(throwError(() => new Error('down')));
+    const fixture = TestBed.createComponent(OperatorOverviewComponent);
+    fixture.detectChanges();
+    const usersBefore = users.getProfiles.mock.calls.length;
+    const productsBefore = store.getProducts.mock.calls.length;
+    const ordersBefore = store.getOrders.mock.calls.length;
+
+    tileFor(fixture.nativeElement, 'Commerce Surfaces')
+      .querySelector<HTMLButtonElement>('button.retry')
+      ?.click();
+    fixture.detectChanges();
+
+    const recovered = tileFor(fixture.nativeElement, 'Commerce Surfaces');
+    expect(recovered.textContent).not.toContain('Unavailable');
+    expect(recovered.textContent).toContain('1 orders');
+    expect(store.getOrders.mock.calls.length).toBe(ordersBefore + 1);
+    expect(store.getProducts.mock.calls.length).toBe(productsBefore);
+    expect(users.getProfiles.mock.calls.length).toBe(usersBefore);
+  });
+
+  it('shows an unavailable state with retry when the operator queue fails', () => {
+    const fixture = TestBed.createComponent(OperatorOverviewComponent);
+    const queue = fixture.debugElement.injector.get(OperatorQueueService);
+    jest
+      .spyOn(queue, 'getOverviewQueue')
+      .mockReturnValueOnce(throwError(() => new Error('down')));
+
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('The work queue could not be loaded');
+    expect(text).not.toContain('Appointments awaiting approval');
+
+    fixture.nativeElement.querySelector('.queue-error button.retry').click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain(
+      'Appointments awaiting approval'
+    );
   });
 });

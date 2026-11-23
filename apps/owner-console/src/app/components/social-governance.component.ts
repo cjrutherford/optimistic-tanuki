@@ -137,23 +137,6 @@ import {
           <p class="empty-state">No content reports are currently queued.</p>
         </ng-template>
       </section>
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Remaining social gaps</h2>
-          <p>These items remain outside the current slice.</p>
-        </div>
-        <ul class="gap-list">
-          <li>
-            Privacy block and mute signals are not yet unified into one review
-            console.
-          </li>
-          <li>
-            Reported profiles, communities, and messages still do not have
-            dedicated moderation actions here.
-          </li>
-        </ul>
-      </section>
     </section>
   `,
   styles: [
@@ -316,13 +299,6 @@ import {
           var(--warning, #b45309) 82%,
           var(--foreground, #111827)
         );
-      }
-
-      .gap-list {
-        margin: 0;
-        padding-left: 20px;
-        display: grid;
-        gap: 10px;
       }
 
       .empty-state,

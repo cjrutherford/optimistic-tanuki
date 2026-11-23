@@ -1,7 +1,13 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  inject,
+  PLATFORM_ID,
+} from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { Subject, filter, takeUntil } from 'rxjs';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import {
   AppBarComponent,
@@ -9,7 +15,10 @@ import {
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
 import { AuthService } from '../services/auth.service';
-import { OPERATOR_WORKSPACES } from '../operator-workspaces';
+import { DASHBOARD_NAV_ENTRIES, activeNavRoute } from '../dashboard-nav';
+
+/** The sidebar overlays the page at or below this width, so it starts closed. */
+export const DESKTOP_SIDEBAR_QUERY = '(min-width: 769px)';
 
 @Component({
   selector: 'app-dashboard',
@@ -23,6 +32,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private authService: AuthService;
   private router: Router;
+  private platformId = inject(PLATFORM_ID);
 
   sidebarOpen = false;
   navItems: NavItem[] = [];
@@ -34,16 +44,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.theme$.pipe(takeUntil(this.destroy$)).subscribe((theme) => {
-      // Theme changes are handled by ThemeService via CSS variables
-    });
-
+    this.sidebarOpen = this.isDesktopWidth();
     this.navItems = this.buildNavItems();
 
-    // Navigate to overview by default
-    if (this.router.url === '/dashboard') {
-      this.router.navigate(['/dashboard/overview']);
-    }
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        this.navItems = this.buildNavItems();
+      });
   }
 
   ngOnDestroy(): void {
@@ -73,45 +84,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
       : 'Dark Mode';
   }
 
+  private isDesktopWidth(): boolean {
+    if (
+      !isPlatformBrowser(this.platformId) ||
+      typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function'
+    ) {
+      return false;
+    }
+    return window.matchMedia(DESKTOP_SIDEBAR_QUERY).matches;
+  }
+
   private buildNavItems(): NavItem[] {
-    const workspaceNav = [
-      {
-        label: 'Overview',
-        route: '/dashboard/overview',
-      },
-      ...OPERATOR_WORKSPACES.map((workspace) => ({
-        label: workspace.label,
-        route: `/dashboard/${workspace.path}`,
-      })),
-      {
-        label: 'Operations',
-        route: '/dashboard/operations',
-      },
-      {
-        label: 'Security',
-        route: '/dashboard/security',
-      },
-      {
-        label: 'Performance',
-        route: '/dashboard/performance',
-      },
-      {
-        label: 'Control Center',
-        route: '/dashboard/control-center',
-      },
-    ];
+    const active = activeNavRoute(this.router.url);
 
     return [
-      ...workspaceNav.map((item) => ({
-        label: item.label,
-        action: () => this.router.navigate([item.route]),
+      ...DASHBOARD_NAV_ENTRIES.map((entry) => ({
+        label: entry.label,
+        action: () => this.router.navigate([entry.route]),
         variant: 'text' as const,
-        isActive: this.router.url.startsWith(item.route),
+        isActive: entry.route === active,
       })),
       {
         label: 'Logout',
         action: () => this.logout(),
-        variant: 'danger',
+        variant: 'danger' as const,
       },
     ];
   }

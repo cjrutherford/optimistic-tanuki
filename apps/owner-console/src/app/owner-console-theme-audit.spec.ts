@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { BehaviorSubject, of } from 'rxjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Router } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { DashboardComponent } from './components/dashboard.component';
 import { OperatorOverviewComponent } from './components/operator-overview.component';
 import { ThemeManagementComponent } from './components/theme-management.component';
@@ -181,6 +181,7 @@ describe('owner-console theme audit regressions', () => {
     await TestBed.configureTestingModule({
       imports: [OperatorOverviewComponent],
       providers: [
+        provideRouter([]),
         { provide: UsersService, useValue: { getProfiles: jest.fn() } },
         { provide: AppScopesService, useValue: { getAppScopes: jest.fn() } },
         {

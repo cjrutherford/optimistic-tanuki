@@ -12,7 +12,6 @@ import { ContactLeadsService } from '../services/contact-leads.service';
 import { ForumService } from '../services/forum.service';
 import { SocialGovernanceService } from '../services/social-governance.service';
 import { StoreService } from '../services/store.service';
-import { OWNER_CONSOLE_MUTATION_MATRIX } from '../owner-console-mutation-matrix';
 import { ControlCenterService } from '../services/control-center.service';
 
 describe('OperationsWorkspaceComponent', () => {
@@ -191,62 +190,6 @@ describe('OperationsWorkspaceComponent', () => {
     ).not.toBeNull();
   });
 
-  it('summarizes mutation coverage counts and exposes incomplete flows', () => {
-    const fixture = TestBed.createComponent(OperationsWorkspaceComponent);
-    fixture.componentInstance.ngOnInit();
-
-    expect(fixture.componentInstance.matrixStatusCards).toEqual([
-      expect.objectContaining({
-        label: 'Complete flows',
-        count: OWNER_CONSOLE_MUTATION_MATRIX.filter(
-          (entry) => entry.status === 'complete'
-        ).length,
-        tone: 'complete',
-      }),
-      expect.objectContaining({
-        label: 'Partial flows',
-        count: OWNER_CONSOLE_MUTATION_MATRIX.filter(
-          (entry) => entry.status === 'partial'
-        ).length,
-        tone: 'partial',
-      }),
-      expect.objectContaining({
-        label: 'Missing flows',
-        count: OWNER_CONSOLE_MUTATION_MATRIX.filter(
-          (entry) => entry.status === 'missing'
-        ).length,
-        tone: 'missing',
-      }),
-    ]);
-
-    expect(
-      fixture.componentInstance.incompleteMatrixEntries.some(
-        (entry) => entry.feature === 'Theme persistence'
-      )
-    ).toBe(false);
-    expect(fixture.componentInstance.incompleteMatrixEntries).toHaveLength(
-      OWNER_CONSOLE_MUTATION_MATRIX.filter(
-        (entry) => entry.status !== 'complete'
-      ).length
-    );
-    expect(fixture.componentInstance.matrixWorkspaceCards).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          workspace: 'CRM',
-          route: '/dashboard/crm',
-          completionPercent: 100,
-          status: 'Healthy',
-        }),
-        expect.objectContaining({
-          workspace: 'Community Ops',
-          route: '/dashboard/community-ops',
-          completionPercent: 100,
-          status: 'Healthy',
-        }),
-      ])
-    );
-  });
-
   it('surfaces the business-site catalog mode for central commerce auditing', () => {
     const fixture = TestBed.createComponent(OperationsWorkspaceComponent);
     fixture.componentInstance.ngOnInit();
@@ -288,58 +231,5 @@ describe('OperationsWorkspaceComponent', () => {
         }),
       ])
     );
-  });
-
-  it('surfaces slice progress and projected score impact for the roadmap', () => {
-    const fixture = TestBed.createComponent(OperationsWorkspaceComponent);
-
-    fixture.detectChanges();
-
-    expect(fixture.componentInstance.sliceTrackerCards).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          slice: '0',
-          status: 'complete',
-          primaryDomains: ['All'],
-        }),
-        expect.objectContaining({
-          slice: '7',
-          status: 'complete',
-          primaryDomains: ['All'],
-        }),
-        expect.objectContaining({
-          slice: '8',
-          status: 'complete',
-          primaryDomains: ['Governance'],
-        }),
-        expect.objectContaining({
-          slice: '9',
-          status: 'complete',
-          primaryDomains: ['Experience'],
-        }),
-      ])
-    );
-    expect(fixture.componentInstance.projectedScoreImpactCards).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          domain: 'CRM',
-          uxDelta: 0.2,
-          completenessDelta: 0.7,
-          practicalityDelta: 0.3,
-        }),
-        expect.objectContaining({
-          domain: 'Community Ops',
-          uxDelta: 0.1,
-          completenessDelta: 0.2,
-          practicalityDelta: 0.2,
-        }),
-      ])
-    );
-
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Slice tracker');
-    expect(text).toContain('Operational Confidence and Coverage Tracking');
-    expect(text).toContain('Projected score impact');
-    expect(text).toContain('CRM');
   });
 });

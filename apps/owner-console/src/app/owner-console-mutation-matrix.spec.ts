@@ -1,5 +1,5 @@
 import { appRoutes } from './app.routes';
-import { OWNER_CONSOLE_MUTATION_MATRIX } from './owner-console-mutation-matrix';
+import { OWNER_CONSOLE_MUTATION_MATRIX } from './owner-console-mutation-matrix.fixture';
 
 describe('OWNER_CONSOLE_MUTATION_MATRIX', () => {
   const dashboardRoute = appRoutes.find((route) => route.path === 'dashboard');

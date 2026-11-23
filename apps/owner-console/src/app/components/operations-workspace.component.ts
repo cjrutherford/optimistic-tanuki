@@ -3,17 +3,6 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
-import {
-  OWNER_CONSOLE_MUTATION_MATRIX,
-  OwnerConsoleMutationMatrixEntry,
-} from '../owner-console-mutation-matrix';
-import {
-  OWNER_CONSOLE_SLICE_7_PROJECTED_SCORE_IMPACT,
-  OWNER_CONSOLE_SLICE_TRACKER,
-  OwnerConsoleScoreImpactEntry,
-  OwnerConsoleSliceTrackerEntry,
-} from '../owner-console-roadmap';
-import { OPERATOR_WORKSPACES } from '../operator-workspaces';
 import { AppConfigService } from '../services/app-config.service';
 import { AppScopesService } from '../services/app-scopes.service';
 import { BusinessSiteAdminService } from '../services/business-site-admin.service';
@@ -44,27 +33,6 @@ interface ControlPlaneAction {
   title: string;
   description: string;
   route: string;
-}
-
-interface MatrixStatusCard {
-  label: string;
-  count: number;
-  tone: 'complete' | 'partial' | 'missing';
-}
-
-interface MatrixWorkspaceCard {
-  workspace: OwnerConsoleMutationMatrixEntry['workspace'];
-  route: string;
-  status: 'Healthy' | 'Attention';
-  completionPercent: number;
-  completeCount: number;
-  totalCount: number;
-  gapCount: number;
-  detail: string;
-}
-
-interface SliceTrackerCard extends OwnerConsoleSliceTrackerEntry {
-  statusTone: 'complete' | 'in-progress' | 'not-started' | 'blocked';
 }
 
 interface BusinessSiteCatalogStatus {
@@ -319,125 +287,6 @@ interface BusinessSiteCatalogStatus {
           }
         </div>
       </section>
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Mutation coverage matrix</h2>
-          <p>
-            This matrix tracks every owner-console write flow by workspace,
-            route, backend endpoint, and expected permission boundary.
-          </p>
-        </div>
-        <div class="coverage-grid">
-          @for (card of matrixStatusCards; track card.label) {
-          <article
-            class="coverage-card"
-            [class.partial]="card.tone === 'partial'"
-            [class.missing]="card.tone === 'missing'"
-          >
-            <span class="coverage-count">{{ card.count }}</span>
-            <h3>{{ card.label }}</h3>
-          </article>
-          }
-        </div>
-        <div class="workspace-coverage-grid">
-          @for (card of matrixWorkspaceCards; track card.workspace) {
-          <a
-            class="coverage-card coverage-card--workspace"
-            [routerLink]="card.route"
-          >
-            <span
-              class="status-badge"
-              [class.attention]="card.status === 'Attention'"
-            >
-              {{ card.status }}
-            </span>
-            <div class="workspace-coverage-head">
-              <h3>{{ card.workspace }}</h3>
-              <strong>{{ card.completionPercent }}%</strong>
-            </div>
-            <p>{{ card.detail }}</p>
-            <span class="workspace-coverage-meta">
-              {{ card.completeCount }}/{{ card.totalCount }} complete ·
-              {{ card.gapCount }} gap{{ card.gapCount === 1 ? '' : 's' }}
-            </span>
-          </a>
-          }
-        </div>
-        <div class="gap-list">
-          @for (entry of incompleteMatrixEntries; track entry.feature) {
-          <article class="gap-card">
-            <div class="gap-header">
-              <span
-                class="gap-status"
-                [class.missing]="entry.status === 'missing'"
-              >
-                {{ entry.status }}
-              </span>
-              <h3>{{ entry.feature }}</h3>
-            </div>
-            <p><strong>Workspace:</strong> {{ entry.workspace }}</p>
-            <p><strong>Route:</strong> {{ entry.uiRoute }}</p>
-            <p><strong>Endpoint:</strong> {{ entry.apiEndpoint }}</p>
-            <p><strong>Permission:</strong> {{ entry.requiredPermission }}</p>
-            <p>{{ entry.notes }}</p>
-          </article>
-          }
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Slice tracker</h2>
-          <p>
-            Track implementation progress across the owner-console improvement
-            roadmap without leaving operations.
-          </p>
-        </div>
-        <div class="slice-grid">
-          @for (card of sliceTrackerCards; track card.slice) {
-          <article class="slice-card">
-            <div class="slice-card__header">
-              <span class="slice-number">Slice {{ card.slice }}</span>
-              <span
-                class="gap-status"
-                [class.missing]="card.status === 'blocked'"
-              >
-                {{ card.status }}
-              </span>
-            </div>
-            <h3>{{ card.name }}</h3>
-            <p>{{ card.expectedOutcome }}</p>
-            <div class="slice-meta">
-              <span>Priority {{ card.priority }}</span>
-              <span>{{ card.primaryDomains.join(', ') }}</span>
-            </div>
-          </article>
-          }
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Projected score impact</h2>
-          <p>
-            Estimated UX, completeness, and practicality movement for the
-            current Slice 7 roadmap work.
-          </p>
-        </div>
-        <div class="score-impact-grid">
-          @for (card of projectedScoreImpactCards; track card.domain) {
-          <article class="score-impact-card">
-            <h3>{{ card.domain }}</h3>
-            <div class="score-impact-metrics">
-              <span>UX +{{ card.uxDelta.toFixed(1) }}</span>
-              <span>Completeness +{{ card.completenessDelta.toFixed(1) }}</span>
-              <span>Practicality +{{ card.practicalityDelta.toFixed(1) }}</span>
-            </div>
-          </article>
-          }
-        </div>
-      </section>
     </section>
   `,
   styles: [
@@ -504,11 +353,7 @@ interface BusinessSiteCatalogStatus {
 
       .status-grid,
       .actions-grid,
-      .coverage-grid,
-      .workspace-coverage-grid,
-      .queue-grid,
-      .slice-grid,
-      .score-impact-grid {
+      .queue-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         gap: 16px;
@@ -516,8 +361,6 @@ interface BusinessSiteCatalogStatus {
 
       .status-card,
       .action-card,
-      .coverage-card,
-      .gap-card,
       .queue-card {
         display: grid;
         gap: 10px;
@@ -632,107 +475,6 @@ interface BusinessSiteCatalogStatus {
       .status-badge.attention {
         background: color-mix(in srgb, var(--warning) 16%, transparent);
         color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
-      }
-
-      .coverage-card {
-        align-content: start;
-      }
-
-      .coverage-card--workspace {
-        text-decoration: none;
-      }
-
-      .coverage-card.partial {
-        background: color-mix(in srgb, var(--warning) 8%, transparent);
-      }
-
-      .coverage-card.missing {
-        background: color-mix(in srgb, var(--danger) 8%, transparent);
-      }
-
-      .coverage-count {
-        font-size: 2rem;
-        font-weight: 700;
-        color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
-      }
-
-      .workspace-coverage-grid {
-        margin-top: 16px;
-      }
-
-      .workspace-coverage-head {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 12px;
-      }
-
-      .workspace-coverage-meta {
-        font-size: 0.82rem;
-        color: var(--foreground-secondary, #666);
-      }
-
-      .slice-card,
-      .score-impact-card {
-        display: grid;
-        gap: 12px;
-        padding: 20px;
-        border-radius: 18px;
-        border: 1px solid var(--border-color, #d6d6d6);
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 92%,
-          transparent
-        );
-      }
-
-      .slice-card__header,
-      .slice-meta,
-      .score-impact-metrics {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
-      .slice-number,
-      .slice-meta span,
-      .score-impact-metrics span {
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        padding: 4px 10px;
-        font-size: 0.78rem;
-        font-weight: 700;
-        background: color-mix(in srgb, var(--warning) 12%, transparent);
-        color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
-      }
-
-      .gap-list {
-        display: grid;
-        gap: 16px;
-        margin-top: 16px;
-      }
-
-      .gap-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .gap-status {
-        width: fit-content;
-        border-radius: 999px;
-        padding: 4px 10px;
-        background: color-mix(in srgb, var(--warning) 16%, transparent);
-        color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
-        font-size: 0.78rem;
-        font-weight: 700;
-        text-transform: uppercase;
-      }
-
-      .gap-status.missing {
-        background: color-mix(in srgb, var(--danger) 16%, transparent);
-        color: color-mix(in srgb, var(--danger) 82%, var(--foreground));
       }
 
       .health-grid,
@@ -893,11 +635,6 @@ export class OperationsWorkspaceComponent implements OnInit {
   ];
   selectedQueueDomain: OperatorQueueDomain | 'all' = 'all';
   selectedQueueSeverity: OperatorQueueItem['severity'] | 'all' = 'all';
-  matrixStatusCards: MatrixStatusCard[] = [];
-  matrixWorkspaceCards: MatrixWorkspaceCard[] = [];
-  sliceTrackerCards: SliceTrackerCard[] = [];
-  projectedScoreImpactCards: OwnerConsoleScoreImpactEntry[] = [];
-  incompleteMatrixEntries: OwnerConsoleMutationMatrixEntry[] = [];
   businessSiteCatalogStatus: BusinessSiteCatalogStatus = {
     status: 'Attention',
     mode: 'unknown',
@@ -966,40 +703,6 @@ export class OperationsWorkspaceComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.matrixStatusCards = [
-      {
-        label: 'Complete flows',
-        count: OWNER_CONSOLE_MUTATION_MATRIX.filter(
-          (entry) => entry.status === 'complete'
-        ).length,
-        tone: 'complete',
-      },
-      {
-        label: 'Partial flows',
-        count: OWNER_CONSOLE_MUTATION_MATRIX.filter(
-          (entry) => entry.status === 'partial'
-        ).length,
-        tone: 'partial',
-      },
-      {
-        label: 'Missing flows',
-        count: OWNER_CONSOLE_MUTATION_MATRIX.filter(
-          (entry) => entry.status === 'missing'
-        ).length,
-        tone: 'missing',
-      },
-    ];
-    this.incompleteMatrixEntries = OWNER_CONSOLE_MUTATION_MATRIX.filter(
-      (entry) => entry.status !== 'complete'
-    );
-    this.matrixWorkspaceCards = this.buildMatrixWorkspaceCards();
-    this.sliceTrackerCards = OWNER_CONSOLE_SLICE_TRACKER.map((entry) => ({
-      ...entry,
-      statusTone: entry.status,
-    }));
-    this.projectedScoreImpactCards =
-      OWNER_CONSOLE_SLICE_7_PROJECTED_SCORE_IMPACT;
-
     this.controlCenter.getDeploymentHealth().subscribe((health) => {
       this.deploymentHealth = health;
     });
@@ -1135,54 +838,5 @@ export class OperationsWorkspaceComponent implements OnInit {
   countQueueItemsByDomain(domain: OperatorQueueDomain): number {
     return this.filteredQueueItems.filter((item) => item.domain === domain)
       .length;
-  }
-
-  private buildMatrixWorkspaceCards(): MatrixWorkspaceCard[] {
-    const workspaceOrder: OwnerConsoleMutationMatrixEntry['workspace'][] = [
-      'Governance',
-      'Experience',
-      'Commerce',
-      'CRM',
-      'Community Ops',
-    ];
-
-    return workspaceOrder.map((workspace) => {
-      const entries = OWNER_CONSOLE_MUTATION_MATRIX.filter(
-        (entry) => entry.workspace === workspace
-      );
-      const completeCount = entries.filter(
-        (entry) => entry.status === 'complete'
-      ).length;
-      const gapCount = entries.length - completeCount;
-      const completionPercent =
-        entries.length === 0
-          ? 0
-          : Math.round((completeCount / entries.length) * 100);
-
-      return {
-        workspace,
-        route: this.resolveWorkspaceRoute(workspace),
-        status: gapCount === 0 ? 'Healthy' : 'Attention',
-        completionPercent,
-        completeCount,
-        totalCount: entries.length,
-        gapCount,
-        detail:
-          gapCount === 0
-            ? 'All tracked write flows in this workspace are marked complete.'
-            : `${gapCount} tracked write flow${
-                gapCount === 1 ? '' : 's'
-              } still need completion or remediation coverage.`,
-      };
-    });
-  }
-
-  private resolveWorkspaceRoute(
-    workspace: OwnerConsoleMutationMatrixEntry['workspace']
-  ): string {
-    const config = OPERATOR_WORKSPACES.find(
-      (candidate) => candidate.label === workspace
-    );
-    return config ? `/dashboard/${config.path}` : '/dashboard/operations';
   }
 }

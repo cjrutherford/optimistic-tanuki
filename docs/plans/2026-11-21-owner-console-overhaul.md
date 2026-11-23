@@ -172,6 +172,24 @@ Owner decisions are needed first (see §4).
 4. **Public `/control-center`.** Should we keep the unauthenticated status page,
    or replace it with the login page?
 
+### Owner answers (2026-11-22)
+
+1. **Daylight operations: mirror in both.** Local-hub keeps its page.
+   Owner-console adds Towns → Daylight over the same civic-briefing operator
+   routes. The two must not diverge, so the shared pieces go in a lib.
+2. **Registry: managed from the owner console, with YAML and the database
+   kept in sync.** In deployment, `apps.yaml` seeds a database-backed
+   registry. The console edits the database, so changes survive restarts, and
+   records each publish and rollback in an audit log. Where possible it also
+   exports changes back to YAML, as a downloadable diff or a proposed commit.
+   The console flags any drift between YAML and the database.
+3. **Consolidation: fold in now.** The owner functions in setup-console
+   (post-bootstrap deploys and rollouts), business-configurator and
+   system-configurator move into owner-console under System and Commerce.
+   That ends system-configurator spoofing the owner-console scope.
+4. **Public `/control-center`: replace with login.** Status moves behind
+   authentication, onto Home.
+
 The recommended order is S0 → S1 → S2 → S3. Those four slices fix findability,
 orientation and trust, the three lowest scores, with no new backend work
 except the summary endpoint in S3. S4–S7 can follow in any order, once the

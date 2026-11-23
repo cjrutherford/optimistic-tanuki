@@ -210,13 +210,6 @@ export const appRoutes: Route[] = [
           ),
       },
       {
-        path: 'oauth-inspector',
-        loadComponent: () =>
-          import('./components/admin-control-center.component').then(
-            (m) => m.AdminControlCenterComponent
-          ),
-      },
-      {
         path: 'users',
         loadComponent: () =>
           import('./components/users-management.component').then(
