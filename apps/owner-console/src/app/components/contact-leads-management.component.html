@@ -1,0 +1,345 @@
+<section class="page">
+  <ot-owner-page-header
+    title="Contacts"
+    description="Contact leads: respond, assign owners and track follow-up."
+  ></ot-owner-page-header>
+
+  <section class="stats-grid">
+    <article class="stat-card">
+      <span class="label">Open leads</span>
+      <strong>{{ loaded ? openLeads().length : '—' }}</strong>
+      <p>{{ leads.length }} total records in the workspace.</p>
+    </article>
+    <article class="stat-card">
+      <span class="label">Overdue follow-up</span>
+      <strong>{{ loaded ? overdueLeads().length : '—' }}</strong>
+      <p>
+        {{ staleNewLeads().length }} HAI leads remain unanswered past the
+        personal acknowledgment deadline.
+      </p>
+    </article>
+    <article class="stat-card">
+      <span class="label">Assigned queue</span>
+      <strong>{{ loaded ? assignedLeads().length : '—' }}</strong>
+      <p>{{ unassignedLeads().length }} leads still need an owner.</p>
+    </article>
+    <article class="stat-card">
+      <span class="label">Qualified pipeline</span>
+      <strong>{{ loaded ? qualifiedPipelineCount() : '—' }}</strong>
+      <p>Qualified, proposal, and negotiation opportunities.</p>
+    </article>
+  </section>
+
+  <ot-owner-filter-bar
+    label="Search leads"
+    placeholder="Name, email or subject"
+    (query)="onSearch($event)"
+    (cleared)="onSearch('')"
+  ></ot-owner-filter-bar>
+
+  <section class="filters">
+    <label>
+      <span>App</span>
+      <select [(ngModel)]="filters.appScope" (ngModelChange)="loadLeads()">
+        <option value="">All apps</option>
+        <option *ngFor="let appScope of appScopes" [value]="appScope">
+          {{ appScope }}
+        </option>
+      </select>
+    </label>
+    <label>
+      <span>Status</span>
+      <select [(ngModel)]="filters.status" (ngModelChange)="loadLeads()">
+        <option value="">All statuses</option>
+        <option *ngFor="let status of statuses" [value]="status">
+          {{ status }}
+        </option>
+      </select>
+    </label>
+    <label>
+      <span>Queue</span>
+      <select [(ngModel)]="queueFilter">
+        <option value="all">All leads</option>
+        <option value="unassigned">Unassigned</option>
+        <option value="assigned">Assigned</option>
+        <option value="overdue">Overdue</option>
+      </select>
+    </label>
+    <button class="btn btn-secondary" type="button" (click)="loadLeads()">
+      Refresh
+    </button>
+  </section>
+
+  <section class="view-presets">
+    <button
+      type="button"
+      class="view-btn"
+      [class.active]="activeViewPreset === 'all'"
+      (click)="applyViewPreset('all')"
+    >
+      All work
+    </button>
+    <button
+      type="button"
+      class="view-btn"
+      [class.active]="activeViewPreset === 'assigned'"
+      (click)="applyViewPreset('assigned')"
+    >
+      Assigned queue
+    </button>
+    <button
+      type="button"
+      class="view-btn"
+      [class.active]="activeViewPreset === 'stale'"
+      (click)="applyViewPreset('stale')"
+    >
+      Stale follow-up
+    </button>
+    <button
+      type="button"
+      class="view-btn"
+      [class.active]="activeViewPreset === 'qualified'"
+      (click)="applyViewPreset('qualified')"
+    >
+      Qualified pipeline
+    </button>
+  </section>
+
+  <ot-owner-state
+    *ngIf="queueError"
+    kind="error"
+    [message]="queueError"
+    (retry)="loadQueue()"
+  ></ot-owner-state>
+  <app-operator-queue-panel
+    *ngIf="!queueError"
+    [items]="queueItems"
+    heading="CRM Queue"
+    description="Lead response and follow-up work prioritized from the shared operator queue."
+    emptyStateCopy="No CRM queue items are currently prioritized."
+  ></app-operator-queue-panel>
+
+  <section class="analytics-grid">
+    <article class="panel">
+      <div class="panel-head">
+        <h2>Assignment queues</h2>
+      </div>
+      <div class="queue-cards">
+        <button
+          *ngFor="let queue of assignmentQueues()"
+          type="button"
+          class="queue-card"
+          [class.active]="queueFilter === queue.key"
+          (click)="queueFilter = queue.key"
+        >
+          <strong>{{ queue.label }}</strong>
+          <span>{{ queue.count }}</span>
+          <small>{{ queue.helper }}</small>
+        </button>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-head">
+        <h2>Source analytics</h2>
+      </div>
+      <div class="analytics-list">
+        <article class="analytics-row" *ngFor="let row of sourceAnalytics()">
+          <strong>{{ row.label }}</strong>
+          <span>{{ row.leadCount }} leads</span>
+          <small>{{ row.openCount }} still open</small>
+        </article>
+      </div>
+    </article>
+  </section>
+
+  <section class="workspace">
+    <div class="lead-list panel">
+      <div class="panel-head">
+        <h2>Inbox</h2>
+        <span>{{ filteredLeads().length }} leads</span>
+      </div>
+
+      <ot-owner-data-table
+        [columns]="columns"
+        [rows]="loaded ? tableLeads : null"
+        [loading]="loading"
+        [error]="loadError"
+        height="28rem"
+        emptyMessage="No contact leads match the current filters."
+        (rowClick)="selectLead($event)"
+        (retry)="loadLeads()"
+      ></ot-owner-data-table>
+    </div>
+
+    <div class="lead-detail panel" *ngIf="selectedLead; else emptyDetail">
+      <div class="panel-head">
+        <div>
+          <h2>{{ selectedLead.name }}</h2>
+          <p>
+            {{ selectedLead.contactSourceLabel || selectedLead.appScope }}
+          </p>
+        </div>
+        <span class="badge">{{ selectedLead.status }}</span>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-block">
+          <span class="label">Email</span>
+          <strong>{{ selectedLead.email || 'Not provided' }}</strong>
+        </div>
+        <div class="detail-block">
+          <span class="label">Phone</span>
+          <strong>{{ selectedLead.phone || 'Not provided' }}</strong>
+        </div>
+        <div class="detail-block">
+          <span class="label">Company</span>
+          <strong>{{ selectedLead.company || 'Not provided' }}</strong>
+        </div>
+        <div class="detail-block">
+          <span class="label">Follow up</span>
+          <strong>{{ selectedLead.nextFollowUp || 'Not scheduled' }}</strong>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-block">
+          <span class="label">Assigned to</span>
+          <strong>{{ selectedLead.assignedTo || 'Unassigned' }}</strong>
+        </div>
+        <div class="detail-block">
+          <span class="label">Last responded</span>
+          <strong>{{ selectedLead.lastRespondedAt || 'No reply yet' }}</strong>
+        </div>
+        <div class="detail-block">
+          <span class="label">SLA</span>
+          <strong>{{ slaLabel(selectedLead) }}</strong>
+        </div>
+        <div class="detail-block" *ngIf="selectedLead.appScope === 'hai'">
+          <span class="label">Personal acknowledgment due</span>
+          <strong>{{ formatEastern(selectedLead.dueAt) }}</strong>
+        </div>
+        <div class="detail-block" *ngIf="selectedLead.appScope === 'hai'">
+          <span class="label">First personal acknowledgment</span>
+          <strong>{{
+            formatEastern(selectedLead.firstPersonalResponseAt)
+          }}</strong>
+        </div>
+        <div class="detail-block">
+          <span class="label">Source</span>
+          <strong>{{ selectedLead.source }}</strong>
+        </div>
+      </div>
+
+      <div class="detail-block">
+        <span class="label">Subject</span>
+        <strong>{{ selectedLead.contactSubject || 'General inquiry' }}</strong>
+      </div>
+
+      <div class="detail-block">
+        <span class="label">Message</span>
+        <p class="message">
+          {{ selectedLead.contactMessage || 'No message' }}
+        </p>
+      </div>
+
+      <div class="editor">
+        <h3>Lead management</h3>
+        <label>
+          <span>Status</span>
+          <select [(ngModel)]="editModel.status">
+            <option *ngFor="let status of statuses" [value]="status">
+              {{ status }}
+            </option>
+          </select>
+        </label>
+        <label>
+          <span>Assigned to</span>
+          <input type="text" [(ngModel)]="editModel.assignedTo" />
+        </label>
+        <label>
+          <span>Next follow up</span>
+          <input type="date" [(ngModel)]="editModel.nextFollowUp" />
+        </label>
+        <label>
+          <span>Operator notes</span>
+          <textarea rows="6" [(ngModel)]="editModel.notes"></textarea>
+        </label>
+        <div class="actions">
+          <button class="btn btn-primary" type="button" (click)="saveLead()">
+            Save changes
+          </button>
+        </div>
+        <p *ngIf="saveStatus" class="response-status" role="alert">
+          {{ saveStatus }}
+        </p>
+      </div>
+
+      <div class="editor">
+        <div class="panel-head">
+          <h3>Reply</h3>
+          <span>{{ responseTemplates.length }} templates</span>
+        </div>
+        <div class="template-row">
+          <button
+            *ngFor="let template of responseTemplates"
+            type="button"
+            class="template-btn"
+            (click)="applyResponseTemplate(template.key)"
+          >
+            {{ template.label }}
+          </button>
+        </div>
+        <label>
+          <span>Email subject</span>
+          <input type="text" [(ngModel)]="responseModel.subject" />
+        </label>
+        <label>
+          <span>Message</span>
+          <textarea rows="8" [(ngModel)]="responseModel.message"></textarea>
+        </label>
+        <label>
+          <span>Post-send status</span>
+          <select [(ngModel)]="responseModel.status">
+            <option [ngValue]="undefined">Contacted</option>
+            <option *ngFor="let status of postSendStatuses" [value]="status">
+              {{ status }}
+            </option>
+          </select>
+        </label>
+        <div class="actions">
+          <button
+            class="btn btn-primary"
+            type="button"
+            (click)="respondToLead()"
+          >
+            Send reply
+          </button>
+        </div>
+        <p *ngIf="responseStatus" class="response-status">
+          {{ responseStatus }}
+        </p>
+      </div>
+
+      <div class="editor">
+        <h3>Interaction timeline</h3>
+        <div class="timeline">
+          <article
+            class="timeline-item"
+            *ngFor="let item of interactionTimeline()"
+          >
+            <strong>{{ item.label }}</strong>
+            <span>{{ item.timestamp }}</span>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #emptyDetail>
+      <div class="panel empty">
+        Select a lead to review submission details, apply templates, and manage
+        follow-up.
+      </div>
+    </ng-template>
+  </section>
+</section>

@@ -18,11 +18,11 @@ describe('owner console theme awareness regression', () => {
       },
       {
         name: 'OperationsWorkspaceComponent',
-        styles: sourceFile('./operations-workspace.component.ts'),
+        styles: sourceFile('./operations-workspace.component.scss'),
       },
       {
         name: 'ContactLeadsManagementComponent',
-        styles: sourceFile('./contact-leads-management.component.ts'),
+        styles: sourceFile('./contact-leads-management.component.scss'),
       },
       {
         name: 'PermissionsInspectorComponent',
@@ -60,7 +60,7 @@ describe('owner console theme awareness regression', () => {
       },
       {
         name: 'RolesManagementComponent',
-        styles: sourceFile('./roles-management.component.ts'),
+        styles: sourceFile('./roles-management.component.scss'),
       },
       {
         name: 'CityManagementComponent',
@@ -72,19 +72,11 @@ describe('owner console theme awareness regression', () => {
       },
       {
         name: 'AdminControlCenterComponent',
-        styles: sourceFile('./admin-control-center.component.ts'),
+        styles: sourceFile('./admin-control-center.component.scss'),
       },
       {
         name: 'UsersManagementComponent',
-        styles: sourceFile('./users-management.component.ts'),
-      },
-      {
-        name: 'AgUsersTableComponent',
-        styles: sourceFile('./ag-users-table.component.ts'),
-      },
-      {
-        name: 'AgRolesTableComponent',
-        styles: sourceFile('./ag-roles-table.component.ts'),
+        styles: sourceFile('./users-management.component.scss'),
       },
       {
         name: 'AgPermissionsTableComponent',
@@ -96,11 +88,11 @@ describe('owner console theme awareness regression', () => {
       },
       {
         name: 'RegistryManagementComponent',
-        styles: sourceFile('./registry-management.component.ts'),
+        styles: sourceFile('./registry-management.component.scss'),
       },
       {
         name: 'SocialGovernanceComponent',
-        styles: sourceFile('./social-governance.component.ts'),
+        styles: sourceFile('./social-governance.component.scss'),
       },
       {
         name: 'AppointmentManagementComponent',

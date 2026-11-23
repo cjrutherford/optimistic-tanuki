@@ -8,6 +8,11 @@ import { ProfileDto, RoleDto, UserRoleDto } from '@optimistic-tanuki/ui-models';
 import { RolesService } from '../services/roles.service';
 import { UsersService } from '../services/users.service';
 import { GovernanceAuditService } from '../services/governance-audit.service';
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
+import {
+  OwnerConfirmStub,
+  createOwnerConfirmStub,
+} from './owner-confirm.testing';
 import { UsersManagementComponent } from './users-management.component';
 
 const profiles = [
@@ -50,6 +55,7 @@ describe('UsersManagementComponent workflows', () => {
     clearMessages: jest.Mock;
     addMessage: jest.Mock;
   };
+  let confirmStub: OwnerConfirmStub;
   let router: { navigate: jest.Mock };
   let governanceAuditService: { getEntries: jest.Mock; recordEntry: jest.Mock };
 
@@ -78,6 +84,7 @@ describe('UsersManagementComponent workflows', () => {
       recordEntry: jest.fn(),
     };
 
+    confirmStub = createOwnerConfirmStub();
     await TestBed.configureTestingModule({
       imports: [UsersManagementComponent],
       providers: [
@@ -85,6 +92,7 @@ describe('UsersManagementComponent workflows', () => {
         { provide: RolesService, useValue: rolesService },
         { provide: MessageService, useValue: messageService },
         { provide: Router, useValue: router },
+        { provide: OwnerConfirmService, useValue: confirmStub },
         { provide: GovernanceAuditService, useValue: governanceAuditService },
       ],
     }).compileComponents();
@@ -108,7 +116,8 @@ describe('UsersManagementComponent workflows', () => {
 
       expect(component.users).toHaveLength(2);
       expect(component.rolesCatalog).toHaveLength(2);
-      expect(component.loading).toBe(false);
+      expect(component.loadError).toBeNull();
+      expect(component.visibleUsers).toHaveLength(2);
     });
 
     it('tells the operator when no users exist', () => {
@@ -129,22 +138,54 @@ describe('UsersManagementComponent workflows', () => {
 
       const component = create();
 
-      expect(component.loading).toBe(false);
-      expect(messageService.addMessage).toHaveBeenCalledWith({
-        content: 'Profile service down',
-        type: 'error',
-      });
+      expect(component.loadError).toBe('Profile service down');
+      expect(component.visibleUsers).toBeNull();
+    });
+
+    it('renders the error state with Retry, not an empty table', () => {
+      usersService.getProfiles.mockReturnValue(
+        throwError(() => ({ error: { message: 'Profile service down' } }))
+      );
+      const fixture = TestBed.createComponent(UsersManagementComponent);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+
+      expect(el.querySelector('ot-owner-state[kind="error"]')).toBeTruthy();
+      expect(el.textContent).toContain('Retry');
+
+      usersService.getProfiles.mockReturnValue(of(profiles));
+      (el.querySelector('ot-owner-state button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(usersService.getProfiles).toHaveBeenCalledTimes(2);
+      expect(fixture.componentInstance.loadError).toBeNull();
+    });
+
+    it('has a plain page header and no hero banner', () => {
+      const fixture = TestBed.createComponent(UsersManagementComponent);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+
+      expect(el.querySelector('ot-owner-page-header')).toBeTruthy();
+      expect(el.querySelector('.hero')).toBeNull();
+    });
+
+    it('filters the table by search text', () => {
+      const component = create();
+
+      component.onSearch('operator');
+
+      expect(component.visibleUsers).toEqual([profiles[0]]);
     });
 
     it('falls back to a generic user load message', () => {
       usersService.getProfiles.mockReturnValue(throwError(() => ({})));
 
-      create();
+      const component = create();
 
-      expect(messageService.addMessage).toHaveBeenCalledWith({
-        content: 'Failed to load users. Please try again.',
-        type: 'error',
-      });
+      expect(component.loadError).toBe(
+        'Failed to load users. Please try again.'
+      );
     });
 
     it('empties the roles catalog when it cannot be loaded', () => {
@@ -155,6 +196,67 @@ describe('UsersManagementComponent workflows', () => {
       const component = create();
 
       expect(component.rolesCatalog).toEqual([]);
+      expect(messageService.addMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'error' })
+      );
+    });
+  });
+
+  describe('confirmation ladder', () => {
+    it('asks for a reason before assigning a role', async () => {
+      const component = create();
+      component.onManageRoles(profiles[0]);
+
+      await component.assignRole(roles[0]);
+
+      expect(confirmStub.confirm).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'reason' })
+      );
+    });
+
+    it('asks for a reason before removing a role', async () => {
+      const component = create();
+      component.onManageRoles(profiles[0]);
+
+      await component.unassignRole({ id: 'assignment-1' } as UserRoleDto);
+
+      expect(confirmStub.confirm).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'reason', destructive: true })
+      );
+    });
+
+    it('requires the role name typed for a bulk change and for rollback', async () => {
+      const component = create();
+      stageBulk(component);
+      component.previewBulkRoleMutation();
+
+      await component.executeBulkRoleMutation();
+      await component.rollbackLastBulkMutation();
+
+      expect(confirmStub.confirm).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ level: 'typed', typedPhrase: 'owner' })
+      );
+      expect(confirmStub.confirm).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ level: 'typed', typedPhrase: 'owner' })
+      );
+    });
+
+    it('makes no call when the owner cancels', async () => {
+      confirmStub.confirm.mockResolvedValue({ confirmed: false });
+      const component = create();
+      component.onManageRoles(profiles[0]);
+      stageBulk(component);
+      component.previewBulkRoleMutation();
+
+      await component.assignRole(roles[0]);
+      await component.unassignRole({ id: 'assignment-1' } as UserRoleDto);
+      await component.executeBulkRoleMutation();
+
+      expect(rolesService['assignRole']).not.toHaveBeenCalled();
+      expect(rolesService['unassignRole']).not.toHaveBeenCalled();
+      expect(rolesService['executeBulkRoleMutation']).not.toHaveBeenCalled();
     });
   });
 
@@ -196,10 +298,7 @@ describe('UsersManagementComponent workflows', () => {
       component.onManageRoles(profiles[0]);
 
       expect(component.roleManagementLoading).toBe(false);
-      expect(messageService.addMessage).toHaveBeenCalledWith({
-        content: 'assignments down',
-        type: 'error',
-      });
+      expect(component.roleLoadError).toBe('assignments down');
     });
 
     it('labels a role scope, falling back when it is missing', () => {
@@ -213,19 +312,19 @@ describe('UsersManagementComponent workflows', () => {
   });
 
   describe('single role assignment', () => {
-    it('does nothing when no user is selected', () => {
+    it('does nothing when no user is selected', async () => {
       const component = create();
 
-      component.assignRole(roles[0]);
+      await component.assignRole(roles[0]);
 
       expect(rolesService['assignRole']).not.toHaveBeenCalled();
     });
 
-    it('refuses to assign a role with no app scope', () => {
+    it('refuses to assign a role with no app scope', async () => {
       const component = create();
 
       component.onManageRoles(profiles[0]);
-      component.assignRole(roles[1]);
+      await component.assignRole(roles[1]);
 
       expect(rolesService['assignRole']).not.toHaveBeenCalled();
       expect(messageService.addMessage).toHaveBeenCalledWith({
@@ -234,11 +333,11 @@ describe('UsersManagementComponent workflows', () => {
       });
     });
 
-    it('assigns the role using its own app scope and reloads', () => {
+    it('assigns the role using its own app scope and reloads', async () => {
       const component = create();
 
       component.onManageRoles(profiles[0]);
-      component.assignRole(roles[0]);
+      await component.assignRole(roles[0]);
 
       expect(rolesService['assignRole']).toHaveBeenCalledWith({
         roleId: 'role-1',
@@ -251,12 +350,12 @@ describe('UsersManagementComponent workflows', () => {
       });
     });
 
-    it('falls back to a generic assign error message', () => {
+    it('falls back to a generic assign error message', async () => {
       rolesService['assignRole'].mockReturnValue(throwError(() => ({})));
       const component = create();
 
       component.onManageRoles(profiles[0]);
-      component.assignRole(roles[0]);
+      await component.assignRole(roles[0]);
 
       expect(component.roleMutationLoading).toBe(false);
       expect(messageService.addMessage).toHaveBeenCalledWith({
@@ -267,11 +366,11 @@ describe('UsersManagementComponent workflows', () => {
   });
 
   describe('single role removal', () => {
-    it('removes the assignment and reloads the selected user', () => {
+    it('removes the assignment and reloads the selected user', async () => {
       const component = create();
 
       component.onManageRoles(profiles[0]);
-      component.unassignRole({
+      await component.unassignRole({
         id: 'assignment-1',
         role: { name: 'owner' },
       } as UserRoleDto);
@@ -283,10 +382,10 @@ describe('UsersManagementComponent workflows', () => {
       });
     });
 
-    it('names the assignment generically when the role is unknown', () => {
+    it('names the assignment generically when the role is unknown', async () => {
       const component = create();
 
-      component.unassignRole({ id: 'assignment-1' } as UserRoleDto);
+      await component.unassignRole({ id: 'assignment-1' } as UserRoleDto);
 
       expect(component.roleMutationLoading).toBe(false);
       expect(messageService.addMessage).toHaveBeenCalledWith({
@@ -295,11 +394,11 @@ describe('UsersManagementComponent workflows', () => {
       });
     });
 
-    it('reports a removal failure', () => {
+    it('reports a removal failure', async () => {
       rolesService['unassignRole'].mockReturnValue(throwError(() => ({})));
       const component = create();
 
-      component.unassignRole({ id: 'assignment-1' } as UserRoleDto);
+      await component.unassignRole({ id: 'assignment-1' } as UserRoleDto);
 
       expect(messageService.addMessage).toHaveBeenCalledWith({
         content: 'Failed to remove role assignment.',
@@ -399,21 +498,21 @@ describe('UsersManagementComponent workflows', () => {
   });
 
   describe('bulk mutation execution', () => {
-    it('does nothing without a staged preview', () => {
+    it('does nothing without a staged preview', async () => {
       const component = create();
 
       stageBulk(component);
-      component.executeBulkRoleMutation();
+      await component.executeBulkRoleMutation();
 
       expect(rolesService['executeBulkRoleMutation']).not.toHaveBeenCalled();
     });
 
-    it('records an audit entry and clears the selection', () => {
+    it('records an audit entry and clears the selection', async () => {
       const component = create();
 
       stageBulk(component);
       component.previewBulkRoleMutation();
-      component.executeBulkRoleMutation();
+      await component.executeBulkRoleMutation();
 
       expect(governanceAuditService.recordEntry).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -428,19 +527,19 @@ describe('UsersManagementComponent workflows', () => {
       expect(component.selectionResetKey).toBe(1);
     });
 
-    it('refreshes the open role modal when it targets an affected profile', () => {
+    it('refreshes the open role modal when it targets an affected profile', async () => {
       const component = create();
 
       component.onManageRoles(profiles[0]);
       stageBulk(component);
       component.previewBulkRoleMutation();
       rolesService['getUserRoles'].mockClear();
-      component.executeBulkRoleMutation();
+      await component.executeBulkRoleMutation();
 
       expect(rolesService['getUserRoles']).toHaveBeenCalledWith('profile-1');
     });
 
-    it('reports an execution failure', () => {
+    it('reports an execution failure', async () => {
       rolesService['executeBulkRoleMutation'].mockReturnValue(
         throwError(() => ({}))
       );
@@ -448,7 +547,7 @@ describe('UsersManagementComponent workflows', () => {
 
       stageBulk(component);
       component.previewBulkRoleMutation();
-      component.executeBulkRoleMutation();
+      await component.executeBulkRoleMutation();
 
       expect(component.bulkMutationLoading).toBe(false);
       expect(messageService.addMessage).toHaveBeenCalledWith({
@@ -459,27 +558,27 @@ describe('UsersManagementComponent workflows', () => {
   });
 
   describe('rollback', () => {
-    it('is unavailable until a mutation has run', () => {
+    it('is unavailable until a mutation has run', async () => {
       const component = create();
 
       expect(component.canRollbackLastBulkMutation).toBe(false);
 
-      component.rollbackLastBulkMutation();
+      await component.rollbackLastBulkMutation();
       expect(rolesService['executeBulkRoleMutation']).not.toHaveBeenCalled();
     });
 
-    it('replays the last payload with the inverse operation', () => {
+    it('replays the last payload with the inverse operation', async () => {
       const component = create();
 
       stageBulk(component);
       component.previewBulkRoleMutation();
-      component.executeBulkRoleMutation();
+      await component.executeBulkRoleMutation();
       rolesService['executeBulkRoleMutation'].mockClear();
       rolesService['executeBulkRoleMutation'].mockReturnValue(
         of({ ...mutationResult, operation: 'unassign' })
       );
 
-      component.rollbackLastBulkMutation();
+      await component.rollbackLastBulkMutation();
 
       expect(rolesService['executeBulkRoleMutation']).toHaveBeenCalledWith(
         expect.objectContaining({ operation: 'unassign', roleId: 'role-1' })
@@ -488,28 +587,28 @@ describe('UsersManagementComponent workflows', () => {
       expect(component.rollbackActionLabel).toBe('Restore Assignment');
     });
 
-    it('labels the rollback action after an assignment', () => {
+    it('labels the rollback action after an assignment', async () => {
       const component = create();
 
       stageBulk(component);
       component.previewBulkRoleMutation();
-      component.executeBulkRoleMutation();
+      await component.executeBulkRoleMutation();
 
       expect(component.rollbackActionLabel).toBe('Rollback Assignment');
       expect(component.canRollbackLastBulkMutation).toBe(true);
     });
 
-    it('reports a rollback failure', () => {
+    it('reports a rollback failure', async () => {
       const component = create();
 
       stageBulk(component);
       component.previewBulkRoleMutation();
-      component.executeBulkRoleMutation();
+      await component.executeBulkRoleMutation();
       rolesService['executeBulkRoleMutation'].mockReturnValue(
         throwError(() => ({}))
       );
 
-      component.rollbackLastBulkMutation();
+      await component.rollbackLastBulkMutation();
 
       expect(component.rollbackLoading).toBe(false);
       expect(messageService.addMessage).toHaveBeenCalledWith({

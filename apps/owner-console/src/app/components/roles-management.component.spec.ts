@@ -8,7 +8,9 @@ import { PermissionsService } from '../services/permissions.service';
 import { RolesService } from '../services/roles.service';
 import { UsersService } from '../services/users.service';
 import { GovernanceAuditService } from '../services/governance-audit.service';
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
 import { RolesManagementComponent } from './roles-management.component';
+import { createOwnerConfirmStub } from './owner-confirm.testing';
 
 describe('RolesManagementComponent', () => {
   let rolesService: {
@@ -123,6 +125,7 @@ describe('RolesManagementComponent', () => {
     await TestBed.configureTestingModule({
       imports: [RolesManagementComponent],
       providers: [
+        { provide: OwnerConfirmService, useValue: createOwnerConfirmStub() },
         { provide: RolesService, useValue: rolesService },
         { provide: AppScopesService, useValue: appScopesService },
         { provide: PermissionsService, useValue: permissionsService },
@@ -173,7 +176,7 @@ describe('RolesManagementComponent', () => {
     );
   });
 
-  it('attaches a permission to the selected role and refreshes role data', () => {
+  it('attaches a permission to the selected role and refreshes role data', async () => {
     const fixture = TestBed.createComponent(RolesManagementComponent);
     fixture.detectChanges();
     const component = fixture.componentInstance as any;
@@ -186,7 +189,7 @@ describe('RolesManagementComponent', () => {
     });
     rolesService.getRole.mockClear();
 
-    component.addPermission('perm-2');
+    await component.addPermission('perm-2');
 
     expect(rolesService.addPermissionToRole).toHaveBeenCalledWith(
       'role-1',
@@ -205,7 +208,7 @@ describe('RolesManagementComponent', () => {
     );
   });
 
-  it('removes a permission from the selected role and refreshes role data', () => {
+  it('removes a permission from the selected role and refreshes role data', async () => {
     const fixture = TestBed.createComponent(RolesManagementComponent);
     fixture.detectChanges();
     const component = fixture.componentInstance as any;
@@ -218,7 +221,7 @@ describe('RolesManagementComponent', () => {
     });
     rolesService.getRole.mockClear();
 
-    component.removePermission('perm-1');
+    await component.removePermission('perm-1');
 
     expect(rolesService.removePermissionFromRole).toHaveBeenCalledWith(
       'role-1',
@@ -237,20 +240,20 @@ describe('RolesManagementComponent', () => {
     );
   });
 
-  it('does not allow permission mutation in create mode', () => {
+  it('does not allow permission mutation in create mode', async () => {
     const fixture = TestBed.createComponent(RolesManagementComponent);
     fixture.detectChanges();
     const component = fixture.componentInstance as any;
 
     component.openCreateModal();
-    component.addPermission('perm-2');
-    component.removePermission('perm-1');
+    await component.addPermission('perm-2');
+    await component.removePermission('perm-1');
 
     expect(rolesService.addPermissionToRole).not.toHaveBeenCalled();
     expect(rolesService.removePermissionFromRole).not.toHaveBeenCalled();
   });
 
-  it('surfaces permission mutation failures without changing role state', () => {
+  it('surfaces permission mutation failures without changing role state', async () => {
     rolesService.addPermissionToRole.mockReturnValue(
       throwError(() => new Error('attach failed'))
     );
@@ -266,7 +269,7 @@ describe('RolesManagementComponent', () => {
     });
     rolesService.getRole.mockClear();
 
-    component.addPermission('perm-2');
+    await component.addPermission('perm-2');
 
     expect(rolesService.getRole).not.toHaveBeenCalled();
     expect(messageService.addMessage).toHaveBeenCalledWith(

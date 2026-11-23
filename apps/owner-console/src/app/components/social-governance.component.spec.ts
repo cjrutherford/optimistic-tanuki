@@ -1,8 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
+import {
+  createOwnerConfirmStub,
+  OwnerConfirmStub,
+} from './owner-confirm.testing';
 import { SocialGovernanceComponent } from './social-governance.component';
 import { SocialGovernanceService } from '../services/social-governance.service';
 import { OperatorQueueService } from '../services/operator-queue.service';
@@ -21,7 +26,10 @@ describe('SocialGovernanceComponent', () => {
     getQueueByDomain: jest.fn(),
   };
 
+  let confirmStub: OwnerConfirmStub;
+
   beforeEach(async () => {
+    confirmStub = createOwnerConfirmStub();
     jest.clearAllMocks();
     socialGovernanceService.getReports.mockReturnValue(
       of([
@@ -152,6 +160,7 @@ describe('SocialGovernanceComponent', () => {
           provide: OperatorQueueService,
           useValue: operatorQueueService,
         },
+        { provide: OwnerConfirmService, useValue: confirmStub },
       ],
     }).compileComponents();
   });
@@ -234,7 +243,7 @@ describe('SocialGovernanceComponent', () => {
     });
   });
 
-  it('applies a soft takedown for the reported content', () => {
+  it('applies a soft takedown for the reported content', async () => {
     const fixture = TestBed.createComponent(SocialGovernanceComponent);
     fixture.detectChanges();
     const component = fixture.componentInstance as any;
@@ -244,7 +253,10 @@ describe('SocialGovernanceComponent', () => {
       adminNotes: 'Hidden pending review',
     };
 
-    component.applyContentModeration(component.reports[0], 'hidden');
+    await component.applyContentModeration(component.reports[0], 'hidden');
+    expect(confirmStub.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'reason' })
+    );
 
     expect(socialGovernanceService.moderateContent).toHaveBeenCalledWith({
       contentType: 'post',
@@ -281,5 +293,55 @@ describe('SocialGovernanceComponent', () => {
     );
     expect(fixture.nativeElement.textContent).toContain('Makers Guild');
     expect(fixture.nativeElement.textContent).toContain('profile-2');
+  });
+
+  it('has a page header and no hero banner', () => {
+    const fixture = TestBed.createComponent(SocialGovernanceComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('.hero')).toBeNull();
+    expect(el.querySelector('ot-owner-page-header')).not.toBeNull();
+  });
+
+  it('shows error and retry instead of zero reports when loading fails', () => {
+    socialGovernanceService.getReports.mockReturnValue(
+      throwError(() => new Error('down'))
+    );
+    const fixture = TestBed.createComponent(SocialGovernanceComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    expect(component.loadFailed).toBe(true);
+    expect(component.reportsLoaded).toBe(false);
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'No content reports are currently queued'
+    );
+
+    socialGovernanceService.getReports.mockReturnValue(of([]));
+    component.retryLoad();
+    expect(component.loadFailed).toBe(false);
+    expect(component.reportsLoaded).toBe(true);
+  });
+
+  it('surfaces a queue failure with retry', () => {
+    operatorQueueService.getQueueByDomain.mockReturnValue(
+      throwError(() => new Error('down'))
+    );
+    const fixture = TestBed.createComponent(SocialGovernanceComponent);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.queueError).not.toBeNull();
+  });
+
+  it('does not hide content when the confirmation is declined', async () => {
+    confirmStub.confirm.mockResolvedValue({ confirmed: false });
+    const fixture = TestBed.createComponent(SocialGovernanceComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    await component.applyContentModeration(component.reports[0], 'hidden');
+
+    expect(socialGovernanceService.moderateContent).not.toHaveBeenCalled();
   });
 });

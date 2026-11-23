@@ -1,0 +1,138 @@
+<section class="governance-page">
+  <ot-owner-page-header
+    title="Social governance"
+    description="Review reported content and decide what stays visible."
+  ></ot-owner-page-header>
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <span class="eyebrow">Reports</span>
+      <strong>{{ reportsLoaded ? reports.length : '—' }}</strong>
+      <p>
+        {{ reportsLoaded ? pendingCount + ' pending review' : 'Not loaded' }}
+      </p>
+    </article>
+    <article class="summary-card">
+      <span class="eyebrow">Actioned</span>
+      <strong>{{ reportsLoaded ? actionedCount : '—' }}</strong>
+      <p>{{ reportsLoaded ? dismissedCount + ' dismissed' : 'Not loaded' }}</p>
+    </article>
+  </section>
+
+  <ot-owner-state
+    *ngIf="loadFailed"
+    kind="error"
+    [message]="error ?? undefined"
+    (retry)="retryLoad()"
+  ></ot-owner-state>
+  <div class="error" *ngIf="error && !loadFailed">{{ error }}</div>
+
+  <section class="panel operator-review">
+    <div class="panel-heading">
+      <h2>Towne Square app reports</h2>
+      <p>
+        Review reports about Towne Square listings and sellers. This queue is
+        app-scoped and does not require a community workspace.
+      </p>
+      <button class="btn" (click)="loadLocalHubOperatorReports()">
+        Show Towne Square reports
+      </button>
+      <button class="btn" (click)="loadClientInterfaceOperatorReports()">
+        Show Optimistic Tanuki reports
+      </button>
+    </div>
+  </section>
+
+  <ot-owner-state
+    *ngIf="queueError"
+    kind="error"
+    [message]="queueError ?? undefined"
+    (retry)="loadQueue()"
+  ></ot-owner-state>
+  <app-operator-queue-panel
+    *ngIf="!queueError"
+    [items]="queueItems"
+    heading="Community Moderation Queue"
+    description="Shared queue items that still require moderation review or follow-through."
+    emptyStateCopy="No community moderation queue items are currently prioritized."
+  ></app-operator-queue-panel>
+
+  <section class="panel" *ngIf="handoffContext">
+    <div class="panel-heading">
+      <h2>Opened from Community Ops</h2>
+      <p>
+        Investigating {{ handoffContext.entityType }} context for
+        {{ handoffContext.entityTitle }} in {{ handoffContext.communityName }}.
+      </p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <h2>Report triage queue</h2>
+      <p>
+        Update moderation status and capture operator notes while takedown
+        actions remain a separate follow-up slice.
+      </p>
+    </div>
+    <div
+      class="report-list"
+      *ngIf="reports.length && !loadFailed; else noReports"
+    >
+      <article class="report-card" *ngFor="let report of reports">
+        <div class="report-copy">
+          <div class="status-row">
+            <span class="status-pill">{{ report.status }}</span>
+            <span class="status-pill soft">{{ report.contentType }}</span>
+            <span class="status-pill soft">{{ report.reason }}</span>
+          </div>
+          <h3>{{ report.contentType }} · {{ report.contentId }}</h3>
+          <p>
+            {{ report.description || 'No reporter description provided.' }}
+          </p>
+        </div>
+        <div class="report-actions">
+          <select
+            [ngModel]="getDraft(report).status"
+            (ngModelChange)="updateDraft(report.id, 'status', $event)"
+          >
+            <option value="pending">Pending</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="actioned">Actioned</option>
+            <option value="dismissed">Dismissed</option>
+          </select>
+          <textarea
+            rows="3"
+            [ngModel]="getDraft(report).adminNotes"
+            (ngModelChange)="updateDraft(report.id, 'adminNotes', $event)"
+            placeholder="Operator notes"
+          ></textarea>
+          <div class="action-row">
+            <button class="btn" (click)="saveReport(report)">
+              Save changes
+            </button>
+            <button
+              class="btn warning"
+              *ngIf="supportsContentModeration(report)"
+              (click)="applyContentModeration(report, 'hidden')"
+            >
+              Hide content
+            </button>
+            <button
+              class="btn"
+              *ngIf="supportsContentModeration(report)"
+              (click)="applyContentModeration(report, 'visible')"
+            >
+              Restore content
+            </button>
+          </div>
+        </div>
+      </article>
+    </div>
+    <ng-template #noReports>
+      <p class="empty-state" *ngIf="reportsLoaded">
+        No content reports are currently queued.
+      </p>
+    </ng-template>
+  </section>
+</section>

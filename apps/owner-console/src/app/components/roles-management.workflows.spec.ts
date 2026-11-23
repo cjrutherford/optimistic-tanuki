@@ -9,7 +9,12 @@ import { PermissionsService } from '../services/permissions.service';
 import { RolesService } from '../services/roles.service';
 import { UsersService } from '../services/users.service';
 import { GovernanceAuditService } from '../services/governance-audit.service';
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
 import { RolesManagementComponent } from './roles-management.component';
+import {
+  createOwnerConfirmStub,
+  OwnerConfirmStub,
+} from './owner-confirm.testing';
 
 const role = {
   id: 'role-1',
@@ -30,6 +35,7 @@ describe('RolesManagementComponent workflows', () => {
     addMessage: jest.Mock;
   };
   let router: { navigate: jest.Mock };
+  let confirmStub: OwnerConfirmStub;
   let governanceAuditService: { getEntries: jest.Mock; recordEntry: jest.Mock };
 
   beforeEach(async () => {
@@ -72,6 +78,7 @@ describe('RolesManagementComponent workflows', () => {
       addMessage: jest.fn(),
     };
     router = { navigate: jest.fn() };
+    confirmStub = createOwnerConfirmStub();
     governanceAuditService = {
       getEntries: jest.fn().mockReturnValue([]),
       recordEntry: jest.fn(),
@@ -86,6 +93,7 @@ describe('RolesManagementComponent workflows', () => {
         { provide: UsersService, useValue: usersService },
         { provide: MessageService, useValue: messageService },
         { provide: Router, useValue: router },
+        { provide: OwnerConfirmService, useValue: confirmStub },
         { provide: GovernanceAuditService, useValue: governanceAuditService },
       ],
     }).compileComponents();
@@ -106,15 +114,48 @@ describe('RolesManagementComponent workflows', () => {
   };
 
   describe('loading', () => {
-    it('tells the operator when no roles exist', () => {
+    it('shows an empty table, not an error, when no roles exist', () => {
       rolesService['getRoles'].mockReturnValue(of([]));
 
-      create();
+      const component = create();
 
-      expect(messageService.addMessage).toHaveBeenCalledWith({
-        content: 'No roles found in the system.',
-        type: 'info',
-      });
+      expect(component.loadError).toBeNull();
+      expect(component.visibleRoles).toEqual([]);
+    });
+
+    it('shows error and retry, never an empty list, when loading fails', () => {
+      rolesService['getRoles'].mockReturnValue(
+        throwError(() => ({ error: { message: 'Upstream is down' } }))
+      );
+      const fixture = TestBed.createComponent(RolesManagementComponent);
+      fixture.detectChanges();
+      const component = fixture.componentInstance;
+
+      expect(component.loadError).toBe('Upstream is down');
+      expect(component.visibleRoles).toBeNull();
+
+      rolesService['getRoles'].mockReturnValue(of([role]));
+      component.loadRoles();
+      expect(component.loadError).toBeNull();
+      expect(component.visibleRoles).toEqual([role]);
+    });
+
+    it('has no hero banner and a plain page header', () => {
+      const fixture = TestBed.createComponent(RolesManagementComponent);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+
+      expect(el.querySelector('.hero')).toBeNull();
+      expect(el.querySelector('ot-owner-page-header')).not.toBeNull();
+    });
+
+    it('filters roles by search text', () => {
+      const component = create();
+
+      component.onSearch('nomatch');
+      expect(component.visibleRoles).toEqual([]);
+      component.onSearch('OWNER');
+      expect(component.visibleRoles).toEqual([role]);
     });
 
     it('surfaces the server message when loading roles fails', () => {
@@ -195,27 +236,36 @@ describe('RolesManagementComponent workflows', () => {
       expect(component.formData.appScopeId).toBe('');
     });
 
-    it('closes the form and confirm modals', () => {
+    it('closes the form modal', () => {
       const component = create();
 
       component.openCreateModal();
       component.closeFormModal();
       expect(component.showFormModal).toBe(false);
-
-      component.openDeleteConfirm(role as never);
-      component.closeConfirmModal();
-      expect(component.showConfirmModal).toBe(false);
     });
 
-    it('stages a delete confirmation for the chosen role', () => {
+    it('asks for the role name before deleting, then deletes', async () => {
       const component = create();
 
-      component.openDeleteConfirm(role as never);
+      await component.openDeleteConfirm(role as never);
 
-      expect(component.currentRole).toEqual(role);
-      expect(component.confirmAction).toBe('delete');
-      expect(component.confirmModalTitle).toBe('Confirm Role Deletion');
-      expect(component.showConfirmModal).toBe(true);
+      expect(confirmStub.confirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          level: 'typed',
+          typedPhrase: 'owner_console_owner',
+          destructive: true,
+        })
+      );
+      expect(rolesService['deleteRole']).toHaveBeenCalledWith('role-1');
+    });
+
+    it('does not delete when the confirmation is declined', async () => {
+      confirmStub.confirm.mockResolvedValue({ confirmed: false });
+      const component = create();
+
+      await component.openDeleteConfirm(role as never);
+
+      expect(rolesService['deleteRole']).not.toHaveBeenCalled();
     });
   });
 
@@ -248,60 +298,54 @@ describe('RolesManagementComponent workflows', () => {
       expect(component.isFormValid()).toBe(true);
     });
 
-    it('refuses to open the confirm modal for an invalid form', () => {
+    it('refuses to submit an invalid form', async () => {
       const component = create();
 
       component.formData = { name: '', description: '', appScopeId: '' };
-      component.confirmFormSubmit();
+      await component.submitForm();
 
-      expect(component.showConfirmModal).toBe(false);
+      expect(confirmStub.confirm).not.toHaveBeenCalled();
       expect(messageService.addMessage).toHaveBeenCalledWith({
         content: 'Please fill in all required fields.',
         type: 'error',
       });
     });
 
-    it('stages a create confirmation outside edit mode', () => {
+    it('creates after a plain confirmation', async () => {
       const component = create();
 
       component.openCreateModal();
       validForm(component);
-      component.confirmFormSubmit();
+      await component.submitForm();
 
-      expect(component.confirmAction).toBe('create');
-      expect(component.confirmModalTitle).toBe('Confirm Role Creation');
-      expect(component.confirmModalMessage).toContain('create');
-      expect(component.showConfirmModal).toBe(true);
+      expect(confirmStub.confirm).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'plain' })
+      );
+      expect(rolesService['createRole']).toHaveBeenCalled();
     });
 
-    it('stages an update confirmation in edit mode', () => {
+    it('updates only after a reason confirmation', async () => {
       const component = create();
 
       component.openEditModal(role as never);
-      validForm(component);
-      component.confirmFormSubmit();
+      component.formData = { ...component.formData, name: 'renamed' };
+      await component.submitForm();
 
-      expect(component.confirmAction).toBe('update');
-      expect(component.confirmModalTitle).toBe('Confirm Role Update');
-      expect(component.confirmModalMessage).toContain('update');
+      expect(confirmStub.confirm).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'reason' })
+      );
+      expect(rolesService['updateRole']).toHaveBeenCalled();
     });
 
-    it('dispatches the staged action', () => {
+    it('does not save when the confirmation is declined', async () => {
+      confirmStub.confirm.mockResolvedValue({ confirmed: false });
       const component = create();
-      const createSpy = jest.spyOn(component, 'createRole');
-      const updateSpy = jest.spyOn(component, 'updateRole');
-      const deleteSpy = jest.spyOn(component, 'deleteRole');
 
-      component.confirmAction = 'create';
-      component.executeConfirmedAction();
-      component.confirmAction = 'update';
-      component.executeConfirmedAction();
-      component.confirmAction = 'delete';
-      component.executeConfirmedAction();
+      component.openCreateModal();
+      validForm(component);
+      await component.submitForm();
 
-      expect(createSpy).toHaveBeenCalled();
-      expect(updateSpy).toHaveBeenCalled();
-      expect(deleteSpy).toHaveBeenCalled();
+      expect(rolesService['createRole']).not.toHaveBeenCalled();
     });
   });
 
@@ -344,7 +388,6 @@ describe('RolesManagementComponent workflows', () => {
         appScopeId: 'scope-1',
       });
       expect(component.showFormModal).toBe(false);
-      expect(component.showConfirmModal).toBe(false);
       expect(rolesService['getRoles']).toHaveBeenCalledTimes(2);
     });
 
@@ -420,14 +463,13 @@ describe('RolesManagementComponent workflows', () => {
     it('deletes the staged role and records an audit entry', () => {
       const component = create();
 
-      component.openDeleteConfirm(role as never);
+      component.currentRole = role as never;
       component.deleteRole();
 
       expect(rolesService['deleteRole']).toHaveBeenCalledWith('role-1');
       expect(governanceAuditService.recordEntry).toHaveBeenCalledWith(
         expect.objectContaining({ kind: 'role-deleted', roleId: 'role-1' })
       );
-      expect(component.showConfirmModal).toBe(false);
     });
 
     it('skips the delete request when nothing is staged', () => {
@@ -445,7 +487,7 @@ describe('RolesManagementComponent workflows', () => {
       );
       const component = create();
 
-      component.openDeleteConfirm(role as never);
+      component.currentRole = role as never;
       component.deleteRole();
 
       expect(messageService.addMessage).toHaveBeenCalledWith({
@@ -456,14 +498,14 @@ describe('RolesManagementComponent workflows', () => {
   });
 
   describe('permission mutation failures', () => {
-    it('reports a remove-permission failure', () => {
+    it('reports a remove-permission failure', async () => {
       rolesService['removePermissionFromRole'].mockReturnValue(
         throwError(() => new Error('detach failed'))
       );
       const component = create();
 
       component.openEditModal(role as never);
-      component.removePermission('perm-1');
+      await component.removePermission('perm-1');
 
       expect(messageService.addMessage).toHaveBeenCalledWith({
         content: 'detach failed',

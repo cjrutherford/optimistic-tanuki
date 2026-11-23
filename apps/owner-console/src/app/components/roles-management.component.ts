@@ -4,8 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui/button/button.component';
-import { CardComponent } from '@optimistic-tanuki/common-ui/card/card.component';
-import { HeadingComponent } from '@optimistic-tanuki/common-ui/heading/heading.component';
 import { ModalComponent } from '@optimistic-tanuki/common-ui/modal/modal.component';
 import { MessageComponent } from '@optimistic-tanuki/message-ui/message/message.component';
 import { MessageService } from '@optimistic-tanuki/message-ui/message.service';
@@ -21,7 +19,13 @@ import {
 import { RolesService } from '../services/roles.service';
 import { AppScopesService } from '../services/app-scopes.service';
 import { PermissionsService } from '../services/permissions.service';
-import { AgRolesTableComponent } from './ag-roles-table.component';
+import {
+  OwnerConfirmService,
+  OwnerDataTableComponent,
+  OwnerFilterBarComponent,
+  OwnerPageHeaderComponent,
+} from '@optimistic-tanuki/owner-page-ui';
+import type { ColDef } from '@optimistic-tanuki/ag-grid-ui';
 import { UsersService } from '../services/users.service';
 import { GovernanceAuditService } from '../services/governance-audit.service';
 
@@ -37,546 +41,17 @@ interface RoleImpactSummary {
   imports: [
     CommonModule,
     FormsModule,
-    CardComponent,
-    HeadingComponent,
     MessageComponent,
     ModalComponent,
     ButtonComponent,
     TextInputComponent,
     TextAreaComponent,
-    AgRolesTableComponent,
+    OwnerPageHeaderComponent,
+    OwnerFilterBarComponent,
+    OwnerDataTableComponent,
   ],
-  template: `
-    <lib-message></lib-message>
-
-    <otui-card>
-      <otui-heading level="2">Roles Management</otui-heading>
-
-      <app-ag-roles-table
-        [roles]="roles"
-        [loading]="loading"
-        (create)="openCreateModal()"
-        (edit)="openEditModal($event)"
-        (delete)="openDeleteConfirm($event)"
-      />
-    </otui-card>
-
-    <!-- Create/Edit Modal -->
-    <otui-modal
-      *ngIf="showFormModal"
-      [heading]="isEditMode ? 'Edit Role' : 'Create New Role'"
-      (closeModal)="closeFormModal()"
-      mode="standard-modal"
-      size="lg"
-    >
-      <div class="form-container">
-        <div class="form-section">
-          <h3>Role Details</h3>
-          <p class="section-description">
-            Define the role name, description, and scope.
-          </p>
-
-          <div class="form-field">
-            <lib-text-input
-              label="Role Name *"
-              placeholder="e.g., admin, moderator, user"
-              [(ngModel)]="formData.name"
-            ></lib-text-input>
-          </div>
-
-          <div class="form-field">
-            <lib-text-area
-              label="Description *"
-              [(ngModel)]="formData.description"
-            ></lib-text-area>
-          </div>
-
-          <div class="form-field">
-            <lib-text-input
-              label="App Scope ID *"
-              placeholder="Enter or select app scope ID"
-              [(ngModel)]="formData.appScopeId"
-            ></lib-text-input>
-          </div>
-
-          <div class="form-field" *ngIf="appScopes.length > 0">
-            <label class="select-label">Or select App Scope:</label>
-            <select class="scope-select" (change)="onAppScopeSelect($event)">
-              <option value="">-- Select App Scope --</option>
-              <option *ngFor="let scope of appScopes" [value]="scope.id">
-                {{ scope.name }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-preview">
-          <h3>Preview</h3>
-          <div class="preview-content">
-            <p><strong>Name:</strong> {{ formData.name || 'Not set' }}</p>
-            <p>
-              <strong>Description:</strong>
-              {{ formData.description || 'Not set' }}
-            </p>
-            <p>
-              <strong>App Scope ID:</strong>
-              {{ formData.appScopeId || 'Not set' }}
-            </p>
-            <p *ngIf="isEditMode && currentRole" class="info-text">
-              <strong>Created:</strong>
-              {{ currentRole.created_at | date : 'medium' }}
-            </p>
-          </div>
-        </div>
-
-        <div class="form-preview" *ngIf="isEditMode && currentRole">
-          <div class="permissions-header">
-            <div>
-              <h3>Impact Preview</h3>
-              <p class="section-description">
-                Role definition and permission changes affect every profile
-                currently assigned to this role.
-              </p>
-            </div>
-            <button
-              type="button"
-              class="secondary-inline"
-              (click)="traceRoleAssignments()"
-            >
-              Trace assignments
-            </button>
-          </div>
-          <div class="preview-content">
-            <p>
-              <strong>Assigned profiles:</strong>
-              {{ roleImpactSummary.assignedProfileCount }}
-            </p>
-            <p>
-              <strong>Scope:</strong>
-              {{ roleImpactSummary.appScopeLabel }}
-            </p>
-            <p *ngIf="roleImpactSummary.sampleProfiles.length > 0">
-              <strong>Examples:</strong>
-              {{ roleImpactSummary.sampleProfiles.join(', ') }}
-            </p>
-          </div>
-        </div>
-
-        <div class="permissions-panel">
-          <div class="permissions-header">
-            <div>
-              <h3>Role Permissions</h3>
-              <p class="section-description">
-                Attach or remove permissions for this role from the full
-                catalog.
-              </p>
-              <p
-                class="section-description"
-                *ngIf="roleImpactSummary.assignedProfileCount > 0"
-              >
-                These permission changes will affect
-                {{ roleImpactSummary.assignedProfileCount }} assigned profile{{
-                  roleImpactSummary.assignedProfileCount === 1 ? '' : 's'
-                }}.
-              </p>
-            </div>
-          </div>
-
-          <ng-container
-            *ngIf="isEditMode && currentRole; else createModeNotice"
-          >
-            <div class="permissions-grid">
-              <div class="permissions-column">
-                <h4>Assigned</h4>
-                <div
-                  *ngIf="
-                    currentRole.permissions?.length;
-                    else noAssignedPermissions
-                  "
-                  class="permission-list"
-                >
-                  <div
-                    *ngFor="let permission of currentRole.permissions"
-                    class="permission-card"
-                  >
-                    <div class="permission-copy">
-                      <strong>{{ permission.name }}</strong>
-                      <span>{{
-                        permission.description || 'No description'
-                      }}</span>
-                    </div>
-                    <otui-button
-                      variant="secondary"
-                      (action)="removePermission(permission.id)"
-                    >
-                      Remove
-                    </otui-button>
-                  </div>
-                </div>
-                <ng-template #noAssignedPermissions>
-                  <p class="empty-state">
-                    No permissions are currently attached.
-                  </p>
-                </ng-template>
-              </div>
-
-              <div class="permissions-column">
-                <h4>Available</h4>
-                <div
-                  *ngIf="
-                    availablePermissions.length;
-                    else noAvailablePermissions
-                  "
-                  class="permission-list"
-                >
-                  <div
-                    *ngFor="let permission of availablePermissions"
-                    class="permission-card"
-                  >
-                    <div class="permission-copy">
-                      <strong>{{ permission.name }}</strong>
-                      <span>{{
-                        permission.description || 'No description'
-                      }}</span>
-                    </div>
-                    <otui-button
-                      variant="primary"
-                      (action)="addPermission(permission.id)"
-                    >
-                      Add
-                    </otui-button>
-                  </div>
-                </div>
-                <ng-template #noAvailablePermissions>
-                  <p class="empty-state">
-                    All loaded permissions are already attached to this role.
-                  </p>
-                </ng-template>
-              </div>
-            </div>
-          </ng-container>
-
-          <ng-template #createModeNotice>
-            <p class="empty-state">
-              Save the role first, then reopen it in edit mode to manage
-              permissions.
-            </p>
-          </ng-template>
-        </div>
-
-        <div class="form-actions">
-          <otui-button variant="secondary" (action)="closeFormModal()">
-            Cancel
-          </otui-button>
-          <otui-button
-            variant="primary"
-            (action)="confirmFormSubmit()"
-            [disabled]="!isFormValid()"
-          >
-            {{ isEditMode ? 'Update Role' : 'Create Role' }}
-          </otui-button>
-        </div>
-      </div>
-    </otui-modal>
-
-    <!-- Confirmation Modal -->
-    <otui-modal
-      *ngIf="showConfirmModal"
-      [heading]="confirmModalTitle"
-      (closeModal)="closeConfirmModal()"
-      mode="standard-modal"
-      size="md"
-    >
-      <div class="confirm-container">
-        <p>{{ confirmModalMessage }}</p>
-
-        <div
-          *ngIf="confirmAction === 'create' || confirmAction === 'update'"
-          class="change-details"
-        >
-          <h4>
-            Changes to be
-            {{ confirmAction === 'create' ? 'applied' : 'saved' }}:
-          </h4>
-          <ul>
-            <li><strong>Name:</strong> {{ formData.name }}</li>
-            <li><strong>Description:</strong> {{ formData.description }}</li>
-            <li><strong>App Scope ID:</strong> {{ formData.appScopeId }}</li>
-          </ul>
-          <p class="warning-text" *ngIf="confirmAction === 'update'">
-            ⚠️ Updating this role may affect users that have been assigned this
-            role.
-          </p>
-        </div>
-
-        <div
-          *ngIf="confirmAction === 'delete' && currentRole"
-          class="change-details"
-        >
-          <h4>Role to be deleted:</h4>
-          <ul>
-            <li><strong>Name:</strong> {{ currentRole.name }}</li>
-            <li><strong>Description:</strong> {{ currentRole.description }}</li>
-          </ul>
-          <p class="danger-text">
-            ⚠️ <strong>This action cannot be undone!</strong> All users with
-            this role will lose their permissions.
-          </p>
-        </div>
-
-        <div class="confirm-actions">
-          <otui-button variant="secondary" (action)="closeConfirmModal()">
-            Cancel
-          </otui-button>
-          <otui-button
-            [variant]="confirmAction === 'delete' ? 'danger' : 'primary'"
-            (action)="executeConfirmedAction()"
-          >
-            Confirm {{ confirmAction === 'delete' ? 'Delete' : 'Save' }}
-          </otui-button>
-        </div>
-      </div>
-    </otui-modal>
-  `,
-  styles: [
-    `
-      :host ::ng-deep otui-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: color-mix(
-          in srgb,
-          var(--foreground, #111827) 36%,
-          transparent
-        );
-        z-index: 999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      :host {
-        display: block;
-        padding: 16px;
-      }
-
-      .form-container {
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-        padding: 1rem;
-      }
-
-      .form-section {
-        flex: 1;
-      }
-
-      .form-section h3 {
-        margin-bottom: 0.5rem;
-      }
-
-      .section-description {
-        color: var(--foreground, #666);
-        margin-bottom: 1.5rem;
-        font-size: 0.9rem;
-      }
-
-      .form-field {
-        margin-bottom: 1.5rem;
-      }
-
-      .select-label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        color: var(--foreground, #111827);
-      }
-
-      .scope-select {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius-sm);
-        font-size: 14px;
-        background: var(--surface, #ffffff);
-        color: var(--foreground, #111827);
-      }
-
-      .secondary-inline {
-        min-height: 36px;
-        border: 1px solid
-          color-mix(in srgb, var(--accent, #2563eb) 24%, transparent);
-        border-radius: 6px;
-        padding: 0 12px;
-        background: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 10%,
-          var(--surface, #ffffff)
-        );
-        color: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 76%,
-          var(--foreground, #111827)
-        );
-        font-weight: 700;
-        cursor: pointer;
-      }
-
-      .form-preview {
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 88%,
-          var(--background, #f3f4f6)
-        );
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid var(--border-color, #ddd);
-        color: var(--foreground, #111827);
-      }
-
-      .permissions-panel {
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 92%,
-          var(--background, #f3f4f6)
-        );
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid var(--border-color, #ddd);
-        color: var(--foreground, #111827);
-      }
-
-      .permissions-header {
-        margin-bottom: 1rem;
-      }
-
-      .form-preview h3 {
-        margin-bottom: 1rem;
-      }
-
-      .permissions-panel h3,
-      .permissions-panel h4 {
-        margin-bottom: 0.75rem;
-      }
-
-      .preview-content p {
-        margin-bottom: 0.75rem;
-      }
-
-      .permissions-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1rem;
-      }
-
-      .permissions-column {
-        display: grid;
-        gap: 0.75rem;
-      }
-
-      .permission-list {
-        display: grid;
-        gap: 0.75rem;
-      }
-
-      .permission-card {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 0.875rem 1rem;
-        border: 1px solid var(--border-color, #ddd);
-        border-radius: 6px;
-        background: var(--surface, #ffffff);
-      }
-
-      .permission-copy {
-        display: grid;
-        gap: 0.25rem;
-      }
-
-      .permission-copy span {
-        color: var(--foreground, #666);
-        font-size: 0.9rem;
-      }
-
-      .empty-state {
-        margin: 0;
-        color: var(--foreground, #666);
-        font-size: 0.95rem;
-      }
-
-      .info-text {
-        color: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 82%,
-          var(--foreground, #111827)
-        );
-        font-style: italic;
-      }
-
-      .form-actions {
-        display: flex;
-        gap: 1rem;
-        justify-content: flex-end;
-        padding-top: 1rem;
-        border-top: 1px solid var(--border-color, #ddd);
-      }
-
-      .confirm-container {
-        padding: 1rem;
-      }
-
-      .confirm-container p {
-        margin-bottom: 1.5rem;
-      }
-
-      .change-details {
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 92%,
-          var(--background, #f3f4f6)
-        );
-        padding: 1rem;
-        border-radius: 6px;
-        margin-bottom: 1.5rem;
-        color: var(--foreground, #111827);
-      }
-
-      .change-details h4 {
-        margin-bottom: 0.75rem;
-      }
-
-      .change-details ul {
-        list-style: none;
-        padding-left: 0;
-      }
-
-      .change-details ul li {
-        margin-bottom: 0.5rem;
-      }
-
-      .warning-text {
-        color: var(--warning, #ff9800);
-        font-weight: 500;
-        margin-top: 1rem;
-      }
-
-      .danger-text {
-        color: var(--danger, #f44336);
-        font-weight: 500;
-        margin-top: 1rem;
-      }
-
-      .confirm-actions {
-        display: flex;
-        gap: 1rem;
-        justify-content: flex-end;
-      }
-    `,
-  ],
+  templateUrl: './roles-management.component.html',
+  styleUrls: ['./roles-management.component.scss'],
 })
 export class RolesManagementComponent implements OnInit {
   private readonly rolesService = inject(RolesService);
@@ -586,14 +61,79 @@ export class RolesManagementComponent implements OnInit {
   private readonly usersService = inject(UsersService);
   private readonly router = inject(Router);
   private readonly governanceAuditService = inject(GovernanceAuditService);
+  private readonly confirmService = inject(OwnerConfirmService);
 
   roles: RoleDto[] = [];
+  loadError: string | null = null;
+  searchText = '';
+
+  readonly columns: ColDef[] = [
+    { field: 'name', headerName: 'Name', flex: 2 },
+    { field: 'description', headerName: 'Description', flex: 3 },
+    {
+      field: 'appScope.name',
+      headerName: 'App scope',
+      flex: 2,
+      valueFormatter: (params) => params.value || 'N/A',
+    },
+    {
+      headerName: 'Actions',
+      width: 200,
+      sortable: false,
+      filter: false,
+      cellRenderer: (params: { data: RoleDto }) => {
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.gap = '0.5rem';
+        const edit = document.createElement('button');
+        edit.textContent = 'Edit';
+        edit.className = 'ag-grid-action-button';
+        edit.addEventListener('click', () => this.openEditModal(params.data));
+        const del = document.createElement('button');
+        del.textContent = 'Delete';
+        del.className = 'ag-grid-action-button ag-grid-delete-button';
+        del.addEventListener('click', () => {
+          void this.openDeleteConfirm(params.data);
+        });
+        container.append(edit, del);
+        return container;
+      },
+    },
+  ];
+
+  private visibleCache: { roles: RoleDto[]; q: string; out: RoleDto[] } | null =
+    null;
+
+  /** Null while loading or after a failed load, so the table shows state, not an empty list. */
+  get visibleRoles(): RoleDto[] | null {
+    if (this.loading || this.loadError) return null;
+    const q = this.searchText.trim().toLowerCase();
+    if (
+      this.visibleCache &&
+      this.visibleCache.roles === this.roles &&
+      this.visibleCache.q === q
+    ) {
+      return this.visibleCache.out;
+    }
+    const out = q
+      ? this.roles.filter((r) =>
+          [r.name, r.description, r.appScope?.name]
+            .filter(Boolean)
+            .some((v) => String(v).toLowerCase().includes(q))
+        )
+      : this.roles;
+    this.visibleCache = { roles: this.roles, q, out };
+    return out;
+  }
+
+  onSearch(text: string): void {
+    this.searchText = text ?? '';
+  }
   appScopes: AppScopeDto[] = [];
   permissions: PermissionDto[] = [];
   loading = false;
 
   showFormModal = false;
-  showConfirmModal = false;
   isEditMode = false;
   currentRole: RoleDto | null = null;
 
@@ -603,9 +143,6 @@ export class RolesManagementComponent implements OnInit {
     appScopeId: '',
   };
 
-  confirmModalTitle = '';
-  confirmModalMessage = '';
-  confirmAction: 'create' | 'update' | 'delete' = 'create';
   roleImpactSummary: RoleImpactSummary = {
     assignedProfileCount: 0,
     appScopeLabel: 'Scope unavailable',
@@ -629,19 +166,13 @@ export class RolesManagementComponent implements OnInit {
 
   loadRoles(): void {
     this.loading = true;
+    this.loadError = null;
     this.messageService.clearMessages();
 
     this.rolesService.getRoles().subscribe({
       next: (roles) => {
         this.roles = roles;
         this.loading = false;
-
-        if (roles.length === 0) {
-          this.messageService.addMessage({
-            content: 'No roles found in the system.',
-            type: 'info',
-          });
-        }
       },
       error: (err) => {
         this.loading = false;
@@ -649,6 +180,7 @@ export class RolesManagementComponent implements OnInit {
           err.error?.message ||
           err.message ||
           'Failed to load roles. Please try again.';
+        this.loadError = errorMessage;
         this.messageService.addMessage({
           content: errorMessage,
           type: 'error',
@@ -716,10 +248,21 @@ export class RolesManagementComponent implements OnInit {
     this.showFormModal = false;
   }
 
-  addPermission(permissionId: string): void {
+  async addPermission(permissionId: string): Promise<void> {
     if (!this.currentRole?.id || !this.isEditMode) {
       return;
     }
+    const permission = this.permissions.find((p) => p.id === permissionId);
+    // Reason is collected in the UI only: the roles API accepts none.
+    const result = await this.confirmService.confirm({
+      level: 'reason',
+      title: 'Add permission to role',
+      body: `Add ${permission?.name ?? 'this permission'} to ${
+        this.currentRole.name
+      }? Everyone who holds this role gains it.`,
+      confirmLabel: 'Add permission',
+    });
+    if (!result.confirmed || !this.currentRole?.id) return;
 
     this.rolesService
       .addPermissionToRole(this.currentRole.id, permissionId)
@@ -749,10 +292,24 @@ export class RolesManagementComponent implements OnInit {
       });
   }
 
-  removePermission(permissionId: string): void {
+  async removePermission(permissionId: string): Promise<void> {
     if (!this.currentRole?.id || !this.isEditMode) {
       return;
     }
+    const permission = this.currentRole.permissions?.find(
+      (p) => p.id === permissionId
+    );
+    // Reason is collected in the UI only: the roles API accepts none.
+    const result = await this.confirmService.confirm({
+      level: 'reason',
+      title: 'Remove permission from role',
+      body: `Remove ${permission?.name ?? 'this permission'} from ${
+        this.currentRole.name
+      }? Everyone who holds this role loses it.`,
+      confirmLabel: 'Remove permission',
+      destructive: true,
+    });
+    if (!result.confirmed || !this.currentRole?.id) return;
 
     this.rolesService
       .removePermissionFromRole(this.currentRole.id, permissionId)
@@ -797,7 +354,7 @@ export class RolesManagementComponent implements OnInit {
     );
   }
 
-  confirmFormSubmit(): void {
+  async submitForm(): Promise<void> {
     if (!this.isFormValid()) {
       this.messageService.addMessage({
         content: 'Please fill in all required fields.',
@@ -806,27 +363,38 @@ export class RolesManagementComponent implements OnInit {
       return;
     }
 
-    this.confirmAction = this.isEditMode ? 'update' : 'create';
-    this.confirmModalTitle = this.isEditMode
-      ? 'Confirm Role Update'
-      : 'Confirm Role Creation';
-    this.confirmModalMessage = this.isEditMode
-      ? 'Are you sure you want to update this role?'
-      : 'Are you sure you want to create this role?';
-
-    this.showConfirmModal = true;
+    // Reason is collected in the UI only: the roles API accepts none.
+    const result = this.isEditMode
+      ? await this.confirmService.confirm({
+          level: 'reason',
+          title: 'Save changes to this role',
+          body: `Updating ${this.formData.name} may change access for users who hold it.`,
+          confirmLabel: 'Save changes',
+        })
+      : await this.confirmService.confirm({
+          level: 'plain',
+          title: 'Create this role',
+          body: `Create the role ${this.formData.name}?`,
+          confirmLabel: 'Create role',
+        });
+    if (!result.confirmed) return;
+    if (this.isEditMode) this.updateRole();
+    else this.createRole();
   }
 
-  openDeleteConfirm(role: RoleDto): void {
+  async openDeleteConfirm(role: RoleDto): Promise<void> {
+    // Reason is collected in the UI only: the roles API accepts none.
+    const result = await this.confirmService.confirm({
+      level: 'typed',
+      title: 'Delete this role',
+      body: `Deleting ${role.name} cannot be undone. Everyone who holds it loses its permissions.`,
+      confirmLabel: 'Delete role',
+      typedPhrase: role.name,
+      destructive: true,
+    });
+    if (!result.confirmed) return;
     this.currentRole = role;
-    this.confirmAction = 'delete';
-    this.confirmModalTitle = 'Confirm Role Deletion';
-    this.confirmModalMessage = 'Are you sure you want to delete this role?';
-    this.showConfirmModal = true;
-  }
-
-  closeConfirmModal(): void {
-    this.showConfirmModal = false;
+    this.deleteRole();
   }
 
   traceRoleAssignments(): void {
@@ -843,16 +411,6 @@ export class RolesManagementComponent implements OnInit {
     });
   }
 
-  executeConfirmedAction(): void {
-    if (this.confirmAction === 'create') {
-      this.createRole();
-    } else if (this.confirmAction === 'update') {
-      this.updateRole();
-    } else if (this.confirmAction === 'delete') {
-      this.deleteRole();
-    }
-  }
-
   createRole(): void {
     const createDto: CreateRoleDto = {
       name: this.formData.name,
@@ -866,7 +424,6 @@ export class RolesManagementComponent implements OnInit {
           content: 'Role created successfully!',
           type: 'success',
         });
-        this.closeConfirmModal();
         this.closeFormModal();
         this.loadRoles();
       },
@@ -903,7 +460,6 @@ export class RolesManagementComponent implements OnInit {
           content: 'Role updated successfully!',
           type: 'success',
         });
-        this.closeConfirmModal();
         this.closeFormModal();
         this.loadRoles();
       },
@@ -954,7 +510,6 @@ export class RolesManagementComponent implements OnInit {
           content: 'Role deleted successfully!',
           type: 'success',
         });
-        this.closeConfirmModal();
         this.loadRoles();
       },
       error: (err) => {

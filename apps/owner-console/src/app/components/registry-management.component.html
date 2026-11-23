@@ -1,0 +1,277 @@
+<section class="registry-page">
+  <ot-owner-page-header
+    title="Application registry"
+    description="Apps, navigation links and published releases."
+  >
+    <div ot-actions class="header-actions">
+      <button type="button" class="secondary" (click)="load()">Refresh</button>
+      <button
+        type="button"
+        class="secondary"
+        (click)="saveRegistry()"
+        [disabled]="loading || validationErrors.length > 0"
+      >
+        Save apps draft
+      </button>
+      <button
+        type="button"
+        class="secondary"
+        (click)="saveLinks()"
+        [disabled]="loading"
+      >
+        Save links draft
+      </button>
+      <button
+        type="button"
+        class="primary"
+        (click)="publishRegistry()"
+        [disabled]="loading || validationErrors.length > 0"
+      >
+        Publish registry
+      </button>
+    </div>
+  </ot-owner-page-header>
+
+  @if (loadFailed) {
+  <ot-owner-state kind="error" [message]="error" (retry)="load()" />
+  } @else { @if (loading) {
+  <ot-owner-state kind="loading" message="Loading registry…" />
+  } @if (message) {
+  <div class="status success">{{ message }}</div>
+  } @if (error) {
+  <div class="status error">{{ error }}</div>
+  } @if (validationErrors.length > 0) {
+  <div class="status error">
+    @for (validationError of validationErrors; track validationError) {
+    <p>{{ validationError }}</p>
+    }
+  </div>
+  }
+
+  <section class="registry-band release-band">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Releases</p>
+        <h2>{{ releaseStatusLabel() }}</h2>
+      </div>
+      <a
+        *ngIf="release?.previewUrl"
+        class="preview-link"
+        [href]="release?.previewUrl"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Open preview
+      </a>
+    </div>
+
+    <div class="release-readiness">
+      <article class="readiness-card">
+        <span class="readiness-label">Validation</span>
+        <strong>{{
+          validationErrors.length === 0 ? 'Ready' : 'Attention needed'
+        }}</strong>
+      </article>
+      <article class="readiness-card">
+        <span class="readiness-label">Public apps</span>
+        <strong>{{ publicAppCount() }}</strong>
+      </article>
+      <article class="readiness-card">
+        <span class="readiness-label">Links</span>
+        <strong>{{ links.length }}</strong>
+      </article>
+    </div>
+
+    <div class="release-fields">
+      <label class="wide">
+        Release notes
+        <textarea
+          [(ngModel)]="releaseNotes"
+          placeholder="Summarize what changed in this registry release."
+        ></textarea>
+      </label>
+      <label class="wide">
+        Change summary
+        <textarea
+          [(ngModel)]="changeSummary"
+          placeholder="Capture the routing, visibility, or app-directory changes in this revision."
+        ></textarea>
+      </label>
+    </div>
+
+    @if (releaseHistory().length) {
+    <div class="release-history">
+      <div class="section-heading">
+        <h2>Published versions</h2>
+      </div>
+      <div class="history-list">
+        @for (revision of releaseHistory(); track revision.version) {
+        <article class="history-item">
+          <div class="history-copy">
+            <strong>Version {{ revision.version }}</strong>
+            <span>{{ revision.releaseNotes }}</span>
+            @if (revision.changeSummary) {
+            <small>{{ revision.changeSummary }}</small>
+            }
+          </div>
+          <button
+            type="button"
+            class="secondary"
+            (click)="rollbackRegistry(revision.version)"
+            [disabled]="loading"
+          >
+            Roll back
+          </button>
+        </article>
+        }
+      </div>
+    </div>
+    }
+  </section>
+
+  <section class="registry-band">
+    <div class="section-heading">
+      <h2>Apps</h2>
+      <button type="button" class="secondary" (click)="addApp()">
+        Add App
+      </button>
+    </div>
+
+    <div class="app-grid">
+      @for (app of registry.apps; track app.appId; let i = $index) {
+      <article class="app-editor">
+        <div class="editor-topline">
+          <strong>{{ app.name || app.appId || 'New application' }}</strong>
+          <button type="button" class="ghost-danger" (click)="removeApp(i)">
+            Remove
+          </button>
+        </div>
+
+        <label>
+          App ID
+          <input [(ngModel)]="app.appId" (ngModelChange)="validate()" />
+        </label>
+        <label>
+          Name
+          <input [(ngModel)]="app.name" (ngModelChange)="validate()" />
+        </label>
+        <label>
+          Domain
+          <input [(ngModel)]="app.domain" (ngModelChange)="syncUiHost(app)" />
+        </label>
+        <label>
+          Subdomain
+          <input
+            [(ngModel)]="app.subdomain"
+            (ngModelChange)="syncUiHost(app)"
+          />
+        </label>
+        <label class="wide">
+          UI base URL
+          <input [(ngModel)]="app.uiBaseUrl" (ngModelChange)="validate()" />
+        </label>
+        <label class="wide">
+          API base URL
+          <input [(ngModel)]="app.apiBaseUrl" (ngModelChange)="validate()" />
+        </label>
+        <label class="wide">
+          Icon URL
+          <input [(ngModel)]="app.iconUrl" (ngModelChange)="validate()" />
+        </label>
+        <label>
+          Type
+          <select [(ngModel)]="app.appType">
+            @for (type of appTypes; track type) {
+            <option [ngValue]="type">{{ type }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Visibility
+          <select [(ngModel)]="app.visibility">
+            @for (visibility of visibilityTypes; track visibility) {
+            <option [ngValue]="visibility">{{ visibility }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Sort order
+          <input type="number" [(ngModel)]="app.sortOrder" />
+        </label>
+        <label class="wide">
+          Description
+          <textarea [(ngModel)]="app.description"></textarea>
+        </label>
+      </article>
+      }
+    </div>
+  </section>
+
+  <section class="registry-band">
+    <div class="section-heading">
+      <h2>Navigation links</h2>
+      <button type="button" class="secondary" (click)="addLink()">
+        Add link
+      </button>
+    </div>
+
+    <div class="link-table">
+      <div class="link-row link-head">
+        <span>Label</span>
+        <span>Source</span>
+        <span>Target</span>
+        <span>Type</span>
+        <span>Path</span>
+        <span></span>
+      </div>
+      @for (link of links; track link.linkId; let i = $index) {
+      <div class="link-row">
+        <input [(ngModel)]="link.label" />
+        <select [(ngModel)]="link.sourceAppId">
+          @for (app of registry.apps; track app.appId) {
+          <option [ngValue]="app.appId">{{ app.appId }}</option>
+          }
+        </select>
+        <select [(ngModel)]="link.targetAppId">
+          @for (app of registry.apps; track app.appId) {
+          <option [ngValue]="app.appId">{{ app.appId }}</option>
+          }
+        </select>
+        <select [(ngModel)]="link.type">
+          @for (type of linkTypes; track type) {
+          <option [ngValue]="type">{{ type }}</option>
+          }
+        </select>
+        <input [(ngModel)]="link.path" />
+        <button type="button" class="ghost-danger" (click)="removeLink(i)">
+          Remove
+        </button>
+      </div>
+      }
+    </div>
+  </section>
+
+  <section class="registry-band audit-band">
+    <div class="section-heading">
+      <h2>Change history</h2>
+      <button type="button" class="secondary" (click)="loadAuditLog()">
+        Reload
+      </button>
+    </div>
+    @if (auditError) {
+    <ot-owner-state
+      kind="error"
+      [message]="auditError"
+      (retry)="loadAuditLog()"
+    />
+    } @else {
+    <ot-owner-data-table
+      [columns]="auditColumns"
+      [rows]="auditLog"
+      height="18rem"
+      emptyMessage="No registry changes recorded in this gateway process."
+    />
+    }
+  </section>
+  }
+</section>

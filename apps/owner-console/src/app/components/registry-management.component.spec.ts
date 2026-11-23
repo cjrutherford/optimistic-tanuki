@@ -1,9 +1,15 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
+import {
+  OwnerConfirmStub,
+  createOwnerConfirmStub,
+} from './owner-confirm.testing';
 import { RegistryManagementComponent } from './registry-management.component';
 import { RegistryManagementService } from '../services/registry-management.service';
 
 describe('RegistryManagementComponent', () => {
+  let confirmStub: OwnerConfirmStub;
   let registryService: {
     getRegistry: jest.Mock;
     updateRegistry: jest.Mock;
@@ -160,10 +166,15 @@ describe('RegistryManagementComponent', () => {
       ),
     };
 
+    confirmStub = createOwnerConfirmStub({
+      confirmed: true,
+      reason: 'Bad launch',
+    });
     await TestBed.configureTestingModule({
       imports: [RegistryManagementComponent],
       providers: [
         { provide: RegistryManagementService, useValue: registryService },
+        { provide: OwnerConfirmService, useValue: confirmStub },
       ],
     }).compileComponents();
   });
@@ -182,24 +193,24 @@ describe('RegistryManagementComponent', () => {
     expect(component.releaseStatusLabel()).toBe('Draft');
   });
 
-  it('removes links that reference a deleted app', () => {
+  it('removes links that reference a deleted app', async () => {
     const fixture = TestBed.createComponent(RegistryManagementComponent);
     fixture.detectChanges();
 
     const component = fixture.componentInstance;
-    component.removeApp(1);
+    await component.removeApp(1);
 
     expect(component.registry.apps.map((app) => app.appId)).toEqual(['hai']);
     expect(component.links).toEqual([]);
   });
 
-  it('blocks save when the UI host does not match the app domain', () => {
+  it('blocks save when the UI host does not match the app domain', async () => {
     const fixture = TestBed.createComponent(RegistryManagementComponent);
     fixture.detectChanges();
 
     const component = fixture.componentInstance;
     component.registry.apps[0].uiBaseUrl = 'https://wrong.example.com';
-    component.saveRegistry();
+    await component.saveRegistry();
 
     expect(component.validationErrors).toContain(
       'hai UI host must match haidev.com.'
@@ -207,13 +218,13 @@ describe('RegistryManagementComponent', () => {
     expect(registryService.updateRegistry).not.toHaveBeenCalled();
   });
 
-  it('blocks save when the icon url is not absolute', () => {
+  it('blocks save when the icon url is not absolute', async () => {
     const fixture = TestBed.createComponent(RegistryManagementComponent);
     fixture.detectChanges();
 
     const component = fixture.componentInstance;
     component.registry.apps[0].iconUrl = '/assets/logo.png';
-    component.saveRegistry();
+    await component.saveRegistry();
 
     expect(component.validationErrors).toContain(
       'hai icon URL must be absolute.'
@@ -221,14 +232,14 @@ describe('RegistryManagementComponent', () => {
     expect(registryService.updateRegistry).not.toHaveBeenCalled();
   });
 
-  it('publishes the registry with release notes once it is ready', () => {
+  it('publishes the registry with release notes once it is ready', async () => {
     const fixture = TestBed.createComponent(RegistryManagementComponent);
     fixture.detectChanges();
     const component = fixture.componentInstance;
 
     component.releaseNotes = 'Registry launch published.';
     component.changeSummary = 'Public app routing stabilized.';
-    component.publishRegistry();
+    await component.publishRegistry();
 
     expect(registryService.publishRegistry).toHaveBeenCalledWith({
       releaseNotes: 'Registry launch published.',
@@ -238,18 +249,113 @@ describe('RegistryManagementComponent', () => {
     expect(component.release?.publishedVersion).toBe(3);
   });
 
-  it('rolls back the registry to a selected published revision', () => {
+  it('rolls back to a selected published revision, sending the reason as release notes', async () => {
     const fixture = TestBed.createComponent(RegistryManagementComponent);
     fixture.detectChanges();
     const component = fixture.componentInstance;
 
-    component.rollbackRegistry(2);
+    await component.rollbackRegistry(2);
 
     expect(registryService.rollbackRegistry).toHaveBeenCalledWith({
       version: 2,
-      releaseNotes: 'Rollback from registry management',
+      releaseNotes: 'Bad launch',
     });
     expect(component.message).toContain('rolled back');
     expect(component.release?.publishedVersion).toBe(2);
+  });
+
+  it('has a plain page header and no hero banner', () => {
+    const fixture = TestBed.createComponent(RegistryManagementComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('ot-owner-page-header')).not.toBeNull();
+    expect(el.querySelector('.registry-hero')).toBeNull();
+  });
+
+  it('shows an error with Retry when the registry fails to load, not an empty editor', () => {
+    registryService.getRegistry.mockReturnValue(
+      throwError(() => ({ message: 'boom' }))
+    );
+    const fixture = TestBed.createComponent(RegistryManagementComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('ot-owner-state[kind="error"]')).not.toBeNull();
+    expect(el.querySelector('.app-editor')).toBeNull();
+    expect(el.textContent).toContain('Failed to load registry: boom');
+
+    registryService.getRegistry.mockReturnValue(
+      of({ success: true, data: { version: '1', generatedAt: '', apps: [] } })
+    );
+    (
+      el.querySelector('ot-owner-state[kind="error"] button') as HTMLElement
+    ).click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.loadFailed).toBe(false);
+  });
+
+  it('reports a change-history failure with Retry instead of an empty list', () => {
+    const fixture = TestBed.createComponent(RegistryManagementComponent);
+    fixture.detectChanges();
+    registryService.getAuditLog.mockReturnValue(throwError(() => ({})));
+
+    fixture.componentInstance.loadAuditLog();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(fixture.componentInstance.auditError).toContain(
+      'Failed to load the change history'
+    );
+    expect(el.querySelectorAll('ot-owner-state[kind="error"]')).toHaveLength(1);
+  });
+
+  it('asks for the app ID typed before removing an app', async () => {
+    const fixture = TestBed.createComponent(RegistryManagementComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    await component.removeApp(1);
+
+    expect(confirmStub.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'typed',
+        typedPhrase: 'store',
+        destructive: true,
+      })
+    );
+  });
+
+  it('uses a plain confirmation for links and drafts, and a reason to publish or roll back', async () => {
+    const fixture = TestBed.createComponent(RegistryManagementComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.releaseNotes = 'Notes';
+
+    await component.removeLink(0);
+    await component.saveRegistry();
+    await component.saveLinks();
+    await component.publishRegistry();
+    await component.rollbackRegistry(2);
+
+    const levels = confirmStub.confirm.mock.calls.map(([o]) => o.level);
+    expect(levels).toEqual(['plain', 'plain', 'plain', 'reason', 'reason']);
+  });
+
+  it('changes nothing when the owner cancels', async () => {
+    confirmStub.confirm.mockResolvedValue({ confirmed: false });
+    const fixture = TestBed.createComponent(RegistryManagementComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.releaseNotes = 'Notes';
+
+    await component.removeApp(1);
+    await component.publishRegistry();
+    await component.rollbackRegistry(2);
+
+    expect(component.registry.apps).toHaveLength(2);
+    expect(registryService.publishRegistry).not.toHaveBeenCalled();
+    expect(registryService.rollbackRegistry).not.toHaveBeenCalled();
   });
 });

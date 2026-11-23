@@ -1,0 +1,268 @@
+<section class="operations-page">
+  <ot-owner-page-header
+    title="Operations"
+    description="Platform status, the work queue, deployment health and the tools for stepping in."
+  ></ot-owner-page-header>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <h2>Domain status</h2>
+      <p>
+        Current status is derived from the operator data sources available
+        today.
+      </p>
+    </div>
+    <div class="status-grid">
+      @for (card of statusCards; track card.title) {
+      <a class="status-card" [routerLink]="card.route">
+        <span
+          class="status-badge"
+          [class.attention]="card.status === 'Attention'"
+        >
+          {{ card.status }}
+        </span>
+        <h3>{{ card.title }}</h3>
+        <p>{{ card.detail }}</p>
+      </a>
+      }
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <h2>Where to step in</h2>
+      <p>
+        These entry points concentrate the workflows platform owners use to
+        intervene.
+      </p>
+    </div>
+    <div class="actions-grid">
+      @for (action of controlPlaneActions; track action.title) {
+      <a class="action-card" [routerLink]="action.route">
+        <h3>{{ action.title }}</h3>
+        <p>{{ action.description }}</p>
+      </a>
+      }
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <h2>Operator queue</h2>
+      <p>
+        Cross-domain actionable work, with filters for triage before jumping
+        into domain tools.
+      </p>
+    </div>
+
+    <div class="queue-filters">
+      <label>
+        <span>Domain</span>
+        <select [(ngModel)]="selectedQueueDomain">
+          <option value="all">All domains</option>
+          @for (domain of queueDomains; track domain) {
+          <option [value]="domain">{{ domain }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Severity</span>
+        <select [(ngModel)]="selectedQueueSeverity">
+          <option value="all">All severities</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </label>
+    </div>
+
+    @if (queueError) {
+    <ot-owner-state
+      kind="error"
+      [message]="queueError"
+      (retry)="loadQueue()"
+    ></ot-owner-state>
+    } @else if (queueItems === null) {
+    <ot-owner-state kind="loading"></ot-owner-state>
+    } @else {
+    <div class="queue-summary" *ngIf="queueItems.length > 0">
+      <span class="queue-count">{{ filteredQueueItems.length }} items</span>
+      @for (domain of queueDomains; track domain) {
+      <span
+        class="queue-domain-chip"
+        *ngIf="countQueueItemsByDomain(domain) > 0"
+      >
+        {{ domain }} · {{ countQueueItemsByDomain(domain) }}
+      </span>
+      }
+    </div>
+
+    @if (filteredQueueItems.length > 0) {
+    <div class="queue-grid">
+      @for (item of filteredQueueItems; track item.id) {
+      <a class="queue-card" [routerLink]="item.route">
+        <div class="queue-card__header">
+          <span
+            class="queue-severity"
+            [class.high]="item.severity === 'high'"
+            [class.medium]="item.severity === 'medium'"
+          >
+            {{ item.severity }}
+          </span>
+          <span class="queue-domain">{{ item.domain }}</span>
+        </div>
+        <h3>{{ item.title }}</h3>
+        <p>{{ item.detail }}</p>
+      </a>
+      }
+    </div>
+    } @else {
+    <ot-owner-state
+      kind="empty"
+      message="No queue items match the current filters."
+    ></ot-owner-state>
+    } }
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <h2>Business-site catalog linkage</h2>
+      <p>
+        Track whether the public business site is running against manual offers
+        or the store service catalog.
+      </p>
+    </div>
+    <a class="status-card" [routerLink]="businessSiteCatalogStatus.route">
+      <span
+        class="status-badge"
+        [class.attention]="businessSiteCatalogStatus.status === 'Attention'"
+      >
+        {{ businessSiteCatalogStatus.status }}
+      </span>
+      <h3>Catalog mode: {{ businessSiteCatalogStatus.mode }}</h3>
+      <p>{{ businessSiteCatalogStatus.detail }}</p>
+    </a>
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <h2>Deployment health</h2>
+      <p>Platform infrastructure and configuration status.</p>
+    </div>
+    @if (healthError) {
+    <ot-owner-state
+      kind="error"
+      [message]="healthError"
+      (retry)="loadHealth()"
+    ></ot-owner-state>
+    } @else if (deploymentHealth; as health) {
+    <div class="health-grid">
+      <div class="health-item">
+        <span class="health-label">Config</span>
+        <span
+          class="health-value"
+          [class.attention]="health.configStatus === 'pending-changes'"
+        >
+          {{
+            health.configStatus === 'current' ? 'Current' : 'Pending changes'
+          }}
+        </span>
+      </div>
+      <div class="health-item">
+        <span class="health-label">Infrastructure</span>
+        <span class="health-value">{{ health.infrastructure }}</span>
+      </div>
+      <div class="health-item">
+        <span class="health-label">Database</span>
+        <span class="health-value">{{ health.databaseReadiness }}</span>
+      </div>
+      <div class="health-item">
+        <span class="health-label">Secrets</span>
+        <span class="health-value">{{ health.secretsHealth }}</span>
+      </div>
+      @if (health.lastDeployed) {
+      <div class="health-item">
+        <span class="health-label">Last deployed</span>
+        <span class="health-value"
+          >{{ health.lastDeployed.tag }} ({{
+            health.lastDeployed.result
+          }})</span
+        >
+      </div>
+      }
+    </div>
+    } @else {
+    <ot-owner-state kind="loading"></ot-owner-state>
+    }
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <h2>Image updates</h2>
+      <p>
+        @if (images === null || imagesError) {
+        <span>Image status is not available.</span>
+        } @else if (updatesAvailable > 0) {
+        <span class="attention-count"
+          >{{ updatesAvailable }} service(s) with updates available</span
+        >
+        } @else {
+        <span>All services are up to date.</span>
+        }
+      </p>
+    </div>
+    @if (imagesError) {
+    <ot-owner-state
+      kind="error"
+      [message]="imagesError"
+      (retry)="loadImages()"
+    ></ot-owner-state>
+    } @else if (images === null) {
+    <ot-owner-state kind="loading"></ot-owner-state>
+    } @else {
+    <div class="images-grid">
+      @for (img of images; track img.serviceId) {
+      <div class="image-item" [class.update-available]="img.updateAvailable">
+        <span class="image-name">{{ img.serviceId }}</span>
+        <span class="image-tag">{{ img.currentTag }}</span>
+        @if (img.updateAvailable) {
+        <span class="update-badge">Update available</span>
+        }
+      </div>
+      }
+    </div>
+    }
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <h2>Sign-in providers</h2>
+      <p>Identity provider status across the platform.</p>
+    </div>
+    @if (oauthError) {
+    <ot-owner-state
+      kind="error"
+      [message]="oauthError"
+      (retry)="loadOauth()"
+    ></ot-owner-state>
+    } @else if (oauthProviders === null) {
+    <ot-owner-state kind="loading"></ot-owner-state>
+    } @else {
+    <div class="oauth-summary">
+      @for (provider of oauthProviders; track provider.name) {
+      <div class="oauth-provider-summary">
+        <span class="provider-name">{{ provider.name }}</span>
+        <span
+          class="badge"
+          [class.badge-success]="provider.status === 'configured'"
+          [class.badge-warning]="provider.status === 'pending'"
+          [class.badge-error]="provider.status === 'error'"
+        >
+          {{ provider.status }}
+        </span>
+      </div>
+      }
+    </div>
+    }
+  </section>
+</section>

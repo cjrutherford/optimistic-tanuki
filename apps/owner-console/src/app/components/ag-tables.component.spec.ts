@@ -4,8 +4,6 @@ import { ColDef } from 'ag-grid-community';
 
 import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
 import { AgPermissionsTableComponent } from './ag-permissions-table.component';
-import { AgRolesTableComponent } from './ag-roles-table.component';
-import { AgUsersTableComponent } from './ag-users-table.component';
 
 type AnyTable = {
   columnDefs: ColDef[];
@@ -191,125 +189,6 @@ describe('ag grid governance tables', () => {
 
       expect(edited).toHaveBeenCalledWith(permissions[0]);
       expect(deleted).toHaveBeenCalledWith(permissions[0]);
-    });
-  });
-
-  describe('AgRolesTableComponent', () => {
-    const roles = [{ id: 'role-1', name: 'owner', description: 'Owner role' }];
-
-    it('mirrors the role input into the grid', async () => {
-      const { component } = await mount(AgRolesTableComponent);
-
-      component.roles = roles as never;
-      component.ngOnInit();
-      expect(component.gridData()).toEqual(roles);
-
-      component.roles = null as never;
-      component.ngOnChanges({ roles: {} as never });
-      expect(component.gridData()).toEqual([]);
-    });
-
-    it('labels a missing app scope', async () => {
-      const { component } = await mount(AgRolesTableComponent);
-      const format = columnFor(component as never, 'App Scope')
-        .valueFormatter as (p: unknown) => string;
-
-      expect(format({ value: 'global' })).toBe('global');
-      expect(format({ value: null })).toBe('N/A');
-    });
-
-    it('emits edit and delete from the row action buttons', async () => {
-      const { component } = await mount(AgRolesTableComponent);
-      const edited = jest.fn();
-      const deleted = jest.fn();
-      component.edit.subscribe(edited);
-      component.delete.subscribe(deleted);
-
-      const buttons = Array.from(
-        renderActions(component as never, roles[0]).querySelectorAll('button')
-      );
-      buttons[0].click();
-      buttons[1].click();
-
-      expect(edited).toHaveBeenCalledWith(roles[0]);
-      expect(deleted).toHaveBeenCalledWith(roles[0]);
-    });
-  });
-
-  describe('AgUsersTableComponent', () => {
-    const users = [
-      { id: 'profile-1', profileName: 'Operator', userId: 'user-1' },
-    ];
-
-    it('mirrors the user input into the grid', async () => {
-      const { component } = await mount(AgUsersTableComponent);
-
-      component.users = users as never;
-      component.ngOnInit();
-      expect(component.gridData()).toEqual(users);
-
-      component.users = null as never;
-      component.ngOnChanges({ users: {} as never });
-      expect(component.gridData()).toEqual([]);
-    });
-
-    it('labels an empty bio', async () => {
-      const { component } = await mount(AgUsersTableComponent);
-      const format = columnFor(component as never, 'Bio').valueFormatter as (
-        p: unknown
-      ) => string;
-
-      expect(format({ value: 'Hello' })).toBe('Hello');
-      expect(format({ value: '' })).toBe('N/A');
-    });
-
-    it('emits the profile behind the manage-roles button', async () => {
-      const { component } = await mount(AgUsersTableComponent);
-      const managed = jest.fn();
-      component.manageRoles.subscribe(managed);
-
-      const button = renderActions(component as never, users[0]).querySelector(
-        'button'
-      ) as HTMLButtonElement;
-      button.click();
-
-      expect(managed).toHaveBeenCalledWith(users[0]);
-    });
-
-    it('clears the grid selection when the reset key changes', async () => {
-      const { fixture, component } = await mount(AgUsersTableComponent);
-      component.users = users as never;
-      fixture.detectChanges();
-
-      const deselectAll = jest.fn();
-      const grid = (component as unknown as { grid?: { gridApi?: unknown } })
-        .grid;
-      if (grid) {
-        (grid as { gridApi?: unknown }).gridApi = { deselectAll };
-      }
-      const cleared = jest.fn();
-      component.selectionChange.subscribe(cleared);
-
-      component.ngOnChanges({
-        selectionResetKey: { firstChange: false } as never,
-      });
-
-      expect(cleared).toHaveBeenCalledWith([]);
-      if (grid) {
-        expect(deselectAll).toHaveBeenCalled();
-      }
-    });
-
-    it('leaves the selection alone on the first reset-key binding', async () => {
-      const { component } = await mount(AgUsersTableComponent);
-      const cleared = jest.fn();
-      component.selectionChange.subscribe(cleared);
-
-      component.ngOnChanges({
-        selectionResetKey: { firstChange: true } as never,
-      });
-
-      expect(cleared).not.toHaveBeenCalled();
     });
   });
 });

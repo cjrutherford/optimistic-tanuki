@@ -1,0 +1,152 @@
+<section class="admin-page">
+  <ot-owner-page-header
+    title="Production rollout"
+    description="Preview and deploy a tagged release, and check the sign-in providers."
+  ></ot-owner-page-header>
+
+  @if (statusError()) {
+  <ot-owner-state
+    kind="error"
+    [message]="statusError() ?? undefined"
+    (retry)="loadStatus()"
+  />
+  } @else if (status(); as summary) {
+  <section class="grid">
+    <article class="panel">
+      <h2>Production preset</h2>
+      <dl>
+        <div>
+          <dt>Deployment</dt>
+          <dd>{{ summary.deploymentName }}</dd>
+        </div>
+        <div>
+          <dt>Namespace</dt>
+          <dd>{{ summary.namespace }}</dd>
+        </div>
+        <div>
+          <dt>Provider</dt>
+          <dd>{{ summary.provider }}</dd>
+        </div>
+        <div>
+          <dt>Default tag</dt>
+          <dd>{{ summary.defaultTag }}</dd>
+        </div>
+      </dl>
+    </article>
+
+    <article class="panel">
+      <h2>Rollout preview</h2>
+      <label for="tag">Target tag</label>
+      <div class="rollout-controls">
+        <input id="tag" [(ngModel)]="targetTag" />
+        <button type="button" (click)="refreshRollout()">Preview plan</button>
+        <button type="button" (click)="startRollout()">
+          Deploy to production
+        </button>
+      </div>
+      @if (rollout(); as preview) {
+      <p class="strategy">{{ preview.strategy }}</p>
+      <p>
+        {{ preview.services.length }} services in staged pull/recreate plan.
+      </p>
+      <div class="waves">
+        @for (wave of preview.waves; track $index) {
+        <article class="wave">
+          <h3>Wave {{ $index + 1 }}</h3>
+          <p>{{ wave.join(', ') }}</p>
+        </article>
+        }
+      </div>
+      }
+    </article>
+  </section>
+  } @if (latestRollout(); as latest) {
+  <section class="panel">
+    <h2>Latest rollout</h2>
+    <p class="strategy">{{ latest.status }} for {{ latest.targetTag }}</p>
+    <p>{{ latest.services.length }} services tracked in this rollout.</p>
+    @if (latest.error) {
+    <p><strong>Error:</strong> {{ latest.error }}</p>
+    }
+  </section>
+  }
+
+  <section class="panel">
+    <h2>Rollout history</h2>
+    @if (historyError()) {
+    <ot-owner-state
+      kind="error"
+      [message]="historyError() ?? undefined"
+      (retry)="loadHistory()"
+    />
+    } @else {
+    <div class="history-list">
+      @for (entry of rolloutHistory(); track entry.startedAt) {
+      <article class="history-entry">
+        <span
+          class="history-status"
+          [class.succeeded]="entry.status === 'succeeded'"
+          [class.failed]="entry.status === 'failed'"
+          [class.running]="entry.status === 'running'"
+        >
+          {{ entry.status }}
+        </span>
+        <span class="history-tag">{{ entry.targetTag }}</span>
+        <span class="history-services"
+          >{{ entry.services.length }} services</span
+        >
+        <span class="history-time">{{ entry.startedAt }}</span>
+      </article>
+      }
+    </div>
+    }
+  </section>
+
+  <section class="panel">
+    <h2>Sign-in providers</h2>
+    @if (providersError()) {
+    <ot-owner-state
+      kind="error"
+      [message]="providersError() ?? undefined"
+      (retry)="loadProviders()"
+    />
+    } @else {
+    <div class="oauth-providers-grid">
+      @for (provider of oauthProviders(); track provider.name) {
+      <article class="provider-card">
+        <div class="provider-header">
+          <h3>{{ provider.name }}</h3>
+          <span
+            class="provider-status"
+            [class.configured]="provider.status === 'configured'"
+            [class.pending]="provider.status === 'pending'"
+            [class.error]="provider.status === 'error'"
+          >
+            {{ provider.status }}
+          </span>
+        </div>
+        <p>
+          <strong>Client ID:</strong>
+          {{ provider.clientIdPresent ? 'Present' : 'Missing' }}
+        </p>
+        <p>
+          <strong>Client Secret:</strong>
+          {{ provider.clientSecretPresent ? 'Present' : 'Missing' }}
+        </p>
+        <p>
+          <strong>Redirect URI:</strong>
+          {{ provider.redirectUri || 'Not set' }}
+        </p>
+        @if (provider.validationErrors.length > 0) {
+        <ul class="validation-errors">
+          @for (err of provider.validationErrors; track err) {
+          <li>{{ err }}</li>
+          }
+        </ul>
+        }
+      </article>
+      }
+    </div>
+    }
+  </section>
+</section>

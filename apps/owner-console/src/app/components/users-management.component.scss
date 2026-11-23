@@ -1,0 +1,256 @@
+:host {
+  display: block;
+  padding: 1rem;
+}
+
+.users-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.bulk-governance-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.1fr) minmax(320px, 1.4fr);
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--personality-card-radius, 12px);
+  border: var(--personality-border-width, 1px)
+    var(--personality-border-style, solid) var(--border-color, #d6d6d6);
+  background: var(--surface, #fff);
+}
+
+.bulk-governance-copy h3,
+.preview-list h4 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-heading);
+}
+
+.bulk-governance-copy p {
+  margin: 0;
+  font-size: var(--type-small, 0.9rem);
+  color: color-mix(in srgb, var(--foreground, #111827) 72%, transparent);
+}
+
+.selection-stat {
+  display: inline-flex;
+  margin-top: 0.75rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: 9999px;
+  background: color-mix(
+    in srgb,
+    var(--accent, #2563eb) 14%,
+    var(--surface, #fff)
+  );
+  font-size: var(--type-small, 0.9rem);
+  font-weight: 700;
+}
+
+.bulk-governance-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.control-field {
+  display: grid;
+  gap: 0.375rem;
+  font-weight: 600;
+}
+
+.control-field span {
+  font-size: var(--type-small, 0.9rem);
+}
+
+.control-field select,
+.control-field input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--personality-input-radius, 10px);
+  border: var(--personality-input-border-width, 1px) solid
+    var(--border-color, #d6d6d6);
+  background: var(--surface, #fff);
+  color: var(--foreground, #111827);
+  font-family: var(--font-body);
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.summary-actions {
+  margin-top: 0.875rem;
+}
+
+.bulk-preview-panel {
+  padding: 1rem;
+  border-radius: var(--personality-card-radius, 12px);
+  border: var(--personality-border-width, 1px)
+    var(--personality-border-style, solid) var(--border-color, #d6d6d6);
+  background: var(--surface, #fff);
+}
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.preview-metric,
+.preview-list,
+.impact-chip,
+.audit-entry {
+  padding: 0.75rem;
+  border-radius: var(--personality-card-radius, 12px);
+  border: 1px solid var(--border-color, #d6d6d6);
+}
+
+.preview-metric span {
+  display: block;
+  font-size: var(--type-small, 0.82rem);
+  letter-spacing: var(--personality-label-letter-spacing, 0.04em);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground, #111827) 68%, transparent);
+}
+
+.preview-metric strong {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: var(--type-h4, 1.35rem);
+}
+
+.preview-list p {
+  margin: 0;
+  color: color-mix(in srgb, var(--foreground, #111827) 74%, transparent);
+}
+
+.preview-list-wide {
+  grid-column: 1 / -1;
+}
+
+.preview-list-muted {
+  background: color-mix(
+    in srgb,
+    var(--surface, #fff) 96%,
+    var(--foreground, #111827) 4%
+  );
+}
+
+.impact-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+.impact-chip {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 180px;
+}
+
+.impact-chip span,
+.impact-chip small {
+  color: color-mix(in srgb, var(--foreground, #111827) 72%, transparent);
+}
+
+.impact-chip[data-status='added'] {
+  background: color-mix(
+    in srgb,
+    var(--success, #15803d) 12%,
+    var(--surface, #fff)
+  );
+}
+
+.impact-chip[data-status='removed'] {
+  background: color-mix(
+    in srgb,
+    var(--danger, #b91c1c) 12%,
+    var(--surface, #fff)
+  );
+}
+
+.impact-chip[data-status='retained'],
+.impact-chip[data-status='already-present'] {
+  background: color-mix(
+    in srgb,
+    var(--warning, #b45309) 10%,
+    var(--surface, #fff)
+  );
+}
+
+.profile-impact + .profile-impact {
+  margin-top: 0.75rem;
+}
+
+.audit-history {
+  display: grid;
+  gap: 0.625rem;
+}
+
+.audit-entry {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.role-modal {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 0.75rem;
+}
+
+.role-panel {
+  border: 1px solid var(--border-color, #d6d6d6);
+  border-radius: var(--personality-card-radius, 12px);
+  padding: 1rem;
+  background: var(--surface, #fff);
+  color: var(--foreground, #111827);
+}
+
+.panel-copy {
+  margin: 0.5rem 0 1rem;
+  color: color-mix(in srgb, var(--foreground, #111827) 72%, transparent);
+}
+
+.role-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.role-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid var(--border-color, #d6d6d6);
+  border-radius: var(--personality-card-radius, 10px);
+  padding: 0.75rem;
+}
+
+.role-item p {
+  margin: 0.25rem 0 0.5rem;
+  color: color-mix(in srgb, var(--foreground, #111827) 72%, transparent);
+}
+
+.scope-chip {
+  display: inline-flex;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  background: color-mix(
+    in srgb,
+    var(--accent, #2563eb) 14%,
+    var(--surface, #fff)
+  );
+  font-size: var(--type-small, 0.8rem);
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .bulk-governance-panel {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,11 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { LeadStatus } from '@optimistic-tanuki/ui-models';
 
 import { ContactLeadsManagementComponent } from './contact-leads-management.component';
 import { ContactLeadsService } from '../services/contact-leads.service';
 import { OperatorQueueService } from '../services/operator-queue.service';
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
+import {
+  OwnerConfirmStub,
+  createOwnerConfirmStub,
+} from './owner-confirm.testing';
 
 describe('ContactLeadsManagementComponent', () => {
   const contactLeadsService = {
@@ -17,6 +22,7 @@ describe('ContactLeadsManagementComponent', () => {
     getQueueByDomain: jest.fn(),
   };
   let storage: Record<string, string>;
+  let confirmStub: OwnerConfirmStub;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -144,11 +150,13 @@ describe('ContactLeadsManagementComponent', () => {
       ])
     );
 
+    confirmStub = createOwnerConfirmStub();
     await TestBed.configureTestingModule({
       imports: [ContactLeadsManagementComponent, RouterTestingModule],
       providers: [
         { provide: ContactLeadsService, useValue: contactLeadsService },
         { provide: OperatorQueueService, useValue: operatorQueueService },
+        { provide: OwnerConfirmService, useValue: confirmStub },
       ],
     }).compileComponents();
   });
@@ -168,11 +176,12 @@ describe('ContactLeadsManagementComponent', () => {
     fixture.detectChanges();
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('CRM Workspace');
     expect(text).toContain('Overdue follow-up');
     expect(text).toContain('Source analytics');
     expect(text).toContain('Assignment queues');
-    expect(text).toContain('Acme Co');
+    expect(fixture.componentInstance.tableLeads.map((l) => l.name)).toContain(
+      'Acme Co'
+    );
   });
 
   it('uses the server HAI deadline and first personal response to classify acknowledgment', () => {
@@ -252,5 +261,95 @@ describe('ContactLeadsManagementComponent', () => {
       'updated',
       'follow-up',
     ]);
+  });
+
+  it('has a plain page header and no hero banner', () => {
+    const fixture = TestBed.createComponent(ContactLeadsManagementComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('ot-owner-page-header')).not.toBeNull();
+    expect(el.querySelector('.hero')).toBeNull();
+  });
+
+  it('shows an error with Retry when leads fail to load, and no zero counts', () => {
+    contactLeadsService.getLeads.mockReturnValue(throwError(() => new Error()));
+    const fixture = TestBed.createComponent(ContactLeadsManagementComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('ot-owner-state[kind="error"]')).not.toBeNull();
+    expect(el.textContent).toContain('Retry');
+    expect(el.querySelector('.stat-card strong')?.textContent?.trim()).toBe(
+      '—'
+    );
+
+    contactLeadsService.getLeads.mockReturnValue(of([]));
+    (
+      el.querySelector('ot-owner-state[kind="error"] button') as HTMLElement
+    ).click();
+
+    expect(fixture.componentInstance.loadError).toBeNull();
+    expect(contactLeadsService.getLeads).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows an error, not an empty queue, when the CRM queue fails', () => {
+    operatorQueueService.getQueueByDomain.mockReturnValue(
+      throwError(() => new Error())
+    );
+    const fixture = TestBed.createComponent(ContactLeadsManagementComponent);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.queueError).toBe(
+      'The CRM queue could not be loaded.'
+    );
+    expect(fixture.nativeElement.textContent).toContain(
+      'The CRM queue could not be loaded.'
+    );
+  });
+
+  it('confirms saving and replying with a plain confirmation, and does nothing on cancel', async () => {
+    const fixture = TestBed.createComponent(ContactLeadsManagementComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.selectLead(component.leads[0]);
+    contactLeadsService.updateLead.mockReturnValue(of(component.leads[0]));
+
+    await component.saveLead();
+    await component.respondToLead();
+
+    expect(confirmStub.confirm).toHaveBeenCalledTimes(2);
+    expect(confirmStub.confirm).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ level: 'plain' })
+    );
+    expect(confirmStub.confirm).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ level: 'plain' })
+    );
+    expect(contactLeadsService.respondToLead).toHaveBeenCalledTimes(1);
+
+    confirmStub.confirm.mockResolvedValue({ confirmed: false });
+    contactLeadsService.updateLead.mockClear();
+    contactLeadsService.respondToLead.mockClear();
+    await component.saveLead();
+    await component.respondToLead();
+
+    expect(contactLeadsService.updateLead).not.toHaveBeenCalled();
+    expect(contactLeadsService.respondToLead).not.toHaveBeenCalled();
+  });
+
+  it('reports a failed save instead of staying silent', async () => {
+    const fixture = TestBed.createComponent(ContactLeadsManagementComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.selectLead(component.leads[0]);
+    contactLeadsService.updateLead.mockReturnValue(
+      throwError(() => ({ error: { message: 'Nope' } }))
+    );
+
+    await component.saveLead();
+
+    expect(component.saveStatus).toBe('Nope');
   });
 });

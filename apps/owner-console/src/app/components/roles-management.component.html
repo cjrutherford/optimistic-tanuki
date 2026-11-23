@@ -1,0 +1,232 @@
+<lib-message></lib-message>
+
+<section class="roles-page">
+  <ot-owner-page-header
+    title="Roles"
+    description="Define roles and the permissions they grant. Changes reach every user who holds the role."
+  >
+    <otui-button ot-actions variant="primary" (action)="openCreateModal()">
+      Create role
+    </otui-button>
+  </ot-owner-page-header>
+
+  <ot-owner-filter-bar
+    label="Search roles"
+    placeholder="Name, description or scope"
+    (query)="onSearch($event)"
+    (cleared)="onSearch('')"
+  ></ot-owner-filter-bar>
+
+  <ot-owner-data-table
+    [columns]="columns"
+    [rows]="visibleRoles"
+    [error]="loadError"
+    emptyMessage="No roles match."
+    (retry)="loadRoles()"
+  ></ot-owner-data-table>
+</section>
+
+<otui-modal
+  *ngIf="showFormModal"
+  [heading]="isEditMode ? 'Edit Role' : 'Create New Role'"
+  (closeModal)="closeFormModal()"
+  mode="standard-modal"
+  size="lg"
+>
+  <div class="form-container">
+    <div class="form-section">
+      <h3>Role Details</h3>
+      <p class="section-description">
+        Define the role name, description, and scope.
+      </p>
+
+      <div class="form-field">
+        <lib-text-input
+          label="Role Name *"
+          placeholder="e.g., admin, moderator, user"
+          [(ngModel)]="formData.name"
+        ></lib-text-input>
+      </div>
+
+      <div class="form-field">
+        <lib-text-area
+          label="Description *"
+          [(ngModel)]="formData.description"
+        ></lib-text-area>
+      </div>
+
+      <div class="form-field">
+        <lib-text-input
+          label="App Scope ID *"
+          placeholder="Enter or select app scope ID"
+          [(ngModel)]="formData.appScopeId"
+        ></lib-text-input>
+      </div>
+
+      <div class="form-field" *ngIf="appScopes.length > 0">
+        <label class="select-label">Or select App Scope:</label>
+        <select class="scope-select" (change)="onAppScopeSelect($event)">
+          <option value="">-- Select App Scope --</option>
+          <option *ngFor="let scope of appScopes" [value]="scope.id">
+            {{ scope.name }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-preview">
+      <h3>Summary</h3>
+      <div class="preview-content">
+        <p><strong>Name:</strong> {{ formData.name || 'Not set' }}</p>
+        <p>
+          <strong>Description:</strong>
+          {{ formData.description || 'Not set' }}
+        </p>
+        <p>
+          <strong>App Scope ID:</strong>
+          {{ formData.appScopeId || 'Not set' }}
+        </p>
+        <p *ngIf="isEditMode && currentRole" class="info-text">
+          <strong>Created:</strong>
+          {{ currentRole.created_at | date : 'medium' }}
+        </p>
+      </div>
+    </div>
+
+    <div class="form-preview" *ngIf="isEditMode && currentRole">
+      <div class="permissions-header">
+        <div>
+          <h3>Who this affects</h3>
+          <p class="section-description">
+            Role definition and permission changes affect every profile
+            currently assigned to this role.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="secondary-inline"
+          (click)="traceRoleAssignments()"
+        >
+          See who holds this role
+        </button>
+      </div>
+      <div class="preview-content">
+        <p>
+          <strong>Assigned profiles:</strong>
+          {{ roleImpactSummary.assignedProfileCount }}
+        </p>
+        <p>
+          <strong>Scope:</strong>
+          {{ roleImpactSummary.appScopeLabel }}
+        </p>
+        <p *ngIf="roleImpactSummary.sampleProfiles.length > 0">
+          <strong>Examples:</strong>
+          {{ roleImpactSummary.sampleProfiles.join(', ') }}
+        </p>
+      </div>
+    </div>
+
+    <div class="permissions-panel">
+      <div class="permissions-header">
+        <div>
+          <h3>Role Permissions</h3>
+          <p class="section-description">
+            Attach or remove permissions for this role from the full catalog.
+          </p>
+          <p
+            class="section-description"
+            *ngIf="roleImpactSummary.assignedProfileCount > 0"
+          >
+            These permission changes will affect
+            {{ roleImpactSummary.assignedProfileCount }} assigned profile{{
+              roleImpactSummary.assignedProfileCount === 1 ? '' : 's'
+            }}.
+          </p>
+        </div>
+      </div>
+
+      <ng-container *ngIf="isEditMode && currentRole; else createModeNotice">
+        <div class="permissions-grid">
+          <div class="permissions-column">
+            <h4>Assigned</h4>
+            <div
+              *ngIf="
+                currentRole.permissions?.length;
+                else noAssignedPermissions
+              "
+              class="permission-list"
+            >
+              <div
+                *ngFor="let permission of currentRole.permissions"
+                class="permission-card"
+              >
+                <div class="permission-copy">
+                  <strong>{{ permission.name }}</strong>
+                  <span>{{ permission.description || 'No description' }}</span>
+                </div>
+                <otui-button
+                  variant="secondary"
+                  (action)="removePermission(permission.id)"
+                >
+                  Remove
+                </otui-button>
+              </div>
+            </div>
+            <ng-template #noAssignedPermissions>
+              <p class="empty-state">No permissions are currently attached.</p>
+            </ng-template>
+          </div>
+
+          <div class="permissions-column">
+            <h4>Available</h4>
+            <div
+              *ngIf="availablePermissions.length; else noAvailablePermissions"
+              class="permission-list"
+            >
+              <div
+                *ngFor="let permission of availablePermissions"
+                class="permission-card"
+              >
+                <div class="permission-copy">
+                  <strong>{{ permission.name }}</strong>
+                  <span>{{ permission.description || 'No description' }}</span>
+                </div>
+                <otui-button
+                  variant="primary"
+                  (action)="addPermission(permission.id)"
+                >
+                  Add
+                </otui-button>
+              </div>
+            </div>
+            <ng-template #noAvailablePermissions>
+              <p class="empty-state">
+                All loaded permissions are already attached to this role.
+              </p>
+            </ng-template>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #createModeNotice>
+        <p class="empty-state">
+          Save the role first, then reopen it in edit mode to manage
+          permissions.
+        </p>
+      </ng-template>
+    </div>
+
+    <div class="form-actions">
+      <otui-button variant="secondary" (action)="closeFormModal()">
+        Cancel
+      </otui-button>
+      <otui-button
+        variant="primary"
+        (action)="submitForm()"
+        [disabled]="!isFormValid()"
+      >
+        {{ isEditMode ? 'Save changes' : 'Create role' }}
+      </otui-button>
+    </div>
+  </div>
+</otui-modal>

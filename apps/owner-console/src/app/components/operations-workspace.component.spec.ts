@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { LeadStatus } from '@optimistic-tanuki/ui-models';
 import { OperationsWorkspaceComponent } from './operations-workspace.component';
 import { UsersService } from '../services/users.service';
@@ -230,6 +230,63 @@ describe('OperationsWorkspaceComponent', () => {
           route: '/dashboard/contacts',
         }),
       ])
+    );
+  });
+
+  it('has a plain page header and no hero banner', () => {
+    const fixture = TestBed.createComponent(OperationsWorkspaceComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('ot-owner-page-header')).not.toBeNull();
+    expect(el.querySelector('.hero')).toBeNull();
+  });
+
+  it('shows an error with Retry when deployment health fails, not invented values', () => {
+    const control = TestBed.inject(ControlCenterService) as unknown as {
+      getDeploymentHealth: jest.Mock;
+    };
+    control.getDeploymentHealth.mockReturnValue(throwError(() => new Error()));
+    const fixture = TestBed.createComponent(OperationsWorkspaceComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(fixture.componentInstance.deploymentHealth).toBeNull();
+    expect(el.querySelector('ot-owner-state[kind="error"]')).not.toBeNull();
+    expect(el.textContent).toContain('Deployment health could not be loaded.');
+
+    control.getDeploymentHealth.mockReturnValue(
+      of({
+        configStatus: 'current',
+        infrastructure: 'compose-up',
+        databaseReadiness: 'all-slots-ready',
+        secretsHealth: 'all-keys-present',
+      })
+    );
+    (
+      el.querySelector('ot-owner-state[kind="error"] button') as HTMLElement
+    ).click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.healthError).toBeNull();
+    expect(fixture.componentInstance.deploymentHealth).not.toBeNull();
+  });
+
+  it('shows errors for images, sign-in providers and the queue instead of empty lists', () => {
+    const control = TestBed.inject(ControlCenterService) as unknown as {
+      getImages: jest.Mock;
+      getOAuthProviders: jest.Mock;
+    };
+    control.getImages.mockReturnValue(throwError(() => new Error()));
+    control.getOAuthProviders.mockReturnValue(throwError(() => new Error()));
+    const fixture = TestBed.createComponent(OperationsWorkspaceComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.textContent).not.toContain('All services are up to date.');
+    expect(el.textContent).toContain('Image status could not be loaded.');
+    expect(el.textContent).toContain(
+      'Sign-in provider status could not be loaded.'
     );
   });
 });

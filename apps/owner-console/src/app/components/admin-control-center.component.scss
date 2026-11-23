@@ -1,0 +1,282 @@
+:host {
+  display: block;
+  padding: 24px;
+}
+
+.admin-page {
+  display: grid;
+  gap: 24px;
+}
+
+.panel {
+  border: 1px solid
+    color-mix(in srgb, var(--foreground, #111827) 12%, transparent);
+  border-radius: var(--personality-card-radius, 24px);
+  padding: 24px;
+  background: color-mix(
+    in srgb,
+    var(--surface, #ffffff) 92%,
+    var(--background, #f3f4f6)
+  );
+  color: var(--foreground, #111827);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.panel p {
+  margin-top: 12px;
+  line-height: var(--line-height, 1.6);
+}
+
+.grid,
+.providers,
+.waves {
+  display: grid;
+  gap: 16px;
+}
+
+.grid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+dl {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 0;
+}
+
+dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid
+    color-mix(in srgb, var(--foreground, #111827) 8%, transparent);
+  padding-top: 12px;
+}
+
+.rollout-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  border-radius: var(--personality-card-radius, 12px);
+  border: 1px solid
+    color-mix(in srgb, var(--foreground, #111827) 18%, transparent);
+  padding: 12px 14px;
+  background: var(--surface, #ffffff);
+  color: var(--foreground, #111827);
+}
+
+button {
+  border: none;
+  border-radius: var(--personality-card-radius, 12px);
+  padding: 12px 16px;
+  background: var(--accent, #2563eb);
+  color: var(--on-primary, var(--primary-foreground, #ffffff));
+  font-weight: 700;
+}
+
+.strategy {
+  font-weight: 700;
+  color: color-mix(
+    in srgb,
+    var(--accent, #2563eb) 78%,
+    var(--foreground, #111827)
+  );
+}
+
+.wave,
+.provider-card {
+  border: 1px solid
+    color-mix(in srgb, var(--foreground, #111827) 10%, transparent);
+  border-radius: var(--personality-card-radius, 18px);
+  padding: 16px;
+  background: color-mix(
+    in srgb,
+    var(--surface, #ffffff) 90%,
+    var(--background, #f3f4f6)
+  );
+}
+
+.provider-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+}
+
+.provider-header span {
+  font-size: var(--type-small, 0.85rem);
+  font-weight: 700;
+  color: color-mix(
+    in srgb,
+    var(--success, #15803d) 80%,
+    var(--foreground, #111827)
+  );
+}
+
+.provider-header span.disabled {
+  color: color-mix(
+    in srgb,
+    var(--warning, #b45309) 82%,
+    var(--foreground, #111827)
+  );
+}
+
+.history-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.history-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid
+    color-mix(in srgb, var(--foreground, #111827) 10%, transparent);
+  border-radius: var(--personality-card-radius, 12px);
+  background: color-mix(
+    in srgb,
+    var(--surface, #ffffff) 90%,
+    var(--background, #f3f4f6)
+  );
+}
+
+.history-status {
+  font-size: var(--type-small, 0.78rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.history-status.succeeded {
+  background: color-mix(
+    in srgb,
+    var(--success, #15803d) 14%,
+    var(--surface, #ffffff)
+  );
+  color: color-mix(
+    in srgb,
+    var(--success, #15803d) 80%,
+    var(--foreground, #111827)
+  );
+}
+
+.history-status.failed {
+  background: color-mix(
+    in srgb,
+    var(--danger, #b91c1c) 14%,
+    var(--surface, #ffffff)
+  );
+  color: color-mix(
+    in srgb,
+    var(--danger, #b91c1c) 82%,
+    var(--foreground, #111827)
+  );
+}
+
+.history-status.running {
+  background: color-mix(
+    in srgb,
+    var(--warning, #b45309) 16%,
+    var(--surface, #ffffff)
+  );
+  color: color-mix(
+    in srgb,
+    var(--warning, #b45309) 82%,
+    var(--foreground, #111827)
+  );
+}
+
+.history-tag {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--type-small, 0.85rem);
+}
+
+.history-services {
+  color: color-mix(in srgb, var(--foreground, #111827) 72%, transparent);
+  font-size: var(--type-small, 0.85rem);
+}
+
+.history-time {
+  margin-left: auto;
+  color: color-mix(in srgb, var(--foreground, #111827) 58%, transparent);
+  font-size: var(--type-small, 0.82rem);
+}
+
+.oauth-providers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.provider-status {
+  font-size: var(--type-small, 0.78rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.provider-status.configured {
+  background: color-mix(
+    in srgb,
+    var(--success, #15803d) 14%,
+    var(--surface, #ffffff)
+  );
+  color: color-mix(
+    in srgb,
+    var(--success, #15803d) 80%,
+    var(--foreground, #111827)
+  );
+}
+
+.provider-status.pending {
+  background: color-mix(
+    in srgb,
+    var(--warning, #b45309) 16%,
+    var(--surface, #ffffff)
+  );
+  color: color-mix(
+    in srgb,
+    var(--warning, #b45309) 82%,
+    var(--foreground, #111827)
+  );
+}
+
+.provider-status.error {
+  background: color-mix(
+    in srgb,
+    var(--danger, #b91c1c) 14%,
+    var(--surface, #ffffff)
+  );
+  color: color-mix(
+    in srgb,
+    var(--danger, #b91c1c) 82%,
+    var(--foreground, #111827)
+  );
+}
+
+.validation-errors {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: color-mix(
+    in srgb,
+    var(--danger, #b91c1c) 82%,
+    var(--foreground, #111827)
+  );
+  font-size: var(--type-small, 0.85rem);
+}

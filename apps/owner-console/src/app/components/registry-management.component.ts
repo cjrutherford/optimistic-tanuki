@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   AppRegistration,
@@ -13,6 +13,13 @@ import {
   RegistryReleaseRevision,
   RegistryReleaseState,
 } from '@optimistic-tanuki/app-registry-backend';
+import type { ColDef } from '@optimistic-tanuki/ag-grid-ui';
+import {
+  OwnerConfirmService,
+  OwnerDataTableComponent,
+  OwnerPageHeaderComponent,
+  OwnerStateComponent,
+} from '@optimistic-tanuki/owner-page-ui';
 import { forkJoin } from 'rxjs';
 import {
   RegistryAuditEntry,
@@ -22,664 +29,15 @@ import {
 @Component({
   selector: 'app-registry-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
-    <section class="registry-page">
-      <header class="registry-hero">
-        <div>
-          <p class="eyebrow">Experience Control</p>
-          <h1>Application Registry</h1>
-        </div>
-        <div class="hero-actions">
-          <button type="button" class="secondary" (click)="load()">
-            Refresh
-          </button>
-          <button
-            type="button"
-            class="secondary"
-            (click)="saveRegistry()"
-            [disabled]="loading || validationErrors.length > 0"
-          >
-            Save Apps Draft
-          </button>
-          <button
-            type="button"
-            class="secondary"
-            (click)="saveLinks()"
-            [disabled]="loading"
-          >
-            Save Links Draft
-          </button>
-          <button
-            type="button"
-            class="primary"
-            (click)="publishRegistry()"
-            [disabled]="loading || validationErrors.length > 0"
-          >
-            Publish Registry
-          </button>
-        </div>
-      </header>
-
-      @if (loading) {
-      <div class="status">Loading registry...</div>
-      } @if (message) {
-      <div class="status success">{{ message }}</div>
-      } @if (error) {
-      <div class="status error">{{ error }}</div>
-      } @if (validationErrors.length > 0) {
-      <div class="status error">
-        @for (validationError of validationErrors; track validationError) {
-        <p>{{ validationError }}</p>
-        }
-      </div>
-      }
-
-      <section class="registry-band release-band">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Release Management</p>
-            <h2>{{ releaseStatusLabel() }}</h2>
-          </div>
-          <a
-            *ngIf="release?.previewUrl"
-            class="preview-link"
-            [href]="release?.previewUrl"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open Preview
-          </a>
-        </div>
-
-        <div class="release-readiness">
-          <article class="readiness-card">
-            <span class="readiness-label">Validation</span>
-            <strong>{{
-              validationErrors.length === 0 ? 'Ready' : 'Attention needed'
-            }}</strong>
-          </article>
-          <article class="readiness-card">
-            <span class="readiness-label">Public apps</span>
-            <strong>{{ publicAppCount() }}</strong>
-          </article>
-          <article class="readiness-card">
-            <span class="readiness-label">Links</span>
-            <strong>{{ links.length }}</strong>
-          </article>
-        </div>
-
-        <div class="release-fields">
-          <label class="wide">
-            Release notes
-            <textarea
-              [(ngModel)]="releaseNotes"
-              placeholder="Summarize what changed in this registry release."
-            ></textarea>
-          </label>
-          <label class="wide">
-            Change summary
-            <textarea
-              [(ngModel)]="changeSummary"
-              placeholder="Capture the routing, visibility, or app-directory changes in this revision."
-            ></textarea>
-          </label>
-        </div>
-
-        @if (releaseHistory().length) {
-        <div class="release-history">
-          <div class="section-heading">
-            <h2>Published Revisions</h2>
-          </div>
-          <div class="history-list">
-            @for (revision of releaseHistory(); track revision.version) {
-            <article class="history-item">
-              <div class="history-copy">
-                <strong>Version {{ revision.version }}</strong>
-                <span>{{ revision.releaseNotes }}</span>
-                @if (revision.changeSummary) {
-                <small>{{ revision.changeSummary }}</small>
-                }
-              </div>
-              <button
-                type="button"
-                class="secondary"
-                (click)="rollbackRegistry(revision.version)"
-                [disabled]="loading"
-              >
-                Roll back
-              </button>
-            </article>
-            }
-          </div>
-        </div>
-        }
-      </section>
-
-      <section class="registry-band">
-        <div class="section-heading">
-          <h2>Registered Applications</h2>
-          <button type="button" class="secondary" (click)="addApp()">
-            Add App
-          </button>
-        </div>
-
-        <div class="app-grid">
-          @for (app of registry.apps; track app.appId; let i = $index) {
-          <article class="app-editor">
-            <div class="editor-topline">
-              <strong>{{ app.name || app.appId || 'New application' }}</strong>
-              <button type="button" class="ghost-danger" (click)="removeApp(i)">
-                Remove
-              </button>
-            </div>
-
-            <label>
-              App ID
-              <input [(ngModel)]="app.appId" (ngModelChange)="validate()" />
-            </label>
-            <label>
-              Name
-              <input [(ngModel)]="app.name" (ngModelChange)="validate()" />
-            </label>
-            <label>
-              Domain
-              <input
-                [(ngModel)]="app.domain"
-                (ngModelChange)="syncUiHost(app)"
-              />
-            </label>
-            <label>
-              Subdomain
-              <input
-                [(ngModel)]="app.subdomain"
-                (ngModelChange)="syncUiHost(app)"
-              />
-            </label>
-            <label class="wide">
-              UI Base URL
-              <input [(ngModel)]="app.uiBaseUrl" (ngModelChange)="validate()" />
-            </label>
-            <label class="wide">
-              API Base URL
-              <input
-                [(ngModel)]="app.apiBaseUrl"
-                (ngModelChange)="validate()"
-              />
-            </label>
-            <label class="wide">
-              Icon URL
-              <input [(ngModel)]="app.iconUrl" (ngModelChange)="validate()" />
-            </label>
-            <label>
-              Type
-              <select [(ngModel)]="app.appType">
-                @for (type of appTypes; track type) {
-                <option [ngValue]="type">{{ type }}</option>
-                }
-              </select>
-            </label>
-            <label>
-              Visibility
-              <select [(ngModel)]="app.visibility">
-                @for (visibility of visibilityTypes; track visibility) {
-                <option [ngValue]="visibility">{{ visibility }}</option>
-                }
-              </select>
-            </label>
-            <label>
-              Sort Order
-              <input type="number" [(ngModel)]="app.sortOrder" />
-            </label>
-            <label class="wide">
-              Description
-              <textarea [(ngModel)]="app.description"></textarea>
-            </label>
-          </article>
-          }
-        </div>
-      </section>
-
-      <section class="registry-band">
-        <div class="section-heading">
-          <h2>Navigation Links</h2>
-          <button type="button" class="secondary" (click)="addLink()">
-            Add Link
-          </button>
-        </div>
-
-        <div class="link-table">
-          <div class="link-row link-head">
-            <span>Label</span>
-            <span>Source</span>
-            <span>Target</span>
-            <span>Type</span>
-            <span>Path</span>
-            <span></span>
-          </div>
-          @for (link of links; track link.linkId; let i = $index) {
-          <div class="link-row">
-            <input [(ngModel)]="link.label" />
-            <select [(ngModel)]="link.sourceAppId">
-              @for (app of registry.apps; track app.appId) {
-              <option [ngValue]="app.appId">{{ app.appId }}</option>
-              }
-            </select>
-            <select [(ngModel)]="link.targetAppId">
-              @for (app of registry.apps; track app.appId) {
-              <option [ngValue]="app.appId">{{ app.appId }}</option>
-              }
-            </select>
-            <select [(ngModel)]="link.type">
-              @for (type of linkTypes; track type) {
-              <option [ngValue]="type">{{ type }}</option>
-              }
-            </select>
-            <input [(ngModel)]="link.path" />
-            <button type="button" class="ghost-danger" (click)="removeLink(i)">
-              Remove
-            </button>
-          </div>
-          }
-        </div>
-      </section>
-
-      <section class="registry-band audit-band">
-        <div class="section-heading">
-          <h2>Audit Log</h2>
-          <button type="button" class="secondary" (click)="loadAuditLog()">
-            Reload
-          </button>
-        </div>
-        @if (auditLog.length === 0) {
-        <p class="quiet">
-          No registry changes recorded in this gateway process.
-        </p>
-        } @else {
-        <ol class="audit-list">
-          @for (entry of auditLog; track entry.id) {
-          <li>
-            <time>{{ entry.occurredAt }}</time>
-            <strong>{{ entry.action }}</strong>
-            <span>{{ entry.summary }}</span>
-          </li>
-          }
-        </ol>
-        }
-      </section>
-    </section>
-  `,
-  styles: [
-    `
-      :host {
-        display: block;
-        padding: 24px;
-      }
-
-      .registry-page {
-        display: grid;
-        gap: 20px;
-        color: var(--foreground, #111827);
-      }
-
-      .registry-hero,
-      .registry-band {
-        border: 1px solid var(--border-color, #d7dde2);
-        border-radius: 8px;
-        background: var(--surface, #ffffff);
-      }
-
-      .registry-hero {
-        display: flex;
-        justify-content: space-between;
-        gap: 20px;
-        align-items: center;
-        padding: 24px;
-      }
-
-      .eyebrow {
-        margin: 0 0 6px;
-        color: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 78%,
-          var(--foreground, #111827)
-        );
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      h1,
-      h2 {
-        margin: 0;
-      }
-
-      .hero-actions,
-      .section-heading {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-      }
-
-      .section-heading {
-        justify-content: space-between;
-        padding: 18px 20px;
-        border-bottom: 1px solid var(--border-color, #d7dde2);
-      }
-
-      button {
-        min-height: 38px;
-        border: 1px solid transparent;
-        border-radius: 6px;
-        padding: 0 14px;
-        font-weight: 700;
-        cursor: pointer;
-      }
-
-      button:disabled {
-        cursor: not-allowed;
-        opacity: 0.55;
-      }
-
-      .primary {
-        background: var(--accent, #2563eb);
-        color: var(--on-primary, var(--primary-foreground, #ffffff));
-      }
-
-      .secondary {
-        border-color: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 24%,
-          transparent
-        );
-        background: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 10%,
-          var(--surface, #ffffff)
-        );
-        color: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 76%,
-          var(--foreground, #111827)
-        );
-      }
-
-      .ghost-danger {
-        border-color: color-mix(
-          in srgb,
-          var(--danger, #b91c1c) 22%,
-          transparent
-        );
-        background: color-mix(
-          in srgb,
-          var(--danger, #b91c1c) 8%,
-          var(--surface, #ffffff)
-        );
-        color: color-mix(
-          in srgb,
-          var(--danger, #b91c1c) 82%,
-          var(--foreground, #111827)
-        );
-      }
-
-      .status {
-        border-radius: 8px;
-        padding: 12px 14px;
-        background: color-mix(
-          in srgb,
-          var(--info, #0ea5e9) 12%,
-          var(--surface, #ffffff)
-        );
-        color: var(--foreground, #111827);
-      }
-
-      .status p {
-        margin: 0;
-      }
-
-      .status p + p {
-        margin-top: 6px;
-      }
-
-      .success {
-        background: color-mix(
-          in srgb,
-          var(--success, #15803d) 10%,
-          var(--surface, #ffffff)
-        );
-        color: color-mix(
-          in srgb,
-          var(--success, #15803d) 80%,
-          var(--foreground, #111827)
-        );
-      }
-
-      .error {
-        background: color-mix(
-          in srgb,
-          var(--danger, #b91c1c) 10%,
-          var(--surface, #ffffff)
-        );
-        color: color-mix(
-          in srgb,
-          var(--danger, #b91c1c) 82%,
-          var(--foreground, #111827)
-        );
-      }
-
-      .app-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 16px;
-        padding: 20px;
-      }
-
-      .release-band,
-      .release-readiness,
-      .release-fields,
-      .release-history,
-      .history-list,
-      .history-copy {
-        display: grid;
-      }
-
-      .release-band {
-        gap: 16px;
-      }
-
-      .release-readiness {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 12px;
-        padding: 0 20px;
-      }
-
-      .readiness-card {
-        border: 1px solid var(--border-color, #d7dde2);
-        border-radius: 10px;
-        padding: 14px 16px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 92%,
-          var(--background, #f3f4f6)
-        );
-      }
-
-      .readiness-label {
-        display: block;
-        margin-bottom: 6px;
-        font-size: 0.74rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 72%,
-          var(--foreground, #111827)
-        );
-      }
-
-      .release-fields {
-        gap: 12px;
-        padding: 0 20px 20px;
-      }
-
-      .release-history {
-        border-top: 1px solid var(--border-color, #d7dde2);
-      }
-
-      .history-list {
-        gap: 12px;
-        padding: 0 20px 20px;
-      }
-
-      .history-item {
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        align-items: center;
-        border: 1px solid var(--border-color, #d7dde2);
-        border-radius: 10px;
-        padding: 14px 16px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 92%,
-          var(--background, #f3f4f6)
-        );
-      }
-
-      .history-copy {
-        gap: 4px;
-      }
-
-      .preview-link {
-        color: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 76%,
-          var(--foreground, #111827)
-        );
-        font-weight: 700;
-        text-decoration: none;
-      }
-
-      .app-editor {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        border: 1px solid var(--border-color, #d7dde2);
-        border-radius: 8px;
-        padding: 16px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 94%,
-          var(--background, #f3f4f6)
-        );
-      }
-
-      .editor-topline,
-      .wide {
-        grid-column: 1 / -1;
-      }
-
-      .editor-topline {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        align-items: center;
-      }
-
-      label {
-        display: grid;
-        gap: 5px;
-        font-size: 0.78rem;
-        font-weight: 700;
-        text-transform: uppercase;
-      }
-
-      input,
-      select,
-      textarea {
-        width: 100%;
-        border: 1px solid #cbd5dc;
-        border-radius: 6px;
-        background: var(--surface, #ffffff);
-        color: inherit;
-        font: inherit;
-        padding: 9px 10px;
-        box-sizing: border-box;
-      }
-
-      textarea {
-        min-height: 78px;
-        resize: vertical;
-        text-transform: none;
-      }
-
-      .link-table {
-        display: grid;
-        gap: 8px;
-        padding: 20px;
-        overflow-x: auto;
-      }
-
-      .link-row {
-        display: grid;
-        grid-template-columns:
-          minmax(160px, 1.2fr) minmax(140px, 1fr) minmax(140px, 1fr)
-          minmax(110px, 0.7fr) minmax(140px, 1fr) auto;
-        gap: 10px;
-        min-width: 860px;
-        align-items: center;
-      }
-
-      .link-head {
-        color: color-mix(in srgb, var(--foreground, #111827) 68%, transparent);
-        font-size: 0.78rem;
-        font-weight: 700;
-        text-transform: uppercase;
-      }
-
-      .audit-band {
-        margin-bottom: 24px;
-      }
-
-      .quiet {
-        margin: 0;
-        padding: 20px;
-        color: color-mix(in srgb, var(--foreground, #111827) 62%, transparent);
-      }
-
-      .audit-list {
-        display: grid;
-        gap: 10px;
-        margin: 0;
-        padding: 20px 20px 20px 42px;
-      }
-
-      .audit-list li {
-        display: grid;
-        grid-template-columns: minmax(190px, 0.4fr) minmax(130px, 0.3fr) 1fr;
-        gap: 12px;
-      }
-
-      time {
-        color: color-mix(in srgb, var(--foreground, #111827) 62%, transparent);
-      }
-
-      @media (max-width: 760px) {
-        .registry-hero,
-        .app-editor,
-        .audit-list li {
-          grid-template-columns: 1fr;
-        }
-
-        .registry-hero {
-          align-items: stretch;
-        }
-      }
-    `,
+  imports: [
+    CommonModule,
+    FormsModule,
+    OwnerDataTableComponent,
+    OwnerPageHeaderComponent,
+    OwnerStateComponent,
   ],
+  templateUrl: './registry-management.component.html',
+  styleUrl: './registry-management.component.scss',
 })
 export class RegistryManagementComponent implements OnInit {
   readonly appTypes: AppType[] = ['client', 'admin', 'user'];
@@ -692,7 +50,18 @@ export class RegistryManagementComponent implements OnInit {
   readonly positions: NavigationPosition[] = ['primary', 'secondary', 'footer'];
   readonly visibilityTypes: AppVisibility[] = ['public', 'internal'];
 
+  readonly auditColumns: ColDef[] = [
+    { field: 'occurredAt', headerName: 'When', flex: 2 },
+    { field: 'action', headerName: 'Action', flex: 1 },
+    { field: 'summary', headerName: 'What changed', flex: 3 },
+  ];
+
+  private readonly confirmService = inject(OwnerConfirmService);
+
   auditLog: RegistryAuditEntry[] = [];
+  auditError: string | null = null;
+  /** The registry itself could not be loaded; the editor is not shown. */
+  loadFailed = false;
   error = '';
   links: NavigationLink[] = [];
   loading = false;
@@ -715,6 +84,7 @@ export class RegistryManagementComponent implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.loadFailed = false;
     this.message = '';
     this.error = '';
 
@@ -737,18 +107,20 @@ export class RegistryManagementComponent implements OnInit {
         this.error = `Failed to load registry: ${
           error.message || error.statusText || 'Unknown error'
         }`;
+        this.loadFailed = true;
         this.loading = false;
       },
     });
   }
 
   loadAuditLog(): void {
+    this.auditError = null;
     this.registryService.getAuditLog().subscribe({
       next: (response) => {
         this.auditLog = response.data;
       },
       error: (error) => {
-        this.error = `Failed to load audit log: ${
+        this.auditError = `Failed to load the change history: ${
           error.message || error.statusText || 'Unknown error'
         }`;
       },
@@ -774,7 +146,18 @@ export class RegistryManagementComponent implements OnInit {
     this.validate();
   }
 
-  removeApp(index: number): void {
+  async removeApp(index: number): Promise<void> {
+    const target = this.registry.apps[index];
+    if (!target) return;
+    const { confirmed } = await this.confirmService.confirm({
+      level: 'typed',
+      title: `Remove ${target.name || target.appId}`,
+      body: 'The app and every navigation link that points to or from it are removed from the draft. Type the app ID to continue.',
+      confirmLabel: 'Remove app',
+      typedPhrase: target.appId || target.name,
+      destructive: true,
+    });
+    if (!confirmed) return;
     const appId = this.registry.apps[index]?.appId;
     this.registry.apps = this.registry.apps.filter(
       (_, current) => current !== index
@@ -803,7 +186,17 @@ export class RegistryManagementComponent implements OnInit {
     ];
   }
 
-  removeLink(index: number): void {
+  async removeLink(index: number): Promise<void> {
+    const link = this.links[index];
+    if (!link) return;
+    const { confirmed } = await this.confirmService.confirm({
+      level: 'plain',
+      title: `Remove link ${link.label}`,
+      body: 'The link is removed from the draft. Refresh to bring it back before you save.',
+      confirmLabel: 'Remove link',
+      destructive: true,
+    });
+    if (!confirmed) return;
     this.links = this.links.filter((_, current) => current !== index);
   }
 
@@ -818,11 +211,18 @@ export class RegistryManagementComponent implements OnInit {
     this.validate();
   }
 
-  saveRegistry(): void {
+  async saveRegistry(): Promise<void> {
     this.validate();
     if (this.validationErrors.length > 0) {
       return;
     }
+    const { confirmed } = await this.confirmService.confirm({
+      level: 'plain',
+      title: 'Save apps draft',
+      body: 'Saves the apps as a draft. Nothing is public until you publish.',
+      confirmLabel: 'Save draft',
+    });
+    if (!confirmed) return;
 
     this.loading = true;
     this.message = '';
@@ -853,7 +253,14 @@ export class RegistryManagementComponent implements OnInit {
     });
   }
 
-  saveLinks(): void {
+  async saveLinks(): Promise<void> {
+    const { confirmed } = await this.confirmService.confirm({
+      level: 'plain',
+      title: 'Save links draft',
+      body: 'Saves the navigation links as a draft. Nothing is public until you publish.',
+      confirmLabel: 'Save draft',
+    });
+    if (!confirmed) return;
     this.loading = true;
     this.message = '';
     this.error = '';
@@ -902,7 +309,7 @@ export class RegistryManagementComponent implements OnInit {
     this.validationErrors = errors;
   }
 
-  publishRegistry(): void {
+  async publishRegistry(): Promise<void> {
     this.validate();
     if (this.validationErrors.length > 0) {
       return;
@@ -912,6 +319,16 @@ export class RegistryManagementComponent implements OnInit {
       this.error = 'Release notes are required before publishing the registry.';
       return;
     }
+
+    // The publish API takes release notes (already required above) but no
+    // separate reason, so this reason is collected for the owner only.
+    const { confirmed } = await this.confirmService.confirm({
+      level: 'reason',
+      title: 'Publish registry',
+      body: 'Every app and the navigation that points to it update for all users.',
+      confirmLabel: 'Publish',
+    });
+    if (!confirmed) return;
 
     this.loading = true;
     this.message = '';
@@ -938,7 +355,15 @@ export class RegistryManagementComponent implements OnInit {
     });
   }
 
-  rollbackRegistry(version: number): void {
+  async rollbackRegistry(version: number): Promise<void> {
+    const { confirmed, reason } = await this.confirmService.confirm({
+      level: 'reason',
+      title: `Roll back to version ${version}`,
+      body: 'The published registry returns to this version for all users.',
+      confirmLabel: 'Roll back',
+      destructive: true,
+    });
+    if (!confirmed) return;
     this.loading = true;
     this.message = '';
     this.error = '';
@@ -946,7 +371,8 @@ export class RegistryManagementComponent implements OnInit {
     this.registryService
       .rollbackRegistry({
         version,
-        releaseNotes: 'Rollback from registry management',
+        // The rollback API accepts release notes, so the reason is sent there.
+        releaseNotes: reason?.trim() || 'Rollback from registry management',
       })
       .subscribe({
         next: (response) => {

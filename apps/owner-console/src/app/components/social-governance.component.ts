@@ -3,6 +3,11 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import {
+  OwnerConfirmService,
+  OwnerPageHeaderComponent,
+  OwnerStateComponent,
+} from '@optimistic-tanuki/owner-page-ui';
+import {
   ModerationReport,
   SocialGovernanceService,
 } from '../services/social-governance.service';
@@ -15,316 +20,28 @@ import {
 @Component({
   selector: 'app-social-governance',
   standalone: true,
-  imports: [CommonModule, FormsModule, OperatorQueuePanelComponent],
-  template: `
-    <section class="governance-page">
-      <header class="hero">
-        <p class="hero-kicker">Community Ops</p>
-        <h1>Social Governance</h1>
-        <p>
-          Review and triage incoming social content reports directly from
-          owner-console.
-        </p>
-      </header>
-
-      <section class="summary-grid">
-        <article class="summary-card">
-          <span class="eyebrow">Reports</span>
-          <strong>{{ reports.length }}</strong>
-          <p>{{ pendingCount }} pending review</p>
-        </article>
-        <article class="summary-card">
-          <span class="eyebrow">Actioned</span>
-          <strong>{{ actionedCount }}</strong>
-          <p>{{ dismissedCount }} dismissed</p>
-        </article>
-      </section>
-
-      <div class="error" *ngIf="error">{{ error }}</div>
-
-      <section class="panel operator-review">
-        <div class="panel-heading">
-          <h2>Towne Square app reports</h2>
-          <p>
-            Review reports about Towne Square listings and sellers. This queue
-            is app-scoped and does not require a community workspace.
-          </p>
-          <button class="btn" (click)="loadLocalHubOperatorReports()">
-            Load Towne Square reports
-          </button>
-          <button class="btn" (click)="loadClientInterfaceOperatorReports()">
-            Load Optimistic Tanuki reports
-          </button>
-        </div>
-      </section>
-
-      <app-operator-queue-panel
-        [items]="queueItems"
-        heading="Community Moderation Queue"
-        description="Shared queue items that still require moderation review or follow-through."
-        emptyStateCopy="No community moderation queue items are currently prioritized."
-      ></app-operator-queue-panel>
-
-      <section class="panel" *ngIf="handoffContext">
-        <div class="panel-heading">
-          <h2>Opened from Community Ops</h2>
-          <p>
-            Investigating {{ handoffContext.entityType }} context for
-            {{ handoffContext.entityTitle }} in
-            {{ handoffContext.communityName }}.
-          </p>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Report triage queue</h2>
-          <p>
-            Update moderation status and capture operator notes while takedown
-            actions remain a separate follow-up slice.
-          </p>
-        </div>
-        <div class="report-list" *ngIf="reports.length; else noReports">
-          <article class="report-card" *ngFor="let report of reports">
-            <div class="report-copy">
-              <div class="status-row">
-                <span class="status-pill">{{ report.status }}</span>
-                <span class="status-pill soft">{{ report.contentType }}</span>
-                <span class="status-pill soft">{{ report.reason }}</span>
-              </div>
-              <h3>{{ report.contentType }} · {{ report.contentId }}</h3>
-              <p>
-                {{ report.description || 'No reporter description provided.' }}
-              </p>
-            </div>
-            <div class="report-actions">
-              <select
-                [ngModel]="getDraft(report).status"
-                (ngModelChange)="updateDraft(report.id, 'status', $event)"
-              >
-                <option value="pending">Pending</option>
-                <option value="reviewed">Reviewed</option>
-                <option value="actioned">Actioned</option>
-                <option value="dismissed">Dismissed</option>
-              </select>
-              <textarea
-                rows="3"
-                [ngModel]="getDraft(report).adminNotes"
-                (ngModelChange)="updateDraft(report.id, 'adminNotes', $event)"
-                placeholder="Operator notes"
-              ></textarea>
-              <div class="action-row">
-                <button class="btn" (click)="saveReport(report)">Save</button>
-                <button
-                  class="btn warning"
-                  *ngIf="supportsContentModeration(report)"
-                  (click)="applyContentModeration(report, 'hidden')"
-                >
-                  Hide
-                </button>
-                <button
-                  class="btn"
-                  *ngIf="supportsContentModeration(report)"
-                  (click)="applyContentModeration(report, 'visible')"
-                >
-                  Restore
-                </button>
-              </div>
-            </div>
-          </article>
-        </div>
-        <ng-template #noReports>
-          <p class="empty-state">No content reports are currently queued.</p>
-        </ng-template>
-      </section>
-    </section>
-  `,
-  styles: [
-    `
-      :host {
-        display: block;
-        padding: 24px;
-      }
-
-      .governance-page {
-        display: grid;
-        gap: 24px;
-      }
-
-      .hero,
-      .panel,
-      .summary-card {
-        border: 1px solid var(--border-color, #d6d6d6);
-        border-radius: 24px;
-        background: radial-gradient(
-            circle at top left,
-            color-mix(in srgb, var(--accent, #2563eb) 10%, transparent),
-            transparent 28%
-          ),
-          linear-gradient(
-            180deg,
-            color-mix(
-              in srgb,
-              var(--surface, #ffffff) 96%,
-              var(--background, #f3f4f6)
-            ),
-            color-mix(
-              in srgb,
-              var(--surface, #ffffff) 90%,
-              var(--background, #f3f4f6)
-            )
-          );
-        padding: 24px;
-        color: var(--foreground, #111827);
-      }
-
-      .hero-kicker,
-      .eyebrow {
-        color: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 78%,
-          var(--foreground, #111827)
-        );
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      .summary-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 16px;
-      }
-
-      .summary-card strong {
-        display: block;
-        font-size: 2rem;
-        margin: 0.5rem 0;
-      }
-
-      .panel-heading {
-        margin-bottom: 16px;
-      }
-
-      .report-list {
-        display: grid;
-        gap: 16px;
-      }
-
-      .report-card {
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 18px;
-        border: 1px solid var(--border-color, #d6d6d6);
-        border-radius: 18px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 92%,
-          var(--background, #f3f4f6)
-        );
-      }
-
-      .report-copy,
-      .report-actions {
-        display: grid;
-        gap: 8px;
-      }
-
-      .report-actions {
-        min-width: 240px;
-      }
-
-      .action-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .status-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .status-pill {
-        padding: 4px 10px;
-        border-radius: 999px;
-        background: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 14%,
-          var(--surface, #ffffff)
-        );
-        color: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 78%,
-          var(--foreground, #111827)
-        );
-        font-size: 0.78rem;
-        font-weight: 700;
-        text-transform: uppercase;
-      }
-
-      .status-pill.soft {
-        background: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 8%,
-          var(--surface, #ffffff)
-        );
-      }
-
-      .btn,
-      select,
-      textarea {
-        padding: 0.55rem 0.85rem;
-        border-radius: 8px;
-        border: 1px solid var(--border-color, #d6d6d6);
-        background: var(--surface, #ffffff);
-        color: var(--foreground, #111827);
-      }
-
-      .btn {
-        cursor: pointer;
-      }
-
-      .btn.warning {
-        background: color-mix(
-          in srgb,
-          var(--warning, #b45309) 12%,
-          var(--surface, #ffffff)
-        );
-        color: color-mix(
-          in srgb,
-          var(--warning, #b45309) 82%,
-          var(--foreground, #111827)
-        );
-      }
-
-      .empty-state,
-      .error {
-        margin: 0;
-      }
-
-      .error {
-        color: color-mix(
-          in srgb,
-          var(--danger, #b91c1c) 82%,
-          var(--foreground, #111827)
-        );
-        font-weight: 600;
-      }
-    `,
+  imports: [
+    CommonModule,
+    FormsModule,
+    OperatorQueuePanelComponent,
+    OwnerPageHeaderComponent,
+    OwnerStateComponent,
   ],
+  templateUrl: './social-governance.component.html',
+  styleUrls: ['./social-governance.component.scss'],
 })
 export class SocialGovernanceComponent implements OnInit {
   private readonly socialGovernanceService = inject(SocialGovernanceService);
   private readonly operatorQueueService = inject(OperatorQueueService);
   private readonly route = inject(ActivatedRoute);
+  private readonly confirmService = inject(OwnerConfirmService);
 
   reports: ModerationReport[] = [];
   queueItems: OperatorQueueItem[] = [];
   error: string | null = null;
+  loadFailed = false;
+  reportsLoaded = false;
+  queueError: string | null = null;
   handoffContext: {
     source: string;
     entityType: string;
@@ -377,21 +94,25 @@ export class SocialGovernanceComponent implements OnInit {
   }
 
   loadQueue(): void {
+    this.queueError = null;
     this.operatorQueueService.getQueueByDomain('Community Ops').subscribe({
       next: (items) => {
         this.queueItems = items;
       },
       error: () => {
-        this.queueItems = [];
+        this.queueError = 'Could not load the moderation queue.';
       },
     });
   }
 
   loadReports(): void {
     this.operatorQueueAppScope = null;
+    this.error = null;
+    this.loadFailed = false;
     this.socialGovernanceService.getReports().subscribe({
       next: (reports) => {
         this.reports = reports;
+        this.reportsLoaded = true;
         this.reportDrafts = {};
         for (const report of reports) {
           this.reportDrafts[report.id] = {
@@ -402,9 +123,19 @@ export class SocialGovernanceComponent implements OnInit {
       },
       error: (err) => {
         this.error = 'Failed to load moderation reports';
+        this.loadFailed = true;
+        this.reportsLoaded = false;
         console.error(err);
       },
     });
+  }
+
+  retryLoad(): void {
+    if (this.operatorQueueAppScope) {
+      this.loadOperatorReports(this.operatorQueueAppScope);
+    } else {
+      this.loadReports();
+    }
   }
 
   loadLocalHubOperatorReports(): void {
@@ -420,6 +151,7 @@ export class SocialGovernanceComponent implements OnInit {
   ): void {
     this.operatorQueueAppScope = appScope;
     this.error = null;
+    this.loadFailed = false;
     const productName =
       appScope === 'local-hub' ? 'Towne Square' : 'Optimistic Tanuki';
     const source =
@@ -429,6 +161,7 @@ export class SocialGovernanceComponent implements OnInit {
     source.subscribe({
       next: (reports) => {
         this.reports = reports;
+        this.reportsLoaded = true;
         this.reportDrafts = {};
         for (const report of reports) {
           this.reportDrafts[report.id] = {
@@ -439,6 +172,8 @@ export class SocialGovernanceComponent implements OnInit {
       },
       error: () => {
         this.error = `Failed to load ${productName} app reports`;
+        this.loadFailed = true;
+        this.reportsLoaded = false;
       },
     });
   }
@@ -505,15 +240,40 @@ export class SocialGovernanceComponent implements OnInit {
     return report.contentType === 'post' || report.contentType === 'comment';
   }
 
-  applyContentModeration(
+  async applyContentModeration(
     report: ModerationReport,
     moderationStatus: 'visible' | 'hidden'
-  ): void {
+  ): Promise<void> {
     if (!this.supportsContentModeration(report)) {
       return;
     }
 
-    const draft = this.getDraft(report);
+    const hiding = moderationStatus === 'hidden';
+    const result = await this.confirmService.confirm(
+      hiding
+        ? {
+            level: 'reason',
+            title: 'Hide this content',
+            body: `Hide this ${report.contentType} from everyone. The author is affected.`,
+            confirmLabel: 'Hide content',
+            destructive: true,
+          }
+        : {
+            level: 'plain',
+            title: 'Restore this content',
+            body: `Make this ${report.contentType} visible again.`,
+            confirmLabel: 'Restore content',
+          }
+    );
+    if (!result.confirmed) return;
+
+    const baseDraft = this.getDraft(report);
+    // The moderation API has no reason field, so the reason is kept as the
+    // operator note when none was typed.
+    const draft = {
+      ...baseDraft,
+      adminNotes: baseDraft.adminNotes || (hiding ? result.reason ?? '' : ''),
+    };
     this.socialGovernanceService
       .moderateContent({
         contentType: report.contentType as 'post' | 'comment',

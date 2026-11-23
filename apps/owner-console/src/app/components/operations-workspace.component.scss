@@ -1,0 +1,274 @@
+:host {
+  display: block;
+  padding: 24px;
+}
+
+.operations-page {
+  display: grid;
+  gap: 24px;
+}
+
+.panel {
+  border: 1px solid var(--border-color, #d6d6d6);
+  border-radius: var(--personality-card-radius, 24px);
+  background: var(--surface, #fff);
+  padding: 1.25rem;
+  color: var(--foreground, #111827);
+}
+
+.panel-heading h2,
+.status-card h3,
+.action-card h3 {
+  margin: 0;
+}
+
+.panel-heading p,
+.status-card p,
+.action-card p {
+  margin: 12px 0 0;
+  line-height: var(--line-height, 1.6);
+}
+
+.panel-heading {
+  margin-bottom: 16px;
+}
+
+.status-grid,
+.actions-grid,
+.queue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.status-card,
+.action-card,
+.queue-card {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border-radius: var(--personality-card-radius, 18px);
+  border: 1px solid var(--border-color, #d6d6d6);
+  background: color-mix(in srgb, var(--surface, #ffffff) 92%, transparent);
+  color: inherit;
+}
+
+.status-card,
+.action-card,
+.queue-card {
+  text-decoration: none;
+}
+
+.queue-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.queue-filters label {
+  display: grid;
+  gap: 8px;
+}
+
+.queue-filters select {
+  min-width: 180px;
+  border: 1px solid var(--border-color, #d6d6d6);
+  border-radius: var(--personality-card-radius, 10px);
+  background: color-mix(in srgb, var(--surface, #ffffff) 92%, transparent);
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--foreground, #111827);
+}
+
+.queue-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.queue-count,
+.queue-domain-chip,
+.queue-severity,
+.queue-domain {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: var(--type-small, 0.78rem);
+  font-weight: 700;
+}
+
+.queue-count,
+.queue-domain-chip,
+.queue-domain {
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
+}
+
+.queue-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.queue-severity {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: color-mix(in srgb, var(--danger) 82%, var(--foreground));
+  text-transform: uppercase;
+}
+
+.queue-severity.medium {
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
+}
+
+.queue-severity.high {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: color-mix(in srgb, var(--danger) 82%, var(--foreground));
+}
+
+.empty-copy {
+  margin: 0;
+  color: var(--foreground-secondary, #666);
+}
+
+.status-badge {
+  width: fit-content;
+  border-radius: 9999px;
+  padding: 4px 10px;
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  color: color-mix(in srgb, var(--success) 82%, var(--foreground));
+  font-size: var(--type-small, 0.78rem);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-badge.attention {
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
+}
+
+.health-grid,
+.images-grid,
+.oauth-summary {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.health-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.health-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--border-color, #d6d6d6);
+  border-radius: var(--personality-card-radius, 12px);
+  background: color-mix(in srgb, var(--surface, #ffffff) 84%, transparent);
+}
+
+.health-label {
+  font-size: var(--type-small, 0.78rem);
+  color: var(--foreground-secondary, #666);
+  text-transform: uppercase;
+  letter-spacing: var(--personality-label-letter-spacing, 0.05em);
+}
+
+.health-value {
+  font-weight: 600;
+}
+
+.health-value.attention {
+  color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
+}
+
+.images-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.image-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border-color, #d6d6d6);
+  border-radius: var(--personality-card-radius, 10px);
+  background: color-mix(in srgb, var(--surface, #ffffff) 84%, transparent);
+}
+
+.image-item.update-available {
+  border-color: color-mix(in srgb, var(--warning) 68%, var(--border));
+  background: color-mix(in srgb, var(--warning) 8%, transparent);
+}
+
+.image-name {
+  font-weight: 600;
+}
+
+.image-tag {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--type-small, 0.85rem);
+  color: var(--foreground-secondary, #666);
+}
+
+.update-badge {
+  margin-left: auto;
+  font-size: var(--type-small, 0.72rem);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
+  font-weight: 700;
+}
+
+.oauth-summary {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.oauth-provider-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border: 1px solid var(--border-color, #d6d6d6);
+  border-radius: var(--personality-card-radius, 10px);
+  background: color-mix(in srgb, var(--surface, #ffffff) 84%, transparent);
+}
+
+.provider-name {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge {
+  font-size: var(--type-small, 0.72rem);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 700;
+}
+
+.badge-success {
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  color: color-mix(in srgb, var(--success) 82%, var(--foreground));
+}
+
+.badge-warning {
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
+}
+
+.badge-error {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: color-mix(in srgb, var(--danger) 82%, var(--foreground));
+}
+
+.attention-count {
+  font-weight: 600;
+  color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
+}

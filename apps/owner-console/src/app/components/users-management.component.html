@@ -1,0 +1,357 @@
+<lib-message></lib-message>
+
+<section class="users-page">
+  <ot-owner-page-header
+    title="Users"
+    description="Find profiles and manage the roles they hold."
+  ></ot-owner-page-header>
+
+  <ot-owner-filter-bar
+    label="Search users"
+    placeholder="Name, user ID or bio"
+    (query)="onSearch($event)"
+    (cleared)="onSearch('')"
+  ></ot-owner-filter-bar>
+
+  <section class="bulk-governance-panel" aria-label="Bulk role changes">
+    <div class="bulk-governance-copy">
+      <h3>Change roles for several users</h3>
+      <p>
+        Preview the impact of a role change across selected profiles before
+        applying it.
+      </p>
+      <div class="selection-stat">
+        {{ selectedUsers.length }} profile{{
+          selectedUsers.length === 1 ? '' : 's'
+        }}
+        selected
+      </div>
+    </div>
+
+    <div class="bulk-governance-controls">
+      <label class="control-field">
+        <span>Operation</span>
+        <select
+          [ngModel]="bulkOperation"
+          (ngModelChange)="onBulkOperationChange($event)"
+        >
+          <option value="assign">Assign role</option>
+          <option value="unassign">Remove role</option>
+        </select>
+      </label>
+
+      <label class="control-field">
+        <span>Role</span>
+        <select
+          [ngModel]="bulkRoleId"
+          (ngModelChange)="onBulkRoleChange($event)"
+        >
+          <option value="">Select a governance role</option>
+          <option *ngFor="let role of rolesCatalog" [value]="role.id">
+            {{ role.name }} · {{ resolveRoleScopeLabel(role) }}
+          </option>
+        </select>
+      </label>
+
+      <label class="control-field">
+        <span>Target ID</span>
+        <input
+          type="text"
+          [ngModel]="bulkTargetId"
+          (ngModelChange)="onBulkTargetChange($event)"
+          placeholder="Optional scoped target, e.g. community-1"
+        />
+      </label>
+
+      <div class="bulk-actions">
+        <otui-button
+          variant="secondary"
+          (action)="traceSelectedProfileAccess()"
+          [disabled]="selectedUsers.length !== 1"
+        >
+          Trace access
+        </otui-button>
+        <otui-button
+          variant="secondary"
+          (action)="previewBulkRoleMutation()"
+          [disabled]="!canPreviewBulkMutation"
+        >
+          {{ bulkPreviewLoading ? 'Previewing…' : 'Preview impact' }}
+        </otui-button>
+        <otui-button
+          variant="primary"
+          (action)="executeBulkRoleMutation()"
+          [disabled]="!canExecuteBulkMutation"
+        >
+          {{ bulkMutationLoading ? 'Applying…' : bulkExecuteLabel }}
+        </otui-button>
+      </div>
+    </div>
+  </section>
+
+  <section class="bulk-preview-panel" *ngIf="bulkPreviewLoading || bulkPreview">
+    <ot-owner-state
+      *ngIf="bulkPreviewLoading"
+      kind="loading"
+      message="Calculating governance impact…"
+    ></ot-owner-state>
+
+    <div *ngIf="bulkPreview" class="preview-grid">
+      <div class="preview-metric">
+        <span>Selected</span>
+        <strong>{{ bulkPreview.totalSelected }}</strong>
+      </div>
+      <div class="preview-metric">
+        <span>Will change</span>
+        <strong>{{ bulkPreview.affectedCount }}</strong>
+      </div>
+      <div class="preview-metric">
+        <span>Unchanged</span>
+        <strong>{{ bulkPreview.unchangedCount }}</strong>
+      </div>
+      <div class="preview-metric">
+        <span>Role</span>
+        <strong>{{ bulkPreview.roleName }}</strong>
+      </div>
+
+      <div
+        class="preview-list"
+        *ngIf="bulkPreview.affectedProfileIds.length > 0"
+      >
+        <h4>
+          {{
+            bulkOperation === 'assign'
+              ? 'Profiles gaining the role'
+              : 'Profiles losing the role'
+          }}
+        </h4>
+        <p>{{ describeProfiles(bulkPreview.affectedProfileIds) }}</p>
+      </div>
+
+      <div
+        class="preview-list preview-list-muted"
+        *ngIf="bulkPreview.unchangedProfileIds.length > 0"
+      >
+        <h4>No-op profiles</h4>
+        <p>{{ describeProfiles(bulkPreview.unchangedProfileIds) }}</p>
+      </div>
+
+      <div
+        class="preview-list preview-list-wide"
+        *ngIf="bulkPreview.permissionChangeSummary.length > 0"
+      >
+        <h4>Permission impact summary</h4>
+        <div class="impact-chip-list">
+          <div
+            class="impact-chip"
+            *ngFor="let change of bulkPreview.permissionChangeSummary"
+            [attr.data-status]="change.status"
+          >
+            <strong>{{ change.permissionName }}</strong>
+            <span>
+              {{ describePermissionStatus(change.status) }}
+              · {{ change.affectedProfileCount }} profile{{
+                change.affectedProfileCount === 1 ? '' : 's'
+              }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="preview-list preview-list-wide"
+        *ngIf="bulkPreview.profileImpacts.length > 0"
+      >
+        <h4>Why access changes</h4>
+        <div
+          class="profile-impact"
+          *ngFor="let impact of bulkPreview.profileImpacts"
+        >
+          <strong>{{ getProfileDisplayName(impact.profileId) }}</strong>
+          <div class="impact-chip-list">
+            <div
+              class="impact-chip"
+              *ngFor="let change of impact.permissionChanges"
+              [attr.data-status]="change.status"
+            >
+              <strong>{{ change.permissionName }}</strong>
+              <span>{{ describePermissionStatus(change.status) }}</span>
+              <small *ngIf="change.reason">{{ change.reason }}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bulk-preview-panel" *ngIf="lastBulkMutationResult">
+    <div class="preview-grid">
+      <div class="preview-metric">
+        <span>Last change</span>
+        <strong>
+          {{
+            lastBulkMutationResult.operation === 'assign'
+              ? 'Assignment'
+              : 'Removal'
+          }}
+        </strong>
+      </div>
+      <div class="preview-metric">
+        <span>Completed</span>
+        <strong>{{ lastBulkMutationResult.completedCount }}</strong>
+      </div>
+      <div class="preview-metric">
+        <span>Scope</span>
+        <strong>{{ lastBulkMutationResult.appScopeId }}</strong>
+      </div>
+      <div class="preview-metric">
+        <span>Target</span>
+        <strong>{{ lastBulkMutationResult.targetId || 'Global' }}</strong>
+      </div>
+
+      <div class="preview-list preview-list-wide">
+        <h4>Audit summary</h4>
+        <p>{{ buildAuditSummary(lastBulkMutationResult) }}</p>
+      </div>
+    </div>
+
+    <div class="bulk-actions summary-actions">
+      <otui-button
+        variant="secondary"
+        (action)="rollbackLastBulkMutation()"
+        [disabled]="rollbackLoading || !canRollbackLastBulkMutation"
+      >
+        {{ rollbackLoading ? 'Reverting…' : rollbackActionLabel }}
+      </otui-button>
+    </div>
+  </section>
+
+  <section class="bulk-preview-panel" *ngIf="governanceAuditEntries.length > 0">
+    <div class="preview-list preview-list-wide">
+      <h4>Role change history</h4>
+      <div class="audit-history">
+        <article
+          class="audit-entry"
+          *ngFor="let entry of governanceAuditEntries"
+        >
+          <strong>{{ entry.roleName }}</strong>
+          <span>{{ entry.summary }}</span>
+          <small>{{ entry.occurredAt | date : 'medium' }}</small>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <ng-container *ngFor="let key of [selectionResetKey]">
+    <ot-owner-data-table
+      [columns]="columns"
+      [rows]="visibleUsers"
+      [error]="loadError"
+      emptyMessage="No users match."
+      (selectionChange)="onSelectedUsersChange($event)"
+      (retry)="loadUsers()"
+    ></ot-owner-data-table>
+  </ng-container>
+</section>
+
+<otui-modal
+  *ngIf="showRoleModal"
+  [heading]="roleModalHeading"
+  (closeModal)="closeRoleModal()"
+  mode="standard-modal"
+  size="lg"
+>
+  <div class="role-modal">
+    <div class="role-panel">
+      <h3>Assigned roles</h3>
+      <p class="panel-copy">
+        Remove roles that should no longer apply to this profile.
+      </p>
+
+      <ot-owner-state
+        *ngIf="roleManagementLoading"
+        kind="loading"
+        message="Loading role assignments…"
+      ></ot-owner-state>
+      <ot-owner-state
+        *ngIf="roleLoadError"
+        kind="error"
+        [message]="roleLoadError"
+        (retry)="retryRoleManagement()"
+      ></ot-owner-state>
+      <ot-owner-state
+        *ngIf="
+          !roleManagementLoading && !roleLoadError && userRoles.length === 0
+        "
+        kind="empty"
+        message="No role assignments found for this user."
+      ></ot-owner-state>
+
+      <div
+        class="role-list"
+        *ngIf="!roleManagementLoading && userRoles.length > 0"
+      >
+        <div class="role-item" *ngFor="let assignment of userRoles">
+          <div>
+            <strong>{{ assignment.role?.name || assignment.roleId }}</strong>
+            <p>
+              {{ assignment.role?.description || 'No description provided.' }}
+            </p>
+            <span class="scope-chip">
+              {{ assignment.appScope?.name || assignment.appScopeId }}
+            </span>
+          </div>
+          <otui-button
+            variant="danger"
+            (action)="unassignRole(assignment)"
+            [disabled]="roleMutationLoading"
+          >
+            Remove
+          </otui-button>
+        </div>
+      </div>
+    </div>
+
+    <div class="role-panel">
+      <h3>Available roles</h3>
+      <p class="panel-copy">
+        Assign a role from the current catalog to this profile.
+      </p>
+
+      <ot-owner-state
+        *ngIf="roleManagementLoading"
+        kind="loading"
+        message="Loading available roles…"
+      ></ot-owner-state>
+      <ot-owner-state
+        *ngIf="
+          !roleManagementLoading &&
+          !roleLoadError &&
+          availableRoles.length === 0
+        "
+        kind="empty"
+        message="No additional roles are available to assign."
+      ></ot-owner-state>
+
+      <div
+        class="role-list"
+        *ngIf="!roleManagementLoading && availableRoles.length > 0"
+      >
+        <div class="role-item" *ngFor="let role of availableRoles">
+          <div>
+            <strong>{{ role.name }}</strong>
+            <p>{{ role.description || 'No description provided.' }}</p>
+            <span class="scope-chip">{{ resolveRoleScopeLabel(role) }}</span>
+          </div>
+          <otui-button
+            variant="primary"
+            (action)="assignRole(role)"
+            [disabled]="roleMutationLoading"
+          >
+            Assign
+          </otui-button>
+        </div>
+      </div>
+    </div>
+  </div>
+</otui-modal>

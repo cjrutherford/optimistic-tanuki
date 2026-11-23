@@ -3,6 +3,10 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
+import {
+  OwnerPageHeaderComponent,
+  OwnerStateComponent,
+} from '@optimistic-tanuki/owner-page-ui';
 import { AppConfigService } from '../services/app-config.service';
 import { AppScopesService } from '../services/app-scopes.service';
 import { BusinessSiteAdminService } from '../services/business-site-admin.service';
@@ -45,573 +49,15 @@ interface BusinessSiteCatalogStatus {
 @Component({
   selector: 'app-operations-workspace',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
-  template: `
-    <section class="operations-page">
-      <header class="hero">
-        <p class="hero-kicker">Operations Workspace</p>
-        <h1>Operational visibility and intervention</h1>
-        <p>
-          Use this workspace to monitor platform domains, identify attention
-          areas, and jump directly into the tools that support operator
-          intervention.
-        </p>
-      </header>
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Domain status</h2>
-          <p>
-            Current status is derived from the operator data sources available
-            today.
-          </p>
-        </div>
-        <div class="status-grid">
-          @for (card of statusCards; track card.title) {
-          <a class="status-card" [routerLink]="card.route">
-            <span
-              class="status-badge"
-              [class.attention]="card.status === 'Attention'"
-            >
-              {{ card.status }}
-            </span>
-            <h3>{{ card.title }}</h3>
-            <p>{{ card.detail }}</p>
-          </a>
-          }
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Control-plane actions</h2>
-          <p>
-            These entry points concentrate the workflows platform owners use to
-            intervene.
-          </p>
-        </div>
-        <div class="actions-grid">
-          @for (action of controlPlaneActions; track action.title) {
-          <a class="action-card" [routerLink]="action.route">
-            <h3>{{ action.title }}</h3>
-            <p>{{ action.description }}</p>
-          </a>
-          }
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Operator queue</h2>
-          <p>
-            Cross-domain actionable work, with filters for triage before jumping
-            into domain tools.
-          </p>
-        </div>
-
-        <div class="queue-filters">
-          <label>
-            <span>Domain</span>
-            <select [(ngModel)]="selectedQueueDomain">
-              <option value="all">All domains</option>
-              @for (domain of queueDomains; track domain) {
-              <option [value]="domain">{{ domain }}</option>
-              }
-            </select>
-          </label>
-          <label>
-            <span>Severity</span>
-            <select [(ngModel)]="selectedQueueSeverity">
-              <option value="all">All severities</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="queue-summary" *ngIf="queueItems.length > 0">
-          <span class="queue-count">{{ filteredQueueItems.length }} items</span>
-          @for (domain of queueDomains; track domain) {
-          <span
-            class="queue-domain-chip"
-            *ngIf="countQueueItemsByDomain(domain) > 0"
-          >
-            {{ domain }} · {{ countQueueItemsByDomain(domain) }}
-          </span>
-          }
-        </div>
-
-        <div
-          class="queue-grid"
-          *ngIf="filteredQueueItems.length > 0; else noQueueItems"
-        >
-          @for (item of filteredQueueItems; track item.id) {
-          <a class="queue-card" [routerLink]="item.route">
-            <div class="queue-card__header">
-              <span
-                class="queue-severity"
-                [class.high]="item.severity === 'high'"
-                [class.medium]="item.severity === 'medium'"
-              >
-                {{ item.severity }}
-              </span>
-              <span class="queue-domain">{{ item.domain }}</span>
-            </div>
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.detail }}</p>
-          </a>
-          }
-        </div>
-
-        <ng-template #noQueueItems>
-          <p class="empty-copy">
-            No operator queue items matched the current filters.
-          </p>
-        </ng-template>
-      </section>
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Business-site catalog linkage</h2>
-          <p>
-            Track whether the public business site is running against manual
-            offers or the store service catalog.
-          </p>
-        </div>
-        <a class="status-card" [routerLink]="businessSiteCatalogStatus.route">
-          <span
-            class="status-badge"
-            [class.attention]="businessSiteCatalogStatus.status === 'Attention'"
-          >
-            {{ businessSiteCatalogStatus.status }}
-          </span>
-          <h3>Catalog mode: {{ businessSiteCatalogStatus.mode }}</h3>
-          <p>{{ businessSiteCatalogStatus.detail }}</p>
-        </a>
-      </section>
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Deployment health</h2>
-          <p>Platform infrastructure and configuration status.</p>
-        </div>
-        @if (deploymentHealth; as health) {
-        <div class="health-grid">
-          <div class="health-item">
-            <span class="health-label">Config</span>
-            <span
-              class="health-value"
-              [class.attention]="health.configStatus === 'pending-changes'"
-            >
-              {{
-                health.configStatus === 'current'
-                  ? 'Current'
-                  : 'Pending changes'
-              }}
-            </span>
-          </div>
-          <div class="health-item">
-            <span class="health-label">Infrastructure</span>
-            <span class="health-value">{{ health.infrastructure }}</span>
-          </div>
-          <div class="health-item">
-            <span class="health-label">Database</span>
-            <span class="health-value">{{ health.databaseReadiness }}</span>
-          </div>
-          <div class="health-item">
-            <span class="health-label">Secrets</span>
-            <span class="health-value">{{ health.secretsHealth }}</span>
-          </div>
-          @if (health.lastDeployed) {
-          <div class="health-item">
-            <span class="health-label">Last deployed</span>
-            <span class="health-value"
-              >{{ health.lastDeployed.tag }} ({{
-                health.lastDeployed.result
-              }})</span
-            >
-          </div>
-          }
-        </div>
-        }
-      </section>
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Image freshness</h2>
-          <p>
-            @if (updatesAvailable > 0) {
-            <span class="attention-count"
-              >{{ updatesAvailable }} service(s) with updates available</span
-            >
-            } @else {
-            <span>All services are up to date.</span>
-            }
-          </p>
-        </div>
-        <div class="images-grid">
-          @for (img of images; track img.serviceId) {
-          <div
-            class="image-item"
-            [class.update-available]="img.updateAvailable"
-          >
-            <span class="image-name">{{ img.serviceId }}</span>
-            <span class="image-tag">{{ img.currentTag }}</span>
-            @if (img.updateAvailable) {
-            <span class="update-badge">Update available</span>
-            }
-          </div>
-          }
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>OAuth health</h2>
-          <p>Identity provider status across the platform.</p>
-        </div>
-        <div class="oauth-summary">
-          @for (provider of oauthProviders; track provider.name) {
-          <div class="oauth-provider-summary">
-            <span class="provider-name">{{ provider.name }}</span>
-            <span
-              class="badge"
-              [class.badge-success]="provider.status === 'configured'"
-              [class.badge-warning]="provider.status === 'pending'"
-              [class.badge-error]="provider.status === 'error'"
-            >
-              {{ provider.status }}
-            </span>
-          </div>
-          }
-        </div>
-      </section>
-    </section>
-  `,
-  styles: [
-    `
-      :host {
-        display: block;
-        padding: 24px;
-      }
-
-      .operations-page {
-        display: grid;
-        gap: 24px;
-      }
-
-      .hero,
-      .panel {
-        border: 1px solid var(--border-color, #d6d6d6);
-        border-radius: 24px;
-        background: radial-gradient(
-            circle at top left,
-            color-mix(in srgb, var(--warning) 12%, transparent),
-            transparent 30%
-          ),
-          linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--surface, #ffffff) 96%, transparent),
-            color-mix(
-              in srgb,
-              var(--surface, #ffffff) 88%,
-              var(--background, #f8fafc)
-            )
-          );
-        padding: 24px;
-        color: var(--foreground, #111827);
-      }
-
-      .hero-kicker {
-        margin: 0 0 8px;
-        color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
-        font-size: 0.82rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-
-      .hero h1,
-      .panel-heading h2,
-      .status-card h3,
-      .action-card h3 {
-        margin: 0;
-      }
-
-      .hero p,
-      .panel-heading p,
-      .status-card p,
-      .action-card p {
-        margin: 12px 0 0;
-        line-height: 1.6;
-      }
-
-      .panel-heading {
-        margin-bottom: 16px;
-      }
-
-      .status-grid,
-      .actions-grid,
-      .queue-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 16px;
-      }
-
-      .status-card,
-      .action-card,
-      .queue-card {
-        display: grid;
-        gap: 10px;
-        padding: 20px;
-        border-radius: 18px;
-        border: 1px solid var(--border-color, #d6d6d6);
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 92%,
-          transparent
-        );
-        color: inherit;
-      }
-
-      .status-card,
-      .action-card,
-      .queue-card {
-        text-decoration: none;
-      }
-
-      .queue-filters {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        margin-bottom: 16px;
-      }
-
-      .queue-filters label {
-        display: grid;
-        gap: 8px;
-      }
-
-      .queue-filters select {
-        min-width: 180px;
-        border: 1px solid var(--border-color, #d6d6d6);
-        border-radius: 10px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 92%,
-          transparent
-        );
-        padding: 10px 12px;
-        font: inherit;
-        color: var(--foreground, #111827);
-      }
-
-      .queue-summary {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 16px;
-      }
-
-      .queue-count,
-      .queue-domain-chip,
-      .queue-severity,
-      .queue-domain {
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        padding: 4px 10px;
-        font-size: 0.78rem;
-        font-weight: 700;
-      }
-
-      .queue-count,
-      .queue-domain-chip,
-      .queue-domain {
-        background: color-mix(in srgb, var(--warning) 12%, transparent);
-        color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
-      }
-
-      .queue-card__header {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-
-      .queue-severity {
-        background: color-mix(in srgb, var(--danger) 12%, transparent);
-        color: color-mix(in srgb, var(--danger) 82%, var(--foreground));
-        text-transform: uppercase;
-      }
-
-      .queue-severity.medium {
-        background: color-mix(in srgb, var(--warning) 12%, transparent);
-        color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
-      }
-
-      .queue-severity.high {
-        background: color-mix(in srgb, var(--danger) 12%, transparent);
-        color: color-mix(in srgb, var(--danger) 82%, var(--foreground));
-      }
-
-      .empty-copy {
-        margin: 0;
-        color: var(--foreground-secondary, #666);
-      }
-
-      .status-badge {
-        width: fit-content;
-        border-radius: 999px;
-        padding: 4px 10px;
-        background: color-mix(in srgb, var(--success) 14%, transparent);
-        color: color-mix(in srgb, var(--success) 82%, var(--foreground));
-        font-size: 0.78rem;
-        font-weight: 700;
-        text-transform: uppercase;
-      }
-
-      .status-badge.attention {
-        background: color-mix(in srgb, var(--warning) 16%, transparent);
-        color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
-      }
-
-      .health-grid,
-      .images-grid,
-      .oauth-summary {
-        display: grid;
-        gap: 12px;
-        margin-top: 12px;
-      }
-
-      .health-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      }
-
-      .health-item {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        padding: 12px;
-        border: 1px solid var(--border-color, #d6d6d6);
-        border-radius: 12px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 84%,
-          transparent
-        );
-      }
-
-      .health-label {
-        font-size: 0.78rem;
-        color: var(--foreground-secondary, #666);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-
-      .health-value {
-        font-weight: 600;
-      }
-
-      .health-value.attention {
-        color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
-      }
-
-      .images-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      }
-
-      .image-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px;
-        border: 1px solid var(--border-color, #d6d6d6);
-        border-radius: 10px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 84%,
-          transparent
-        );
-      }
-
-      .image-item.update-available {
-        border-color: color-mix(in srgb, var(--warning) 68%, var(--border));
-        background: color-mix(in srgb, var(--warning) 8%, transparent);
-      }
-
-      .image-name {
-        font-weight: 600;
-      }
-
-      .image-tag {
-        font-family: monospace;
-        font-size: 0.85rem;
-        color: var(--foreground-secondary, #666);
-      }
-
-      .update-badge {
-        margin-left: auto;
-        font-size: 0.72rem;
-        padding: 2px 8px;
-        border-radius: 999px;
-        background: color-mix(in srgb, var(--warning) 16%, transparent);
-        color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
-        font-weight: 700;
-      }
-
-      .oauth-summary {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      }
-
-      .oauth-provider-summary {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px;
-        border: 1px solid var(--border-color, #d6d6d6);
-        border-radius: 10px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 84%,
-          transparent
-        );
-      }
-
-      .provider-name {
-        font-weight: 600;
-        text-transform: capitalize;
-      }
-
-      .badge {
-        font-size: 0.72rem;
-        padding: 2px 8px;
-        border-radius: 999px;
-        font-weight: 700;
-      }
-
-      .badge-success {
-        background: color-mix(in srgb, var(--success) 14%, transparent);
-        color: color-mix(in srgb, var(--success) 82%, var(--foreground));
-      }
-
-      .badge-warning {
-        background: color-mix(in srgb, var(--warning) 16%, transparent);
-        color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
-      }
-
-      .badge-error {
-        background: color-mix(in srgb, var(--danger) 14%, transparent);
-        color: color-mix(in srgb, var(--danger) 82%, var(--foreground));
-      }
-
-      .attention-count {
-        font-weight: 600;
-        color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
-      }
-    `,
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    OwnerPageHeaderComponent,
+    OwnerStateComponent,
   ],
+  templateUrl: './operations-workspace.component.html',
+  styleUrl: './operations-workspace.component.scss',
 })
 export class OperationsWorkspaceComponent implements OnInit {
   private readonly usersService = inject(UsersService);
@@ -625,7 +71,7 @@ export class OperationsWorkspaceComponent implements OnInit {
   private readonly contactLeadsService = inject(ContactLeadsService);
 
   statusCards: DomainStatusCard[] = [];
-  queueItems: OperatorQueueItem[] = [];
+  queueItems: OperatorQueueItem[] | null = null;
   readonly queueDomains: OperatorQueueDomain[] = [
     'Governance',
     'Experience',
@@ -680,18 +126,18 @@ export class OperationsWorkspaceComponent implements OnInit {
     },
   ];
 
-  deploymentHealth: DeploymentHealth = {
-    configStatus: 'current',
-    infrastructure: 'not-provisioned',
-    databaseReadiness: 'all-slots-ready',
-    secretsHealth: 'all-keys-present',
-  };
-  images: ImageInfo[] = [];
-  oauthProviders: OAuthProviderDetail[] = [];
+  // Null until loaded, so a pending or failed load never shows invented values.
+  deploymentHealth: DeploymentHealth | null = null;
+  healthError: string | null = null;
+  images: ImageInfo[] | null = null;
+  imagesError: string | null = null;
+  oauthProviders: OAuthProviderDetail[] | null = null;
+  oauthError: string | null = null;
+  queueError: string | null = null;
   updatesAvailable = 0;
 
   get filteredQueueItems(): OperatorQueueItem[] {
-    return this.queueItems.filter((item) => {
+    return (this.queueItems ?? []).filter((item) => {
       const domainMatch =
         this.selectedQueueDomain === 'all' ||
         item.domain === this.selectedQueueDomain;
@@ -703,19 +149,10 @@ export class OperationsWorkspaceComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.controlCenter.getDeploymentHealth().subscribe((health) => {
-      this.deploymentHealth = health;
-    });
-    this.controlCenter.getImages().subscribe((imgs) => {
-      this.images = imgs;
-      this.updatesAvailable = imgs.filter((img) => img.updateAvailable).length;
-    });
-    this.controlCenter.getOAuthProviders().subscribe((data) => {
-      this.oauthProviders = data.providers;
-    });
-    this.operatorQueueService.getOverviewQueue().subscribe((items) => {
-      this.queueItems = items;
-    });
+    this.loadHealth();
+    this.loadImages();
+    this.loadOauth();
+    this.loadQueue();
 
     forkJoin({
       governance: forkJoin({
@@ -832,6 +269,44 @@ export class OperationsWorkspaceComponent implements OnInit {
             : 'Business-site or store catalog data is unavailable and should be investigated.',
         route: '/dashboard/store/business-site',
       };
+    });
+  }
+
+  loadHealth(): void {
+    this.healthError = null;
+    this.controlCenter.getDeploymentHealth().subscribe({
+      next: (health) => (this.deploymentHealth = health),
+      error: () =>
+        (this.healthError = 'Deployment health could not be loaded.'),
+    });
+  }
+
+  loadImages(): void {
+    this.imagesError = null;
+    this.controlCenter.getImages().subscribe({
+      next: (imgs) => {
+        this.images = imgs;
+        this.updatesAvailable = imgs.filter((i) => i.updateAvailable).length;
+      },
+      error: () => (this.imagesError = 'Image status could not be loaded.'),
+    });
+  }
+
+  loadOauth(): void {
+    this.oauthError = null;
+    this.controlCenter.getOAuthProviders().subscribe({
+      next: (data) => (this.oauthProviders = data.providers),
+      error: () =>
+        (this.oauthError = 'Sign-in provider status could not be loaded.'),
+    });
+  }
+
+  loadQueue(): void {
+    this.queueError = null;
+    this.operatorQueueService.getOverviewQueue().subscribe({
+      next: (items) => (this.queueItems = items),
+      error: () =>
+        (this.queueError = 'The operator queue could not be loaded.'),
     });
   }
 

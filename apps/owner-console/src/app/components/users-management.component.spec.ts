@@ -5,6 +5,11 @@ import { MessageService } from '@optimistic-tanuki/message-ui/message.service';
 import { RolesService } from '../services/roles.service';
 import { UsersService } from '../services/users.service';
 import { GovernanceAuditService } from '../services/governance-audit.service';
+import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
+import {
+  OwnerConfirmStub,
+  createOwnerConfirmStub,
+} from './owner-confirm.testing';
 import { UsersManagementComponent } from './users-management.component';
 
 describe('UsersManagementComponent', () => {
@@ -18,6 +23,7 @@ describe('UsersManagementComponent', () => {
   };
   let usersService: { getProfiles: jest.Mock };
   let messageService: { clearMessages: jest.Mock; addMessage: jest.Mock };
+  let confirmStub: OwnerConfirmStub;
   let router: { navigate: jest.Mock };
   let governanceAuditService: {
     getEntries: jest.Mock;
@@ -124,6 +130,7 @@ describe('UsersManagementComponent', () => {
       recordEntry: jest.fn(),
     };
 
+    confirmStub = createOwnerConfirmStub();
     await TestBed.configureTestingModule({
       imports: [UsersManagementComponent],
       providers: [
@@ -131,6 +138,7 @@ describe('UsersManagementComponent', () => {
         { provide: RolesService, useValue: rolesService },
         { provide: MessageService, useValue: messageService },
         { provide: Router, useValue: router },
+        { provide: OwnerConfirmService, useValue: confirmStub },
         {
           provide: GovernanceAuditService,
           useValue: governanceAuditService,
@@ -152,12 +160,12 @@ describe('UsersManagementComponent', () => {
     expect(component.selectedUser).toEqual(user);
   });
 
-  it('assigns a role to the selected user using the role app scope', () => {
+  it('assigns a role to the selected user using the role app scope', async () => {
     const fixture = TestBed.createComponent(UsersManagementComponent);
     const component = fixture.componentInstance as any;
     component.selectedUser = { id: 'profile-1', profileName: 'Operator One' };
 
-    component.assignRole({
+    await component.assignRole({
       id: 'role-1',
       name: 'owner_console_owner',
       appScope: { id: 'scope-1', name: 'global' },
@@ -170,11 +178,11 @@ describe('UsersManagementComponent', () => {
     });
   });
 
-  it('unassigns an existing role assignment from the selected user', () => {
+  it('unassigns an existing role assignment from the selected user', async () => {
     const fixture = TestBed.createComponent(UsersManagementComponent);
     const component = fixture.componentInstance as any;
 
-    component.unassignRole({
+    await component.unassignRole({
       id: 'assignment-1',
       role: { name: 'owner_console_owner' },
     });
@@ -261,7 +269,7 @@ describe('UsersManagementComponent', () => {
     ).toBe('roles.update');
   });
 
-  it('executes a bulk role mutation and clears the preview state', () => {
+  it('executes a bulk role mutation and clears the preview state', async () => {
     const fixture = TestBed.createComponent(UsersManagementComponent);
     const component = fixture.componentInstance as any;
 
@@ -298,7 +306,7 @@ describe('UsersManagementComponent', () => {
       profileImpacts: [],
     };
 
-    component.executeBulkRoleMutation();
+    await component.executeBulkRoleMutation();
 
     expect(rolesService.executeBulkRoleMutation).toHaveBeenCalledWith({
       operation: 'assign',
@@ -319,7 +327,7 @@ describe('UsersManagementComponent', () => {
     expect(component.lastBulkMutationResult?.targetId).toBe('community-1');
   });
 
-  it('rolls back the last bulk mutation with the inverse operation and same scope', () => {
+  it('rolls back the last bulk mutation with the inverse operation and same scope', async () => {
     const fixture = TestBed.createComponent(UsersManagementComponent);
     const component = fixture.componentInstance as any;
 
@@ -347,7 +355,7 @@ describe('UsersManagementComponent', () => {
       completedCount: 1,
     };
 
-    component.rollbackLastBulkMutation();
+    await component.rollbackLastBulkMutation();
 
     expect(rolesService.executeBulkRoleMutation).toHaveBeenCalledWith({
       operation: 'unassign',

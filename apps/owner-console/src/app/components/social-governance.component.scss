@@ -1,0 +1,171 @@
+:host {
+  display: block;
+  padding: 24px;
+}
+
+.governance-page {
+  display: grid;
+  gap: 24px;
+}
+
+.panel,
+.summary-card {
+  border: 1px solid var(--border-color, #d6d6d6);
+  border-radius: var(--personality-card-radius, 24px);
+  background: radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--accent, #2563eb) 10%, transparent),
+      transparent 28%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(
+        in srgb,
+        var(--surface, #ffffff) 96%,
+        var(--background, #f3f4f6)
+      ),
+      color-mix(
+        in srgb,
+        var(--surface, #ffffff) 90%,
+        var(--background, #f3f4f6)
+      )
+    );
+  padding: 24px;
+  color: var(--foreground, #111827);
+}
+
+.eyebrow {
+  color: color-mix(
+    in srgb,
+    var(--accent, #2563eb) 78%,
+    var(--foreground, #111827)
+  );
+  font-size: var(--type-small, 0.8rem);
+  font-weight: 700;
+  letter-spacing: var(--personality-label-letter-spacing, 0.08em);
+  text-transform: uppercase;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.summary-card strong {
+  display: block;
+  font-size: var(--type-h2, 2rem);
+  margin: 0.5rem 0;
+}
+
+.panel-heading {
+  margin-bottom: 16px;
+}
+
+.report-list {
+  display: grid;
+  gap: 16px;
+}
+
+.report-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--border-color, #d6d6d6);
+  border-radius: var(--personality-card-radius, 18px);
+  background: color-mix(
+    in srgb,
+    var(--surface, #ffffff) 92%,
+    var(--background, #f3f4f6)
+  );
+}
+
+.report-copy,
+.report-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.report-actions {
+  min-width: 240px;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-pill {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: color-mix(
+    in srgb,
+    var(--accent, #2563eb) 14%,
+    var(--surface, #ffffff)
+  );
+  color: color-mix(
+    in srgb,
+    var(--accent, #2563eb) 78%,
+    var(--foreground, #111827)
+  );
+  font-size: var(--type-small, 0.78rem);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-pill.soft {
+  background: color-mix(
+    in srgb,
+    var(--accent, #2563eb) 8%,
+    var(--surface, #ffffff)
+  );
+}
+
+.btn,
+select,
+textarea {
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--personality-card-radius, 8px);
+  border: 1px solid var(--border-color, #d6d6d6);
+  background: var(--surface, #ffffff);
+  color: var(--foreground, #111827);
+}
+
+.btn {
+  cursor: pointer;
+}
+
+.btn.warning {
+  background: color-mix(
+    in srgb,
+    var(--warning, #b45309) 12%,
+    var(--surface, #ffffff)
+  );
+  color: color-mix(
+    in srgb,
+    var(--warning, #b45309) 82%,
+    var(--foreground, #111827)
+  );
+}
+
+.empty-state,
+.error {
+  margin: 0;
+}
+
+.error {
+  color: color-mix(
+    in srgb,
+    var(--danger, #b91c1c) 82%,
+    var(--foreground, #111827)
+  );
+  font-weight: 600;
+}
