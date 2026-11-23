@@ -14,6 +14,14 @@ const same = (a: string[], b: string[]) =>
   new Set(a).size === a.length &&
   [...a].sort().every((v, i) => v === [...b].sort()[i]);
 
+/** Entities that hold platform state, never account content. */
+const OPERATIONAL_ENTITIES = [
+  'AccountDeletionWriteFenceEntity',
+  'RegistryAuditEntity',
+  'RegistryEntryEntity',
+  'RegistryReleaseEntity',
+];
+
 /** Pure metadata and inventory parity validator. Optional physical catalog is read-only input. */
 export function validateAppConfiguratorDispositions(
   raw: readonly (EntityMetadata | Meta)[],
@@ -120,16 +128,52 @@ export function validateAppConfiguratorDispositions(
       'createdAt',
       'updatedAt',
     ],
+    RegistryEntryEntity: [
+      'id',
+      'kind',
+      'key',
+      'definition',
+      'position',
+      'createdAt',
+      'updatedAt',
+    ],
+    RegistryReleaseEntity: [
+      'id',
+      'version',
+      'status',
+      'isCurrent',
+      'snapshot',
+      'releaseNotes',
+      'changeSummary',
+      'sourceHash',
+      'restoredFromVersion',
+      'publishedAt',
+      'publishedBy',
+      'createdAt',
+    ],
+    RegistryAuditEntity: [
+      'id',
+      'action',
+      'actor',
+      'summary',
+      'reason',
+      'releaseVersion',
+      'before',
+      'after',
+      'metadata',
+      'createdAt',
+    ],
   };
-  if (raw.length !== 4)
+  if (raw.length !== 7)
     errors.push(
-      'registered entities must contain three content entities and their operational fence'
+      'registered entities must contain three content entities, the platform registry tables and the operational fence'
     );
   const entityNames = [
     'AccountDeletionWriteFenceEntity',
     'AppConfigurationEntity',
     'AppInstanceEntity',
     'AppMembershipEntity',
+    ...OPERATIONAL_ENTITIES.filter((name) => name.startsWith('Registry')),
   ];
   if (
     !same(
@@ -256,7 +300,7 @@ export function validateAppConfiguratorDispositions(
     AppMembershipEntity: ['userId', 'profileId'],
   };
   for (const entity of policy.entities) {
-    if (entity.name === 'AccountDeletionWriteFenceEntity') {
+    if (OPERATIONAL_ENTITIES.includes(entity.name)) {
       if (
         entity.subject?.kind !== 'none' ||
         entity.subject.fields.length ||
@@ -265,7 +309,7 @@ export function validateAppConfiguratorDispositions(
             g.action !== 'exclude' || g.classification !== 'nonpersonal'
         )
       )
-        errors.push('operational fence must be excluded');
+        errors.push(`${entity.name} operational entity must be excluded`);
       continue;
     }
     const entityRelations = Array.isArray(entity.relations)

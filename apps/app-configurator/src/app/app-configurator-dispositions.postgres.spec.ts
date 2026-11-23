@@ -6,6 +6,9 @@ import { DataSource } from 'typeorm';
 import { AppConfigurationEntity } from '../configurations/entities/app-configuration.entity';
 import { AppInstanceEntity } from '../configurations/entities/app-instance.entity';
 import { AppMembershipEntity } from '../configurations/entities/app-membership.entity';
+import { RegistryAuditEntity } from '../registry/entities/registry-audit.entity';
+import { RegistryEntryEntity } from '../registry/entities/registry-entry.entity';
+import { RegistryReleaseEntity } from '../registry/entities/registry-release.entity';
 import {
   APP_CONFIGURATOR_ACCOUNT_EXPORT_INVENTORY,
   validateAppConfiguratorDispositions,
@@ -44,6 +47,9 @@ describePrivate('O02 App Configurator migrated physical catalog', () => {
         AppInstanceEntity,
         AppMembershipEntity,
         AccountDeletionWriteFenceEntity,
+        RegistryAuditEntity,
+        RegistryEntryEntity,
+        RegistryReleaseEntity,
       ],
       synchronize: false,
       migrationsRun: false,

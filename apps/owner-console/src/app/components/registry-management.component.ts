@@ -10,8 +10,10 @@ import {
   NavigationLinkType,
   NavigationPosition,
   PublishRegistryDto,
+  RegistryDriftReport,
   RegistryReleaseRevision,
   RegistryReleaseState,
+  RegistryYamlExport,
 } from '@optimistic-tanuki/app-registry-backend';
 import type { ColDef } from '@optimistic-tanuki/ag-grid-ui';
 import {
@@ -52,14 +54,24 @@ export class RegistryManagementComponent implements OnInit {
 
   readonly auditColumns: ColDef[] = [
     { field: 'occurredAt', headerName: 'When', flex: 2 },
-    { field: 'action', headerName: 'Action', flex: 1 },
+    { field: 'event', headerName: 'Action', flex: 1 },
+    { field: 'actor', headerName: 'Who', flex: 2 },
     { field: 'summary', headerName: 'What changed', flex: 3 },
+    { field: 'reason', headerName: 'Reason', flex: 3 },
   ];
 
   private readonly confirmService = inject(OwnerConfirmService);
 
   auditLog: RegistryAuditEntry[] = [];
   auditError: string | null = null;
+  /** How the deployed YAML compares with the database; null until loaded. */
+  drift: RegistryDriftReport | null = null;
+  driftError: string | null = null;
+  /** The last YAML export, shown with its diff against the deployed YAML. */
+  yamlExport: RegistryYamlExport | null = null;
+  exporting = false;
+  /** Draft edits that have no confirmation of their own, sent as the reason. */
+  private pendingChanges: string[] = [];
   /** The registry itself could not be loaded; the editor is not shown. */
   loadFailed = false;
   error = '';
@@ -101,7 +113,9 @@ export class RegistryManagementComponent implements OnInit {
         this.loading = false;
         this.releaseNotes = this.release?.releaseNotes ?? '';
         this.changeSummary = this.release?.changeSummary ?? '';
+        this.pendingChanges = [];
         this.validate();
+        this.loadDrift();
       },
       error: (error) => {
         this.error = `Failed to load registry: ${
@@ -111,6 +125,89 @@ export class RegistryManagementComponent implements OnInit {
         this.loading = false;
       },
     });
+  }
+
+  loadDrift(): void {
+    this.driftError = null;
+    this.registryService.getDrift().subscribe({
+      next: (response) => {
+        this.drift = response.data;
+      },
+      error: (error) => {
+        this.drift = null;
+        this.driftError = `Could not compare the YAML with the database: ${
+          error.error?.message || error.message || 'Unknown error'
+        }`;
+      },
+    });
+  }
+
+  driftTitle(): string {
+    switch (this.drift?.state) {
+      case 'in-sync':
+        return 'YAML and database are in sync';
+      case 'db-ahead':
+        return 'The database is ahead of the YAML';
+      case 'yaml-changed':
+        return 'The YAML changed since the last publish';
+      case 'both':
+        return 'The YAML and the database have both changed';
+      default:
+        return '';
+    }
+  }
+
+  driftDetail(): string {
+    switch (this.drift?.state) {
+      case 'db-ahead':
+        return 'Published changes are not in apps.yaml. Export the YAML and commit it so the next deployment keeps them.';
+      case 'yaml-changed':
+        return 'apps.yaml changed after the last publish. The database is not overwritten; review the diff and re-apply the change here.';
+      case 'both':
+        return 'Neither side is overwritten automatically. Compare the exported diff, then reconcile in apps.yaml and publish here.';
+      default:
+        return '';
+    }
+  }
+
+  async exportYaml(): Promise<void> {
+    this.exporting = true;
+    this.error = '';
+    this.registryService.exportYaml().subscribe({
+      next: (response) => {
+        this.yamlExport = response.data;
+        this.exporting = false;
+        this.downloadFile('apps.yaml', response.data.yaml, 'text/yaml');
+        this.message = response.data.identical
+          ? 'Exported apps.yaml. It matches the deployed YAML.'
+          : 'Exported apps.yaml. Review the diff below before committing it.';
+      },
+      error: (error) => {
+        this.exporting = false;
+        this.error = `Failed to export YAML: ${
+          error.error?.message || error.message || 'Unknown error'
+        }`;
+      },
+    });
+  }
+
+  downloadDiff(): void {
+    if (this.yamlExport?.diff) {
+      this.downloadFile('apps.yaml.diff', this.yamlExport.diff, 'text/x-diff');
+    }
+  }
+
+  /** Hands text to the browser as a file download. */
+  protected downloadFile(name: string, text: string, type: string): void {
+    if (typeof URL === 'undefined' || !URL.createObjectURL) {
+      return;
+    }
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = name;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   loadAuditLog(): void {
@@ -159,6 +256,7 @@ export class RegistryManagementComponent implements OnInit {
     });
     if (!confirmed) return;
     const appId = this.registry.apps[index]?.appId;
+    this.pendingChanges.push(`Removed app ${appId}`);
     this.registry.apps = this.registry.apps.filter(
       (_, current) => current !== index
     );
@@ -235,22 +333,26 @@ export class RegistryManagementComponent implements OnInit {
       })),
     };
 
-    this.registryService.updateRegistry(this.registry).subscribe({
-      next: (response) => {
-        this.registry = this.clone(response.data);
-        this.release = response.release ?? this.release;
-        this.loading = false;
-        this.message = 'Application registry saved.';
-        this.error = '';
-        this.loadAuditLog();
-      },
-      error: (error) => {
-        this.error = `Failed to save registry: ${
-          error.error?.message || error.message || 'Unknown error'
-        }`;
-        this.loading = false;
-      },
-    });
+    this.registryService
+      .updateRegistry(this.registry, this.draftReason())
+      .subscribe({
+        next: (response) => {
+          this.registry = this.clone(response.data);
+          this.release = response.release ?? this.release;
+          this.loading = false;
+          this.message = 'Application registry saved.';
+          this.pendingChanges = [];
+          this.error = '';
+          this.loadAuditLog();
+          this.loadDrift();
+        },
+        error: (error) => {
+          this.error = `Failed to save registry: ${
+            error.error?.message || error.message || 'Unknown error'
+          }`;
+          this.loading = false;
+        },
+      });
   }
 
   async saveLinks(): Promise<void> {
@@ -264,12 +366,13 @@ export class RegistryManagementComponent implements OnInit {
     this.loading = true;
     this.message = '';
     this.error = '';
-    this.registryService.updateLinks(this.links).subscribe({
+    this.registryService.updateLinks(this.links, this.draftReason()).subscribe({
       next: (response) => {
         this.links = this.clone(response.data);
         this.loading = false;
         this.message = 'Navigation links saved.';
         this.loadAuditLog();
+        this.loadDrift();
       },
       error: (error) => {
         this.error = `Failed to save links: ${
@@ -320,9 +423,7 @@ export class RegistryManagementComponent implements OnInit {
       return;
     }
 
-    // The publish API takes release notes (already required above) but no
-    // separate reason, so this reason is collected for the owner only.
-    const { confirmed } = await this.confirmService.confirm({
+    const { confirmed, reason } = await this.confirmService.confirm({
       level: 'reason',
       title: 'Publish registry',
       body: 'Every app and the navigation that points to it update for all users.',
@@ -337,6 +438,7 @@ export class RegistryManagementComponent implements OnInit {
     const payload: PublishRegistryDto = {
       releaseNotes: this.releaseNotes.trim(),
       changeSummary: this.changeSummary.trim() || undefined,
+      reason: reason?.trim() || undefined,
     };
 
     this.registryService.publishRegistry(payload).subscribe({
@@ -345,6 +447,7 @@ export class RegistryManagementComponent implements OnInit {
         this.loading = false;
         this.message = 'Application registry published.';
         this.loadAuditLog();
+        this.loadDrift();
       },
       error: (error) => {
         this.error = `Failed to publish registry: ${
@@ -371,8 +474,8 @@ export class RegistryManagementComponent implements OnInit {
     this.registryService
       .rollbackRegistry({
         version,
-        // The rollback API accepts release notes, so the reason is sent there.
         releaseNotes: reason?.trim() || 'Rollback from registry management',
+        reason: reason?.trim() || undefined,
       })
       .subscribe({
         next: (response) => {
@@ -388,6 +491,11 @@ export class RegistryManagementComponent implements OnInit {
           this.loading = false;
         },
       });
+  }
+
+  private draftReason(): string | undefined {
+    const reason = this.pendingChanges.join('; ');
+    return reason || undefined;
   }
 
   releaseStatusLabel(): string {

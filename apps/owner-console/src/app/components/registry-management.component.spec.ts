@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { OwnerConfirmService } from '@optimistic-tanuki/owner-page-ui';
 import {
@@ -18,6 +18,8 @@ describe('RegistryManagementComponent', () => {
     getAuditLog: jest.Mock;
     publishRegistry: jest.Mock;
     rollbackRegistry: jest.Mock;
+    getDrift: jest.Mock;
+    exportYaml: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -89,6 +91,34 @@ describe('RegistryManagementComponent', () => {
       ),
       updateLinks: jest.fn().mockReturnValue(of({ success: true, data: [] })),
       getAuditLog: jest.fn().mockReturnValue(of({ success: true, data: [] })),
+      getDrift: jest.fn().mockReturnValue(
+        of({
+          success: true,
+          data: {
+            state: 'in-sync',
+            sourceHash: 'a',
+            publishedHash: 'a',
+            publishedVersion: 1,
+            changedApps: [],
+            addedInDatabase: [],
+            missingFromDatabase: [],
+            hasUnpublishedChanges: false,
+          },
+        })
+      ),
+      exportYaml: jest.fn().mockReturnValue(
+        of({
+          success: true,
+          data: {
+            yaml: 'version: 1.0.0\n',
+            deployedYaml: 'version: 1.0.0\n',
+            diff: '--- deployed/apps.yaml\n+++ database/apps.yaml\n@@ -1,1 +1,1 @@\n-a\n+b\n',
+            identical: false,
+            publishedVersion: 1,
+            linksNotInYaml: 2,
+          },
+        })
+      ),
       publishRegistry: jest.fn().mockReturnValue(
         of({
           success: true,
@@ -244,12 +274,13 @@ describe('RegistryManagementComponent', () => {
     expect(registryService.publishRegistry).toHaveBeenCalledWith({
       releaseNotes: 'Registry launch published.',
       changeSummary: 'Public app routing stabilized.',
+      reason: 'Bad launch',
     });
     expect(component.message).toContain('published');
     expect(component.release?.publishedVersion).toBe(3);
   });
 
-  it('rolls back to a selected published revision, sending the reason as release notes', async () => {
+  it('rolls back to a selected published revision, sending the reason for the audit log', async () => {
     const fixture = TestBed.createComponent(RegistryManagementComponent);
     fixture.detectChanges();
     const component = fixture.componentInstance;
@@ -259,6 +290,7 @@ describe('RegistryManagementComponent', () => {
     expect(registryService.rollbackRegistry).toHaveBeenCalledWith({
       version: 2,
       releaseNotes: 'Bad launch',
+      reason: 'Bad launch',
     });
     expect(component.message).toContain('rolled back');
     expect(component.release?.publishedVersion).toBe(2);
@@ -358,4 +390,123 @@ describe('RegistryManagementComponent', () => {
     expect(registryService.publishRegistry).not.toHaveBeenCalled();
     expect(registryService.rollbackRegistry).not.toHaveBeenCalled();
   });
+
+  describe('drift, export and audit', () => {
+    const driftReport = (state: string, extra = {}) => ({
+      success: true,
+      data: {
+        state,
+        sourceHash: 'a',
+        publishedHash: 'b',
+        publishedVersion: 3,
+        changedApps: [],
+        addedInDatabase: [],
+        missingFromDatabase: [],
+        hasUnpublishedChanges: false,
+        ...extra,
+      },
+    });
+
+    it('shows an in-sync banner', () => {
+      const fixture = TestBed.createComponent(RegistryManagementComponent);
+      fixture.detectChanges();
+      const banner = fixture.nativeElement.querySelector(
+        '[data-testid="drift-banner"]'
+      );
+      expect(banner.textContent).toContain('in sync');
+      expect(banner.classList).toContain('success');
+    });
+
+    it.each([
+      ['db-ahead', 'database is ahead'],
+      ['yaml-changed', 'YAML changed'],
+      ['both', 'both changed'],
+    ])('explains %s drift and lists differing apps', (state, text) => {
+      registryService.getDrift.mockReturnValue(
+        of(driftReport(state, { changedApps: ['hai'] }))
+      );
+      const fixture = TestBed.createComponent(RegistryManagementComponent);
+      fixture.detectChanges();
+      const banner = fixture.nativeElement.querySelector(
+        '[data-testid="drift-banner"]'
+      );
+      expect(banner.textContent).toContain(text);
+      expect(banner.textContent).toContain('Different in the database: hai');
+      expect(banner.classList).not.toContain('success');
+    });
+
+    it('reports a drift failure without hiding the editor', () => {
+      registryService.getDrift.mockReturnValue(
+        throwError(() => ({ message: 'boom' }))
+      );
+      const fixture = TestBed.createComponent(RegistryManagementComponent);
+      fixture.detectChanges();
+      expect(
+        fixture.nativeElement.querySelector('[data-testid="drift-error"]')
+          .textContent
+      ).toContain('boom');
+      expect(fixture.componentInstance.loadFailed).toBe(false);
+    });
+
+    it('exports the YAML, downloads it and shows the diff', async () => {
+      const fixture = TestBed.createComponent(RegistryManagementComponent);
+      fixture.detectChanges();
+      const component = fixture.componentInstance;
+      const download = jest
+        .spyOn(
+          component as unknown as { downloadFile: () => void },
+          'downloadFile'
+        )
+        .mockImplementation(() => undefined);
+
+      await component.exportYaml();
+      fixture.detectChanges();
+
+      expect(registryService.exportYaml).toHaveBeenCalled();
+      expect(download).toHaveBeenCalledWith(
+        'apps.yaml',
+        'version: 1.0.0\n',
+        'text/yaml'
+      );
+      const panel = fixture.nativeElement.querySelector(
+        '[data-testid="yaml-export"]'
+      );
+      expect(panel.textContent).toContain('+b');
+      expect(component.message).toContain('Review the diff');
+
+      component.downloadDiff();
+      expect(download).toHaveBeenCalledWith(
+        'apps.yaml.diff',
+        expect.stringContaining('@@'),
+        'text/x-diff'
+      );
+    });
+
+    it('shows the stored actor and reason in the audit table', () => {
+      expect(
+        fixtureColumns(TestBed.createComponent(RegistryManagementComponent))
+      ).toEqual(['occurredAt', 'event', 'actor', 'summary', 'reason']);
+    });
+
+    it('sends the removal as the reason when the draft is saved', async () => {
+      const fixture = TestBed.createComponent(RegistryManagementComponent);
+      fixture.detectChanges();
+      const component = fixture.componentInstance;
+      component.links = [];
+      await component.removeApp(1);
+      await component.saveRegistry();
+      expect(registryService.updateRegistry).toHaveBeenCalledWith(
+        expect.objectContaining({ apps: [expect.anything()] }),
+        'Removed app store'
+      );
+    });
+  });
 });
+
+function fixtureColumns(
+  fixture: ComponentFixture<RegistryManagementComponent>
+): string[] {
+  return fixture.componentInstance.auditColumns.map(
+    (column) => column.field as string
+  );
+}

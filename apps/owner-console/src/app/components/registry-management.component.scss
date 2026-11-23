@@ -319,3 +319,16 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+.yaml-diff {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  max-height: 24rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--type-small, 0.85rem);
+  line-height: var(--line-height, 1.5);
+  border-radius: var(--personality-card-radius, 8px);
+  background: var(--surface, #ffffff);
+  color: var(--foreground, #111827);
+}

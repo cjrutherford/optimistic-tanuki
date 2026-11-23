@@ -27,4 +27,12 @@ export const AppConfigCommands = {
   ResolvePublishedApp: 'app-config.resolvePublishedApp',
   JoinPublishedApp: 'app-config.joinPublishedApp',
   RequestPublishedApp: 'app-config.requestPublishedApp',
+  RegistryGet: 'app-config.registry.get',
+  RegistrySaveDraft: 'app-config.registry.saveDraft',
+  RegistryPublish: 'app-config.registry.publish',
+  RegistryRollback: 'app-config.registry.rollback',
+  RegistryAuditList: 'app-config.registry.auditList',
+  RegistrySeed: 'app-config.registry.seed',
+  RegistryExportYaml: 'app-config.registry.exportYaml',
+  RegistryDrift: 'app-config.registry.drift',
 };

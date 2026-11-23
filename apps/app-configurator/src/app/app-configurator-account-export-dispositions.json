@@ -240,6 +240,116 @@
         }
       ],
       "relations": []
+    },
+    {
+      "name": "RegistryEntryEntity",
+      "table": "registry_entry",
+      "source": "apps/app-configurator/src/registry/entities/registry-entry.entity.ts",
+      "subject": {
+        "kind": "none",
+        "fields": [],
+        "rule": "Platform registry data; not owned by any account or profile.",
+        "evidence": [
+          "apps/app-configurator/src/registry/entities/registry-entry.entity.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "kind",
+            "key",
+            "definition",
+            "position",
+            "createdAt",
+            "updatedAt"
+          ],
+          "classification": "nonpersonal",
+          "action": "exclude",
+          "handling": "Exclude platform registry state.",
+          "reason": "Registry apps, releases and operator audit are platform configuration, not portable personal content.",
+          "evidence": [
+            "apps/app-configurator/src/registry/entities/registry-entry.entity.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "RegistryReleaseEntity",
+      "table": "registry_release",
+      "source": "apps/app-configurator/src/registry/entities/registry-release.entity.ts",
+      "subject": {
+        "kind": "none",
+        "fields": [],
+        "rule": "Platform registry data; not owned by any account or profile.",
+        "evidence": [
+          "apps/app-configurator/src/registry/entities/registry-release.entity.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "version",
+            "status",
+            "isCurrent",
+            "snapshot",
+            "releaseNotes",
+            "changeSummary",
+            "sourceHash",
+            "restoredFromVersion",
+            "publishedAt",
+            "publishedBy",
+            "createdAt"
+          ],
+          "classification": "nonpersonal",
+          "action": "exclude",
+          "handling": "Exclude platform registry state.",
+          "reason": "Registry apps, releases and operator audit are platform configuration, not portable personal content.",
+          "evidence": [
+            "apps/app-configurator/src/registry/entities/registry-release.entity.ts"
+          ]
+        }
+      ],
+      "relations": []
+    },
+    {
+      "name": "RegistryAuditEntity",
+      "table": "registry_audit",
+      "source": "apps/app-configurator/src/registry/entities/registry-audit.entity.ts",
+      "subject": {
+        "kind": "none",
+        "fields": [],
+        "rule": "Platform registry data; not owned by any account or profile.",
+        "evidence": [
+          "apps/app-configurator/src/registry/entities/registry-audit.entity.ts"
+        ]
+      },
+      "columns": [
+        {
+          "fields": [
+            "id",
+            "action",
+            "actor",
+            "summary",
+            "reason",
+            "releaseVersion",
+            "before",
+            "after",
+            "metadata",
+            "createdAt"
+          ],
+          "classification": "nonpersonal",
+          "action": "exclude",
+          "handling": "Exclude platform registry state.",
+          "reason": "Registry apps, releases and operator audit are platform configuration, not portable personal content.",
+          "evidence": [
+            "apps/app-configurator/src/registry/entities/registry-audit.entity.ts"
+          ]
+        }
+      ],
+      "relations": []
     }
   ],
   "associations": [],

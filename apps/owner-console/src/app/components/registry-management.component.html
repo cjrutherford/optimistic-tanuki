@@ -8,6 +8,14 @@
       <button
         type="button"
         class="secondary"
+        (click)="exportYaml()"
+        [disabled]="loading || exporting"
+      >
+        Export YAML
+      </button>
+      <button
+        type="button"
+        class="secondary"
         (click)="saveRegistry()"
         [disabled]="loading || validationErrors.length > 0"
       >
@@ -46,6 +54,57 @@
     <p>{{ validationError }}</p>
     }
   </div>
+  } @if (driftError) {
+  <div class="status error" data-testid="drift-error">{{ driftError }}</div>
+  } @else if (drift) {
+  <div
+    class="status drift"
+    [class.error]="drift.state === 'both'"
+    [class.success]="drift.state === 'in-sync'"
+    data-testid="drift-banner"
+  >
+    <p>
+      <strong>{{ driftTitle() }}</strong>
+      @if (drift.publishedVersion) { (published v{{ drift.publishedVersion }}) }
+    </p>
+    @if (driftDetail()) {
+    <p>{{ driftDetail() }}</p>
+    } @if (drift.changedApps.length) {
+    <p>Different in the database: {{ drift.changedApps.join(', ') }}</p>
+    } @if (drift.addedInDatabase.length) {
+    <p>Only in the database: {{ drift.addedInDatabase.join(', ') }}</p>
+    } @if (drift.missingFromDatabase.length) {
+    <p>Only in the YAML: {{ drift.missingFromDatabase.join(', ') }}</p>
+    } @if (drift.hasUnpublishedChanges) {
+    <p>There are saved draft changes that are not published yet.</p>
+    }
+  </div>
+  } @if (yamlExport) {
+  <section class="registry-band export-band" data-testid="yaml-export">
+    <div class="section-heading">
+      <h2>YAML export</h2>
+      <button
+        type="button"
+        class="secondary"
+        (click)="downloadDiff()"
+        [disabled]="yamlExport.identical"
+      >
+        Download diff
+      </button>
+    </div>
+    @if (yamlExport.identical) {
+    <p>
+      The published registry matches the deployed apps.yaml. Navigation links
+      are not stored in apps.yaml.
+    </p>
+    } @else {
+    <p>
+      Changes the published registry would make to the deployed apps.yaml.
+      Navigation links are not stored in apps.yaml.
+    </p>
+    <pre class="yaml-diff">{{ yamlExport.diff }}</pre>
+    }
+  </section>
   }
 
   <section class="registry-band release-band">
@@ -269,7 +328,7 @@
       [columns]="auditColumns"
       [rows]="auditLog"
       height="18rem"
-      emptyMessage="No registry changes recorded in this gateway process."
+      emptyMessage="No registry changes recorded yet."
     />
     }
   </section>

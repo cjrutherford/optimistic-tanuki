@@ -4,6 +4,9 @@ import { DataSource } from 'typeorm';
 import { AppConfigurationEntity } from '../configurations/entities/app-configuration.entity';
 import { AppInstanceEntity } from '../configurations/entities/app-instance.entity';
 import { AppMembershipEntity } from '../configurations/entities/app-membership.entity';
+import { RegistryAuditEntity } from '../registry/entities/registry-audit.entity';
+import { RegistryEntryEntity } from '../registry/entities/registry-entry.entity';
+import { RegistryReleaseEntity } from '../registry/entities/registry-release.entity';
 import {
   APP_CONFIGURATOR_ACCOUNT_EXPORT_INVENTORY,
   validateAppConfiguratorDispositions,
@@ -17,6 +20,9 @@ const source = () =>
       AppInstanceEntity,
       AppMembershipEntity,
       AccountDeletionWriteFenceEntity,
+      RegistryAuditEntity,
+      RegistryEntryEntity,
+      RegistryReleaseEntity,
     ],
   });
 const policy = () =>
@@ -30,7 +36,7 @@ const buildMetadata = async (ds: DataSource) =>
   (ds as unknown as { buildMetadatas: () => Promise<void> }).buildMetadatas();
 
 describe('App Configurator disposition policy', () => {
-  it('accepts all five physical tables and rejects malformed inventories and undeclared stores', async () => {
+  it('accepts all eight physical tables and rejects malformed inventories and undeclared stores', async () => {
     const ds = source();
     await buildMetadata(ds);
     const catalog = [

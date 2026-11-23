@@ -58,21 +58,30 @@ export interface RegistryReleaseState {
   history: RegistryReleaseRevision[];
 }
 
+/** Where a registry read came from. */
+export type AppRegistryOrigin = 'database' | 'cache' | 'yaml-fallback';
+
 export interface AppRegistryResponse {
   success: boolean;
   data: AppRegistry;
   release?: RegistryReleaseState;
+  /** Absent on older gateways. `yaml-fallback` means the database was down. */
+  origin?: AppRegistryOrigin;
   error?: string;
 }
 
 export interface PublishRegistryDto {
   releaseNotes: string;
   changeSummary?: string;
+  /** Why the owner is publishing; stored on the audit row. */
+  reason?: string;
 }
 
 export interface RollbackRegistryDto {
   version: number;
   releaseNotes: string;
+  /** Why the owner is rolling back; stored on the audit row. */
+  reason?: string;
 }
 
 export interface RegistryReleaseBundle {

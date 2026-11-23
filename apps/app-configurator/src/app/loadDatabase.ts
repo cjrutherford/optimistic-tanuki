@@ -4,6 +4,9 @@ import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConne
 import { AppConfigurationEntity } from '../configurations/entities/app-configuration.entity';
 import { AppInstanceEntity } from '../configurations/entities/app-instance.entity';
 import { AppMembershipEntity } from '../configurations/entities/app-membership.entity';
+import { RegistryAuditEntity } from '../registry/entities/registry-audit.entity';
+import { RegistryEntryEntity } from '../registry/entities/registry-entry.entity';
+import { RegistryReleaseEntity } from '../registry/entities/registry-release.entity';
 import loadConfig from '../config';
 
 export default (
@@ -26,6 +29,9 @@ export default (
       AppInstanceEntity,
       AppMembershipEntity,
       AccountDeletionWriteFenceEntity,
+      RegistryAuditEntity,
+      RegistryEntryEntity,
+      RegistryReleaseEntity,
     ],
     synchronize: false,
     logging: process.env.NODE_ENV === 'development',

@@ -31,6 +31,10 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { AppConfiguratorAccountExportOwnerService } from './account-export-owner.service';
 import { AppConfiguratorAccountExportSnapshotService } from './account-export-snapshot.service';
 import { AppConfiguratorAccountExportSnapshotController } from './account-export-snapshot.controller';
+import { RegistryController } from '../registry/registry.controller';
+import { RegistryService } from '../registry/registry.service';
+import { REGISTRY_STORE } from '../registry/registry.store';
+import { TypeOrmRegistryStore } from '../registry/typeorm-registry.store';
 
 @Module({
   imports: [
@@ -48,6 +52,7 @@ import { AppConfiguratorAccountExportSnapshotController } from './account-export
     AccountDeletionSnapshotController,
     AppConfiguratorAccountDeletionOwnerController,
     ConfigurationsController,
+    RegistryController,
     AppConfiguratorAccountExportSnapshotController,
   ],
   providers: [
@@ -80,6 +85,12 @@ import { AppConfiguratorAccountExportSnapshotController } from './account-export
       inject: ['APP_CONFIGURATOR_AUTH_PROXY'],
     },
     ConfigurationsService,
+    RegistryService,
+    {
+      provide: REGISTRY_STORE,
+      useFactory: (ds: DataSource) => new TypeOrmRegistryStore(ds),
+      inject: ['APP-CONFIGURATOR_CONNECTION'],
+    },
     Logger,
     AccountExportOwnerSpoolService,
     {

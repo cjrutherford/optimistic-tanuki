@@ -7,6 +7,9 @@ import {
   RegistryReleaseBundleResponse,
   RollbackRegistryDto,
   NavigationLink,
+  RegistryAuditRecord,
+  RegistryDriftReport,
+  RegistryYamlExport,
 } from '@optimistic-tanuki/app-registry-backend';
 import { Observable } from 'rxjs';
 
@@ -15,12 +18,17 @@ export interface NavigationLinksResponse {
   data: NavigationLink[];
 }
 
-export interface RegistryAuditEntry {
-  id: number;
-  occurredAt: string;
-  action: 'apps.updated' | 'links.updated';
-  summary: string;
-  metadata: Record<string, string | number | boolean>;
+/** A stored audit row: who did what, and the reason they gave. */
+export type RegistryAuditEntry = RegistryAuditRecord;
+
+export interface RegistryDriftResponse {
+  success: boolean;
+  data: RegistryDriftReport;
+}
+
+export interface RegistryExportResponse {
+  success: boolean;
+  data: RegistryYamlExport;
 }
 
 export interface RegistryAuditResponse {
@@ -40,9 +48,13 @@ export class RegistryManagementService {
     return this.http.get<AppRegistryResponse>(`${this.apiUrl}/apps`);
   }
 
-  updateRegistry(registry: AppRegistry): Observable<AppRegistryResponse> {
+  updateRegistry(
+    registry: AppRegistry,
+    reason?: string
+  ): Observable<AppRegistryResponse> {
     return this.http.post<AppRegistryResponse>(`${this.apiUrl}/apps`, {
       registry,
+      reason,
     });
   }
 
@@ -68,13 +80,25 @@ export class RegistryManagementService {
     return this.http.get<NavigationLinksResponse>(`${this.apiUrl}/links`);
   }
 
-  updateLinks(links: NavigationLink[]): Observable<NavigationLinksResponse> {
+  updateLinks(
+    links: NavigationLink[],
+    reason?: string
+  ): Observable<NavigationLinksResponse> {
     return this.http.post<NavigationLinksResponse>(`${this.apiUrl}/links`, {
       links,
+      reason,
     });
   }
 
   getAuditLog(): Observable<RegistryAuditResponse> {
     return this.http.get<RegistryAuditResponse>(`${this.apiUrl}/audit-log`);
+  }
+
+  getDrift(): Observable<RegistryDriftResponse> {
+    return this.http.get<RegistryDriftResponse>(`${this.apiUrl}/drift`);
+  }
+
+  exportYaml(): Observable<RegistryExportResponse> {
+    return this.http.get<RegistryExportResponse>(`${this.apiUrl}/export`);
   }
 }
