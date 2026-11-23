@@ -32,13 +32,12 @@ Each E2E test has its own Docker Compose file that includes only the necessary s
 
 ## Owner console owner account
 
-The full-stack `owner-console-e2e` specs (nav smoke, happy paths) sign in as the stack's owner. Global setup registers that account through the gateway in the owner-console scope (open only while the stack has no owner, the same call `scripts/dev-seed.sh` makes) and confirms it can sign in, so reruns against the same stack are fine.
+The full-stack `owner-console-e2e` specs (nav smoke, happy paths) sign in as the stack's owner. Global setup registers that account in the owner-console scope through the console's own `/api` proxy (the gateway refuses the call on its own port, because registration is bound to the app's registered host) (open only while the stack has no owner, the same call `scripts/dev-seed.sh` makes) and confirms it can sign in, so reruns against the same stack are fine.
 
 | Variable         | CI / `scripts/run-ci-e2e-locally.sh` default | Notes                                    |
 | ---------------- | -------------------------------------------- | ---------------------------------------- |
 | `OWNER_EMAIL`    | `owner-e2e@example.test`                     | Test-only value; override with your own. |
 | `OWNER_PASSWORD` | `OwnerE2e-Pass-123!`                         | Test-only value; override with your own. |
-| `GATEWAY_URL`    | `http://127.0.0.1:3000`                      | Where global setup registers the owner.  |
 
 In CI the specs fail loudly when the owner variables are missing; outside CI they skip with a reason. The deny-path spec registers its own plain account. For a stack that already has a different owner, pass that owner's credentials.
 
@@ -59,6 +58,23 @@ ACCOUNT_EXPORT_E2E_DB_MARKER=auth-profile-forum-export-fixture-v1 ACCOUNT_EXPORT
 
 # Clean up
 docker compose --project-name ot-df007-b6-forum -f e2e/docker-compose.authentication-e2e.yaml down -v
+```
+
+### Host-specific compose overrides
+
+`scripts/run-ci-e2e-locally.sh` layers `E2E_COMPOSE_OVERRIDE` over the shared stack when it is set. Use it for tweaks that only your machine needs. CI never sets it.
+
+An example: Docker's embedded DNS can stall for 5 seconds before failing a lookup of a service the profile does not start. This happens when the host's upstream resolver can't be reached from containers, such as an IPv6-only nameserver. The owner console fans out to many services, so those stalls take up the browser's connections and route changes stop loading. Give the gateway a resolver it can reach:
+
+```yaml
+# ~/ot-e2e-dns.yaml
+services:
+  gateway:
+    dns: [192.168.1.1]
+```
+
+```bash
+E2E_COMPOSE_OVERRIDE=~/ot-e2e-dns.yaml E2E_TARGETS=owner-console-e2e PLAYWRIGHT_HEADLESS=true scripts/run-ci-e2e-locally.sh
 ```
 
 ### Running full browser-based E2E tests

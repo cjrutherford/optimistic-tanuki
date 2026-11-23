@@ -69,8 +69,12 @@ function databaseOptions(database: string): PoolConfig {
   return {
     host:
       process.env.E2E_POSTGRES_HOST ?? process.env.POSTGRES_HOST ?? 'localhost',
+    // The e2e stack publishes its database on E2E_DB_PORT (5439 by default),
+    // not on 5432.
     port: Number(
-      process.env.E2E_POSTGRES_PORT ?? process.env.POSTGRES_PORT ?? '5432'
+      process.env.E2E_POSTGRES_PORT ??
+        process.env.POSTGRES_PORT ??
+        (process.env.E2E_DB_PORT || '5439')
     ),
     user:
       process.env.E2E_POSTGRES_USER ?? process.env.POSTGRES_USER ?? 'postgres',

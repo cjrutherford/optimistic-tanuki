@@ -35,6 +35,20 @@ const mockedUrl = `http://127.0.0.1:${mockedPort}`;
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
+const MOCKED_PROJECT = {
+  name: 'mocked',
+  use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+  testDir: './src/mocked',
+  testMatch: '**/*.mocked.spec.ts',
+};
+
+const FULL_STACK_PROJECT = {
+  name: 'chromium',
+  use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+  testDir: './src',
+  testMatch: FULL_STACK_SPECS,
+};
+
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
   globalSetup: mocked ? undefined : require.resolve('./global-setup'),
@@ -73,24 +87,10 @@ export default defineConfig({
         cwd: workspaceRoot,
       },
   testDir: './src',
-  projects: mocked
-    ? [
-        {
-          name: 'mocked',
-          use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-          testDir: './src/mocked',
-          testMatch: '**/*.mocked.spec.ts',
-        },
-      ]
-    : isCI
-    ? [
-        {
-          name: 'chromium',
-          use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-          testDir: './src',
-          testMatch: FULL_STACK_SPECS,
-        },
-      ]
+  projects: isCI
+    ? [mocked ? MOCKED_PROJECT : FULL_STACK_PROJECT]
+    : mocked
+    ? [MOCKED_PROJECT]
     : [
         // {
         //   name: 'chromium',

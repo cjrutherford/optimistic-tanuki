@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import {
-  ALWAYS_ALLOWED,
+  FULL_STACK_ALLOWED,
   NAV_TARGETS,
   openLeaf,
   firstTownId,
@@ -35,7 +35,7 @@ test.describe('Owner console navigation smoke (full stack)', () => {
     await signInAsOwner(page, email as string, password as string);
     if (townId) await selectTown(page, townId);
     // Watch only once signed in: the signed-out session probe is a 401 by design.
-    const problems = watchProblems(page, ALWAYS_ALLOWED);
+    const problems = watchProblems(page, FULL_STACK_ALLOWED);
     const unavailable: string[] = [];
 
     for (const target of NAV_TARGETS) {
@@ -60,6 +60,18 @@ test.describe('Owner console navigation smoke (full stack)', () => {
       test.info().annotations.push({
         type: 'unavailable-sources',
         description: unavailable.join(', '),
+      });
+    }
+    if (problems.failedResponses.length) {
+      const counts = new Map<string, number>();
+      for (const line of problems.failedResponses) {
+        counts.set(line, (counts.get(line) ?? 0) + 1);
+      }
+      test.info().annotations.push({
+        type: 'failed-responses',
+        description: [...counts]
+          .map(([line, count]) => (count > 1 ? `${line} x${count}` : line))
+          .join('\n'),
       });
     }
     expect(problems.pageErrors, 'uncaught page errors').toEqual([]);

@@ -121,7 +121,9 @@ export async function openLeaf(
     ? target.leaf.path.replace(':townId', encodeURIComponent(townId ?? ''))
     : target.leaf.path;
   const nav = page.getByRole('navigation', { name: 'Owner console' });
-  const link = nav.locator(`a[href="${path}"]`);
+  // Town-scoped leaves render disabled, pointing at the town picker, until a
+  // town is chosen; skip them so "All towns" is the only match for its href.
+  const link = nav.locator(`a[href="${path}"]:not([aria-disabled="true"])`);
   if (!(await link.isVisible())) {
     await nav
       .getByRole('button', { name: target.group.label, exact: false })
@@ -140,6 +142,8 @@ function escapeRegExp(text: string): string {
 export interface PageProblems {
   pageErrors: string[];
   consoleErrors: string[];
+  /** Every 4xx/5xx response, as "status METHOD /path". */
+  failedResponses: string[];
 }
 
 /**
@@ -150,8 +154,19 @@ export function watchProblems(
   page: Page,
   allow: readonly RegExp[]
 ): PageProblems {
-  const problems: PageProblems = { pageErrors: [], consoleErrors: [] };
+  const problems: PageProblems = {
+    pageErrors: [],
+    consoleErrors: [],
+    failedResponses: [],
+  };
   page.on('pageerror', (error) => problems.pageErrors.push(error.message));
+  page.on('response', (response) => {
+    if (response.status() < 400) return;
+    const url = new URL(response.url());
+    problems.failedResponses.push(
+      `${response.status()} ${response.request().method()} ${url.pathname}`
+    );
+  });
   page.on('console', (message) => {
     if (message.type() !== 'error') return;
     const text = message.text();
@@ -166,4 +181,17 @@ export const ALWAYS_ALLOWED: readonly RegExp[] = [
   // Browsers request /favicon.ico on their own; the console does not ship one
   // at that path and the failure says nothing about a page.
   /Failed to load resource.*favicon/i,
+];
+
+/**
+ * The full-stack smoke runs a minimal stack: services the profile does not
+ * start answer 5xx, and some sources refuse an owner without seeded data.
+ * Chromium logs each such response as a console error with no URL in it.
+ * Those responses are recorded in `failedResponses` and annotated on the
+ * run instead, so the console-error check keeps meaning "the app logged an
+ * error" rather than "a backend this stack lacks was unavailable".
+ */
+export const FULL_STACK_ALLOWED: readonly RegExp[] = [
+  ...ALWAYS_ALLOWED,
+  /^Failed to load resource: the server responded with a status of \d{3}\b/,
 ];

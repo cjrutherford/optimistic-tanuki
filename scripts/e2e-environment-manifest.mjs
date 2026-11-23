@@ -460,6 +460,8 @@ const UI_ENVIRONMENTS = [
       'redis',
       'db-setup',
       'authentication',
+      // Owner registration in global setup creates the global profile.
+      'profile',
       'permissions',
       'permissions-seed',
       'app-configurator',

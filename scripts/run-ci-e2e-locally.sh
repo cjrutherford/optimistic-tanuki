@@ -15,8 +15,12 @@ export E2E_BUILD_BATCH_SIZE="${E2E_BUILD_BATCH_SIZE:-4}"
 export E2E_BUILD_PARALLEL_LIMIT="${E2E_BUILD_PARALLEL_LIMIT:-1}"
 export E2E_TARGETS="${E2E_TARGETS:-}"
 export E2E_NX_ARGS="${E2E_NX_ARGS:-}"
+# Optional extra compose file layered over the stack, for host-specific
+# runtime tweaks (for example a container DNS server) that do not belong in
+# the shared stack. Local runs only; CI never sets it.
+export E2E_COMPOSE_OVERRIDE="${E2E_COMPOSE_OVERRIDE:-}"
 # Same test-only owner as .github/workflows/ci-cd.yml; owner-console-e2e
-# registers it through the gateway in its global setup.
+# registers it through the console's /api proxy in its global setup.
 export OWNER_EMAIL="${OWNER_EMAIL:-owner-e2e@example.test}"
 export OWNER_PASSWORD="${OWNER_PASSWORD:-OwnerE2e-Pass-123!}"
 
@@ -32,7 +36,11 @@ if [ -n "$E2E_NX_ARGS" ]; then
 fi
 
 compose() {
-  docker compose --project-name "$E2E_COMPOSE_PROJECT" -f "$COMPOSE_FILE" "$@"
+  local files=(-f "$COMPOSE_FILE")
+  if [ -n "$E2E_COMPOSE_OVERRIDE" ]; then
+    files+=(-f "$E2E_COMPOSE_OVERRIDE")
+  fi
+  docker compose --project-name "$E2E_COMPOSE_PROJECT" "${files[@]}" "$@"
 }
 
 compose_target() {

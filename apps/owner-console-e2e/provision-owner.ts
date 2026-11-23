@@ -3,18 +3,20 @@ import { OwnerCredentials } from './src/support/owner-credentials';
 /**
  * Makes sure the stack has an owner the full-stack specs can sign in as.
  *
- * The stack has no startup bootstrap, so this registers the account through
- * the gateway in the owner-console app scope, the same call
- * scripts/dev-seed.sh makes. Owner-console registration is open only while no
+ * The stack has no startup bootstrap, so this registers the account in the
+ * owner-console app scope, the same call scripts/dev-seed.sh makes. It goes
+ * through the console's own /api proxy, as a browser would: the gateway binds
+ * registration to a Host that matches the app's registered origin, so a direct
+ * call to the gateway port is refused. Owner-console registration is open only while no
  * global profile exists; once an owner is there it answers "registration is
  * closed", which is fine as long as the credentials already sign in. The
  * closing login check is what makes this idempotent across reruns.
  */
-const gatewayUrl = (): string =>
-  (process.env['GATEWAY_URL'] ?? 'http://127.0.0.1:3000').replace(/\/$/, '');
-
 const ownerOrigin = (): string =>
-  process.env['OWNER_CONSOLE_ORIGIN'] ?? 'http://127.0.0.1:8084';
+  (process.env['OWNER_CONSOLE_ORIGIN'] ?? 'http://127.0.0.1:8084').replace(
+    /\/$/,
+    ''
+  );
 
 const headers = (): Record<string, string> => ({
   'content-type': 'application/json',
@@ -24,7 +26,7 @@ const headers = (): Record<string, string> => ({
 });
 
 async function canSignIn(owner: OwnerCredentials): Promise<boolean> {
-  const response = await fetch(`${gatewayUrl()}/api/authentication/login`, {
+  const response = await fetch(`${ownerOrigin()}/api/authentication/login`, {
     method: 'POST',
     headers: { ...headers(), 'X-ot-session-mode': 'cookie' },
     body: JSON.stringify({ email: owner.email, password: owner.password }),
@@ -38,7 +40,7 @@ export async function provisionOwner(owner: OwnerCredentials): Promise<void> {
     return;
   }
 
-  const response = await fetch(`${gatewayUrl()}/api/authentication/register`, {
+  const response = await fetch(`${ownerOrigin()}/api/authentication/register`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify({
@@ -62,9 +64,7 @@ export async function provisionOwner(owner: OwnerCredentials): Promise<void> {
     );
   }
   if (!(await canSignIn(owner))) {
-    throw new Error(
-      `Provisioned owner ${owner.email} but sign-in through the gateway still fails`
-    );
+    throw new Error(`Provisioned owner ${owner.email} but sign-in still fails`);
   }
   console.log(`[owner-console-e2e] provisioned owner ${owner.email}`);
 }
