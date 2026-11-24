@@ -818,8 +818,11 @@ export const elegantPersonality: Personality = {
   },
 
   fonts: {
+    // Cormorant Garamond's hairline strokes and small x-height were
+    // unreadable as running text, especially on a dark ground. Lora keeps
+    // the editorial serif voice with a sturdier, larger-x-height face.
     body: {
-      family: '"Cormorant Garamond", Georgia, serif',
+      family: '"Lora", Georgia, serif',
       weights: [400, 500, 600],
       display: 'swap',
       preload: true,
