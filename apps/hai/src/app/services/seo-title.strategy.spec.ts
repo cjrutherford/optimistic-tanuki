@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { DOCUMENT } from '@angular/common';
 import { Router, TitleStrategy, provideRouter } from '@angular/router';
 import { SeoTitleStrategy } from './seo-title.strategy';
-import { PAGE_SEO } from '../content/seo';
+import { NOT_FOUND_SEO, PAGE_SEO } from '../content/seo';
 
 @Component({ standalone: true, template: '' })
 class BlankComponent {}
@@ -86,9 +86,23 @@ describe('SeoTitleStrategy', () => {
     ).toEqual(['ProfessionalService', 'Service']);
   });
 
-  it('falls back to the homepage metadata for unknown paths', async () => {
+  it('marks unknown paths noindex without a canonical or a page title', async () => {
     await router.navigateByUrl('/not-a-page');
 
-    expect(document.title).toBe(PAGE_SEO[''].title);
+    expect(document.title).toBe(NOT_FOUND_SEO.title);
+    expect(meta('name', 'robots')).toBe('noindex');
+    expect(document.head.querySelector('link[rel="canonical"]')).toBeNull();
+    expect(meta('property', 'og:url')).toBeUndefined();
+  });
+
+  it('clears noindex and restores the canonical when leaving a 404', async () => {
+    await router.navigateByUrl('/not-a-page');
+    await router.navigateByUrl('/contact');
+
+    expect(document.title).toBe(PAGE_SEO['contact'].title);
+    expect(meta('name', 'robots')).toBeUndefined();
+    expect(
+      document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')
+    ).toBe('https://hopefulaspirationsindustries.com/contact');
   });
 });

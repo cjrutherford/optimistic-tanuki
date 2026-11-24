@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
 import {
+  NOT_FOUND_SEO,
   ORGANIZATION_SCHEMA,
   PAGE_SEO,
   PRIVATE_CLOUD_SERVICE_SCHEMA,
@@ -27,8 +28,14 @@ export class SeoTitleStrategy extends TitleStrategy {
 
   override updateTitle(snapshot: RouterStateSnapshot): void {
     const path = snapshot.url.split(/[?#]/)[0].replace(/^\/+|\/+$/g, '');
-    const seo: PageSeo = PAGE_SEO[path] ?? PAGE_SEO[''];
+    const seo: PageSeo | undefined = PAGE_SEO[path];
+    if (!seo) {
+      this.setNotFound();
+      return;
+    }
     const canonical = `${SITE_ORIGIN}/${path}`;
+
+    this.meta.removeTag('name="robots"');
     const image = `${SITE_ORIGIN}${SOCIAL_IMAGE.path}`;
 
     this.title.setTitle(seo.title);
@@ -62,6 +69,22 @@ export class SeoTitleStrategy extends TitleStrategy {
         ? [ORGANIZATION_SCHEMA, PRIVATE_CLOUD_SERVICE_SCHEMA]
         : [ORGANIZATION_SCHEMA]
     );
+  }
+
+  /**
+   * Unknown paths render the 404 page. Keep them out of the index and do not
+   * let them claim a canonical URL or another page's title.
+   */
+  private setNotFound(): void {
+    this.title.setTitle(NOT_FOUND_SEO.title);
+    this.meta.updateTag({
+      name: 'description',
+      content: NOT_FOUND_SEO.description,
+    });
+    this.meta.updateTag({ name: 'robots', content: 'noindex' });
+    this.document.head.querySelector('link[rel="canonical"]')?.remove();
+    this.meta.removeTag('property="og:url"');
+    this.setSchema([ORGANIZATION_SCHEMA]);
   }
 
   private setCanonical(href: string): void {

@@ -1,6 +1,7 @@
 {
-  "name": "",
-  "short_name": "",
+  "name": "Christopher Rutherford — Full-Stack & Systems Engineer",
+  "short_name": "C. Rutherford",
+  "start_url": "/",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -13,7 +14,7 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
+  "theme_color": "#0b1120",
+  "background_color": "#0b1120",
   "display": "standalone"
 }

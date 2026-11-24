@@ -110,4 +110,12 @@ export const appRoutes: Route[] = [
         (m) => m.ContactPageComponent
       ),
   },
+  {
+    // Not a page: rendered as a 404 and kept out of the sitemap and metadata.
+    path: '**',
+    loadComponent: () =>
+      import('./pages/not-found/not-found-page.component').then(
+        (m) => m.NotFoundPageComponent
+      ),
+  },
 ];
