@@ -50,28 +50,59 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Person",
-        "name": "Christopher Rutherford",
-        "jobTitle": "Full-Stack & Systems Engineer",
-        "url": "https://christopherrutherford.net/",
-        "address": {
-          "@type": "PostalAddress",
-          "addressRegion": "GA",
-          "addressCountry": "US"
-        },
-        "sameAs": [
-          "https://github.com/cjrutherford",
-          "https://www.linkedin.com/in/thecjrutherford"
+        "@graph": [
+          {
+            "@type": "Person",
+            "@id": "https://christopherrutherford.net/#person",
+            "name": "Christopher Rutherford",
+            "jobTitle": "Full-Stack & Systems Engineer",
+            "description": "Full-stack and systems engineer building distributed applications, native products, and the Linux systems behind them.",
+            "url": "https://christopherrutherford.net/",
+            "image": "https://christopherrutherford.net/assets/images/og-card.jpg",
+            "address": {
+              "@type": "PostalAddress",
+              "addressRegion": "GA",
+              "addressCountry": "US"
+            },
+            "knowsAbout": [
+              "TypeScript",
+              "Angular",
+              "NestJS",
+              "Go",
+              "PostgreSQL",
+              "Linux",
+              "Docker",
+              "Kubernetes",
+              "Distributed systems"
+            ],
+            "sameAs": [
+              "https://github.com/cjrutherford",
+              "https://www.linkedin.com/in/thecjrutherford"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://christopherrutherford.net/#website",
+            "url": "https://christopherrutherford.net/",
+            "name": "Christopher Rutherford",
+            "inLanguage": "en-US",
+            "publisher": { "@id": "https://christopherrutherford.net/#person" }
+          }
         ]
       }
     </script>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- The default (elegant) personality's fonts, fetched with the HTML so
+         text does not repaint once the app boots. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Farro:wght@300;400;500;700&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Lobster&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Oranienbaum&family=Rokkitt:ital,wght@0,100..900;1,100..900&family=Winky+Rough:ital,wght@0,300..900;1,300..900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Playfair+Display:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
   </head>

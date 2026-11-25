@@ -6,7 +6,7 @@ import { PAGE_SEO } from './content/seo';
 /** Every page route has metadata and a sitemap entry; nothing extra. */
 describe('SEO coverage', () => {
   const pages = appRoutes
-    .filter((route) => route.loadComponent)
+    .filter((route) => route.loadComponent && route.path !== '**')
     .map((route) => route.path ?? '');
   const sitemap = readFileSync(
     join(__dirname, '../../public/sitemap.xml'),

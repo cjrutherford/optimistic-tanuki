@@ -17,6 +17,13 @@ export interface PageSeo {
   description: string;
 }
 
+/** Title and description for any path that is not a page (the 404). */
+export const NOT_FOUND_SEO: PageSeo = {
+  title: 'Page not found | Hopeful Aspirations Industries',
+  description:
+    'This address does not match a page on the Hopeful Aspirations Industries site.',
+};
+
 /** Keyed by route path without the leading slash ('' is the homepage). */
 export const PAGE_SEO: Record<string, PageSeo> = {
   '': {
@@ -35,8 +42,7 @@ export const PAGE_SEO: Record<string, PageSeo> = {
       'Photos, files, media, and backups for your household, set up for you on hardware you own and supported by real people in South Georgia.',
   },
   'private-cloud/organizations': {
-    title:
-      'Private Cloud for Small Businesses, Nonprofits & Faith Groups | HAI',
+    title: 'Private Cloud for Organizations & Faith Groups | HAI',
     description:
       'Shared files, secure backups, and local support without vendor lock-in, for faith groups, nonprofits, community groups, and small businesses.',
   },
