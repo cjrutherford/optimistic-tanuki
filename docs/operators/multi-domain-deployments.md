@@ -319,13 +319,36 @@ Docker Compose on another.
 6. On the Compose host, set the deployment inputs:
    - `PRODUCTION_IMAGE_TAG=sha-...`
    - optional `COMPOSE_ENV_FILE=/path/to/production.env`
-   - optional `DOCKER_PULL_BATCH_SIZE=4`
+   - optional `DOCKER_PULL_CONCURRENCY=3` (images pulled in parallel)
+   - optional `DOCKER_PULL_RETRIES=3` (0-10 retries per batch after the first attempt)
+   - optional `DOCKER_PULL_RETRY_DELAY=15` (seconds between attempts, 0-300)
+   - optional `DOCKER_PULL_POLICY=missing` (default is Compose's `always`; `missing`
+     skips pulls for image tags that are already present locally)
+   - optional `COMPOSE_PARALLEL_LIMIT=2` (concurrent Compose operations; lower it on
+     slow or unstable links)
    - optional `ROLLBACK_IMAGE_TAG=sha-previous`
 7. Trigger the rollout through the standard production script:
    - `pnpm run docker:prod:bootstrap`
    - or through `admin-env tui` / `admin-env serve`, which now reuse the same script
 8. Inspect rollout state at `tmp/admin-env/rollouts/production.json`.
 9. Validate each public host for page load, login, `/api`, and websocket behavior where applicable.
+
+### Slow or flaky registry links
+
+`docker-compose-deploy.sh` resolves the images behind the selected services,
+deduplicates them, and pulls them concurrently (default 3 at a time). Each image
+gets its own retry and a live byte-progress row in a dashboard written to the
+terminal, so it still works when stdout is piped into a deploy log.
+`DOCKER_PULL_POLICY=missing` skips images already on the host;
+`DOCKER_PULL_CONCURRENCY` controls parallelism and `DOCKER_PULL_RETRIES` the
+per-image retries. Set `DOCKER_PULL_PROGRESS=off` to suppress the dashboard.
+`COMPOSE_PARALLEL_LIMIT` bounds concurrent Compose operations such as `up`.
+
+Do not run `docker system prune -af --volumes` between a failed pull and the
+retry. No container references the newly pulled images yet, so pruning deletes
+them and the next attempt downloads them again. The deploy script already keeps
+only `PRODUCTION_IMAGE_TAG` and `ROLLBACK_IMAGE_TAG` through
+`scripts/docker-image-cleanup.sh`.
 
 ## Files To Inspect
 

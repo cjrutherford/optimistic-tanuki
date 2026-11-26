@@ -271,7 +271,9 @@ jobs:
             scripts/tests/wait-for-e2e-readiness.test.mjs \
             scripts/tests/resolve-e2e-images.test.mjs \
             scripts/tests/ui-e2e-ci-contract.test.mjs \
-            scripts/tests/registry-workflow-contract.test.mjs
+            scripts/tests/registry-workflow-contract.test.mjs \
+            scripts/tests/pull-progress.test.mjs \
+            scripts/tests/pull-images.test.mjs
           for target in \
             client-interface-e2e \
             forgeofwill-e2e \
