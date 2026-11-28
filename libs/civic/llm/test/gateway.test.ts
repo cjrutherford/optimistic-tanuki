@@ -1,5 +1,6 @@
 import {
   buildOllamaResponseSchema,
+  describeTransportError,
   OLLAMA_RESPONSE_SCHEMAS,
   requestChatCompletion,
   StrictLlmError,
@@ -434,5 +435,39 @@ describe('strict Ollama gateway', () => {
             ),
         }))()
     ).rejects.toThrow(/empty/i);
+  });
+
+  it('names the cause when the transport rejects with a non-Error payload', async () => {
+    const error = await captureRejection(
+      requestChatCompletion({
+        baseUrl: 'http://test.local',
+        api: 'ollama',
+        model: 'qwen3.5:4b-q8_0',
+        timeoutMs: 1000,
+        messages: [{ role: 'user', content: 'user' }],
+        fetchImpl: () =>
+          Promise.reject({
+            status: 'error',
+            message: 'connect ECONNREFUSED 192.168.1.180:11434',
+          }),
+      })
+    );
+    expect(error).toBeInstanceOf(StrictLlmError);
+    expect((error as Error).message).toBe(
+      'Ollama request unavailable: connect ECONNREFUSED 192.168.1.180:11434'
+    );
+  });
+
+  it('describes transport errors of every shape without [object Object]', () => {
+    const refused = Object.assign(new Error('fetch failed'), {
+      cause: { code: 'ECONNREFUSED' },
+    });
+    expect(describeTransportError(refused)).toBe('fetch failed (ECONNREFUSED)');
+    expect(describeTransportError('socket hang up')).toBe('socket hang up');
+    expect(describeTransportError({ error: { message: 'nested' } })).toBe(
+      'nested'
+    );
+    expect(describeTransportError({ status: 503 })).toBe('{"status":503}');
+    expect(describeTransportError(undefined)).toBe('undefined');
   });
 });

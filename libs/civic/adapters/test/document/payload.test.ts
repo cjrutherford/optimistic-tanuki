@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import {
   createDocumentAdapter,
   documentAdapter,
+  documentUrl,
   DocumentParseError,
 } from '../../src/document/index.js';
 import {
@@ -238,6 +239,49 @@ describe('document payload contract', () => {
       },
     });
     expect(results).toStrictEqual([]);
+  });
+
+  it('downloads a CivicPlus file once, as the PDF rather than its ?html=true view', async () => {
+    const file =
+      'https://example.test/AgendaCenter/ViewFile/Agenda/_05182026-349';
+    const requested: string[] = [];
+    const policy = new OutboundPolicy({
+      resolveHostname: async () => ['93.184.216.34'],
+      fetch: async (input) => {
+        requested.push(input);
+        if (input.endsWith('/docs'))
+          return new Response(
+            '<a href="/AgendaCenter/ViewFile/Agenda/_05182026-349?html=true">HTML</a>' +
+              '<a href="/AgendaCenter/ViewFile/Agenda/_05182026-349">City Council Agenda</a>',
+            { status: 200, headers: { 'content-type': 'text/html' } }
+          );
+        return input.includes('html=true')
+          ? response('<!DOCTYPE HTML><html></html>', 'text/html')
+          : response(Buffer.from(shortTextPdf()));
+      },
+    });
+    const adapter = createDocumentAdapter(undefined, undefined, {
+      outboundPolicy: policy,
+    });
+    const results = await adapter.fetch(
+      { ...source, config: { linkPattern: 'ViewFile' } },
+      { locality: {} as never, httpClient: {} as never }
+    );
+    expect(results.map((r) => [r.kind, r.url])).toEqual([['fetched', file]]);
+    expect(requested.filter((url) => url.includes('ViewFile'))).toEqual([file]);
+  });
+
+  it('leaves other document URLs as they are', () => {
+    expect(documentUrl('https://example.test/files/agenda.pdf?html=true')).toBe(
+      'https://example.test/files/agenda.pdf?html=true'
+    );
+    expect(
+      documentUrl(
+        'https://example.test/AgendaCenter/ViewFile/Minutes/_07272026-35?HTML=true&id=4'
+      )
+    ).toBe(
+      'https://example.test/AgendaCenter/ViewFile/Minutes/_07272026-35?id=4'
+    );
   });
 
   it('fails closed on an empty PDF response with structured diagnostics', async () => {

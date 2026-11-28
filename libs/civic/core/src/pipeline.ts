@@ -113,7 +113,7 @@ import {
   projectStories,
 } from './edition.js';
 import { isNotCivicRecord, scoreNewsworthiness } from './newsworthiness.js';
-import { buildCoverageRange } from './coverage.js';
+import { buildCoverageRange, isCoverageNote } from './coverage.js';
 import {
   defaultPublicationLockPath,
   prepareImmutableMarkdown,
@@ -1227,6 +1227,9 @@ export interface AgendaFixupInput {
   body: string;
   sourceKey: string;
   civicItemId: number;
+  /** The town and scope the document belongs to; supplies its state to grounding. */
+  localitySlug?: string;
+  scopeSlug?: string;
   runId?: string;
 }
 export type AgendaFixup = (input: AgendaFixupInput) => Promise<
@@ -1460,6 +1463,8 @@ export async function extractAgenda(
           body: doc.body,
           sourceKey: doc.sourceId,
           civicItemId: doc.id as number,
+          localitySlug,
+          ...(doc.scopeSlug ? { scopeSlug: doc.scopeSlug } : {}),
           ...(runId !== undefined ? { runId: String(runId) } : {}),
         });
         const norm = doc.body.toLowerCase().replace(/\s+/g, ' ');
@@ -2929,9 +2934,6 @@ export function renderCoverageGapMarkdown(gap: BriefCoverageGap): string {
   return `- ${gap.stage} · ${label}: ${gap.reason}${separator}${details}`;
 }
 
-const UNCONFIRMED_RANGE =
-  'source does not document date or pagination coverage capability';
-
 /**
  * The coverage notes under an edition. Real gaps — a source that failed, was
  * paused, withheld items for access reasons, or skipped days — are listed one
@@ -2945,7 +2947,7 @@ export function renderCoverageNotes(gaps: readonly BriefCoverageGap[]): string {
       gap.stage === 'project' &&
       /^withhold: does not mention /u.test(gap.reason)
   );
-  const unconfirmed = gaps.filter((gap) => gap.reason === UNCONFIRMED_RANGE);
+  const unconfirmed = gaps.filter(isCoverageNote);
   const real = gaps.filter(
     (gap) => !offTopic.includes(gap) && !unconfirmed.includes(gap)
   );

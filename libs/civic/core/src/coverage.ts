@@ -221,6 +221,19 @@ export interface CoverageGap {
   reason: string;
 }
 
+/** The reason recorded when a source cannot confirm it returned the whole period. */
+export const UNCONFIRMED_COVERAGE_REASON =
+  'source does not document date or pagination coverage capability';
+
+/**
+ * A coverage note rather than a gap: the source answered, it just cannot say
+ * whether that was everything. Most sources are like this, so the note is
+ * kept and counted under the edition but does not make a run partial.
+ */
+export function isCoverageNote(gap: { reason: string }): boolean {
+  return gap.reason === UNCONFIRMED_COVERAGE_REASON;
+}
+
 /** Turn a source range into an explicit diagnostic; complete ranges emit none. */
 export function coverageGapForRange(
   sourceKey: string,
@@ -233,7 +246,7 @@ export function coverageGapForRange(
       : range.reason === 'source-failed'
       ? 'source fetch failed'
       : range.reason === 'unsupported-capability'
-      ? 'source does not document date or pagination coverage capability'
+      ? UNCONFIRMED_COVERAGE_REASON
       : `partial range; missing days: ${range.missingDays.join(', ')}`;
   return { sourceKey, reason };
 }

@@ -14,3 +14,4 @@ export * from './edition-contract';
 export * from './community-contract';
 export * from './community.dto';
 export * from './pipeline-health';
+export * from './pipeline-dashboard';

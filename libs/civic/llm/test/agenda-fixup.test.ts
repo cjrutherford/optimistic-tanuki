@@ -105,4 +105,65 @@ describe('strict agenda fixup', () => {
         }))()
     ).rejects.toThrow(StrictLlmError);
   });
+
+  describe('state qualifiers', () => {
+    const body =
+      'Planning: The Town of Chapel Hill, NC will review the Weaver Street plan.';
+    const answering = (rowBody: string) =>
+      createOllamaSummarizer({
+        baseUrl: 'http://test.local/v1',
+        runId: 'run-state',
+        fetchImpl: async () =>
+          new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  message: {
+                    content: JSON.stringify({
+                      items: [
+                        {
+                          section: 'Planning',
+                          heading: 'Weaver Street plan',
+                          body: rowBody,
+                          citations: [
+                            { sourceKey: 'meeting-doc', civicItemId: 42 },
+                          ],
+                        },
+                      ],
+                    }),
+                  },
+                },
+              ],
+            }),
+            { status: 200 }
+          ),
+      });
+
+    it("accepts the town's own state once the fixup knows the town", async () => {
+      const result = await answering(
+        'The Town of Chapel Hill, NC will review the Weaver Street plan.'
+      ).fixupAgendaItems({
+        body,
+        sourceKey: 'meeting-doc',
+        civicItemId: 42,
+        localitySlug: 'chapel-hill-nc',
+        runId: 'run-state',
+      });
+      expect(result[0].body).toContain('Chapel Hill, NC');
+    });
+
+    it('still rejects a state the town is not in', async () => {
+      await expect(
+        answering(
+          'The Town of Chapel Hill, TX will review the Weaver Street plan.'
+        ).fixupAgendaItems({
+          body,
+          sourceKey: 'meeting-doc',
+          civicItemId: 42,
+          localitySlug: 'chapel-hill-nc',
+          runId: 'run-state',
+        })
+      ).rejects.toThrow(/unsupported-named-state-qualifier.*tx/u);
+    });
+  });
 });

@@ -264,6 +264,9 @@ export interface AgendaFixupRequest {
   body: string;
   sourceKey: string;
   civicItemId: number;
+  /** The town and scope the document belongs to; supplies its state to grounding. */
+  localitySlug?: string;
+  scopeSlug?: string;
   runId?: string;
 }
 
@@ -1134,6 +1137,9 @@ export class OllamaSummarizer implements Summarizer {
         sourceKey: input.sourceKey,
         civicItemId: input.civicItemId,
         body: input.body,
+        // Metadata only: it lets the town's own state qualify a place name.
+        ...(input.localitySlug ? { localitySlug: input.localitySlug } : {}),
+        ...(input.scopeSlug ? { scopeSlug: input.scopeSlug } : {}),
       },
     ];
     const prompt = `Return ONLY JSON with items. Each item must have section, heading, body, and citations. ${PUBLIC_PROSE_ID_WARNING} Split the meeting text into agenda items; copy only source facts. Section labels are navigation metadata, not evidence. Do not claim a meeting met or was held, and do not turn a listed/proposed action into an approved or passed outcome without explicit source evidence. Future wording such as "will be held" is not evidence that the meeting occurred. Every section, heading, and body must be supported by the cited original source.\n${evidenceBlock(

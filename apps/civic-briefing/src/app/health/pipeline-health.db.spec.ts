@@ -1,4 +1,5 @@
 import {
+  LlmGenerationSchema,
   type LocalityConfig,
   PipelineRunSchema,
 } from '@optimistic-tanuki/civic-core';
@@ -16,6 +17,8 @@ import {
   pipelineProblems,
   pipelineReport,
 } from './pipeline-health';
+import { DigestSender } from './pipeline-digest';
+import { loadTrend } from './pipeline-trend';
 
 const town = (slug: string, name: string) =>
   ({
@@ -85,6 +88,7 @@ describe('pipeline health and alerts (P5.2)', () => {
   beforeEach(async () => {
     await ds.getRepository(DaylightAlertSchema).clear();
     await ds.getRepository(PipelineRunSchema).clear();
+    await ds.getRepository(LlmGenerationSchema).clear();
   });
 
   it('says so when there is no locality registry', async () => {
@@ -170,7 +174,7 @@ describe('pipeline health and alerts (P5.2)', () => {
     expect(
       pipelineProblems(troubled()).map((problem) => [problem.key, problem.kind])
     ).toEqual([
-      ['run:7', 'run-failed'],
+      ['run:adel-ga:model-timeout', 'run-failed'],
       ['source:tifton-agendas:failing', 'source-failing'],
     ]);
   });
@@ -223,6 +227,177 @@ describe('pipeline health and alerts (P5.2)', () => {
     expect(email.sendEmail).not.toHaveBeenCalled();
     const rows = await ds.getRepository(DaylightAlertSchema).find();
     expect(rows.map((row) => row.notifiedAt)).toEqual([null, null]);
+  });
+
+  it('alerts once while a town keeps failing for the same reason', async () => {
+    const email = { sendEmail: jest.fn(async () => ({ success: true })) };
+    const alerts = new PipelineAlerts(ds, email, ['ops@example.com']);
+    const failedRun = (runId: number, error: string): PipelineHealthReport => ({
+      ...troubled(),
+      towns: [
+        {
+          ...troubled().towns[0],
+          lastRun: { ...troubled().towns[0].lastRun!, runId, error },
+        },
+      ],
+    });
+    await alerts.check(
+      failedRun(7, 'Ollama request unavailable: ECONNREFUSED')
+    );
+    await alerts.check(
+      failedRun(8, 'Ollama request unavailable: ECONNREFUSED')
+    );
+    expect(email.sendEmail).toHaveBeenCalledTimes(1);
+    // A different cause on the next run is news.
+    await alerts.check(failedRun(9, 'run lease expired'));
+    expect(email.sendEmail).toHaveBeenCalledTimes(2);
+  });
+
+  it('records quiet sources for the digest without emailing them', async () => {
+    const email = { sendEmail: jest.fn(async () => ({ success: true })) };
+    const alerts = new PipelineAlerts(ds, email, ['ops@example.com']);
+    const quiet: PipelineHealthReport = {
+      ...troubled(),
+      towns: [
+        {
+          ...troubled().towns[1],
+          problems: [
+            {
+              ...troubled().towns[1].problems[0],
+              status: 'stale',
+              stalenessDays: 5,
+            },
+          ],
+        },
+      ],
+    };
+    expect((await alerts.check(quiet)).opened).toHaveLength(1);
+    expect(email.sendEmail).not.toHaveBeenCalled();
+    const [row] = await ds.getRepository(DaylightAlertSchema).find();
+    expect(row).toMatchObject({ kind: 'source-stale', notifiedAt: null });
+  });
+
+  it('sends the daily digest once a day, from the configured local time', async () => {
+    const sent: { subject: string; html?: string }[] = [];
+    const email = {
+      sendEmail: jest.fn(
+        async (message: { subject: string; html?: string }) => {
+          sent.push(message);
+          return { success: true };
+        }
+      ),
+    };
+    await ds.getRepository(PipelineRunSchema).insert({
+      scopeSlug: 'adel-ga',
+      localitySlug: 'adel-ga',
+      cadence: 'daily',
+      startedAt: '2026-11-28T10:00:00.000Z',
+      completedAt: '2026-11-28T10:05:00.000Z',
+      status: 'failed',
+      ruleVersion: 'v',
+      counts: '{}',
+      coverageGaps: '[]',
+      error: 'Ollama request unavailable: connect ECONNREFUSED',
+      coverageRanges: '{}',
+    } as never);
+    const digest = new DigestSender(ds, email, {
+      at: '07:00',
+      timeZone: 'America/New_York',
+      recipients: ['ops@example.com'],
+    });
+    const report = async () => troubled();
+    // 06:45 Eastern: not yet.
+    expect(
+      await digest.maybeSend(report, new Date('2026-11-28T11:45:00.000Z'))
+    ).toBe('not-due');
+    expect(
+      await digest.maybeSend(report, new Date('2026-11-28T12:00:00.000Z'))
+    ).toBe('sent');
+    expect(
+      await digest.maybeSend(report, new Date('2026-11-28T12:15:00.000Z'))
+    ).toBe('already-sent');
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.subject).toContain('Daylight daily digest 2026-11-28');
+    expect(sent[0]?.html).toContain('model service unreachable');
+    // The digest row is resolved, so it is never mistaken for an open problem.
+    const alerts = new PipelineAlerts(ds, null, []);
+    expect((await alerts.check({ ...troubled(), towns: [] })).resolved).toBe(0);
+  });
+
+  it('counts a week of runs and model calls per local day', async () => {
+    const run = (startedAt: string, status: string) => ({
+      scopeSlug: 'adel-ga',
+      localitySlug: 'adel-ga',
+      cadence: 'daily',
+      startedAt,
+      completedAt: startedAt,
+      status,
+      ruleVersion: 'v',
+      counts: '{}',
+      coverageGaps: '[]',
+      error: null,
+      coverageRanges: '{}',
+    });
+    await ds.getRepository(PipelineRunSchema).insert([
+      run('2026-11-28T10:00:00.000Z', 'succeeded'),
+      run('2026-11-28T11:00:00.000Z', 'failed'),
+      // 23:30 Eastern on the 26th, though the 27th in UTC.
+      run('2026-11-27T04:30:00.000Z', 'partial_success'),
+      // Before the window.
+      run('2026-11-01T10:00:00.000Z', 'failed'),
+    ] as never);
+    const call = (attempt: number, status: string, error: string | null) => ({
+      runId: 1,
+      localitySlug: 'adel-ga',
+      operation: 'story',
+      model: 'qwen3.5:4b-q8_0',
+      status,
+      attempt,
+      promptSha256: 'p',
+      inputSha256: 'i',
+      outputSha256: null,
+      sourceKeys: '[]',
+      output: null,
+      error,
+      generatedAt: '2026-11-28T10:01:00.000Z',
+      latencyMs: 100,
+    });
+    await ds
+      .getRepository(LlmGenerationSchema)
+      .insert([
+        call(1, 'successful', null),
+        call(2, 'failed', 'Ollama request unavailable: connect ECONNREFUSED'),
+        call(3, 'failed', 'Ollama request timeout after 300000ms'),
+        call(4, 'failed', 'claim-grounding/unsupported-number: claim 1'),
+        call(5, 'failed', null),
+      ] as never);
+
+    const trend = await loadTrend(
+      ds,
+      new Date('2026-11-28T12:00:00.000Z'),
+      7,
+      'America/New_York'
+    );
+    expect(trend.map((d) => d.day)).toEqual([
+      '2026-11-22',
+      '2026-11-23',
+      '2026-11-24',
+      '2026-11-25',
+      '2026-11-26',
+      '2026-11-27',
+      '2026-11-28',
+    ]);
+    expect(trend[4]).toMatchObject({ runsPartial: 1, runsFailed: 0 });
+    expect(trend[6]).toEqual({
+      day: '2026-11-28',
+      runsSucceeded: 1,
+      runsPartial: 0,
+      runsFailed: 1,
+      callsSuccessful: 1,
+      callsUnavailable: 2,
+      callsRejected: 2,
+    });
+    expect(trend[0]).toMatchObject({ runsFailed: 0, callsSuccessful: 0 });
   });
 
   it('reads the operator addresses from DAYLIGHT_ALERT_EMAIL', () => {

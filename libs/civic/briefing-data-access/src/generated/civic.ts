@@ -587,6 +587,127 @@ export interface PipelineHealthReply {
   data: PipelineHealthReport;
 }
 
+export type PipelineDigestSummaryVerdict =
+  (typeof PipelineDigestSummaryVerdict)[keyof typeof PipelineDigestSummaryVerdict];
+
+export const PipelineDigestSummaryVerdict = {
+  healthy: 'healthy',
+  degraded: 'degraded',
+  outage: 'outage',
+  idle: 'idle',
+} as const;
+
+export interface DigestTownCounts {
+  ran: number;
+  succeeded: number;
+  failedOnly: number;
+}
+
+export interface DigestRunCounts {
+  total: number;
+  succeeded: number;
+  partial: number;
+  failed: number;
+  skipped: number;
+  running: number;
+}
+
+export type DigestCauseSummaryKind =
+  (typeof DigestCauseSummaryKind)[keyof typeof DigestCauseSummaryKind];
+
+export const DigestCauseSummaryKind = {
+  'model-unavailable': 'model-unavailable',
+  'model-timeout': 'model-timeout',
+  grounding: 'grounding',
+  'invalid-output': 'invalid-output',
+  pipeline: 'pipeline',
+} as const;
+
+export interface DigestCauseSummary {
+  key: string;
+  label: string;
+  kind: DigestCauseSummaryKind;
+  count: number;
+  towns: string[];
+}
+
+export interface DigestCallCounts {
+  total: number;
+  successful: number;
+  unavailable: number;
+}
+
+export interface DigestModelSummary {
+  operation: string;
+  model: string;
+  calls: number;
+  successful: number;
+  unavailable: number;
+  p95LatencyMs: number;
+}
+
+export interface DigestFailingSource {
+  town: string;
+  sourceId: string;
+  adapter: string;
+  attempts: number;
+}
+
+export interface DigestSourceSummary {
+  failing: DigestFailingSource[];
+  stale: number;
+  staleTowns: number;
+}
+
+export interface DigestTownRequest {
+  slug: string;
+  name: string;
+  requests: number;
+}
+
+export interface DigestAlertCounts {
+  opened: number;
+  resolved: number;
+}
+
+export interface PipelineDigestSummary {
+  since: string;
+  until: string;
+  verdict: PipelineDigestSummaryVerdict;
+  towns: DigestTownCounts;
+  runs: DigestRunCounts;
+  runFailures: DigestCauseSummary[];
+  calls: DigestCallCounts;
+  models: DigestModelSummary[];
+  rejections: DigestCauseSummary[];
+  outageHours: number;
+  sources: DigestSourceSummary;
+  noSources: DigestTownRequest[];
+  alerts: DigestAlertCounts;
+  improvements: string[];
+}
+
+export interface PipelineTrendDay {
+  day: string;
+  runsSucceeded: number;
+  runsPartial: number;
+  runsFailed: number;
+  callsSuccessful: number;
+  callsUnavailable: number;
+  callsRejected: number;
+}
+
+export interface PipelineDashboard {
+  health: PipelineHealthReport;
+  digest: PipelineDigestSummary;
+  trend: PipelineTrendDay[];
+  timeZone: string;
+}
+
+export interface PipelineDashboardReply {
+  data: PipelineDashboard;
+}
+
 export interface BackfillRequest {
   towns?: string[];
   /**
@@ -1769,6 +1890,50 @@ export class OptomisitcTanukiAPIService {
       ...(options as Omit<NonNullable<typeof options>, 'observe'>),
       observe: 'body',
     });
+  }
+
+  /**
+   * @summary Daylight's pipeline dashboard
+   */
+  pipelineDashboard<TData = PipelineDashboardReply>(
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  pipelineDashboard<TData = PipelineDashboardReply>(
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  pipelineDashboard<TData = PipelineDashboardReply>(
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  pipelineDashboard<TData = PipelineDashboardReply>(
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(
+        `/api/local-hub/operations/pipeline-dashboard`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(
+        `/api/local-hub/operations/pipeline-dashboard`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.get<TData>(
+      `/api/local-hub/operations/pipeline-dashboard`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
   }
 
   /**

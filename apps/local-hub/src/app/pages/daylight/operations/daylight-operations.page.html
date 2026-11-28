@@ -21,7 +21,201 @@
       No towns are scheduled: the daily schedule is off
       (DAYLIGHT_SCHEDULE_ENABLED) or no towns have synced from social yet.
     </p>
-    } @else {
+    } @else { @if (dashboard(); as d) {
+    <div class="pipeline-summary" aria-labelledby="pipeline-day-heading">
+      <div class="summary-head">
+        <h3 id="pipeline-day-heading">Last 24 hours</h3>
+        <span class="verdict" [attr.data-verdict]="d.digest.verdict"
+          >{{ verdictWords[d.digest.verdict] ?? d.digest.verdict }}</span
+        >
+      </div>
+      <ul class="headlines">
+        @for (h of headlines(); track h.label) {
+        <li class="headline" [attr.data-tone]="h.tone">
+          <span class="headline-label">{{ h.label }}</span>
+          <span class="headline-value">{{ h.value }}</span>
+          <span class="headline-detail">{{ h.detail }}</span>
+        </li>
+        }
+      </ul>
+
+      @if (d.digest.improvements.length) {
+      <h4>What to improve</h4>
+      <ul class="improvements">
+        @for (item of d.digest.improvements; track item) {
+        <li>{{ item }}</li>
+        }
+      </ul>
+      }
+
+      <div class="trends">
+        @for (chart of [ { title: 'Runs per day', id: 'runs', series: runSeries,
+        data: runTrend() }, { title: 'Model calls per day', id: 'calls', series:
+        callSeries, data: callTrend() } ]; track chart.id) {
+        <figure class="trend">
+          <figcaption>
+            <span class="trend-title">{{ chart.title }}</span>
+            <span class="legend">
+              @for (s of chart.series; track s.field) {
+              <span class="legend-item"
+                ><span class="swatch" [attr.data-tone]="s.tone"></span>{{
+                s.label }}</span
+              >
+              }
+            </span>
+          </figcaption>
+          <svg
+            class="trend-chart"
+            [attr.viewBox]="'0 -14 ' + chart.data.width + ' ' + (chart.data.height + 32)"
+            role="img"
+            [attr.aria-label]="chart.title + ' over the last week, as in the table below'"
+          >
+            <line
+              class="baseline"
+              x1="0"
+              [attr.x2]="chart.data.width"
+              [attr.y1]="chart.data.height"
+              [attr.y2]="chart.data.height"
+            />
+            <text class="scale" x="0" y="-4">
+              busiest day {{ chart.data.max }}
+            </text>
+            @for (col of chart.data.columns; track col.day) {
+            <g class="column" tabindex="0" [attr.aria-label]="col.summary">
+              <title>{{ col.summary }}</title>
+              <rect
+                class="hit"
+                [attr.x]="col.x - 4"
+                y="0"
+                [attr.width]="chart.data.barWidth + 8"
+                [attr.height]="chart.data.height"
+              />
+              @for (seg of col.segments; track seg.label) {
+              <rect
+                class="segment"
+                [attr.data-tone]="seg.tone"
+                [attr.x]="col.x"
+                [attr.y]="seg.y"
+                [attr.width]="chart.data.barWidth"
+                [attr.height]="seg.height"
+                rx="2"
+              />
+              }
+              <text
+                class="axis"
+                [attr.x]="col.x + chart.data.barWidth / 2"
+                [attr.y]="chart.data.height + 14"
+              >
+                {{ col.axis }}
+              </text>
+            </g>
+            }
+          </svg>
+          <details class="trend-table">
+            <summary>Show as a table</summary>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Day</th>
+                  @for (s of chart.series; track s.field) {
+                  <th scope="col" class="number">{{ s.label }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (day of d.trend; track day.day) {
+                <tr>
+                  <th scope="row">{{ day.day }}</th>
+                  @for (s of chart.series; track s.field) {
+                  <td class="number">{{ day[s.field] }}</td>
+                  }
+                </tr>
+                }
+              </tbody>
+            </table>
+          </details>
+        </figure>
+        }
+      </div>
+
+      @if (d.digest.models.length) {
+      <h4>Models</h4>
+      <div class="table-wrap">
+        <table class="models">
+          <thead>
+            <tr>
+              <th scope="col">Step</th>
+              <th scope="col">Model</th>
+              <th scope="col" class="number">Calls</th>
+              <th scope="col" class="number">Accepted</th>
+              <th scope="col" class="number">Never answered</th>
+              <th scope="col" class="number">p95 latency</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of d.digest.models; track m.operation + m.model) {
+            <tr>
+              <th scope="row">{{ m.operation }}</th>
+              <td>{{ m.model }}</td>
+              <td class="number">{{ m.calls }}</td>
+              <td class="number">
+                {{ m.successful }} @if (m.calls - m.unavailable > 0) {
+                <span class="quiet"
+                  >({{ (m.successful / (m.calls - m.unavailable)) * 100 | number
+                  : '1.0-0' }}%)</span
+                >
+                }
+              </td>
+              <td class="number">{{ m.unavailable }}</td>
+              <td class="number">{{ seconds(m.p95LatencyMs) }}</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+
+      <div class="causes">
+        <section aria-labelledby="run-failures-heading">
+          <h4 id="run-failures-heading">Why runs failed</h4>
+          @for (c of d.digest.runFailures; track c.key) {
+          <p class="cause" [attr.data-kind]="c.kind">
+            <span class="cause-count">{{ c.count }} ×</span> {{ c.label }}
+            <span class="quiet">({{ c.towns.join(', ') }})</span>
+          </p>
+          } @empty {
+          <p class="quiet">No failed runs.</p>
+          }
+        </section>
+        <section aria-labelledby="rejections-heading">
+          <h4 id="rejections-heading">Why model output was rejected</h4>
+          @for (c of d.digest.rejections.slice(0, 6); track c.key) {
+          <p class="cause" [attr.data-kind]="c.kind">
+            <span class="cause-count">{{ c.count }} ×</span> {{ c.label }}
+          </p>
+          } @empty {
+          <p class="quiet">Nothing rejected.</p>
+          }
+        </section>
+      </div>
+      <p class="quiet">
+        Since {{ d.digest.since | date : 'medium' }}. Days are in {{ d.timeZone
+        }}. The same summary is emailed each morning as the daily digest.
+      </p>
+    </div>
+    }
+
+    <div class="summary-head">
+      <h3>Towns</h3>
+      <label class="filter">
+        <input
+          type="checkbox"
+          [checked]="attentionOnly()"
+          (change)="setAttentionOnly($event)"
+        />
+        Only towns needing attention ({{ attentionCount() }})
+      </label>
+    </div>
     <div class="table-wrap">
       <table>
         <thead>
@@ -33,7 +227,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (town of report.towns; track town.slug) {
+          @for (town of pipelineTowns(); track town.slug) {
           <tr>
             <th scope="row">{{ town.name }}</th>
             <td>
@@ -66,7 +260,10 @@
           </tr>
           } @empty {
           <tr>
-            <td colspan="4" class="quiet">No towns yet.</td>
+            <td colspan="4" class="quiet">
+              {{ attentionOnly() ? 'No town needs attention.' : 'No towns yet.'
+              }}
+            </td>
           </tr>
           }
         </tbody>

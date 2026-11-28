@@ -215,3 +215,229 @@ li {
   border: 1px solid var(--border);
   border-radius: var(--personality-card-radius, 0.8rem);
 }
+
+// ── Pipeline dashboard ───────────────────────────────────────────────────
+// Status tones come from the theme; the personality only shapes type and radii.
+
+.pipeline-summary {
+  margin-bottom: 1.5rem;
+}
+
+.summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: baseline;
+  justify-content: space-between;
+
+  .filter {
+    margin-bottom: 0;
+  }
+}
+
+.verdict {
+  padding: 0.15rem 0.6rem;
+  border-radius: 9999px;
+  font-size: var(--type-small, 0.8rem);
+  font-weight: 600;
+  letter-spacing: var(--personality-label-letter-spacing, 0.04em);
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+.verdict[data-verdict='healthy'] {
+  background: color-mix(in srgb, var(--success) 18%, transparent);
+}
+
+.verdict[data-verdict='degraded'] {
+  background: color-mix(in srgb, var(--warning) 22%, transparent);
+}
+
+.verdict[data-verdict='outage'] {
+  background: color-mix(in srgb, var(--error) 18%, transparent);
+}
+
+.headlines {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.headline {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--personality-card-radius, 0.8rem);
+  background: var(--surface);
+}
+
+.headline[data-tone='good'] {
+  border-left-color: var(--success);
+}
+
+.headline[data-tone='warning'] {
+  border-left-color: var(--warning);
+}
+
+.headline[data-tone='critical'] {
+  border-left-color: var(--error);
+}
+
+.headline-label {
+  font-size: var(--type-small, 0.8rem);
+  letter-spacing: var(--personality-label-letter-spacing, 0.04em);
+  text-transform: uppercase;
+  color: var(--foreground-muted);
+}
+
+.headline-value {
+  font-family: var(--font-heading, inherit);
+  font-size: var(--type-h2, 1.6rem);
+  line-height: var(--heading-line-height, 1.15);
+  font-variant-numeric: tabular-nums;
+}
+
+.headline-detail {
+  font-size: var(--type-small, 0.85rem);
+  color: var(--foreground-muted);
+}
+
+.improvements {
+  margin: 0.25rem 0 1rem;
+  padding-left: 1.25rem;
+  line-height: var(--line-height, 1.5);
+}
+
+.trends {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.trend {
+  margin: 0;
+  min-width: 0;
+
+  figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+  }
+}
+
+.trend-title {
+  font-weight: 600;
+}
+
+.legend {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  font-size: var(--type-small, 0.8rem);
+  color: var(--foreground-muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: var(--border-radius-sm, 2px);
+}
+
+.trend-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+
+  .baseline {
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+
+  .scale,
+  .axis {
+    fill: var(--foreground-muted);
+    font-size: var(--type-small, 0.65rem);
+  }
+
+  .axis {
+    text-anchor: middle;
+  }
+
+  .hit {
+    fill: transparent;
+  }
+
+  .column:hover .hit,
+  .column:focus-visible .hit {
+    fill: color-mix(in srgb, var(--foreground) 6%, transparent);
+  }
+
+  .column:focus-visible {
+    outline: none;
+  }
+}
+
+.swatch,
+.segment {
+  &[data-tone='good'] {
+    background: var(--success);
+    fill: var(--success);
+  }
+
+  &[data-tone='warning'] {
+    background: var(--warning);
+    fill: var(--warning);
+  }
+
+  &[data-tone='critical'] {
+    background: var(--error);
+    fill: var(--error);
+  }
+}
+
+.trend-table {
+  margin-top: 0.25rem;
+  font-size: var(--type-small, 0.85rem);
+
+  summary {
+    cursor: pointer;
+    color: var(--foreground-muted);
+  }
+}
+
+.causes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.cause {
+  margin: 0.25rem 0;
+  font-size: var(--type-small, 0.9rem);
+  line-height: var(--line-height, 1.4);
+}
+
+.cause-count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.cause[data-kind='model-unavailable'] .cause-count,
+.cause[data-kind='model-timeout'] .cause-count {
+  color: var(--error);
+}

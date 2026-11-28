@@ -32,6 +32,7 @@ import {
   type BackfillStatus,
   ConfirmOfficialCallbackBody,
   type OfficialCandidate,
+  type PipelineDashboard,
   type PipelineHealthReport,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
@@ -47,6 +48,7 @@ import {
   OfficialCandidateReply,
   OfficialStandingReply,
   OutcomeSweepReply,
+  PipelineDashboardReply,
   PipelineHealthReply,
   PromotionExportReply,
   RereviewReply,
@@ -102,6 +104,34 @@ export class CivicOperationsController {
     } catch {
       throw new ServiceUnavailableException(
         'Pipeline health is unavailable right now. Try again shortly.'
+      );
+    }
+  }
+
+  /**
+   * The operations dashboard: pipeline health, the last 24 hours as the daily
+   * digest summarises them, and a week's trend of runs and model calls.
+   */
+  @Get('operations/pipeline-dashboard')
+  @RequirePermissions('town.configure')
+  @ApiOperation({ summary: "Daylight's pipeline dashboard" })
+  @ApiResponse({ status: 200, type: PipelineDashboardReply })
+  async pipelineDashboard() {
+    try {
+      return {
+        data: await firstValueFrom(
+          this.briefings
+            .send<PipelineDashboard>(
+              { cmd: CivicBriefingCommands.PIPELINE_DASHBOARD },
+              {}
+            )
+            // The health report walks every town's sources; give it time.
+            .pipe(timeout(30_000))
+        ),
+      };
+    } catch {
+      throw new ServiceUnavailableException(
+        'The pipeline dashboard is unavailable right now. Try again shortly.'
       );
     }
   }

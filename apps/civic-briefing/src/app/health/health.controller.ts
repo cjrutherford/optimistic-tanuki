@@ -27,4 +27,9 @@ export class HealthController {
   pipeline() {
     return this.health.report();
   }
+
+  @MessagePattern({ cmd: CivicBriefingCommands.PIPELINE_DASHBOARD })
+  dashboard() {
+    return this.health.dashboard();
+  }
 }

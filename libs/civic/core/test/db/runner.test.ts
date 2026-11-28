@@ -7,6 +7,7 @@ import {
   runPipeline,
   type RunPipelineOptions,
 } from '../../src/runner.js';
+import { isCoverageNote } from '../../src/coverage.js';
 import { FOUNDATION_SCHEMAS } from '../../src/schema.js';
 import type { LocalityConfig } from '../../src/types.js';
 import type { LocalityRegistry } from '../../src/locality-registry.js';
@@ -906,7 +907,8 @@ describe('unified pipeline runner', () => {
         dataSource: ds,
         summarizer,
       });
-      expect(result.status).toBe('partial_success');
+      // Project diagnostics and an unconfirmed range are notes, not gaps.
+      expect(result.status).toBe('succeeded');
       expect(
         result.stages.some(
           (stage) =>
@@ -1415,10 +1417,20 @@ describe('unified pipeline runner', () => {
         dataSource: quietDs,
         summarizer,
       });
-      expect(quiet.status).toBe('partial_success');
+      // Every source answered; that they cannot confirm their range is a
+      // note under the edition, not a reason to mark the run partial.
+      expect(quiet.status).toBe('succeeded');
       expect(
         quiet.stages.find((stage) => stage.stage === 'gather')?.status
-      ).toBe('partial_success');
+      ).toBe('succeeded');
+      expect(
+        quiet.coverageGaps.filter((gap) => gap.stage === 'gather')
+      ).toHaveLength(2);
+      expect(
+        quiet.coverageGaps.every(
+          (gap) => gap.stage !== 'gather' || isCoverageNote(gap)
+        )
+      ).toBe(true);
       expect(
         quiet.stages.find((stage) => stage.stage === 'parse')?.status
       ).toBe('succeeded');
@@ -1761,9 +1773,10 @@ describe('unified pipeline runner', () => {
         summarizer,
       });
       expect(result.status).toBe('partial_success');
+      // Both sources answered; the parser failure is what makes it partial.
       expect(
         result.stages.find((stage) => stage.stage === 'gather')?.status
-      ).toBe('partial_success');
+      ).toBe('succeeded');
       expect(
         result.stages.find((stage) => stage.stage === 'parse')?.status
       ).toBe('partial_success');

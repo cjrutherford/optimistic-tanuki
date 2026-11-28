@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -17,12 +17,20 @@ import {
   OptomisitcTanukiAPIService as CivicAPIService,
   DENSITY_TARGET,
   type OfficialCandidate,
-  type PipelineHealthReport,
+  type PipelineDashboard,
   problem,
   type TakedownNoticeRecord,
   type TownDensity,
 } from '@optimistic-tanuki/civic-briefing-data-access';
 import { catchError, map, of, startWith, type Observable } from 'rxjs';
+import {
+  CALL_SERIES,
+  headlines,
+  needsAttention,
+  RUN_SERIES,
+  trendChart,
+  VERDICT_WORDS,
+} from './pipeline-dashboard';
 
 type Loaded<T> =
   | { status: 'loading' }
@@ -51,7 +59,7 @@ type NoticeAction = 'upheld' | 'declined' | 'restored';
  */
 @Component({
   selector: 'app-daylight-operations-page',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink],
+  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daylight-operations.page.html',
   styleUrl: './daylight-operations.page.scss',
@@ -87,13 +95,38 @@ export class DaylightOperationsPage {
   );
 
   // ── Pipeline health ────────────────────────────────────────────────────
-  protected readonly pipeline = signal<Loaded<PipelineHealthReport>>({
+  protected readonly pipeline = signal<Loaded<PipelineDashboard>>({
     status: 'loading',
   });
-  protected readonly pipelineReport = computed(() => {
+  protected readonly dashboard = computed(() => {
     const state = this.pipeline();
     return state.status === 'ready' ? state.value : null;
   });
+  protected readonly pipelineReport = computed(
+    () => this.dashboard()?.health ?? null
+  );
+  protected readonly headlines = computed(() => {
+    const dashboard = this.dashboard();
+    return dashboard ? headlines(dashboard) : [];
+  });
+  protected readonly verdictWords = VERDICT_WORDS;
+  protected readonly runSeries = RUN_SERIES;
+  protected readonly callSeries = CALL_SERIES;
+  protected readonly runTrend = computed(() =>
+    trendChart(this.dashboard()?.trend ?? [], RUN_SERIES)
+  );
+  protected readonly callTrend = computed(() =>
+    trendChart(this.dashboard()?.trend ?? [], CALL_SERIES)
+  );
+  /** Only the towns that need an operator, when set. */
+  protected readonly attentionOnly = signal(false);
+  protected readonly pipelineTowns = computed(() => {
+    const towns = this.pipelineReport()?.towns ?? [];
+    return this.attentionOnly() ? towns.filter(needsAttention) : towns;
+  });
+  protected readonly attentionCount = computed(
+    () => (this.pipelineReport()?.towns ?? []).filter(needsAttention).length
+  );
   protected readonly pipelineError = computed(() => {
     const state = this.pipeline();
     return state.status === 'failed' ? state.message : '';
@@ -220,7 +253,7 @@ export class DaylightOperationsPage {
 
   protected loadPipeline(): void {
     this.track(
-      this.civic.pipelineHealth().pipe(map((reply) => reply.data)),
+      this.civic.pipelineDashboard().pipe(map((reply) => reply.data)),
       'Pipeline health could not be loaded.'
     ).subscribe((state) => this.pipeline.set(state));
   }
@@ -383,6 +416,14 @@ export class DaylightOperationsPage {
   }
 
   /** A run status in plain words. */
+  protected setAttentionOnly(event: Event): void {
+    this.attentionOnly.set((event.target as HTMLInputElement).checked);
+  }
+
+  protected seconds(ms: number): string {
+    return ms ? `${(ms / 1000).toFixed(ms < 10_000 ? 1 : 0)}s` : '—';
+  }
+
   protected runWords(status: string): string {
     const words: Record<string, string> = {
       succeeded: 'Published',

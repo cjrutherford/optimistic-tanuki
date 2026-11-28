@@ -22,6 +22,7 @@ import {
   DaylightAlertSchema,
   type DaylightAlertRow,
 } from './daylight-alert.schema';
+import { failureCause } from './failure-cause';
 
 /** Run statuses an operator has to look at. */
 const FAILED_RUNS = new Set(['failed', 'blocked']);
@@ -114,8 +115,10 @@ export function pipelineProblems(
     const run = town.lastRun;
     // A town discovery found nothing for is skipped, not failing (D32).
     if (run && FAILED_RUNS.has(run.status) && !town.noSources) {
+      // Keyed by town and cause, not run: a town that keeps failing for the
+      // same reason is told about once, until a run gets past it.
       problems.push({
-        key: `run:${run.runId}`,
+        key: `run:${town.slug}:${failureCause(run.error).key}`,
         kind: 'run-failed',
         localitySlug: town.slug,
         detail: `${town.name}: the ${run.cadence} run started ${
@@ -149,7 +152,8 @@ export function pipelineProblems(
 /**
  * Tells an operator about new pipeline problems, once each (P5.2). A problem
  * is recorded when first seen and emailed to `recipients`; it is resolved
- * when it clears, so a recurrence is a new alert. Without recipients (or an
+ * when it clears, so a recurrence is a new alert. Quiet sources are recorded
+ * but left to the daily digest. Without recipients (or an
  * email service) problems are still recorded and logged.
  */
 export class PipelineAlerts {
@@ -178,12 +182,15 @@ export class PipelineAlerts {
 
     const opened = problems.filter((problem) => !openKeys.has(problem.key));
     if (!opened.length) return { opened, resolved: resolved.length };
-    const notified = await this.notify(opened);
+    // A source going quiet is not urgent: it is recorded and reported in the
+    // daily digest, not emailed on its own.
+    const urgent = opened.filter((problem) => problem.kind !== 'source-stale');
+    const notified = urgent.length ? await this.notify(urgent) : false;
     await alerts.insert(
       opened.map((problem) => ({
         ...problem,
         firstSeenAt: at,
-        notifiedAt: notified ? at : null,
+        notifiedAt: notified && problem.kind !== 'source-stale' ? at : null,
         resolvedAt: null,
       }))
     );
@@ -206,6 +213,7 @@ export class PipelineAlerts {
         '',
         'Pipeline health in Towne Square’s Operations page shows the current state.',
         'You are told once per problem; it is reported again only if it clears and comes back.',
+        'Sources that have gone quiet, and everything else, are in the daily digest.',
       ].join('\n'),
     });
     if (!result.success) {

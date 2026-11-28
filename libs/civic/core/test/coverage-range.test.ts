@@ -1,6 +1,8 @@
 import {
   buildCoverageRange,
   coverageGapForRange,
+  isCoverageNote,
+  UNCONFIRMED_COVERAGE_REASON,
   matchesConfiguredPublisherIdentity,
 } from '../src/coverage.js';
 import { renderCoverageGapMarkdown } from '../src/pipeline.js';
@@ -46,6 +48,22 @@ describe('coverage ranges', () => {
         capabilitySupported: false,
       }).reason
     ).toBe('unsupported-capability');
+  });
+
+  it('treats an unconfirmed range as a note, not a gap', () => {
+    const range = buildCoverageRange({
+      requestedStart: '2026-09-10',
+      requestedEnd: '2026-09-12',
+      observedDates: ['2026-09-11'],
+      capabilitySupported: false,
+    });
+    const note = coverageGapForRange('adel-council', range);
+    expect(note).toStrictEqual({
+      sourceKey: 'adel-council',
+      reason: UNCONFIRMED_COVERAGE_REASON,
+    });
+    expect(isCoverageNote(note as NonNullable<typeof note>)).toBe(true);
+    expect(isCoverageNote({ reason: 'source fetch failed' })).toBe(false);
   });
 
   it('gives a zero-result restricted aggregate source the scoped no-result diagnostic before capability checks', () => {

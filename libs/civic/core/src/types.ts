@@ -509,6 +509,8 @@ export interface Summarizer {
     body: string;
     sourceKey: string;
     civicItemId: number;
+    localitySlug?: string;
+    scopeSlug?: string;
     runId?: string;
   }): Promise<
     {
