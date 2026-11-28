@@ -118,10 +118,9 @@ describe('buildDigest', () => {
   it('counts towns, runs and model calls over the window', () => {
     const digest = buildDigest(input());
     expect(digest.towns).toEqual({
-      scheduled: 3,
+      ran: 2,
       succeeded: 1,
       failedOnly: 1,
-      notRun: 1,
     });
     expect(digest.runs).toMatchObject({ total: 3, partial: 1, failed: 2 });
     expect(digest.calls).toEqual({ total: 3, successful: 1, unavailable: 1 });
@@ -186,7 +185,7 @@ describe('renderDigest', () => {
     digest.runFailures[0].towns = ['<Tifton>'];
     const { subject, text, html } = renderDigest(digest, '2026-11-28');
     expect(subject).toBe(
-      'Daylight daily digest 2026-11-28: Degraded · 1/3 towns published · 2 failed runs'
+      'Daylight daily digest 2026-11-28: Degraded · 1/2 towns published · 2 failed runs'
     );
     for (const section of ['WHAT WORKED', "WHAT DIDN'T", 'WHAT TO IMPROVE'])
       expect(text).toContain(section);
@@ -194,6 +193,36 @@ describe('renderDigest', () => {
     expect(text).toContain('tifton-agendas (civicplus) failing, 5 attempts');
     expect(html).toContain('&lt;Tifton&gt;');
     expect(html).not.toContain('<Tifton>');
+  });
+});
+
+describe('failing sources in the digest', () => {
+  it('lists one line per town, not one per source', () => {
+    const base = report();
+    const tifton = base.towns[1];
+    tifton.problems = Array.from({ length: 3 }, (_, i) => ({
+      ...tifton.problems[0],
+      sourceId: `tifton-doc-${i}`,
+      consecutiveFailures: i + 2,
+    }));
+    const { text } = renderDigest(
+      buildDigest(input({ report: base })),
+      '2026-11-28'
+    );
+    expect(text).toContain(
+      'Tifton: 3 sources failing (civicplus), up to 4 attempts in a row'
+    );
+    expect(text).not.toContain('tifton-doc-0');
+  });
+
+  it('measures latency over answered calls only', () => {
+    const generations = [
+      call({ latencyMs: 40_000 }),
+      call({ status: 'failed', error: unavailable, latencyMs: 9 }),
+    ];
+    expect(buildDigest(input({ generations })).models[0].p95LatencyMs).toBe(
+      40_000
+    );
   });
 });
 

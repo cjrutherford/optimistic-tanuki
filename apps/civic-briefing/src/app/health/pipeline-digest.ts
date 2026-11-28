@@ -50,13 +50,12 @@ export interface PipelineDigest {
   until: string;
   verdict: DigestVerdict;
   towns: {
-    scheduled: number;
+    /** Towns that ran in the window (weekly towns rarely do, so not every edition town). */
+    ran: number;
     /** Towns with at least one run that produced an edition. */
     succeeded: number;
     /** Towns whose every run in the window failed. */
     failedOnly: number;
-    /** Scheduled towns that did not run at all. */
-    notRun: number;
   };
   runs: {
     total: number;
@@ -113,12 +112,14 @@ export function buildDigest(input: DigestInput): PipelineDigest {
   const failedTowns = new Set(
     input.runs.filter((r) => FAILED.has(r.status)).map((r) => r.localitySlug)
   );
-  const scheduled = input.report.towns.filter((t) => !t.noSources);
   const towns = {
-    scheduled: scheduled.length,
+    ran: [...ranTowns].filter((slug) =>
+      input.runs.some(
+        (r) => r.localitySlug === slug && r.status !== 'skipped-overlap'
+      )
+    ).length,
     succeeded: okTowns.size,
     failedOnly: [...failedTowns].filter((slug) => !okTowns.has(slug)).length,
-    notRun: scheduled.filter((t) => !ranTowns.has(t.slug)).length,
   };
 
   const runFailures = groupCauses(
@@ -154,8 +155,10 @@ export function buildDigest(input: DigestInput): PipelineDigest {
         calls: rows.length,
         successful: count(rows, (g) => g.status === 'successful'),
         unavailable: count(rows, isUnavailable),
+        // Over answered calls only: a refused connection fails in
+        // milliseconds and would hide how slow the model really is.
         p95LatencyMs: percentile(
-          rows.map((g) => g.latencyMs),
+          rows.filter((g) => !isUnavailable(g)).map((g) => g.latencyMs),
           0.95
         ),
       };
@@ -304,12 +307,6 @@ function improvements(d: PipelineDigest): string[] {
         asked.map((t) => `${t.name} (${t.requests})`)
       )}.`
     );
-  if (d.towns.notRun)
-    out.push(
-      `${d.towns.notRun} scheduled town${
-        d.towns.notRun === 1 ? '' : 's'
-      } did not run at all in the window.`
-    );
   return out;
 }
 
@@ -331,14 +328,14 @@ export function renderDigest(
 } {
   const subject = `Daylight daily digest ${day}: ${VERDICT_TEXT[d.verdict]} · ${
     d.towns.succeeded
-  }/${d.towns.scheduled} towns published · ${d.runs.failed} failed runs`;
+  }/${d.towns.ran} towns published · ${d.runs.failed} failed runs`;
   const passRate =
     d.calls.total - d.calls.unavailable
       ? percent(d.calls.successful / (d.calls.total - d.calls.unavailable))
       : '—';
 
   const worked = [
-    `${d.towns.succeeded} of ${d.towns.scheduled} scheduled towns published an edition.`,
+    `${d.towns.succeeded} of the ${d.towns.ran} towns that ran published an edition.`,
     `${d.runs.succeeded + d.runs.partial} runs completed (${
       d.runs.succeeded
     } clean, ${d.runs.partial} with some sources missing).`,
@@ -361,15 +358,7 @@ export function renderDigest(
           `${d.calls.unavailable} model calls never got an answer (service unreachable or timed out).`,
         ]
       : []),
-    ...d.sources.failing
-      .slice(0, 8)
-      .map(
-        (s) =>
-          `${s.town}: ${s.sourceId} (${s.adapter}) failing, ${s.attempts} attempts in a row`
-      ),
-    ...(d.sources.failing.length > 8
-      ? [`…and ${d.sources.failing.length - 8} more failing sources.`]
-      : []),
+    ...failingByTown(d.sources.failing),
     ...(d.sources.stale
       ? [
           `${d.sources.stale} sources in ${d.sources.staleTowns} towns have gone quiet.`,
@@ -398,9 +387,10 @@ export function renderDigest(
       (m) =>
         `- ${m.operation} · ${m.model}: ${m.successful}/${
           m.calls - m.unavailable
-        }${
-          m.unavailable ? ` (+${m.unavailable} unanswered)` : ''
-        }, ${Math.round(m.p95LatencyMs / 1000)}s`
+        }${m.unavailable ? ` (+${m.unavailable} unanswered)` : ''}, ${seconds(
+          m.p95LatencyMs,
+          m.calls - m.unavailable
+        )}`
     ),
     '',
     'TOP REJECTION REASONS',
@@ -447,9 +437,7 @@ function digestHtml(
         answered ? percent(m.successful / answered) : '—'
       })</td><td style="${cell}">${
         m.unavailable
-      }</td><td style="${cell}">${Math.round(
-        m.p95LatencyMs / 1000
-      )}s</td></tr>`;
+      }</td><td style="${cell}">${seconds(m.p95LatencyMs, answered)}</td></tr>`;
     })
     .join('');
   const rejectionRows = d.rejections
@@ -471,7 +459,7 @@ function digestHtml(
 <p style="margin:0 0 12px"><span style="display:inline-block;padding:2px 10px;border-radius:9999px;color:#fff;background:${
     colour[d.verdict]
   };font-weight:600">${VERDICT_TEXT[d.verdict]}</span>
-&nbsp;${d.towns.succeeded}/${d.towns.scheduled} towns published · ${
+&nbsp;${d.towns.succeeded}/${d.towns.ran} towns published · ${
     d.runs.failed
   } failed runs · ${d.calls.successful} outputs passed</p>
 ${heading('What worked')}${list(sections.worked)}
@@ -639,6 +627,35 @@ export class DigestSender {
   }
 }
 
+/** Failing sources, one line per town, worst towns first. */
+function failingByTown(
+  failing: PipelineDigest['sources']['failing']
+): string[] {
+  const byTown = new Map<string, typeof failing>();
+  for (const s of failing)
+    byTown.set(s.town, [...(byTown.get(s.town) ?? []), s]);
+  const lines = [...byTown.entries()]
+    .sort((a, b) => b[1].length - a[1].length)
+    .map(([town, sources]) =>
+      sources.length === 1
+        ? `${town}: ${sources[0].sourceId} (${
+            sources[0].adapter
+          }) failing, ${plural(sources[0].attempts, 'attempt')} in a row`
+        : `${town}: ${sources.length} sources failing (${[
+            ...new Set(sources.map((s) => s.adapter)),
+          ].join(', ')}), up to ${plural(
+            Math.max(...sources.map((s) => s.attempts)),
+            'attempt'
+          )} in a row`
+    );
+  return lines.length > 6
+    ? [
+        ...lines.slice(0, 6),
+        `…and failing sources in ${lines.length - 6} more towns.`,
+      ]
+    : lines;
+}
+
 function groupCauses(
   items: { cause: FailureCause; town: string }[]
 ): DigestCause[] {
@@ -656,6 +673,14 @@ function listTowns(towns: string[]): string {
   return towns.length > 4
     ? `${towns.slice(0, 3).join(', ')} and ${towns.length - 3} more`
     : towns.join(', ');
+}
+
+function plural(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? '' : 's'}`;
+}
+
+function seconds(ms: number, answered: number): string {
+  return answered ? `${Math.round(ms / 1000)}s` : '—';
 }
 
 function count<T>(rows: readonly T[], test: (row: T) => boolean): number {
