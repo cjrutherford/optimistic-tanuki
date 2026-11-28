@@ -11,6 +11,7 @@ import {
   OfficialApplicationResult,
   BackfillStatus,
   OfficialCandidate,
+  PipelineDashboard,
   PipelineHealthReport,
   type OfficialStanding,
   PublishedBriefing,
@@ -204,6 +205,11 @@ export class BackfillStatusReply {
 export class PipelineHealthReply {
   @ApiProperty({ type: PipelineHealthReport })
   data!: PipelineHealthReport;
+}
+
+export class PipelineDashboardReply {
+  @ApiProperty({ type: PipelineDashboard })
+  data!: PipelineDashboard;
 }
 
 export class OfficialCandidateListReply {

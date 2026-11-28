@@ -1,7 +1,10 @@
 import { Logger } from '@nestjs/common';
 import type { LocalityConfig } from '@optimistic-tanuki/civic-core';
 import type { EmailService } from '@optimistic-tanuki/email';
-import type { PipelineHealthReport } from '@optimistic-tanuki/models';
+import type {
+  PipelineDashboard,
+  PipelineHealthReport,
+} from '@optimistic-tanuki/models';
 import type { DataSource } from 'typeorm';
 import type { LocalityRegistrySource } from '../registry/locality-registry.source';
 import {
@@ -9,10 +12,19 @@ import {
   PipelineAlerts,
   pipelineReport,
 } from './pipeline-health';
-import { DigestSender, digestSchedule } from './pipeline-digest';
+import {
+  buildDigest,
+  DigestSender,
+  digestSchedule,
+  loadDigestInput,
+} from './pipeline-digest';
+import { loadTrend } from './pipeline-trend';
 
 /** How often the pipeline is checked for new problems (PIPELINE_ALERT_MS). */
 const DEFAULT_ALERT_MS = 15 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Days of history on the operations dashboard's trend. */
+const TREND_DAYS = 7;
 
 /**
  * Daylight's pipeline health for operators, and the alerts that follow from
@@ -36,6 +48,33 @@ export class PipelineHealthService {
       new Date(),
       this.registry.current()
     );
+  }
+
+  /**
+   * The operations dashboard: the health report, the last 24 hours as the
+   * daily digest summarises them, and a week's trend in the digest timezone.
+   */
+  async dashboard(
+    env: NodeJS.ProcessEnv = process.env,
+    now = new Date()
+  ): Promise<PipelineDashboard> {
+    const health = await pipelineReport(
+      this.ds,
+      this.editions(),
+      now,
+      this.registry.current()
+    );
+    const { timeZone } = digestSchedule(env);
+    const digest = buildDigest(
+      await loadDigestInput(
+        this.ds,
+        health,
+        new Date(now.getTime() - DAY_MS),
+        now
+      )
+    );
+    const trend = await loadTrend(this.ds, now, TREND_DAYS, timeZone);
+    return { health, digest, trend, timeZone };
   }
 
   /**

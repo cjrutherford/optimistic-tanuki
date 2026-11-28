@@ -47,6 +47,40 @@ const idle = {
   problem: null,
 };
 
+const quietDigest = {
+  since: '2026-10-04T12:00:00.000Z',
+  until: '2026-10-05T12:00:00.000Z',
+  verdict: 'idle',
+  towns: { ran: 0, succeeded: 0, failedOnly: 0 },
+  runs: {
+    total: 0,
+    succeeded: 0,
+    partial: 0,
+    failed: 0,
+    skipped: 0,
+    running: 0,
+  },
+  runFailures: [],
+  calls: { total: 0, successful: 0, unavailable: 0 },
+  models: [],
+  rejections: [],
+  outageHours: 0,
+  sources: { failing: [], stale: 0, staleTowns: 0 },
+  noSources: [],
+  alerts: { opened: 0, resolved: 0 },
+  improvements: [],
+};
+
+/** The dashboard reply around a health report. */
+const dashboard = (health: unknown, digest: object = {}) => ({
+  data: {
+    health,
+    digest: { ...quietDigest, ...digest },
+    trend: [],
+    timeZone: 'America/New_York',
+  },
+});
+
 describe('DaylightOperationsPage', () => {
   async function render(permissions: string[]) {
     TestBed.configureTestingModule({
@@ -149,9 +183,9 @@ describe('DaylightOperationsPage', () => {
     const { fixture, page } = await render(['town.configure']);
     flushCandidates();
     http()
-      .expectOne(`${API}/operations/pipeline-health`)
-      .flush({
-        data: {
+      .expectOne(`${API}/operations/pipeline-dashboard`)
+      .flush(
+        dashboard({
           configured: true,
           checkedAt: '2026-10-05T12:00:00.000Z',
           towns: [
@@ -179,8 +213,8 @@ describe('DaylightOperationsPage', () => {
               ],
             },
           ],
-        },
-      });
+        })
+      );
     http().expectOne(`${API}/operations/backfill`).flush({ data: idle });
     fixture.detectChanges();
     const row = page.querySelector('#pipeline-heading')?.closest('section');
@@ -193,18 +227,99 @@ describe('DaylightOperationsPage', () => {
     );
   });
 
+  it('summarises the last day and narrows the towns to those needing attention', async () => {
+    const { fixture, page } = await render(['town.configure']);
+    flushCandidates();
+    const healthy = {
+      slug: 'quitman-ga',
+      name: 'Quitman',
+      lastRun: null,
+      problems: [],
+    };
+    const failing = {
+      ...healthy,
+      slug: 'adel-ga',
+      name: 'Adel',
+      lastRun: {
+        runId: 7,
+        status: 'failed',
+        cadence: 'daily',
+        startedAt: '2026-10-05T06:00:00.000Z',
+        completedAt: null,
+        currentStage: 'briefing',
+        error: 'model timed out',
+      },
+    };
+    http()
+      .expectOne(`${API}/operations/pipeline-dashboard`)
+      .flush(
+        dashboard(
+          {
+            configured: true,
+            checkedAt: '2026-10-05T12:00:00.000Z',
+            towns: [failing, healthy],
+          },
+          {
+            verdict: 'degraded',
+            towns: { ran: 2, succeeded: 1, failedOnly: 1 },
+            runs: { ...quietDigest.runs, total: 3, failed: 2 },
+            calls: { total: 10, successful: 6, unavailable: 2 },
+            runFailures: [
+              {
+                key: 'model-timeout',
+                label: 'model request timed out',
+                kind: 'model-timeout',
+                count: 2,
+                towns: ['Adel'],
+              },
+            ],
+            improvements: ['Check the Ollama host.'],
+          }
+        )
+      );
+    http().expectOne(`${API}/operations/backfill`).flush({ data: idle });
+    fixture.detectChanges();
+
+    expect(page.querySelector('.verdict')?.textContent?.trim()).toBe(
+      'Degraded'
+    );
+    const tiles = Array.from(page.querySelectorAll('.headline')).map((li) =>
+      Array.from(li.children)
+        .map((span) => span.textContent?.trim())
+        .join(' ')
+    );
+    expect(tiles).toContain('Model output accepted 75% 6 of 8 answered calls');
+    expect(page.querySelector('.cause')?.textContent).toContain(
+      'model request timed out'
+    );
+    expect(page.textContent).toContain('Check the Ollama host.');
+
+    const rows = () =>
+      Array.from(
+        page.querySelectorAll('#pipeline-heading ~ .table-wrap tbody th')
+      ).map((th) => th.textContent?.trim());
+    expect(rows()).toEqual(['Adel', 'Quitman']);
+    const filter = page.querySelector(
+      '.summary-head input[type="checkbox"]'
+    ) as HTMLInputElement;
+    filter.checked = true;
+    filter.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(rows()).toEqual(['Adel']);
+  });
+
   it('starts a pull and backfill and shows its progress', async () => {
     const { fixture, page } = await render(['town.configure']);
     flushCandidates();
     http()
-      .expectOne(`${API}/operations/pipeline-health`)
-      .flush({
-        data: {
+      .expectOne(`${API}/operations/pipeline-dashboard`)
+      .flush(
+        dashboard({
           configured: true,
           checkedAt: '2026-10-05T12:00:00Z',
           towns: [],
-        },
-      });
+        })
+      );
     http().expectOne(`${API}/operations/backfill`).flush({ data: idle });
     fixture.detectChanges();
 
@@ -267,8 +382,8 @@ describe('DaylightOperationsPage', () => {
     async function open(list: unknown[] = [candidate()]) {
       const view = await render(['town.configure']);
       http()
-        .expectOne(`${API}/operations/pipeline-health`)
-        .flush({ data: { configured: false, checkedAt: '', towns: [] } });
+        .expectOne(`${API}/operations/pipeline-dashboard`)
+        .flush(dashboard({ configured: false, checkedAt: '', towns: [] }));
       http().expectOne(`${API}/operations/backfill`).flush({ data: idle });
       flushCandidates(list);
       view.fixture.detectChanges();

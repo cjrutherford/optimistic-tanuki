@@ -33,6 +33,7 @@ const METHODS = [
   'me',
   'mine',
   'officialCandidates',
+  'pipelineDashboard',
   'pipelineHealth',
   'rejectOfficialCandidate',
   'request',

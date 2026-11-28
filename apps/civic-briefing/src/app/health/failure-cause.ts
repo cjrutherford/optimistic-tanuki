@@ -21,21 +21,28 @@ export interface FailureCause {
 
 const GROUNDING = /claim-grounding\/([a-z0-9-]+)/i;
 
+/**
+ * The model service never answered. Written in the subset of regex syntax
+ * Postgres `~*` shares with JavaScript, so the dashboard's SQL trend counts
+ * the same calls as unanswered.
+ */
+export const UNAVAILABLE_PATTERN =
+  'request unavailable|ECONNREFUSED|ENOTFOUND|EHOSTUNREACH|EAI_AGAIN|socket hang up';
+export const TIMEOUT_PATTERN = 'request timeout|timed out';
+const UNAVAILABLE = new RegExp(UNAVAILABLE_PATTERN, 'i');
+const TIMEOUT = new RegExp(TIMEOUT_PATTERN, 'i');
+
 export function failureCause(error: string | null | undefined): FailureCause {
   const message = (error ?? '').trim();
   if (!message)
     return { key: 'unknown', label: 'no error recorded', kind: 'pipeline' };
-  if (
-    /request unavailable|ECONNREFUSED|ENOTFOUND|EHOSTUNREACH|EAI_AGAIN|socket hang up/i.test(
-      message
-    )
-  )
+  if (UNAVAILABLE.test(message))
     return {
       key: 'model-unavailable',
       label: 'model service unreachable',
       kind: 'model-unavailable',
     };
-  if (/request timeout|timed out/i.test(message))
+  if (TIMEOUT.test(message))
     return {
       key: 'model-timeout',
       label: 'model request timed out',
