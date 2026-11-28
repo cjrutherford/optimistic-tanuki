@@ -1,6 +1,7 @@
 import { createTestDataSource } from './helpers/postgres.js';
 import { backfillSince, dailyPeriod } from '../../src/calendar.js';
 import { extractAgenda, gather, parseAll } from '../../src/pipeline.js';
+import type { AgendaFixupInput } from '../../src/pipeline.js';
 import { registerAdapter } from '../../src/registry.js';
 import { DataSource } from 'typeorm';
 import {
@@ -375,6 +376,49 @@ test('agenda extraction keeps distinct repeated ordinals in one section idempote
         .getRepository(AgendaItemSchema)
         .count({ where: { itemId: item.id } as any })
     ).toBe(rows.length);
+  } finally {
+    await ds.destroy();
+  }
+});
+
+test('agenda fixup is told which town the document belongs to', async () => {
+  const ds = await createTestDataSource(FOUNDATION_SCHEMAS);
+  try {
+    // One long paragraph: the rules find fewer than two rows, so fixup runs.
+    const item = await ds.getRepository(CivicItemSchema).save({
+      sourceId: source.sourceKey,
+      localitySlug: locality.slug,
+      scopeSlug: locality.slug,
+      scopeKind: 'town',
+      kind: 'meeting',
+      title: 'Council packet 09/12/2026',
+      body: `The council will hear a presentation on the bridge construction schedule. ${'Residents may comment on the drainage study and the downtown parking plan. '.repeat(
+        8
+      )}`,
+      eventDate: '2026-09-12',
+      topics: JSON.stringify(['bridge']),
+      uris: JSON.stringify(['https://example.test/agenda']),
+      hash: 'fixup-locality',
+      createdAt: '2026-09-12T01:00:00.000Z',
+    });
+    const inputs: AgendaFixupInput[] = [];
+    await extractAgenda(
+      ds,
+      locality.slug,
+      async (input) => {
+        inputs.push(input);
+        return [];
+      },
+      { start: '2026-09-12', end: '2026-09-13' },
+      locality.timezone
+    );
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0]).toMatchObject({
+      sourceKey: source.sourceKey,
+      civicItemId: item.id,
+      localitySlug: locality.slug,
+      scopeSlug: locality.slug,
+    });
   } finally {
     await ds.destroy();
   }

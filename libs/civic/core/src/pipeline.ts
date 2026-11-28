@@ -1227,6 +1227,9 @@ export interface AgendaFixupInput {
   body: string;
   sourceKey: string;
   civicItemId: number;
+  /** The town and scope the document belongs to; supplies its state to grounding. */
+  localitySlug?: string;
+  scopeSlug?: string;
   runId?: string;
 }
 export type AgendaFixup = (input: AgendaFixupInput) => Promise<
@@ -1460,6 +1463,8 @@ export async function extractAgenda(
           body: doc.body,
           sourceKey: doc.sourceId,
           civicItemId: doc.id as number,
+          localitySlug,
+          ...(doc.scopeSlug ? { scopeSlug: doc.scopeSlug } : {}),
           ...(runId !== undefined ? { runId: String(runId) } : {}),
         });
         const norm = doc.body.toLowerCase().replace(/\s+/g, ' ');

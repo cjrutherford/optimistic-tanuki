@@ -144,6 +144,13 @@ export class AgendaService {
         body: document['body'],
         sourceKey: document['sourceId'],
         civicItemId: document['id'] as number,
+        localitySlug:
+          typeof request.locality === 'string'
+            ? request.locality
+            : request.locality.slug,
+        ...(typeof document['scopeSlug'] === 'string'
+          ? { scopeSlug: document['scopeSlug'] }
+          : {}),
         ...(request.runId !== undefined
           ? { runId: String(request.runId) }
           : {}),
