@@ -26,6 +26,37 @@ export const DEFAULT_OLLAMA_BASE_URL =
 // Chosen by `civic corpus eval-llm` on the recorded Georgia corpus (2026-09-17): on an
 // 8 GB GPU with a 16k context, qwen3.5:4b-q8_0 completed every brief and story prompt with
 // the most validated claims and the lowest latency; qwen3:8b and mistral:7b timed out.
+/**
+ * A readable reason for a failed model request. Transports do not always
+ * reject with an Error: a Nest microservice client (prompt-proxy) rejects with
+ * the RpcException payload, `{ status: 'error', message }`, which `String()`
+ * turns into "[object Object]" and hides the cause from runs and alerts.
+ */
+export function describeTransportError(error: unknown): string {
+  if (error instanceof Error) {
+    const code = (error.cause as { code?: unknown } | undefined)?.code;
+    return typeof code === 'string' && !error.message.includes(code)
+      ? `${error.message} (${code})`
+      : error.message;
+  }
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object') {
+    const record = error as Record<string, unknown>;
+    for (const key of ['message', 'error', 'code']) {
+      const value = record[key];
+      if (typeof value === 'string' && value.trim()) return value;
+      if (value && typeof value === 'object')
+        return describeTransportError(value);
+    }
+    try {
+      return JSON.stringify(error).slice(0, 500);
+    } catch {
+      return 'unserializable error';
+    }
+  }
+  return String(error);
+}
+
 export const DEFAULT_PRIMARY_MODEL = 'qwen3.5:4b-q8_0';
 export const DEFAULT_FALLBACK_MODEL = 'qwen2.5:7b-instruct';
 
@@ -313,9 +344,7 @@ export async function requestChatCompletion(
           }
         );
       throw new StrictLlmError(
-        `Ollama request unavailable: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        `Ollama request unavailable: ${describeTransportError(error)}`,
         { operation: options.operation, model: options.model, cause: error }
       );
     }
