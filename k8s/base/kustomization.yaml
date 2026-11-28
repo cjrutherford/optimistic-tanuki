@@ -75,4 +75,6 @@ configMapGenerator:
       - LLM_FALLBACK_MODEL=
       - REVIEW_MODEL=
       - DAYLIGHT_ALERT_EMAIL=
+      - DAYLIGHT_DIGEST_AT=07:00
+      - DAYLIGHT_DIGEST_TZ=America/New_York
       - PIPELINE_ALERT_MS=900000

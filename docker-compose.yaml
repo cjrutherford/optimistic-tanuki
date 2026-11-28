@@ -616,6 +616,11 @@ services:
       CLAMAV_SCAN_DEADLINE_MS: ${CIVIC_CLAMAV_SCAN_DEADLINE_MS:-120000}
       # Pipeline alerts (P5.2): new failed runs and failing or quiet sources.
       DAYLIGHT_ALERT_EMAIL: ${DAYLIGHT_ALERT_EMAIL:-}
+      # Daily digest of what worked, what failed and what to improve; goes to
+      # DAYLIGHT_ALERT_EMAIL unless DAYLIGHT_DIGEST_EMAIL is set.
+      DAYLIGHT_DIGEST_EMAIL: ${DAYLIGHT_DIGEST_EMAIL:-}
+      DAYLIGHT_DIGEST_AT: ${DAYLIGHT_DIGEST_AT:-07:00}
+      DAYLIGHT_DIGEST_TZ: ${DAYLIGHT_DIGEST_TZ:-America/New_York}
       SMTP_HOST: ${SMTP_HOST:-mail.christopherrutherford.net}
       SMTP_PORT: ${SMTP_PORT:-465}
       SMTP_SECURE: ${SMTP_SECURE:-true}

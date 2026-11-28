@@ -9,6 +9,7 @@ import {
   PipelineAlerts,
   pipelineReport,
 } from './pipeline-health';
+import { DigestSender, digestSchedule } from './pipeline-digest';
 
 /** How often the pipeline is checked for new problems (PIPELINE_ALERT_MS). */
 const DEFAULT_ALERT_MS = 15 * 60 * 1000;
@@ -39,7 +40,9 @@ export class PipelineHealthService {
 
   /**
    * Checks now and then every PIPELINE_ALERT_MS, emailing DAYLIGHT_ALERT_EMAIL
-   * about problems not reported before. Started with the daily schedule.
+   * about problems not reported before, and sending the daily digest once a
+   * day at DAYLIGHT_DIGEST_AT (see digestSchedule). Started with the daily
+   * schedule.
    */
   startAlerts(env: NodeJS.ProcessEnv = process.env): void {
     if (this.timer) return;
@@ -49,14 +52,22 @@ export class PipelineHealthService {
         'DAYLIGHT_ALERT_EMAIL is not set; pipeline problems are logged, not emailed'
       );
     const alerts = new PipelineAlerts(this.ds, this.email, recipients);
+    const schedule = digestSchedule(env);
+    const digest = new DigestSender(this.ds, this.email, schedule);
+    if (schedule.recipients.length)
+      this.logger.log(
+        `daily digest at ${schedule.at} ${schedule.timeZone} to ${schedule.recipients.length} recipient(s)`
+      );
     const every = Number(env['PIPELINE_ALERT_MS']) || DEFAULT_ALERT_MS;
     const check = async () => {
       try {
-        const { opened, resolved } = await alerts.check(await this.report());
+        const report = await this.report();
+        const { opened, resolved } = await alerts.check(report);
         if (opened.length || resolved)
           this.logger.log(
             `pipeline alerts: ${opened.length} new, ${resolved} resolved`
           );
+        await digest.maybeSend(async () => report);
       } catch (error) {
         this.logger.error(
           `pipeline health check failed: ${
