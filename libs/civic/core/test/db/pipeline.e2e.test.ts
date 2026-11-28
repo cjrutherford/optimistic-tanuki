@@ -197,8 +197,9 @@ test('real runner produces isolated, repeatable multi-locality daily editions', 
     const lake = await run('lakeview-alpha-ga', '12');
     const namesake = await run('pineville-beta-ga', '12');
     expect(first.status).toBe('partial_success');
-    expect(lake.status).toBe('partial_success');
-    expect(namesake.status).toBe('partial_success');
+    // These towns' sources all answered; an unconfirmed range is only a note.
+    expect(lake.status).toBe('succeeded');
+    expect(namesake.status).toBe('succeeded');
     expect(first.stages.length).toBe(7);
     expect(
       first.stages.every((stage) => stage.status !== 'skipped')

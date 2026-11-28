@@ -38,6 +38,8 @@ import { isEditoriallyEligibleBody } from './article-enrichment.js';
 import { backfillSince, localDate, periodFor } from './calendar.js';
 import {
   coverageGapForRange,
+  isCoverageNote,
+  UNCONFIRMED_COVERAGE_REASON,
   matchesConfiguredPublisherIdentity,
 } from './coverage.js';
 import { publishBriefing } from './brief-publication.js';
@@ -932,7 +934,7 @@ export async function runPipeline(
         });
         return {
           ...value,
-          __status: gaps.length
+          __status: gaps.some((gap) => !isCoverageNote(gap))
             ? successful
               ? ('partial_success' as const)
               : ('failed' as const)
@@ -1035,8 +1037,7 @@ export async function runPipeline(
           if (
             gap.stage === 'gather' &&
             gap.sourceKey === source.sourceKey &&
-            gap.reason ===
-              'source does not document date or pagination coverage capability'
+            gap.reason === UNCONFIRMED_COVERAGE_REASON
           )
             gap.reason = 'no recent aggregate result';
         }
@@ -1046,8 +1047,7 @@ export async function runPipeline(
         for (const gap of gatherStage?.coverageGaps ?? []) {
           if (
             gap.sourceKey === source.sourceKey &&
-            gap.reason ===
-              'source does not document date or pagination coverage capability'
+            gap.reason === UNCONFIRMED_COVERAGE_REASON
           )
             gap.reason = 'no recent aggregate result';
         }
@@ -1072,7 +1072,7 @@ export async function runPipeline(
     }
     if (options.pullOnly) {
       // A pull fetches and stores; editions come from later runs.
-      result.status = result.coverageGaps.length
+      result.status = result.coverageGaps.some((gap) => !isCoverageNote(gap))
         ? 'partial_success'
         : 'succeeded';
       await finalizeRunAndRelease(
@@ -1417,9 +1417,12 @@ export async function runPipeline(
     );
     // Project diagnostics are intentionally observable coverage information,
     // not pipeline failures.  Only source gather/parse gaps make a usable run
-    // partial; withhold/uncertain geography must not penalize its status.
+    // partial; withhold/uncertain geography must not penalize its status,
+    // and neither must a source that cannot confirm its range is complete.
     const hasSourceCoverageGap = result.coverageGaps.some(
-      (gap) => gap.stage === 'gather' || gap.stage === 'parse'
+      (gap) =>
+        (gap.stage === 'gather' || gap.stage === 'parse') &&
+        !isCoverageNote(gap)
     );
     result.status = hasSourceCoverageGap ? 'partial_success' : 'succeeded';
     await finalizeRunAndRelease(
