@@ -188,6 +188,20 @@ function ocrDocumentTitle(text: string): string | undefined {
     .join(' ');
 }
 
+/**
+ * The URL that serves the file itself. CivicPlus AgendaCenter links each
+ * file twice, as ViewFile/... (the PDF) and ViewFile/...?html=true (an HTML
+ * rendering of it); only the first passes the PDF check.
+ */
+export function documentUrl(url: URL | string): string {
+  const parsed = new URL(url.toString());
+  if (/\/AgendaCenter\/ViewFile\//i.test(parsed.pathname)) {
+    for (const key of [...parsed.searchParams.keys()])
+      if (key.toLowerCase() === 'html') parsed.searchParams.delete(key);
+  }
+  return parsed.toString();
+}
+
 async function downloadPdf(
   url: string,
   blobStore: BlobStore,
@@ -368,8 +382,15 @@ export function createDocumentAdapter(
             const href = page(el).attr('href') ?? '';
             const anchorText = page(el).text().trim();
             if (pattern.test(href)) {
-              const abs = new URL(href, pageBaseUrl).toString();
-              if (seen.has(abs)) return;
+              const raw = new URL(href, pageBaseUrl);
+              const abs = documentUrl(raw);
+              if (seen.has(abs)) {
+                // CivicPlus lists each file twice; the PDF link carries the title.
+                const known = candidates.find((c) => c.url === abs);
+                if (known && raw.toString() === abs && anchorText)
+                  known.anchorText = anchorText;
+                return;
+              }
               seen.add(abs);
               candidates.push({ url: abs, anchorText });
               return;
